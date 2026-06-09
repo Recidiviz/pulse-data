@@ -45,8 +45,13 @@ def is_forward_ref(attribute: attr.Attribute) -> bool:
 
 
 def is_flat_field(attribute: attr.Attribute) -> bool:
-    """Returns True if the attribute is a flat field (not a list or a reference)."""
-    return not is_list(attribute) and not is_forward_ref(attribute)
+    """Returns True if the attribute is a flat field (not a list, tuple, or
+    reference)."""
+    return (
+        not is_list(attribute)
+        and not is_tuple(attribute)
+        and not is_forward_ref(attribute)
+    )
 
 
 def is_attr_decorated(obj_cls: Type[Any]) -> bool:
@@ -136,6 +141,20 @@ def is_list_type(attr_type: Type) -> bool:
     return get_origin(attr_type) is list
 
 
+def is_tuple(attribute: attr.Attribute) -> bool:
+    """Returns true if the attribute is a tuple type."""
+
+    if not isinstance(attribute, attr.Attribute):
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
+
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return is_tuple_type(non_optional_type)
+
+
+def is_tuple_type(attr_type: Type) -> bool:
+    return get_origin(attr_type) is tuple
+
+
 def is_str(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a str type."""
 
@@ -198,18 +217,41 @@ def get_inner_type_from_list_type(list_type: Type) -> Type:
     return one(t for t in get_args(list_type))
 
 
-def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
-    """Returns the the inner class name for an attribute's type that is either
-    List[<type>] or Optional[<type>], or None if the attribute type does not match
-    either format.
+def get_inner_type_from_tuple_type(tuple_type: Type) -> Type:
+    """Returns the element type from a `tuple[X, ...]` type, that is, a
+    tuple of any number of elements that are all the same type.
 
-    If something is a nested List or Optional type, returns the innermost type if it
-    is an object reference type.
+    Only `tuple[X, ...]` is supported. Fixed-length tuples like `tuple[X]`
+    or mixed-element tuples like `tuple[X, Y]` raise `ValueError`, since
+    there is no single "inner type" to return for those shapes.
+    """
+    if not is_tuple_type(tuple_type):
+        raise ValueError(f"Expected tuple type, found [{tuple_type}]")
+
+    # tuple[Foo, ...] carries two type args: the element type and Ellipsis.
+    args = get_args(tuple_type)
+    if len(args) != 2 or args[1] is not Ellipsis:
+        raise ValueError(
+            f"Only tuples of the form `tuple[X, ...]` (any number of "
+            f"elements of one type) are supported; found [{tuple_type}] "
+            f"with args {args}."
+        )
+    return args[0]
+
+
+def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
+    """Returns the the inner class name for an attribute's type that is one of
+    `List[<type>]`, `tuple[<type>, ...]`, or `Optional[<type>]`, or None if the
+    attribute type does not match any of those formats.
+
+    If something is a nested List/tuple/Optional type, returns the innermost type
+    if it is an object reference type.
 
     Examples:
         List[str] -> None
         List[List[str]] -> None
         List["StatePerson"] -> "StatePerson"
+        tuple["IdentityClusterRace", ...] -> "IdentityClusterRace"
         Optional[List["StatePerson"]] -> "StatePerson"
         Optional["StatePerson"] -> "StatePerson"
     """
@@ -237,13 +279,14 @@ def get_referenced_class_name_from_type(
     """Returns the referenced class name from a type annotation, or None if the
     type does not reference an entity class.
 
-    Handles ForwardRef, str, List, and Optional types, unwrapping nested
+    Handles ForwardRef, str, List, tuple, and Optional types, unwrapping nested
     containers to find the innermost class reference.
 
     Examples:
         List[str] -> None
         List[List[str]] -> None
         List["StatePerson"] -> "StatePerson"
+        tuple["IdentityClusterRace", ...] -> "IdentityClusterRace"
         Optional[List["StatePerson"]] -> "StatePerson"
         Optional["StatePerson"] -> "StatePerson"
         ForwardRef("StatePerson | None") -> "StatePerson"
@@ -259,6 +302,10 @@ def get_referenced_class_name_from_type(
             return _extract_class_name_from_forward_ref(attr_type)
         if is_list_type(attr_type):
             attr_type = get_inner_type_from_list_type(attr_type)
+            continue
+
+        if is_tuple_type(attr_type):
+            attr_type = get_inner_type_from_tuple_type(attr_type)
             continue
 
         if is_optional_type(attr_type):

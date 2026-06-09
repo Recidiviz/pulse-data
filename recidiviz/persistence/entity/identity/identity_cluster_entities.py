@@ -34,12 +34,12 @@ from typing import Any
 import attr
 
 from recidiviz.common.attr_validators import (
-    is_list_of,
     is_none,
     is_opt,
     is_opt_str,
     is_opt_valid_name_part,
     is_opt_valid_name_suffix,
+    is_tuple_of,
     is_valid_email,
     is_valid_phone_number,
 )
@@ -52,7 +52,10 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entities_from_tree,
+    set_backedges,
+)
 from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
     IDENTITY_CLUSTER_ENTITIES_CONTEXT,
 )
@@ -65,62 +68,78 @@ from recidiviz.persistence.entity.reasonable_date_validators import (
 from recidiviz.persistence.entity.serialization import serialize_entity_tree_into_json
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterExternalId(IdentityEntityMixin, ExternalIdEntity):
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterName(IdentityEntityMixin, Entity):
     given_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     preferred_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     surname: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     middle_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     name_suffix: str | None = attr.ib(default=None, validator=is_opt_valid_name_suffix)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterGender(IdentityEntityMixin, EnumEntity):
     gender: Gender = attr.ib(validator=attr.validators.instance_of(Gender))
     gender_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterSex(IdentityEntityMixin, EnumEntity):
     sex: Sex = attr.ib(validator=attr.validators.instance_of(Sex))
     sex_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterRace(IdentityEntityMixin, EnumEntity):
     race: Race = attr.ib(validator=attr.validators.instance_of(Race))
     race_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterEthnicity(IdentityEntityMixin, EnumEntity):
     ethnicity: Ethnicity = attr.ib(validator=attr.validators.instance_of(Ethnicity))
     ethnicity_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterPhoneNumber(IdentityEntityMixin, Entity):
     number: str = attr.ib(validator=is_valid_phone_number)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityClusterEmail(IdentityEntityMixin, Entity):
     address: str = attr.ib(validator=is_valid_email)
-    identity_cluster: "IdentityCluster | None" = attr.ib(default=None)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityCluster(
     IdentityEntityMixin,
     HasMultipleExternalIdsEntity["IdentityClusterExternalId"],
@@ -128,8 +147,8 @@ class IdentityCluster(
 ):
     """The post-clustering view of one logical person."""
 
-    external_ids: list["IdentityClusterExternalId"] = attr.ib(
-        validator=is_list_of(IdentityClusterExternalId)
+    external_ids: tuple["IdentityClusterExternalId", ...] = attr.ib(
+        validator=is_tuple_of(IdentityClusterExternalId),
     )
 
     person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
@@ -158,31 +177,50 @@ class IdentityCluster(
         default=None, validator=is_opt(IdentityClusterSex)
     )
 
-    races: list["IdentityClusterRace"] = attr.ib(
-        factory=list, validator=is_list_of(IdentityClusterRace)
+    races: tuple["IdentityClusterRace", ...] = attr.ib(
+        factory=tuple,
+        validator=is_tuple_of(IdentityClusterRace),
     )
 
     ethnicity: "IdentityClusterEthnicity | None" = attr.ib(
         default=None, validator=is_opt(IdentityClusterEthnicity)
     )
 
-    phone_numbers: list["IdentityClusterPhoneNumber"] = attr.ib(
-        factory=list, validator=is_list_of(IdentityClusterPhoneNumber)
+    phone_numbers: tuple["IdentityClusterPhoneNumber", ...] = attr.ib(
+        factory=tuple,
+        validator=is_tuple_of(IdentityClusterPhoneNumber),
     )
 
-    emails: list["IdentityClusterEmail"] = attr.ib(
-        factory=list, validator=is_list_of(IdentityClusterEmail)
+    emails: tuple["IdentityClusterEmail", ...] = attr.ib(
+        factory=tuple,
+        validator=is_tuple_of(IdentityClusterEmail),
     )
 
-    # SHA-256 of the cluster's sorted external IDs. Stable across pipeline
-    # runs as long as the external_id set is unchanged, so the Identity
-    # Service can use this as the stable identifier for the person.
-    identity_cluster_id: str = attr.ib(init=False, default="")
+    # SHA-256 of the cluster's sorted external IDs. Used by the Identity
+    # Service as the upsert/deduplication key across import runs to
+    # determine whether this is a cluster it has seen before. Not a stable
+    # person identifier: if the cluster gains or loses an external ID
+    # between runs the hash changes, so one logical person may have
+    # multiple identity_cluster_id values over time.
+    #
+    # Declared with on_setattr=validate because its value is derived from
+    # the fully-constructed, back-edge-resolved tree and so must be
+    # assigned in __attrs_post_init__ rather than supplied by the caller.
+    identity_cluster_id: str = attr.ib(
+        init=False, default="", on_setattr=attr.setters.validate
+    )
 
     # SHA-256 of the cluster's full content (external IDs + flat fields +
     # child entities). Used by the Identity Service to detect whether a
     # cluster has changed since the last import.
-    cluster_hash: str = attr.ib(init=False, default="")
+    #
+    # Like identity_cluster_id, declared with on_setattr=validate because
+    # its value is derived from the fully-constructed, back-edge-resolved
+    # tree and so must be assigned in __attrs_post_init__ rather than
+    # supplied by the caller.
+    cluster_hash: str = attr.ib(
+        init=False, default="", on_setattr=attr.setters.validate
+    )
 
     def __attrs_post_init__(self) -> None:
         all_entities = get_all_entities_from_tree(
@@ -201,16 +239,25 @@ class IdentityCluster(
                 f"{self.tenant!r}; found mismatched tenants: {mismatched_tenants}"
             )
 
+        set_backedges(self, IDENTITY_CLUSTER_ENTITIES_CONTEXT)
+
         json_entity_tree = serialize_entity_tree_into_json(
             self, IDENTITY_CLUSTER_ENTITIES_CONTEXT
         )
         json_entity_tree.pop("identity_cluster_id")
         json_entity_tree.pop("cluster_hash")
+
+        # identity_cluster_id and cluster_hash are derived from the fully-
+        # constructed tree (including back-edges, which `set_backedges` above
+        # derives), so they can't be determined at construction time, but must
+        # be computed here.
         self.identity_cluster_id = _hash_json(json_entity_tree["external_ids"])
         self.cluster_hash = _hash_json(json_entity_tree)
 
     def get_external_ids(self) -> list["IdentityClusterExternalId"]:
-        return self.external_ids
+        # TODO(#84019): Loosen parent return type to Sequence and drop the
+        # list(...) coercion here.
+        return list(self.external_ids)
 
     @classmethod
     def back_edge_field_name(cls) -> str:

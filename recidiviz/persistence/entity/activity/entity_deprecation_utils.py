@@ -87,7 +87,7 @@ def validate_deprecated_entity_field_for_states(
 
         invalid_set_field = (
             field_value is not None
-            if attr_field_type != BuildableAttrFieldType.LIST
+            if attr_field_type != BuildableAttrFieldType.COLLECTION
             else field_value != []
         )
 

@@ -18,6 +18,7 @@
 
 import unittest
 
+import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import (
@@ -30,6 +31,7 @@ from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_line_terminator,
     make_bq_compatible_identifier,
     normalize_column_name_for_bq,
+    schema_field_for_attribute,
     to_big_query_valid_encoding,
     to_validated_schema_field,
     validate_unquoted_bq_identifier,
@@ -303,4 +305,25 @@ class GetReservedBqColumnNamePrefixTest(unittest.TestCase):
         self.assertEqual("_FILE_", get_reserved_bq_column_name_prefix("_file_name"))
         self.assertEqual(
             "_PARTITION", get_reserved_bq_column_name_prefix("_partitiondate")
+        )
+
+
+@attr.define
+class _CollectionFieldsAttrClass:
+    list_field: list[str] = attr.ib(factory=list)
+    tuple_field: tuple[str, ...] = attr.ib(factory=tuple)
+
+
+class SchemaFieldForAttributeTest(unittest.TestCase):
+    """Tests for schema_field_for_attribute."""
+
+    def test_list_and_tuple_attributes_map_to_string_columns(self) -> None:
+        fields = attr.fields_dict(_CollectionFieldsAttrClass)
+        self.assertEqual(
+            "STRING",
+            schema_field_for_attribute("list_field", fields["list_field"]).field_type,
+        )
+        self.assertEqual(
+            "STRING",
+            schema_field_for_attribute("tuple_field", fields["tuple_field"]).field_type,
         )

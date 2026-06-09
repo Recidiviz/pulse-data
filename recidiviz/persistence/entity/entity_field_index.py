@@ -21,7 +21,11 @@ from enum import Enum, auto
 from types import ModuleType
 from typing import Dict, Set, Type
 
-from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attribute_field_type_reference_for_class,
+)
+from recidiviz.common.attr_utils import is_tuple
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
     SchemaEdgeDirectionChecker,
@@ -78,7 +82,7 @@ class EntityFieldIndex:
         result = set()
         for field_name in self.get_all_entity_fields(type(entity), entity_field_type):
             v = entity.get_field(field_name)
-            if isinstance(v, list):
+            if isinstance(v, (list, tuple)):
                 if v:
                     result.add(field_name)
             elif v is not None:
@@ -125,6 +129,22 @@ class EntityFieldIndex:
             field_info = class_reference.get_field_info(field)
             if field_info.referenced_cls_name:
                 if self.direction_checker.is_back_edge(entity_cls, field):
+                    # update_reverse_references_on_related_entities mutates
+                    # back-edge collections in place via .append, which is not
+                    # supported on tuples. Reject tuple-typed back-edge fields
+                    # at class-registration time so the failure surfaces at
+                    # import rather than during a pipeline run.
+                    if (
+                        field_info.field_type == BuildableAttrFieldType.COLLECTION
+                        and is_tuple(field_info.attribute)
+                    ):
+                        raise ValueError(
+                            f"Class [{entity_cls.__name__}] declares back-edge "
+                            f"field [{field}] as a tuple. Tuple-typed back-edge "
+                            f"collections are not supported; declare the field "
+                            f"as a list, or add tuple-back-edge support to "
+                            f"`update_reverse_references_on_related_entities`."
+                        )
                     back_edges.add(field)
                 else:
                     forward_edges.add(field)
@@ -151,3 +171,14 @@ class EntityFieldIndex:
                 _EntityFieldIndexKey(),
             )
         return _entity_field_index_by_entities_module[entities_module]
+
+
+@environment.test_only
+def build_entity_field_index_for_test(
+    direction_checker: SchemaEdgeDirectionChecker,
+) -> "EntityFieldIndex":
+    """Test-only factory for `EntityFieldIndex`. Production code should obtain
+    an `EntityFieldIndex` via `EntitiesModuleContext.field_index()` or
+    `EntityFieldIndex.get()`.
+    """
+    return EntityFieldIndex(direction_checker, _EntityFieldIndexKey())

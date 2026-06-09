@@ -303,7 +303,7 @@ def update_forward_references_on_updated_entity(
         setattr(updated_entity, forward_relationship_field, new_related_entities[0])
         return
 
-    if forward_relationship_field_type != BuildableAttrFieldType.LIST:
+    if forward_relationship_field_type != BuildableAttrFieldType.COLLECTION:
         raise ValueError(
             f"Unexpected forward_relationship_field_type: [{forward_relationship_field_type}]"
         )

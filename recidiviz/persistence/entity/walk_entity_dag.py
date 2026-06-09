@@ -56,7 +56,7 @@ class EntityDagEdge:
     @property
     def child_reference_to_parent_field_type(self) -> BuildableAttrFieldType:
         """The type of the field on |child| that contains a reference to |parent|.
-        (e.g. BuildableAttrFieldType.LIST or BuildableAttrFieldType.FORWARD_REF).
+        (e.g. BuildableAttrFieldType.COLLECTION or BuildableAttrFieldType.FORWARD_REF).
         """
         return attr_field_type_for_field_name(
             self.child_cls, self.child_reference_to_parent_field

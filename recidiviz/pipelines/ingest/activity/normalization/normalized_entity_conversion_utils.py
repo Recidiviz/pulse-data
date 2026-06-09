@@ -238,7 +238,7 @@ def convert_entity_trees_to_normalized_versions(
                 new_related_entities=forward_entities,
                 forward_relationship_field=field,
                 forward_relationship_field_type=(
-                    BuildableAttrFieldType.LIST
+                    BuildableAttrFieldType.COLLECTION
                     if field_is_list
                     else BuildableAttrFieldType.FORWARD_REF
                 ),

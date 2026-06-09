@@ -17,7 +17,7 @@
 """Base class for all entity types"""
 import abc
 import datetime
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, Type, TypeVar
 
 import attr
 from more_itertools import one
@@ -403,8 +403,8 @@ def _entity_graph_eq(
         value1 = getattr(e1, field)
         value2 = getattr(e2, field)
 
-        if isinstance(value1, list):
-            is_match = _entity_graph_list_eq(
+        if isinstance(value1, (list, tuple)):
+            is_match = _entity_graph_sequence_eq(
                 value1, value2, should_ignore_field_cb, matching_objects_map
             )
         elif isinstance(value1, Entity):
@@ -423,32 +423,32 @@ def _entity_graph_eq(
     return True
 
 
-def _entity_graph_list_eq(
-    entity_list_1: List["Entity"],
-    entity_list_2: List["Entity"],
+def _entity_graph_sequence_eq(
+    entity_list_1: Sequence["Entity"],
+    entity_list_2: Sequence["Entity"],
     should_ignore_field_cb: Callable[[Type, str], bool],
     matching_objects_map: Dict[int, int],
 ) -> bool:
-    """Recursive helper for checking deep equality of two list fields in an
-    entity graph. Ignores differences in list order.
+    """Recursive helper for checking deep equality of two sequence-typed
+    (list or tuple) fields in an entity graph. Ignores differences in order.
 
     Args:
-        entity_list_1: The first list to compare
-        entity_list_2: The second list to compare
+        entity_list_1: The first sequence to compare
+        entity_list_2: The second sequence to compare
         should_ignore_field_cb: Callback that returns True if we should ignore
             equality checks between fields. Used for testing purposes.
         matching_objects_map: Map of object id for an objects in |e1| to the id
             of an equivalent object in |e2|.
 
     Returns:
-        True if the two lists are equal, ignoring order, False otherwise.
+        True if the two sequences are equal, ignoring order, False otherwise.
     """
 
     if len(entity_list_1) != len(entity_list_2):
         return False
 
-    entity_list_1_copy = entity_list_1.copy()
-    entity_list_2_copy = entity_list_2.copy()
+    entity_list_1_copy = list(entity_list_1)
+    entity_list_2_copy = list(entity_list_2)
 
     while entity_list_1_copy:
         child1 = entity_list_1_copy.pop(0)
@@ -559,8 +559,8 @@ def _eq_shallow_id(
         if should_ignore_field_cb(type(entity), field):
             continue
         v = getattr(entity, field)
-        if isinstance(v, list) or issubclass(type(v), Entity):
-            # For entity/list types, we can't use a string representation
+        if isinstance(v, (list, tuple)) or issubclass(type(v), Entity):
+            # For entity/list/tuple types, we can't use a string representation
             # because that would turn into a recursive graph search of its own.
             # However, the existence / non-existence of the object does still
             # give valuable signal on equality between graphs. We can't use

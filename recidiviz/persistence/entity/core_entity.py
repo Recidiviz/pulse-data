@@ -99,6 +99,8 @@ class CoreEntity:
             return []
         if isinstance(field, list):
             return field
+        if isinstance(field, tuple):
+            return list(field)
         return [field]
 
     def get_field(self, field_name: str) -> Any:

@@ -19,10 +19,6 @@ import datetime
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_module,
-)
-from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
@@ -127,15 +123,12 @@ def generate_full_graph_identity_fragment(
     return fragment
 
 
-def generate_full_graph_identity_cluster(
-    set_back_edges: bool,
-) -> identity_cluster_entities.IdentityCluster:
+def generate_full_graph_identity_cluster() -> identity_cluster_entities.IdentityCluster:
     """Test util for generating an `IdentityCluster` that has at least one
     child of each possible cluster-entity type, with all possible edge types
     defined between objects.
 
-    Args:
-        set_back_edges: explicitly sets all the back edges on the graph.
+    Back-edges are wired automatically by `IdentityCluster.__attrs_post_init__`.
 
     Returns:
         A test instance of an `IdentityCluster`.
@@ -144,14 +137,14 @@ def generate_full_graph_identity_cluster(
         tenant=_TENANT,
         person_type=PersonType.JII,
         birthdate=datetime.date(1990, 1, 1),
-        external_ids=[
+        external_ids=(
             identity_cluster_entities.IdentityClusterExternalId(
                 tenant=_TENANT, external_id="EXT_001", id_type=f"{_TENANT}_ID_TYPE"
             ),
             identity_cluster_entities.IdentityClusterExternalId(
                 tenant=_TENANT, external_id="EXT_002", id_type=f"{_TENANT}_ID_TYPE"
             ),
-        ],
+        ),
         name=identity_cluster_entities.IdentityClusterName(
             tenant=_TENANT,
             given_name="John",
@@ -171,35 +164,30 @@ def generate_full_graph_identity_cluster(
             ethnicity=Ethnicity.NOT_HISPANIC,
             ethnicity_raw_text="NH",
         ),
-        races=[
+        races=(
             identity_cluster_entities.IdentityClusterRace(
                 tenant=_TENANT, race=Race.BLACK, race_raw_text="B"
             ),
             identity_cluster_entities.IdentityClusterRace(
                 tenant=_TENANT, race=Race.WHITE, race_raw_text="W"
             ),
-        ],
-        phone_numbers=[
+        ),
+        phone_numbers=(
             identity_cluster_entities.IdentityClusterPhoneNumber(
                 tenant=_TENANT, number="5550100001"
             ),
             identity_cluster_entities.IdentityClusterPhoneNumber(
                 tenant=_TENANT, number="5550100002"
             ),
-        ],
-        emails=[
+        ),
+        emails=(
             identity_cluster_entities.IdentityClusterEmail(
                 tenant=_TENANT, address="a@example.com"
             ),
             identity_cluster_entities.IdentityClusterEmail(
                 tenant=_TENANT, address="b@example.com"
             ),
-        ],
+        ),
     )
-
-    if set_back_edges:
-        set_backedges(
-            cluster, entities_module_context_for_module(identity_cluster_entities)
-        )
 
     return cluster

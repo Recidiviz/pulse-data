@@ -156,7 +156,7 @@ def entity_deserialize(
 
         if field_type in (
             BuildableAttrFieldType.FORWARD_REF,
-            BuildableAttrFieldType.LIST,
+            BuildableAttrFieldType.COLLECTION,
         ):
             return field_value
 

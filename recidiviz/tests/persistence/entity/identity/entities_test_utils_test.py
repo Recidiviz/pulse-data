@@ -74,7 +74,7 @@ class TestGenerateFullGraphHelpers(unittest.TestCase):
         found_entity_classes = {
             type(e)
             for e in get_all_entities_from_tree(
-                generate_full_graph_identity_cluster(set_back_edges=True),
+                generate_full_graph_identity_cluster(),
                 entities_module_context,
             )
         }

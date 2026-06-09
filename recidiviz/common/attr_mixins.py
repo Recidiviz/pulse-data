@@ -34,6 +34,7 @@ from recidiviz.common.attr_utils import (
     is_int,
     is_list,
     is_str,
+    is_tuple,
 )
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
 from recidiviz.utils import environment
@@ -47,7 +48,7 @@ class BuildableAttrFieldType(Enum):
     fields when building a BuildableAttr."""
 
     FORWARD_REF = "FORWARD_REF"
-    LIST = "LIST"
+    COLLECTION = "COLLECTION"
     BOOLEAN = "BOOLEAN"
     ENUM = "ENUM"
     DATE = "DATE"
@@ -150,7 +151,7 @@ class CachedClassAttributeReference:
     ) -> Optional[str]:
         """Returns the name of the class referenced by the Attribute on the attrs class
         with the name matching the given |field_name|. Returns None if the field is not
-        a FORWARD_REF or LIST type field.
+        a FORWARD_REF or COLLECTION type field.
         """
         return self.get_field_info(field_name).referenced_cls_name
 
@@ -245,7 +246,7 @@ def attr_field_referenced_cls_name_for_field_name(
 ) -> Optional[str]:
     """Returns the name of the class referenced by the Attribute on the |cls| with the
     name matching the given |field_name|. Returns None if the field is not a FORWARD_REF
-    or LIST type field.
+    or COLLECTION type field.
     """
     return attribute_field_type_reference_for_class(
         cls
@@ -273,14 +274,14 @@ def _map_attr_to_type_for_class(
                 referenced_cls_name=referenced_cls_name,
                 seq_number=i,
             )
-        elif is_list(attribute):
-            # If the list stores forward references, get the name of the class stored
-            # in the list
+        elif is_list(attribute) or is_tuple(attribute):
+            # If the list/tuple stores forward references, get the name of the
+            # class stored in it.
             referenced_cls_name = get_non_flat_attribute_class_name(attribute)
 
             attr_field_types[field_name] = CachedAttributeInfo(
                 attribute=attribute,
-                field_type=BuildableAttrFieldType.LIST,
+                field_type=BuildableAttrFieldType.COLLECTION,
                 enum_cls=None,
                 referenced_cls_name=referenced_cls_name,
                 seq_number=i,

@@ -139,7 +139,7 @@ def serialize_entity_tree_into_json(
         entity_cls, EntityFieldType.FORWARD_EDGE
     ):
         field_info = class_ref.get_field_info(field_name)
-        if field_info.field_type == BuildableAttrFieldType.LIST:
+        if field_info.field_type == BuildableAttrFieldType.COLLECTION:
             children = entity.get_field_as_list(field_name)
             sort_based_on_flat_fields(children, entities_module_context)
             result[field_name] = [

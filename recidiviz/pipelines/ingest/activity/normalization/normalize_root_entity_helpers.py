@@ -86,7 +86,7 @@ def build_normalized_root_entity(
             NormalizedStateEntity,
         )
 
-        if field_info.field_type is not BuildableAttrFieldType.LIST:
+        if field_info.field_type is not BuildableAttrFieldType.COLLECTION:
             raise ValueError(
                 f"Unexpected field type [{field_info.field_type}] for field [{field}] "
                 f"on root entity with type "

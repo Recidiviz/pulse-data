@@ -44,6 +44,7 @@ from recidiviz.common.attr_utils import (
     is_int,
     is_list,
     is_str,
+    is_tuple,
 )
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.encoding import (
@@ -88,7 +89,12 @@ class BigQueryDateInterval(enum.Enum):
 def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
     """Returns the schema column type that should be used to store the value of the
     provided |attribute| in a BigQuery table."""
-    if is_enum(attribute) or is_list(attribute) or is_str(attribute):
+    if (
+        is_enum(attribute)
+        or is_list(attribute)
+        or is_tuple(attribute)
+        or is_str(attribute)
+    ):
         return bigquery.enums.SqlTypeNames.STRING.value
     if is_int(attribute):
         return bigquery.enums.SqlTypeNames.INTEGER.value

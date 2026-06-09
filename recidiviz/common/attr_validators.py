@@ -580,23 +580,37 @@ is_list = attr.validators.instance_of(list)
 is_opt_list = is_opt(list)
 
 
-class IsListOfValidator:
-    def __init__(self, list_item_expected_type: Type) -> None:
-        self._list_item_expected_type = list_item_expected_type
+class _IsContainerOfValidator:
+    """Validates that the value of an attr field is an instance of the
+    configured `container_type` and that each element of that value is an
+    instance of the configured `item_expected_type`.
+    """
+
+    def __init__(self, container_type: Type, item_expected_type: Type) -> None:
+        self._container_type = container_type
+        self._container_type_name = container_type.__name__
+        self._item_expected_type = item_expected_type
 
     def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
-        if not isinstance(value, list):
+        if not isinstance(value, self._container_type):
             raise ValueError(
-                f"Found value for list type field [{attribute.name}] on class "
-                f"[{type(instance)}] which has non-list type [{type(value)}]."
+                f"Found value for {self._container_type_name} type field "
+                f"[{attribute.name}] on class [{type(instance)}] which has "
+                f"non-{self._container_type_name} type [{type(value)}]."
             )
         for item in value:
-            if not isinstance(item, self._list_item_expected_type):
+            if not isinstance(item, self._item_expected_type):
                 raise ValueError(
-                    f"Found item in list type field [{attribute.name}] on class "
-                    f"[{type(instance)}] which is not the expected type "
-                    f"[{self._list_item_expected_type}]: {type(item)}"
+                    f"Found item in {self._container_type_name} type field "
+                    f"[{attribute.name}] on class [{type(instance)}] which is "
+                    f"not the expected type [{self._item_expected_type}]: "
+                    f"{type(item)}"
                 )
+
+
+class IsListOfValidator(_IsContainerOfValidator):
+    def __init__(self, item_expected_type: Type) -> None:
+        super().__init__(list, item_expected_type)
 
 
 def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
@@ -620,6 +634,15 @@ is_opt_dict = is_opt(dict)
 # Tuple field validators
 is_tuple = attr.validators.instance_of(tuple)
 is_opt_tuple = is_opt(tuple)
+
+
+class IsTupleOfValidator(_IsContainerOfValidator):
+    def __init__(self, item_expected_type: Type) -> None:
+        super().__init__(tuple, item_expected_type)
+
+
+def is_tuple_of(tuple_item_expected_type: Type) -> IsTupleOfValidator:
+    return IsTupleOfValidator(tuple_item_expected_type)
 
 
 # Set field validators

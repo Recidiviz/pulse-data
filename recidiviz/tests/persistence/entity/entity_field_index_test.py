@@ -18,6 +18,8 @@
 from unittest import TestCase
 from unittest.mock import call, patch
 
+import attr
+
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -32,6 +34,7 @@ from recidiviz.persistence.entity.activity.entities import (
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     clear_entities_module_context_cache,
     entities_module_context_for_module,
@@ -40,6 +43,9 @@ from recidiviz.persistence.entity.entity_field_index import (
     EntityFieldIndex,
     EntityFieldType,
     clear_entity_field_index_cache,
+)
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    SchemaEdgeDirectionChecker,
 )
 
 _ID = 1
@@ -249,3 +255,47 @@ class TestEntityFieldIndex(TestCase):
             mock_get_field_type_ref.assert_has_calls(
                 [call(StatePerson), call(NormalizedStatePerson)]
             )
+
+    def test_rejects_tuple_typed_back_edge(self) -> None:
+        @attr.s(eq=False, kw_only=True)
+        class _TupleBackEdgeParent(Entity):
+            children: list["_TupleBackEdgeChild"] = attr.ib(factory=list)
+
+        @attr.s(eq=False, kw_only=True)
+        class _TupleBackEdgeChild(Entity):
+            parents: tuple["_TupleBackEdgeParent", ...] = attr.ib(factory=tuple)
+
+        field_index = entity_field_index.build_entity_field_index_for_test(
+            SchemaEdgeDirectionChecker(
+                [_TupleBackEdgeParent.__name__, _TupleBackEdgeChild.__name__]
+            )
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Class \[_TupleBackEdgeChild\] declares back-edge field "
+            r"\[parents\] as a tuple",
+        ):
+            field_index.get_all_entity_fields(
+                _TupleBackEdgeChild, EntityFieldType.BACK_EDGE
+            )
+
+    def test_allows_list_typed_back_edge(self) -> None:
+        @attr.s(eq=False, kw_only=True)
+        class _ListBackEdgeParent(Entity):
+            children: list["_ListBackEdgeChild"] = attr.ib(factory=list)
+
+        @attr.s(eq=False, kw_only=True)
+        class _ListBackEdgeChild(Entity):
+            parents: list["_ListBackEdgeParent"] = attr.ib(factory=list)
+
+        field_index = entity_field_index.build_entity_field_index_for_test(
+            SchemaEdgeDirectionChecker(
+                [_ListBackEdgeParent.__name__, _ListBackEdgeChild.__name__]
+            )
+        )
+        self.assertEqual(
+            {"parents"},
+            field_index.get_all_entity_fields(
+                _ListBackEdgeChild, EntityFieldType.BACK_EDGE
+            ),
+        )

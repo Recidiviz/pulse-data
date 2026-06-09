@@ -326,7 +326,7 @@ class EntityTreeManifestFactory:
                 raise ValueError(error_message)
 
             field_manifest: ManifestNode
-            if field_type is BuildableAttrFieldType.LIST:
+            if field_type is BuildableAttrFieldType.COLLECTION:
                 child_manifests: List[
                     Union[ExpandableListItemManifest, ManifestNode[Entity]]
                 ] = []

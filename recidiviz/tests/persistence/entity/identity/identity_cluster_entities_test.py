@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the entities defined in identity_cluster_entities.py."""
 import datetime
+import io
 import pickle
 import unittest
 from typing import Type
@@ -30,7 +31,10 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    print_entity_tree,
+)
 from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
@@ -294,21 +298,21 @@ class TestIdentityCluster(unittest.TestCase):
     def _make_cluster(
         self,
         *,
-        external_ids: list[IdentityClusterExternalId] | None = None,
+        external_ids: tuple[IdentityClusterExternalId, ...] | None = None,
         birthdate: datetime.date | None = None,
-        races: list[IdentityClusterRace] | None = None,
+        races: tuple[IdentityClusterRace, ...] | None = None,
     ) -> IdentityCluster:
         return IdentityCluster(
             tenant=_TENANT,
             person_type=PersonType.JII,
             birthdate=birthdate,
             external_ids=external_ids
-            or [
+            or (
                 IdentityClusterExternalId(
                     tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
-                )
-            ],
-            races=races or [],
+                ),
+            ),
+            races=races or (),
         )
 
     def test_equality(self) -> None:
@@ -317,22 +321,22 @@ class TestIdentityCluster(unittest.TestCase):
                 tenant=_TENANT,
                 person_type=PersonType.JII,
                 birthdate=datetime.date(1990, 1, 1),
-                external_ids=[
+                external_ids=(
                     IdentityClusterExternalId(
                         tenant=_TENANT,
                         external_id="EXT_001",
                         id_type="US_XX_ID_TYPE",
-                    )
-                ],
+                    ),
+                ),
                 name=_NAME,
                 gender=IdentityClusterGender(tenant=_TENANT, gender=Gender.MALE),
-                races=[IdentityClusterRace(tenant=_TENANT, race=Race.WHITE)],
-                phone_numbers=[
-                    IdentityClusterPhoneNumber(tenant=_TENANT, number="5550100001")
-                ],
-                emails=[
-                    IdentityClusterEmail(tenant=_TENANT, address="john@example.com")
-                ],
+                races=(IdentityClusterRace(tenant=_TENANT, race=Race.WHITE),),
+                phone_numbers=(
+                    IdentityClusterPhoneNumber(tenant=_TENANT, number="5550100001"),
+                ),
+                emails=(
+                    IdentityClusterEmail(tenant=_TENANT, address="john@example.com"),
+                ),
             )
 
         self.assertEqual(_make(), _make())
@@ -340,22 +344,22 @@ class TestIdentityCluster(unittest.TestCase):
     def test_inequality_different_external_id(self) -> None:
         self.assertNotEqual(
             self._make_cluster(
-                external_ids=[
+                external_ids=(
                     IdentityClusterExternalId(
                         tenant=_TENANT,
                         external_id="EXT_001",
                         id_type="US_XX_ID_TYPE",
-                    )
-                ]
+                    ),
+                )
             ),
             self._make_cluster(
-                external_ids=[
+                external_ids=(
                     IdentityClusterExternalId(
                         tenant=_TENANT,
                         external_id="EXT_002",
                         id_type="US_XX_ID_TYPE",
-                    )
-                ]
+                    ),
+                )
             ),
         )
 
@@ -373,33 +377,33 @@ class TestIdentityCluster(unittest.TestCase):
         self.assertIsNone(cluster.name)
         self.assertIsNone(cluster.gender)
         self.assertIsNone(cluster.sex)
-        self.assertEqual(cluster.races, [])
+        self.assertEqual(cluster.races, ())
         self.assertIsNone(cluster.ethnicity)
-        self.assertEqual(cluster.phone_numbers, [])
-        self.assertEqual(cluster.emails, [])
+        self.assertEqual(cluster.phone_numbers, ())
+        self.assertEqual(cluster.emails, ())
 
     def test_pickle_roundtrip(self) -> None:
         cluster = IdentityCluster(
             tenant=_TENANT,
             person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
-            external_ids=[
+            external_ids=(
                 IdentityClusterExternalId(
                     tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
-                )
-            ],
+                ),
+            ),
             name=_NAME,
             gender=IdentityClusterGender(tenant=_TENANT, gender=Gender.MALE),
-            races=[
+            races=(
                 IdentityClusterRace(tenant=_TENANT, race=Race.WHITE),
                 IdentityClusterRace(
                     tenant=_TENANT, race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE
                 ),
-            ],
-            phone_numbers=[
-                IdentityClusterPhoneNumber(tenant=_TENANT, number="5550100001")
-            ],
-            emails=[IdentityClusterEmail(tenant=_TENANT, address="john@example.com")],
+            ),
+            phone_numbers=(
+                IdentityClusterPhoneNumber(tenant=_TENANT, number="5550100001"),
+            ),
+            emails=(IdentityClusterEmail(tenant=_TENANT, address="john@example.com"),),
         )
         self.assertEqual(cluster, pickle.loads(pickle.dumps(cluster)))
 
@@ -423,16 +427,16 @@ class TestIdentityCluster(unittest.TestCase):
         eid_b = IdentityClusterExternalId(
             tenant=_TENANT, external_id="EXT_B", id_type="US_XX_ID_TYPE"
         )
-        cluster_a = self._make_cluster(external_ids=[eid_a, eid_b])
-        cluster_b = self._make_cluster(external_ids=[eid_b, eid_a])
+        cluster_a = self._make_cluster(external_ids=(eid_a, eid_b))
+        cluster_b = self._make_cluster(external_ids=(eid_b, eid_a))
         self.assertEqual(cluster_a.identity_cluster_id, cluster_b.identity_cluster_id)
         self.assertEqual(cluster_a.cluster_hash, cluster_b.cluster_hash)
 
     def test_hash_is_stable_under_race_reordering(self) -> None:
         race_black = IdentityClusterRace(tenant=_TENANT, race=Race.BLACK)
         race_white = IdentityClusterRace(tenant=_TENANT, race=Race.WHITE)
-        cluster_a = self._make_cluster(races=[race_black, race_white])
-        cluster_b = self._make_cluster(races=[race_white, race_black])
+        cluster_a = self._make_cluster(races=(race_black, race_white))
+        cluster_b = self._make_cluster(races=(race_white, race_black))
         self.assertEqual(cluster_a.cluster_hash, cluster_b.cluster_hash)
 
     def test_tenant_mismatch_in_external_id_raises(self) -> None:
@@ -440,12 +444,70 @@ class TestIdentityCluster(unittest.TestCase):
             tenant="US_YY", external_id="EXT_001", id_type="US_YY_ID_TYPE"
         )
         with self.assertRaisesRegex(ValueError, "mismatched tenants"):
-            self._make_cluster(external_ids=[eid_other])
+            self._make_cluster(external_ids=(eid_other,))
 
     def test_tenant_mismatch_in_child_entity_raises(self) -> None:
         race_other = IdentityClusterRace(tenant="US_YY", race=Race.WHITE)
         with self.assertRaisesRegex(ValueError, "mismatched tenants"):
-            self._make_cluster(races=[race_other])
+            self._make_cluster(races=(race_other,))
+
+    def test_child_back_edges_point_to_cluster(self) -> None:
+        race = IdentityClusterRace(tenant=_TENANT, race=Race.WHITE)
+        external_id = IdentityClusterExternalId(
+            tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
+        )
+        cluster = self._make_cluster(
+            external_ids=(external_id,),
+            races=(race,),
+        )
+        self.assertIs(cluster.races[0].identity_cluster, cluster)
+        self.assertIs(cluster.external_ids[0].identity_cluster, cluster)
+
+    def test_hash_is_stable(self) -> None:
+        cluster = IdentityCluster(
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            birthdate=datetime.date(1990, 1, 1),
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
+                ),
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="EXT_002", id_type="US_XX_ID_TYPE"
+                ),
+            ),
+            name=IdentityClusterName(tenant=_TENANT, given_name="John", surname="Doe"),
+            gender=IdentityClusterGender(tenant=_TENANT, gender=Gender.MALE),
+            races=(
+                IdentityClusterRace(tenant=_TENANT, race=Race.BLACK, race_raw_text="B"),
+            ),
+        )
+        self.assertEqual(
+            cluster.identity_cluster_id,
+            "407efabf4ca809a7154543ab3086e8006bd4cdc4d17fd46325bf2dd437d33930",
+        )
+        self.assertEqual(
+            cluster.cluster_hash,
+            "ee7a29d22e9de4bd2cfcf89c6e4a055617936b29805ee9f5a5e6a76849882c4f",
+        )
+
+    def test_print_entity_tree_handles_tuple_forward_edges(self) -> None:
+        cluster = self._make_cluster(
+            races=(
+                IdentityClusterRace(tenant=_TENANT, race=Race.BLACK),
+                IdentityClusterRace(tenant=_TENANT, race=Race.WHITE),
+            ),
+        )
+        buf = io.StringIO()
+        print_entity_tree(
+            cluster,
+            entities_module_context_for_module(identity_cluster_entities),
+            file_or_buffer=buf,
+        )
+        output = buf.getvalue()
+        self.assertIn("IdentityCluster", output)
+        self.assertIn("IdentityClusterRace", output)
+        self.assertIn("IdentityClusterExternalId", output)
 
 
 # Fragment classes that are not represented in the cluster tree: the root and
@@ -560,6 +622,40 @@ class TestClusterEntitiesParity(unittest.TestCase):
                 f"Child cluster entity [{cluster_cls.__name__}] is missing the "
                 f"`identity_cluster` back-edge.",
             )
+
+    def test_all_fields_immutable_except_back_edge_and_computed(self) -> None:
+        """Verifies that all fields in every cluster entity have been frozen
+        (using `on_setattr=attr.setters.frozen`), with the exception of each
+        entity's `identity_cluster` back-edge (set by `set_backedges`) and
+        `IdentityCluster.identity_cluster_id` and `IdentityCluster.cluster_hash`
+        (set in `__attrs_post_init__`).
+        """
+        for cluster_cls in self.cluster_classes:
+            is_root = cluster_cls is identity_cluster_entities.IdentityCluster
+            mutable_fields = (
+                set(_CLUSTER_ONLY_FIELDS)
+                if is_root
+                else {identity_cluster_entities.IdentityCluster.back_edge_field_name()}
+            )
+            # Probe an uninitialized instance so we don't need valid constructor
+            # arguments for every class; the frozen setter raises before any
+            # field value is read.
+            instance = object.__new__(cluster_cls)
+            for field in attr.fields(cluster_cls):
+                if field.name in mutable_fields:
+                    self.assertIs(
+                        field.on_setattr,
+                        attr.setters.validate,
+                        f"{cluster_cls.__name__}.{field.name} must declare "
+                        f"on_setattr=attr.setters.validate so the framework can "
+                        f"set it and any validator still runs.",
+                    )
+                    continue
+                with self.assertRaises(
+                    attr.exceptions.FrozenAttributeError,
+                    msg=f"{cluster_cls.__name__}.{field.name} must be immutable.",
+                ):
+                    setattr(instance, field.name, None)
 
     def test_identity_cluster_is_a_root_entity(self) -> None:
         self.assertTrue(

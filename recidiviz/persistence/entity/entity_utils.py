@@ -159,11 +159,26 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
 
 
 def sort_based_on_flat_fields(
-    db_entities: Sequence[Entity], entities_module_context: EntitiesModuleContext
+    db_entities: List[Entity], entities_module_context: EntitiesModuleContext
 ) -> None:
-    """Helper function that sorts all entities in |db_entities| in place as
-    well as all children of |db_entities|. Sorting is done by first by an
-    external_id if that field exists, then present flat fields.
+    """Sorts |db_entities| in place by external_id (if present) then by flat
+    fields, then recursively does the same for each entity's forward-edge
+    children.
+
+    Note: This method sorts list-typed children--even list-type grandchildren
+    of tuple-typed children--in place, but leaves tuple-typed forward-edge
+    children in their original order (since tuples are immutable). This is
+    admittedly smelly.
+
+    The smell is a symptom of this function doing two jobs: sorting one level
+    of entities AND walking the tree to recursively sort every level below.
+    The fix is TODO(#84020): create a single-level `sorted_entities` that
+    returns a new sorted list and make callers like
+    `serialize_entity_tree_into_json` and `print_entity_tree` do the
+    recursion themselves. That way each level sorts exactly once (eliminating
+    the redundant tree walk this function and its callers do today), and
+    tuples behave identically to lists because `sorted_entities` never tries
+    to mutate its input.
     """
 
     def _get_entity_sort_key(e: Entity) -> str:
@@ -171,15 +186,15 @@ def sort_based_on_flat_fields(
         in this entity."""
         return f"{e.get_external_id()}#{get_flat_fields_json_str(e, entities_module_context)}"
 
-    db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
     for entity in db_entities:
         field_index = entities_module_context.field_index()
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
-            field = entity.get_field_as_list(field_name)
-            sort_based_on_flat_fields(field, entities_module_context)
+            sort_based_on_flat_fields(
+                entity.get_field_as_list(field_name), entities_module_context
+            )
 
 
 def get_flat_fields_json_str(
@@ -257,6 +272,7 @@ def print_entity_trees(
 
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
+        entities_list = list(entities_list)
         sort_based_on_flat_fields(entities_list, entities_module_context)
 
     for entity in entities_list:
@@ -310,7 +326,7 @@ def print_entity_tree(
         child = entity.get_field(child_field)
 
         if child is not None:
-            if isinstance(child, list):
+            if isinstance(child, (list, tuple)):
                 if not child:
                     _print_indented(f"{child_field}: []", indent, file_or_buffer)
                 else:
@@ -345,7 +361,7 @@ def print_entity_tree(
         child = entity.get_field(child_field)
         if not child:
             raise ValueError(f"Expected non-empty child value for field {child_field}")
-        if isinstance(child, list):
+        if isinstance(child, (list, tuple)):
             first_child = next(iter(child))
             unique = {id(c) for c in child}
             len_str = (
@@ -400,7 +416,7 @@ def get_all_entities_from_tree(
         if child is None:
             raise ValueError("Expected only nonnull values at this point")
 
-        if isinstance(child, list):
+        if isinstance(child, (list, tuple)):
             for c in child:
                 get_all_entities_from_tree(c, entities_module_context, result, seen_ids)
         else:
@@ -428,7 +444,7 @@ def update_reverse_references_on_related_entities(
             setattr(new_related_entity, reverse_relationship_field, updated_entity)
         return
 
-    if reverse_relationship_field_type != BuildableAttrFieldType.LIST:
+    if reverse_relationship_field_type != BuildableAttrFieldType.COLLECTION:
         raise ValueError(
             f"Unexpected reverse_relationship_field_type: [{reverse_relationship_field_type}]"
         )
@@ -439,7 +455,6 @@ def update_reverse_references_on_related_entities(
         )
 
         if updated_entity not in reverse_relationship_list:
-            # Add the updated entity to the list since it is not already present
             reverse_relationship_list.append(updated_entity)
 
 
@@ -510,8 +525,8 @@ def deep_entity_update(
         )
 
         new_related_entities: List[Entity]
-        if isinstance(updated_value, list):
-            new_related_entities = updated_value
+        if isinstance(updated_value, (list, tuple)):
+            new_related_entities = list(updated_value)
         else:
             new_related_entities = [updated_value]
 
@@ -642,8 +657,8 @@ def get_many_to_many_relationships(
             else None
         )
         if (
-            relationship_field_type == BuildableAttrFieldType.LIST
-            and inverse_relationship_field_type == BuildableAttrFieldType.LIST
+            relationship_field_type == BuildableAttrFieldType.COLLECTION
+            and inverse_relationship_field_type == BuildableAttrFieldType.COLLECTION
         ):
             many_to_many_relationships.add(back_edge)
 
@@ -734,10 +749,10 @@ def is_many_to_many_relationship(
 
     return (
         attr_field_type_for_field_name(parent_cls, reference_field)
-        == BuildableAttrFieldType.LIST
+        == BuildableAttrFieldType.COLLECTION
     ) and (
         attr_field_type_for_field_name(child_cls, reverse_reference_field)
-        == BuildableAttrFieldType.LIST
+        == BuildableAttrFieldType.COLLECTION
     )
 
 
@@ -775,10 +790,10 @@ def is_one_to_many_relationship(
 
     return (
         attr_field_type_for_field_name(parent_cls, reference_field)
-        == BuildableAttrFieldType.LIST
+        == BuildableAttrFieldType.COLLECTION
     ) and (
         attr_field_type_for_field_name(child_cls, reverse_reference_field)
-        != BuildableAttrFieldType.LIST
+        != BuildableAttrFieldType.COLLECTION
     )
 
 

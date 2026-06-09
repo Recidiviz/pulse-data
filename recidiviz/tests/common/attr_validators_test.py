@@ -29,6 +29,7 @@ from recidiviz.common.attr_validators import (
     is_list_of,
     is_not_set_along_with,
     is_set_of,
+    is_tuple_of,
 )
 
 
@@ -979,6 +980,72 @@ class TestIsListOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 list_of_str_field=[],
                 list_of_class_field=[None],  # type: ignore[list-item]
+            )
+
+
+class TestIsTupleOfValidator(unittest.TestCase):
+    """Tests for the is_tuple_of() validator."""
+
+    @attr.define
+    class TestClass:
+        tuple_of_str_field: tuple[str, ...] = attr.ib(validator=is_tuple_of(str))
+        tuple_of_class_field: tuple[_TestEmailClass, ...] = attr.ib(
+            validator=is_tuple_of(_TestEmailClass)
+        )
+
+    def test_tuple_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(
+            tuple_of_str_field=("a", "b"),
+            tuple_of_class_field=(
+                _TestEmailClass(my_email="valid@example.com", my_opt_email=None),
+            ),
+        )
+
+    def test_tuple_of_validator_empty_tuples(self) -> None:
+        _ = self.TestClass(tuple_of_str_field=(), tuple_of_class_field=())
+
+    def test_tuple_of_validator_bad_types(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in tuple type field [tuple_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsTupleOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                tuple_of_str_field=(1,),  # type: ignore[arg-type]
+                tuple_of_class_field=(),
+            )
+
+    def test_tuple_of_validator_none_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in tuple type field [tuple_of_class_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsTupleOfValidator.TestClass'>] "
+                "which is not the expected type "
+                "[<class 'recidiviz.tests.common.attr_validators_test._TestEmailClass'>]: "
+                "<class 'NoneType'>",
+            ),
+        ):
+            _ = self.TestClass(
+                tuple_of_str_field=(),
+                tuple_of_class_field=(None,),  # type: ignore[arg-type]
+            )
+
+    def test_tuple_of_validator_non_tuple_input(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found value for tuple type field [tuple_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsTupleOfValidator.TestClass'>] "
+                "which has non-tuple type [<class 'list'>]."
+            ),
+        ):
+            _ = self.TestClass(
+                tuple_of_str_field=["a"],  # type: ignore[arg-type]
+                tuple_of_class_field=(),
             )
 
 

@@ -74,6 +74,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     int_field: Optional[int] = attr.ib(default=None)
     float_field: Optional[float] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
+    field_tuple: tuple[str, ...] = attr.ib(factory=tuple)
     field_forward_ref: Optional["FakeBuildableAttr"] = attr.ib(default=None)
 
 
@@ -462,7 +463,15 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
             elif "list" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute=attribute,
-                    field_type=BuildableAttrFieldType.LIST,
+                    field_type=BuildableAttrFieldType.COLLECTION,
+                    enum_cls=None,
+                    referenced_cls_name=None,
+                    seq_number=i,
+                )
+            elif "tuple" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.COLLECTION,
                     enum_cls=None,
                     referenced_cls_name=None,
                     seq_number=i,
@@ -512,7 +521,7 @@ class TestAttrFieldTypeForFieldName(unittest.TestCase):
         )
 
         self.assertEqual(
-            BuildableAttrFieldType.LIST,
+            BuildableAttrFieldType.COLLECTION,
             attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "field_list"),
         )
         self.assertEqual(

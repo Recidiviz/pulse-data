@@ -25,6 +25,7 @@ from more_itertools import one
 
 from recidiviz.common.attr_utils import (
     get_enum_cls,
+    get_inner_type_from_tuple_type,
     get_non_flat_attribute_class_name,
     get_non_optional_type,
     get_referenced_class_name_from_type,
@@ -38,6 +39,7 @@ from recidiviz.common.attr_utils import (
     is_non_optional_enum,
     is_optional_type,
     is_str,
+    is_tuple,
 )
 from recidiviz.utils.types import non_optional
 
@@ -59,6 +61,7 @@ class AttrUtilsTest(unittest.TestCase):
             is_date(attribute),
             is_enum(attribute),
             is_list(attribute),
+            is_tuple(attribute),
             is_forward_ref(attribute),
         ]
 
@@ -321,26 +324,6 @@ class AttrUtilsTest(unittest.TestCase):
         for attribute in fields_dict.values():
             self._check_no_utils_crash(attribute)
 
-    def test_forward_ref_and_str_class_name_extraction(self) -> None:
-        """Tests that get_referenced_class_name_from_type correctly extracts the
-        class name from ForwardRef and str inputs, including 'X | None' syntax."""
-        self.assertEqual(
-            "MyClass",
-            get_referenced_class_name_from_type(ForwardRef("MyClass | None")),
-        )
-        self.assertEqual(
-            "MyClass",
-            get_referenced_class_name_from_type(ForwardRef("MyClass")),
-        )
-        self.assertEqual(
-            "MyClass",
-            get_referenced_class_name_from_type("MyClass | None"),
-        )
-        self.assertEqual(
-            "MyClass",
-            get_referenced_class_name_from_type("MyClass"),
-        )
-
     def test_list_fields(self) -> None:
         @attr.define
         class ChildClass:
@@ -397,3 +380,141 @@ class AttrUtilsTest(unittest.TestCase):
 
         for attribute in fields_dict.values():
             self._check_no_utils_crash(attribute)
+
+    def test_tuple_fields(self) -> None:
+        @attr.define
+        class ChildClass:
+            pass
+
+        @attr.define
+        class MyAttrClass:
+            my_opt_tuple: Optional[tuple["AnotherChildClass", ...]]
+            my_opt_tuple_other: Optional[tuple[ChildClass, ...]]
+            my_nonnull_tuple: tuple["AnotherChildClass", ...]
+            my_nonnull_tuple_other: tuple[ChildClass, ...]
+
+        @attr.define
+        class AnotherChildClass:
+            pass
+
+        fields_dict = attr.fields_dict(MyAttrClass)
+
+        my_opt_tuple_attribute = fields_dict["my_opt_tuple"]
+        my_opt_tuple_other_attribute = fields_dict["my_opt_tuple_other"]
+        my_nonnull_tuple_attribute = fields_dict["my_nonnull_tuple"]
+        my_nonnull_tuple_other_attribute = fields_dict["my_nonnull_tuple_other"]
+
+        self.assertTrue(is_tuple(my_opt_tuple_attribute))
+        self.assertTrue(is_tuple(my_opt_tuple_other_attribute))
+        self.assertTrue(is_tuple(my_nonnull_tuple_attribute))
+        self.assertTrue(is_tuple(my_nonnull_tuple_other_attribute))
+
+        self.assertTrue(is_optional_type(non_optional(my_opt_tuple_attribute.type)))
+        self.assertTrue(
+            is_optional_type(non_optional(my_opt_tuple_other_attribute.type))
+        )
+        self.assertFalse(
+            is_optional_type(non_optional(my_nonnull_tuple_attribute.type))
+        )
+        self.assertFalse(
+            is_optional_type(non_optional(my_nonnull_tuple_other_attribute.type))
+        )
+
+        # Forward-referenced inner types stay as bare strings under
+        # tuple[...] (the builtin doesn't wrap them in ForwardRef, unlike
+        # typing.List[...]).
+        self.assertEqual(
+            tuple["AnotherChildClass", ...],  # type: ignore[misc]
+            get_non_optional_type(non_optional(my_opt_tuple_attribute.type)),
+        )
+        self.assertEqual(
+            tuple[ChildClass, ...],
+            get_non_optional_type(non_optional(my_opt_tuple_other_attribute.type)),
+        )
+        self.assertEqual(
+            tuple["AnotherChildClass", ...],  # type: ignore[misc]
+            get_non_optional_type(non_optional(my_nonnull_tuple_attribute.type)),
+        )
+        self.assertEqual(
+            tuple[ChildClass, ...],
+            get_non_optional_type(non_optional(my_nonnull_tuple_other_attribute.type)),
+        )
+
+        self.assertEqual(
+            ChildClass,
+            get_inner_type_from_tuple_type(
+                get_non_optional_type(
+                    non_optional(my_nonnull_tuple_other_attribute.type)
+                )
+            ),
+        )
+        self.assertEqual(
+            "AnotherChildClass",
+            get_inner_type_from_tuple_type(
+                get_non_optional_type(non_optional(my_nonnull_tuple_attribute.type))
+            ),
+        )
+
+        for attribute in fields_dict.values():
+            self._check_no_utils_crash(attribute)
+
+    def test_get_inner_type_from_tuple_type_rejects_fixed_length_and_mixed(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"Only tuples of the form `tuple\[X, \.\.\.\]`"
+        ):
+            get_inner_type_from_tuple_type(tuple[int, str])  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(
+            ValueError, r"Only tuples of the form `tuple\[X, \.\.\.\]`"
+        ):
+            get_inner_type_from_tuple_type(tuple[int])  # type: ignore[arg-type]
+
+    def test_get_referenced_class_name_from_type(self) -> None:
+        # ForwardRef and str inputs, with and without X | None.
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(ForwardRef("MyClass | None")),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(ForwardRef("MyClass")),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type("MyClass | None"),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type("MyClass"),
+        )
+
+        # List inputs.
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(List[ForwardRef("MyClass")]),  # type: ignore[arg-type, misc]
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(Optional[List[ForwardRef("MyClass")]]),  # type: ignore[arg-type, misc]
+        )
+        self.assertIsNone(get_referenced_class_name_from_type(List[str]))
+        self.assertIsNone(get_referenced_class_name_from_type(List[List[str]]))
+
+        # Tuple inputs.
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(tuple[ForwardRef("MyClass"), ...]),  # type: ignore[arg-type, misc]
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(Optional[tuple[ForwardRef("MyClass"), ...]]),  # type: ignore[arg-type, misc]
+        )
+        self.assertIsNone(get_referenced_class_name_from_type(tuple[str, ...]))
+
+        # Optional inputs.
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(Optional[ForwardRef("MyClass")]),  # type: ignore[arg-type]
+        )
