@@ -23,7 +23,7 @@ from recidiviz.common.attr_validators import is_str
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.string import is_meaningful_docstring
 
-# TODO(#70350) add is_valid_project_id
+# TODO(#84110) add is_valid_project_id
 
 
 def is_meaningful_description(

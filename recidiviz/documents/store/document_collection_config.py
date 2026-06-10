@@ -35,6 +35,7 @@ from recidiviz.big_query.big_query_utils import (
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents import config as default_config_module
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
@@ -48,7 +49,6 @@ from recidiviz.documents.store.document_store_columns import (
     STAFF_ID_COLUMN_NAME,
     get_document_store_column_schema,
 )
-from recidiviz.ingest.direct import regions as default_regions_module
 from recidiviz.ingest.direct.dataset_config import (
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
@@ -58,14 +58,14 @@ from recidiviz.utils.yaml_dict import YAMLDict
 DOCUMENT_COLLECTIONS_SUBDIR = "document_collections"
 
 
-def _state_collections_dir(state_code: StateCode, region_module: ModuleType) -> Path:
+def _state_collections_dir(state_code: StateCode, config_module: ModuleType) -> Path:
     """Returns the path to the document collections directory for a state."""
-    if region_module.__file__ is None:
-        raise ValueError(f"No file associated with {region_module}.")
+    if config_module.__file__ is None:
+        raise ValueError(f"No file associated with {config_module}.")
     return (
-        Path(region_module.__file__).parent
-        / state_code.value.lower()
+        Path(config_module.__file__).parent
         / DOCUMENT_COLLECTIONS_SUBDIR
+        / state_code.value.lower()
     )
 
 
@@ -291,12 +291,12 @@ class DocumentCollectionConfig:
     def config_name_to_file_path(
         state_code: StateCode,
         collection_name: str,
-        region_module: ModuleType | None = None,
+        config_module: ModuleType | None = None,
     ) -> Path:
         """Returns the file path to the YAML config for a given collection name."""
         return (
             _state_collections_dir(
-                state_code, region_module=region_module or default_regions_module
+                state_code, config_module=config_module or default_config_module
             )
             / f"{collection_name}.yaml"
         )
@@ -309,8 +309,8 @@ class DocumentCollectionConfig:
     @staticmethod
     def file_path_to_state_code(file_path: Path) -> StateCode:
         """Returns the state code for a given YAML config file path."""
-        # Parent is document_collections/, grandparent is the state dir
-        return StateCode(file_path.parent.parent.name.upper())
+        # Parent is the state dir
+        return StateCode(file_path.parent.name.upper())
 
 
 _DOCUMENT_COLLECTION_CONFIGS: dict[
@@ -336,11 +336,11 @@ def _load_config_from_file(yaml_path: Path) -> DocumentCollectionConfig:
 
 def collect_document_collection_config_yaml_paths(
     state_code: StateCode,
-    region_module: ModuleType | None = None,
+    config_module: ModuleType | None = None,
 ) -> list[Path]:
     """Returns a list of file paths to document collection YAML configs for a given state."""
     state_dir = _state_collections_dir(
-        state_code, region_module=region_module or default_regions_module
+        state_code, config_module=config_module or default_config_module
     )
     if not state_dir.is_dir():
         return []
@@ -355,13 +355,13 @@ def get_states_with_document_collections() -> list[StateCode]:
 
 def collect_document_collection_configs(
     state_code: StateCode,
-    region_module: ModuleType | None = None,
+    config_module: ModuleType | None = None,
 ) -> dict[str, DocumentCollectionConfig]:
     """Returns a map of document collection name to its configuration for all document
     collections defined for the given state code.
     """
     for yaml_path in collect_document_collection_config_yaml_paths(
-        state_code, region_module=region_module
+        state_code, config_module=config_module
     ):
         _load_config_from_file(yaml_path)
 
@@ -371,7 +371,7 @@ def collect_document_collection_configs(
 def get_document_collection_config(
     state_code: StateCode,
     collection_name: str,
-    region_module: ModuleType | None = None,
+    config_module: ModuleType | None = None,
 ) -> DocumentCollectionConfig:
     """Returns the DocumentCollectionConfig for the given collection name."""
     if collection_name in _DOCUMENT_COLLECTION_CONFIGS[state_code]:
@@ -381,6 +381,6 @@ def get_document_collection_config(
         DocumentCollectionConfig.config_name_to_file_path(
             state_code,
             collection_name,
-            region_module=region_module or default_regions_module,
+            config_module=config_module or default_config_module,
         ),
     )

@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./../../../../../../../recidiviz/documents/store/yaml_schema/schema.json
+# yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
 description: Fake person ID notes for testing document collection config parsing with person_id root entity.
 root_entity_id_type: person_id
 document_metadata_columns:

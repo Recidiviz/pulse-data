@@ -31,8 +31,8 @@ from recidiviz.documents.store.document_upload_status_table import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.tests.documents.store.fixtures import metadata_updates
-from recidiviz.tests.ingest.direct import fake_regions
 
 
 class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
@@ -41,7 +41,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_regions
+            StateCode.US_XX, "fake_case_notes", fake_config_module
         )
         self.temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(

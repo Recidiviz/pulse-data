@@ -33,7 +33,7 @@ from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
 )
 from recidiviz.documents.store.document_upload_batching import build_document_batches
-from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.documents.store import config as fake_config_module
 
 
 class TestBuildDocumentBatches(unittest.TestCase):
@@ -78,7 +78,7 @@ class TestBuildDocumentBatches(unittest.TestCase):
 
     def test_build_document_batches(self) -> None:
         configs = collect_document_collection_configs(
-            StateCode.US_XX, region_module=fake_regions
+            StateCode.US_XX, config_module=fake_config_module
         )
         config_list = list(configs.values())
 

@@ -28,7 +28,7 @@ from recidiviz.documents.store.document_collection_config import (
     collect_document_collection_configs,
     get_document_collection_config,
 )
-from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
@@ -43,12 +43,12 @@ class TestDocumentCollectionConfig(unittest.TestCase):
     def test_get_document_collection_config_doesnt_exist(self) -> None:
         with self.assertRaisesRegex(ValueError, "No config file found"):
             get_document_collection_config(
-                StateCode.US_XX, "non_existent_collection", fake_regions
+                StateCode.US_XX, "non_existent_collection", fake_config_module
             )
 
     def test_get_document_collection_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_regions
+            StateCode.US_XX, "fake_case_notes", fake_config_module
         )
 
         self.assertEqual(config.state_code, StateCode.US_XX)
@@ -65,7 +65,9 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         self.assertEqual(config.other_metadata_columns[0].field_type, "STRING")
 
     def test_collect_configs(self) -> None:
-        configs = collect_document_collection_configs(StateCode.US_XX, fake_regions)
+        configs = collect_document_collection_configs(
+            StateCode.US_XX, fake_config_module
+        )
         self.assertEqual(
             configs.keys(),
             {
@@ -78,7 +80,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
 
     def test_get_staff_external_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_staff_reports", fake_regions
+            StateCode.US_XX, "fake_staff_reports", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(
@@ -88,20 +90,22 @@ class TestDocumentCollectionConfig(unittest.TestCase):
 
     def test_get_person_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_person_id_notes", fake_regions
+            StateCode.US_XX, "fake_person_id_notes", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(pk_col_names, ["person_id", "note_id"])
 
     def test_get_staff_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_staff_id_reports", fake_regions
+            StateCode.US_XX, "fake_staff_id_reports", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(pk_col_names, ["staff_id"])
 
     def test_collect_configs_nonexistent_state(self) -> None:
-        configs = collect_document_collection_configs(StateCode.US_LL, fake_regions)
+        configs = collect_document_collection_configs(
+            StateCode.US_LL, fake_config_module
+        )
         self.assertEqual(configs, {})
 
     def test_validation_duplicate_columns(self) -> None:
@@ -139,7 +143,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             yaml_files = collect_document_collection_config_yaml_paths(state_code)
             yaml_files.extend(
                 collect_document_collection_config_yaml_paths(
-                    state_code, region_module=fake_regions
+                    state_code, config_module=fake_config_module
                 )
             )
 

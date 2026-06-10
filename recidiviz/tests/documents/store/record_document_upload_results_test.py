@@ -32,7 +32,7 @@ from recidiviz.documents.store.document_store_types import (
 from recidiviz.documents.store.record_document_upload_results import (
     DocumentUploadResultRecorder,
 )
-from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.documents.store import config as fake_config_module
 
 
 class TestDocumentUploadResultRecorder(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         self.configs = list(
             collect_document_collection_configs(
-                self.state_code, region_module=fake_regions
+                self.state_code, config_module=fake_config_module
             ).values()
         )
         self.collection_a_doc_discovery_result = (

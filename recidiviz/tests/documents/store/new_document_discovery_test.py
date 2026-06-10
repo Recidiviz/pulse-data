@@ -26,7 +26,7 @@ from recidiviz.documents.store.document_collection_config import (
     collect_document_collection_configs,
 )
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
-from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.documents.store import config as fake_config_module
 
 
 class TestNewDocumentDiscovery(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
             state_code: StateCode,
         ) -> dict[str, DocumentCollectionConfig]:
             return collect_document_collection_configs(
-                state_code, region_module=fake_regions
+                state_code, config_module=fake_config_module
             )
 
         self.document_collection_patcher = patch(
@@ -55,7 +55,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         self.collect_configs_mock = self.document_collection_patcher.start()
 
         self.configs = collect_document_collection_configs(
-            StateCode.US_XX, region_module=fake_regions
+            StateCode.US_XX, config_module=fake_config_module
         )
         self.config_names = list(self.configs.keys())
 

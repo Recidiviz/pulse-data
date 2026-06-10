@@ -36,8 +36,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
+from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.tests.documents.store.fixtures import document_diff
-from recidiviz.tests.ingest.direct import fake_regions
 
 
 class TestBuildDocumentGenerationQuery(unittest.TestCase):
@@ -72,7 +72,7 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_regions
+            StateCode.US_XX, "fake_case_notes", fake_config_module
         )
         self.metadata_address = self.config.metadata_table_address(
             self.project_id,

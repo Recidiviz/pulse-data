@@ -30,8 +30,8 @@ from recidiviz.documents.store.document_metadata_table_query_builder import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.tests.documents.store.fixtures import document_metadata
-from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 
 
@@ -41,7 +41,7 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_regions
+            StateCode.US_XX, "fake_case_notes", fake_config_module
         )
         self.metadata_address = self.config.metadata_table_address(
             self.project_id,
