@@ -427,8 +427,6 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
 
 # TODO(#57815): Validate logic, especially for "2+ per 1 period" contacts and "2+ per 2+
 # period" contacts.
-# TODO(#62741): Deprecate overdue_flag from reasons blobs in favor of
-# compliance TES is_overdue column.
 def us_mo_contact_compliance_builder(
     *,
     criteria_name: str,
@@ -492,7 +490,6 @@ def us_mo_contact_compliance_builder(
     reasons_field_name_contact_count = f"contact_count{reasons_field_suffix}"
     reasons_field_name_contact_due_date = f"contact_due_date{reasons_field_suffix}"
     reasons_field_name_last_contact_date = f"last_contact_date{reasons_field_suffix}"
-    reasons_field_name_overdue_flag = f"overdue_flag{reasons_field_suffix}"
     reasons_field_name_supplementary_contacts = (
         f"supplementary_contacts{reasons_field_suffix}"
     )
@@ -868,8 +865,6 @@ def us_mo_contact_compliance_builder(
         -- next contact's due date is 1 day before the day when it would become overdue
         DATE_SUB(critical_date, INTERVAL 1 DAY) AS {reasons_field_name_contact_due_date},
         last_contact_date AS {reasons_field_name_last_contact_date},
-        -- if the critical date has passed, the contact is overdue
-        critical_date_has_passed AS {reasons_field_name_overdue_flag},
         supplementary_contacts AS {reasons_field_name_supplementary_contacts},
         TO_JSON(STRUCT(
             contact_category AS {reasons_field_name_category_of_contact},
@@ -878,7 +873,6 @@ def us_mo_contact_compliance_builder(
             contact_count AS {reasons_field_name_contact_count},
             DATE_SUB(critical_date, INTERVAL 1 DAY) AS {reasons_field_name_contact_due_date},
             last_contact_date AS {reasons_field_name_last_contact_date},
-            critical_date_has_passed AS {reasons_field_name_overdue_flag},
             supplementary_contacts AS {reasons_field_name_supplementary_contacts}
         )) AS reason,
     FROM critical_date_has_passed_spans_due_date
@@ -920,11 +914,6 @@ def us_mo_contact_compliance_builder(
                 name=reasons_field_name_last_contact_date,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date of the last contact",
-            ),
-            ReasonsField(
-                name=reasons_field_name_overdue_flag,
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Flag that indicates whether contact was missed",
             ),
             ReasonsField(
                 name=reasons_field_name_supplementary_contacts,
@@ -1097,8 +1086,6 @@ def us_mo_non_recurring_contact_compliance_builder(
         contact_count,
         compliance_due_date AS contact_due_date,
         last_contact_date,
-        -- if contact count is too low & critical date has passed, contact is overdue
-        ((contact_count < quantity) AND critical_date_has_passed) AS overdue_flag,
         contact_period_start_date,
         TO_JSON(STRUCT(
             '{contact_category}' AS contact_category,
@@ -1107,8 +1094,6 @@ def us_mo_non_recurring_contact_compliance_builder(
             contact_count,
             compliance_due_date AS contact_due_date,
             last_contact_date,
-            -- if contact count is too low & critical date has passed, contact is overdue
-            ((contact_count < quantity) AND critical_date_has_passed) AS overdue_flag,
             contact_period_start_date
         )) AS reason,
         FROM critical_date_has_passed_spans
@@ -1150,11 +1135,6 @@ def us_mo_non_recurring_contact_compliance_builder(
                 name="last_contact_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date of the last contact",
-            ),
-            ReasonsField(
-                name="overdue_flag",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Flag that indicates whether contact was missed",
             ),
             ReasonsField(
                 name="contact_period_start_date",
