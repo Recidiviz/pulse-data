@@ -78,17 +78,22 @@ output:
                         - "81" # Returned from Temporary Release
                         - "84" # Returned from Limited Furlough
                         - "85" # Returned from Parole Furlough
+                        - "26" # Returned from Court
                       # Movement reasons that are for releases are often followed by actual releases
                       # therefore, we indicate this as a status change
                       StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
                         - "106" # Held in Custody
                         - "105" # Held Under Custody - Parole Violation Processing
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                        - "21" # CRP Additional Felony Out to Court (REP Only)
+                        - "93" # Court Released on Bond
+                        - "37" # Released to Court on Writ
+                        - "7" # Released for Additional Sentencing Processing
                       StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
                         - "156" # Probationer Held Under Custody
                         - "102" # Held Under Custody - New Criminal Processing
                         - "19" # Out of State Parolee Sentenced in Michigan
                         - "91" # Limited Furlough
-                        - "21" # CRP Additional Felony Out to Court (REP Only)
                         - "112" # Absconder from Parole
                         - "86" # First Parole
                         - "87" # Reinstated on Parole from the Institution
@@ -112,13 +117,11 @@ output:
                         - "79" # Returned to Court from Bond
                         - "27" # Released from SAI - Incomplete
                         - "122" # Administrative Discharge from Probation
-                        - "7" # Released for Additional Sentencing Processing
                         - "32" # Discharged from Parole
                         - "25" # Conviction Reversed by Court
                         - "127" # Reinstated on Probation
                         - "96" # Escape from the Institution
                         - "94" # Temporarily Housed at County Jail
-                        - "93" # Court Released on Bond
                         - "88" # Paroled in Custody
                         - "77" # Court Resentenced to Probation
                         - "42" # Discharged by Transfer to Foreign Country
@@ -140,7 +143,6 @@ output:
                         - "24" # Sentence Reduced to Misdemeanor
                         - "128" # Held Under Custody - Probation Violation Processing
                         - "141" # Disch. Prison MAX - Transfer for Probation
-                        - "37" # Released to Court on Writ
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
@@ -148,7 +150,6 @@ output:
                         - "20" # Visitor Out
                         - "5" # Transfer Between Offices in Michigan
                       StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                        - "26" # Returned from Court
                         - "82" # Returned from County Jail
                         - "109" # Returned From Mntl Hlth Hospital/ Othr Crimnl Justce Agncies
                 # Movements that don't have reason ids usually mean internal unit or facility
@@ -176,6 +177,8 @@ output:
                             StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                               - "79" # Returned to Court from Bond
                               - "1" # Report to Office
+                              - "7" # Released for Additional Sentencing Processing
+                              - "37" # Released to Court on Writ
                               - "21" # CRP Additional Felony Out to Court (REP Only)
                             StateIncarcerationPeriodReleaseReason.DEATH:
                               - "40" # Death on Temporary Release
@@ -235,7 +238,6 @@ output:
                               - "81" # Returned from Temporary Release
                               - "121" # Discharged from Probation
                               - "119" # Absconder from Probation
-                              - "26" # Returned from Court
                               - "80" # Escaper Returned to the Institution
                               - "159" # New Commitment - HYTA Prisoner
                               - "142" # Discharged from Probation Without Improvement
@@ -257,12 +259,16 @@ output:
                               - "106" # Held Under Custody
                               - "158" # New Commitment - HYTA Probationer
                               - "149" # Sentenced to Prison While in Custody of Outside Jurisdiction
+                              - "139" # Sentence Suspended by the Court
                             StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                               - "95" # Temporary Release - Outside Hospital/Funerals Only
                               - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
                               - "91" # Limited Furlough
                               - "132" # Discharge Furlough
                               - "92" # Parole Furlough
+                              - "93" # Court Released on Bond
+                            StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                              - "26" # Returned from Court
                             StateIncarcerationPeriodReleaseReason.TRANSFER:
                               - "117" # Transfer In ... Institutional or Caseload
                               - "107" # Transferred Out ... Institutional or Caseload
@@ -275,14 +281,11 @@ output:
                               - "111" # Out of State Case Transfered Out of Michigan
                               - "123" # Discharged Sentenced to Jail Only
                               - "42" # Discharged by Transfer to Foreign Country
-                              - "7" # Released for Additional Sentencing Processing
-                              - "37" # Released to Court on Writ
                             StateIncarcerationPeriodReleaseReason.VACATED:
-                              - "93" # Court Released on Bond
                               - "25" # Conviction Reversed by Court
-                              - "139" # Sentence Suspended by the Court
                               - "148" # Charge(s) Dismissed by Court
                               - "23" # Discharged by Court - Nolle Prosequi
+                            StateIncarcerationPeriodReleaseReason.COMMUTED:
                               - "24" # Sentence Reduced to Misdemeanor
                     # Movements that don't have reason ids usually mean internal unit or facility
                     # movements or a release that doesn't have a corresponding movement yet.
