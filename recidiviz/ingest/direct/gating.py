@@ -1092,6 +1092,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "ORAS_MO_ASSESSMENT_SECTION_QUESTION_RESPONSES_DB2": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ORAS_ORAS_ASSESSMENTS_WEEKLY": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ORAS_WEEKLY_SUMMARY_UPDATE": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "RECIDIVIZ_REFERENCE_staff_roster": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_supervision_district_to_name": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_supervision_district_to_region": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
     },
