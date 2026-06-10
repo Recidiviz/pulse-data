@@ -21,7 +21,6 @@ import logging
 from datetime import datetime, timezone
 
 from airflow.decorators import task
-from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
@@ -40,7 +39,7 @@ from recidiviz.documents.store.record_document_upload_results import (
 
 
 @task.short_circuit(ignore_downstream_trigger_rules=False)
-def has_collections_with_updates(
+def check_has_updates(
     collection_results: list[dict[str, str | int]],
 ) -> bool:
     """Skips all downstream document upload/record tasks when discovery returned
@@ -104,7 +103,7 @@ def build_document_upload_pod_arguments(
     ]
 
 
-@task(trigger_rule=TriggerRule.ALL_DONE)
+@task
 def record_document_upload_results(
     collection_results: list[dict[str, str | int]],
     state_code: StateCode,

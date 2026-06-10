@@ -15,5 +15,7 @@
 - [recidiviz/ingest/direct/raw_data/validations/configs, "*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.csv"]
+# TODO(#63822) Update this path when we move the document collection configs out of the region folders.
+- [recidiviz/ingest/direct/regions, "*/document_collections/*.yaml"]
 - [recidiviz/big_query/config, "*.yaml"]
 - [recidiviz/view_registry, "raw_data_reference_reasons.yaml"]

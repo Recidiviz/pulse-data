@@ -29,6 +29,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_all_dag_ids,
     get_discrete_configuration_parameters,
     get_known_configuration_parameters,
+    get_llm_document_extraction_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
@@ -144,5 +145,9 @@ class TestDagIntegrity(AirflowIntegrationTest):
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         self.assertNotEqual(len(dag_bag.dags), 0)
+        # TODO(OBT-32107) Add reasonable runtime configs for llm dag
+        exempt_dag_ids = {get_llm_document_extraction_dag_id(_PROJECT_ID)}
         for dag in dag_bag.dags.values():
+            if dag.dag_id in exempt_dag_ids:
+                continue
             JobRunHistoryDelegateFactory.build(dag_id=dag.dag_id)

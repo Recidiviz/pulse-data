@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Column name constants and schema definitions for document store metadata tables."""
+
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
@@ -83,8 +84,8 @@ _ALL_COLUMN_DEFINITIONS = [
     SchemaField(
         name=DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
         field_type=SqlTypeNames.TIMESTAMP.value,
-        mode="REQUIRED",
-        description="Datetime from the source data indicating when the document was last updated",
+        mode="NULLABLE",
+        description="Datetime from the source data indicating when the document was last updated. Null for deleted documents.",
     ),
     SchemaField(
         name=ROW_CREATE_DATETIME_COLUMN_NAME,

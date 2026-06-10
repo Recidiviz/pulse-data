@@ -348,6 +348,11 @@ def collect_document_collection_config_yaml_paths(
     return list(state_dir.glob("*.yaml"))
 
 
+def get_states_with_document_collections() -> list[StateCode]:
+    """Returns the list of StateCode values that have document collection configs."""
+    return [sc for sc in StateCode if collect_document_collection_config_yaml_paths(sc)]
+
+
 def collect_document_collection_configs(
     state_code: StateCode,
     region_module: ModuleType | None = None,

@@ -17,6 +17,7 @@
 """Helpers for getting information about all Airflow DAGs that are deployed in a
 project.
 """
+
 from typing import List, Set
 
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
@@ -42,6 +43,11 @@ def get_raw_data_import_dag_id(project_id: str) -> str:
     return f"{project_id}_raw_data_import_dag"
 
 
+def get_llm_document_extraction_dag_id(project_id: str) -> str:
+    """Returns the id of the LLM document extraction DAG defined in llm_document_extraction_dag.py."""
+    return f"{project_id}_llm_document_extraction_dag"
+
+
 def get_sftp_dag_id(project: str) -> str:
     """Returns the id of the monitoring DAG defined in sftp_dag.py."""
     return f"{project}_sftp_dag"
@@ -57,6 +63,7 @@ def get_all_dag_ids(project_id: str) -> List[str]:
         get_sftp_dag_id(project_id),
         get_raw_data_import_dag_id(project_id),
         get_metadata_maintenance_dag_id(project_id),
+        get_llm_document_extraction_dag_id(project_id),
     ]
 
 
@@ -79,6 +86,8 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
         }
     if dag_id == get_metadata_maintenance_dag_id(project_id):
         return set()
+    if dag_id == get_llm_document_extraction_dag_id(project_id):
+        return {"state_code_filter"}
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
 
 
@@ -98,5 +107,7 @@ def get_discrete_configuration_parameters(project_id: str, dag_id: str) -> List[
     if dag_id == get_raw_data_import_dag_id(project_id):
         return ["ingest_instance"]
     if dag_id == get_metadata_maintenance_dag_id(project_id):
+        return []
+    if dag_id == get_llm_document_extraction_dag_id(project_id):
         return []
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
