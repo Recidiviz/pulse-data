@@ -28,7 +28,8 @@ output_schema:
 
     - name: search_status
       type: ENUM
-      description: Current job search status.
+      description: Current job search status. Do not infer search_status from
+        primary_status.
       values: [searching, not_searching, other]
       required: true
 

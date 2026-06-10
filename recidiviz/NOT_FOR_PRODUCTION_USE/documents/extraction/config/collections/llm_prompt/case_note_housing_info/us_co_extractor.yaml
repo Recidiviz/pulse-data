@@ -12,6 +12,7 @@ input_document_collection_name: US_CO_SUPERVISION_CONTACT_NOTES
 
 llm_provider: vertex_ai
 model: gemini-2.5-flash
+thinking_budget: 0
 
 prompt_vars:
   state_agency_name: "Colorado Department of Corrections"

@@ -11,6 +11,7 @@ input_document_collection_name: US_MI_CASE_NOTES
 
 llm_provider: vertex_ai
 model: gemini-2.5-flash
+thinking_budget: 0
 
 prompt_vars:
   state_agency_name: "Michigan Department of Corrections"
