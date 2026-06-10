@@ -17232,6 +17232,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str("workflows_views.us_co_resident_metadata"): [
+        "cohort_label",
         "credit_activity",
         "credit_activity.credit_date",
         "credit_activity.credit_type",
@@ -17239,11 +17240,12 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "credit_activity.earned_time_status",
         "credit_activity.good_time_change_reason",
         "incarceration_start_date",
+        "is_interstate_compact",
+        "is_serving_life_or_death",
         "last_updated_date",
         "mrd_tent",
         "ped_tent",
         "person_id",
-        "sdd_tent",
         "state_code",
     ],
     BigQueryAddress.from_str("workflows_views.us_co_supervision_tasks_record"): [
