@@ -61,14 +61,17 @@ class GetClosingIssuesTest(unittest.TestCase):
                     "attachmentsForURL": {
                         "nodes": [
                             {
+                                "id": "att-1",
                                 "metadata": {"linkKind": "closes"},
                                 "issue": {"identifier": "OBT-123"},
                             },
                             {
+                                "id": "att-2",
                                 "metadata": {"linkKind": "contributes"},
                                 "issue": {"identifier": "OBT-456"},
                             },
                             {
+                                "id": "att-3",
                                 "metadata": {"linkKind": "closes"},
                                 "issue": {"identifier": "ENG-789"},
                             },
@@ -106,6 +109,40 @@ class GetClosingIssuesTest(unittest.TestCase):
         self.assertEqual(result, [])
 
     @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_skips_attachment_with_no_link_kind(self, mock_post: MagicMock) -> None:
+        # attachmentsForURL returns attachments created outside Linear's GitHub
+        # integration, which carry no linkKind. These must be skipped rather
+        # than crashing on LinkKind(None).
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "attachmentsForURL": {
+                        "nodes": [
+                            {
+                                "id": "att-1",
+                                "metadata": {},
+                                "issue": {"identifier": "OBT-123"},
+                            },
+                            {
+                                "id": "att-2",
+                                "metadata": {"linkKind": "closes"},
+                                "issue": {"identifier": "OBT-456"},
+                            },
+                        ]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_closing_issues(
+            "https://github.com/Recidiviz/pulse-data/pull/100",
+        )
+
+        self.assertEqual(result, [LinearIssue(team_prefix="OBT", number=456)])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=500,
@@ -130,31 +167,6 @@ class GetClosingIssuesTest(unittest.TestCase):
             client.get_closing_issues(
                 "https://github.com/Recidiviz/pulse-data/pull/100",
             )
-
-    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_handles_metadata_as_string(self, mock_post: MagicMock) -> None:
-        mock_post.return_value = MagicMock(
-            status_code=200,
-            json=lambda: {
-                "data": {
-                    "attachmentsForURL": {
-                        "nodes": [
-                            {
-                                "metadata": '{"linkKind": "closes"}',
-                                "issue": {"identifier": "OBT-123"},
-                            },
-                        ]
-                    }
-                }
-            },
-        )
-
-        client = LinearClient(FAKE_API_KEY)
-        result = client.get_closing_issues(
-            "https://github.com/Recidiviz/pulse-data/pull/100",
-        )
-
-        self.assertEqual(result, [LinearIssue(team_prefix="OBT", number=123)])
 
 
 class ResolveLinearToGithubTest(unittest.TestCase):
@@ -311,17 +323,9 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
         )
 
     @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_returns_empty_when_no_attachments(self, mock_post: MagicMock) -> None:
-        mock_post.return_value = MagicMock(
-            status_code=200,
-            json=lambda: {"data": {"attachmentsForURL": {"nodes": []}}},
-        )
-
-        client = LinearClient(FAKE_API_KEY)
-        self.assertEqual(client.get_all_pr_attachments(FAKE_PR_URL), [])
-
-    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_handles_metadata_as_string(self, mock_post: MagicMock) -> None:
+    def test_attachment_with_no_link_kind_has_none_link_kind(
+        self, mock_post: MagicMock
+    ) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
             json=lambda: {
@@ -330,7 +334,7 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
                         "nodes": [
                             {
                                 "id": "att-1",
-                                "metadata": '{"source": "my-source", "linkKind": "closes"}',
+                                "metadata": {},
                                 "issue": {"identifier": "OBT-111"},
                             },
                         ]
@@ -342,9 +346,27 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
         client = LinearClient(FAKE_API_KEY)
         attachments = client.get_all_pr_attachments(FAKE_PR_URL)
 
-        self.assertEqual(len(attachments), 1)
-        self.assertEqual(attachments[0].link_kind, LinkKind.CLOSES)
-        self.assertEqual(attachments[0].source, "my-source")
+        self.assertEqual(
+            attachments,
+            [
+                LinearAttachment(
+                    id="att-1",
+                    issue_identifier="OBT-111",
+                    link_kind=None,
+                    source=None,
+                ),
+            ],
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_empty_when_no_attachments(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": {"attachmentsForURL": {"nodes": []}}},
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertEqual(client.get_all_pr_attachments(FAKE_PR_URL), [])
 
 
 class CreatePrAttachmentTest(unittest.TestCase):

@@ -17,7 +17,6 @@
 """Client for querying the Linear GraphQL API."""
 
 import enum
-import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -34,6 +33,7 @@ from tenacity import (
 
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.utils.types import assert_type
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +90,29 @@ class LinearAttachment:
 
     id: str = attr.ib()
     issue_identifier: str = attr.ib()
-    link_kind: LinkKind = attr.ib()
+    # None for attachments not created by Linear's GitHub integration, which
+    # carry no linkKind in their metadata.
+    link_kind: LinkKind | None = attr.ib()
     source: str | None = attr.ib()
 
     @property
     def linear_issue(self) -> LinearIssue:
         return LinearIssue.from_string(self.issue_identifier)
+
+    @classmethod
+    def from_response(cls, response: dict[str, Any]) -> "LinearAttachment":
+        """Builds a LinearAttachment from a single attachmentsForURL response
+        node. metadata is always present (Linear returns it as a non-null JSON
+        object, deserialized into a dict), but its linkKind is absent for
+        attachments not created by Linear's GitHub integration."""
+        metadata = assert_type(response["metadata"], dict)
+        raw_link_kind = metadata.get("linkKind")
+        return cls(
+            id=response["id"],
+            issue_identifier=response["issue"]["identifier"],
+            link_kind=LinkKind(raw_link_kind) if raw_link_kind is not None else None,
+            source=metadata.get("source"),
+        )
 
 
 _triage_state_cache: dict[str, str] = {}
@@ -150,14 +167,6 @@ class LinearClient:
 
         return data["data"]
 
-    @staticmethod
-    def _parse_metadata(node: dict) -> dict:
-        """Parse the metadata field from a Linear API response node."""
-        metadata = node.get("metadata", {})
-        if isinstance(metadata, str):
-            metadata = json.loads(metadata)
-        return metadata
-
     def _paginated_query(
         self,
         query: str,
@@ -197,28 +206,17 @@ class LinearClient:
         return all_nodes
 
     def get_closing_issues(self, pr_url: str) -> list[LinearIssue]:
-        """Query Linear for issues linked to a PR with linkKind == 'closes'."""
-        query = """
-        query($url: String!) {
-            attachmentsForURL(url: $url) {
-                nodes {
-                    metadata
-                    issue { identifier }
-                }
-            }
-        }
+        """Query Linear for issues linked to a PR with linkKind == 'closes'.
+
+        attachmentsForURL returns every attachment for the PR URL, including
+        ones created outside Linear's GitHub integration (which carry no
+        linkKind); those and "contributes" links are filtered out here.
         """
-        result = self.query(query, {"url": pr_url})
-
-        closing_issues: list[LinearIssue] = []
-        nodes = result.get("attachmentsForURL", {}).get("nodes", [])
-        for node in nodes:
-            metadata = self._parse_metadata(node)
-            if LinkKind(metadata.get("linkKind")) == LinkKind.CLOSES:
-                identifier = node["issue"]["identifier"]
-                closing_issues.append(LinearIssue.from_string(identifier))
-
-        return closing_issues
+        return [
+            attachment.linear_issue
+            for attachment in self.get_all_pr_attachments(pr_url)
+            if attachment.link_kind is LinkKind.CLOSES
+        ]
 
     def resolve_linear_to_github(self, linear_issue: LinearIssue) -> GithubIssue | None:
         """Find the synced GitHub issue for a Linear issue."""
@@ -275,19 +273,8 @@ class LinearClient:
         """
         result = self.query(query, {"url": pr_url})
 
-        attachments: list[LinearAttachment] = []
         nodes = result.get("attachmentsForURL", {}).get("nodes", [])
-        for node in nodes:
-            metadata = self._parse_metadata(node)
-            attachments.append(
-                LinearAttachment(
-                    id=node["id"],
-                    issue_identifier=node["issue"]["identifier"],
-                    link_kind=LinkKind(metadata["linkKind"]),
-                    source=metadata.get("source"),
-                )
-            )
-        return attachments
+        return [LinearAttachment.from_response(node) for node in nodes]
 
     def create_pr_attachment(
         self,
