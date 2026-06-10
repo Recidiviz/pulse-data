@@ -469,7 +469,7 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
 
     TODO(#26240): Replace NormalizedStateCharge with this entity
 
-    TODO(#36539): Consider including uniform offense information from the
+    TODO(OBT-19720): Consider including uniform offense information from the
     `cleaned_offense_description_to_labels` reference view
     """
 

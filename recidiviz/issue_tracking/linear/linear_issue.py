@@ -23,6 +23,8 @@ import attr
 
 from recidiviz.issue_tracking.issue import Issue
 
+LINEAR_ISSUE_URL_BASE = "https://linear.app/recidiviz/issue/"
+
 
 @attr.s(frozen=True, kw_only=True)
 class LinearIssue(Issue):
@@ -34,6 +36,10 @@ class LinearIssue(Issue):
     @property
     def issue_identifier(self) -> str:
         return f"{self.team_prefix}-{self.number}"
+
+    @property
+    def url(self) -> str:
+        return f"{LINEAR_ISSUE_URL_BASE}{self.issue_identifier}"
 
     @classmethod
     def issue_regex(cls) -> str:

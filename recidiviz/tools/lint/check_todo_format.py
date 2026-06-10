@@ -44,6 +44,8 @@ EXCLUDED_PATH_PATTERNS: list[re.Pattern[str]] = [
         r"reopen_closed_todo_issues_test\.py",
         r"issue\.py",
         r"issue_test\.py",
+        r"issue_parsing\.py",
+        r"issue_parsing_test\.py",
         r"codebase_todos\.py",
         r"codebase_todos_test\.py",
         r"bandit-baseline\.json",

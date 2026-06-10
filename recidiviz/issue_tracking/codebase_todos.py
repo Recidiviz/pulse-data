@@ -22,12 +22,10 @@ import subprocess
 from typing import DefaultDict, Dict, List, Mapping
 
 from recidiviz.github.github_code_reference import GithubCodeReference
-from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.issue import Issue, UrlIssue
-from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.issue import Issue
+from recidiviz.issue_tracking.issue_parsing import TODO_ISSUE_REF_REGEX, issue_from_todo
 from recidiviz.tools.utils.git_manager import get_local_repo_name
 
-_TODO_ISSUE_REF_REGEX = re.compile(r"TODO\((?P<issue_ref>[^)]+)\)")
 _COMMIT_SHA_REGEX = re.compile(r"^[0-9a-f]{4,40}$")
 
 
@@ -71,24 +69,6 @@ def _find_todo_code_references(
     return code_refs
 
 
-def issue_from_todo(todo_string: str, *, default_repo: str) -> Issue:
-    """Parses a TODO string like 'TODO(#12345)' or 'TODO(OBT-789)' into the
-    appropriate Issue subclass."""
-    ref_match = re.fullmatch(_TODO_ISSUE_REF_REGEX, todo_string)
-    if ref_match is None:
-        raise ValueError(f"Unrecognized TODO format: {todo_string}")
-    issue_ref = ref_match.group("issue_ref")
-
-    if re.fullmatch(GithubIssue.issue_regex(), issue_ref):
-        return GithubIssue.from_string(issue_ref, default_repo=default_repo)
-    if re.fullmatch(LinearIssue.issue_regex(), issue_ref):
-        return LinearIssue.from_string(issue_ref)
-    if re.fullmatch(UrlIssue.issue_regex(), issue_ref):
-        return UrlIssue.from_string(issue_ref)
-
-    raise ValueError(f"Unrecognized TODO format: {todo_string}")
-
-
 def get_entire_codebase_issue_references(
     commit_ref: str,
 ) -> Dict[Issue, List[GithubCodeReference]]:
@@ -99,7 +79,7 @@ def get_entire_codebase_issue_references(
     issue_references: Dict[Issue, List[GithubCodeReference]] = DefaultDict(list)
 
     for code_ref in _find_todo_code_references(commit_ref):
-        for todo_match in _TODO_ISSUE_REF_REGEX.finditer(code_ref.line_text):
+        for todo_match in TODO_ISSUE_REF_REGEX.finditer(code_ref.line_text):
             try:
                 issue = issue_from_todo(todo_match.group(0), default_repo=repo)
             except ValueError:
@@ -107,13 +87,6 @@ def get_entire_codebase_issue_references(
             issue_references[issue].append(code_ref)
 
     return issue_references
-
-
-def parse_issue_string(issue_string: str, *, default_repo: str) -> Issue:
-    """Parses '#123', 'Owner/Repo#123', or 'OBT-12345' into an Issue."""
-    if re.fullmatch(LinearIssue.issue_regex(), issue_string):
-        return LinearIssue.from_string(issue_string)
-    return GithubIssue.from_string(issue_string, default_repo=default_repo)
 
 
 def to_markdown(

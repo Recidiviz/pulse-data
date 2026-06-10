@@ -26,8 +26,6 @@ from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.codebase_todos import (
     get_entire_codebase_issue_references,
-    issue_from_todo,
-    parse_issue_string,
     to_markdown,
 )
 from recidiviz.issue_tracking.issue import Issue, UrlIssue
@@ -141,26 +139,6 @@ class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
         )
 
 
-class ParseIssueStringTest(unittest.TestCase):
-    """Tests for parse_issue_string()."""
-
-    def test_github_hash(self) -> None:
-        issue = parse_issue_string("#123", default_repo=RECIDIVIZ_DATA_REPO)
-        self.assertEqual(
-            issue, GithubIssue(repo="Recidiviz/pulse-data", number=123)
-        )
-
-    def test_github_repo(self) -> None:
-        issue = parse_issue_string(
-            "Recidiviz/pulse-data#789", default_repo=RECIDIVIZ_DATA_REPO
-        )
-        self.assertEqual(issue, GithubIssue(repo="Recidiviz/pulse-data", number=789))
-
-    def test_linear(self) -> None:
-        issue = parse_issue_string("OBT-12345", default_repo=RECIDIVIZ_DATA_REPO)
-        self.assertEqual(issue, LinearIssue(team_prefix="OBT", number=12345))
-
-
 class ToMarkdownTest(unittest.TestCase):
     """Tests for to_markdown()."""
 
@@ -230,30 +208,3 @@ class ToMarkdownTest(unittest.TestCase):
 * Recidiviz/pulse-data#123
   * foo.py:10""",
         )
-
-
-class IssueFromTodoTest(unittest.TestCase):
-    """Tests for issue_from_todo()."""
-
-    def test_github_todo(self) -> None:
-        issue = issue_from_todo("TODO(#123)", default_repo=RECIDIVIZ_DATA_REPO)
-        self.assertEqual(
-            issue, GithubIssue(repo="Recidiviz/pulse-data", number=123)
-        )
-
-    def test_linear_todo(self) -> None:
-        issue = issue_from_todo("TODO(OBT-789)", default_repo=RECIDIVIZ_DATA_REPO)
-        self.assertEqual(issue, LinearIssue(team_prefix="OBT", number=789))
-
-    def test_url_todo(self) -> None:
-        issue = issue_from_todo(
-            "TODO(https://issues.apache.org/jira/browse/BEAM-12641)",
-            default_repo=RECIDIVIZ_DATA_REPO,
-        )
-        self.assertEqual(
-            issue, UrlIssue(url="https://issues.apache.org/jira/browse/BEAM-12641")
-        )
-
-    def test_unrecognized_todo(self) -> None:
-        with self.assertRaises(ValueError):
-            issue_from_todo("TODO(XXXX)", default_repo=RECIDIVIZ_DATA_REPO)

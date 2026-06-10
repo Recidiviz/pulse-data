@@ -23,6 +23,8 @@ import re
 
 import attr
 
+from recidiviz.common import attr_validators
+
 
 @attr.s(frozen=True, kw_only=True)
 class Issue(abc.ABC):
@@ -36,6 +38,11 @@ class Issue(abc.ABC):
         """Returns a regex pattern that matches this issue type's identifier
         (e.g. '#123', 'OBT-456', 'https://...')."""
 
+    @property
+    @abc.abstractmethod
+    def url(self) -> str:
+        """Returns the canonical web URL for this issue."""
+
     @classmethod
     def todo_regex(cls) -> str:
         """Returns a regex pattern matching a TODO referencing this issue type,
@@ -45,7 +52,16 @@ class Issue(abc.ABC):
 
 @attr.s(frozen=True, kw_only=True)
 class UrlIssue(Issue):
-    url: str = attr.ib()
+    """A reference to an issue identified by its URL."""
+
+    # The init kwarg is aliased to `url` so callers still construct this as
+    # UrlIssue(url=...), while the field is stored under a different name so the
+    # public `url` can be a property that satisfies the abstract Issue.url.
+    url_value: str = attr.ib(alias="url", validator=attr_validators.is_non_empty_str)
+
+    @property
+    def url(self) -> str:
+        return self.url_value
 
     @classmethod
     def issue_regex(cls) -> str:

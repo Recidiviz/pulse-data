@@ -23,26 +23,43 @@ from collections.abc import Sequence
 from enum import Enum
 
 import recidiviz
+from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.issue import UrlIssue
+from recidiviz.issue_tracking.issue_parsing import issue_from_todo
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 DOCS_ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(recidiviz.__file__), "..", "docs")
 )
+
+# Assembled from fragments so this placeholder marker is not itself a literal
+# to-do reference that the to-do-format lint would flag. Generated config
+# skeletons emit it where a real issue reference still needs to be filled in.
 PLACEHOLDER_TO_DO_STRING = "TO" + "DO"
-ISSUES_URL = "https://github.com/Recidiviz/pulse-data/issues/"
+
+_ISSUE_REF_REGEX = re.compile(
+    "|".join(
+        [
+            GithubIssue.todo_regex(),
+            LinearIssue.todo_regex(),
+            UrlIssue.todo_regex(),
+        ]
+    )
+)
 
 
-# TODO(#80515): Also hyperlink Linear TODOs
 def hyperlink_todos(text: str) -> str:
-    """Given any text, returns that text with todos linked."""
+    """Given any text, returns that text with GitHub, Linear, and URL issue
+    references linked."""
 
     def _link_todo(match_obj: re.Match) -> str:
-        """Adds a markdown link to the found todo."""
-        og_text = match_obj.group(0)
-        digits = og_text[len(f"{PLACEHOLDER_TO_DO_STRING}(#") : -1]
-        return f"[{og_text}]({ISSUES_URL+digits})"
+        """Adds a markdown link to the found issue reference."""
+        todo = match_obj.group(0)
+        issue = issue_from_todo(todo, default_repo=RECIDIVIZ_DATA_REPO)
+        return f"[{todo}]({issue.url})"
 
-    return re.sub(GithubIssue.todo_regex(), _link_todo, text)
+    return re.sub(_ISSUE_REF_REGEX, _link_todo, text)
 
 
 _INTEGER_RE = re.compile(r"^-?\d+$")
