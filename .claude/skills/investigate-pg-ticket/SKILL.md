@@ -9,10 +9,12 @@ description:
 
 ## Overview
 
-This skill takes a GitHub issue URL from `recidiviz-dashboards` (or
-`pulse-data`), fetches the ticket details, retrieves associated PII from the
-shared Google Doc, and suggests specific BigQuery investigation paths based on
-the ticket context.
+This skill takes a GitHub issue URL from `pulse-data` (where PG tickets are
+now filed) or `recidiviz-dashboards` (the legacy source — tickets filed there
+before the cutover to `pulse-data` are still supported until they've been
+worked through; TODO(#84434) tracks dropping `recidiviz-dashboards` support),
+fetches the ticket details, retrieves associated PII from the shared Google Doc,
+and suggests specific BigQuery investigation paths based on the ticket context.
 
 ## Instructions
 

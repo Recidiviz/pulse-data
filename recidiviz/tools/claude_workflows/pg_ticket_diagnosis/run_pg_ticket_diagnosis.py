@@ -34,15 +34,15 @@ To test end-to-end, fire the Cloud Build webhook trigger directly:
     PROJECT_NUMBER=$(gcloud projects describe recidiviz-staging \\
       --format='value(projectNumber)')
     NUMBER=<issue number>
-    ENCODED_TITLE=$(gh issue view $NUMBER --repo Recidiviz/recidiviz-dashboards \\
+    ENCODED_TITLE=$(gh issue view $NUMBER --repo Recidiviz/pulse-data \\
       --json title --jq '.title' | base64 -w 0)
-    ENCODED_BODY=$(gh issue view $NUMBER --repo Recidiviz/recidiviz-dashboards \\
+    ENCODED_BODY=$(gh issue view $NUMBER --repo Recidiviz/pulse-data \\
       --json body --jq '.body' | base64 -w 0)
     jq -n \\
       --arg issue_number "$NUMBER" \\
       --arg issue_title "$ENCODED_TITLE" \\
       --arg issue_body "$ENCODED_BODY" \\
-      --arg issue_repo "Recidiviz/recidiviz-dashboards" \\
+      --arg issue_repo "Recidiviz/pulse-data" \\
       --arg repo_branch "main" \\
       --arg product_areas "workflows" \\
       --arg force_rerun "1" \\
@@ -96,7 +96,7 @@ from pii_doc_parser_utils import (  # type: ignore[import-not-found]  # noqa: E4
 
 from recidiviz.github.github_client import (  # noqa: E402
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
-    RECIDIVIZ_DASHBOARDS_REPO,
+    RECIDIVIZ_DATA_REPO,
     github_helperbot_client,
     upsert_issue_comment,
 )
@@ -869,7 +869,7 @@ def main() -> None:
     config = _load_runtime_config()
 
     issue_number = int(get_env("ISSUE_NUMBER"))
-    issue_repo = os.environ.get("ISSUE_REPO", RECIDIVIZ_DASHBOARDS_REPO)
+    issue_repo = os.environ.get("ISSUE_REPO", RECIDIVIZ_DATA_REPO)
 
     # Title and body are base64-encoded in Cloud Build substitutions to avoid
     # breakage from commas, equals signs, or other special characters.

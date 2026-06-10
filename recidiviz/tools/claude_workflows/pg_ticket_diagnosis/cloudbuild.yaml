@@ -53,14 +53,17 @@ substitutions:
   _ISSUE_NUMBER: ""
   _ISSUE_TITLE: ""
   _ISSUE_BODY: ""
-  # Should match recidiviz.github.github_client.RECIDIVIZ_DASHBOARDS_REPO.
-  _ISSUE_REPO: "Recidiviz/recidiviz-dashboards"
+  # Should match recidiviz.github.github_client.RECIDIVIZ_DATA_REPO.
+  _ISSUE_REPO: "Recidiviz/pulse-data"
   _REPO_BRANCH: "main"
   _FORCE_RERUN: ""
   _PRODUCT_AREAS: ""
 
-serviceAccount: "projects/recidiviz-staging/serviceAccounts/diagnosis-for-pg-ticket@recidiviz-staging.iam.gserviceaccount.com"
-
+# No `serviceAccount` here: it's set on the Cloud Build trigger
+# (pg-diagnosis-trigger.tf), which inlines these steps via `yamldecode`.
+# Specifying a service account in both the trigger and the build config is
+# rejected by Cloud Build. `logging: CLOUD_LOGGING_ONLY` below is still
+# required because the trigger runs the build as a custom service account.
 images:
   - us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest
 
