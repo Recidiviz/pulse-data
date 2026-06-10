@@ -17,8 +17,11 @@
 """Local smoke test for the Edovo course-completion endpoint.
 
 Hits the real Docker Postgres (case_triage_db on host port 5433) and mocks
-BigQuery person resolution.  Requires the case_triage_db container to be
-running and the Alembic migrations to be at head.
+BigQuery person resolution and Secret Manager.  Requires the case_triage_db
+container to be running and the Alembic migrations to be at head.
+
+The HMAC secret is generated fresh in-process each run; no GCP credentials
+or GOOGLE_CLOUD_PROJECT are required.
 
 Usage:
     uv run python -m recidiviz.tools.case_triage.edovo.smoke_test
@@ -37,6 +40,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import sys
 import time
 from unittest.mock import MagicMock, patch
@@ -49,18 +53,22 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
-from recidiviz.utils.secrets import get_secret
 
 _MODULE = "recidiviz.case_triage.edovo.edovo_routes"
+_HMAC_MODULE = "recidiviz.case_triage.edovo.hmac_verifier"
 
-_PAYLOAD = {
-    "person_id": "A123456",
-    "state_code": "US_CO",
-    "course_id": "smoke-test-course-001",
-    "course_name": "Smoke Test Course",
-    "content_hours": 3.5,
-    "completed_at": "2026-06-08T12:00:00Z",
-}
+
+def _build_payload() -> dict[str, object]:
+    return {
+        "person_id": "A123456",
+        "state_code": "US_CO",
+        # Randomize the course_id per run so reruns aren't dedup'd against
+        # rows left behind by previous runs.
+        "course_id": f"smoke-test-course-{secrets.token_hex(4)}",
+        "course_name": "Smoke Test Course",
+        "content_hours": 3.5,
+        "completed_at": "2026-06-08T12:00:00Z",
+    }
 
 
 def _build_auth_header(body: bytes, key_id: str, secret_b64: str) -> str:
@@ -98,13 +106,9 @@ def _check(label: str, condition: bool, detail: str = "") -> None:
 def main() -> None:
     key_id = os.getenv("EDOVO_HMAC_KEY_ID", "local-test")
     person_id = os.getenv("EDOVO_PERSON_ID", "9999001")
-    secret_b64 = get_secret(f"edovo_hmac_{key_id}")
-    if secret_b64 is None:
-        print(
-            f"ERROR: secret 'edovo_hmac_{key_id}' not found in Secret Manager / local GSM.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # Generate an ephemeral 256-bit HMAC secret in-process so the smoke test
+    # has no dependency on real Secret Manager / GOOGLE_CLOUD_PROJECT.
+    secret_b64 = base64.b64encode(secrets.token_bytes(32)).decode()
 
     app = Flask(__name__)
     register_error_handlers(app)
@@ -114,11 +118,11 @@ def main() -> None:
     app.register_blueprint(create_edovo_api_blueprint(), url_prefix="/edovo")
     client = app.test_client()
 
-    body = json.dumps(_PAYLOAD).encode()
+    body = json.dumps(_build_payload()).encode()
 
     with patch(f"{_MODULE}.BigQueryClientImpl") as mock_bq_cls, patch(
         f"{_MODULE}.resolve_person_by_doc_id", return_value=person_id
-    ):
+    ), patch(f"{_HMAC_MODULE}.get_secret", return_value=secret_b64):
         mock_bq_cls.return_value = MagicMock()
 
         print("\n--- Edovo smoke test ---")
@@ -159,7 +163,7 @@ def main() -> None:
 
         # POST with missing field → should be 400
         bad_body = json.dumps(
-            {k: v for k, v in _PAYLOAD.items() if k != "course_id"}
+            {k: v for k, v in _build_payload().items() if k != "course_id"}
         ).encode()
         auth = _build_auth_header(bad_body, key_id, secret_b64)
         r3 = client.post(
