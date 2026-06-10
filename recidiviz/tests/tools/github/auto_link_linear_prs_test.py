@@ -25,9 +25,9 @@ from recidiviz.github.github_pull_request import GithubPullRequest
 from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
     LinearAttachment,
-    LinkKind,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.linear.linear_types import LinkKind
 from recidiviz.tools.github.auto_link_linear_prs import (
     AUTO_LINK_SOURCE_MARKER,
     main,
@@ -237,6 +237,9 @@ class MainTest(unittest.TestCase):
         mock_client.create_pr_attachment.assert_called_once_with(
             "OBT-456", FAKE_PR_URL, 100, LinkKind.CLOSES, AUTO_LINK_SOURCE_MARKER
         )
+        mock_client.start_issue_if_unstarted.assert_called_once_with(
+            LinearIssue(team_prefix="OBT", number=456)
+        )
 
     def test_creates_link_for_non_closing_reference(
         self,
@@ -253,6 +256,9 @@ class MainTest(unittest.TestCase):
         self.assertEqual(self._run(), 0)
         mock_client.create_pr_attachment.assert_called_once_with(
             "OBT-456", FAKE_PR_URL, 100, LinkKind.CONTRIBUTES, AUTO_LINK_SOURCE_MARKER
+        )
+        mock_client.start_issue_if_unstarted.assert_called_once_with(
+            LinearIssue(team_prefix="OBT", number=456)
         )
 
     def test_skips_issue_with_no_synced_linear_issue(
@@ -292,6 +298,7 @@ class MainTest(unittest.TestCase):
         )
         self.assertEqual(self._run(), 0)
         mock_client.create_pr_attachment.assert_not_called()
+        mock_client.start_issue_if_unstarted.assert_not_called()
 
     def test_deletes_attachment_when_reference_removed(
         self,
@@ -314,6 +321,7 @@ class MainTest(unittest.TestCase):
         )
         self.assertEqual(self._run(), 0)
         mock_client.delete_attachment.assert_called_once_with("att-1")
+        mock_client.start_issue_if_unstarted.assert_not_called()
 
     def test_updates_attachment_when_link_kind_changes(
         self,
@@ -340,6 +348,9 @@ class MainTest(unittest.TestCase):
             "att-1", "PR #100", LinkKind.CONTRIBUTES, AUTO_LINK_SOURCE_MARKER
         )
         mock_client.create_pr_attachment.assert_not_called()
+        mock_client.start_issue_if_unstarted.assert_called_once_with(
+            LinearIssue(team_prefix="OBT", number=456)
+        )
 
     def test_no_change_when_attachment_matches(
         self,
@@ -365,6 +376,7 @@ class MainTest(unittest.TestCase):
         mock_client.create_pr_attachment.assert_not_called()
         mock_client.update_attachment.assert_not_called()
         mock_client.delete_attachment.assert_not_called()
+        mock_client.start_issue_if_unstarted.assert_not_called()
 
     def test_multiple_references(
         self,

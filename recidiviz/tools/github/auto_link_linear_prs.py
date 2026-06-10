@@ -45,12 +45,9 @@ from github.Auth import Token
 from recidiviz.github.github_client import get_pr_body
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.github.github_pull_request import GithubPullRequest
-from recidiviz.issue_tracking.linear.linear_client import (
-    LinearAttachment,
-    LinearClient,
-    LinkKind,
-)
+from recidiviz.issue_tracking.linear.linear_client import LinearAttachment, LinearClient
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.linear.linear_types import LinkKind
 
 AUTO_LINK_SOURCE_MARKER = "auto-link-action"
 
@@ -167,6 +164,11 @@ def _reconcile_linear_attachments(
     on existing attachments when it changes (e.g. "contributes" -> "closes"),
     and deletes attachments whose references were removed from the PR body.
     Skips issues that already have a natively-created attachment.
+
+    When creating or updating an attachment, also transitions the linked issue
+    to its team's started state if it is currently unstarted — mirroring
+    Linear's native "move to In Progress when a PR opens" automation, which
+    does not fire for the attachments this action creates out-of-band.
     """
     action_created_attachments = [
         att for att in all_attachments_for_pr if att.source == AUTO_LINK_SOURCE_MARKER
@@ -211,6 +213,7 @@ def _reconcile_linear_attachments(
                 desired_attachment_kind_by_linear_issue[issue],
                 AUTO_LINK_SOURCE_MARKER,
             )
+            linear_client.start_issue_if_unstarted(issue)
 
     for issue, link_kind in desired_attachment_kind_by_linear_issue.items():
         if issue in existing_action_created_attachment_by_linear_issue:
@@ -226,6 +229,7 @@ def _reconcile_linear_attachments(
             link_kind,
             AUTO_LINK_SOURCE_MARKER,
         )
+        linear_client.start_issue_if_unstarted(issue)
 
 
 def create_parser() -> argparse.ArgumentParser:

@@ -16,7 +16,7 @@
 # =============================================================================
 """Client for querying the Linear GraphQL API."""
 
-import enum
+import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -33,6 +33,11 @@ from tenacity import (
 
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.linear.linear_types import (
+    LinearStateType,
+    LinearTeamKey,
+    LinkKind,
+)
 from recidiviz.utils.types import assert_type
 
 logger = logging.getLogger(__name__)
@@ -53,19 +58,6 @@ class RetryableLinearApiError(LinearApiError):
     still handle it once retries are exhausted."""
 
 
-class LinkKind(enum.Enum):
-    """The relationship between a PR attachment and a Linear issue.
-
-    Linear stores this as a free-form string in attachment metadata (not a
-    schema-enforced enum), but only two values are used by their GitHub
-    integration: "closes" and "contributes".
-    See https://linear.app/docs/github#link-issues-with-pull-requests
-    """
-
-    CLOSES = "closes"
-    CONTRIBUTES = "contributes"
-
-
 @attr.s(frozen=True, kw_only=True)
 class LinearIssueInfo:
     """API-fetched details for a Linear issue. Wraps a LinearIssue identifier
@@ -80,7 +72,7 @@ class LinearIssueInfo:
         return self.linear_issue.issue_identifier
 
     @property
-    def team_key(self) -> str:
+    def team_key(self) -> LinearTeamKey:
         return self.linear_issue.team_prefix
 
 
@@ -115,7 +107,8 @@ class LinearAttachment:
         )
 
 
-_triage_state_cache: dict[str, str] = {}
+# Cache of resolved workflow state IDs, keyed by team key then state type.
+_state_id_cache: dict[LinearTeamKey, dict[LinearStateType, str]] = {}
 
 
 class LinearClient:
@@ -368,32 +361,35 @@ class LinearClient:
             raise ValueError(
                 f"since must be timezone-aware, got naive datetime: {since}"
             )
-        query = """
-        query($since: DateTimeOrDuration!, $excludeLabels: [String!]!, $after: String) {
+        closed_state_types = json.dumps(
+            [LinearStateType.COMPLETED.value, LinearStateType.CANCELED.value]
+        )
+        query = f"""
+        query($since: DateTimeOrDuration!, $excludeLabels: [String!]!, $after: String) {{
             issues(
-                filter: {
-                    state: { type: { in: ["completed", "canceled"] } }
-                    labels: { every: { name: { nin: $excludeLabels } } }
+                filter: {{
+                    state: {{ type: {{ in: {closed_state_types} }} }}
+                    labels: {{ every: {{ name: {{ nin: $excludeLabels }} }} }}
                     or: [
-                        { completedAt: { gte: $since } }
-                        { canceledAt: { gte: $since } }
+                        {{ completedAt: {{ gte: $since }} }}
+                        {{ canceledAt: {{ gte: $since }} }}
                     ]
-                }
+                }}
                 first: 50
                 after: $after
-            ) {
-                nodes {
+            ) {{
+                nodes {{
                     id
                     identifier
                     title
-                    team { key }
-                }
-                pageInfo {
+                    team {{ key }}
+                }}
+                pageInfo {{
                     hasNextPage
                     endCursor
-                }
-            }
-        }
+                }}
+            }}
+        }}
         """
         nodes = self._paginated_query(
             query,
@@ -410,16 +406,21 @@ class LinearClient:
             for node in nodes
         ]
 
-    def _get_triage_state_id(self, team_key: str) -> str:
-        """Return the ID of the triage workflow state for the given team.
-        Results are cached per team key.
+    def _get_state_id_for_type(
+        self, team_key: LinearTeamKey, state_type: LinearStateType
+    ) -> str:
+        """Return the ID of the workflow state of the given type for the team.
+        Results are cached per (team key, state type).
 
-        Linear doesn't have a generic "reopen" action. Each team defines its
-        own workflow states (each with a unique UUID), so we have to look up the
-        right target state for the issue's team.
+        Each team defines its own workflow states (each with a unique UUID), so
+        transitioning an issue requires looking up the right target state for
+        the issue's team. A team can have several states of the same type (e.g.
+        "In Progress" and "In Review" are both ``started``); we pick the one
+        with the lowest ``position`` — the leftmost board column for that type,
+        which matches Linear's own default (e.g. "In Progress", not "In Review").
         """
-        if team_key in _triage_state_cache:
-            return _triage_state_cache[team_key]
+        if state_type in _state_id_cache.get(team_key, {}):
+            return _state_id_cache[team_key][state_type]
 
         query = """
         query($teamKey: String!) {
@@ -429,6 +430,7 @@ class LinearClient:
                         nodes {
                             id
                             type
+                            position
                         }
                     }
                 }
@@ -441,12 +443,19 @@ class LinearClient:
         if not teams:
             raise LinearApiError(f"No team found with key {team_key!r}")
 
-        for state in teams[0]["states"]["nodes"]:
-            if state["type"] == "triage":
-                _triage_state_cache[team_key] = state["id"]
-                return state["id"]
+        matching_states = [
+            state
+            for state in teams[0]["states"]["nodes"]
+            if state["type"] == state_type.value
+        ]
+        if not matching_states:
+            raise LinearApiError(
+                f"No {state_type.value!r} state found for team {team_key!r}"
+            )
 
-        raise LinearApiError(f"No triage state found for team {team_key!r}")
+        target_state = min(matching_states, key=lambda state: state["position"])
+        _state_id_cache.setdefault(team_key, {})[state_type] = target_state["id"]
+        return target_state["id"]
 
     def reopen_issue(self, issue_info: LinearIssueInfo) -> None:
         """Reopen a completed/cancelled issue by moving it back to the team's
@@ -459,7 +468,9 @@ class LinearClient:
         target state for the issue's team and transitioning to it via the
         ``issueUpdate`` mutation.
         """
-        target_state_id = self._get_triage_state_id(issue_info.team_key)
+        target_state_id = self._get_state_id_for_type(
+            issue_info.team_key, LinearStateType.TRIAGE
+        )
         mutation = """
         mutation($id: String!, $input: IssueUpdateInput!) {
             issueUpdate(id: $id, input: $input) {
@@ -471,6 +482,47 @@ class LinearClient:
             mutation,
             {"id": issue_info.uuid, "input": {"stateId": target_state_id}},
         )
+
+    def start_issue_if_unstarted(self, linear_issue: LinearIssue) -> bool:
+        """Move the issue to its team's started state, but only if it is
+        currently in an unstarted-type state. Returns True if it transitioned,
+        False if it was left untouched (any other state type — backlog,
+        started, completed, canceled, triage).
+
+        Mirrors Linear's native "move to In Progress when a PR opens"
+        automation, which does not fire for attachments we create out-of-band
+        via the ``attachmentCreate`` mutation. Only unstarted issues are
+        advanced, so an issue already in a later state is never regressed.
+        """
+        query = """
+        query($id: String!) {
+            issue(id: $id) {
+                id
+                state { type }
+            }
+        }
+        """
+        result = self.query(query, {"id": linear_issue.issue_identifier})
+
+        issue = result["issue"]
+        if issue["state"]["type"] != LinearStateType.UNSTARTED.value:
+            return False
+
+        target_state_id = self._get_state_id_for_type(
+            linear_issue.team_prefix, LinearStateType.STARTED
+        )
+        mutation = """
+        mutation($id: String!, $input: IssueUpdateInput!) {
+            issueUpdate(id: $id, input: $input) {
+                success
+            }
+        }
+        """
+        self.query(
+            mutation,
+            {"id": issue["id"], "input": {"stateId": target_state_id}},
+        )
+        return True
 
     def create_comment(self, issue_info: LinearIssueInfo, comment_body: str) -> None:
         """Post a comment on a Linear issue."""

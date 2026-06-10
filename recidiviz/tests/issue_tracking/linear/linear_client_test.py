@@ -29,10 +29,10 @@ from recidiviz.issue_tracking.linear.linear_client import (
     LinearAttachment,
     LinearClient,
     LinearIssueInfo,
-    LinkKind,
     RetryableLinearApiError,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.linear.linear_types import LinkKind
 
 FAKE_API_KEY = "lin_api_test_key"
 
@@ -734,10 +734,17 @@ FAKE_ISSUE_INFO = LinearIssueInfo(
 )
 
 
-def _mock_team_states_response(states: list[dict[str, str]]) -> MagicMock:
+def _mock_team_states_response(states: list[dict[str, object]]) -> MagicMock:
+    # Real WorkflowState nodes carry a `position`; default one per index so
+    # callers that don't care about ordering don't have to specify it.
+    states_with_position = [
+        {"position": float(i), **state} for i, state in enumerate(states)
+    ]
     return MagicMock(
         status_code=200,
-        json=lambda: {"data": {"teams": {"nodes": [{"states": {"nodes": states}}]}}},
+        json=lambda: {
+            "data": {"teams": {"nodes": [{"states": {"nodes": states_with_position}}]}}
+        },
     )
 
 
@@ -746,7 +753,7 @@ class ReopenIssueTest(unittest.TestCase):
 
     def setUp(self) -> None:
         linear_client_module = "recidiviz.issue_tracking.linear.linear_client"
-        patcher = patch.dict(f"{linear_client_module}._triage_state_cache", clear=True)
+        patcher = patch.dict(f"{linear_client_module}._state_id_cache", clear=True)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -826,6 +833,137 @@ class ReopenIssueTest(unittest.TestCase):
         client = LinearClient(FAKE_API_KEY)
         with self.assertRaises(LinearApiError):
             client.reopen_issue(FAKE_ISSUE_INFO)
+
+
+FAKE_LINEAR_ISSUE = LinearIssue(team_prefix="OBT", number=100)
+
+
+def _mock_issue_state_response(uuid: str, state_type: str) -> MagicMock:
+    return MagicMock(
+        status_code=200,
+        json=lambda: {"data": {"issue": {"id": uuid, "state": {"type": state_type}}}},
+    )
+
+
+class StartIssueIfUnstartedTest(unittest.TestCase):
+    """Tests for LinearClient.start_issue_if_unstarted()."""
+
+    def setUp(self) -> None:
+        linear_client_module = "recidiviz.issue_tracking.linear.linear_client"
+        patcher = patch.dict(f"{linear_client_module}._state_id_cache", clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_transitions_unstarted_issue_to_started(self, mock_post: MagicMock) -> None:
+        mock_post.side_effect = [
+            _mock_issue_state_response("uuid-obt-100", "unstarted"),
+            _mock_team_states_response(
+                [
+                    {"id": "s-triage", "type": "triage"},
+                    {"id": "s-started", "type": "started"},
+                ]
+            ),
+            MagicMock(
+                status_code=200,
+                json=lambda: {"data": {"issueUpdate": {"success": True}}},
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertTrue(client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE))
+
+        update_body = (
+            mock_post.call_args_list[2].kwargs.get("json")
+            or mock_post.call_args_list[2][1]["json"]
+        )
+        self.assertEqual(update_body["variables"]["id"], "uuid-obt-100")
+        self.assertEqual(update_body["variables"]["input"], {"stateId": "s-started"})
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_picks_lowest_position_when_multiple_started_states(
+        self, mock_post: MagicMock
+    ) -> None:
+        # OBT has two started states ("In Progress" and "In Review"); we must
+        # transition to the lower-position one ("In Progress"), not whichever
+        # the API happens to list first.
+        mock_post.side_effect = [
+            _mock_issue_state_response("uuid-obt-100", "unstarted"),
+            _mock_team_states_response(
+                [
+                    {"id": "s-in-review", "type": "started", "position": 2.0},
+                    {"id": "s-in-progress", "type": "started", "position": 1.0},
+                ]
+            ),
+            MagicMock(
+                status_code=200,
+                json=lambda: {"data": {"issueUpdate": {"success": True}}},
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertTrue(client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE))
+
+        update_body = (
+            mock_post.call_args_list[2].kwargs.get("json")
+            or mock_post.call_args_list[2][1]["json"]
+        )
+        self.assertEqual(
+            update_body["variables"]["input"], {"stateId": "s-in-progress"}
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_leaves_started_issue_untouched(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = _mock_issue_state_response("uuid-obt-100", "started")
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertFalse(client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE))
+
+        # Only the state-lookup query runs; no team-states lookup or issueUpdate.
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_leaves_completed_issue_untouched(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = _mock_issue_state_response("uuid-obt-100", "completed")
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertFalse(client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE))
+
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_caches_started_state_across_calls(self, mock_post: MagicMock) -> None:
+        mock_post.side_effect = [
+            _mock_issue_state_response("uuid-obt-100", "unstarted"),
+            _mock_team_states_response([{"id": "s-started", "type": "started"}]),
+            MagicMock(
+                status_code=200,
+                json=lambda: {"data": {"issueUpdate": {"success": True}}},
+            ),
+            _mock_issue_state_response("uuid-obt-200", "unstarted"),
+            MagicMock(
+                status_code=200,
+                json=lambda: {"data": {"issueUpdate": {"success": True}}},
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE)
+        client.start_issue_if_unstarted(LinearIssue(team_prefix="OBT", number=200))
+
+        # 1st call: state query + team-states query + issueUpdate = 3.
+        # 2nd call: state query + issueUpdate = 2 (team-states cached). Total 5.
+        self.assertEqual(mock_post.call_count, 5)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=500, text="Internal Server Error"
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaises(LinearApiError):
+            client.start_issue_if_unstarted(FAKE_LINEAR_ISSUE)
 
 
 FAKE_COMMENT_ISSUE_INFO = LinearIssueInfo(

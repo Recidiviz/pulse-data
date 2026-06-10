@@ -22,6 +22,7 @@ from typing import Match
 import attr
 
 from recidiviz.issue_tracking.issue import Issue
+from recidiviz.issue_tracking.linear.linear_types import LinearTeamKey
 
 LINEAR_ISSUE_URL_BASE = "https://linear.app/recidiviz/issue/"
 
@@ -30,7 +31,7 @@ LINEAR_ISSUE_URL_BASE = "https://linear.app/recidiviz/issue/"
 class LinearIssue(Issue):
     """A reference to a Linear issue, e.g. 'OBT-12345'."""
 
-    team_prefix: str = attr.ib()
+    team_prefix: LinearTeamKey = attr.ib()
     number: int = attr.ib()
 
     @property

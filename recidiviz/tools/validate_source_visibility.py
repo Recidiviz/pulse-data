@@ -525,6 +525,7 @@ def main() -> int:
         "recidiviz.issue_tracking.issue_parsing",
         "recidiviz.issue_tracking.labels",
         "recidiviz.issue_tracking.linear.linear_issue",
+        "recidiviz.issue_tracking.linear.linear_types",
         "recidiviz.tools.docs.utils",
         "recidiviz.tools.raw_data_reference_reasons_yaml_loader",
         "recidiviz.utils.environment",
