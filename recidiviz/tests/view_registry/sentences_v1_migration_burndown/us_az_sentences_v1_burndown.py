@@ -59,6 +59,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_az_approachin
 from recidiviz.calculator.query.state.views.workflows.firestore.us_az_transfer_to_administrative_supervision_record import (
     US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_az_transfer_to_administrative_supervision_record_v2 import (
+    US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_V2_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_az.no_arson_conviction import (
     VIEW_BUILDER as US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER,
 )
@@ -224,6 +227,20 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     },
     "WORKFLOWS_FIRESTORE": {
         US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_VIEW_BUILDER.address: {
+            CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+                US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+            },
+            SENTENCE_SPANS_VIEW_BUILDER.address: {
+                US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+                US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+            },
+            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+                US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
+            },
+        },
+        US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_V2_VIEW_BUILDER.address: {
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,

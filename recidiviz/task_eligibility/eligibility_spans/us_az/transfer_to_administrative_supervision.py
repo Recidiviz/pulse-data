@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the eligibility spans for supervision clients in AZ who are eligible
-for a transfer to administrative supervision"""
+for a transfer to administrative supervision. This version of TES is being deprecated in favor of v2
+due to policy changes post tool launch."""
+from datetime import date
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -145,6 +147,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_community_supervision_completed.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    policy_end_date=date(2026, 6, 26),
     almost_eligible_condition=NotEligibleCriteriaCondition(
         # AZ has not fully rolled out ORAS assessment yet. We put clients without an ORAS into a separate
         # eligibility category/tab for the time being.

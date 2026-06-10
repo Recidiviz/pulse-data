@@ -17217,6 +17217,19 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
+        "workflows_views.us_az_transfer_to_administrative_supervision_record_v2"
+    ): [
+        "almost_eligible_date",
+        "eligible_date",
+        "external_id",
+        "ineligible_criteria",
+        "is_almost_eligible",
+        "is_eligible",
+        "person_id",
+        "reasons",
+        "state_code",
+    ],
+    BigQueryAddress.from_str(
         "workflows_views.us_ca_supervision_level_downgrade_form_record"
     ): [
         "case_type",
