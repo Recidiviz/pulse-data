@@ -712,6 +712,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.workflows",
                 "recidiviz.segment.product_type",
+                "recidiviz.datasets.static_data.views.data",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
@@ -764,6 +765,7 @@ def main() -> int:
                 "recidiviz.aggregated_metrics",
                 "recidiviz.application_data_import",
                 "recidiviz.auth",
+                "recidiviz.datasets.static_data.views.data",
                 "recidiviz.backup.backup_manager",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
