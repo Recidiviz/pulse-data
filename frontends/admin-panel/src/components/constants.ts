@@ -68,7 +68,11 @@ export const LANTERN_PERMISSIONS_LABELS = {
 };
 
 export const DIRECTOR_DASHBOARD_PERMISSIONS_LABELS = {
-  directorDashboardSupervision: "Director Dashboard (Supervision)",
+  directorDashboard: "Director Dashboard",
+};
+
+export const LOOKER_EMBED_PERMISSIONS_LABELS = {
+  lookerEmbed: "Embedded Looker Dashboards",
 };
 
 export const ROUTES_PERMISSIONS_LABELS = {
@@ -82,6 +86,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...MEETINGS_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
   ...DIRECTOR_DASHBOARD_PERMISSIONS_LABELS,
+  ...LOOKER_EMBED_PERMISSIONS_LABELS,
 } satisfies Record<string, string>;
 
 export const ALLOWED_APPS_LABELS = {

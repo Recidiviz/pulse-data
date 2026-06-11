@@ -238,6 +238,13 @@ export const CustomPermissionsPanel = ({
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
+
+    <h4>Embedded Looker Dashboards:</h4>
+    <RoutePermissionList
+      labels={DIRECTOR_DASHBOARD_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
     <hr />
     <h3>Feature Variants:</h3>
     <Note>Notes:</Note>
