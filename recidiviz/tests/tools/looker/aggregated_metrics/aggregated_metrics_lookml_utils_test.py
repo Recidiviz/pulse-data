@@ -189,7 +189,7 @@ class LookMLUtilsTest(unittest.TestCase):
                 LookMLFieldParameter.group_label(TEST_SPAN_DAYS_METRIC.pretty_name()),
                 LookMLFieldParameter.sql(
                     """{% if my_view.measure_type._parameter_value == "normalized" %}
-        SUM(${TABLE}.test_span_days_metric) / SUM(${TABLE}.avg_daily_population * ${days_in_period})
+        SAFE_DIVIDE(SUM(${TABLE}.test_span_days_metric), SUM(${TABLE}.avg_daily_population * ${days_in_period}))
         {% else %}
         SUM(${TABLE}.test_span_days_metric)
         {% endif %}"""

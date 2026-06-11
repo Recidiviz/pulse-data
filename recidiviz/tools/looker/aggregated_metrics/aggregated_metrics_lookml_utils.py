@@ -128,16 +128,26 @@ def _generate_lookml_measure_fragment_normalized(
         ),
     ):
         return f"SUM(${{TABLE}}.{metric.name}) / SUM(${{TABLE}}.assignments)"
-    if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
+    if isinstance(
+        metric,
+        (
+            DailyAvgSpanCountMetric,
+            EventCountMetric,
+            EventValueMetric,
+            SumEventValueMetric,
+        ),
+    ):
         return (
             f"SUM(SAFE_DIVIDE(${{TABLE}}.{metric.name} * {days_in_period_clause}, {custom_denominator})) / "
             f"SUM({days_in_period_clause})"
         )
     if isinstance(metric, SumSpanDaysMetric):
         return (
-            f"SUM(${{TABLE}}.{metric.name}) / "
-            f"SUM(${{TABLE}}.avg_daily_population * {days_in_period_clause})"
+            f"SAFE_DIVIDE(SUM(${{TABLE}}.{metric.name}), "
+            f"SUM(${{TABLE}}.avg_daily_population * {days_in_period_clause}))"
         )
+    if isinstance(metric, (EventDistinctUnitCountMetric, SpanDistinctUnitCountMetric)):
+        return f"AVG(SAFE_DIVIDE(${{TABLE}}.{metric.name}, {custom_denominator}))"
     return "NULL"
 
 
@@ -305,7 +315,15 @@ def generate_lookml_denominator_description_normalized(
         ),
     ):
         return f'"{metric.description}, divided by the number of assignments to the population"'
-    if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
+    if isinstance(
+        metric,
+        (
+            DailyAvgSpanCountMetric,
+            EventCountMetric,
+            EventValueMetric,
+            SumEventValueMetric,
+        ),
+    ):
         denominator_description = (
             "${metric_denominator_description}"
             if allow_custom_denominator

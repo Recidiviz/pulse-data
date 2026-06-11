@@ -81,6 +81,7 @@ from recidiviz.observations.observation_type_utils import (
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     get_metric_explore_parameter,
+    get_metric_value_dimension,
     get_metric_value_measure,
     measure_for_metric,
 )
@@ -92,6 +93,7 @@ def _liquid_wrap_metrics(
     metrics: list[AggregatedMetric],
     lookml_views_package_name: str,
     include_comma: bool = True,
+    support_denominator: bool = False,
 ) -> str:
     """
     Outputs a conditional liquid fragment that will display the provided query fragment
@@ -99,9 +101,10 @@ def _liquid_wrap_metrics(
     """
     metric_liquid_fragments: list[str] = []
     for metric in metrics:
-        metric_liquid_fragments.append(
-            f'{lookml_views_package_name}.{metric.name}_measure._in_query or {lookml_views_package_name}.metric_filter._parameter_value contains "{metric.name}"'
-        )
+        liquid_fragment = f'{lookml_views_package_name}.{metric.name}_measure._in_query or {lookml_views_package_name}.metric_filter._parameter_value contains "{metric.name}"'
+        if support_denominator:
+            liquid_fragment += f' or {lookml_views_package_name}.metric_denominator_filter._parameter_value contains "{metric.name}"'
+        metric_liquid_fragments.append(liquid_fragment)
     metric_liquid_fragment = " or ".join(metric_liquid_fragments)
     return f"""{{% if {metric_liquid_fragment} %}}
 {query_fragment}{"," if include_comma else ""}
@@ -888,9 +891,20 @@ def build_custom_metrics_lookml_view(
         str, Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
     ],
     json_field_filters_with_suggestions: Optional[dict[str, list[str]]] = None,
+    denominator_metrics: Optional[list[AggregatedMetric]] = None,
 ) -> LookMLView:
     """Generates a LookML view that contains all metrics across all units of observation,
     supporting a provided set of assignment types and json field filters."""
+
+    # Check if denominator metrics are a subset of metrics
+    if denominator_metrics:
+        denominator_metrics_not_included_in_metrics = [
+            denom for denom in denominator_metrics if denom not in metrics
+        ]
+        if denominator_metrics_not_included_in_metrics:
+            raise ValueError(
+                "Denominator metrics must be a subset of the provided metrics. Found {denominator_metrics_not_included_in_metrics} not in metrics."
+            )
 
     metrics_by_unit_of_observation_type_and_metric_class = (
         get_metrics_by_observation_type_and_metric_class(metrics)
@@ -925,6 +939,7 @@ def build_custom_metrics_lookml_view(
                 metric_output_column_clause(metric),
                 metrics=[metric],
                 lookml_views_package_name=lookml_views_package_name,
+                support_denominator=denominator_metrics is not None,
             )
             for metric in metrics
         ]
@@ -977,6 +992,7 @@ USING
     )""",
             metrics,
             lookml_views_package_name,
+            support_denominator=denominator_metrics is not None,
             include_comma=False,
         )
         for _, ((unit_of_observation_type, _), metrics) in enumerate(
@@ -1115,10 +1131,36 @@ CROSS JOIN
 """
     metric_measures = [
         measure_for_metric(
-            metric, days_in_period_source=LookMLSqlReferenceType.DIMENSION
+            metric,
+            days_in_period_source=LookMLSqlReferenceType.DIMENSION,
+            allow_custom_denominator=denominator_metrics is not None,
         )
         for metric in metrics
     ]
+
+    metric_denominator_fields: List[LookMLViewField] = []
+    if denominator_metrics:
+        metric_denominator_filter_parameter = get_metric_explore_parameter(
+            [m for m in metrics if m in denominator_metrics],
+            field_name="metric_denominator_filter",
+        ).extend(
+            additional_parameters=[
+                LookMLFieldParameter.label("Metric Denominator Filter"),
+                LookMLFieldParameter.description(
+                    "Used to select a denominator to normalize the metric if the `normalized` "
+                    "measure type is selected. Default is average daily population."
+                ),
+            ]
+        )
+        metric_denominator_fields.append(metric_denominator_filter_parameter)
+
+        metric_denominator_value_dimension = get_metric_value_dimension(
+            lookml_views_package_name,
+            metric_denominator_filter_parameter,
+            "metric_denominator_value",
+        ).extend(additional_parameters=[LookMLFieldParameter.hidden(is_hidden=True)])
+        metric_denominator_fields.append(metric_denominator_value_dimension)
+
     extended_views: list[str] = []
     for unit_of_observation_type in all_unit_of_observation_types:
         for metric_class in METRIC_CLASSES:
@@ -1138,6 +1180,7 @@ CROSS JOIN
             measure_type_parameter,
             metric_filter_parameter,
             metric_value_measure,
+            *metric_denominator_fields,
             count_units_measure,
             *json_field_filter_lookml_fields,
         ],

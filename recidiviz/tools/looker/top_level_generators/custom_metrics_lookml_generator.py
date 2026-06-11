@@ -43,6 +43,11 @@ from recidiviz.tools.looker.aggregated_metrics.custom_cpa_metrics_configurations
     CPA_ASSIGNMENT_NAMES_TO_TYPES,
     CPA_IMPACT_LOOKER_METRICS,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_experiment_kpi_metrics_configurations import (
+    EXPERIMENT_KPI_ASSIGNMENT_NAMES_TO_TYPES,
+    EXPERIMENT_KPI_DENOMINATOR_METRICS,
+    EXPERIMENT_KPI_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurations import (
     GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
     GLOBAL_IMPACT_LOOKER_METRICS,
@@ -102,6 +107,7 @@ def collect_and_build_custom_metrics_views_for_package(
         str, Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
     ],
     json_field_filters_with_suggestions: Optional[dict[str, list[str]]] = None,
+    denominator_metrics: Optional[list[AggregatedMetric]] = None,
 ) -> None:
     """Builds and writes views required to build Workflows impact metrics in Looker"""
     if not output_directory:
@@ -138,6 +144,7 @@ def collect_and_build_custom_metrics_views_for_package(
         metrics,
         assignment_types_dict,
         json_field_filters_with_suggestions,
+        denominator_metrics,
     ).write(output_directory, source_script_path=__file__)
 
 
@@ -242,6 +249,16 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             metrics=JII_TEXTS_IMPACT_LOOKER_METRICS,
             assignment_types_dict=JII_TEXTS_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={"message_type": list(MessageType)},
+        )
+
+        # Experiment KPIs
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="experiment_kpi_metrics",
+            output_directory=output_subdir,
+            metrics=EXPERIMENT_KPI_LOOKER_METRICS,
+            assignment_types_dict=EXPERIMENT_KPI_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions=WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+            denominator_metrics=EXPERIMENT_KPI_DENOMINATOR_METRICS,
         )
 
 
