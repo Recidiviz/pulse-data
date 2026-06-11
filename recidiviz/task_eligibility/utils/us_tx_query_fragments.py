@@ -278,6 +278,16 @@ FROM intersection_spans_with_critical_understaffing
     )
 
 
+# Values of the `type_agnostic_criteria` routing column in the type-agnostic contact
+# standards CSV. Each labels the criterion a standard is evaluated by; concurrent
+# obligations for the same (supervision_level, case_type) must use different buckets.
+TYPE_AGNOSTIC_CRITERIA_STANDARD_POLICY = "STANDARD_POLICY"
+TYPE_AGNOSTIC_CRITERIA_STANDARD_POLICY_SECONDARY = "STANDARD_POLICY_SECONDARY"
+TYPE_AGNOSTIC_CRITERIA_SCHEDULED_OFFICE_OR_VIRTUAL_OFFICE = (
+    "SCHEDULED_OFFICE_OR_VIRTUAL_OFFICE"
+)
+
+
 def contact_compliance_builder_type_agnostic(
     criteria_name: str,
     description: str,
