@@ -31,10 +31,10 @@ locals {
     if !local.is_production || !lookup(manifest, "playground", false)
   }
 
-  # States that have a document_collections/ directory under their region config
+  # States that have a document collections config directory
   document_collection_states = toset([
     for region, manifest in local.direct_ingest_region_manifests_to_deploy : region
-    if length(fileset("${local.direct_ingest_regions_package}/${lower(region)}/document_collections", "*.yaml")) > 0
+    if length(fileset("${local.recidiviz_root}/documents/config/document_collections/${lower(region)}", "*.yaml")) > 0
   ])
 
   sftp_state_alpha_codes = yamldecode(file("${path.module}/config/sftp_state_alpha_codes.yaml"))
