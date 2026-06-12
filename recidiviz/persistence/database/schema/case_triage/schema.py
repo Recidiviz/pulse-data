@@ -21,8 +21,16 @@ application; now only defines tables for roster management of the dashboard appl
 
 from datetime import timezone
 
-from sqlalchemy import TIMESTAMP, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy import (
+    TIMESTAMP,
+    Column,
+    DateTime,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql import func
 
@@ -89,6 +97,36 @@ class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     routes = Column(JSONB(none_as_null=True), nullable=True)
     feature_variants = Column(JSONB(none_as_null=True), nullable=True)
     jii_permissions = Column(JSONB(none_as_null=True), nullable=True)
+
+
+class EdovoCourseCompletion(CaseTriageBase):
+    """Records each Edovo course completion received for earned-time processing."""
+
+    __tablename__ = "edovo_course_completions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "person_id",
+            "state_code",
+            "course_id",
+            name="edovo_course_completions_no_double_credit",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    idempotency_key = Column(UUID(as_uuid=True), nullable=False, unique=True)
+    person_id = Column(String(255), nullable=False)
+    state_code = Column(String(255), nullable=False)
+    course_id = Column(String(255), nullable=False)
+    course_name = Column(String(255), nullable=False)
+    content_hours = Column(Numeric, nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=False)
+    received_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class PermissionsOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
