@@ -181,13 +181,13 @@ class BuildIdentityClusters(beam.PTransform):
             IdentityAttributes
         ).field_index()
 
-        cluster_attributes = merge_identity_attributes(all_fragments, field_index)
-
-        if not cluster_attributes.has_at_least_one_attribute(field_index):
+        try:
+            cluster_attributes = merge_identity_attributes(all_fragments, field_index)
+        except ValueError as e:
             raise ValueError(
-                f"Cluster {cluster_key} with external ids "
-                f"{cluster_external_ids} has no attributes."
-            )
+                f"Failed to build cluster {cluster_key} with external ids "
+                f"{cluster_external_ids}: {e}"
+            ) from e
 
         return IdentityCluster(
             external_ids=cluster_external_ids,

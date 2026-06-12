@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for identity_fragment_entity_factories.py."""
+import datetime
 import unittest
 
 from recidiviz.common.constants.identity import PersonType
@@ -199,25 +200,23 @@ class TestEntityFactories(unittest.TestCase):
         result = entity_factories.IdentityAttributesFactory.deserialize(
             tenant=_TENANT,
             person_type=PersonType.JII,
+            birthdate=datetime.date(1990, 1, 1),
         )
 
         expected = entities.IdentityAttributes(
-            tenant=_TENANT, person_type=PersonType.JII
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            birthdate=datetime.date(1990, 1, 1),
         )
         self.assertEqual(expected, result)
 
     def test_deserialize_IdentityFragment(self) -> None:
-        attributes = entities.IdentityAttributes(
-            tenant=_TENANT, person_type=PersonType.JII
-        )
         result = entity_factories.IdentityFragmentFactory.deserialize(
             tenant=_TENANT,
-            attributes=attributes,  # type: ignore[arg-type]
         )
 
         expected = entities.IdentityFragment(
             tenant=_TENANT,
             external_ids=[],
-            attributes=attributes,
         )
         self.assertEqual(expected, result)

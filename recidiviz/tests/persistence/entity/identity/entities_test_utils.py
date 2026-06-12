@@ -23,6 +23,7 @@ from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
 )
+from recidiviz.utils.types import assert_type
 
 _TENANT = "US_XX"
 
@@ -109,16 +110,19 @@ def generate_full_graph_identity_fragment(
     )
 
     if set_back_edges:
+        attributes = assert_type(
+            fragment.attributes, identity_fragment_entities.IdentityAttributes
+        )
         for external_id in fragment.external_ids:
             external_id.fragment = fragment
-        fragment.attributes.fragment = fragment
+        attributes.fragment = fragment
         for singular_field in ("name", "gender", "sex", "ethnicity"):
-            child = getattr(fragment.attributes, singular_field)
+            child = getattr(attributes, singular_field)
             if child is not None:
-                child.identity_attributes = fragment.attributes
+                child.identity_attributes = attributes
         for list_field in ("races", "phone_numbers", "emails"):
-            for child in getattr(fragment.attributes, list_field):
-                child.identity_attributes = fragment.attributes
+            for child in getattr(attributes, list_field):
+                child.identity_attributes = attributes
 
     return fragment
 

@@ -504,6 +504,7 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
         attrs = IdentityAttributes(
             tenant="US_OZ",
             person_type=PersonType.JII,
+            birthdate=datetime.date(1990, 1, 1),
         )
 
         result = serialize_entity_tree_into_json(

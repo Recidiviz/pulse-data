@@ -20,9 +20,7 @@ import unittest
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
-from recidiviz.common.constants.identity import PersonType
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
-    IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,
 )
@@ -35,7 +33,8 @@ _TENANT = "US_XX"
 
 
 def _make_fragment(*id_pairs: tuple[str, str]) -> IdentityFragment:
-    """Creates an IdentityFragment with the given (external_id, id_type) pairs."""
+    """Creates an external-id-only `IdentityFragment` with the given
+    (`external_id`, `id_type`) pairs."""
     return IdentityFragment(
         tenant=_TENANT,
         external_ids=[
@@ -46,7 +45,6 @@ def _make_fragment(*id_pairs: tuple[str, str]) -> IdentityFragment:
             )
             for ext_id, id_type in id_pairs
         ],
-        attributes=IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII),
     )
 
 

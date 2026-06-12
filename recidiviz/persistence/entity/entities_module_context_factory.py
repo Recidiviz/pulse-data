@@ -31,11 +31,11 @@ from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
 )
-from recidiviz.persistence.entity.identity.entity_documentation_utils import (
-    description_for_field as identity_description_for_field,
-)
 from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
     IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities_module_context import (
+    IDENTITY_FRAGMENT_ENTITIES_CONTEXT,
 )
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.utils import environment
@@ -258,33 +258,6 @@ class _OperationsEntitiesModuleContext(EntitiesModuleContext):
         ]
 
 
-class _IdentityFragmentEntitiesModuleContext(EntitiesModuleContext):
-    """EntitiesModuleContext for the identity fragment entities module."""
-
-    @classmethod
-    def entities_module(cls) -> ModuleType:
-        return identity_fragment_entities
-
-    @classmethod
-    def class_hierarchy(cls) -> list[str]:
-        return [
-            identity_fragment_entities.IdentityFragment.__name__,
-            identity_fragment_entities.IdentityExternalId.__name__,
-            identity_fragment_entities.IdentityAttributes.__name__,
-            identity_fragment_entities.IdentityName.__name__,
-            identity_fragment_entities.IdentityGender.__name__,
-            identity_fragment_entities.IdentitySex.__name__,
-            identity_fragment_entities.IdentityRace.__name__,
-            identity_fragment_entities.IdentityEthnicity.__name__,
-            identity_fragment_entities.IdentityPhoneNumber.__name__,
-            identity_fragment_entities.IdentityEmail.__name__,
-        ]
-
-    @classmethod
-    def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
-        return identity_description_for_field(entity_cls, field_name)
-
-
 def entities_module_context_for_module(
     entities_module: ModuleType,
 ) -> EntitiesModuleContext:
@@ -300,7 +273,7 @@ def entities_module_context_for_module(
         elif entities_module is operations_entities:
             context = _OperationsEntitiesModuleContext()
         elif entities_module is identity_fragment_entities:
-            context = _IdentityFragmentEntitiesModuleContext()
+            context = IDENTITY_FRAGMENT_ENTITIES_CONTEXT
         elif entities_module is identity_cluster_entities:
             context = IDENTITY_CLUSTER_ENTITIES_CONTEXT
         else:

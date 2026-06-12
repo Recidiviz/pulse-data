@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 from recidiviz.pipelines.ingest.identity.merge_identity_attributes import (
     merge_identity_attributes,
 )
+from recidiviz.utils.types import assert_type
 
 _TENANT = "US_XX"
 
@@ -65,10 +66,14 @@ def _fragment(
     phone_numbers: list[IdentityPhoneNumber] | None = None,
     emails: list[IdentityEmail] | None = None,
 ) -> IdentityFragment:
-    return IdentityFragment(
-        tenant=_TENANT,
-        external_ids=[IdentityExternalId(tenant=_TENANT, external_id="X", id_type="T")],
-        attributes=IdentityAttributes(
+    """If no attribute is provided, the fragment is constructed as an
+    external-id-only carrier (`attributes=None`)."""
+    attributes: IdentityAttributes | None = None
+    if any(
+        v is not None and v != []
+        for v in (name, birthdate, gender, sex, ethnicity, races, phone_numbers, emails)
+    ):
+        attributes = IdentityAttributes(
             tenant=_TENANT,
             person_type=PersonType.JII,
             name=name,
@@ -79,7 +84,11 @@ def _fragment(
             races=races or [],
             phone_numbers=phone_numbers or [],
             emails=emails or [],
-        ),
+        )
+    return IdentityFragment(
+        tenant=_TENANT,
+        external_ids=[IdentityExternalId(tenant=_TENANT, external_id="X", id_type="T")],
+        attributes=attributes,
     )
 
 
@@ -238,23 +247,28 @@ class TestMergeIdentityAttributes(unittest.TestCase):
 
         self.assertEqual(result.name, name)
 
-    def test_scalar_keeps_values(self) -> None:
+    def test_skips_fragments_with_no_attributes(self) -> None:
         name = _name("John", "Doe")
         dob = datetime.date(1990, 1, 1)
 
         fragment_with_values = _fragment(name=name, birthdate=dob)
-        fragment_with_nones = _fragment(name=None, birthdate=None)
+        external_id_only_fragment = _fragment()
+        self.assertIsNone(external_id_only_fragment.attributes)
 
         result = merge_identity_attributes(
             [
                 fragment_with_values,
-                fragment_with_nones,
+                external_id_only_fragment,
             ],
             _field_index(),
         )
 
         self.assertEqual(result.name, name)
         self.assertEqual(result.birthdate, dob)
+
+    def test_all_fragments_with_no_attributes_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, "no fragment has attributes set"):
+            merge_identity_attributes([_fragment(), _fragment()], _field_index())
 
     def test_non_conflicting_scalars_from_different_fragments(self) -> None:
         fragment_a = _fragment(name=_name("John", "Doe"))
@@ -391,10 +405,11 @@ class TestMergeIdentityAttributes(unittest.TestCase):
         field_index = _field_index()
         result = merge_identity_attributes([fragment], field_index)
 
+        before_attributes = assert_type(fragment.attributes, IdentityAttributes)
         for field_name in field_index.get_all_entity_fields(
             IdentityAttributes, EntityFieldType.FLAT_FIELD
         ):
-            before_merge = fragment.attributes.get_field(field_name)
+            before_merge = before_attributes.get_field(field_name)
             after_merge = result.get_field(field_name)
             self.assertEqual(
                 after_merge,

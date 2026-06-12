@@ -41,7 +41,8 @@ def merge_identity_attributes(
     field_index: EntityFieldIndex,
 ) -> IdentityAttributes:
     """Merge attributes from the sorted list of fragments in a cluster into a
-    single IdentityAttributes.
+    single IdentityAttributes. Fragments with no attributes (external-id-only
+    carriers) are skipped.
 
     For flat scalar attributes (e.g. birthdate): requires all non-None values
     to agree. Raises a ValueError if they do not.
@@ -54,9 +55,16 @@ def merge_identity_attributes(
     For list attributes (e.g. races, phone_numbers, emails): unions across all
     fragments, deduplicating by Entity equality.
     """
-    result = sorted_fragments[0].attributes
-    for fragment in sorted_fragments[1:]:
-        result = _merge_entity("attributes", result, fragment.attributes, field_index)
+    attributes_to_merge = [
+        f.attributes for f in sorted_fragments if f.attributes is not None
+    ]
+    if not attributes_to_merge:
+        raise ValueError(
+            "Cannot merge identity attributes: no fragment has attributes set."
+        )
+    result = attributes_to_merge[0]
+    for incoming in attributes_to_merge[1:]:
+        result = _merge_entity("attributes", result, incoming, field_index)
     return result
 
 

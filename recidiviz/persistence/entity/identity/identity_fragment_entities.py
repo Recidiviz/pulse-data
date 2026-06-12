@@ -44,12 +44,12 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_field_index import (
-    EntityFieldIndex,
-    EntityFieldType,
-)
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.identity.identity_entity_mixin import (
     IdentityEntityMixin,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities_module_context import (
+    IDENTITY_FRAGMENT_ENTITIES_CONTEXT,
 )
 from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
@@ -157,21 +157,23 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
 
     fragment: "IdentityFragment | None" = attr.ib(default=None)
 
-    ATTRIBUTE_FIELDS_TO_EXCLUDE_WHEN_CHECKING_FOR_AT_LEAST_ONE = frozenset(
-        {"tenant", "person_type"}
-    )
+    # Fields that don't count as "an attribute" for the at-least-one-attribute
+    # check below. tenant and person_type are always set by the caller;
+    # back-edges are excluded by the field index's FORWARD_EDGE filter.
+    _FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK = frozenset({"tenant", "person_type"})
 
-    def has_at_least_one_attribute(self, field_index: EntityFieldIndex) -> bool:
-        """Returns True if at least one field beyond tenant/person_type is
-        non-empty."""
+    def __attrs_post_init__(self) -> None:
+        field_index = IDENTITY_FRAGMENT_ENTITIES_CONTEXT.field_index()
         non_empty = field_index.get_fields_with_non_empty_values(
             self, EntityFieldType.FLAT_FIELD
         ) | field_index.get_fields_with_non_empty_values(
             self, EntityFieldType.FORWARD_EDGE
         )
-        return bool(
-            non_empty - self.ATTRIBUTE_FIELDS_TO_EXCLUDE_WHEN_CHECKING_FOR_AT_LEAST_ONE
-        )
+        if not non_empty - self._FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK:
+            raise ValueError(
+                f"[{type(self).__name__}] must have at least one attribute set "
+                f"beyond those in {sorted(self._FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK)}."
+            )
 
     @classmethod
     def back_edge_field_name(cls) -> str:
@@ -188,8 +190,10 @@ class IdentityFragment(
         validator=is_list_of(IdentityExternalId)
     )
 
-    attributes: "IdentityAttributes" = attr.ib(
-        validator=attr.validators.instance_of(IdentityAttributes),
+    # attributes must be optional because ingest views could produce fragments
+    # whose only purpose is to carry external ids
+    attributes: "IdentityAttributes | None" = attr.ib(
+        default=None, validator=is_opt(IdentityAttributes)
     )
 
     def get_external_ids(self) -> list[IdentityExternalId]:

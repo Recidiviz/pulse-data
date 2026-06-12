@@ -53,6 +53,7 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_staff_role_period,
     make_task_deadline,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestIngestViewTreeMerger(unittest.TestCase):
@@ -444,7 +445,8 @@ Entities with conflicts:
         result = tree_merger.merge(fragments)
 
         merged = one(result)
-        numbers = {p.number for p in merged.attributes.phone_numbers}
+        merged_attributes = assert_type(merged.attributes, IdentityAttributes)
+        numbers = {p.number for p in merged_attributes.phone_numbers}
         self.assertEqual({"5550100001", "5550100002"}, numbers)
 
 
@@ -787,9 +789,10 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
         result = tree_merger.merge(fragments, should_throw_on_conflicts=False)
 
         merged = one(result)
-        self.assertIsNotNone(merged.attributes.name)
-        assert merged.attributes.name is not None
+        merged_attributes = assert_type(merged.attributes, IdentityAttributes)
+        self.assertIsNotNone(merged_attributes.name)
+        assert merged_attributes.name is not None
         self.assertIn(
-            merged.attributes.name.given_name,
+            merged_attributes.name.given_name,
             ("JOHN", "JANE"),
         )

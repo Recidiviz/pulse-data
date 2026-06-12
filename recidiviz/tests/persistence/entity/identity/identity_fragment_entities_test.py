@@ -14,17 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for identity ingest pipeline entities."""
+"""Tests the entities defined in identity_fragment_entities.py."""
 import datetime
 import pickle
 import unittest
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_entity_class,
-)
-from recidiviz.persistence.entity.entity_field_index import EntityFieldIndex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityEmail,
@@ -310,11 +306,6 @@ class TestIdentityEmail(unittest.TestCase):
 class TestIdentityAttributes(unittest.TestCase):
     """Tests the IdentityAttributes entity."""
 
-    def _field_index(self) -> EntityFieldIndex:
-        return entities_module_context_for_entity_class(
-            IdentityAttributes
-        ).field_index()
-
     def test_equality(self) -> None:
         self.assertEqual(
             IdentityAttributes(
@@ -366,9 +357,12 @@ class TestIdentityAttributes(unittest.TestCase):
         )
 
     def test_defaults(self) -> None:
-        attrs = IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
+        attrs = IdentityAttributes(
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            birthdate=datetime.date(1990, 1, 1),
+        )
         self.assertIsNone(attrs.name)
-        self.assertIsNone(attrs.birthdate)
         self.assertIsNone(attrs.gender)
         self.assertIsNone(attrs.sex)
         self.assertEqual(attrs.races, [])
@@ -376,79 +370,39 @@ class TestIdentityAttributes(unittest.TestCase):
         self.assertEqual(attrs.phone_numbers, [])
         self.assertEqual(attrs.emails, [])
 
-    def test_has_at_least_one_attribute_false_when_all_defaults(self) -> None:
-        attrs = IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
-        self.assertFalse(attrs.has_at_least_one_attribute(self._field_index()))
+    def test_construction_raises_when_no_attributes_set(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "must have at least one attribute set beyond"
+        ):
+            IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
 
-    def test_has_at_least_one_attribute_true_for_each_scalar(self) -> None:
-        field_index = self._field_index()
-        cases: list[tuple[str, IdentityAttributes]] = [
-            (
-                "name",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, name=_NAME
-                ),
-            ),
-            (
-                "birthdate",
-                IdentityAttributes(
-                    tenant=_TENANT,
-                    person_type=PersonType.JII,
-                    birthdate=datetime.date(1990, 1, 1),
-                ),
-            ),
-            (
-                "gender",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, gender=_GENDER
-                ),
-            ),
-            (
-                "sex",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, sex=_SEX
-                ),
-            ),
-            (
-                "ethnicity",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, ethnicity=_ETHNICITY
-                ),
-            ),
+    def test_construction_succeeds_for_each_scalar(self) -> None:
+        cases: list[tuple[str, dict]] = [
+            ("name", {"name": _NAME}),
+            ("birthdate", {"birthdate": datetime.date(1990, 1, 1)}),
+            ("gender", {"gender": _GENDER}),
+            ("sex", {"sex": _SEX}),
+            ("ethnicity", {"ethnicity": _ETHNICITY}),
         ]
-        for field, attrs in cases:
-            self.assertTrue(
-                attrs.has_at_least_one_attribute(field_index),
-                f"Expected True for {field}",
-            )
+        for field_name, kwargs in cases:
+            with self.subTest(field=field_name):
+                attrs = IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, **kwargs
+                )
+                self.assertEqual(getattr(attrs, field_name), kwargs[field_name])
 
-    def test_has_at_least_one_attribute_true_for_each_list(self) -> None:
-        field_index = self._field_index()
-        cases: list[tuple[str, IdentityAttributes]] = [
-            (
-                "races",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, races=[_RACE]
-                ),
-            ),
-            (
-                "phone_numbers",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, phone_numbers=[_PHONE]
-                ),
-            ),
-            (
-                "emails",
-                IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, emails=[_EMAIL]
-                ),
-            ),
+    def test_construction_succeeds_for_each_list(self) -> None:
+        cases: list[tuple[str, dict]] = [
+            ("races", {"races": [_RACE]}),
+            ("phone_numbers", {"phone_numbers": [_PHONE]}),
+            ("emails", {"emails": [_EMAIL]}),
         ]
-        for field, attrs in cases:
-            self.assertTrue(
-                attrs.has_at_least_one_attribute(field_index),
-                f"Expected True for {field}",
-            )
+        for field_name, kwargs in cases:
+            with self.subTest(field=field_name):
+                attrs = IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, **kwargs
+                )
+                self.assertEqual(getattr(attrs, field_name), kwargs[field_name])
 
     def test_pickle_roundtrip(self) -> None:
         attrs = IdentityAttributes(
@@ -540,9 +494,6 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
-                attributes=IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII
-                ),
             ),
             IdentityFragment(
                 tenant=_TENANT,
@@ -553,9 +504,6 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
-                attributes=IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII
-                ),
             ),
         )
 
@@ -585,17 +533,9 @@ class TestIdentityFragment(unittest.TestCase):
         fragment = IdentityFragment(
             tenant=_TENANT,
             external_ids=[_EXTERNAL_ID],
-            attributes=IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII),
         )
         self.assertEqual(fragment.tenant, _TENANT)
-        self.assertIsNone(fragment.attributes.name)
-        self.assertIsNone(fragment.attributes.birthdate)
-        self.assertIsNone(fragment.attributes.gender)
-        self.assertIsNone(fragment.attributes.sex)
-        self.assertEqual(fragment.attributes.races, [])
-        self.assertIsNone(fragment.attributes.ethnicity)
-        self.assertEqual(fragment.attributes.phone_numbers, [])
-        self.assertEqual(fragment.attributes.emails, [])
+        self.assertIsNone(fragment.attributes)
 
     def test_pickle_roundtrip(self) -> None:
         fragment = IdentityFragment(

@@ -136,7 +136,11 @@ class TestIdentityCluster(unittest.TestCase):
         )
 
     def test_mismatched_external_id_tenant_raises(self) -> None:
-        attrs = IdentityAttributes(tenant="US_OZ", person_type=PersonType.JII)
+        attrs = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
+        )
         with self.assertRaisesRegex(ValueError, "mismatched tenants"):
             IdentityCluster(
                 external_ids=[
@@ -167,9 +171,17 @@ class TestClusterId(unittest.TestCase):
 
     def test_tenant_namespacing(self) -> None:
         eids_oz = [_eid("A", "T1", tenant="US_OZ")]
-        attrs_oz = IdentityAttributes(tenant="US_OZ", person_type=PersonType.JII)
+        attrs_oz = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
+        )
         eids_xx = [_eid("A", "T1", tenant="US_XX")]
-        attrs_xx = IdentityAttributes(tenant="US_XX", person_type=PersonType.JII)
+        attrs_xx = IdentityAttributes(
+            tenant="US_XX",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_XX", given_name="John", surname="Doe"),
+        )
         self.assertNotEqual(
             _cluster(eids_oz, attrs_oz).cluster_id,
             _cluster(eids_xx, attrs_xx).cluster_id,
@@ -230,9 +242,17 @@ class TestClusterHash(unittest.TestCase):
 
     def test_tenant_namespacing(self) -> None:
         eids_oz = [_eid("A", "T1", tenant="US_OZ")]
-        attrs_oz = IdentityAttributes(tenant="US_OZ", person_type=PersonType.JII)
+        attrs_oz = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
+        )
         eids_xx = [_eid("A", "T1", tenant="US_XX")]
-        attrs_xx = IdentityAttributes(tenant="US_XX", person_type=PersonType.JII)
+        attrs_xx = IdentityAttributes(
+            tenant="US_XX",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_XX", given_name="John", surname="Doe"),
+        )
         self.assertNotEqual(
             _cluster(eids_oz, attrs_oz).cluster_hash,
             _cluster(eids_xx, attrs_xx).cluster_hash,

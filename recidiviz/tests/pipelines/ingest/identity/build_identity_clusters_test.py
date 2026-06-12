@@ -50,15 +50,21 @@ def _fragment(
     name_surname: str | None = None,
     person_type: PersonType = PersonType.JII,
 ) -> IdentityFragment:
-    name = None
+    """If no name is provided, the fragment is constructed as an
+    external-id-only carrier (`attributes=None`)."""
+    attributes: IdentityAttributes | None = None
     if name_given or name_surname:
-        name = IdentityName(tenant=_TENANT, given_name=name_given, surname=name_surname)
+        attributes = IdentityAttributes(
+            tenant=_TENANT,
+            person_type=person_type,
+            name=IdentityName(
+                tenant=_TENANT, given_name=name_given, surname=name_surname
+            ),
+        )
     return IdentityFragment(
         tenant=_TENANT,
         external_ids=[_eid_entity(eid, id_type) for eid, id_type in eids],
-        attributes=IdentityAttributes(
-            tenant=_TENANT, person_type=person_type, name=name
-        ),
+        attributes=attributes,
     )
 
 
@@ -239,21 +245,26 @@ class TestBuildCluster(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "has no fragments"):
             self.transform.build_cluster(element)
 
-    def test_no_attributes_beyond_person_type_raises(self) -> None:
-        """A fragment that contributes only external IDs (all attribute fields
-        None/empty) should cause the cluster build to fail."""
+    def test_only_external_id_only_fragments_raises(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
         fragment = _fragment([("A", "T1")])
         cluster_key = (eid_key,)
         element = (cluster_key, [(100.0, "view_a", fragment)])
 
-        with self.assertRaisesRegex(ValueError, "has no attributes"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Failed to build cluster .* no fragment has attributes",
+        ):
             self.transform.build_cluster(element)
 
     def test_single_eid_conflicting_person_types_raises(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
-        jii_fragment = _fragment([("A", "T1")], person_type=PersonType.JII)
-        staff_fragment = _fragment([("A", "T1")], person_type=PersonType.STAFF)
+        jii_fragment = _fragment(
+            [("A", "T1")], name_given="John", person_type=PersonType.JII
+        )
+        staff_fragment = _fragment(
+            [("A", "T1")], name_given="John", person_type=PersonType.STAFF
+        )
         cluster_key = (eid_key,)
         element = (
             cluster_key,
@@ -265,7 +276,8 @@ class TestBuildCluster(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Conflicting non-None values for 'attributes.person_type'",
+            r"Failed to build cluster .* Conflicting non-None values for "
+            r"'attributes.person_type'",
         ):
             self.transform.build_cluster(element)
 
@@ -273,8 +285,12 @@ class TestBuildCluster(unittest.TestCase):
         eid_a: ExternalIdKey = ("A", "T1")
         eid_b: ExternalIdKey = ("B", "T2")
 
-        jii_fragment = _fragment([("A", "T1")], person_type=PersonType.JII)
-        staff_fragment = _fragment([("B", "T2")], person_type=PersonType.STAFF)
+        jii_fragment = _fragment(
+            [("A", "T1")], name_given="John", person_type=PersonType.JII
+        )
+        staff_fragment = _fragment(
+            [("B", "T2")], name_given="John", person_type=PersonType.STAFF
+        )
 
         cluster_key = tuple(sorted([eid_a, eid_b]))
 
@@ -288,7 +304,8 @@ class TestBuildCluster(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Conflicting non-None values for 'attributes.person_type'",
+            r"Failed to build cluster .* Conflicting non-None values for "
+            r"'attributes.person_type'",
         ):
             self.transform.build_cluster(element)
 
