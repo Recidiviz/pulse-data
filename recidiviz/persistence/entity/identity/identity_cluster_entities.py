@@ -196,12 +196,8 @@ class IdentityCluster(
         validator=is_tuple_of(IdentityClusterEmail),
     )
 
-    # SHA-256 of the cluster's sorted external IDs. Used by the Identity
-    # Service as the upsert/deduplication key across import runs to
-    # determine whether this is a cluster it has seen before. Not a stable
-    # person identifier: if the cluster gains or loses an external ID
-    # between runs the hash changes, so one logical person may have
-    # multiple identity_cluster_id values over time.
+    # SHA-256 of the cluster's sorted external IDs; not a stable person
+    # identifier. Full semantics documented in entity_field_descriptions.yaml.
     #
     # Declared with on_setattr=validate because its value is derived from
     # the fully-constructed, back-edge-resolved tree and so must be
@@ -210,14 +206,12 @@ class IdentityCluster(
         init=False, default="", on_setattr=attr.setters.validate
     )
 
-    # SHA-256 of the cluster's full content (external IDs + flat fields +
-    # child entities). Used by the Identity Service to detect whether a
-    # cluster has changed since the last import.
+    # SHA-256 of the cluster's full content. Full semantics documented in
+    # entity_field_descriptions.yaml.
     #
-    # Like identity_cluster_id, declared with on_setattr=validate because
-    # its value is derived from the fully-constructed, back-edge-resolved
-    # tree and so must be assigned in __attrs_post_init__ rather than
-    # supplied by the caller.
+    # Declared with on_setattr=validate because its value is derived from
+    # the fully-constructed, back-edge-resolved tree and so must be
+    # assigned in __attrs_post_init__ rather than supplied by the caller.
     cluster_hash: str = attr.ib(
         init=False, default="", on_setattr=attr.setters.validate
     )

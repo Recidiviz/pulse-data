@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,12 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper functions to handle entity documentation and descriptions for the
-state/normalized_state entities modules.
+identity entities modules (both fragment and cluster).
 """
-from recidiviz.persistence.entity import activity
-from recidiviz.persistence.entity.activity.normalized_state_entity import (
-    NormalizedStateEntity,
-)
+from recidiviz.persistence.entity import identity
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_documentation_utils import (
     FIELD_KEY,
@@ -29,29 +26,25 @@ from recidiviz.persistence.entity.entity_documentation_utils import (
     resolve_field_description,
 )
 
-STATE_DATASET_ONLY_FIELD_KEY = "state_dataset_only_fields"
-NORMALIZATION_FIELD_KEY = "normalization_only_fields"
-ENTITY_DESCRIPTIONS_YAML_PATH = entity_field_descriptions_yaml_path(activity)
-_STATE_CODE_ROOT_FIELD = RootFieldDescription(
-    field_name="state_code",
-    description="The U.S. state or region that provided the source data.",
+ENTITY_DESCRIPTIONS_YAML_PATH = entity_field_descriptions_yaml_path(identity)
+_TENANT_ROOT_FIELD = RootFieldDescription(
+    field_name="tenant",
+    description="The tenant (e.g. state or partner) that provided the source data.",
 )
 
 
 def description_for_field(entity_cls: type[Entity], field_name: str) -> str:
-    """Returns a description for the given class and field to be used in BQ Schemas and documentation."""
-    # Each state entity has a `fields` section that holds the descriptions
-    # common to both the state and normalized_state datasets, plus a
-    # dataset-specific section for fields that only exist in one of the two.
-    dataset_specific_section = (
-        NORMALIZATION_FIELD_KEY
-        if issubclass(entity_cls, NormalizedStateEntity)
-        else STATE_DATASET_ONLY_FIELD_KEY
-    )
+    """Returns a description for the given identity entity class and field to
+    be used in BQ Schemas and documentation.
+
+    Every entity resolves against its own table_id section in the YAML; cluster
+    tables share their fragment equivalents' descriptions via YAML
+    anchors/aliases declared in the descriptions file itself.
+    """
     return resolve_field_description(
         entity_cls,
         field_name,
         yaml_path=ENTITY_DESCRIPTIONS_YAML_PATH,
-        root_field=_STATE_CODE_ROOT_FIELD,
-        sections=(FIELD_KEY, dataset_specific_section),
+        root_field=_TENANT_ROOT_FIELD,
+        sections=(FIELD_KEY,),
     )

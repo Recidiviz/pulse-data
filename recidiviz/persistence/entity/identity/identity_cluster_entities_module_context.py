@@ -24,8 +24,12 @@ forming an `identity_cluster_entities` -> factory ->
 """
 from types import ModuleType
 
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.identity import identity_cluster_entities
+from recidiviz.persistence.entity.identity.entity_documentation_utils import (
+    description_for_field as identity_description_for_field,
+)
 
 
 class IdentityClusterEntitiesModuleContext(EntitiesModuleContext):
@@ -48,6 +52,10 @@ class IdentityClusterEntitiesModuleContext(EntitiesModuleContext):
             identity_cluster_entities.IdentityClusterPhoneNumber.__name__,
             identity_cluster_entities.IdentityClusterEmail.__name__,
         ]
+
+    @classmethod
+    def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
+        return identity_description_for_field(entity_cls, field_name)
 
 
 IDENTITY_CLUSTER_ENTITIES_CONTEXT: EntitiesModuleContext = (

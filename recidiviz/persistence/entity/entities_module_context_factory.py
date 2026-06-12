@@ -31,6 +31,9 @@ from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
 )
+from recidiviz.persistence.entity.identity.entity_documentation_utils import (
+    description_for_field as identity_description_for_field,
+)
 from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
     IDENTITY_CLUSTER_ENTITIES_CONTEXT,
 )
@@ -276,6 +279,10 @@ class _IdentityFragmentEntitiesModuleContext(EntitiesModuleContext):
             identity_fragment_entities.IdentityPhoneNumber.__name__,
             identity_fragment_entities.IdentityEmail.__name__,
         ]
+
+    @classmethod
+    def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
+        return identity_description_for_field(entity_cls, field_name)
 
 
 def entities_module_context_for_module(

@@ -1,0 +1,115 @@
+# Field descriptions for identity entities (both fragment and cluster).
+#
+# Cluster tables share their fragment equivalents' descriptions via YAML
+# anchors (&) and aliases (*). The cluster root (identity_cluster) merges (<<)
+# the identity_attributes fields, since the cluster tree flattens
+# IdentityFragment + IdentityAttributes into a single root. A cluster table
+# that needs to diverge from its fragment equivalent can switch from the alias
+# form (`fields: *anchor`) to the merge form (`fields: { <<: *anchor, ... }`)
+# and add or override fields locally.
+
+identity_external_id:
+  fields: &identity_external_id_fields
+    id_type: >-
+      The type of id provided by the source data system. In a tenant with
+      multiple data systems that emit person identifiers, this distinguishes
+      which system the id originated from.
+
+identity_name:
+  fields: &identity_name_fields
+    given_name: The legal first name of the person.
+    preferred_name: >-
+      The name the person prefers to be called, when different from their
+      given name.
+    surname: The family name (last name) of the person.
+    middle_name: The middle name of the person.
+    name_suffix: >-
+      The generational or honorific suffix attached to the person's name
+      (e.g. Jr, Sr, III).
+
+identity_gender:
+  fields: &identity_gender_fields
+    gender: The person's gender, normalized to the Recidiviz `Gender` enum.
+    gender_raw_text: >-
+      The raw text value from the source data system that was mapped to the
+      `gender` enum.
+
+identity_sex:
+  fields: &identity_sex_fields
+    sex: The person's sex, normalized to the Recidiviz `Sex` enum.
+    sex_raw_text: >-
+      The raw text value from the source data system that was mapped to the
+      `sex` enum.
+
+identity_race:
+  fields: &identity_race_fields
+    race: The person's race, normalized to the Recidiviz `Race` enum.
+    race_raw_text: >-
+      The raw text value from the source data system that was mapped to the
+      `race` enum.
+
+identity_ethnicity:
+  fields: &identity_ethnicity_fields
+    ethnicity: >-
+      The person's ethnicity, normalized to the Recidiviz `Ethnicity` enum.
+    ethnicity_raw_text: >-
+      The raw text value from the source data system that was mapped to the
+      `ethnicity` enum.
+
+identity_phone_number:
+  fields: &identity_phone_number_fields
+    number: A phone number associated with the person.
+
+identity_email:
+  fields: &identity_email_fields
+    address: An email address associated with the person.
+
+identity_attributes:
+  fields: &identity_attributes_fields
+    person_type: >-
+      Whether this set of attributes describes a justice-involved individual
+      (JII) or a staff member, normalized to the Recidiviz `PersonType` enum.
+    person_type_raw_text: >-
+      Companion raw-text field for `person_type`. Always null at runtime;
+      present because the ingest manifest compiler pairs every enum field
+      with a `_raw_text` companion.
+    birthdate: The person's date of birth.
+
+identity_cluster_external_id:
+  fields: *identity_external_id_fields
+
+identity_cluster_name:
+  fields: *identity_name_fields
+
+identity_cluster_gender:
+  fields: *identity_gender_fields
+
+identity_cluster_sex:
+  fields: *identity_sex_fields
+
+identity_cluster_race:
+  fields: *identity_race_fields
+
+identity_cluster_ethnicity:
+  fields: *identity_ethnicity_fields
+
+identity_cluster_phone_number:
+  fields: *identity_phone_number_fields
+
+identity_cluster_email:
+  fields: *identity_email_fields
+
+identity_cluster:
+  fields:
+    <<: *identity_attributes_fields
+    identity_cluster_id: >-
+      SHA-256 of the cluster's sorted external IDs. Used by the Identity
+      Service as the upsert/deduplication key when ingesting clusters across
+      import runs to determine whether this is a cluster it has seen before.
+      Not a stable person identifier: if the cluster gains or loses an
+      external ID between runs the hash changes, so a single logical person
+      may have multiple `identity_cluster_id` values over time.
+    cluster_hash: >-
+      SHA-256 of the cluster's full content (external IDs, flat fields, and
+      child entities). Used by the Identity Service to detect whether a
+      cluster has changed since the last import.
