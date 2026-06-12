@@ -56,7 +56,6 @@ US_TX_NEEDS_TYPE_AGNOSTIC_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaGr
         "types_and_amounts_done",
         "period_type",
         "overdue_flag",
-        "frequency",
         "contact_cadence",
         "contact_types_accepted",
         "supervision_level",

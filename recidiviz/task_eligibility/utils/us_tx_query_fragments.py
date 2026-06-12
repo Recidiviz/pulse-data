@@ -515,9 +515,7 @@ def contact_compliance_builder_type_agnostic(
                     THEN "1 EVERY DAY"
                 ELSE
                     CONCAT("1 EVERY ", frequency, " ", frequency_date_part, "S")
-            END{")" if use_alternative_contact_cadence_reason else ""} AS contact_cadence,
-            frequency,
-            frequency_date_part
+            END{")" if use_alternative_contact_cadence_reason else ""} AS contact_cadence
         FROM contact_count cc
         LEFT JOIN types_and_amounts_due_cte td
             ON cc.supervision_level = td.supervision_level
@@ -549,8 +547,6 @@ def contact_compliance_builder_type_agnostic(
                 THEN TRUE
                 ELSE FALSE
             END AS overdue_flag,
-            frequency,
-            frequency_date_part,
             contact_cadence,
             supervision_level,
             case_type
@@ -599,7 +595,6 @@ def contact_compliance_builder_type_agnostic(
         types_and_amounts_done,
         period_type,
         overdue_flag,
-        frequency,
         contact_cadence,
         contact_types_accepted,
         supervision_level,
@@ -647,16 +642,6 @@ def contact_compliance_builder_type_agnostic(
                 name="overdue_flag",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Flag that indicates whether contact was missed.",
-            ),
-            ReasonsField(
-                name="frequency",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Frequency of contact requirement, paired with frequency_date_part. Backwards compatible for TX.",
-            ),
-            ReasonsField(
-                name="frequency_date_part",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Date part for frequency contact requirement. Backwards compatible for TX.",
             ),
             ReasonsField(
                 name="contact_types_accepted",
