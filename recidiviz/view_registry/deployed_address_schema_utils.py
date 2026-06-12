@@ -17,6 +17,7 @@
 """Defines helpers that give us insight into the schemas of our deployed views and
 tables.
 """
+
 import itertools
 from datetime import datetime
 from functools import cache
@@ -67,6 +68,18 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_tools_d
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_relevant_contact_codes import (
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ar import (
+    US_AR_RESIDENT_DATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ix import (
+    US_IX_RESIDENT_DATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ma import (
+    US_MA_RESIDENT_DATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_tn import (
+    US_TN_RESIDENT_DATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
@@ -278,6 +291,10 @@ def state_specific_deployed_views_without_state_code_columns(
         US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
+        US_AR_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_IX_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_MA_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_TN_RESIDENT_DATA_VIEW_BUILDER.address,
     }
 
     return {

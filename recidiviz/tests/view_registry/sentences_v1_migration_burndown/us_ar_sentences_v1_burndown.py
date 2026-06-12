@@ -17,6 +17,7 @@
 """US_AR exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.views.jii.resident import RESIDENT_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -36,6 +37,13 @@ US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
 ] = {
     "WORKFLOWS_FIRESTORE": {
         RESIDENT_RECORD_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "JII_TABLET": {
+        RESIDENT_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },

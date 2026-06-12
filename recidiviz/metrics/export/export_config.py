@@ -36,7 +36,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.jii.jii_views import JII_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.jii.jii_etl_views import (
+    JII_ETL_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
     JII_TEXTING_VIEWS_TO_EXPORT,
 )
@@ -531,7 +533,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # JII tablet app views
     ExportViewCollectionConfig(
-        view_builders_to_export=JII_VIEW_BUILDERS,
+        view_builders_to_export=JII_ETL_VIEW_BUILDERS,
         output_directory_uri_template=JII_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="JII_TABLET",
         allow_empty=True,
