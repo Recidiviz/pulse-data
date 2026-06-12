@@ -550,10 +550,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Union view for PSI case insights segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2025-12-29)"
     ),
-    BigQueryAddress.from_str("segment_events.all_route_planner_segment_events"): (
-        "Union view for route planner segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
     BigQueryAddress.from_str(
         "segment_events.all_supervisor_homepage_operations_module_segment_events"
     ): (
