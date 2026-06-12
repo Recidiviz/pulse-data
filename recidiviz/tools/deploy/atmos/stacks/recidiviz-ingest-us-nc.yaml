@@ -84,5 +84,10 @@ components:
             permissions:
               - list
               - download
+              # Allow moving processed files into /writeback/processed. On a
+              # GCS-backed folder a move is a copy + delete, so create_dirs lets
+              # the user make the processed/ subfolder and rename performs the move.
+              - create_dirs
+              - rename
         kubernetes_endpoint: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
         kubernetes_ca_certificate: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate

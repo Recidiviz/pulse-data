@@ -209,6 +209,22 @@ resource "google_storage_bucket_iam_member" "sftp-virtual-folder-creator" {
   member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
 }
 
+# Grant full object access (create + delete) to virtual folder buckets when the
+# user can rename/move or delete files. On GCS a rename is implemented as a
+# copy + delete, so the service account needs both create and delete on objects
+# (neither objectViewer nor objectCreator grants delete).
+resource "google_storage_bucket_iam_member" "sftp-virtual-folder-object-user" {
+  for_each = {
+    for folder in var.sftpgo_virtual_folders :
+    folder.name => folder
+    if contains(folder.permissions, "*") || contains(folder.permissions, "delete") || contains(folder.permissions, "rename") || contains(folder.permissions, "rename_files") || contains(folder.permissions, "rename_dirs")
+  }
+
+  bucket = each.value.bucket
+  role   = "roles/storage.objectUser"
+  member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
+}
+
 data "google_container_cluster" "primary" {
   name     = "sftpgo-cluster"
   location = var.zone

@@ -47,6 +47,6 @@ variable "sftpgo_virtual_folders" {
     mount_path  = string
     permissions = list(string)
   }))
-  description = "Virtual folders to mount as additional GCS buckets in the SFTP user space. Permissions is a list of SFTPGo permissions (e.g., ['list', 'download'] for read-only, ['upload', 'overwrite', 'create_dirs'] for write, or ['*'] for all)."
+  description = "Virtual folders to mount as additional GCS buckets in the SFTP user space. Permissions is a list of SFTPGo permissions (e.g., ['list', 'download'] for read-only, ['upload', 'overwrite', 'create_dirs'] for write, or ['*'] for all). Permissions that imply object creation (upload/overwrite) grant the backing service account objectCreator, and permissions that imply deletion (delete/rename, since a GCS move is a copy + delete) grant objectUser."
   default     = []
 }
