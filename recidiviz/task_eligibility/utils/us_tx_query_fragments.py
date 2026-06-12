@@ -43,18 +43,21 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.string_formatting import fix_indent
 
 
-def alternative_contact_cadence_reason() -> str:
+def alternative_contact_cadence_reason(
+    is_every_other_month_column: str = "ca.is_every_other_month",
+) -> str:
     """Returns a SQL CASE expression that builds an alternative_contact_cadence_reason
     string based on the is_every_other_month column (ODD/EVEN).
 
-    Expects `ca.is_every_other_month`, `cadence.quantity`, and
-    `cadence.frequency_date_part` to be available in the query context.
+    Expects the column named by `is_every_other_month_column`, plus
+    `cadence.quantity` and `cadence.frequency_date_part`, to be available in the
+    query context.
     """
-    return """
+    return f"""
     CASE
-        WHEN ca.is_every_other_month = 'ODD'
+        WHEN {is_every_other_month_column} = 'ODD'
             THEN CONCAT(cadence.quantity, ' EVERY ODD ', cadence.frequency_date_part)
-        WHEN ca.is_every_other_month = 'EVEN'
+        WHEN {is_every_other_month_column} = 'EVEN'
             THEN CONCAT(cadence.quantity, ' EVERY EVEN ', cadence.frequency_date_part)
         ELSE NULL
     END AS alternative_contact_cadence_reason"""
