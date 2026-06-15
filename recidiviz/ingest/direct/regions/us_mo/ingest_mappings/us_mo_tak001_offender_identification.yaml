@@ -17,6 +17,8 @@ input_columns:
   EK_SEX: STRING
   DOC_ID_DOB: STRING
   DOB: STRING
+  prioritized_email_address: STRING
+  PHONE_NO: STRING
 unused_columns:
   - EK_CYC # Unused - Cycle number
   - EK_SID # Unused - SID Number - See #4632 for more context why we don't ingest this
@@ -70,3 +72,5 @@ output:
           StateEthnicity.HISPANIC: H
           StateEthnicity.NOT_HISPANIC: N
           StateEthnicity.EXTERNAL_UNKNOWN: U
+    current_email_address: prioritized_email_address
+    current_phone_number: PHONE_NO
