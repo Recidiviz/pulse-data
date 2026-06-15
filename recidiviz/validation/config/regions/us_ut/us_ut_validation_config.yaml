@@ -48,7 +48,7 @@ num_allowed_rows_overrides:
       This is expected - there is an option to list "none" as a supervising agent, and
       we typically see 30-40 of those cases at a time.
   - validation_name: invalid_reason_json_format_tes_criteria_spans
-    hard_num_allowed_rows_override: 7350000
+    hard_num_allowed_rows_override: 7360000
     override_reason: |-
       TODO(https://linear.app/recidiviz/issue/SPE-2635): HAS_AT_LEAST_1_NEGATIVE_DRUG_TEST_PAST_YEAR and
       HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of
@@ -60,6 +60,13 @@ num_allowed_rows_overrides:
       This is expected - there is a Release and Reentry "user" assigned to supervise 
       some clients from a UDC Administration location that does not appear as a supervision
       location in location metadata.
+  - validation_name: officer_monthly_usage_report_actions_without_logins
+    hard_num_allowed_rows_override: 1
+    override_reason: |-
+      TODO(https://linear.app/recidiviz/issue/OBT-30314): There is some weird date logic 
+      issue for logins/actions on the border of a month change, and so the login
+      gets attributed to one month and the action is attributed to the other month.
+      Will be resolved with the Polaris segment ad blocker work around
   - validation_name: missing_client_record_rows_null_full_name
     hard_num_allowed_rows_override: 10
     override_reason: |-
