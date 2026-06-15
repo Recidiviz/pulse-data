@@ -76,76 +76,79 @@ IS_IN_ORIENTATION_UNIT_CLAUSE = """((facility = 'NDSP' AND REGEXP_CONTAINS(housi
         OR (facility = 'DWCRC' AND REGEXP_CONTAINS(housing_unit, r'HZN-E')))"""
 
 
-def initial_review_dates_query() -> str:
+def current_booking_id_query() -> str:
     """
-    Return a SQL query that retrieves initial review dates for North Dakota sentences.
-    On this date, DOCR and Parole Board staff set Parole Review Dates.
-    This generally only occurs if a sentence is greater than 3 years.
-    This is not the date the Parole Board hears the case.
+    Returns a SQL query that retrieves the current OFFENDER_BOOK_ID for each currently-
+    incarcerated ND person, derived from the active incarceration period's external ID.
+
+    ND incarceration period external IDs have the format {OFFENDER_BOOK_ID}-{SEQ}.
+    For people with multiple open periods (rare data quality issue), returns the one
+    with the most recent admission date.
     """
     return """
-        SELECT 
-            peid.state_code,
-            peid.person_id,
-            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) AS initial_review_date,
-        FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
-            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
-            AND peid.id_type = 'US_ND_ELITE_BOOKING'
-            AND peid.state_code = 'US_ND'
-            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
-            AND ms.SCREEN_REASON_CODE = 'INITIAL'
-            AND (ms.TEMP_UNIT_CODE IS NULL OR TEMP_UNIT_CODE = 'IRA')
-        QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY person_id
-            ORDER BY
-                -- Prefer future dates where they exist [1 (TRUE) > 0 (FALSE)]
-                (initial_review_date > CURRENT_DATE) DESC,
-                -- Among multiple future dates, pick the earliest
-                IF(initial_review_date > CURRENT_DATE, initial_review_date, NULL) ASC NULLS LAST,
-                -- Among multiple past dates, pick the latest
-                initial_review_date DESC
-        ) = 1
+        SELECT
+            sip.state_code,
+            sip.person_id,
+            SPLIT(sip.external_id, '-')[OFFSET(0)] AS CURR_OFFENDER_BOOK_ID
+        FROM `{project_id}.{normalized_state_dataset}.state_incarceration_period` sip
+        WHERE sip.state_code = 'US_ND'
+          AND sip.release_date IS NULL
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY sip.person_id ORDER BY sip.admission_date DESC) = 1
     """
 
 
 def parole_review_dates_query() -> str:
     """
-    Returns a SQL query that retrieves the parole review dates for North Dakota.
-    """
-    # TODO(#31967): ingest parole review dates
-    return """
-        SELECT 
-            peid.state_code,
-            peid.person_id,
-            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) AS parole_review_date,
-        FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
-            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
-            AND peid.id_type = 'US_ND_ELITE_BOOKING'
-            AND peid.state_code = 'US_ND'
-            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
-            AND ms.SCREEN_REASON_CODE = 'MISC'
-"""
+    Retrieve the parole review dates for North Dakota.
 
+    SCREEN_REASON_CODE values in elite_offender_medical_screenings_6i:
+      - MISC:     Standard scheduled parole review.
+      - PERSONAL: Personal review (e.g. victim input). Treated the same as MISC.
+      - VIOLATOR: Revocation hearing. The MEDICAL_DATE is the hearing date, not a
+                  future parole review. We always surface NULL for these so the tool
+                  does not display a misleading date.
 
-def latest_import_date_for_elite_dates_query() -> str:
-    """
-    Returns a SQL query that retrieves the most recent file import datetime for Elite
-    source tables that are used to populate date fields in the Opportunities app.
+    VIOLATOR records are kept in the candidate set (not filtered out in WHERE) so
+    that they compete in QUALIFY deduplication on their raw MEDICAL_DATE. The SELECT
+    alias nulls the output afterward. This is why the ORDER BY must use raw
+    SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) expressions rather than the alias.
+
+    We join elite_offenderbookingstable to resolve booking IDs to person IDs using
+    ACTIVE_FLAG = 'Y'. A person with multiple incarcerations (e.g. revocations) may
+    have their current parole review scheduled under an older booking that is still
+    flagged active in the system, so we cannot restrict to only the current IP's booking.
+
+    # TODO(#31967): Ingest parole review dates
     """
     return """
-        SELECT CAST(MAX(update_datetime) AS DATE) AS last_updated_date
-            FROM (
-                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
-                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offendersentenceaggs_all`
-                UNION ALL
-                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
-                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offendersentences_all`
-                UNION ALL
-                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
-                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offender_medical_screenings_6i_all`
-            )
+    SELECT
+        peid.state_code,
+        peid.person_id,
+        ms.SCREEN_REASON_CODE,
+        -- VIOLATOR records are revocation hearings, not scheduled parole reviews. We keep
+        -- them in the filter so they win deduplication over stale pre-revocation MISC dates,
+        -- but we surface NULL so the tool does not display a misleading future date.
+        IF(ms.SCREEN_REASON_CODE = 'VIOLATOR', CAST(NULL AS DATE), SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)) AS parole_review_date,
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
+    INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offenderbookingstable_latest` ctbk
+        ON REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '') = ctbk.OFFENDER_BOOK_ID
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+        ON ctbk.OFFENDER_BOOK_ID = peid.external_id
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    WHERE
+        ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+        AND ms.SCREEN_REASON_CODE IN ('MISC', 'PERSONAL', 'VIOLATOR')
+        AND ctbk.ACTIVE_FLAG = 'Y'
+    -- Use the raw MEDICAL_DATE for ordering so VIOLATOR records compete on equal footing
+    -- with MISC/PERSONAL even though parole_review_date is nulled in the output above.
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY peid.person_id
+        ORDER BY
+            (SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE) DESC,
+            IF(SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE, SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE), NULL) DESC NULLS LAST,
+            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) DESC
+    ) = 1
     """
 
 
