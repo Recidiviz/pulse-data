@@ -20,18 +20,14 @@ from typing import Any, TypedDict
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-import requests
 
+from recidiviz.intercom.client import IntercomAPIClient
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.roster_ticket_service import (
-    IntercomAPIClient,
     RosterChangeType,
     RosterTicketService,
 )
-from recidiviz.outliers.types import (
-    IntercomTicketResponse,
-    RosterChangeRequestResponseSchema,
-)
+from recidiviz.outliers.types import RosterChangeRequestResponseSchema
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerSupervisor,
@@ -121,7 +117,7 @@ def intercom_api_client_fixture() -> IntercomAPIClient:  # type: ignore
     """
     # Patch get_secret to avoid real secret lookups
     with patch(
-        "recidiviz.outliers.roster_ticket_service.get_secret",
+        "recidiviz.intercom.client.get_secret",
         return_value="mock_intercom_token",
     ):
         # Instantiate the client
@@ -158,86 +154,6 @@ def ticket_service_fixture(
     return RosterTicketService(
         querier=mock_querier, intercom_api_client=intercom_api_client
     )
-
-
-@pytest.mark.parametrize(
-    "title,description,email",
-    [
-        ("Test Title A", "Test Description A", "testA@example.com"),
-        ("Another Title", "Another Description", "another@example.com"),
-    ],
-    ids=["basic_ticket", "another_ticket"],
-)
-def test_create_ticket(
-    intercom_api_client: IntercomAPIClient, title: str, description: str, email: str
-) -> None:
-    """
-    Test IntercomAPIClient.create_ticket with parameterization.
-    Ensures the correct payload is sent and response is parsed properly.
-    """
-
-    result_ticket = intercom_api_client.create_ticket(title, description, email)
-
-    # Assert
-    assert result_ticket == IntercomTicketResponse(id="1")
-
-    # Verify the POST call
-    intercom_api_client._session.post.assert_called_once()  # type: ignore # pylint: disable=protected-access
-    called_args, _ = intercom_api_client._session.post.call_args  # type: ignore # pylint: disable=protected-access
-    assert "/tickets" in called_args[0], "Should POST to /tickets endpoint"
-
-
-@pytest.mark.parametrize(
-    "status_code,error_message",
-    [
-        (400, "Bad Request"),
-        (503, "Service Unavailable"),
-        # test at your own discretion, the first should suffice
-        # (401, "Unauthorized"),
-        # (403, "Forbidden"),
-        # (404, "Not Found"),
-        # (500, "Internal Server Error"),
-    ],
-    ids=[
-        "bad_request",
-        "unauthorized",
-        # "forbidden",
-        # "not_found",
-        # "server_error",
-        # "service_unavailable",
-    ],
-)
-def test_create_ticket_fails(
-    intercom_api_client: IntercomAPIClient, status_code: int, error_message: str
-) -> None:
-    """
-    Test IntercomAPIClient.create_ticket error handling.
-    Ensures that it properly raises HTTP status errors.
-
-    Args:
-        intercom_api_client: The client fixture
-        status_code: HTTP status code to test
-        error_message: Expected error message
-    """
-    title = "Test Title A"
-    description = "Test Description A"
-    email = "testA@example.com"
-
-    # Mock the error response
-    mock_response = Mock()
-    mock_response.status_code = status_code
-    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-        error_message, request=Mock(), response=mock_response
-    )
-    intercom_api_client._session.post.side_effect = None  # type: ignore # pylint: disable=protected-access
-    intercom_api_client._session.post.return_value = mock_response  # type: ignore # pylint: disable=protected-access
-
-    # Test that it raises the HTTP error
-    with pytest.raises(requests.exceptions.HTTPError, match=error_message):
-        intercom_api_client.create_ticket(title, description, email)
-
-    # Verify the POST call tried three times
-    assert intercom_api_client._session.post.call_count == 3  # type: ignore # pylint: disable=protected-access
 
 
 @pytest.mark.parametrize(

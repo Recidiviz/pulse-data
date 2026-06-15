@@ -20,14 +20,11 @@ from functools import cached_property
 from typing import Callable, Iterable, List, TypeVar, Union
 
 import attrs
-import requests
 from more_itertools import flatten
-from tenacity import retry, stop_after_attempt, wait_exponential
 
+from recidiviz.intercom.client import IntercomAPIClient
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
-    IntercomTicket,
-    IntercomTicketResponse,
     OutliersProductConfiguration,
     PersonName,
     RosterChangeRequestResponseSchema,
@@ -37,51 +34,9 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerSupervisor,
 )
-from recidiviz.utils.secrets import get_secret
 
 REPORT_INCORRECT_ROSTER_TICKET_TYPE = 1
 T = TypeVar("T")
-
-
-@attrs.define
-class IntercomAPIClient:
-    """Handles Intercom API interactions for roster ticketing using requests."""
-
-    _AUTH_TOKEN = get_secret("intercom_rir_auth_token")
-    _BASE_URL = "https://api.intercom.io"
-
-    @cached_property
-    def _session(self) -> requests.Session:
-        session = requests.Session()
-        session.headers.update(
-            {
-                "Authorization": f"Bearer {self._AUTH_TOKEN}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Intercom-Version": "2.11",
-            }
-        )
-        return session
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        reraise=True,
-    )
-    def create_ticket(
-        self, title: str, description: str, requester_email: str
-    ) -> IntercomTicketResponse:
-        url = f"{self._BASE_URL}/tickets"
-        ticket_payload = IntercomTicket(
-            REPORT_INCORRECT_ROSTER_TICKET_TYPE,
-            requester_email,
-            title,
-            description,
-        ).to_dict()
-
-        response = self._session.post(url, json=ticket_payload, timeout=10.0)
-        response.raise_for_status()
-        return IntercomTicketResponse(id=response.json().get("id", ""))
 
 
 @attrs.define(kw_only=True)
@@ -215,7 +170,10 @@ class RosterTicketService:
         action = "Addition" if change_type == RosterChangeType.ADD else "Removal"
         title = f"{test_tag}Team {action} Request Submitted"
         response = self.intercom_api_client.create_ticket(
-            title, test_disclaimer + description, email
+            REPORT_INCORRECT_ROSTER_TICKET_TYPE,
+            title,
+            test_disclaimer + description,
+            email,
         )
 
         return RosterChangeRequestResponseSchema(email=email, id=response.id)

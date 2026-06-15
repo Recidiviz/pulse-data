@@ -822,45 +822,6 @@ class ActionStrategySurfacedEvent:
         return cattrs.unstructure(self)
 
 
-@attr.frozen
-class IntercomTicket:
-    """Represents an Intercom ticket request schema."""
-
-    # The ID of the type of ticket you want to create
-    ticket_type_id: int
-    # The email you have defined for the contact who is being added as a participant. If a contact with this email does not exist, one will be created.
-    email: str
-    # Title of the ticket
-    default_title: str
-    # Description for the ticket
-    default_description: str
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts an object into the intercom format"""
-        return {
-            "ticket_type_id": self.ticket_type_id,
-            "contacts": [{"email": self.email}],
-            "ticket_attributes": {
-                "_default_title_": self.default_title,
-                "_default_description_": self.default_description,
-            },
-        }
-
-    def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
-
-
-@attr.frozen
-class IntercomTicketResponse:
-    """Represents an Intercom ticket response schema."""
-
-    # The id for the created ticket
-    id: str
-
-    def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
-
-
 class RosterChangeType(str, Enum):
     ADD = "ADD"
     REMOVE = "REMOVE"

@@ -661,6 +661,7 @@ def main() -> int:
                 "recidiviz.ingest.direct.regions.us_mi.constants",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
                 "recidiviz.ingest.views.dataset_config",
+                "recidiviz.intercom",
                 "recidiviz.monitoring",
                 "recidiviz.observations",
                 "recidiviz.outliers",
