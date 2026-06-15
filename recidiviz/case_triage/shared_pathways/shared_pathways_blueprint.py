@@ -48,7 +48,7 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata as PublicPathwaysMetricMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.utils.environment import in_offline_mode
+from recidiviz.utils.environment import in_gcp_production, in_offline_mode
 
 FILTER_STRING_PATTERN = r"filters\[(\w+)\]"
 
@@ -85,6 +85,7 @@ class SharedPathwaysBlueprint:
 
     def __init__(
         self,
+        *,
         blueprint_name: str,
         auth_handler_name: str,
         on_successful_authorization: Callable,
@@ -94,6 +95,7 @@ class SharedPathwaysBlueprint:
         enabled_metrics: list[MetricQueryBuilder],
         metric_metadata: type[PathwaysMetricMetadata]
         | type[PublicPathwaysMetricMetadata],
+        skip_authentication_in_production: bool,
     ) -> None:
         self.schema_type = schema_type
         self.api = Blueprint(blueprint_name, __name__)
@@ -111,8 +113,14 @@ class SharedPathwaysBlueprint:
         @self.api.before_request
         def validate_authentication() -> None:
             # OPTIONS requests do not require authentication
-            if request.method != "OPTIONS":
-                handle_authorization()
+            if request.method == "OPTIONS":
+                return
+            # Public Pathways is a public-facing product with no auth wall in
+            # production. Staging keeps authentication enabled so the product can
+            # be tested behind auth before the wall comes down in the frontend.
+            if skip_authentication_in_production and in_gcp_production():
+                return
+            handle_authorization()
 
         @self.api.before_request
         def validate_cors() -> Response | None:

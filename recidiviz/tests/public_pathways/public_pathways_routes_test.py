@@ -572,3 +572,33 @@ class TestAuthorizationIntegration(PublicPathwaysBlueprintTestCase):
         )
 
         self.mock_authorization_handler.assert_not_called()
+
+    @patch(
+        "recidiviz.case_triage.shared_pathways.shared_pathways_blueprint.in_gcp_production",
+        return_value=True,
+    )
+    def test_production_skips_authorization(
+        self, _mock_in_production: MagicMock
+    ) -> None:
+        # Public Pathways is public in production, so the auth wall is dropped.
+        self.test_client.get(
+            "/public_pathways/US_NY/LibertyToPrisonTransitionsCount",
+            query_string={"group": Dimension.RACE.value},
+        )
+
+        self.mock_authorization_handler.assert_not_called()
+
+    @patch(
+        "recidiviz.case_triage.shared_pathways.shared_pathways_blueprint.in_gcp_production",
+        return_value=False,
+    )
+    def test_staging_requires_authorization(
+        self, _mock_in_production: MagicMock
+    ) -> None:
+        # Outside of production (e.g. staging), authentication is still enforced.
+        self.test_client.get(
+            "/public_pathways/US_NY/LibertyToPrisonTransitionsCount",
+            query_string={"group": Dimension.RACE.value},
+        )
+
+        self.mock_authorization_handler.assert_called()

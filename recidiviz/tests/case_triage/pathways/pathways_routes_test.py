@@ -655,3 +655,18 @@ class TestAuthorizationIntegration(PathwaysBlueprintTestCase):
         self.test_client.options("/pathways/US_TN/LibertyToPrisonTransitionsCount")
 
         self.mock_authorization_handler.assert_not_called()
+
+    @patch(
+        "recidiviz.case_triage.shared_pathways.shared_pathways_blueprint.in_gcp_production",
+        return_value=True,
+    )
+    def test_production_still_requires_authorization(
+        self, _mock_in_production: MagicMock
+    ) -> None:
+        # Unlike Public Pathways, staff Pathways keeps the auth wall in production.
+        self.test_client.get(
+            "/pathways/US_TN/LibertyToPrisonTransitionsCount",
+            query_string={"group": Dimension.RACE.value},
+        )
+
+        self.mock_authorization_handler.assert_called()

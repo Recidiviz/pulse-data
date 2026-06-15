@@ -52,4 +52,5 @@ def create_public_pathways_api_blueprint() -> Blueprint:
         enabled_states=get_public_pathways_enabled_states_for_cloud_sql(),
         enabled_metrics=ALL_PUBLIC_PATHWAYS_METRICS,
         metric_metadata=MetricMetadata,
+        skip_authentication_in_production=True,
     ).api
