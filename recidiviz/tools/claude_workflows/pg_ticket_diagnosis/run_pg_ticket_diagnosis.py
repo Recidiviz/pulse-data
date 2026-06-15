@@ -106,7 +106,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_AGENT_ITERATIONS = 40
-MODEL = "claude-opus-4-20250514"
+MODEL = "claude-opus-4-8"
 SCRUB_MODEL = "claude-haiku-4-5-20251001"
 AGENT_TIMEZONE = ZoneInfo("US/Eastern")
 
@@ -936,13 +936,17 @@ def main() -> None:
         scrubbed = truncate_string_if_necessary(scrubbed, max_length=diagnosis_budget)
         _post_marked_comment(issue_repo, issue_number, scrubbed + logs_footer)
         logger.info("Posted diagnosis for %s#%d", issue_repo, issue_number)
-    except Exception:
+    except Exception as e:
         logger.exception("Failed to process %s#%d", issue_repo, issue_number)
+        # Surface the error type and message so a failure isn't a contentless
+        # "it failed." Scrub any external IDs seen this run; person_ids are not
+        # PII. Most failures here are infra (model/API/auth errors) with no PII.
+        detail = ctx.scrub_known_external_ids(f"{type(e).__name__}: {e}")
         try:
             _post_marked_comment(
                 issue_repo,
                 issue_number,
-                "⚠️ Automated diagnosis failed." + logs_footer,
+                f"⚠️ Automated diagnosis failed.\n\n**Detail:** {detail}" + logs_footer,
             )
         except Exception:
             logger.exception(
