@@ -7,12 +7,12 @@
 # R&D-owned code
 
 # Polaris-owned code
-recidiviz/persistence/**/case_triage/** @Recidiviz/polaris
-recidiviz/persistence/**/insights/** @Recidiviz/polaris-insights
+recidiviz/persistence/**/case_triage/** @Recidiviz/polaris-core
+recidiviz/persistence/**/insights/** @Recidiviz/polaris-core
 # The JC database should never be updated anymore
-recidiviz/persistence/**/justice_counts/** @Recidiviz/polaris
-recidiviz/persistence/**/pathways/** @Recidiviz/polaris
-recidiviz/persistence/**/workflows/** @Recidiviz/polaris-workflows
+recidiviz/persistence/**/justice_counts/** @Recidiviz/polaris-core
+recidiviz/persistence/**/pathways/** @Recidiviz/polaris-core
+recidiviz/persistence/**/workflows/** @Recidiviz/polaris-core
 # Public Pathways views should be reviewed by Jen or George to ensure non-pii columns
 recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_columns.py @jovergaag @georgemandis
 
