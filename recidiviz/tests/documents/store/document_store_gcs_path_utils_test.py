@@ -34,11 +34,13 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
         self.run_id = "manual__2026-05-12T17:21:11.122491+00:00"
 
     def test_gcs_path_for_document(self) -> None:
-        path = gcs_path_for_document(self.project_id, self.state_code, "abc123")
+        path = gcs_path_for_document(
+            self.project_id, self.state_code, "case_notes", "abc123"
+        )
         self.assertEqual(
             path.bucket_name, "recidiviz-testing-us-xx-document-blob-storage"
         )
-        self.assertEqual(path.blob_name, "abc123.txt")
+        self.assertEqual(path.blob_name, "case_notes/abc123.txt")
 
     def test_gcs_path_for_task_output(self) -> None:
         path = gcs_path_for_task_output(

@@ -17,7 +17,6 @@
 """Utility functions for document store GCS path construction."""
 
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
     make_directory_path_gcsfs_safe,
@@ -38,12 +37,18 @@ def temp_document_store_output_bucket_name(
 
 
 def gcs_path_for_document(
-    project_id: str, state_code: StateCode, document_contents_id: str
+    project_id: str,
+    state_code: StateCode,
+    collection_name: str,
+    document_contents_id: str,
 ) -> GcsfsFilePath:
-    """Returns the GCS path where a document's contents are stored."""
+    """Returns the GCS path where a document's contents are stored. Documents
+    are namespaced by collection so that the same document text uploaded by
+    different collections is stored as a distinct object per collection."""
     return GcsfsFilePath.from_directory_and_file_name(
-        dir_path=GcsfsBucketPath(
-            document_blob_storage_bucket_name(project_id, state_code)
+        dir_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
+            bucket_name=document_blob_storage_bucket_name(project_id, state_code),
+            blob_name=collection_name,
         ),
         file_name=f"{document_contents_id}.txt",
     )

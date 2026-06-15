@@ -136,7 +136,7 @@ class GcsDocumentUploader:
             timeout_seconds=batch_timeout_seconds,
         )
 
-        self._write_status_csv(results, batch_index)
+        self._write_status_csv(results, batch_index, upload_batch.collection_name)
 
         failed_uploads = [r for r in results if r.error_message]
         logging.info(
@@ -228,6 +228,7 @@ class GcsDocumentUploader:
             path = gcs_path_for_document(
                 self.project_id,
                 self.state_code,
+                collection_name,
                 document_contents_row.document_contents_id,
             )
             self.fs.upload_from_string(
@@ -254,6 +255,7 @@ class GcsDocumentUploader:
         self,
         results: list[DocumentUploadResult],
         batch_index: int,
+        collection_name: str,
     ) -> None:
         """Writes a CSV file to GCS containing upload status for a batch of documents.
         CSV file matches `document_upload_status` table schema."""
@@ -263,6 +265,7 @@ class GcsDocumentUploader:
             writer.writerow(
                 DocumentUploadStatusTable.to_csv_row(
                     document_contents_id=result.document_contents_id,
+                    collection_name=collection_name,
                     run_id=self.run_id,
                     upload_datetime=self.upload_datetime,
                     status=result.status,

@@ -34,6 +34,7 @@ from recidiviz.documents.store.document_store_columns import (
     ROW_CREATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_upload_status_table import (
+    COLLECTION_NAME,
     DOCUMENT_UPLOAD_SUCCESS,
     DocumentUploadStatusTable,
 )
@@ -55,13 +56,14 @@ class DocumentMetadataUpdatesQueryBuilder:
 
     def build_new_documents_query(
         self,
+        collection_name: str,
         temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
         target_batch_bytes: int,
     ) -> str:
         """Builds a query that selects distinct (document_contents_id, document_text)
         pairs from the temp metadata diff table that have not already been
-        successfully uploaded, and assigns each a batch number based on
-        cumulative byte size.
+        successfully uploaded for |collection_name|, and assigns each a batch
+        number based on cumulative byte size.
 
         Batch boundaries are determined by the cumulative byte size of all
         *preceding* rows, so a batch's actual total can exceed |target_batch_bytes| by
@@ -92,6 +94,7 @@ WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
     SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
     FROM {self.upload_status_table_address.format_address_for_query()}
     WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
+      AND {COLLECTION_NAME} = '{collection_name}'
 )"""
 
     def build_successful_uploads_metadata_insert_query(
@@ -104,7 +107,8 @@ WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
         """Builds a DML INSERT INTO query that inserts rows from the temp
         metadata updates table into the collection metadata table. Includes rows
         where document_contents_id is NULL (deleted documents) and rows whose
-        document_contents_id has a SUCCESS entry in the upload status table."""
+        document_contents_id has a SUCCESS entry in the upload status table for
+        this collection."""
         temp_metadata_columns_select = [
             col.name
             for col in config.build_bq_metadata_schema()
@@ -122,4 +126,5 @@ WHERE temp.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NULL
         SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
         FROM {self.upload_status_table_address.format_address_for_query()}
         WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
+          AND {COLLECTION_NAME} = '{config.name}'
     )"""

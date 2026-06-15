@@ -34,6 +34,7 @@ DOCUMENT_UPLOAD_SUCCESS = "SUCCESS"
 DOCUMENT_UPLOAD_FAILURE = "FAILURE"
 
 DOCUMENT_CONTENTS_ID = "document_contents_id"
+COLLECTION_NAME = "collection_name"
 RUN_ID = "run_id"
 UPLOAD_DATETIME = "upload_datetime"
 STATUS = "status"
@@ -56,6 +57,12 @@ class DocumentUploadStatusTable:
                 field_type=SqlTypeNames.STRING.value,
                 mode="REQUIRED",
                 description="SHA256 hash of state_code | document_text",
+            ),
+            SchemaField(
+                name=COLLECTION_NAME,
+                field_type=SqlTypeNames.STRING.value,
+                mode="REQUIRED",
+                description="Name of the document collection this upload was attempted for",
             ),
             SchemaField(
                 name=RUN_ID,
@@ -107,14 +114,16 @@ class DocumentUploadStatusTable:
     @staticmethod
     def to_csv_row(
         document_contents_id: str,
+        collection_name: str,
         run_id: str,
         upload_datetime: datetime,
         status: str,
         document_length_bytes: int,
         error_message: str | None,
-    ) -> tuple[str, str, str, str, int, str | None]:
+    ) -> tuple[str, str, str, str, str, int, str | None]:
         return (
             document_contents_id,
+            collection_name,
             run_id,
             upload_datetime.isoformat(),
             status,

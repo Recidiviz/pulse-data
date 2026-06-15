@@ -144,6 +144,7 @@ class NewDocumentDiscoverer:
         new_documents_query = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id, state_code=config.state_code
         ).build_new_documents_query(
+            collection_name=config.name,
             temp_document_metadata_updates_address=temp_metadata_address,
             target_batch_bytes=self.target_upload_batch_bytes,
         )

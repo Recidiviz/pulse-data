@@ -38,8 +38,12 @@ from recidiviz.documents.store.document_store_gcs_path_utils import (
 )
 from recidiviz.documents.store.document_store_types import DocumentUploadBatch
 from recidiviz.documents.store.document_upload_status_table import (
+    COLLECTION_NAME,
+    DOCUMENT_CONTENTS_ID,
     DOCUMENT_UPLOAD_FAILURE,
     DOCUMENT_UPLOAD_SUCCESS,
+    STATUS,
+    DocumentUploadStatusTable,
 )
 from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
 
@@ -120,7 +124,11 @@ class TestGcsDocumentUploader(unittest.TestCase):
         uploaded_paths = {c.kwargs["path"].blob_name for c in upload_calls}
         self.assertEqual(
             uploaded_paths,
-            {"doc_a.txt", "doc_b.txt", "doc_c.txt"},
+            {
+                "test_collection/doc_a.txt",
+                "test_collection/doc_b.txt",
+                "test_collection/doc_c.txt",
+            },
         )
 
         csv_calls = [
@@ -138,14 +146,26 @@ class TestGcsDocumentUploader(unittest.TestCase):
         ]
         self.assertEqual(csv_paths, expected_paths)
 
-        statuses: dict[str, str] = {}
+        statuses: dict[str, tuple[str, str]] = {}
         for csv_call in csv_calls:
-            reader = csv.reader(io.StringIO(csv_call.kwargs["contents"]))
-            rows = list(reader)
-            statuses.update({row[0]: row[3] for row in rows})
-        self.assertEqual(statuses["doc_a"], DOCUMENT_UPLOAD_SUCCESS)
-        self.assertEqual(statuses["doc_b"], DOCUMENT_UPLOAD_SUCCESS)
-        self.assertEqual(statuses["doc_c"], DOCUMENT_UPLOAD_SUCCESS)
+            reader = csv.DictReader(
+                io.StringIO(csv_call.kwargs["contents"]),
+                fieldnames=DocumentUploadStatusTable.column_names(),
+            )
+            for row in reader:
+                statuses[row[DOCUMENT_CONTENTS_ID]] = (
+                    row[COLLECTION_NAME],
+                    row[STATUS],
+                )
+        self.assertEqual(
+            statuses["doc_a"], ("test_collection", DOCUMENT_UPLOAD_SUCCESS)
+        )
+        self.assertEqual(
+            statuses["doc_b"], ("test_collection", DOCUMENT_UPLOAD_SUCCESS)
+        )
+        self.assertEqual(
+            statuses["doc_c"], ("test_collection", DOCUMENT_UPLOAD_SUCCESS)
+        )
 
     def test_document_upload_failure(self) -> None:
         query_job = MagicMock()
@@ -161,7 +181,10 @@ class TestGcsDocumentUploader(unittest.TestCase):
             contents: str,  # pylint: disable=unused-argument
             content_type: str,
         ) -> None:
-            if content_type == TEXT_CONTENT_TYPE and path.blob_name == "doc_fail.txt":
+            if (
+                content_type == TEXT_CONTENT_TYPE
+                and path.blob_name == "test_collection/doc_fail.txt"
+            ):
                 raise RuntimeError("gcp upload error")
 
         self.fs.upload_from_string.side_effect = upload_side_effect
@@ -183,7 +206,11 @@ class TestGcsDocumentUploader(unittest.TestCase):
         uploaded_paths = {c.kwargs["path"].blob_name for c in upload_calls}
         self.assertEqual(
             uploaded_paths,
-            {"doc_ok_1.txt", "doc_fail.txt", "doc_ok_2.txt"},
+            {
+                "test_collection/doc_ok_1.txt",
+                "test_collection/doc_fail.txt",
+                "test_collection/doc_ok_2.txt",
+            },
         )
 
         csv_calls = [
@@ -193,9 +220,11 @@ class TestGcsDocumentUploader(unittest.TestCase):
         ]
         self.assertEqual(len(csv_calls), 1)
         csv_content = csv_calls[0].kwargs["contents"]
-        reader = csv.reader(io.StringIO(csv_content))
-        rows = list(reader)
-        statuses = {row[0]: row[3] for row in rows}
+        reader = csv.DictReader(
+            io.StringIO(csv_content),
+            fieldnames=DocumentUploadStatusTable.column_names(),
+        )
+        statuses = {row[DOCUMENT_CONTENTS_ID]: row[STATUS] for row in reader}
         self.assertEqual(statuses["doc_ok_1"], DOCUMENT_UPLOAD_SUCCESS)
         self.assertEqual(statuses["doc_ok_2"], DOCUMENT_UPLOAD_SUCCESS)
         self.assertEqual(statuses["doc_fail"], DOCUMENT_UPLOAD_FAILURE)
@@ -234,7 +263,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             if c.kwargs.get("content_type") == TEXT_CONTENT_TYPE
         ]
         uploaded_paths = {c.kwargs["path"].blob_name for c in upload_calls}
-        self.assertEqual(uploaded_paths, {"doc_a.txt"})
+        self.assertEqual(uploaded_paths, {"ok_collection/doc_a.txt"})
 
         csv_calls = [
             c
@@ -300,7 +329,10 @@ class TestGcsDocumentUploader(unittest.TestCase):
             contents: str,  # pylint: disable=unused-argument
             content_type: str,
         ) -> None:
-            if content_type == TEXT_CONTENT_TYPE and path.blob_name == "doc_slow.txt":
+            if (
+                content_type == TEXT_CONTENT_TYPE
+                and path.blob_name == "test_collection/doc_slow.txt"
+            ):
                 # Block long enough to exceed the 0.1s batch timeout, but
                 # not so long that the test is slow.
                 hang_event.wait(timeout=2)
@@ -324,8 +356,10 @@ class TestGcsDocumentUploader(unittest.TestCase):
             if c.kwargs.get("content_type") == CSV_CONTENT_TYPE
         ]
         self.assertEqual(len(csv_calls), 1)
-        reader = csv.reader(io.StringIO(csv_calls[0].kwargs["contents"]))
-        rows = list(reader)
-        statuses = {row[0]: row[3] for row in rows}
+        reader = csv.DictReader(
+            io.StringIO(csv_calls[0].kwargs["contents"]),
+            fieldnames=DocumentUploadStatusTable.column_names(),
+        )
+        statuses = {row[DOCUMENT_CONTENTS_ID]: row[STATUS] for row in reader}
         self.assertEqual(statuses["doc_fast"], DOCUMENT_UPLOAD_SUCCESS)
         self.assertEqual(statuses["doc_slow"], DOCUMENT_UPLOAD_FAILURE)

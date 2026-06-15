@@ -105,6 +105,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self._load_temp_metadata_and_upload_status("new_documents")
 
         query = self.query_builder.build_new_documents_query(
+            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
             target_batch_bytes=20,
         )
@@ -132,6 +133,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self._load_temp_metadata_and_upload_status("new_documents_batching")
 
         query = self.query_builder.build_new_documents_query(
+            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
             target_batch_bytes=20,
         )
@@ -151,6 +153,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self._create_empty_temp_metadata_and_upload_status()
 
         query = self.query_builder.build_new_documents_query(
+            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
             target_batch_bytes=1_000_000_000,
         )
