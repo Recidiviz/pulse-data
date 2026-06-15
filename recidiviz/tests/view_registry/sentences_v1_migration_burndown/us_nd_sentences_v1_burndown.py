@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_su
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_time_series import (
     VITALS_TIME_SERIES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii.incarceration_facility import (
+    INCARCERATION_FACILITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii.resident import RESIDENT_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
@@ -475,6 +478,20 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address,
             },
-        }
+        },
+        INCARCERATION_FACILITY_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+            },
+            SENTENCE_SPANS_VIEW_BUILDER.address: {
+                SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address,
+            },
+            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address,
+            },
+        },
     },
 }

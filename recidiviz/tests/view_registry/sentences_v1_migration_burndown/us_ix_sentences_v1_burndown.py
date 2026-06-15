@@ -35,6 +35,9 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_su
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_time_series import (
     VITALS_TIME_SERIES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii.incarceration_facility import (
+    INCARCERATION_FACILITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii.resident import RESIDENT_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.jii_texting.jii_to_text import (
     JII_TO_TEXT_VIEW_BUILDER,
@@ -473,6 +476,19 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
-        }
+        },
+        INCARCERATION_FACILITY_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
+                table_id=StateCharge.get_table_id(),
+            ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
+                US_IX_SLS_Q1_VIEW_BUILDER.address,
+                US_IX_SLS_Q3_VIEW_BUILDER.address,
+            },
+        },
     },
 }
