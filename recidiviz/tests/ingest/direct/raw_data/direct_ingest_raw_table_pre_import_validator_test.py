@@ -306,12 +306,6 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
 
         with patch.object(
             KnownValuesValidation, "_get_relevancy_error_message", return_value=""
-        ), patch.dict(
-            # TODO(#71014) Remove this patch once KNOWN_VALUES is added to
-            # NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT for prod.
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator."
-            "NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT",
-            {GCP_PROJECT_PRODUCTION: {RawDataPreImportValidationType.KNOWN_VALUES}},
         ):
             warnings = validator.run_raw_data_temp_table_validations(
                 self.file_tag, self.file_update_datetime, self.temp_table_address

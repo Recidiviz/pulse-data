@@ -55,9 +55,7 @@ DEFAULT_TOTAL_TIMEOUT = 60.0 * 8  # 8 minutes, in seconds
 
 NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT: dict[
     str, set[RawDataPreImportValidationType]
-] = {
-    GCP_PROJECT_PRODUCTION: set()  # TODO(#71014) Add RawDataPreImportValidationType.KNOWN_VALUES
-}
+] = {GCP_PROJECT_PRODUCTION: {RawDataPreImportValidationType.KNOWN_VALUES}}
 
 
 class DirectIngestRawTablePreImportValidator:

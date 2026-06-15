@@ -85,8 +85,7 @@ SELECT
     -- a non-blocking failure on any file in this file_tag should alert like a normal
     -- file-tag-level failure, so promote the file_tag's state to FAILED whenever one
     -- is present
-    -- TODO(#71014) Create separate alerts for non-blocking failures instead
-    -- See https://github.com/Recidiviz/pulse-data/pull/79839#discussion_r3270586365
+    -- TODO(#84461) Create separate alerts for non-blocking failures instead
     GREATEST(
         MAX(import_state),
         MAX(CASE WHEN non_blocking_failure_message IS NOT NULL THEN {failed_value} ELSE {success_value} END)

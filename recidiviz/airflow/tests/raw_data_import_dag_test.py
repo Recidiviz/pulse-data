@@ -82,6 +82,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
+    DirectIngestRawTablePreImportValidator,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -100,6 +103,12 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawFileProcessingError,
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataNonBlockingValidationFailure,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -2555,7 +2564,6 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             assert set(self.fs.all_paths) == set(original_paths)
 
 
-# TODO(#71014) Add test case to cover new non-blocking failure case
 class RawDataImportDagE2ETest(AirflowIntegrationTest):
     """end to end tests for the raw data import dag"""
 
@@ -2942,7 +2950,20 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
-        with Session(bind=self.engine) as session:
+        # Simulate a non-blocking pre-import validation failure (e.g. KNOWN_VALUES in
+        # prod): the file should still import successfully, but the failure message
+        # should be persisted to direct_ingest_raw_file_import.non_blocking_failure_message
+        # so monitoring can surface it.
+        non_blocking_failure = RawDataNonBlockingValidationFailure(
+            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
+            validation_query="SELECT 1",
+            error_msg="unknown known_values found in column foo",
+        )
+        with patch.object(
+            DirectIngestRawTablePreImportValidator,
+            "run_raw_data_temp_table_validations",
+            return_value=[non_blocking_failure],
+        ), Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 self._create_dag(),
                 session=session,
@@ -3020,11 +3041,16 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             import_runs = session.execute(
                 text(
-                    "SELECT file_import_id, file_id, import_status, raw_rows FROM direct_ingest_raw_file_import"
+                    "SELECT file_import_id, file_id, import_status, raw_rows, non_blocking_failure_message FROM direct_ingest_raw_file_import"
                 )
-            )
+            ).fetchall()
 
-            assert set(import_runs) == {(1, 1, "SUCCEEDED", 100)}
+            assert len(import_runs) == 1
+            row = import_runs[0]
+            assert (row[0], row[1], row[2], row[3]) == (1, 1, "SUCCEEDED", 100)
+            assert row[4] is not None
+            assert "KNOWN_VALUES" in row[4]
+            assert "unknown known_values found in column foo" in row[4]
 
             # (4) resource locks are released
             for lock_released in session.execute(
