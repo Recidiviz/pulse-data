@@ -87,7 +87,7 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
     if dag_id == get_metadata_maintenance_dag_id(project_id):
         return set()
     if dag_id == get_llm_document_extraction_dag_id(project_id):
-        return {"state_code_filter"}
+        return {"state_code_filter", "collection_name_filter"}
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
 
 

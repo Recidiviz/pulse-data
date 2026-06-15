@@ -278,6 +278,7 @@ class GcsDocumentUploader:
             project_id=self.project_id,
             state_code=self.state_code,
             run_id=self.run_id,
+            collection_name=collection_name,
             task_index=self.task_index,
             batch_index=batch_index,
         )

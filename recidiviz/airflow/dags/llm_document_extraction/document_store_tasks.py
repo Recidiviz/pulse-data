@@ -40,52 +40,59 @@ from recidiviz.documents.store.record_document_upload_results import (
 
 @task.short_circuit(ignore_downstream_trigger_rules=False)
 def check_has_updates(
-    collection_results: list[dict[str, str | int]],
+    collection_result: dict[str, str | int] | None,
 ) -> bool:
-    """Skips all downstream document upload/record tasks when discovery returned
-    no collections with updates."""
-    return len(collection_results) > 0
+    """Skips downstream document upload/record tasks when discovery found no
+    new metadata updates for the collection."""
+    return collection_result is not None
 
 
 @task
 def run_document_discovery(
     state_code: StateCode,
+    collection_name: str,
     run_id: str,
-) -> list[dict[str, str | int]]:
-    """Runs document discovery for all collections in a state, writing temp BQ
-    tables and returning per-collection discovery results."""
+) -> dict[str, str | int] | None:
+    """Runs document discovery for a single collection, writing temp BQ tables
+    and returning the discovery result (or None if no new metadata rows)."""
     discoverer = NewDocumentDiscoverer(
         state_code=state_code,
+        collection_name=collection_name,
         project_id=get_project_id(),
         big_query_client=BigQueryClientImpl(),
         run_id=run_id,
     )
-    collection_results = discoverer.run()
+    collection_result = discoverer.run()
+
+    if collection_result is None:
+        logging.info(
+            "[%s] Collection [%s] discovery complete: no new metadata rows.",
+            state_code.value,
+            collection_name,
+        )
+        return None
 
     logging.info(
-        "[%s] Discovery complete: %d collections with updates.",
+        "[%s] Collection [%s] discovery complete: %d new metadata rows.",
         state_code.value,
-        len(collection_results),
+        collection_name,
+        collection_result.num_document_metadata_updates_rows,
     )
-    return [r.to_dict() for r in collection_results]
+    return collection_result.to_dict()
 
 
 @task
 def build_document_upload_pod_arguments(
     state_code: StateCode,
-    collection_results: list[dict[str, str | int]],
+    collection_result: dict[str, str | int],
     upload_task_instance_count: int,
 ) -> list[list[str]]:
-    """Builds DocumentUploadBatches for each collection, distributes them
-    round-robin across |upload_task_instance_count| task instances, and
-    returns the argv for each mapped DocumentUploadEntrypoint pod."""
-    if not collection_results:
-        raise ValueError("Expected non-empty collection_results.")
-
+    """Builds DocumentUploadBatches for the collection, distributes them
+    across |upload_task_instance_count| task instances, and returns the argv
+    for each mapped DocumentUploadEntrypoint pod."""
     task_instance_batches = build_document_batches(
         collection_results=[
-            SingleCollectionDocumentDiscoveryResult.from_dict(r)
-            for r in collection_results
+            SingleCollectionDocumentDiscoveryResult.from_dict(collection_result)
         ],
         num_upload_task_instances=upload_task_instance_count,
         big_query_client=BigQueryClientImpl(),
@@ -105,15 +112,12 @@ def build_document_upload_pod_arguments(
 
 @task
 def record_document_upload_results(
-    collection_results: list[dict[str, str | int]],
+    collection_result: dict[str, str | int],
     state_code: StateCode,
     run_id: str,
 ) -> None:
-    """Loads upload status CSVs into BQ, inserts metadata rows for successful
-    uploads, and cleans up temp tables."""
-    if not collection_results:
-        raise ValueError("Expected non-empty collection_results.")
-
+    """Loads this collection's upload status CSVs into BQ, inserts metadata
+    rows for successful uploads, and cleans up temp tables."""
     recorder = DocumentUploadResultRecorder(
         state_code=state_code,
         project_id=get_project_id(),
@@ -121,9 +125,4 @@ def record_document_upload_results(
         run_id=run_id,
         metadata_row_create_datetime=datetime.now(tz=timezone.utc),
     )
-    recorder.run(
-        [
-            SingleCollectionDocumentDiscoveryResult.from_dict(r)
-            for r in collection_results
-        ]
-    )
+    recorder.run(SingleCollectionDocumentDiscoveryResult.from_dict(collection_result))

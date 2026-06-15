@@ -29,9 +29,12 @@ from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_a
     WaitUntilCanContinueOrCancelSensorAsync,
 )
 from recidiviz.airflow.dags.utils.config_utils import (
+    DOCUMENT_COLLECTION_NAME_FILTER,
+    STATE_CODE_FILTER,
     handle_params_check,
     handle_queueing_result,
 )
+from recidiviz.airflow.dags.utils.dag_run_metadata import record_dag_run_metadata
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
     NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
@@ -64,6 +67,15 @@ def verify_parameters(dag_run: DagRun | None = None) -> bool:
             f"Unknown configuration parameters supplied: {unknown_parameters}"
         )
 
+    if dag_run.conf.get(DOCUMENT_COLLECTION_NAME_FILTER) and not dag_run.conf.get(
+        STATE_CODE_FILTER
+    ):
+        raise ValueError(
+            f"[{DOCUMENT_COLLECTION_NAME_FILTER}] was set without "
+            f"[{STATE_CODE_FILTER}]; collection names are only unique within a "
+            f"state, so [{STATE_CODE_FILTER}] must also be provided."
+        )
+
     return True
 
 
@@ -76,6 +88,7 @@ def initialize_llm_document_extraction_dag_group() -> Any:
     )
     (
         handle_params_check(verify_parameters())
+        >> record_dag_run_metadata()
         >> wait_to_continue_or_cancel
         >> handle_queueing_result(wait_to_continue_or_cancel.output)
     )

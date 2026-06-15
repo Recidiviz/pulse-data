@@ -58,10 +58,15 @@ def gcs_directory_for_task_output(
     project_id: str,
     state_code: StateCode,
     run_id: str,
+    collection_name: str,
 ) -> GcsfsDirectoryPath:
+    """Returns the GCS directory holding the upload-status CSVs produced by
+    document upload tasks for a single (run, collection). Each collection gets
+    its own subdirectory so per-collection recorders can load only their own
+    CSVs."""
     return GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=temp_document_store_output_bucket_name(project_id, state_code),
-        blob_name=make_directory_path_gcsfs_safe(run_id),
+        blob_name=make_directory_path_gcsfs_safe(f"{run_id}/{collection_name}"),
     )
 
 
@@ -69,11 +74,14 @@ def gcs_path_for_task_output(
     project_id: str,
     state_code: StateCode,
     run_id: str,
+    collection_name: str,
     task_index: int,
     batch_index: int,
 ) -> GcsfsFilePath:
     """Returns the GCS path for a CSV output file produced by a document upload task."""
     return GcsfsFilePath.from_directory_and_file_name(
-        dir_path=gcs_directory_for_task_output(project_id, state_code, run_id),
+        dir_path=gcs_directory_for_task_output(
+            project_id, state_code, run_id, collection_name
+        ),
         file_name=f"task_{task_index}_{batch_index}.csv",
     )

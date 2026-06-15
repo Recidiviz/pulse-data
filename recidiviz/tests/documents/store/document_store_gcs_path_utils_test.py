@@ -44,12 +44,13 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
 
     def test_gcs_path_for_task_output(self) -> None:
         path = gcs_path_for_task_output(
-            self.project_id, self.state_code, self.run_id, 2, 5
+            self.project_id, self.state_code, self.run_id, "case_notes", 2, 5
         )
         self.assertEqual(
             path.bucket_name,
             "recidiviz-testing-us-xx-temp-document-store-output",
         )
         self.assertEqual(
-            path.blob_name, "manual__2026-05-12T17:21:11_122491+00:00/task_2_5.csv"
+            path.blob_name,
+            "manual__2026-05-12T17:21:11_122491+00:00/case_notes/task_2_5.csv",
         )

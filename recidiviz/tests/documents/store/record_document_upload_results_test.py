@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for record_document_upload_results.py."""
+
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
@@ -52,24 +53,17 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             metadata_row_create_datetime=self.row_create_datetime,
         )
 
-        self.configs = list(
-            collect_document_collection_configs(
-                self.state_code, config_module=fake_config_module
-            ).values()
-        )
-        self.collection_a_doc_discovery_result = (
-            self._make_collection_doc_discovery_result(
-                self.configs[0],
-                num_new_document_contents_rows=5,
-                num_document_metadata_updates_rows=10,
+        self.config = next(
+            iter(
+                collect_document_collection_configs(
+                    self.state_code, config_module=fake_config_module
+                ).values()
             )
         )
-        self.collection_b_doc_discovery_result = (
-            self._make_collection_doc_discovery_result(
-                self.configs[1],
-                num_new_document_contents_rows=5,
-                num_document_metadata_updates_rows=10,
-            )
+        self.discovery_result = self._make_discovery_result(
+            self.config,
+            num_new_document_contents_rows=5,
+            num_document_metadata_updates_rows=10,
         )
 
         self.query_job_all_docs_uploaded = MagicMock()
@@ -84,7 +78,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         result_failures.num_dml_affected_rows = 7
         self.query_job_doc_upload_failures.result.return_value = result_failures
 
-    def _make_collection_doc_discovery_result(
+    def _make_discovery_result(
         self,
         config: DocumentCollectionConfig,
         num_new_document_contents_rows: int,
@@ -103,31 +97,13 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             num_document_metadata_updates_rows=num_document_metadata_updates_rows,
         )
 
-    def test_some_document_uploads_failed(self) -> None:
-        def _run_query_side_effect(query_str: str, **_kwargs: object) -> MagicMock:
-            if (
-                self.collection_b_doc_discovery_result.config.metadata_table_id
-                in query_str
-            ):
-                return self.query_job_doc_upload_failures
-            return self.query_job_all_docs_uploaded
+    def test_all_uploads_succeeded_deletes_temp_tables(self) -> None:
+        self.bq_client.run_query_async.return_value = self.query_job_all_docs_uploaded
 
-        self.bq_client.run_query_async.side_effect = _run_query_side_effect
+        self.recorder.run(self.discovery_result)
 
-        self.recorder.run(
-            [
-                self.collection_a_doc_discovery_result,
-                self.collection_b_doc_discovery_result,
-            ]
-        )
-
-        # single load call for the upload status information
-        self.assertEqual(self.bq_client.load_table_from_cloud_storage.call_count, 1)
-
-        # both collections get an insert call
-        self.assertEqual(self.bq_client.run_query_async.call_count, 2)
-
-        # Only result_a's temp tables should be deleted since only result_a had all rows inserted successfully
+        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.run_query_async.assert_called_once()
         self.assertEqual(self.bq_client.delete_table.call_count, 2)
         deleted_addresses = {
             c.args[0] for c in self.bq_client.delete_table.call_args_list
@@ -135,80 +111,34 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.assertEqual(
             deleted_addresses,
             {
-                self.collection_a_doc_discovery_result.temp_document_metadata_updates_address.to_project_agnostic_address(),
-                self.collection_a_doc_discovery_result.temp_new_document_contents_address.to_project_agnostic_address(),
+                self.discovery_result.temp_document_metadata_updates_address.to_project_agnostic_address(),
+                self.discovery_result.temp_new_document_contents_address.to_project_agnostic_address(),
             },
         )
 
-    def test_single_collection_error_does_not_block_others(self) -> None:
-        def _run_query_side_effect(query_str: str, **_kwargs: object) -> MagicMock:
-            if (
-                self.collection_a_doc_discovery_result.config.metadata_table_id
-                in query_str
-            ):
-                raise ValueError("BQ insert failed")
-            return self.query_job_all_docs_uploaded
+    def test_some_uploads_failed_retains_temp_tables(self) -> None:
+        self.bq_client.run_query_async.return_value = self.query_job_doc_upload_failures
 
-        self.bq_client.run_query_async.side_effect = _run_query_side_effect
+        self.recorder.run(self.discovery_result)
 
-        with self.assertRaises(ExceptionGroup) as ctx:
-            self.recorder.run(
-                [
-                    self.collection_a_doc_discovery_result,
-                    self.collection_b_doc_discovery_result,
-                ]
-            )
-        self.assertIn(
-            self.collection_a_doc_discovery_result.collection_name, str(ctx.exception)
-        )
-        self.assertEqual(len(ctx.exception.exceptions), 1)
-        self.assertIsInstance(ctx.exception.exceptions[0], ValueError)
-
-        # Both collections attempted an insert
-        self.assertEqual(self.bq_client.run_query_async.call_count, 2)
-
-        # Only the successful collection's temp tables are deleted
-        self.assertEqual(self.bq_client.delete_table.call_count, 2)
-        deleted_addresses = {
-            c.args[0] for c in self.bq_client.delete_table.call_args_list
-        }
-        self.assertEqual(
-            deleted_addresses,
-            {
-                self.collection_b_doc_discovery_result.temp_document_metadata_updates_address.to_project_agnostic_address(),
-                self.collection_b_doc_discovery_result.temp_new_document_contents_address.to_project_agnostic_address(),
-            },
-        )
-
-    def test_empty_collection_results(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError, "Expected at least one collection discovery result"
-        ):
-            self.recorder.run([])
-
-        self.bq_client.load_table_from_cloud_storage.assert_not_called()
-        self.bq_client.run_query_async.assert_not_called()
+        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.run_query_async.assert_called_once()
         self.bq_client.delete_table.assert_not_called()
 
     def test_no_new_document_contents_skips_csv_load(self) -> None:
-        metadata_only_a = self._make_collection_doc_discovery_result(
-            self.configs[0],
-            num_new_document_contents_rows=0,
-            num_document_metadata_updates_rows=10,
-        )
-        metadata_only_b = self._make_collection_doc_discovery_result(
-            self.configs[1],
+        metadata_only_result = self._make_discovery_result(
+            self.config,
             num_new_document_contents_rows=0,
             num_document_metadata_updates_rows=10,
         )
         self.bq_client.run_query_async.return_value = self.query_job_all_docs_uploaded
 
-        self.recorder.run([metadata_only_a, metadata_only_b])
+        self.recorder.run(metadata_only_result)
 
         # don't upload CSVs if there are no new document contents
         self.bq_client.load_table_from_cloud_storage.assert_not_called()
-        # but still attempt to insert metadata rows for both collections
-        self.assertEqual(self.bq_client.run_query_async.call_count, 2)
+        # but still attempt to insert metadata rows
+        self.bq_client.run_query_async.assert_called_once()
 
     def test_load_upload_status_not_found_raises(self) -> None:
         load_job_mock = MagicMock()
@@ -216,12 +146,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.bq_client.load_table_from_cloud_storage.return_value = load_job_mock
 
         with self.assertRaises(NotFound):
-            self.recorder.run(
-                [
-                    self.collection_a_doc_discovery_result,
-                    self.collection_b_doc_discovery_result,
-                ]
-            )
+            self.recorder.run(self.discovery_result)
 
         self.bq_client.load_table_from_cloud_storage.assert_called_once()
         self.bq_client.run_query_async.assert_not_called()
@@ -233,12 +158,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ValueError, "BQ load failed"):
-            self.recorder.run(
-                [
-                    self.collection_a_doc_discovery_result,
-                    self.collection_b_doc_discovery_result,
-                ]
-            )
+            self.recorder.run(self.discovery_result)
 
         self.bq_client.load_table_from_cloud_storage.assert_called_once()
         self.bq_client.run_query_async.assert_not_called()

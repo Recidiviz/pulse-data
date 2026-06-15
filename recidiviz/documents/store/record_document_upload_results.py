@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Loads document upload results to BQ and inserts successfully uploaded
-documents into their collection metadata tables."""
+"""Loads document upload results for a single collection to BQ and inserts
+successfully uploaded documents into the collection metadata table."""
 import logging
-from concurrent import futures
 from datetime import datetime
 
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
@@ -42,8 +41,10 @@ from recidiviz.documents.store.document_upload_status_table import (
 
 @attr.define
 class DocumentUploadResultRecorder:
-    """Writes all new document collection metadata rows for successfully uploaded documents to the collection
-    metadata tables, and records upload status for all new documents in the document upload status table.
+    """Loads upload status CSVs for a single collection into the
+    document_upload_status table, inserts metadata rows for the collection's
+    successfully uploaded documents into the collection metadata table, and
+    cleans up the collection's temp tables when all uploads succeeded.
     """
 
     state_code: StateCode = attr.ib(validator=recidiviz_attr_validators.is_state_code)
@@ -61,58 +62,26 @@ class DocumentUploadResultRecorder:
 
     def run(
         self,
-        collection_discovery_results: list[SingleCollectionDocumentDiscoveryResult],
+        collection_discovery_result: SingleCollectionDocumentDiscoveryResult,
     ) -> None:
-        """Loads document upload status CSVs from GCS into the BQ upload status table, then inserts
-        rows for successfully uploaded documents into each collection's metadata table.
-        """
-        if not collection_discovery_results:
-            raise ValueError("Expected at least one collection discovery result")
-
-        has_new_document_contents = any(
-            r.num_new_document_contents_rows > 0 for r in collection_discovery_results
-        )
-        if has_new_document_contents:
-            self._load_upload_status_to_bq()
+        """Loads this collection's upload status CSVs from GCS into the BQ
+        upload status table, then inserts rows for successfully uploaded
+        documents into the collection metadata table."""
+        if collection_discovery_result.num_new_document_contents_rows > 0:
+            self._load_upload_status_to_bq(collection_discovery_result.collection_name)
         else:
             logging.info(
-                "No collections have new document contents; "
-                "skipping upload status CSV load."
+                "%s no new document contents; skipping upload status CSV load.",
+                self._log_prefix(collection_discovery_result.collection_name),
             )
 
-        errors: list[tuple[str, Exception]] = []
-        with futures.ThreadPoolExecutor(
-            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-        ) as executor:
-            record_futures = {
-                executor.submit(
-                    self._record_for_collection,
-                    collection_result=collection_result,
-                ): collection_result.collection_name
-                for collection_result in collection_discovery_results
-            }
-            for future in futures.as_completed(record_futures):
-                collection_name = record_futures[future]
-                try:
-                    future.result()
-                except Exception as e:
-                    logging.error(
-                        "%s failed to record results: %s",
-                        self._log_prefix(collection_name),
-                        e,
-                    )
-                    errors.append((collection_name, e))
+        self._record_for_collection(collection_discovery_result)
 
-        if errors:
-            raise ExceptionGroup(
-                f"Failed to record results for collections: {[name for name, _ in errors]}",
-                [e for _, e in errors],
-            )
-
-    def _load_upload_status_to_bq(self) -> None:
-        """Loads all upload status CSVs for this run from GCS into the document_upload_status BQ table."""
+    def _load_upload_status_to_bq(self, collection_name: str) -> None:
+        """Loads this collection's upload status CSVs for this run from GCS
+        into the document_upload_status BQ table."""
         output_dir = gcs_directory_for_task_output(
-            self.project_id, self.state_code, self.run_id
+            self.project_id, self.state_code, self.run_id, collection_name
         )
         source_uri = f"{output_dir.uri()}/*.csv"
         upload_status_table_address = DocumentUploadStatusTable.get_table_address(
@@ -120,7 +89,8 @@ class DocumentUploadResultRecorder:
         )
 
         logging.info(
-            "Loading upload status CSVs from [%s] into [%s]",
+            "%s loading upload status CSVs from [%s] into [%s]",
+            self._log_prefix(collection_name),
             source_uri,
             upload_status_table_address.to_str(),
         )

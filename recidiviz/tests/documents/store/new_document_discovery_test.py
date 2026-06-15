@@ -22,8 +22,8 @@ from unittest.mock import MagicMock, patch
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
-    DocumentCollectionConfig,
     collect_document_collection_configs,
+    get_document_collection_config,
 )
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
 from recidiviz.tests.documents.store import config as fake_config_module
@@ -34,85 +34,88 @@ class TestNewDocumentDiscovery(unittest.TestCase):
 
     def setUp(self) -> None:
         self.bq_client = MagicMock()
+        self.collection_name = next(
+            iter(
+                collect_document_collection_configs(
+                    StateCode.US_XX, config_module=fake_config_module
+                )
+            )
+        )
+
+        self.get_config_patcher = patch(
+            "recidiviz.documents.store.new_document_discovery.get_document_collection_config",
+            side_effect=lambda state_code, name: get_document_collection_config(
+                state_code, name, config_module=fake_config_module
+            ),
+        )
+        self.get_config_patcher.start()
+
         self.discovery = NewDocumentDiscoverer(
             state_code=StateCode.US_XX,
+            collection_name=self.collection_name,
             project_id="recidiviz-testing",
             big_query_client=self.bq_client,
             run_id="test_run_id",
         )
 
-        def mock_collect_document_collection_configs(
-            state_code: StateCode,
-        ) -> dict[str, DocumentCollectionConfig]:
-            return collect_document_collection_configs(
-                state_code, config_module=fake_config_module
-            )
-
-        self.document_collection_patcher = patch(
-            "recidiviz.documents.store.new_document_discovery.collect_document_collection_configs",
-            side_effect=mock_collect_document_collection_configs,
-        )
-        self.collect_configs_mock = self.document_collection_patcher.start()
-
-        self.configs = collect_document_collection_configs(
-            StateCode.US_XX, config_module=fake_config_module
-        )
-        self.config_names = list(self.configs.keys())
-
     def tearDown(self) -> None:
-        self.document_collection_patcher.stop()
+        self.get_config_patcher.stop()
 
-    def test_all_collections_empty_returns_no_results(self) -> None:
+    def _mock_temp_table_row_counts(
+        self,
+        *,
+        new_document_contents_rows: int,
+        document_metadata_updates_rows: int,
+    ) -> None:
+        def create_table_side_effect(
+            address: ProjectSpecificBigQueryAddress, **_kwargs: object
+        ) -> MagicMock:
+            mock = MagicMock()
+            if "temp_new_document_contents" in address.table_id:
+                mock.total_rows = new_document_contents_rows
+            elif "temp_document_metadata_updates" in address.table_id:
+                mock.total_rows = document_metadata_updates_rows
+            else:
+                raise ValueError(f"Unexpected table address: {address.to_str()}")
+            return mock
+
+        self.bq_client.create_table_from_query.side_effect = create_table_side_effect
+
+    def test_no_metadata_updates_returns_none(self) -> None:
         mock_row_iterator = MagicMock()
         mock_row_iterator.total_rows = 0
         self.bq_client.create_table_from_query.return_value = mock_row_iterator
 
         result = self.discovery.run()
 
-        self.assertEqual(result, [])
-        # 2 create_table_from_query calls per collection (metadata + document)
-        self.assertEqual(
-            self.bq_client.create_table_from_query.call_count,
-            2 * len(self.configs),
-        )
+        self.assertIsNone(result)
+        # Only the metadata-updates temp table is written; the new-documents
+        # step is skipped when there are no metadata updates.
+        self.assertEqual(self.bq_client.create_table_from_query.call_count, 1)
         self.bq_client.run_query_async.assert_not_called()
 
-    def test_creates_temp_tables_and_filters_by_metadata_updates(self) -> None:
-        """Tests three categories of collections:
-        - no_changes: 0 metadata updates → excluded from results
-        - metadata_only: metadata updates but 0 new document contents → included in results
-        - has_new_docs (remaining): metadata updates AND new documents → included in results
-        """
-        no_changes_collection = self.config_names[0]
-        metadata_only_collection = self.config_names[1]
-
-        def create_table_side_effect(
-            address: ProjectSpecificBigQueryAddress, **_kwargs: object
-        ) -> MagicMock:
-            mock = MagicMock()
-            if no_changes_collection in address.table_id:
-                mock.total_rows = 0
-            elif "temp_new_document_contents" in address.table_id:
-                if metadata_only_collection in address.table_id:
-                    mock.total_rows = 0
-                else:
-                    mock.total_rows = 6
-            # Temp metadata updates table
-            else:
-                mock.total_rows = 10
-            return mock
-
-        self.bq_client.create_table_from_query.side_effect = create_table_side_effect
+    def test_writes_both_temp_tables_when_updates_exist(self) -> None:
+        self._mock_temp_table_row_counts(
+            new_document_contents_rows=6,
+            document_metadata_updates_rows=10,
+        )
 
         result = self.discovery.run()
 
-        self.assertEqual(
-            self.bq_client.create_table_from_query.call_count,
-            2 * len(self.configs),
+        assert result is not None
+        self.assertEqual(result.collection_name, self.collection_name)
+        self.assertEqual(result.num_document_metadata_updates_rows, 10)
+        self.assertEqual(result.num_new_document_contents_rows, 6)
+        self.assertEqual(self.bq_client.create_table_from_query.call_count, 2)
+
+    def test_metadata_updates_without_new_documents(self) -> None:
+        self._mock_temp_table_row_counts(
+            new_document_contents_rows=0,
+            document_metadata_updates_rows=4,
         )
 
-        collections_with_metadata_updates = len(self.configs) - 1
-        self.assertEqual(len(result), collections_with_metadata_updates)
-        result_collection_names = {r.collection_name for r in result}
-        self.assertNotIn(no_changes_collection, result_collection_names)
-        self.assertIn(metadata_only_collection, result_collection_names)
+        result = self.discovery.run()
+
+        assert result is not None
+        self.assertEqual(result.num_document_metadata_updates_rows, 4)
+        self.assertEqual(result.num_new_document_contents_rows, 0)

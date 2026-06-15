@@ -140,7 +140,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
         csv_paths = [c.kwargs["path"] for c in csv_calls]
         expected_paths = [
             gcs_path_for_task_output(
-                self.project_id, self.state_code, self.run_id, 0, i
+                self.project_id, self.state_code, self.run_id, "test_collection", 0, i
             )
             for i in range(2)
         ]
