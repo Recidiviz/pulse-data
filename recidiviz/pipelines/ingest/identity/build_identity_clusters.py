@@ -24,12 +24,17 @@ from more_itertools import one
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
+from recidiviz.persistence.entity.identity.identity_cluster_entities import (
+    IdentityCluster,
+    IdentityClusterExternalId,
+)
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
-    IdentityExternalId,
     IdentityFragment,
 )
-from recidiviz.pipelines.ingest.identity.identity_cluster import IdentityCluster
+from recidiviz.pipelines.ingest.identity.cluster_entity_conversion_utils import (
+    convert_attributes_to_cluster_kwargs,
+)
 from recidiviz.pipelines.ingest.identity.merge_identity_attributes import (
     merge_identity_attributes,
 )
@@ -85,10 +90,14 @@ class BuildIdentityClusters(beam.PTransform):
 
             PCollection[
                 IdentityCluster(
-                    external_ids=[EID("A","T1"), EID("B","T2")],
-                    attributes=IdentityAttributes(
-                        name="John", birthdate=1990-01-01, ...
+                    external_ids=(
+                        IdentityClusterExternalId(external_id="A", id_type="T1"),
+                        IdentityClusterExternalId(external_id="B", id_type="T2"),
                     ),
+                    person_type=PersonType.JII,
+                    birthdate=1990-01-01,
+                    name=IdentityClusterName(given_name="John", ...),
+                    ...
                 ),
             ]
 
@@ -168,10 +177,12 @@ class BuildIdentityClusters(beam.PTransform):
         IdentityCluster."""
         cluster_key, fragments_iterable = cluster_key_and_fragments
 
-        cluster_external_ids = [
-            IdentityExternalId(tenant=self.tenant, external_id=eid, id_type=id_type)
+        cluster_external_ids = tuple(
+            IdentityClusterExternalId(
+                tenant=self.tenant, external_id=eid, id_type=id_type
+            )
             for eid, id_type in cluster_key
-        ]
+        )
 
         all_fragments = [fragment for _, _, fragment in fragments_iterable]
         if not all_fragments:
@@ -190,6 +201,7 @@ class BuildIdentityClusters(beam.PTransform):
             ) from e
 
         return IdentityCluster(
+            tenant=self.tenant,
             external_ids=cluster_external_ids,
-            attributes=cluster_attributes,
+            **convert_attributes_to_cluster_kwargs(cluster_attributes),
         )

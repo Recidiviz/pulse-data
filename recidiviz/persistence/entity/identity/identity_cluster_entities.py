@@ -60,6 +60,9 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
     IDENTITY_CLUSTER_ENTITIES_CONTEXT,
 )
+from recidiviz.persistence.entity.identity.identity_cluster_entity import (
+    IdentityClusterEntity,
+)
 from recidiviz.persistence.entity.identity.identity_entity_mixin import (
     IdentityEntityMixin,
 )
@@ -70,14 +73,14 @@ from recidiviz.persistence.entity.serialization import serialize_entity_tree_int
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterExternalId(IdentityEntityMixin, ExternalIdEntity):
+class IdentityClusterExternalId(IdentityClusterEntity, ExternalIdEntity):
     identity_cluster: "IdentityCluster | None" = attr.ib(
         default=None, on_setattr=attr.setters.validate
     )
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterName(IdentityEntityMixin, Entity):
+class IdentityClusterName(IdentityClusterEntity, Entity):
     given_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     preferred_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
     surname: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
@@ -89,7 +92,7 @@ class IdentityClusterName(IdentityEntityMixin, Entity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterGender(IdentityEntityMixin, EnumEntity):
+class IdentityClusterGender(IdentityClusterEntity, EnumEntity):
     gender: Gender = attr.ib(validator=attr.validators.instance_of(Gender))
     gender_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_cluster: "IdentityCluster | None" = attr.ib(
@@ -98,7 +101,7 @@ class IdentityClusterGender(IdentityEntityMixin, EnumEntity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterSex(IdentityEntityMixin, EnumEntity):
+class IdentityClusterSex(IdentityClusterEntity, EnumEntity):
     sex: Sex = attr.ib(validator=attr.validators.instance_of(Sex))
     sex_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_cluster: "IdentityCluster | None" = attr.ib(
@@ -107,7 +110,7 @@ class IdentityClusterSex(IdentityEntityMixin, EnumEntity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterRace(IdentityEntityMixin, EnumEntity):
+class IdentityClusterRace(IdentityClusterEntity, EnumEntity):
     race: Race = attr.ib(validator=attr.validators.instance_of(Race))
     race_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_cluster: "IdentityCluster | None" = attr.ib(
@@ -116,7 +119,7 @@ class IdentityClusterRace(IdentityEntityMixin, EnumEntity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterEthnicity(IdentityEntityMixin, EnumEntity):
+class IdentityClusterEthnicity(IdentityClusterEntity, EnumEntity):
     ethnicity: Ethnicity = attr.ib(validator=attr.validators.instance_of(Ethnicity))
     ethnicity_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_cluster: "IdentityCluster | None" = attr.ib(
@@ -125,7 +128,7 @@ class IdentityClusterEthnicity(IdentityEntityMixin, EnumEntity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterPhoneNumber(IdentityEntityMixin, Entity):
+class IdentityClusterPhoneNumber(IdentityClusterEntity, Entity):
     number: str = attr.ib(validator=is_valid_phone_number)
     identity_cluster: "IdentityCluster | None" = attr.ib(
         default=None, on_setattr=attr.setters.validate
@@ -133,7 +136,7 @@ class IdentityClusterPhoneNumber(IdentityEntityMixin, Entity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
-class IdentityClusterEmail(IdentityEntityMixin, Entity):
+class IdentityClusterEmail(IdentityClusterEntity, Entity):
     address: str = attr.ib(validator=is_valid_email)
     identity_cluster: "IdentityCluster | None" = attr.ib(
         default=None, on_setattr=attr.setters.validate
@@ -142,7 +145,7 @@ class IdentityClusterEmail(IdentityEntityMixin, Entity):
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityCluster(
-    IdentityEntityMixin,
+    IdentityClusterEntity,
     HasMultipleExternalIdsEntity["IdentityClusterExternalId"],
     RootEntity,
 ):
@@ -255,6 +258,16 @@ class IdentityCluster(
     @classmethod
     def back_edge_field_name(cls) -> str:
         return "identity_cluster"
+
+    @classmethod
+    def fragment_class_name(cls) -> str:
+        # The cluster root has no single fragment-tree counterpart: its fields
+        # come from `IdentityFragment` and its `IdentityAttributes` subtree
+        # combined.
+        raise NotImplementedError(
+            f"[{cls.__name__}] is the flattened root of the cluster tree and "
+            f"has no single fragment-tree counterpart"
+        )
 
 
 def _hash_json(payload: list[dict[str, Any]] | dict[str, Any]) -> str:

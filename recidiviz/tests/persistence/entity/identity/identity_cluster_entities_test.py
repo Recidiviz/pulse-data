@@ -50,6 +50,13 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterRace,
     IdentityClusterSex,
 )
+from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
+    IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+)
+from recidiviz.persistence.entity.serialization import serialize_entity_tree_into_json
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    generate_full_graph_identity_cluster,
+)
 
 _TENANT = "US_XX"
 
@@ -463,33 +470,82 @@ class TestIdentityCluster(unittest.TestCase):
         self.assertIs(cluster.races[0].identity_cluster, cluster)
         self.assertIs(cluster.external_ids[0].identity_cluster, cluster)
 
-    def test_hash_is_stable(self) -> None:
-        cluster = IdentityCluster(
-            tenant=_TENANT,
-            person_type=PersonType.JII,
-            birthdate=datetime.date(1990, 1, 1),
-            external_ids=(
-                IdentityClusterExternalId(
-                    tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
-                ),
-                IdentityClusterExternalId(
-                    tenant=_TENANT, external_id="EXT_002", id_type="US_XX_ID_TYPE"
-                ),
-            ),
-            name=IdentityClusterName(tenant=_TENANT, given_name="John", surname="Doe"),
-            gender=IdentityClusterGender(tenant=_TENANT, gender=Gender.MALE),
-            races=(
-                IdentityClusterRace(tenant=_TENANT, race=Race.BLACK, race_raw_text="B"),
-            ),
-        )
+    # Fields in the serialized full-graph cluster that must remain None even
+    # when every other field is populated (their validators enforce it).
+    # Listed here so test_full_graph_field_coverage doesn't flag them.
+    _FIELDS_ALWAYS_NONE: frozenset[str] = frozenset(
+        {"IdentityCluster.person_type_raw_text"}
+    )
+
+    def test_full_graph_golden_hashes(self) -> None:
+        """Locks `identity_cluster_id` and `cluster_hash` to known values for a
+        fully populated cluster.
+
+        Both hashes are a contract with the Identity Service: `cluster_hash`
+        is used to detect whether a cluster has changed since the last import
+        (every cluster will appear "updated" on the next run if the
+        serialization format silently drifts), and `identity_cluster_id` is
+        the upsert/deduplication key.
+
+        If this test fails, do not just replace the expected hashes with
+        whatever the code now produces — first confirm the change is
+        intentional.
+
+        If a new field was added to `IdentityCluster` or a child entity,
+        `test_full_graph_field_coverage` will fail first, pointing to the
+        unpopulated field. Populate it in `generate_full_graph_identity_cluster`,
+        then update the expected hashes here.
+        """
+        cluster = generate_full_graph_identity_cluster()
         self.assertEqual(
             cluster.identity_cluster_id,
             "407efabf4ca809a7154543ab3086e8006bd4cdc4d17fd46325bf2dd437d33930",
         )
         self.assertEqual(
             cluster.cluster_hash,
-            "ee7a29d22e9de4bd2cfcf89c6e4a055617936b29805ee9f5a5e6a76849882c4f",
+            "1b06ba9643610bf0214902c2cfe541f0320c496d4ee22133da1c84c6a26b5948",
         )
+
+    def test_full_graph_field_coverage(self) -> None:
+        """Ensures `generate_full_graph_identity_cluster` populates every
+        serializable field, so `test_full_graph_golden_hashes` exercises the
+        full serialization surface.
+
+        If this fails because a field is None or a list is empty, update
+        `generate_full_graph_identity_cluster` to populate the new field,
+        then update the expected hashes in `test_full_graph_golden_hashes`.
+        """
+        serialized = serialize_entity_tree_into_json(
+            generate_full_graph_identity_cluster(),
+            IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+        )
+        self._assert_all_fields_populated(serialized, "IdentityCluster")
+
+    def _assert_all_fields_populated(self, d: dict[str, object], path: str) -> None:
+        for key, value in d.items():
+            field_path = f"{path}.{key}"
+            if field_path in self._FIELDS_ALWAYS_NONE:
+                self.assertIsNone(
+                    value,
+                    f"{field_path} should be None per its validator, got {value!r}",
+                )
+                continue
+            if isinstance(value, dict):
+                self._assert_all_fields_populated(value, field_path)
+                continue
+            if isinstance(value, list):
+                self.assertTrue(
+                    value,
+                    f"{field_path} is empty in the full-graph cluster",
+                )
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        self._assert_all_fields_populated(item, f"{field_path}[{i}]")
+                continue
+            self.assertIsNotNone(
+                value,
+                f"{field_path} is None in the full-graph cluster",
+            )
 
     def test_print_entity_tree_handles_tuple_forward_edges(self) -> None:
         cluster = self._make_cluster(

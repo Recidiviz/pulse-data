@@ -22,6 +22,11 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.persistence.entity.identity.identity_cluster_entities import (
+    IdentityCluster,
+    IdentityClusterExternalId,
+    IdentityClusterName,
+)
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
@@ -33,7 +38,6 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     FRAGMENTS_WITH_DATES,
     BuildIdentityClusters,
 )
-from recidiviz.pipelines.ingest.identity.identity_cluster import IdentityCluster
 from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
@@ -73,8 +77,8 @@ def _cluster_summary(
 ) -> tuple[str, tuple[tuple[str, str], ...], str | None, str]:
     """Extract comparable fields from an IdentityCluster."""
     eid_tuple = tuple(sorted((e.external_id, e.id_type) for e in cluster.external_ids))
-    given_name = cluster.attributes.name.given_name if cluster.attributes.name else None
-    return (cluster.cluster_id, eid_tuple, given_name, cluster.cluster_hash)
+    given_name = cluster.name.given_name if cluster.name else None
+    return (cluster.identity_cluster_id, eid_tuple, given_name, cluster.cluster_hash)
 
 
 class TestRekeyFragmentsByCluster(unittest.TestCase):
@@ -195,8 +199,8 @@ class TestBuildCluster(unittest.TestCase):
 
         self.assertEqual(len(result.external_ids), 1)
         self.assertEqual(result.external_ids[0].external_id, "A")
-        assert result.attributes.name is not None
-        self.assertEqual(result.attributes.name.given_name, "John")
+        assert result.name is not None
+        self.assertEqual(result.name.given_name, "John")
 
     def test_multi_eid_merges_attributes(self) -> None:
         eid_a: ExternalIdKey = ("A", "T1")
@@ -215,8 +219,8 @@ class TestBuildCluster(unittest.TestCase):
         result = self.transform.build_cluster(element)
 
         self.assertEqual(len(result.external_ids), 2)
-        assert result.attributes.name is not None
-        self.assertEqual(result.attributes.name.given_name, "John")
+        assert result.name is not None
+        self.assertEqual(result.name.given_name, "John")
 
     def test_eid_with_no_fragments_still_in_external_ids(self) -> None:
         """An EID that's in the cluster but has no fragments still appears in
@@ -233,8 +237,8 @@ class TestBuildCluster(unittest.TestCase):
 
         eid_pairs = {(e.external_id, e.id_type) for e in result.external_ids}
         self.assertEqual(eid_pairs, {("A", "T1"), ("B", "T2")})
-        assert result.attributes.name is not None
-        self.assertEqual(result.attributes.name.given_name, "John")
+        assert result.name is not None
+        self.assertEqual(result.name.given_name, "John")
 
     def test_no_fragments_raises(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
@@ -317,12 +321,14 @@ class TestBuildCluster(unittest.TestCase):
 
         result = self.transform.build_cluster(element)
 
-        expected = IdentityCluster(
-            external_ids=[_eid_entity("A", "T1")],
-            attributes=result.attributes,
-        )
-        self.assertEqual(result.cluster_id, expected.cluster_id)
-        self.assertEqual(result.cluster_hash, expected.cluster_hash)
+        self.assertTrue(result.identity_cluster_id)
+        self.assertTrue(result.cluster_hash)
+        # Re-running on identical input must produce identical hashes (the
+        # Identity Service relies on this for deduplication and change
+        # detection across import runs).
+        rerun = self.transform.build_cluster(element)
+        self.assertEqual(result.identity_cluster_id, rerun.identity_cluster_id)
+        self.assertEqual(result.cluster_hash, rerun.cluster_hash)
 
 
 class TestBuildIdentityClustersBeam(unittest.TestCase):
@@ -349,12 +355,14 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         } | BuildIdentityClusters(tenant=_TENANT)
 
         expected_cluster = IdentityCluster(
-            external_ids=[_eid_entity("A", "T1")],
-            attributes=IdentityAttributes(
-                tenant=_TENANT,
-                person_type=PersonType.JII,
-                name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
+            tenant=_TENANT,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="A", id_type="T1"
+                ),
             ),
+            person_type=PersonType.JII,
+            name=IdentityClusterName(tenant=_TENANT, given_name="John", surname="Doe"),
         )
 
         summaries = output | "Summarize" >> beam.Map(_cluster_summary)
@@ -363,7 +371,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             equal_to(
                 [
                     (
-                        expected_cluster.cluster_id,
+                        expected_cluster.identity_cluster_id,
                         (("A", "T1"),),
                         "John",
                         expected_cluster.cluster_hash,
@@ -400,12 +408,17 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         summaries = output | "Summarize" >> beam.Map(_cluster_summary)
 
         expected_cluster = IdentityCluster(
-            external_ids=[_eid_entity("A", "T1"), _eid_entity("B", "T2")],
-            attributes=IdentityAttributes(
-                tenant=_TENANT,
-                person_type=PersonType.JII,
-                name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
+            tenant=_TENANT,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="A", id_type="T1"
+                ),
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="B", id_type="T2"
+                ),
             ),
+            person_type=PersonType.JII,
+            name=IdentityClusterName(tenant=_TENANT, given_name="John", surname="Doe"),
         )
 
         assert_that(
@@ -413,7 +426,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             equal_to(
                 [
                     (
-                        expected_cluster.cluster_id,
+                        expected_cluster.identity_cluster_id,
                         (("A", "T1"), ("B", "T2")),
                         "John",
                         expected_cluster.cluster_hash,
