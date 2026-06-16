@@ -29,6 +29,7 @@ entities (name, gender, sex, races, ethnicity, phone numbers, emails).
 import datetime
 import hashlib
 import json
+from collections.abc import Sequence
 from typing import Any
 
 import attr
@@ -248,10 +249,8 @@ class IdentityCluster(
         self.identity_cluster_id = _hash_json(json_entity_tree["external_ids"])
         self.cluster_hash = _hash_json(json_entity_tree)
 
-    def get_external_ids(self) -> list["IdentityClusterExternalId"]:
-        # TODO(#84019): Loosen parent return type to Sequence and drop the
-        # list(...) coercion here.
-        return list(self.external_ids)
+    def get_external_ids(self) -> Sequence["IdentityClusterExternalId"]:
+        return self.external_ids
 
     @classmethod
     def back_edge_field_name(cls) -> str:

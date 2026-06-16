@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for GetRootExternalIdClusterEdges."""
 import unittest
+from collections.abc import Sequence
 
 import apache_beam as beam
 import attr
@@ -41,7 +42,7 @@ class _FakeExternalId(ExternalIdEntity):
 class _FakeEntity(HasMultipleExternalIdsEntity[_FakeExternalId], RootEntity):
     external_ids: list[_FakeExternalId] = attr.ib(factory=list)
 
-    def get_external_ids(self) -> list[_FakeExternalId]:
+    def get_external_ids(self) -> Sequence[_FakeExternalId]:
         return self.external_ids
 
     @classmethod

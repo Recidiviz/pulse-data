@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Fake entities module for tests."""
+from collections.abc import Sequence
 from typing import Optional
 
 import attr
@@ -47,7 +48,7 @@ class FakePerson(
         factory=list, validator=attr_validators.is_list
     )
 
-    def get_external_ids(self) -> list["FakePersonExternalId"]:
+    def get_external_ids(self) -> Sequence["FakePersonExternalId"]:
         return self.external_ids
 
     @classmethod

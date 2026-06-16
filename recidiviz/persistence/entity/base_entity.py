@@ -251,8 +251,8 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdEntityT], Entity):
     """An entity that has multiple associated external ids."""
 
     @abc.abstractmethod
-    def get_external_ids(self) -> List[ExternalIdEntityT]:
-        """Returns the list of external id objects for this class."""
+    def get_external_ids(self) -> Sequence[ExternalIdEntityT]:
+        """Returns the external id objects for this class."""
 
     @environment.test_only
     def has_external_id(self, external_id: str) -> bool:

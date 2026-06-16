@@ -22,7 +22,7 @@ ORM objects can't provide.
 """
 
 import datetime
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 import attr
 
@@ -634,7 +634,7 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
 
-    def get_external_ids(self) -> List["StatePersonExternalId"]:
+    def get_external_ids(self) -> Sequence["StatePersonExternalId"]:
         return self.external_ids
 
     @classmethod
@@ -2852,7 +2852,7 @@ class StateStaff(
         factory=list, validator=attr_validators.is_list
     )
 
-    def get_external_ids(self) -> List[StateStaffExternalId]:
+    def get_external_ids(self) -> Sequence[StateStaffExternalId]:
         return self.external_ids
 
     @classmethod

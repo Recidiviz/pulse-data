@@ -22,6 +22,7 @@ has been run through the normalization portions of our pipelines.
 TODO(#34048): Consider disallowing default values in normalized entities.
 """
 
+from collections.abc import Sequence
 from datetime import date, datetime
 from typing import Optional, Type
 
@@ -3624,7 +3625,7 @@ class NormalizedStatePerson(
         ),
     )
 
-    def get_external_ids(self) -> list["NormalizedStatePersonExternalId"]:
+    def get_external_ids(self) -> Sequence["NormalizedStatePersonExternalId"]:
         return self.external_ids
 
     @classmethod
@@ -3952,7 +3953,7 @@ class NormalizedStateStaff(
         validator=attr_validators.is_list_of(NormalizedStateStaffCaseloadTypePeriod),
     )
 
-    def get_external_ids(self) -> list[NormalizedStateStaffExternalId]:
+    def get_external_ids(self) -> Sequence[NormalizedStateStaffExternalId]:
         return self.external_ids
 
     @classmethod

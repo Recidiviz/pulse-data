@@ -22,6 +22,7 @@ StatePerson/StateStaff entities. The structure mirrors StatePerson/StatePersonRa
 so that ingest view mapping YAMLs and IngestViewManifestCompiler can be reused.
 """
 import datetime
+from collections.abc import Sequence
 
 import attr
 
@@ -196,7 +197,7 @@ class IdentityFragment(
         default=None, validator=is_opt(IdentityAttributes)
     )
 
-    def get_external_ids(self) -> list[IdentityExternalId]:
+    def get_external_ids(self) -> Sequence[IdentityExternalId]:
         return self.external_ids
 
     @classmethod
