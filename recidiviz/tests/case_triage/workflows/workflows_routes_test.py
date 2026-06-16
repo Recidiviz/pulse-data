@@ -2514,6 +2514,12 @@ class TestOptimizeRoute(WorkflowsBlueprintTestCase):
             "test_user@texas.gov",
         )
 
+    def _set_auth_for_id(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id",
+            "test_user@id.gov",
+        )
+
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_optimize_route_success_no_destination(
         self, mock_get_secret: MagicMock
@@ -2614,8 +2620,34 @@ class TestOptimizeRoute(WorkflowsBlueprintTestCase):
         self.assertEqual(result["optimizedOrder"], ["person_1", "person_2", "person_3"])
         self.assertFalse(result["isChanged"])
 
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_idaho_supported(self, mock_get_secret: MagicMock) -> None:
+        """Idaho has now been added and should not be rejected."""
+        self._set_auth_for_id()
+        mock_get_secret.return_value = "fake-api-key"
+
+        google_response = {"routes": [{"optimizedIntermediateWaypointIndex": [1, 0]}]}
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json=google_response,
+                status=200,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_ID/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
     def test_optimize_route_unsupported_state(self) -> None:
-        """Non-TX states should be rejected."""
+        """States without home contact route planner enabled should be rejected."""
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_tn",
             "test_user@tennessee.gov",

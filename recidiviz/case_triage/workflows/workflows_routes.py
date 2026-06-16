@@ -58,6 +58,7 @@ from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsSendSmsRequestSchema,
 )
 from recidiviz.case_triage.workflows.constants import (
+    ROUTE_PLANNER_ENABLED_STATES,
     WORKFLOWS_SMS_ENABLED_STATES,
     ExternalSystemRequestStatus,
 )
@@ -652,8 +653,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
     ) -> Response:
         # Validate the email from the request matches the signed-in user
-        # This is currently only used in Texas for emailing a google maps route link
-        if state.upper() != StateCode.US_TX.value:
+        # This is currently only used in route planner enabled states for emailing a google maps route link
+        if state.upper() not in ROUTE_PLANNER_ENABLED_STATES:
             return jsonify_response(
                 f"Unsupported state for user emails: {state}",
                 HTTPStatus.UNAUTHORIZED,
@@ -768,13 +769,12 @@ def create_workflows_api_blueprint() -> Blueprint:
     def optimize_route(state: str) -> Response:
         """
         Optimizes the order of waypoints for a route using Google Routes API.
-        Currently only supported for Texas (US_TX).
 
         If a destination is provided, it will be used as the ending point and all
         waypoints will be treated as intermediate stops. Otherwise, the last
         waypoint will be treated as the destination.
         """
-        if state.upper() != StateCode.US_TX.value:
+        if state.upper() not in ROUTE_PLANNER_ENABLED_STATES:
             return jsonify_response(
                 f"Unsupported state for route optimization: {state}",
                 HTTPStatus.UNAUTHORIZED,

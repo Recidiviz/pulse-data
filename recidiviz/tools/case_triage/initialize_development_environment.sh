@@ -72,3 +72,7 @@ WORKFLOWS_TWILIO_AUTH_TOKEN=$(get_secret recidiviz-staging twilio_auth_token)
 WORKFLOWS_TWILIO_ACCOUNT_SID=$(get_secret recidiviz-staging twilio_sid)
 write_to_file "$WORKFLOWS_TWILIO_AUTH_TOKEN" recidiviz/local/gsm/twilio_auth_token
 write_to_file "$WORKFLOWS_TWILIO_ACCOUNT_SID" recidiviz/local/gsm/twilio_sid
+
+# This secret is used to connect to google routes for workflows
+WORKFLOWS_GOOGLE_ROUTES_TOKEN=$(get_secret recidiviz-staging google_routes_api_key)
+write_to_file "$WORKFLOWS_GOOGLE_ROUTES_TOKEN" recidiviz/local/gsm/google_routes_api_key

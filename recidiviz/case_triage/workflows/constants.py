@@ -27,3 +27,5 @@ class ExternalSystemRequestStatus(Enum):
 
 
 WORKFLOWS_SMS_ENABLED_STATES = {StateCode.US_CA.value}
+
+ROUTE_PLANNER_ENABLED_STATES = {StateCode.US_ID.value, StateCode.US_TX.value}
