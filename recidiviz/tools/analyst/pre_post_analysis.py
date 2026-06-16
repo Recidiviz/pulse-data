@@ -19,6 +19,7 @@
 from datetime import date
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from scipy import stats
@@ -67,6 +68,66 @@ def get_incarceration_super_sessions_and_days_in_window(
     """
 
 
+def per_person_credit_activity_monthly(
+    window_start: date,
+    window_end: date,
+    *,
+    state_code: str,
+    project_id: str,
+    credit_filter_sql: str,
+) -> pd.DataFrame:
+    """Per-resident-per-month credit-activity rates over the window.
+
+    Queries `analyst_data.earned_credit_activity_materialized` for events in
+    [window_start, window_end] matching ``credit_filter_sql``. Cohort is every
+    resident incarcerated in ``state_code`` during the window.
+
+    Returns one row per resident with:
+      - ``incarcerated_days``: days incarcerated within the window
+      - ``n_events``: matching event count
+      - ``total_credits``: sum of ``credits_earned`` across matching events
+      - ``events_per_resident_per_month``: ``n_events / (incarcerated_days / 30.4375)``
+      - ``credits_per_resident_per_month``: ``total_credits / (incarcerated_days / 30.4375)``
+    """
+    return pd.read_gbq(
+        f"""
+    WITH
+    {get_incarceration_super_sessions_and_days_in_window(state_code=state_code, window_start=window_start, window_end=window_end, project_id=project_id)},
+    person_credits AS (
+      SELECT
+        e.person_id,
+        COUNT(*) AS n_events,
+        SUM(e.credits_earned) AS total_credits
+      FROM `{project_id}.analyst_data.earned_credit_activity_materialized` e
+      WHERE e.state_code = '{state_code}'
+        AND ({credit_filter_sql})
+        AND e.credit_date >= DATE '{window_start}'
+        AND e.credit_date <  DATE '{window_end}'
+      GROUP BY e.person_id
+    )
+    SELECT
+      i.person_id,
+      i.incarcerated_days,
+      CAST(COALESCE(pc.n_events, 0) AS INT64) AS n_events,
+      CAST(COALESCE(pc.total_credits, 0) AS FLOAT64) AS total_credits,
+      CAST(
+        COALESCE(pc.n_events, 0)
+          / NULLIF(i.incarcerated_days / 30.4375, 0)
+        AS FLOAT64
+      ) AS events_per_resident_per_month,
+      CAST(
+        COALESCE(pc.total_credits, 0)
+          / NULLIF(i.incarcerated_days / 30.4375, 0)
+        AS FLOAT64
+      ) AS credits_per_resident_per_month
+    FROM incarcerated_days i
+    LEFT JOIN person_credits pc USING (person_id)
+    """,
+        project_id=project_id,
+        progress_bar_type=None,
+    )
+
+
 def trim_iqr(x: pd.Series, k: float = 1.5) -> pd.Series:
     """Drop values outside ±k×IQR."""
     q1, q3 = x.quantile([0.25, 0.75])
@@ -96,6 +157,17 @@ def welch_post_vs_pre(
             }
         ]
     )
+
+
+def t_ci_half_width(mean: pd.Series, sd: pd.Series, n: pd.Series) -> pd.Series:
+    """95% t-CI half-width on the mean"""
+    _, ci_high = stats.t.interval(
+        0.95,
+        df=(n - 1).clip(lower=1),
+        loc=mean,
+        scale=sd.fillna(0) / np.sqrt(n),
+    )
+    return ci_high - mean
 
 
 def pre_post_xticklabels(
@@ -160,7 +232,45 @@ def plot_pre_post_bar(
     ax.set_ylabel(ylabel)
     for container in ax.containers:
         ax.bar_label(container, fmt=fmt, padding=4, fontsize=8)  # type: ignore[arg-type]
-    ax.set_ylim(0, ax.get_ylim()[1] * 1.20)
+    ymin, ymax = ax.get_ylim()
+    if ymin >= 0:
+        ax.set_ylim(0, ymax * 1.20)
+    elif ymax <= 0:
+        ax.set_ylim(ymin * 1.20, 0)
+    else:
+        pad = (ymax - ymin) * 0.10
+        ax.set_ylim(ymin - pad, ymax + pad)
     plt.title(title)
     plt.show()
     return welch_post_vs_pre(df, value_col, decimals=welch_decimals)
+
+
+def plot_pre_post_histograms(
+    pre: pd.Series,
+    post: pd.Series,
+    *,
+    xlabel: str,
+    title: str,
+    bins: int | list[float] = 30,
+    color: str | None = None,
+    xticks: list[float] | None = None,
+) -> None:
+    """Side-by-side pre/post histograms on shared axes for distribution comparison."""
+    bin_edges = (
+        np.histogram_bin_edges(np.concatenate([pre, post]), bins=bins)
+        if isinstance(bins, int)
+        else bins
+    )
+    _, axes = plt.subplots(1, 2, figsize=(11, 4), sharex=True, sharey=True)
+    for ax, data, label in zip(axes, [pre, post], ["Pre launch", "Post launch"]):
+        ax.hist(
+            data, bins=bin_edges, color=color or RECIDIVIZ_COLORS[0], edgecolor="white"
+        )
+        ax.set_title(f"{label} (n = {len(data):,})")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("Number of observations")
+        if xticks is not None:
+            ax.set_xticks(xticks)
+    plt.suptitle(title)
+    plt.tight_layout()
+    plt.show()
