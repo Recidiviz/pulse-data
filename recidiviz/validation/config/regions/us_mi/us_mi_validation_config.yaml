@@ -102,3 +102,6 @@ num_allowed_rows_overrides:
       HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of
       objects. Fix is blocked on #61640 (requires coordinated FE changes tracked in
       SPE-2635).
+  - validation_name: missing_client_record_rows_null_officer
+    hard_num_allowed_rows_override: 300
+    override_reason: confirmed with MI these are most likely data entry errors where statuses were not closed out properly
