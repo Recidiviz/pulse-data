@@ -168,6 +168,7 @@ export const babyOpportunityConfigurationSchema = z
     snoozeCompanionOpportunityTypes: z.array(z.string()).default([]),
     caseNotesTitle: nullishAsUndefined(z.string()),
     skipFormPreview: z.boolean().default(false),
+    markSubmittedOnFormDownload: z.boolean().default(true),
   })
   .strict();
 // strict() prevents us from accidentally dropping fields the frontend doesn't know about

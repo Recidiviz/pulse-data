@@ -226,6 +226,9 @@ class OpportunityConfigurationsAPI(MethodView):
             ),
             case_notes_title=body_args.get("case_notes_title"),
             skip_form_preview=body_args["skip_form_preview"],
+            mark_submitted_on_form_download=body_args[
+                "mark_submitted_on_form_download"
+            ],
         )
         return new_config_id
 

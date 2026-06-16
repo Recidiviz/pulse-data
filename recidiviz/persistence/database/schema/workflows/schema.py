@@ -226,3 +226,8 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # When true, clicking "Generate Paperwork" directly downloads the form rather than showing the preview screen
     skip_form_preview = Column(Boolean, nullable=False, server_default="false")
+
+    # When true, marks opportunity as submitted on form download
+    mark_submitted_on_form_download = Column(
+        Boolean, nullable=False, server_default="true"
+    )

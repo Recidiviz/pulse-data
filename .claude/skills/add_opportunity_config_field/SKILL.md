@@ -83,8 +83,7 @@ Make changes to all 9 files in the order below. Read each file before editing.
 ### File 1: Database schema
 **`recidiviz/persistence/database/schema/workflows/schema.py`**
 
-Add the column to `OpportunityConfiguration` near the end of the class,
-before the last field. Follow the pattern for the matching type:
+Add the column to `OpportunityConfiguration` at the end of the class. Follow the pattern for the matching type:
 
 ```python
 # Optional string

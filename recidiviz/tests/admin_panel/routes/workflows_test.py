@@ -116,6 +116,7 @@ def generate_config(
         snooze_companion_opportunity_types=["usNdOppType1", "usNdOppType2"],
         case_notes_title="Case notes title",
         skip_form_preview=False,
+        mark_submitted_on_form_download=True,
     )
 
 

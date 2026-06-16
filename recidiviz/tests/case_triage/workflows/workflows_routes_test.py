@@ -2217,6 +2217,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             snooze_companion_opportunity_types=["usNdOppType1", "usNdOppType2"],
             case_notes_title=None,
             skip_form_preview=False,
+            mark_submitted_on_form_download=True,
         )
 
         mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = {

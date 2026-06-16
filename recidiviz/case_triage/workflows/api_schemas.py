@@ -205,6 +205,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     snooze_companion_opportunity_types = fields.List(fields.Str(required=False))
     case_notes_title = fields.Str(required=False)
     skip_form_preview = fields.Bool()
+    mark_submitted_on_form_download = fields.Bool(required=False)
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

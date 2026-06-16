@@ -82,6 +82,7 @@ const OpportunityConfigurationForm = ({
     revisionDescription: undefined,
     variantDescription,
     featureVariant: freshVariant ? undefined : template?.featureVariant,
+    markSubmittedOnFormDownload: template?.markSubmittedOnFormDownload ?? true,
   };
 
   // Add notification UUIDs to newly created notifications

@@ -61,6 +61,7 @@ snapshots[
         "ineligibleCriteriaCopy": [],
         "initialHeader": "header",
         "isAlert": False,
+        "markSubmittedOnFormDownload": True,
         "markSubmittedOptionsByTab": [
             {"tab": "Pending", "texts": ["PENDING_1", "PENDING_2", "PENDING_3"]},
             {"tab": "Eligible Now", "texts": ["PENDING_1"]},
@@ -132,6 +133,7 @@ snapshots[
         "ineligibleCriteriaCopy": [],
         "initialHeader": "header",
         "isAlert": False,
+        "markSubmittedOnFormDownload": True,
         "markSubmittedOptionsByTab": [
             {"tab": "Pending", "texts": ["PENDING_1", "PENDING_2", "PENDING_3"]},
             {"tab": "Eligible Now", "texts": ["PENDING_1"]},
@@ -203,6 +205,7 @@ snapshots[
         "ineligibleCriteriaCopy": [],
         "initialHeader": "header",
         "isAlert": False,
+        "markSubmittedOnFormDownload": True,
         "markSubmittedOptionsByTab": [
             {"tab": "Pending", "texts": ["PENDING_1", "PENDING_2", "PENDING_3"]},
             {"tab": "Eligible Now", "texts": ["PENDING_1"]},

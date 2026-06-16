@@ -143,6 +143,10 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         label: "Skip Form Preview?",
         Edit: Checkbox,
       },
+      markSubmittedOnFormDownload: {
+        label: "Mark Submitted on Form Download?",
+        Edit: Checkbox,
+      },
       sidebarComponents: {
         multiple: true,
         Edit: SidebarComponentsEdit,
