@@ -62,6 +62,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configura
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_jii_tablet_app_metrics_configurations import (
     JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
+    JII_TABLET_APP_DENOMINATOR_METRICS,
     JII_TABLET_APP_IMPACT_LOOKER_METRICS,
     JII_TABLET_APP_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
@@ -231,6 +232,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             metrics=JII_TABLET_APP_IMPACT_LOOKER_METRICS,
             assignment_types_dict=JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions=JII_TABLET_APP_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+            denominator_metrics=JII_TABLET_APP_DENOMINATOR_METRICS,
         )
 
         # CPA

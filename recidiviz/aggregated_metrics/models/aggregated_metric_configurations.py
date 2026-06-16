@@ -2943,6 +2943,18 @@ DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetr
         span_conditions_dict={"is_registered": ["true"]},
     ),
 )
+AVG_DAILY_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = DailyAvgSpanCountMetric(
+    name="avg_daily_registered_jii_tablet_app_provisioned_users",
+    display_name="Average Daily Registered JII Tablet App Provisioned Users",
+    description=(
+        "Average daily count of people provisioned to the JII tablet app who "
+        "have signed up/logged in at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
 DISTINCT_LOGGED_IN_JII_TABLET_APP_USERS = EventDistinctUnitCountMetric(
     name="distinct_logged_in_jii_tablet_app_users",
     display_name="Distinct Logged In JII Tablet App Users",
@@ -4644,12 +4656,11 @@ PERSON_DAYS_WEIGHTED_EARNED_CREDIT_BALANCE_FOR_REGISTERED_JII_TABLET_APP_PROVISI
     display_name="Person-Days Weighted by Earned Credit Balance — Registered JII Tablet App Users",
     description=(
         "Total person-days of earned credit balance summed across all credit "
-        "types over the active incarcerated population, restricted to "
-        "person-days where the person was a registered JII tablet app user. "
-        "Pair with AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' "
-        "measure does this automatically) to get the share of total "
-        "credit-balance-days held by registered users. Excludes PENDING and "
-        "PARTIALLY_APPLIED credits."
+        "types, restricted to person-days where the person was a registered "
+        "JII tablet app user. In Looker, select 'Normalized' with denominator "
+        "AVG_DAILY_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS to get the "
+        "average balance per registered user. Excludes PENDING and PARTIALLY_APPLIED "
+        "credits."
     ),
     span_selector=SpanSelector(
         span_type=SpanType.EARNED_CREDIT_BALANCE_SESSION,
@@ -4662,13 +4673,12 @@ PERSON_DAYS_WEIGHTED_ACHIEVEMENT_EARNED_CREDIT_BALANCE_FOR_REGISTERED_JII_TABLET
     name="person_days_weighted_achievement_earned_credit_balance_for_registered_jii_tablet_app_provisioned_users",
     display_name="Person-Days Weighted by ACHIEVEMENT Earned Credit Balance — Registered JII Tablet App Users",
     description=(
-        "Total person-days of ACHIEVEMENT credit balance summed over the "
-        "active incarcerated population, restricted to person-days where the "
-        "person was a registered JII tablet app user. Pair with "
-        "AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' measure "
-        "does this automatically) to get the share of total ACHIEVEMENT "
-        "credit-balance-days held by registered users. Excludes "
-        "PENDING and PARTIALLY_APPLIED credits."
+        "Total person-days of ACHIEVEMENT credit balance, restricted to "
+        "person-days where the person was a registered JII tablet app user. "
+        "In Looker, select 'Normalized' with denominator "
+        "AVG_DAILY_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS to get the "
+        "average ACHIEVEMENT balance per registered user. Excludes PENDING and "
+        "PARTIALLY_APPLIED credits."
     ),
     span_selector=SpanSelector(
         span_type=SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,

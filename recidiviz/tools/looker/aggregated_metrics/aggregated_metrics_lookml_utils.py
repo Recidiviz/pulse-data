@@ -144,7 +144,7 @@ def _generate_lookml_measure_fragment_normalized(
     if isinstance(metric, SumSpanDaysMetric):
         return (
             f"SAFE_DIVIDE(SUM(${{TABLE}}.{metric.name}), "
-            f"SUM(${{TABLE}}.avg_daily_population * {days_in_period_clause}))"
+            f"SUM({custom_denominator} * {days_in_period_clause}))"
         )
     if isinstance(metric, (EventDistinctUnitCountMetric, SpanDistinctUnitCountMetric)):
         return f"AVG(SAFE_DIVIDE(${{TABLE}}.{metric.name}, {custom_denominator}))"
@@ -331,7 +331,12 @@ def generate_lookml_denominator_description_normalized(
         )
         return f'CONCAT("{metric.description}", ", divided by the ", {denominator_description})'
     if isinstance(metric, SumSpanDaysMetric):
-        return f'"{metric.description}, divided by the total number of person-days in the time period"'
+        denominator_description = (
+            "${metric_denominator_description}"
+            if allow_custom_denominator
+            else '"average daily population"'
+        )
+        return f'CONCAT("{metric.description}", ", divided by the ", {denominator_description}, " × total number of days in the time period")'
     # Return an empty string if the metric can not be normalized
     # This reflects the NULL output from _generate_lookml_measure_fragment_normalized
     if isinstance(

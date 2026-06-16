@@ -1451,6 +1451,8 @@
       us_ix_scl_Supervision.UpdateUserId,
       us_ix_scl_Supervision.UpdateDate,
       us_ix_scl_Supervision.OriginalOffense,
+      us_ix_scl_Supervision.VCINVerificationDate__raw,
+      us_ix_scl_Supervision.VCINVerifiedBy,
       us_ix_scl_Supervision.OffenderId,
       us_ix_scl_Supervision.file_id,
       us_ix_scl_Supervision.is_deleted]

@@ -189,7 +189,7 @@ class LookMLUtilsTest(unittest.TestCase):
                 LookMLFieldParameter.group_label(TEST_SPAN_DAYS_METRIC.pretty_name()),
                 LookMLFieldParameter.sql(
                     """{% if my_view.measure_type._parameter_value == "normalized" %}
-        SAFE_DIVIDE(SUM(${TABLE}.test_span_days_metric), SUM(${TABLE}.avg_daily_population * ${days_in_period}))
+        SAFE_DIVIDE(SUM(${TABLE}.test_span_days_metric), SUM(${metric_denominator_value} * ${days_in_period}))
         {% else %}
         SUM(${TABLE}.test_span_days_metric)
         {% endif %}"""
@@ -222,17 +222,19 @@ class LookMLUtilsTest(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            f'"{TEST_SPAN_DAYS_METRIC.description}, '
-            'divided by the total number of person-days in the time period"',
+            f'CONCAT("{TEST_SPAN_DAYS_METRIC.description}", ", '
+            'divided by the ", ${metric_denominator_description}, '
+            '" × total number of days in the time period")',
             generate_lookml_denominator_description_normalized(
                 TEST_SPAN_DAYS_METRIC, allow_custom_denominator=True
             ),
         )
         self.assertEqual(
-            f'"{TEST_SPAN_DAYS_METRIC.description}, '
-            'divided by the total number of person-days in the time period"',
+            f'CONCAT("{TEST_SPAN_DAYS_METRIC.description}", ", '
+            'divided by the ", "average daily population", '
+            '" × total number of days in the time period")',
             generate_lookml_denominator_description_normalized(
-                TEST_SPAN_DAYS_METRIC, allow_custom_denominator=True
+                TEST_SPAN_DAYS_METRIC, allow_custom_denominator=False
             ),
         )
         self.assertEqual(
