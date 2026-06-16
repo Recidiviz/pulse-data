@@ -52,6 +52,11 @@ from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
+from recidiviz.observations.views.events.person.supervision_contact import (
+    ROUTE_OPTIMIZATION_ACTION,
+    ROUTE_PLANNER_LINK_ACTIONS,
+    SURFACED_ROUTE_PLANNER_ACTION,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
@@ -3805,6 +3810,39 @@ DISTINCT_ACTIVE_PRIMARY_TASKS_USERS = EventDistinctUnitCountMetric(
     event_selector=EventSelector(
         event_type=EventType.TASKS_ACTIVE_USAGE_EVENT,
         event_conditions_dict={},
+    ),
+)
+
+DISTINCT_PRIMARY_TASKS_USERS_VIEWED_HCRP = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_viewed_hcrp",
+    display_name="Distinct Primary Tasks Users Who Viewed HCRP",
+    description="Number of distinct primary Tasks users who had at least one client "
+    "surfaced in the Home Contact Route Planner",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"event": SURFACED_ROUTE_PLANNER_ACTION},
+    ),
+)
+
+DISTINCT_PRIMARY_TASKS_USERS_USED_OPTIMIZE_ROUTE = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_used_optimize_route",
+    display_name="Distinct Primary Tasks Users Who Used Optimize Route",
+    description="Number of distinct primary Tasks users who attempted at least one "
+    "route optimization in the Route Planner",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"event": ROUTE_OPTIMIZATION_ACTION},
+    ),
+)
+
+DISTINCT_PRIMARY_TASKS_USERS_USED_GOOGLE_MAPS_LINK = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_used_google_maps_link",
+    display_name="Distinct Primary Tasks Users Who Used Google Maps Link",
+    description="Number of distinct primary Tasks users who emailed, copied, or opened "
+    "at least one route link in the Route Planner",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"event": ROUTE_PLANNER_LINK_ACTIONS},
     ),
 )
 
