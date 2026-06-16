@@ -44,3 +44,7 @@ recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeo
 recidiviz/view_registry/raw_data_table_reference_exemptions.py @Recidiviz/doppler-codeowners
 
 .claude/skills/** @Recidiviz/doppler
+
+# Aurora
+# Google Workflows are allowed for orchestration but cannot process DOC data
+recidiviz/cloud_workflows/** @Recidiviz/aurora
