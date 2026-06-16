@@ -1412,7 +1412,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
         "scl_DorOffenseCategoryType": ["InsertDate", "UpdateDate"],
         "scl_Parole": ["ReleaseDate"],
-        "scl_Supervision": ["ImposedDate", "StartDate"],
         "scl_Warrant": [
             "DocumentRetrievedDate",
             "InsertDate",
