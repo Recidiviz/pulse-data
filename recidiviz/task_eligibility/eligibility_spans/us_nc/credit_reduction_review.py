@@ -150,7 +150,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         _SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER,
         _DRUG_SCREEN_OK_FOR_CRR_VIEW_BUILDER,
     ],
-    # TODO(#54787): Hydrate completion event
     completion_event_builder=granted_supervision_sentence_reduction.VIEW_BUILDER,
 )
 

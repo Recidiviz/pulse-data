@@ -14,9 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows granted credit reductions produced after a 
-Credit Reduction Review (CRR)."""
+"""Defines a view that shows granted credit reductions produced after a
+Credit Review (CR). Note that this considers approval for any number of days as a
+completion event. Realistically, there are full approvals and partial approvals which
+may be important to distinguish for things like impact tracking and tool functionality,
+since partial approvals could potentially be resubmitted for more time off in the
+future."""
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -24,14 +30,18 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#54787): Hydrate completion event
 _QUERY_TEMPLATE = """
-SELECT
+SELECT DISTINCT
     'US_NC' AS state_code,
-    123 AS person_id,
-    CURRENT_DATE('US/Central') AS completion_event_date
-FROM (SELECT 1)
-WHERE FALSE
+    pei.person_id,
+    SAFE.PARSE_DATE('%Y%m%d', cr.EVTDT) AS completion_event_date
+FROM `{project_id}.{us_nc_raw_data_up_to_date_dataset}.cr_outcome_latest` cr
+INNER JOIN `{project_id}.us_nc_normalized_state.state_person_external_id` pei
+    ON pei.external_id = cr.OPUS
+WHERE 
+    -- Only count reviews where credit was actually awarded. Denied reviews will read
+    -- "...AWARDED NO DAYS CREDIT."
+    REGEXP_CONTAINS(LOWER(cr.COMMENTS), r'\\d+\\s+day')
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
@@ -39,6 +49,9 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecifi
     completion_event_type=TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
+    us_nc_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_NC, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":
