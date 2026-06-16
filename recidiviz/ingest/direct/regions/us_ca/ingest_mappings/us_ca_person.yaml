@@ -93,6 +93,7 @@ output:
             - "Nicaraguan"
             - "Columbian"
             - "Cuban"
+            - "Other Hispanic Not Listed"
           StateEthnicity.NOT_HISPANIC:
             - "Other"
             - "American Indian"
