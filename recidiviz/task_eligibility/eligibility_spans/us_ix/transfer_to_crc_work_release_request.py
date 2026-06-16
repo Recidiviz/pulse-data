@@ -40,6 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_sex_offender_alert,
     not_denied_for_crc,
     not_detainers_for_xcrc_and_crc,
+    not_in_reception_or_mental_health_unit,
     not_serving_a_rider_sentence,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -89,6 +90,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
         # Time-based criteria specific to work release
         *CRC_WORK_RELEASE_TIME_BASED,
+        # Exclude reception/diagnostic and mental-health unit residents
+        not_in_reception_or_mental_health_unit.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
