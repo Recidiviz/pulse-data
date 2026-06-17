@@ -18,7 +18,11 @@
 import unittest
 from unittest.mock import patch
 
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.pipelines.pipeline_names import (
+    IDENTITY_INGEST_PIPELINE_NAME,
     METRICS_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
@@ -95,6 +99,43 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
                 "dataflow_metrics.violation_with_response_metrics",
             ],
         )
+
+    def test_identity_cluster(self) -> None:
+        """Tests the expected output schema of the identity ingest pipeline,
+        one collection per tenant."""
+        identity_collections = self.source_table_repository.get_collections_with_labels(
+            labels=[
+                DataflowPipelineSourceTableLabel(
+                    pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
+                )
+            ]
+        )
+
+        state_codes = get_direct_ingest_states_existing_in_env()
+        self.assertEqual(len(identity_collections), len(state_codes))
+        self.assertEqual(
+            {c.dataset_id for c in identity_collections},
+            {
+                f"{state_code.value.lower()}_identity_cluster"
+                for state_code in state_codes
+            },
+        )
+
+        for collection in identity_collections:
+            self.assert_source_tables_match(
+                collection,
+                expected_addresses=[
+                    f"{collection.dataset_id}.identity_cluster",
+                    f"{collection.dataset_id}.identity_cluster_email",
+                    f"{collection.dataset_id}.identity_cluster_ethnicity",
+                    f"{collection.dataset_id}.identity_cluster_external_id",
+                    f"{collection.dataset_id}.identity_cluster_gender",
+                    f"{collection.dataset_id}.identity_cluster_name",
+                    f"{collection.dataset_id}.identity_cluster_phone_number",
+                    f"{collection.dataset_id}.identity_cluster_race",
+                    f"{collection.dataset_id}.identity_cluster_sex",
+                ],
+            )
 
     def assert_source_tables_match(
         self,

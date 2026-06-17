@@ -25,9 +25,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.identity.dataset_config import (
-    IDENTITY_INGEST_RESULTS_DATASET,
+    identity_cluster_dataset_for_tenant,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
+from recidiviz.utils.types import assert_type
 
 
 @attr.define(kw_only=True)
@@ -73,7 +74,9 @@ class IdentityIngestPipelineParameters(PipelineParameters):
     @property
     def clustering_output_dataset(self) -> str:
         return self.get_output_dataset(
-            default_dataset_id=IDENTITY_INGEST_RESULTS_DATASET
+            default_dataset_id=identity_cluster_dataset_for_tenant(
+                assert_type(self.tenant, str)
+            )
         )
 
     @property

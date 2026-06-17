@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for getting ingest pipeline output datasets."""
+"""Helpers for getting activity ingest pipeline output datasets."""
 from typing import Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides

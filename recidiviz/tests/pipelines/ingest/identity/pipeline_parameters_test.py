@@ -59,7 +59,7 @@ class TestIdentityIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_input_dataset)
         self.assertEqual(
-            "identity_ingest_results",
+            "us_oz_identity_cluster",
             pipeline_parameters.clustering_output_dataset,
         )
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
@@ -109,7 +109,7 @@ class TestIdentityIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_input_dataset)
         self.assertEqual(
-            "my_prefix_identity_ingest_results",
+            "my_prefix_us_oz_identity_cluster",
             pipeline_parameters.clustering_output_dataset,
         )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
@@ -131,7 +131,7 @@ class TestIdentityIngestPipelineParameters(unittest.TestCase):
             "some_other_raw_data", pipeline_parameters.raw_data_input_dataset
         )
         self.assertEqual(
-            "my_prefix_identity_ingest_results",
+            "my_prefix_us_oz_identity_cluster",
             pipeline_parameters.clustering_output_dataset,
         )
 

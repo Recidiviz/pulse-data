@@ -30,6 +30,7 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
     get_bq_schema_for_entity_table,
 )
+from recidiviz.persistence.entity.identity import identity_cluster_entities
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
@@ -187,6 +188,36 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
     def test_bq_schema_for_entities_module_normalized_state(self) -> None:
         # Does not crash
         _ = get_bq_schema_for_entities_module(normalized_state_entities)
+
+    def test_bq_schema_for_entities_module_identity_cluster(self) -> None:
+        # Does not crash
+        _ = get_bq_schema_for_entities_module(identity_cluster_entities)
+
+    def test_string_typed_foreign_key(self) -> None:
+        """Tests that a child entity's FK column to a root entity with a
+        string-typed primary key is generated as STRING (not the
+        previously-hardcoded INTEGER).
+        """
+        schema = get_bq_schema_for_entity_table(
+            identity_cluster_entities, "identity_cluster_name"
+        )
+        fk_field = one(f for f in schema if f.name == "identity_cluster_id")
+        self.assertEqual("STRING", fk_field.field_type)
+        self.assertEqual("NULLABLE", fk_field.mode)
+        self.assertEqual(
+            "Foreign key reference to identity_cluster", fk_field.description
+        )
+
+    def test_string_typed_primary_key(self) -> None:
+        """Tests that a root entity's string-typed primary key column is
+        emitted as STRING.
+        """
+        schema = get_bq_schema_for_entity_table(
+            identity_cluster_entities, "identity_cluster"
+        )
+        pk_field = one(f for f in schema if f.name == "identity_cluster_id")
+        self.assertEqual("STRING", pk_field.field_type)
+        self.assertEqual("NULLABLE", pk_field.mode)
 
     def test_parity_with_source_table_collection_us_xx_state(self) -> None:
         """Tests that get_bq_schema_for_entities_module() creates a schema that

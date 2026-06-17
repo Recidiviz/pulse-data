@@ -17,7 +17,7 @@
 """The identity ingest pipeline.
 
 This pipeline reads raw data from us_xx_raw_data, clusters external IDs using
-graph traversal, and writes results to the identity_ingest_results.* BigQuery
+graph traversal, and writes results to the {tenant}_identity_cluster.* BigQuery
 dataset for the Identity Service to consume via POST /import.
 
 See recidiviz/tools/calculator/run_sandbox_dataflow_pipeline_utils.py for details
@@ -35,6 +35,7 @@ from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
+from recidiviz.pipelines.pipeline_names import IDENTITY_INGEST_PIPELINE_NAME
 
 
 class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
@@ -46,7 +47,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
 
     @classmethod
     def pipeline_name(cls) -> str:
-        return "IDENTITY_INGEST"
+        return IDENTITY_INGEST_PIPELINE_NAME
 
     @classmethod
     def all_input_reference_query_providers(
@@ -86,4 +87,11 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         #    via CoGroupByKey, merge attributes within and across external IDs,
         #    and produce one IdentityCluster per cluster.
         #    → PCollection[IdentityCluster]
+        #
+        # 6. WriteIdentityClustersToBQ (not yet implemented)
+        #    Serialize each IdentityCluster into rows for the
+        #    {tenant}_identity_cluster.* tables and write them to BigQuery.
+        #    Schemas for those tables are defined by
+        #    identity_pipeline_output_table_collector and follow
+        #    identity_cluster_entities.
         pass

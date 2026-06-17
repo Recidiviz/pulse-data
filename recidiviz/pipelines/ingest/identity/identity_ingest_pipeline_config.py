@@ -15,18 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config loader for the identity ingest pipeline."""
-import glob
 import os
 
 import attr
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _REGIONS_DIR = os.path.dirname(regions_module.__file__)
 _IDENTITY_CONFIG_FILENAME = "identity_config.yaml"
 _MAX_IDS_PER_TYPE_OVERRIDES_KEY = "max_ids_per_type_overrides"
+
+
+def identity_config_path_for_state_code(
+    state_code: StateCode, regions_dir: str = _REGIONS_DIR
+) -> str:
+    """Returns the path to `identity_config.yaml` for the given state code."""
+    return os.path.join(
+        regions_dir, state_code.value.lower(), _IDENTITY_CONFIG_FILENAME
+    )
+
 
 # Default maximum number of external IDs of a given type a person can have before
 # that ID value is assumed to be a sentinel (e.g. InmateNum='000000'). States can
@@ -70,11 +83,11 @@ class IdentityIngestPipelineConfig:
         tenant_configs: dict[
             tuple[str, PersonType], IdentityIngestPipelineTenantConfig
         ] = {}
-        for identity_config_path in glob.glob(
-            os.path.join(regions_dir, "*", _IDENTITY_CONFIG_FILENAME)
-        ):
-            tenant = os.path.basename(os.path.dirname(identity_config_path)).upper()
-            tenant_dict = YAMLDict.from_path(identity_config_path)
+        for state_code in get_direct_ingest_states_existing_in_env():
+            tenant = state_code.value
+            tenant_dict = YAMLDict.from_path(
+                identity_config_path_for_state_code(state_code, regions_dir)
+            )
             for person_type in PersonType:
                 person_type_dict = tenant_dict.pop_dict_optional(
                     person_type.value.lower()

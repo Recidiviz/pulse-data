@@ -40,7 +40,7 @@ from recidiviz.persistence.entity.entities_module_context import EntitiesModuleC
 
 @attr.s(eq=False, kw_only=True)
 class FakeRootNormalizedEntity(NormalizedStateEntity, Entity, RootEntity):
-    pk: str = attr.ib()
+    fake_root_normalized_entity_id: str = attr.ib()
 
     @classmethod
     def back_edge_field_name(cls) -> str:
@@ -50,7 +50,7 @@ class FakeRootNormalizedEntity(NormalizedStateEntity, Entity, RootEntity):
 @attr.s(eq=False, kw_only=True)
 class FakeSimpleNormalizedEntity(NormalizedStateEntity, Entity):
 
-    pk: str = attr.ib()
+    fake_simple_normalized_entity_id: str = attr.ib()
     optional_string: str | None = attr.ib()
     optional_int: int | None = attr.ib()
 
@@ -61,7 +61,7 @@ class FakeSimpleNormalizedEntity(NormalizedStateEntity, Entity):
 @attr.s(eq=False, kw_only=True)
 class FakeComplexNormalizedEntity(NormalizedStateEntity, Entity):
 
-    pk: str = attr.ib()
+    fake_complex_normalized_entity_id: str = attr.ib()
     root: "FakeRootNormalizedEntity" = attr.ib()
     simple: list["FakeSimpleNormalizedEntity"] = attr.ib()
     optional_int: int | None = attr.ib()
@@ -72,7 +72,7 @@ class FakeSequencedNormalizedEntity(
     NormalizedStateEntity, SequencedEntityMixin, Entity
 ):
 
-    pk: str = attr.ib()
+    fake_sequenced_normalized_entity_id: str = attr.ib()
     root: "FakeRootNormalizedEntity" = attr.ib()
 
 
@@ -172,7 +172,7 @@ FROM (
         count(*) as entity_count,
         [
           STRUCT('state_code' AS column_name, COUNTIF(state_code IS NOT NULL) AS hydrated_count),
-          STRUCT('pk' AS column_name, COUNTIF(pk IS NOT NULL) AS hydrated_count),
+          STRUCT('fake_simple_normalized_entity_id' AS column_name, COUNTIF(fake_simple_normalized_entity_id IS NOT NULL) AS hydrated_count),
           STRUCT('optional_string' AS column_name, COUNTIF(optional_string IS NOT NULL) AS hydrated_count),
           STRUCT('optional_int' AS column_name, COUNTIF(optional_int IS NOT NULL) AS hydrated_count),
           STRUCT('fake_complex_normalized_entity_id' AS column_name, COUNTIF(fake_complex_normalized_entity_id IS NOT NULL) AS hydrated_count),
@@ -205,7 +205,7 @@ FROM (
         count(*) as entity_count,
         [
           STRUCT('state_code' AS column_name, COUNTIF(state_code IS NOT NULL) AS hydrated_count),
-          STRUCT('pk' AS column_name, COUNTIF(pk IS NOT NULL) AS hydrated_count),
+          STRUCT('fake_complex_normalized_entity_id' AS column_name, COUNTIF(fake_complex_normalized_entity_id IS NOT NULL) AS hydrated_count),
           STRUCT('fake_root_normalized_entity_id' AS column_name, COUNTIF(fake_root_normalized_entity_id IS NOT NULL) AS hydrated_count),
           STRUCT('optional_int' AS column_name, COUNTIF(optional_int IS NOT NULL) AS hydrated_count)
         ] as column_hydration_counts,
@@ -237,7 +237,7 @@ FROM (
         [
           STRUCT('state_code' AS column_name, COUNTIF(state_code IS NOT NULL) AS hydrated_count),
           STRUCT('sequence_num' AS column_name, COUNTIF(sequence_num IS NOT NULL) AS hydrated_count),
-          STRUCT('pk' AS column_name, COUNTIF(pk IS NOT NULL) AS hydrated_count),
+          STRUCT('fake_sequenced_normalized_entity_id' AS column_name, COUNTIF(fake_sequenced_normalized_entity_id IS NOT NULL) AS hydrated_count),
           STRUCT('fake_root_normalized_entity_id' AS column_name, COUNTIF(fake_root_normalized_entity_id IS NOT NULL) AS hydrated_count)
         ] as column_hydration_counts,
     FROM `{project_id}.{normalized_state_dataset_id}.fake_sequenced_normalized_entity`

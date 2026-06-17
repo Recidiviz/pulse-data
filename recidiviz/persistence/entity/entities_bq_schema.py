@@ -102,14 +102,16 @@ def _get_bq_schema_for_entity_class(
         ) and not is_many_to_one_relationship(entity_cls, referenced_cls):
             continue
 
-        # The entity_cls has a foreign key reference to the referenced class on its
-        # table.
+        # The entity_cls has a foreign key reference to the referenced class on
+        # its table. The FK column name and type match the referenced class's
+        # primary-key field.
         foreign_key_field_name = referenced_cls.get_class_id_name()
         schema.append(
-            SchemaField(
+            schema_field_for_attribute(
                 foreign_key_field_name,
-                bigquery.enums.SqlTypeNames.INTEGER.value,
-                mode="NULLABLE",
+                attribute_field_type_reference_for_class(referenced_cls)
+                .get_field_info(foreign_key_field_name)
+                .attribute,
                 description=f"Foreign key reference to {referenced_cls.get_table_id()}",
             )
         )

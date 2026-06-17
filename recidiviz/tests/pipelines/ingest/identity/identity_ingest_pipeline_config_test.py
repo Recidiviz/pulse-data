@@ -18,8 +18,10 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
     _DEFAULT_MAX_IDS_PER_TYPE,
     IdentityIngestPipelineConfig,
@@ -61,7 +63,11 @@ class IdentityIngestPipelineConfigTest(unittest.TestCase):
         self.assertEqual(self.config.default_config.max_ids_per_type_overrides, {})
 
     def test_load_clustering_config_loads_overrides_from_state_config(self) -> None:
-        with tempfile.TemporaryDirectory() as regions_dir:
+        with tempfile.TemporaryDirectory() as regions_dir, patch(
+            "recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config."
+            "get_direct_ingest_states_existing_in_env",
+            return_value=[StateCode.US_XX],
+        ):
             state_dir = os.path.join(regions_dir, "us_xx")
             os.makedirs(state_dir)
             with open(

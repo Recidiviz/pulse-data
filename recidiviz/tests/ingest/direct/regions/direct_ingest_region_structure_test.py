@@ -247,6 +247,26 @@ class DirectIngestRegionDirStructureBase:
             lambda region_code: "manifest.yaml", validate_manifest_contents
         )
 
+    def test_identity_config_yaml_format(self) -> None:
+        def validate_identity_config_contents(
+            file_path: str, file_contents: object
+        ) -> None:
+            if not isinstance(file_contents, dict):
+                self.test.fail(
+                    f"File contents type [{type(file_contents)}], expected dict."
+                )
+
+            identity_config_required_keys = ["jii", "staff"]
+            for k in identity_config_required_keys:
+                self.test.assertTrue(
+                    k in file_contents, f"Key [{k}] not in [{file_path}]"
+                )
+
+        self.run_check_valid_yamls_exist_in_all_regions(
+            lambda region_code: "identity_config.yaml",
+            validate_identity_config_contents,
+        )
+
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
             region = direct_ingest_regions.get_direct_ingest_region(

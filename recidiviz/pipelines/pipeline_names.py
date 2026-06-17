@@ -17,5 +17,6 @@
 """Constants for the different pipeline names"""
 
 INGEST_PIPELINE_NAME = "ingest"
+IDENTITY_INGEST_PIPELINE_NAME = "identity_ingest"
 SUPPLEMENTAL_PIPELINE_NAME = "supplemental"
 METRICS_PIPELINE_NAME = "metrics"

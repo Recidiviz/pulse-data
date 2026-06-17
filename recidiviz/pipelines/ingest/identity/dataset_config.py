@@ -14,9 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for getting identity ingest pipeline datasets."""
+"""Helpers for getting identity ingest pipeline output datasets."""
 
-# The BigQuery dataset where the identity ingest pipeline writes its
-# clustering results (clusters, external_ids, names, dates_of_birth, etc.).
-# Consumed exclusively by the Identity Service's POST /import endpoint.
-IDENTITY_INGEST_RESULTS_DATASET = "identity_ingest_results"
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+
+
+def identity_cluster_dataset_for_tenant(
+    tenant: str, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the BigQuery dataset where the identity ingest pipeline writes
+    the given tenant's clustering results.
+    """
+    base_dataset = f"{tenant.lower()}_identity_cluster"
+    if not sandbox_dataset_prefix:
+        return base_dataset
+    return BigQueryAddressOverrides.format_sandbox_dataset(
+        sandbox_dataset_prefix, base_dataset
+    )

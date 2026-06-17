@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class for ingest pipeline parameters"""
+"""Class for activity ingest pipeline parameters"""
 import json
 from typing import Dict, List, Optional, Set
 
@@ -34,7 +34,7 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 @attr.define(kw_only=True)
 class IngestPipelineParameters(PipelineParameters):
-    """Class for ingest pipeline parameters"""
+    """Class for activity ingest pipeline parameters"""
 
     raw_data_source_instance: str = attr.ib(
         default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
