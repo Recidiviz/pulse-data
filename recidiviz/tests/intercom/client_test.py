@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for IntercomAPIClient"""
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -23,7 +24,11 @@ import pytest
 import requests
 
 from recidiviz.intercom.client import IntercomAPIClient
-from recidiviz.intercom.types import IntercomTicketResponse
+from recidiviz.intercom.types import IntercomExportJobResponse, IntercomTicketResponse
+
+TIME_NOW = datetime.now(timezone.utc)
+TIME_2018 = datetime(2018, 1, 1, tzinfo=timezone.utc)
+TIME_HOUR_AGO = TIME_NOW - timedelta(hours=1)
 
 
 @pytest.fixture(name="intercom_api_client")
@@ -43,20 +48,44 @@ def intercom_api_client_fixture() -> IntercomAPIClient:  # type: ignore
         # Patch the _session property to avoid real HTTP calls
         with patch.object(client, "_session", autospec=True) as mock_session:
 
-            def fake_post(*args: Any, **kwargs: Any) -> MagicMock:  # type: ignore # pylint: disable=unused-argument
+            def fake_post(url: str, **_kwargs: Any) -> MagicMock:
                 fake_response = MagicMock()
-                payload = kwargs.get("json")
-                if isinstance(payload, dict):
-                    # Create a copy to avoid mutating the original object.
-                    payload_copy = payload.copy()
-                    payload_copy["id"] = "1"
-                    payload_copy["ticket_id"] = "1"
-                    fake_response.json.return_value = payload_copy
+                if "export/content/data" in url:
+                    fake_response.status_code = 200
+                    fake_response.json.return_value = {
+                        "job_identifier": "orzzsbd7hk67xyu",
+                        "status": "completed",
+                        "download_url": "example.com",
+                        "download_expires_at": "1674917488",
+                    }
+                elif "/tickets" in url:
+                    fake_response.status_code = 200
+                    fake_response.json.return_value = {"id": "1"}
                 else:
-                    fake_response.json.return_value = payload
+                    raise NotImplementedError(f"Unexpected URL in fake_post: {url}")
+
+                return fake_response
+
+            def fake_get(url: str, **_kwargs: Any) -> MagicMock:
+                fake_response = MagicMock()
+                if "export" in url:
+                    fake_response.status_code = 200
+                    fake_response.json.return_value = {
+                        "job_identifier": "orzzsbd7hk67xyu",
+                        "status": "completed",
+                        "download_url": "example.com",
+                        "download_expires_at": "1674917488",
+                    }
+                elif "download" in url:
+                    fake_response.status_code = 200
+                    fake_response.content = "Test content"
+                else:
+                    raise NotImplementedError(f"Unexpected URL in fake_get: {url}")
+
                 return fake_response
 
             mock_session.post.side_effect = fake_post
+            mock_session.get.side_effect = fake_get
             yield client
 
 
@@ -145,3 +174,104 @@ def test_create_ticket_fails(
 
     # Verify the POST call tried three times
     assert intercom_api_client._session.post.call_count == 3  # type: ignore # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize(
+    "created_at_after,created_at_before",
+    [
+        (TIME_2018, TIME_NOW),
+        (TIME_HOUR_AGO, TIME_NOW),
+    ],
+    ids=["all_time", "one_hour"],
+)
+def test_create_data_export(
+    intercom_api_client: IntercomAPIClient,
+    created_at_after: datetime,
+    created_at_before: datetime,
+) -> None:
+    """
+    Test IntercomAPIClient.create_data_export to ensure the data export is created.
+    """
+
+    result_export_job_response = intercom_api_client.create_data_export(
+        created_at_after, created_at_before
+    )
+
+    # Assert
+    assert result_export_job_response == IntercomExportJobResponse(
+        job_identifier="orzzsbd7hk67xyu",
+        status="completed",
+        download_url="example.com",
+        download_expires_at="1674917488",
+    )
+
+    # Verify the POST call
+    called_args, _ = intercom_api_client._session.post.call_args  # type: ignore # pylint: disable=protected-access
+    assert "/export/content/data" in called_args[0]
+
+
+@pytest.mark.parametrize(
+    "status_code,error_message",
+    [
+        (429, "Exceeded Rate Limit"),
+        (500, "Internal Server Error"),
+    ],
+    ids=["exceeded_rate_limit", "server_error"],
+)
+def test_create_data_export_fails(
+    intercom_api_client: IntercomAPIClient, status_code: int, error_message: str
+) -> None:
+    """
+    Test IntercomAPIClient.create_data_export error handling.
+    Ensures that it properly raises HTTP status errors.
+
+    Args:
+        intercom_api_client: The client fixture
+        status_code: HTTP status code to test
+        error_message: Expected error message
+    """
+
+    # Mock the error response
+    mock_response = Mock()
+    mock_response.status_code = status_code
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        error_message, request=Mock(), response=mock_response
+    )
+    intercom_api_client._session.post.side_effect = None  # type: ignore # pylint: disable=protected-access
+    intercom_api_client._session.post.return_value = mock_response  # type: ignore # pylint: disable=protected-access
+
+    # Test that it raises the HTTP error
+    with pytest.raises(requests.exceptions.HTTPError, match=error_message):
+        intercom_api_client.create_data_export(TIME_2018, TIME_NOW)
+
+    # Verify the POST call tried three times
+    assert intercom_api_client._session.post.call_count == 3  # type: ignore # pylint: disable=protected-access
+
+
+def test_get_export_status(
+    intercom_api_client: IntercomAPIClient,
+) -> None:
+    """
+    Test IntercomAPIClient.get_export_status to ensure the correct export status is returned.
+    """
+    job_identifier = "orzzsbd7hk67xyu"
+
+    result_export_response = intercom_api_client.get_export_status(job_identifier)
+
+    # Assert
+    assert result_export_response.status == "completed"
+
+
+def test_download_export_data(
+    intercom_api_client: IntercomAPIClient,
+) -> None:
+    """
+    Test IntercomAPIClient.download_export_data to ensure export data is downloaded.
+    """
+    job_identifier = "orzzsbd7hk67xyu"
+
+    result_export_data = intercom_api_client.download_export_data(job_identifier)
+    print(result_export_data)
+
+    # Assert
+    assert result_export_data == "Test content"

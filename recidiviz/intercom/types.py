@@ -16,7 +16,7 @@
 # =============================================================================
 """Intercom-related types"""
 
-from typing import Any, Dict
+from typing import Any
 
 import attr
 import cattrs
@@ -35,7 +35,7 @@ class IntercomTicket:
     # Description for the ticket
     default_description: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Converts an object into the intercom format"""
         return {
             "ticket_type_id": self.ticket_type_id,
@@ -46,7 +46,7 @@ class IntercomTicket:
             },
         }
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         return cattrs.unstructure(self)
 
 
@@ -57,5 +57,22 @@ class IntercomTicketResponse:
     # The id for the created ticket
     id: str
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.frozen
+class IntercomExportJobResponse:
+    """Represents an Intercom export job response."""
+
+    # Unique identifier for the export job
+    job_identifier: str
+    # Status of the export job (pending, completed, failed)
+    status: str
+    # URL to download the export data (populated when status is completed)
+    download_url: str
+    # Timestamp when the download URL expires
+    download_expires_at: str
+
+    def to_json(self) -> dict[str, Any]:
         return cattrs.unstructure(self)
