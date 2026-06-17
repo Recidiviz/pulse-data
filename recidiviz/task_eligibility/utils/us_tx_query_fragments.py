@@ -21,6 +21,7 @@ Helper SQL queries for Texas
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
@@ -41,6 +42,40 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
     get_reason_json_fields_query_template_for_criteria,
 )
 from recidiviz.utils.string_formatting import fix_indent
+
+# Substance abuse program IDs that count as treatment programs requiring an
+# additional collateral contact for RRC clients (per the contact policy
+# encoded in US_TX_NEEDS_SCHEDULED_COLLATERAL_CONTACT). DWI, SACP, and
+# Therapeutic Community programs are included; AA/NA/peer support are
+# intentionally excluded.
+US_TX_SUBSTANCE_ABUSE_PROGRAM_IDS_REQUIRING_COLLATERAL: list[str] = [
+    "DWI REPEAT OFFENDER PROGRAM",
+    "SUBSTANCE ABUSE - SACP - LEVEL 2 - SUPPORTIVE OUTPATIENT",
+    "SUBSTANCE ABUSE - SACP - RESIDENTIAL",
+    "SUBSTANCE ABUSE - THERAPEUTIC COMMUNITY - SUPPORTIVE OUTPATIENT",
+    "SUBSTANCE ABUSE - THERAPEUTIC COMMUNITY - RESIDENTIAL",
+    "SUBSTANCE ABUSE - THERAPEUTIC COMMUNITY - RELAPSE OUTPATIENT",
+    "SUBSTANCE ABUSE - THERAPEUTIC COMMUNITY - RELAPSE RESIDENTIAL",
+]
+
+
+def active_collateral_contact_treatment_program_filter() -> str:
+    """Returns a SQL boolean predicate that filters
+    `us_tx_normalized_state.state_program_assignment` rows to active treatment
+    program assignments that count toward the additional collateral-contact
+    requirement for RRC clients (per US_TX_NEEDS_SCHEDULED_COLLATERAL_CONTACT).
+
+    Inline this expression in a WHERE clause selecting from
+    `state_program_assignment`.
+    """
+    substance_abuse_ids_sql = list_to_query_string(
+        US_TX_SUBSTANCE_ABUSE_PROGRAM_IDS_REQUIRING_COLLATERAL, quoted=True
+    )
+    return f"""participation_status_raw_text = 'ACTIVE'
+        AND (
+            JSON_EXTRACT_SCALAR(referral_metadata, '$.program_type') IN ('SPECIAL NEEDS', 'SEX OFFENDER')
+            OR program_id IN ({substance_abuse_ids_sql})
+        )"""
 
 
 def alternative_contact_cadence_reason(
