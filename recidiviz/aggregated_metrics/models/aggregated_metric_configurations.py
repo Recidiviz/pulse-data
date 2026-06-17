@@ -4746,44 +4746,42 @@ DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP_FOR_REGISTERED_JII_TABLET_A
     ),
 )
 
-HOME_CONTACTS_AFTER_SURFACED_IN_ROUTE_PLANNER = EventCountMetric(
-    name="home_contacts_after_surfaced_in_route_planner",
-    display_name="Home Contacts After Being Surfaced in Route Planner",
+CONTACTS_AFTER_ROUTE_PLANNER_SURFACED = EventCountMetric(
+    name="contacts_after_route_planner_surfaced",
+    display_name="Contacts After Being Surfaced in Route Planner",
     description=(
-        "Flag for whether a home contact was attempted or completed within a month of a client being surfaced in the Home Contact Route Planner (HCRP)."
+        "Flag for whether a contact was attempted or completed within a month of a client being surfaced in the Route Planner."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={"contact_after_route_planner_surfaced": ["true"]},
+    ),
+)
+
+CONTACTS_AFTER_ROUTE_PLANNER_LINK_INTERACTION = EventCountMetric(
+    name="contacts_after_route_planner_link_interaction",
+    display_name="Contacts After Link Interaction in Route Planner",
+    description=(
+        "Flag for whether a contact was attempted or completed within a month of an officer interacting with a link in the Route Planner."
     ),
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT,
         event_conditions_dict={
-            "home_contact_after_surfaced_in_route_planner": ["true"]
+            "contact_after_route_planner_link_interaction": ["true"]
         },
     ),
 )
 
-HOME_CONTACTS_AFTER_LINK_INTERACTION_IN_ROUTE_PLANNER = EventCountMetric(
-    name="home_contacts_after_link_interaction_in_route_planner",
-    display_name="Home Contacts After Link Interaction in Route Planner",
+CONTACTS_AFTER_ROUTE_PLANNER_ROUTE_OPTIMIZATION_ATTEMPT = EventCountMetric(
+    name="contacts_after_route_planner_route_optimization_attempt",
+    display_name="Contacts After Route Optimization Attempt in Route Planner",
     description=(
-        "Flag for whether a home contact was attempted or completed within a month of an officer interacting with a link in the Home Contact Route Planner (HCRP)."
+        "Flag for whether a contact was attempted or completed within a month of an officer attempting route optimization in the Route Planner."
     ),
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT,
         event_conditions_dict={
-            "home_contact_after_link_interaction_in_route_planner": ["true"]
-        },
-    ),
-)
-
-HOME_CONTACTS_AFTER_ROUTE_OPTIMIZATION_ATTEMPT_IN_ROUTE_PLANNER = EventCountMetric(
-    name="home_contacts_after_route_optimization_attempt_in_route_planner",
-    display_name="Home Contacts After Route Optimization Attempt in Route Planner",
-    description=(
-        "Flag for whether a home contact was attempted or completed within a month of an officer attempting route optimization in the Home Contact Route Planner (HCRP)."
-    ),
-    event_selector=EventSelector(
-        event_type=EventType.SUPERVISION_CONTACT,
-        event_conditions_dict={
-            "home_contact_after_route_optimization_attempt_in_route_planner": ["true"]
+            "contact_after_route_planner_route_optimization_attempt": ["true"]
         },
     ),
 )
