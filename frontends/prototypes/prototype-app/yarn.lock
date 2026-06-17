@@ -4463,10 +4463,10 @@ mobx-react-lite@^4.1.1:
   dependencies:
     use-sync-external-store "^1.4.0"
 
-mobx@^6.16.0, mobx@^6.6.1:
-  version "6.16.0"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.16.0.tgz#94d0c53459ddf152dc9fe4c5772b4221cd0f7c67"
-  integrity sha512-qFIcwox4Mc4xRUVBGm0mt2uXmm4zCnfpwBRVkm59Y7zDei498NmpyKvEDsjCR3OYPbnQCKyhV6mLDs0vt2hBxA==
+mobx@^6.16.1, mobx@^6.6.1:
+  version "6.16.1"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.16.1.tgz#8b3166186d1298b1848395e10e64b5c43d6dc43b"
+  integrity sha512-syNcDdX3KT+Jq3je6eGjBhuc24Z68td2VG0zNFqRswaE433D9SNH5VRy/xrGbJsUixfppLLccXhAW9JSf6n+SQ==
 
 ms@2.1.2:
   version "2.1.2"
