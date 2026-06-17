@@ -202,6 +202,14 @@ class ProductType(Enum):
                     mode="NULLABLE",
                 )
             ]
+        if self is ProductType.ROUTE_PLANNER:
+            return [
+                String(
+                    name="context_user_agent",
+                    description="The user agent string of the browser/device that triggered the event, used to determine whether Route Planner usage occurred on mobile.",
+                    mode="NULLABLE",
+                )
+            ]
         return []
 
     @property

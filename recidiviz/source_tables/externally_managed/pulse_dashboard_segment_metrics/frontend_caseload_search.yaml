@@ -30,6 +30,7 @@ schema:
     type: STRING
     mode: NULLABLE
   - name: context_user_agent
+    description: User-Agent string of the client browser
     type: STRING
     mode: NULLABLE
   - name: event
