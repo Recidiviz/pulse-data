@@ -48,9 +48,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
-    JII_CPA_DATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.community_corrections_population_by_facility_by_demographics import (
     COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER,
 )
@@ -397,34 +394,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "CPA": {
-        JII_CPA_DATA_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_ND
-                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),

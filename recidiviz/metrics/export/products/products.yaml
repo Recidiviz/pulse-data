@@ -237,17 +237,6 @@ products:
         environment: production
       - state_code: US_TX
         environment: production
-  - name: Reentry
-    description: Views that back the Reentry product
-    exports:
-      - REENTRY
-    states:
-      - state_code: US_AZ
-        environment: production
-      - state_code: US_IX
-        environment: production
-      - state_code: US_UT
-        environment: production
   - name: Meetings
     description: Views that back the Meeting Assistant product
     exports:
@@ -286,21 +275,6 @@ products:
     states:
       - state_code: US_NY
         environment: production
-  - name: Case Planning Assistant
-    description: Views that back the Case Planning Assistant v1 product
-    exports:
-      - CPA
-    states:
-      - state_code: US_UT
-        environment: staging
-      - state_code: US_IX
-        environment: staging
-      - state_code: US_NE
-        environment: staging
-      - state_code: US_AZ
-        environment: staging
-      - state_code: US_ND
-        environment: staging
   - name: JII Tablet App Postgres exports
     description: Views to be loaded into the JII Tablet app Postgres database
     exports:

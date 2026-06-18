@@ -96,6 +96,15 @@ from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.case_manager import (
+    REENTRY_CASE_MANAGER_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reentry.client import (
+    REENTRY_CLIENT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.most_severe_sentence_and_charge_spans import (
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER,
 )
@@ -345,6 +354,18 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
+    ),
+    REENTRY_CLIENT_VIEW_BUILDER.address: (
+        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
+        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
+    ),
+    REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
+        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
+        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
+    ),
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER.address: (
+        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
+        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
     ),
     WORKFLOWS_ELIGIBILITY_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New view that parses archived workflows_eligibility_status exports from GCS. "
