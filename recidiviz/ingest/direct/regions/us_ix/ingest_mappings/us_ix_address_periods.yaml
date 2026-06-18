@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  OffenderId: STRING
+  AddressTypeDesc: STRING
+  ReleasePlanTypeId: STRING
+  PrimaryAddress: STRING
+  address_start_date: DATE
+  address_end_date: DATE
+  address_line_1: STRING
+  address_line_2: STRING
+  address_city: STRING
+  address_state: STRING
+  address_zip: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    address_periods:
+      - StatePersonAddressPeriod:
+          address_start_date: address_start_date
+          address_end_date: address_end_date
+          address_line_1: address_line_1
+          address_line_2: address_line_2
+          address_city: address_city
+          address_state: address_state
+          address_zip: address_zip
+          address_type:
+            # The address_periods ingest view only emits confirmed physical
+            # residences ('Permanent Address', 'Local Address'); all other
+            # AddressTypeDesc values are filtered out upstream and never reach
+            # this mapping.
+            $enum_mapping:
+              $raw_text: AddressTypeDesc
+              $mappings:
+                StatePersonAddressType.PHYSICAL_RESIDENCE:
+                  - "Permanent Address"
+                  - "Local Address"
+          address_metadata:
+            $normalized_values_json_dict:
+              release_plan_type_id: ReleasePlanTypeId
+              primary_address: PrimaryAddress

@@ -1397,7 +1397,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "ind_OffenderLocationHistory": ["InsertDate", "UpdateDate"],
         "ind_SecurityLevelMandatoryOverride": ["InsertDate", "UpdateDate"],
         "prb_PBCaseType": ["InsertDate", "UpdateDate"],
-        "ref_AddressType": ["InsertDate", "UpdateDate"],
         "ref_EmployeeStatus": ["InsertDate", "UpdateDate"],
         "ref_ScoreSheetType": ["InsertDate", "UpdateDate"],
         "scl_Credit": ["InsertDate", "UpdateDate"],

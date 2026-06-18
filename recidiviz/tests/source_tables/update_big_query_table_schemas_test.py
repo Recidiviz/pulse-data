@@ -716,6 +716,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ix_identity_cluster.identity_cluster_phone_number",
     "us_ix_identity_cluster.identity_cluster_race",
     "us_ix_identity_cluster.identity_cluster_sex",
+    "us_ix_ingest_view_results.address_periods",
     "us_ix_ingest_view_results.assessments",
     "us_ix_ingest_view_results.charges",
     "us_ix_ingest_view_results.classification_assessments",
