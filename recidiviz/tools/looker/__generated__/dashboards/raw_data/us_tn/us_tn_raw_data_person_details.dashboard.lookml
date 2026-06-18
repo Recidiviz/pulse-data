@@ -1096,7 +1096,7 @@
       us_tn_Violations.is_deleted]
     sorts: [us_tn_Violations.ContactNoteDate__raw]
     note_display: hover
-    note_text: "TODO(#11323): fill out description once received."
+    note_text: "Records formal supervision violation events for offenders in Tennessee, where each row is a contact note of a violation type (e.g., VWAR for violation warning, VRPT for violation report). Linked to sanctions via TriggerNumber."
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
