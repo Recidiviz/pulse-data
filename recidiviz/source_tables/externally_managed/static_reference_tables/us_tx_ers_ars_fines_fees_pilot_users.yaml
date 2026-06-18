@@ -1,0 +1,72 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: us_tx_ers_ars_fines_fees_pilot_users
+description: >-
+  Static snapshot of US_TX supervision officers in regions 1 and 2 with at least
+  3 active days of Workflows engagement with the Early Release from Supervision
+  (ERS, usTxEarlyReleaseFromSupervision) and Annual Report Status (ARS,
+  usTxAnnualReportStatus) opportunities over the trailing 90 days as of the load
+  date, used to seed the ERS/ARS fines-and-fees pilot. Restricted to officers
+  present in supervision_staff_record, and excludes passive
+  frontend_surfaced_in_list impressions. This is a point-in-time snapshot
+  manually loaded for the pilot, not a live view, which is why it is not managed
+  in code. TODO(#86314): Drop this table (staging + prod) and remove this YAML
+  once the ERS/ARS fines-and-fees pilot ends.
+schema:
+  - name: staff_id
+    description: Recidiviz-internal state staff ID of the officer.
+    type: INTEGER
+    mode: NULLABLE
+  - name: region
+    description: >-
+      The officer's TDCJ region (district from supervision_staff_record); limited
+      to regions 1 and 2 for this pilot.
+    type: INTEGER
+    mode: NULLABLE
+  - name: active_days
+    description: >-
+      Number of distinct days in the trailing 90-day window on which the officer
+      took at least one (non-impression) ERS or ARS action in Workflows.
+    type: INTEGER
+    mode: NULLABLE
+  - name: total_actions
+    description: >-
+      Total count of ERS and ARS Workflows actions by the officer in the window,
+      excluding passive frontend_surfaced_in_list impressions.
+    type: INTEGER
+    mode: NULLABLE
+  - name: ers_actions
+    description: >-
+      Count of the officer's actions on the Early Release from Supervision (ERS)
+      opportunity in the window.
+    type: INTEGER
+    mode: NULLABLE
+  - name: ars_actions
+    description: >-
+      Count of the officer's actions on the Annual Report Status (ARS)
+      opportunity in the window.
+    type: INTEGER
+    mode: NULLABLE
+  - name: distinct_clients_engaged
+    description: >-
+      Number of distinct clients (person_id) the officer engaged with across ERS
+      and ARS in the window.
+    type: INTEGER
+    mode: NULLABLE
+  - name: last_active_date
+    description: Most recent date the officer took an ERS or ARS action in the window.
+    type: DATE
+    mode: NULLABLE
+  - name: had_ers_eligible_client
+    description: >-
+      Whether the officer had at least one client eligible for ERS at any point
+      in the trailing 90-day window.
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: had_ars_eligible_client
+    description: >-
+      Whether the officer had at least one client eligible for ARS at any point
+      in the trailing 90-day window.
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null
