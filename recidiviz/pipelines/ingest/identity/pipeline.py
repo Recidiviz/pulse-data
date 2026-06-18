@@ -88,10 +88,11 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         #    and produce one IdentityCluster per cluster.
         #    → PCollection[IdentityCluster]
         #
-        # 6. WriteIdentityClustersToBQ (not yet implemented)
+        # 6. WriteRootEntitiesToBQ
         #    Serialize each IdentityCluster into rows for the
-        #    {tenant}_identity_cluster.* tables and write them to BigQuery.
-        #    Schemas for those tables are defined by
+        #    {tenant}_identity_cluster.* tables and write them to BigQuery via
+        #    the shared transforms.write_root_entities_to_bq.WriteRootEntitiesToBQ
+        #    PTransform. Schemas for those tables are defined by
         #    identity_pipeline_output_table_collector and follow
         #    identity_cluster_entities.
         pass

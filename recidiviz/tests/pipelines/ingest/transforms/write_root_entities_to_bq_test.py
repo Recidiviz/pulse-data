@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ from unittest.mock import patch
 import apache_beam as beam
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity import entities as state_entities
@@ -36,11 +37,22 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.pipelines.ingest.activity import write_root_entities_to_bq
-from recidiviz.pipelines.ingest.activity.write_root_entities_to_bq import (
+from recidiviz.persistence.entity.identity import identity_cluster_entities
+from recidiviz.persistence.entity.identity.identity_cluster_entities import (
+    IdentityCluster,
+    IdentityClusterExternalId,
+)
+from recidiviz.pipelines.ingest.identity.dataset_config import (
+    identity_cluster_dataset_for_tenant,
+)
+from recidiviz.pipelines.ingest.transforms import write_root_entities_to_bq
+from recidiviz.pipelines.ingest.transforms.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
+from recidiviz.source_tables.identity_pipeline_output_table_collector import (
+    build_identity_cluster_output_source_table_collection,
+)
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
@@ -55,10 +67,16 @@ from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    generate_full_graph_identity_cluster,
+)
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.fake_bigquery import FakeWriteToBigQueryEmulator
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
+
+_TENANT = "US_XX"
+_SANDBOX_PREFIX = "my_prefix"
 
 
 class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
@@ -87,9 +105,10 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
             # Output collections
             build_state_output_source_table_collection(StateCode.US_DD),
             build_normalized_state_output_source_table_collection(StateCode.US_DD),
+            build_identity_cluster_output_source_table_collection(_TENANT),
         ]
 
-        return [c.as_sandbox_collection("my_prefix") for c in collections]
+        return [c.as_sandbox_collection(_SANDBOX_PREFIX) for c in collections]
 
     def _get_rows_by_table(self, dataset_id: str) -> dict[str, list[TableRow]]:
         result = {}
@@ -131,7 +150,6 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
             self.test_pipeline
             | beam.Create([person])
             | WriteRootEntitiesToBQ(
-                state_code=StateCode.US_DD,
                 output_dataset=output_dataset_id,
                 output_table_ids=["state_person", "state_person_external_id"],
                 entities_module=state_entities,
@@ -206,7 +224,6 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                 ]
             )
             | WriteRootEntitiesToBQ(
-                state_code=StateCode.US_DD,
                 output_dataset=output_dataset_id,
                 output_table_ids=output_table_ids,
                 entities_module=state_entities,
@@ -234,7 +251,6 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                 ]
             )
             | WriteRootEntitiesToBQ(
-                state_code=StateCode.US_DD,
                 output_dataset=output_dataset_id,
                 output_table_ids=output_table_ids,
                 entities_module=normalized_entities,
@@ -247,3 +263,87 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
         for table, table_rows in persisted_rows_by_table.items():
             if not table_rows:
                 self.fail(f"Found table [{table}] unexpectedly empty")
+
+    def test_write_identity_cluster_minimal(self) -> None:
+        """A minimal identity cluster (no M2M relationships in
+        `identity_cluster_entities`) round-trips through WriteRootEntitiesToBQ."""
+        output_dataset_id = identity_cluster_dataset_for_tenant(
+            _TENANT, sandbox_dataset_prefix=_SANDBOX_PREFIX
+        )
+        output_table_ids = sorted(
+            get_bq_schema_for_entities_module(identity_cluster_entities)
+        )
+
+        cluster = IdentityCluster(
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="EXT_001", id_type=f"{_TENANT}_ID_TYPE"
+                ),
+            ),
+        )
+
+        _ = (
+            self.test_pipeline
+            | beam.Create([cluster])
+            | WriteRootEntitiesToBQ(
+                output_dataset=output_dataset_id,
+                output_table_ids=output_table_ids,
+                entities_module=identity_cluster_entities,
+            )
+        )
+        self.test_pipeline.run()
+
+        rows_by_table = self._get_rows_by_table(output_dataset_id)
+
+        self.assertEqual(len(rows_by_table["identity_cluster"]), 1)
+        self.assertEqual(rows_by_table["identity_cluster"][0]["tenant"], _TENANT)
+        self.assertEqual(
+            rows_by_table["identity_cluster_external_id"],
+            [
+                {
+                    "tenant": _TENANT,
+                    "external_id": "EXT_001",
+                    "id_type": f"{_TENANT}_ID_TYPE",
+                    "identity_cluster_id": cluster.identity_cluster_id,
+                }
+            ],
+        )
+        for empty_table in (
+            "identity_cluster_email",
+            "identity_cluster_ethnicity",
+            "identity_cluster_gender",
+            "identity_cluster_name",
+            "identity_cluster_phone_number",
+            "identity_cluster_race",
+            "identity_cluster_sex",
+        ):
+            self.assertEqual(rows_by_table[empty_table], [])
+
+    def test_write_identity_cluster_full_tree(self) -> None:
+        output_dataset_id = identity_cluster_dataset_for_tenant(
+            _TENANT, sandbox_dataset_prefix=_SANDBOX_PREFIX
+        )
+        output_table_ids = sorted(
+            get_bq_schema_for_entities_module(identity_cluster_entities)
+        )
+
+        _ = (
+            self.test_pipeline
+            | beam.Create([generate_full_graph_identity_cluster()])
+            | WriteRootEntitiesToBQ(
+                output_dataset=output_dataset_id,
+                output_table_ids=output_table_ids,
+                entities_module=identity_cluster_entities,
+            )
+        )
+        self.test_pipeline.run()
+
+        rows_by_table = self._get_rows_by_table(output_dataset_id)
+        for table_id in output_table_ids:
+            self.assertGreaterEqual(
+                len(rows_by_table[table_id]),
+                1,
+                msg=f"Expected at least one row in [{table_id}]",
+            )

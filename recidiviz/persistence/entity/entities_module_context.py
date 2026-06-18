@@ -55,13 +55,8 @@ class EntitiesModuleContext:
         entities don't carry that info.
 
         Must be non-None for modules whose entities are written to BigQuery via
-        the `SerializeEntities` transform AND have many-to-many relationships.
-
-        TODO(#75625): No caller reads this yet. `SerializeEntities` (currently
-        at `recidiviz.pipelines.ingest.activity.serialize_entities`) will be
-        moved to `recidiviz.pipelines.ingest.transforms.serialize_entities` and
-        switched from a constructor `state_code` arg to
-        `get_partition_value(entity)` in a follow-up PR.
+        `recidiviz.pipelines.ingest.transforms.serialize_entities.SerializeEntities`
+        AND have many-to-many relationships.
         """
 
     @classmethod

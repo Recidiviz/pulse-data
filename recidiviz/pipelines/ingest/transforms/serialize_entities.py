@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@ import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.entities_bq_schema import STATE_CODE_COL
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
@@ -32,6 +30,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_many_to_many_relationships,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
+from recidiviz.utils.types import non_optional
 
 
 # pylint: disable=arguments-differ,abstract-method
@@ -40,21 +39,23 @@ from recidiviz.persistence.entity.serialization import serialize_entity_into_jso
 class SerializeEntities(beam.DoFn):
     """A DoFn that converts a RootEntity into N JSON-serializable dictionaries for
     writing to BQ, where each one represents an entity in that root entity tree.
+
+    For modules that have many-to-many relationships, also emits one row per
+    association table, tagged with the association table id. Each association
+    row is stamped with the module's partition column (e.g. `state_code`,
+    `tenant`, `region_code`), read off the parent entity via
+    `EntitiesModuleContext.get_partition_value`.
     """
 
-    def __init__(
-        self,
-        state_code: StateCode,
-        entities_module_context: EntitiesModuleContext,
-    ):
+    def __init__(self, entities_module_context: EntitiesModuleContext):
         super().__init__()
-        self._state_code = state_code
         self._entities_module_context = entities_module_context
 
     def process(
         self, element: RootEntity
     ) -> Generator[beam.pvalue.TaggedOutput, None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
+        partition_column = self._entities_module_context.partition_column_name()
 
         for entity in get_all_entities_from_tree(
             entity=cast(Entity, element),
@@ -64,6 +65,13 @@ class SerializeEntities(beam.DoFn):
             many_to_many_relationships = get_many_to_many_relationships(
                 entity_cls, self._entities_module_context
             )
+            if many_to_many_relationships and partition_column is None:
+                raise ValueError(
+                    f"Module "
+                    f"[{self._entities_module_context.entities_module().__name__}] "
+                    f"has many-to-many relationships but declares no partition "
+                    f"column; cannot stamp association rows."
+                )
             for relationship in many_to_many_relationships:
                 parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
                     entity_cls, relationship
@@ -86,7 +94,11 @@ class SerializeEntities(beam.DoFn):
                         {
                             parent_entity.get_class_id_name(): parent_entity.get_id(),
                             entity.get_class_id_name(): entity.get_id(),
-                            STATE_CODE_COL: self._state_code.value,
+                            non_optional(
+                                partition_column
+                            ): self._entities_module_context.get_partition_value(
+                                parent_entity
+                            ),
                         },
                     )
 

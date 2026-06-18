@@ -73,14 +73,14 @@ from recidiviz.pipelines.ingest.activity.process_all_ingest_views import (
     ProcessAllIngestViews,
 )
 from recidiviz.pipelines.ingest.activity.run_validations import RunValidations
-from recidiviz.pipelines.ingest.activity.write_root_entities_to_bq import (
-    WriteRootEntitiesToBQ,
-)
 from recidiviz.pipelines.ingest.transforms.cluster_root_external_ids import (
     ClusterRootExternalIds,
 )
 from recidiviz.pipelines.ingest.transforms.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
+)
+from recidiviz.pipelines.ingest.transforms.write_root_entities_to_bq import (
+    WriteRootEntitiesToBQ,
 )
 from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
@@ -229,7 +229,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             pre_normalization_root_entities
             | f"Write pre-normalization entities to {self.pipeline_parameters.pre_normalization_output}"
             >> WriteRootEntitiesToBQ(
-                state_code=state_code,
                 entities_module=state_entities,
                 output_dataset=self.pipeline_parameters.pre_normalization_output,
                 output_table_ids=expected_pre_norm_table_ids,
@@ -276,7 +275,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             normalized_root_entities
             | f"Write normalized entities to {self.pipeline_parameters.normalized_output}"
             >> WriteRootEntitiesToBQ(
-                state_code=state_code,
                 entities_module=normalized_entities,
                 output_dataset=self.pipeline_parameters.normalized_output,
                 output_table_ids=expected_norm_table_ids,

@@ -24,7 +24,6 @@ import apache_beam as beam
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
@@ -37,8 +36,8 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.pipelines.ingest.activity import write_root_entities_to_bq
-from recidiviz.pipelines.ingest.activity.write_root_entities_to_bq import (
+from recidiviz.pipelines.ingest.transforms import write_root_entities_to_bq
+from recidiviz.pipelines.ingest.transforms.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -65,7 +64,6 @@ def write_root_entities_to_emulator(
         raise ValueError(
             "Cannot pass empty list to 'people' argument of write_root_entities_to_emulator"
         )
-    state_code = StateCode(people[0].state_code)
     root_entity_type = type(people[0])
     dataset = (
         STATE_BASE_DATASET
@@ -95,7 +93,6 @@ def write_root_entities_to_emulator(
                 ]
             )
             | WriteRootEntitiesToBQ(
-                state_code=state_code,
                 output_dataset=dataset,
                 output_table_ids=[addr.table_id for addr in schema_mapping],
                 entities_module=entities_module_context.entities_module(),

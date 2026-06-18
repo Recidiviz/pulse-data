@@ -61,9 +61,20 @@ def _related_entity_id_field_lives_on_entity(
             # For many-to-one relationships, we expect the id field of the related
             # entity to be stored on the table for this entity.
             return True
+
+        # Must be direct 1:1 relationship. Mirror the convention used by
+        # entities_bq_schema._get_bq_schema_for_entity_class: a child entity
+        # that references the RootEntity carries the root id on its table.
+        is_entity_root = issubclass(entity_cls, RootEntity)
+        is_referenced_root = issubclass(referenced_entity_cls, RootEntity)
+        if is_referenced_root and not is_entity_root:
+            return True
+        if is_entity_root and not is_referenced_root:
+            return False
         raise ValueError(
-            f"Found unexpected relationship type between "
-            f"[{entity_cls.__name__}] and [{referenced_entity_cls.__name__}]."
+            f"Found 1:1 direct relationship between [{entity_cls.__name__}] and "
+            f"[{referenced_entity_cls.__name__}] where neither (or both) is a "
+            f"RootEntity; FK ownership cannot be determined."
         )
     if issubclass(referenced_entity_cls, RootEntity):
         # For indirect relationships to the root entity, we expect the root entity

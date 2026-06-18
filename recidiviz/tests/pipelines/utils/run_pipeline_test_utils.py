@@ -34,8 +34,8 @@ from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.activity import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.transforms import write_root_entities_to_bq
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
