@@ -31,9 +31,6 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
     num_events_within_time_interval_spans,
 )
 
-# TODO(#20870): Rather than having to repeatedly exclude these levels from
-# opportunities, should they be remapped differently so that they won't get grouped in
-# with the supervision levels for clients not in the PSU or DRC programs?
 # These are the raw-text supervision levels that correspond with participation in Day
 # Reporting Center (DRC) programs in TN. They're often excluded from various
 # supervision-side opportunities.

@@ -19,10 +19,6 @@ eligible for Compliant Reporting under the policy implemented in 2025, for those
 on the "Low" supervision level (which we map to 'MINIMUM').
 """
 
-# TODO(#40868): Ideally, combine this logic into the eligibility spans for the pre-2025
-# version of the CR policy, such that we have a single set of spans (if possible) for
-# the old and new versions of the policy.
-
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (

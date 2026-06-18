@@ -27,8 +27,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#40868): Deprecate this completion event in favor of combining all CR transfers
-# into a single completion event in TN.
 _QUERY_TEMPLATE = """
     SELECT
         state_code,

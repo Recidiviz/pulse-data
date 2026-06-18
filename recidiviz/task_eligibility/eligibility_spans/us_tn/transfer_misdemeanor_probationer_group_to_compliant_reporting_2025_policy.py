@@ -20,10 +20,6 @@ being supervised as "misdemeanor probationers," who are eligible for Compliant R
 following intake.
 """
 
-# TODO(#40868): Ideally, combine this logic into the eligibility spans for the pre-2025
-# version of the CR policy, such that we have a single set of spans (if possible) for
-# the old and new versions of the policy.
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,

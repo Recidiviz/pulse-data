@@ -44,10 +44,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "ASSESSED_RISK_LOW_WHILE_ON_SUPERVISION_AT_LEAST_2_YEARS"
 
-# TODO(#34709): Generalize this criterion. We might consider moving this criterion logic
-# into a criterion builder in the `general_criteria_builders.py` file, where it can be
-# generalized/parameterized.
-# TODO(#34751): Decide how to handle assessments with null `assessment_level` values.
 _QUERY_TEMPLATE = f"""
     WITH prioritized_supervision_sessions AS (
         SELECT
