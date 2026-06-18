@@ -34,7 +34,7 @@ _QUERY_TEMPLATE = """
 SELECT DISTINCT
     'US_NC' AS state_code,
     pei.person_id,
-    SAFE.PARSE_DATE('%Y%m%d', cr.EVTDT) AS completion_event_date
+    DATE(cr.EVTDT) AS completion_event_date
 FROM `{project_id}.{us_nc_raw_data_up_to_date_dataset}.cr_outcome_latest` cr
 INNER JOIN `{project_id}.us_nc_normalized_state.state_person_external_id` pei
     ON pei.external_id = cr.OPUS
