@@ -38,3 +38,7 @@ class FakeEntitiesModuleContext(EntitiesModuleContext):
             entities.Child.__name__,
             entities.Toy.__name__,
         ]
+
+    @classmethod
+    def partition_column_name(cls) -> str | None:
+        return None

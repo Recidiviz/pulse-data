@@ -35,3 +35,7 @@ class FakeEntitiesModuleContext(EntitiesModuleContext):
             fake_entities.FakeEntity.__name__,
             fake_entities.FakeAnotherEntity.__name__,
         ]
+
+    @classmethod
+    def partition_column_name(cls) -> str:
+        return "state_code"

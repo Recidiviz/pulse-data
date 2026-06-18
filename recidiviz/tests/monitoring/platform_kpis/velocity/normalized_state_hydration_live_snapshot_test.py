@@ -91,6 +91,10 @@ def _get_module_ctx(module: ModuleType) -> EntitiesModuleContext:
                 FakeSequencedNormalizedEntity.__name__,
             ]
 
+        @classmethod
+        def partition_column_name(cls) -> str:
+            return "state_code"
+
     return _FakeEntityModuleContext()
 
 

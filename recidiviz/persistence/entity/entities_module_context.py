@@ -26,6 +26,7 @@ from recidiviz.persistence.entity.entity_field_index import EntityFieldIndex
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
     SchemaEdgeDirectionChecker,
 )
+from recidiviz.utils.types import non_optional
 
 
 class EntitiesModuleContext:
@@ -45,6 +46,31 @@ class EntitiesModuleContext:
         ranked in order from closest to the root of the entity tree to furthest. This
         ranking is used to determine edge direction in an entity tree.
         """
+
+    @classmethod
+    @abc.abstractmethod
+    def partition_column_name(cls) -> str | None:
+        """Returns the column name that says which state or tenant a row belongs
+        to (e.g. `state_code`, `tenant`, `region_code`), or None if this module's
+        entities don't carry that info.
+
+        Must be non-None for modules whose entities are written to BigQuery via
+        the `SerializeEntities` transform AND have many-to-many relationships.
+
+        TODO(#75625): No caller reads this yet. `SerializeEntities` (currently
+        at `recidiviz.pipelines.ingest.activity.serialize_entities`) will be
+        moved to `recidiviz.pipelines.ingest.transforms.serialize_entities` and
+        switched from a constructor `state_code` arg to
+        `get_partition_value(entity)` in a follow-up PR.
+        """
+
+    @classmethod
+    def get_partition_value(cls, entity: Entity) -> str:
+        """Returns the partition value (e.g. state code, tenant, region code) of the
+        given entity by reading the flat field named by `partition_column_name`.
+        Raises if this module declares no partition column.
+        """
+        return getattr(entity, non_optional(cls.partition_column_name()))
 
     @classmethod
     @cache

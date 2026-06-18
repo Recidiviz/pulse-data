@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolation,
 )
 from recidiviz.persistence.entity.entities_module_context_factory import (
-    ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES,
+    CONTEXT_CLASS_BY_MODULE,
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
@@ -68,7 +68,7 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
     def test_schemaEdgeDirectionChecker_covers_all_entities_for_supported_schemas(
         self,
     ) -> None:
-        for entities_module in ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES:
+        for entities_module in CONTEXT_CLASS_BY_MODULE:
             entity_classes = get_all_entity_classes_in_module(entities_module)
             entities_module_context = entities_module_context_for_module(
                 entities_module

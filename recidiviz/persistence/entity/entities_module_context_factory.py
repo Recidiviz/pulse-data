@@ -32,21 +32,13 @@ from recidiviz.persistence.entity.identity import (
     identity_fragment_entities,
 )
 from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
-    IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+    IdentityClusterEntitiesModuleContext,
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities_module_context import (
-    IDENTITY_FRAGMENT_ENTITIES_CONTEXT,
+    IdentityFragmentEntitiesModuleContext,
 )
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.utils import environment
-
-ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES = [
-    normalized_entities,
-    state_entities,
-    operations_entities,
-    identity_fragment_entities,
-    identity_cluster_entities,
-]
 
 _module_context_by_module: dict[ModuleType, EntitiesModuleContext] = {}
 
@@ -61,7 +53,7 @@ _module_by_entity_class: dict[type[Entity], ModuleType] = {}
 
 def _get_module_for_entity_class(entity_cls: type[Entity]) -> ModuleType:
     if entity_cls not in _module_by_entity_class:
-        for module in ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES:
+        for module in CONTEXT_CLASS_BY_MODULE:
             classes_in_module = get_all_entity_classes_in_module(module)
             if entity_cls in classes_in_module:
                 # Register all classes in this module for future calls
@@ -126,6 +118,10 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             state_entities.StateStaffCaseloadTypePeriod.__name__,
             state_entities.StatePersonStaffRelationshipPeriod.__name__,
         ]
+
+    @classmethod
+    def partition_column_name(cls) -> str:
+        return "state_code"
 
     # TODO(#10389): Remove this custom handling for legacy sentence association tables
     #  once we remove these classes from the schema.
@@ -208,6 +204,10 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
             normalized_entities.NormalizedStatePersonStaffRelationshipPeriod.__name__,
         ]
 
+    @classmethod
+    def partition_column_name(cls) -> str:
+        return "state_code"
+
     # TODO(#10389): Remove this custom handling for legacy sentence association tables
     #  once we remove these classes from the schema.
     @classmethod
@@ -257,6 +257,23 @@ class _OperationsEntitiesModuleContext(EntitiesModuleContext):
             operations_entities.DirectIngestRawDataFlashStatus.__name__,
         ]
 
+    @classmethod
+    def partition_column_name(cls) -> str | None:
+        # Operations entities are SQLAlchemy-persisted, never flow through
+        # `SerializeEntities`, and `DirectIngestDataflowRawTableUpperBounds`
+        # doesn't carry `region_code` directly (it's inherited via FK), so we
+        # don't declare a partition column here.
+        return None
+
+
+CONTEXT_CLASS_BY_MODULE: dict[ModuleType, type[EntitiesModuleContext]] = {
+    state_entities: _StateEntitiesModuleContext,
+    normalized_entities: _NormalizedStateEntitiesModuleContext,
+    operations_entities: _OperationsEntitiesModuleContext,
+    identity_fragment_entities: IdentityFragmentEntitiesModuleContext,
+    identity_cluster_entities: IdentityClusterEntitiesModuleContext,
+}
+
 
 def entities_module_context_for_module(
     entities_module: ModuleType,
@@ -264,22 +281,12 @@ def entities_module_context_for_module(
     """Returns the EntitiesModuleContext for a given module. Throws if the module is not
     supported.
     """
-    context: EntitiesModuleContext
+    if entities_module not in CONTEXT_CLASS_BY_MODULE:
+        raise ValueError(f"Unsupported module: [{entities_module}]")
     if entities_module not in _module_context_by_module:
-        if entities_module is state_entities:
-            context = _StateEntitiesModuleContext()
-        elif entities_module is normalized_entities:
-            context = _NormalizedStateEntitiesModuleContext()
-        elif entities_module is operations_entities:
-            context = _OperationsEntitiesModuleContext()
-        elif entities_module is identity_fragment_entities:
-            context = IDENTITY_FRAGMENT_ENTITIES_CONTEXT
-        elif entities_module is identity_cluster_entities:
-            context = IDENTITY_CLUSTER_ENTITIES_CONTEXT
-        else:
-            raise ValueError(f"Unsupported module: [{entities_module}]")
-        _module_context_by_module[context.entities_module()] = context
-
+        _module_context_by_module[entities_module] = CONTEXT_CLASS_BY_MODULE[
+            entities_module
+        ]()
     return _module_context_by_module[entities_module]
 
 

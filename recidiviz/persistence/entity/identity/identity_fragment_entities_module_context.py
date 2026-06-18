@@ -55,6 +55,10 @@ class IdentityFragmentEntitiesModuleContext(EntitiesModuleContext):
         ]
 
     @classmethod
+    def partition_column_name(cls) -> str:
+        return "tenant"
+
+    @classmethod
     def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
         return identity_description_for_field(entity_cls, field_name)
 
