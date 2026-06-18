@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_charge import (
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Gender, Race
 from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.activity.entities import (
@@ -483,9 +484,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
 
     def test_recursive_tree(self) -> None:
         attrs = IdentityAttributes(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
-            name=IdentityName(tenant="US_XX", given_name="John", surname="Doe"),
+            name=IdentityName(tenant=Tenant.US_XX, given_name="John", surname="Doe"),
         )
 
         result = serialize_entity_tree_into_json(
@@ -508,7 +509,7 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
 
     def test_none_optional_forward_edge_children(self) -> None:
         attrs = IdentityAttributes(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
@@ -524,11 +525,11 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
 
     def test_forward_edge_list_children_sorted(self) -> None:
         attrs = IdentityAttributes(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
             races=[
-                IdentityRace(tenant="US_XX", race=Race.WHITE, race_raw_text="W"),
-                IdentityRace(tenant="US_XX", race=Race.BLACK, race_raw_text="B"),
+                IdentityRace(tenant=Tenant.US_XX, race=Race.WHITE, race_raw_text="W"),
+                IdentityRace(tenant=Tenant.US_XX, race=Race.BLACK, race_raw_text="B"),
             ],
         )
 
@@ -541,14 +542,14 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
 
     def test_back_edges_excluded(self) -> None:
         attrs = IdentityAttributes(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
-            name=IdentityName(tenant="US_XX", given_name="John", surname="Doe"),
+            name=IdentityName(tenant=Tenant.US_XX, given_name="John", surname="Doe"),
             gender=IdentityGender(
-                tenant="US_XX", gender=Gender.MALE, gender_raw_text="M"
+                tenant=Tenant.US_XX, gender=Gender.MALE, gender_raw_text="M"
             ),
             races=[
-                IdentityRace(tenant="US_XX", race=Race.BLACK, race_raw_text="B"),
+                IdentityRace(tenant=Tenant.US_XX, race=Race.BLACK, race_raw_text="B"),
             ],
         )
 
@@ -564,14 +565,14 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
     def test_one_to_one_child_row_carries_root_id(self) -> None:
         """The non-root side of a direct 1:1 to the root carries the root's id."""
         cluster = IdentityCluster(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
             external_ids=(
                 IdentityClusterExternalId(
-                    tenant="US_XX", external_id="EXT_001", id_type="US_XX_T1"
+                    tenant=Tenant.US_XX, external_id="EXT_001", id_type="US_XX_T1"
                 ),
             ),
-            name=IdentityClusterName(tenant="US_XX", given_name="John"),
+            name=IdentityClusterName(tenant=Tenant.US_XX, given_name="John"),
         )
         assert cluster.name is not None
 
@@ -583,14 +584,14 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
         """The root side of a direct 1:1 to a non-root child has no FK column
         for the child."""
         cluster = IdentityCluster(
-            tenant="US_XX",
+            tenant=Tenant.US_XX,
             person_type=PersonType.JII,
             external_ids=(
                 IdentityClusterExternalId(
-                    tenant="US_XX", external_id="EXT_001", id_type="US_XX_T1"
+                    tenant=Tenant.US_XX, external_id="EXT_001", id_type="US_XX_T1"
                 ),
             ),
-            name=IdentityClusterName(tenant="US_XX", given_name="John"),
+            name=IdentityClusterName(tenant=Tenant.US_XX, given_name="John"),
         )
 
         root_row = serialize_entity_into_json(cluster, identity_cluster_entities)
@@ -670,8 +671,8 @@ class TestSerializeEntityTreesIntoJson(unittest.TestCase):
 
     def test_sorts_top_level(self) -> None:
         eids = [
-            IdentityExternalId(tenant="US_XX", external_id="B", id_type="T1"),
-            IdentityExternalId(tenant="US_XX", external_id="A", id_type="T1"),
+            IdentityExternalId(tenant=Tenant.US_XX, external_id="B", id_type="T1"),
+            IdentityExternalId(tenant=Tenant.US_XX, external_id="A", id_type="T1"),
         ]
 
         result = serialize_entity_trees_into_json(

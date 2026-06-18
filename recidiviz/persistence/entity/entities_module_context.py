@@ -18,6 +18,7 @@
 collection of Entity objects that form a relational schema).
 """
 import abc
+from enum import Enum
 from functools import cache
 from types import ModuleType
 
@@ -65,7 +66,12 @@ class EntitiesModuleContext:
         given entity by reading the flat field named by `partition_column_name`.
         Raises if this module declares no partition column.
         """
-        return getattr(entity, non_optional(cls.partition_column_name()))
+        value = getattr(entity, non_optional(cls.partition_column_name()))
+        # The partition column flows into BigQuery row dicts as a string. Enum-valued
+        # partition fields (e.g. `tenant: Tenant` on identity entities) need to be
+        # coerced to their underlying string value here; non-enum fields (e.g.
+        # `state_code: str` on state entities) are returned as-is.
+        return value.value if isinstance(value, Enum) else value
 
     @classmethod
     @cache

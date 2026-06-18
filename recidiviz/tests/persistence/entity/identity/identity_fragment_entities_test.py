@@ -20,6 +20,7 @@ import pickle
 import unittest
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
@@ -34,7 +35,7 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentitySex,
 )
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 _EXTERNAL_ID = IdentityExternalId(
     tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"

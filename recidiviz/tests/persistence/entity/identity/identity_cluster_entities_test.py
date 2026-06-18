@@ -24,6 +24,7 @@ from typing import Type
 import attr
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
@@ -58,7 +59,7 @@ from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
     generate_full_graph_identity_cluster,
 )
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 _EXTERNAL_ID = IdentityClusterExternalId(
     tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
@@ -448,13 +449,13 @@ class TestIdentityCluster(unittest.TestCase):
 
     def test_tenant_mismatch_in_external_id_raises(self) -> None:
         eid_other = IdentityClusterExternalId(
-            tenant="US_YY", external_id="EXT_001", id_type="US_YY_ID_TYPE"
+            tenant=Tenant.US_YY, external_id="EXT_001", id_type="US_YY_ID_TYPE"
         )
         with self.assertRaisesRegex(ValueError, "mismatched tenants"):
             self._make_cluster(external_ids=(eid_other,))
 
     def test_tenant_mismatch_in_child_entity_raises(self) -> None:
-        race_other = IdentityClusterRace(tenant="US_YY", race=Race.WHITE)
+        race_other = IdentityClusterRace(tenant=Tenant.US_YY, race=Race.WHITE)
         with self.assertRaisesRegex(ValueError, "mismatched tenants"):
             self._make_cluster(races=(race_other,))
 

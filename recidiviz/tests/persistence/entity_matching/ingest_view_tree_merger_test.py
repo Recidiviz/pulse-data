@@ -27,6 +27,7 @@ from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity.identity import (
@@ -410,32 +411,32 @@ Entities with conflicts:
         children (phone_numbers) unioned, same as state entity list children."""
         fragments = [
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
                     phone_numbers=[
-                        IdentityPhoneNumber(tenant="US_OZ", number="5550100001"),
+                        IdentityPhoneNumber(tenant=Tenant.US_XX, number="5550100001"),
                     ],
                 ),
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
                     phone_numbers=[
-                        IdentityPhoneNumber(tenant="US_OZ", number="5550100002"),
+                        IdentityPhoneNumber(tenant=Tenant.US_XX, number="5550100002"),
                     ],
                 ),
             ),
@@ -722,29 +723,33 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
         edge on IdentityAttributes."""
         fragments = [
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
-                    name=IdentityName(tenant="US_OZ", given_name="JOHN", surname="DOE"),
+                    name=IdentityName(
+                        tenant=Tenant.US_XX, given_name="JOHN", surname="DOE"
+                    ),
                 ),
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
-                    name=IdentityName(tenant="US_OZ", given_name="JANE", surname="DOE"),
+                    name=IdentityName(
+                        tenant=Tenant.US_XX, given_name="JANE", surname="DOE"
+                    ),
                 ),
             ),
         ]
@@ -758,29 +763,33 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
         conflict should log instead of raising and keep the first child."""
         fragments = [
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
-                    name=IdentityName(tenant="US_OZ", given_name="JOHN", surname="DOE"),
+                    name=IdentityName(
+                        tenant=Tenant.US_XX, given_name="JOHN", surname="DOE"
+                    ),
                 ),
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=Tenant.US_XX,
                 external_ids=[
                     IdentityExternalId(
-                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                        tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
                 attributes=IdentityAttributes(
-                    tenant="US_OZ",
+                    tenant=Tenant.US_XX,
                     person_type=PersonType.JII,
-                    name=IdentityName(tenant="US_OZ", given_name="JANE", surname="DOE"),
+                    name=IdentityName(
+                        tenant=Tenant.US_XX, given_name="JANE", surname="DOE"
+                    ),
                 ),
             ),
         ]

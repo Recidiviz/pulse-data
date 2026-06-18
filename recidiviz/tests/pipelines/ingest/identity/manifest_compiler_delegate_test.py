@@ -18,6 +18,7 @@
 
 import unittest
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
@@ -32,80 +33,82 @@ from recidiviz.pipelines.ingest.identity.manifest_compiler_delegate import (
 
 class TestGetIdentityViewNames(unittest.TestCase):
     def test_no_mappings_returns_empty(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_NONEXISTENT")
+        # Tenant.US_XX has no identity_mappings/ directory in the repo, so the
+        # delegate should return an empty list rather than crashing.
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_XX)
         self.assertEqual([], delegate.get_identity_ingest_view_names())
 
 
 class TestGetEntityCls(unittest.TestCase):
     def test_resolves_identity_fragment(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         cls = delegate.get_entity_cls("IdentityFragment")
         self.assertIs(cls, IdentityFragment)
 
     def test_resolves_identity_external_id(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         cls = delegate.get_entity_cls("IdentityExternalId")
         self.assertIs(cls, IdentityExternalId)
 
     def test_resolves_identity_attributes(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         cls = delegate.get_entity_cls("IdentityAttributes")
         self.assertIs(cls, IdentityAttributes)
 
     def test_resolves_identity_name(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         cls = delegate.get_entity_cls("IdentityName")
         self.assertIs(cls, IdentityName)
 
 
 class TestGetEntityFactoryClass(unittest.TestCase):
     def test_resolves_identity_fragment_factory(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         factory_cls = delegate.get_entity_factory_class("IdentityFragment")
         self.assertEqual("IdentityFragmentFactory", factory_cls.__name__)
 
     def test_unknown_entity_raises(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         with self.assertRaises(ValueError):
             delegate.get_entity_factory_class("NonexistentEntity")
 
 
 class TestGetEnumCls(unittest.TestCase):
     def test_resolves_gender(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertIs(delegate.get_enum_cls("Gender"), Gender)
 
     def test_resolves_race(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertIs(delegate.get_enum_cls("Race"), Race)
 
     def test_resolves_sex(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertIs(delegate.get_enum_cls("Sex"), Sex)
 
     def test_resolves_ethnicity(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertIs(delegate.get_enum_cls("Ethnicity"), Ethnicity)
 
     def test_unknown_enum_raises(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         with self.assertRaises(ValueError):
             delegate.get_enum_cls("NonexistentEnum")
 
 
 class TestGetCommonArgs(unittest.TestCase):
     def test_returns_tenant(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
-        self.assertEqual({"tenant": "US_OZ"}, delegate.get_common_args())
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
+        self.assertEqual({"tenant": Tenant.US_OZ}, delegate.get_common_args())
 
 
 class TestGetFilterIfNullField(unittest.TestCase):
     def test_returns_none(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertIsNone(delegate.get_filter_if_null_field(IdentityFragment))
 
 
 class TestIsJsonField(unittest.TestCase):
     def test_returns_false(self) -> None:
-        delegate = IdentityIngestViewManifestCompilerDelegate(tenant="US_OZ")
+        delegate = IdentityIngestViewManifestCompilerDelegate(tenant=Tenant.US_OZ)
         self.assertFalse(delegate.is_json_field(IdentityFragment, "tenant"))

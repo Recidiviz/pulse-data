@@ -19,6 +19,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterExternalId,
@@ -35,7 +36,7 @@ from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
 )
 from recidiviz.utils.types import assert_type
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 class TestConvertAttributesToClusterKwargs(unittest.TestCase):

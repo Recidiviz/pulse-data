@@ -22,6 +22,7 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Gender, Race
 from recidiviz.persistence.entity.identity import (
     identity_fragment_entities as identity_entities,
@@ -40,7 +41,7 @@ from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
 )
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 def _make_attrs(

@@ -19,6 +19,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -29,7 +30,7 @@ from recidiviz.persistence.entity.identity import (
     identity_fragment_entity_factories as entity_factories,
 )
 
-_TENANT = "US_OZ"
+_TENANT = Tenant.US_XX
 
 
 class TestEntityFactories(unittest.TestCase):
@@ -78,13 +79,13 @@ class TestEntityFactories(unittest.TestCase):
         result = entity_factories.IdentityExternalIdFactory.deserialize(
             tenant=_TENANT,
             external_id="EXT_001",
-            id_type="US_OZ_ID_TYPE",
+            id_type="US_XX_ID_TYPE",
         )
 
         expected = entities.IdentityExternalId(
             tenant=_TENANT,
             external_id="EXT_001",
-            id_type="US_OZ_ID_TYPE",
+            id_type="US_XX_ID_TYPE",
         )
 
         self.assertEqual(expected, result)

@@ -21,6 +21,7 @@ from collections.abc import Iterable, Iterator
 import apache_beam as beam
 from more_itertools import one
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
@@ -53,7 +54,7 @@ class BuildIdentityClusters(beam.PTransform):
     """Joins cluster memberships with per-external-ID fragments, merges
     attributes, and produces one IdentityCluster per cluster."""
 
-    def __init__(self, tenant: str) -> None:
+    def __init__(self, tenant: Tenant) -> None:
         super().__init__()
         self.tenant = tenant
 

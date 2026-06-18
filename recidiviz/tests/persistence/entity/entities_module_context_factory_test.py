@@ -20,6 +20,7 @@ from functools import cmp_to_key
 
 import attr
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.activity.entities import StatePerson
@@ -163,11 +164,11 @@ class EntitiesModuleContextFactoryTest(unittest.TestCase):
             "US_XX",
             identity_context.get_partition_value(
                 identity_cluster_entities.IdentityCluster(
-                    tenant="US_XX",
+                    tenant=Tenant.US_XX,
                     person_type=identity_cluster_entities.PersonType.JII,
                     external_ids=(
                         identity_cluster_entities.IdentityClusterExternalId(
-                            tenant="US_XX",
+                            tenant=Tenant.US_XX,
                             external_id="EXT_001",
                             id_type="US_XX_ID_TYPE",
                         ),

@@ -24,6 +24,7 @@ from recidiviz.common.attr_mixins import (
     attribute_field_type_reference_for_class,
 )
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -52,7 +53,7 @@ from recidiviz.pipelines.ingest.identity.merge_identity_attributes import (
 )
 from recidiviz.utils.types import assert_type
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 def _fragment(

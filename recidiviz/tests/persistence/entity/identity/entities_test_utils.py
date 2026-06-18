@@ -18,6 +18,7 @@
 import datetime
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
@@ -25,7 +26,7 @@ from recidiviz.persistence.entity.identity import (
 )
 from recidiviz.utils.types import assert_type
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 def generate_full_graph_identity_fragment(
@@ -100,10 +101,14 @@ def generate_full_graph_identity_fragment(
         tenant=_TENANT,
         external_ids=[
             identity_fragment_entities.IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_001", id_type=f"{_TENANT}_ID_TYPE"
+                tenant=_TENANT,
+                external_id="EXT_001",
+                id_type=f"{_TENANT.value}_ID_TYPE",
             ),
             identity_fragment_entities.IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_002", id_type=f"{_TENANT}_ID_TYPE"
+                tenant=_TENANT,
+                external_id="EXT_002",
+                id_type=f"{_TENANT.value}_ID_TYPE",
             ),
         ],
         attributes=attributes,
@@ -143,10 +148,14 @@ def generate_full_graph_identity_cluster() -> identity_cluster_entities.Identity
         birthdate=datetime.date(1990, 1, 1),
         external_ids=(
             identity_cluster_entities.IdentityClusterExternalId(
-                tenant=_TENANT, external_id="EXT_001", id_type=f"{_TENANT}_ID_TYPE"
+                tenant=_TENANT,
+                external_id="EXT_001",
+                id_type=f"{_TENANT.value}_ID_TYPE",
             ),
             identity_cluster_entities.IdentityClusterExternalId(
-                tenant=_TENANT, external_id="EXT_002", id_type=f"{_TENANT}_ID_TYPE"
+                tenant=_TENANT,
+                external_id="EXT_002",
+                id_type=f"{_TENANT.value}_ID_TYPE",
             ),
         ),
         name=identity_cluster_entities.IdentityClusterName(

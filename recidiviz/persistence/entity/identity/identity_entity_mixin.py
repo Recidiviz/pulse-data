@@ -17,7 +17,7 @@
 """Shared mixin used by both fragment and cluster identity entities."""
 import attr
 
-from recidiviz.common.attr_validators import is_str
+from recidiviz.common.constants.tenants import Tenant
 
 
 @attr.s(eq=False)
@@ -25,5 +25,4 @@ class IdentityEntityMixin:
     """Mixin providing the `tenant` field on all identity entities, analogous
     to `StateEntityMixin` providing `state_code` on all state entities."""
 
-    # TODO(#73568): Add a validator to ensure this is a valid tenant, or change to type Tenant
-    tenant: str = attr.ib(validator=is_str)
+    tenant: Tenant = attr.ib(validator=attr.validators.instance_of(Tenant))

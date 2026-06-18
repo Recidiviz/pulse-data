@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
     _DEFAULT_MAX_IDS_PER_TYPE,
     IdentityIngestPipelineConfig,
@@ -83,39 +84,38 @@ class IdentityIngestPipelineConfigTest(unittest.TestCase):
                 regions_dir=regions_dir
             )
 
-        jii_config = config.get_tenant_clustering_config("US_XX", PersonType.JII)
+        jii_config = config.get_tenant_clustering_config(Tenant.US_XX, PersonType.JII)
         self.assertEqual(jii_config.get_max_ids_for_type("US_XX_INMATE_NUM"), 50)
         self.assertEqual(jii_config.get_max_ids_for_type("US_XX_SID"), 3)
         self.assertEqual(
             jii_config.get_max_ids_for_type("US_XX_OTHER"), _DEFAULT_MAX_IDS_PER_TYPE
         )
         # staff is not configured in the temp YAML, so it should fall back to default
-        staff_config = config.get_tenant_clustering_config("US_XX", PersonType.STAFF)
+        staff_config = config.get_tenant_clustering_config(
+            Tenant.US_XX, PersonType.STAFF
+        )
         self.assertEqual(staff_config, config.default_config)
 
     def test_get_tenant_clustering_config_us_oz_jii(self) -> None:
-        config = self.config.get_tenant_clustering_config("US_OZ", PersonType.JII)
+        config = self.config.get_tenant_clustering_config(Tenant.US_OZ, PersonType.JII)
         self.assertEqual(config.max_ids_per_type_overrides, {})
 
     def test_get_tenant_clustering_config_us_oz_staff(self) -> None:
-        config = self.config.get_tenant_clustering_config("US_OZ", PersonType.STAFF)
+        config = self.config.get_tenant_clustering_config(
+            Tenant.US_OZ, PersonType.STAFF
+        )
         self.assertEqual(config.max_ids_per_type_overrides, {})
 
     def test_get_tenant_clustering_config_returns_default_for_unconfigured_tenant(
         self,
     ) -> None:
-        config = self.config.get_tenant_clustering_config("US_XX", PersonType.JII)
+        config = self.config.get_tenant_clustering_config(Tenant.US_XX, PersonType.JII)
         self.assertEqual(config, self.config.default_config)
 
     def test_get_tenant_clustering_config_returns_default_for_unconfigured_person_type(
         self,
     ) -> None:
         config = self.config.get_tenant_clustering_config(
-            "US_OZ", PersonType.RECIDIVIZ_EMPLOYEE
+            Tenant.US_OZ, PersonType.RECIDIVIZ_EMPLOYEE
         )
         self.assertEqual(config, self.config.default_config)
-
-    def test_get_tenant_clustering_config_tenant_is_case_insensitive(self) -> None:
-        upper = self.config.get_tenant_clustering_config("US_OZ", PersonType.JII)
-        lower = self.config.get_tenant_clustering_config("us_oz", PersonType.JII)
-        self.assertEqual(upper, lower)

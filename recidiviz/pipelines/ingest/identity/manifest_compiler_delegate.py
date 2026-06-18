@@ -26,6 +26,7 @@ from typing import Type
 
 import recidiviz.pipelines.ingest.identity
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
@@ -63,13 +64,13 @@ class IdentityIngestViewManifestCompilerDelegate(
     """Manifest compiler delegate for building IdentityFragment entity trees
     from identity mapping YAMLs stored under identity_mappings/ directories."""
 
-    def __init__(self, tenant: str) -> None:
+    def __init__(self, tenant: Tenant) -> None:
         self.tenant = tenant
         self._entity_cls_cache: dict[str, Type[Entity]] = {}
         self._enum_cls_cache: dict[str, Type[Enum]] = {}
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
-        tenant_lower = self.tenant.lower()
+        tenant_lower = self.tenant.value.lower()
         return os.path.join(
             _REGIONS_DIR,
             tenant_lower,
@@ -81,10 +82,10 @@ class IdentityIngestViewManifestCompilerDelegate(
         """Returns names of all identity mapping views for this tenant by scanning
         the identity_mappings directory."""
         identity_mappings_dir = os.path.join(
-            _REGIONS_DIR, self.tenant.lower(), _IDENTITY_MAPPINGS_DIR_NAME
+            _REGIONS_DIR, self.tenant.value.lower(), _IDENTITY_MAPPINGS_DIR_NAME
         )
         return self.get_ingest_view_names_from_mappings_dir(
-            identity_mappings_dir, self.tenant
+            identity_mappings_dir, self.tenant.value
         )
 
     def get_env_property_type(self, property_name: str) -> Type:

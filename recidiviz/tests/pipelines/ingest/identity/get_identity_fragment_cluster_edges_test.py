@@ -20,6 +20,7 @@ import unittest
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityExternalId,
     IdentityFragment,
@@ -29,7 +30,7 @@ from recidiviz.pipelines.ingest.transforms.get_root_external_ids import (
 )
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 def _make_fragment(*id_pairs: tuple[str, str]) -> IdentityFragment:

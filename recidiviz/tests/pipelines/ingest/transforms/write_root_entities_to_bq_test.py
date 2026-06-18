@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.activity.entities import (
@@ -75,7 +76,7 @@ from recidiviz.tests.pipelines.fake_bigquery import FakeWriteToBigQueryEmulator
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 _SANDBOX_PREFIX = "my_prefix"
 
 
@@ -105,7 +106,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
             # Output collections
             build_state_output_source_table_collection(StateCode.US_DD),
             build_normalized_state_output_source_table_collection(StateCode.US_DD),
-            build_identity_cluster_output_source_table_collection(_TENANT),
+            build_identity_cluster_output_source_table_collection(_TENANT.value),
         ]
 
         return [c.as_sandbox_collection(_SANDBOX_PREFIX) for c in collections]
@@ -268,7 +269,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
         """A minimal identity cluster (no M2M relationships in
         `identity_cluster_entities`) round-trips through WriteRootEntitiesToBQ."""
         output_dataset_id = identity_cluster_dataset_for_tenant(
-            _TENANT, sandbox_dataset_prefix=_SANDBOX_PREFIX
+            _TENANT.value, sandbox_dataset_prefix=_SANDBOX_PREFIX
         )
         output_table_ids = sorted(
             get_bq_schema_for_entities_module(identity_cluster_entities)
@@ -279,7 +280,9 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
             person_type=PersonType.JII,
             external_ids=(
                 IdentityClusterExternalId(
-                    tenant=_TENANT, external_id="EXT_001", id_type=f"{_TENANT}_ID_TYPE"
+                    tenant=_TENANT,
+                    external_id="EXT_001",
+                    id_type=f"{_TENANT.value}_ID_TYPE",
                 ),
             ),
         )
@@ -298,14 +301,14 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
         rows_by_table = self._get_rows_by_table(output_dataset_id)
 
         self.assertEqual(len(rows_by_table["identity_cluster"]), 1)
-        self.assertEqual(rows_by_table["identity_cluster"][0]["tenant"], _TENANT)
+        self.assertEqual(rows_by_table["identity_cluster"][0]["tenant"], _TENANT.value)
         self.assertEqual(
             rows_by_table["identity_cluster_external_id"],
             [
                 {
-                    "tenant": _TENANT,
+                    "tenant": _TENANT.value,
                     "external_id": "EXT_001",
-                    "id_type": f"{_TENANT}_ID_TYPE",
+                    "id_type": f"{_TENANT.value}_ID_TYPE",
                     "identity_cluster_id": cluster.identity_cluster_id,
                 }
             ],
@@ -323,7 +326,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
 
     def test_write_identity_cluster_full_tree(self) -> None:
         output_dataset_id = identity_cluster_dataset_for_tenant(
-            _TENANT, sandbox_dataset_prefix=_SANDBOX_PREFIX
+            _TENANT.value, sandbox_dataset_prefix=_SANDBOX_PREFIX
         )
         output_table_ids = sorted(
             get_bq_schema_for_entities_module(identity_cluster_entities)

@@ -229,7 +229,8 @@ class IdentityCluster(
                 e.tenant
                 for e in all_entities
                 if isinstance(e, IdentityEntityMixin) and e.tenant != self.tenant
-            }
+            },
+            key=lambda t: t.value,
         )
         if mismatched_tenants:
             raise ValueError(

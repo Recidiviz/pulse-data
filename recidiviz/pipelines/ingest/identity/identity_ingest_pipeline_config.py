@@ -21,6 +21,7 @@ import attr
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -70,7 +71,7 @@ class IdentityIngestPipelineConfig:
     """Top-level configuration for the identity ingest pipeline, parsed from YAML."""
 
     default_config: IdentityIngestPipelineTenantConfig
-    tenant_configs: dict[tuple[str, PersonType], IdentityIngestPipelineTenantConfig]
+    tenant_configs: dict[tuple[Tenant, PersonType], IdentityIngestPipelineTenantConfig]
 
     @classmethod
     def load_clustering_config(
@@ -81,10 +82,10 @@ class IdentityIngestPipelineConfig:
         default_config = IdentityIngestPipelineTenantConfig()
 
         tenant_configs: dict[
-            tuple[str, PersonType], IdentityIngestPipelineTenantConfig
+            tuple[Tenant, PersonType], IdentityIngestPipelineTenantConfig
         ] = {}
         for state_code in get_direct_ingest_states_existing_in_env():
-            tenant = state_code.value
+            tenant = Tenant.from_state_code(state_code)
             tenant_dict = YAMLDict.from_path(
                 identity_config_path_for_state_code(state_code, regions_dir)
             )
@@ -113,13 +114,11 @@ class IdentityIngestPipelineConfig:
         return cls(default_config=default_config, tenant_configs=tenant_configs)
 
     def get_tenant_clustering_config(
-        self, tenant: str, person_type: PersonType
+        self, tenant: Tenant, person_type: PersonType
     ) -> IdentityIngestPipelineTenantConfig:
         """Returns the config for the given tenant and person type.
 
         Falls back to default_config for any (tenant, person_type) pair not explicitly
-        configured. Tenant matching is case-insensitive.
+        configured.
         """
-        return self.tenant_configs.get(
-            (tenant.upper(), person_type), self.default_config
-        )
+        return self.tenant_configs.get((tenant, person_type), self.default_config)

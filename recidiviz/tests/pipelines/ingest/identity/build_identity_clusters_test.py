@@ -22,6 +22,7 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterExternalId,
@@ -41,7 +42,7 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
 from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
-_TENANT = "US_XX"
+_TENANT = Tenant.US_XX
 
 
 def _eid_entity(external_id: str, id_type: str) -> IdentityExternalId:
