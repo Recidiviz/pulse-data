@@ -38,10 +38,11 @@ SELECT DISTINCT
 FROM `{project_id}.{us_nc_raw_data_up_to_date_dataset}.cr_outcome_latest` cr
 INNER JOIN `{project_id}.us_nc_normalized_state.state_person_external_id` pei
     ON pei.external_id = cr.OPUS
-WHERE 
+WHERE
     -- Only count reviews where credit was actually awarded. Denied reviews will read
     -- "...AWARDED NO DAYS CREDIT."
     REGEXP_CONTAINS(LOWER(cr.COMMENTS), r'\\d+\\s+day')
+    AND DATE(cr.EVTDT) IS NOT NULL
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
