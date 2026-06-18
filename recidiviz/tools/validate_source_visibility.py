@@ -802,6 +802,19 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
+        "recidiviz.services.identity.server",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.monitoring",
+                "recidiviz.services.identity",
+                "recidiviz.utils",
+                "recidiviz.common.constants.identity",
+                "recidiviz.common.constants.state.external_id_types",
+            }
+        ),
+    )
+
+    success &= check_dependencies_for_entrypoint(
         "recidiviz.entrypoints.entrypoint_executor",
         valid_module_prefixes=make_module_matcher(
             {

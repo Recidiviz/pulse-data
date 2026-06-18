@@ -180,6 +180,8 @@ def service_token() -> Optional[str]:
 
 @attr.s(auto_attribs=True)
 class CloudRunMetadata:
+    """Metadata about the Cloud Run service this process is running in."""
+
     project_id: str
     region: str
     url: str
@@ -189,6 +191,7 @@ class CloudRunMetadata:
         ADMIN_PANEL = "admin-panel"
         APPLICATION_DATA_IMPORT = "application-data-import"
         CASE_TRIAGE = "case-triage-web"
+        IDENTITY_SERVICE = "identity-service"
 
     @classmethod
     def build_from_metadata_server(cls, service_name: Service | None):

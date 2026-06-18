@@ -36,7 +36,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.utils import metadata, validate_jwt
-from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.auth.gce import get_backend_service_id_from_secret
 
 _UNKNOWN_USER = "unknown"
 _REASON_KEY = "reason"
@@ -100,11 +100,9 @@ def get_authenticated_user_email() -> Tuple[str, Optional[str]]:
     if not project_number:
         raise RuntimeError("Expected project_number to be set")
 
-    backend_service_id = get_secret(LOAD_BALANCER_SERVICE_ID_SECRET_NAME)
-    if not backend_service_id:
-        raise RuntimeError(
-            f"Missing backend service id secret named {LOAD_BALANCER_SERVICE_ID_SECRET_NAME}"
-        )
+    backend_service_id = get_backend_service_id_from_secret(
+        LOAD_BALANCER_SERVICE_ID_SECRET_NAME
+    )
 
     (
         _user_id,

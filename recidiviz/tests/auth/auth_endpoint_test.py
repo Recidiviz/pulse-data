@@ -163,7 +163,7 @@ class AuthEndpointTests(TestCase):
         self.database_key.declarative_meta.metadata.create_all(engine)
         self.session = SessionFactory.using_database(self.database_key).__enter__()
 
-        self.get_secret_patcher = patch("recidiviz.auth.helpers.get_secret")
+        self.get_secret_patcher = patch("recidiviz.utils.auth.gce.get_secret")
         self.mock_get_secret = self.get_secret_patcher.start()
         self.mock_get_secret.return_value = "123"
 

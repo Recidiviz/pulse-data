@@ -1,5 +1,5 @@
 .PHONY: help sync pylint docker-build docker-build-dev docker-build-base \
-        cloudsql docker-admin docker-prototypes
+        cloudsql docker-admin docker-identity docker-prototypes
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -36,6 +36,9 @@ docker-admin: ## Run admin panel locally
 
 docker-case-triage: ## Run admin panel locally
 	docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml up
+
+docker-identity: ## Run identity service locally
+	docker compose -f docker-compose.yaml -f docker-compose.identity.yaml up
 
 docker-build-prototypes: ## Build prototypes Docker image
 	docker build . -f Dockerfile.prototypes -t us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest --platform=linux/amd64
