@@ -26,6 +26,7 @@ import pytz
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_validators import (
+    is_dict_of,
     is_list_of,
     is_not_set_along_with,
     is_set_of,
@@ -128,6 +129,60 @@ class AttrValidatorsTest(unittest.TestCase):
         # These don't crash
         _ = _TestClass(my_required_int=10, my_optional_int=None)
         _ = _TestClass(my_required_int=1000, my_optional_int=3000)
+
+    def test_is_int_strict(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_strict_int: int = attr.ib(validator=attr_validators.is_int_strict)
+
+        with self.assertRaises(ValueError) as e:
+            _ = _TestClass(my_strict_int=True)
+
+        self.assertEqual(
+            "Field [my_strict_int] on [_TestClass] must be an int. Found value "
+            "[True] of type [<class 'bool'>].",
+            str(e.exception.args[0]),
+        )
+
+        with self.assertRaises(ValueError) as e:
+            _ = _TestClass(my_strict_int=1.5)  # type: ignore[arg-type]
+
+        self.assertEqual(
+            "Field [my_strict_int] on [_TestClass] must be an int. Found value "
+            "[1.5] of type [<class 'float'>].",
+            str(e.exception.args[0]),
+        )
+
+        with self.assertRaises(ValueError):
+            _ = _TestClass(my_strict_int="3")  # type: ignore[arg-type]
+
+        # These don't crash
+        _ = _TestClass(my_strict_int=0)
+        _ = _TestClass(my_strict_int=-10)
+
+    def test_is_numerical_strict(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_strict_numerical: float = attr.ib(
+                validator=attr_validators.is_numerical_strict
+            )
+
+        with self.assertRaises(ValueError) as e:
+            _ = _TestClass(my_strict_numerical=True)
+
+        self.assertEqual(
+            "Field [my_strict_numerical] on [_TestClass] must be an int or "
+            "float. Found value [True] of type [<class 'bool'>].",
+            str(e.exception.args[0]),
+        )
+
+        with self.assertRaises(ValueError):
+            _ = _TestClass(my_strict_numerical="1.5")  # type: ignore[arg-type]
+
+        # These don't crash — both ints and floats are numerical
+        _ = _TestClass(my_strict_numerical=1.5)
+        _ = _TestClass(my_strict_numerical=2)
+        _ = _TestClass(my_strict_numerical=-0.5)
 
     def test_date_validators(self) -> None:
         @attr.s
@@ -1098,6 +1153,73 @@ class TestIsSetOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 set_of_str_field=set(),
                 set_of_class_field={None},  # type: ignore[arg-type]
+            )
+
+
+class TestIsDictOfValidator(unittest.TestCase):
+    """Tests for the is_dict_of() validator."""
+
+    @attr.define
+    class TestClass:
+        dict_of_str_to_int_field: dict[str, int] = attr.ib(
+            validator=is_dict_of(str, int)
+        )
+        dict_of_str_to_class_field: dict[str, _TestEmailClass] = attr.ib(
+            validator=is_dict_of(str, _TestEmailClass)
+        )
+
+    def test_dict_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(
+            dict_of_str_to_int_field={"a": 1, "b": 2},
+            dict_of_str_to_class_field={
+                "a": _TestEmailClass(my_email="valid@example.com", my_opt_email=None)
+            },
+        )
+
+    def test_dict_of_validator_empty_dicts(self) -> None:
+        _ = self.TestClass(dict_of_str_to_int_field={}, dict_of_str_to_class_field={})
+
+    def test_dict_of_validator_non_dict(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found value for dict type field [dict_of_str_to_int_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsDictOfValidator.TestClass'>] "
+                "which has non-dict type [<class 'list'>].",
+            ),
+        ):
+            _ = self.TestClass(
+                dict_of_str_to_int_field=[],  # type: ignore[arg-type]
+                dict_of_str_to_class_field={},
+            )
+
+    def test_dict_of_validator_bad_key_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found key in dict type field [dict_of_str_to_int_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsDictOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                dict_of_str_to_int_field={1: 1},  # type: ignore[dict-item]
+                dict_of_str_to_class_field={},
+            )
+
+    def test_dict_of_validator_bad_value_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found value for key [a] in dict type field [dict_of_str_to_int_field] "
+                "on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsDictOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'int'>]: <class 'str'>",
+            ),
+        ):
+            _ = self.TestClass(
+                dict_of_str_to_int_field={"a": "1"},  # type: ignore[dict-item]
+                dict_of_str_to_class_field={},
             )
 
 

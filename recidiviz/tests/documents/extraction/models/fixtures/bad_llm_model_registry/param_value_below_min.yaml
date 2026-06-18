@@ -1,0 +1,24 @@
+# A minimal model registry that is invalid in exactly one way: a config parameter value below the allowed_range minimum.
+model_families:
+  acme:
+    default_api_provider: vertex_ai
+
+base_models:
+  acme-small:
+    family: acme
+    is_thinking_model: false
+    input_token_limit: 10000
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: false
+    known_pinned_versions:
+      - acme-small-001
+    parameters:
+      max_output_tokens:
+        type: INTEGER
+        allowed_range: [1, 100]
+        description: Maximum tokens in the response.
+
+configs:
+  ACME_SMALL_DEFAULT:
+    model: acme-small-001
+    max_output_tokens: 0

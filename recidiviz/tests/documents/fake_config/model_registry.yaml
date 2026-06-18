@@ -1,0 +1,92 @@
+# A fake model registry used in unit tests, exercising valid edge cases:
+# multiple families, a family shared by two base models, multiple pinned
+# versions, a base model with no parameters, integer bounds on a FLOAT
+# parameter, values at exact range boundaries, an int value for a FLOAT
+# parameter, an omitted optional parameter, and a config with no parameters.
+
+model_families:
+  acme:
+    default_api_provider: vertex_ai
+  globex:
+    default_api_provider: vertex_ai
+
+base_models:
+  # Two base models share the `acme` family.
+  acme-small:
+    family: acme
+    is_thinking_model: false
+    input_token_limit: 10000
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: false
+    known_pinned_versions:
+      - acme-small-001
+      - acme-small-002
+    parameters:
+      temperature:
+        type: FLOAT
+        # Integer bounds on a FLOAT parameter are valid.
+        allowed_range: [0, 2]
+        description: Controls randomness. 0.0 = deterministic.
+      max_output_tokens:
+        type: INTEGER
+        allowed_range: [1, 100]
+        description: Maximum tokens in the response.
+
+  acme-large:
+    family: acme
+    is_thinking_model: true
+    input_token_limit: 200000
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: true
+    known_pinned_versions:
+      - acme-large-001
+    parameters:
+      temperature:
+        type: FLOAT
+        allowed_range: [0.0, 2.0]
+        description: Controls randomness. 0.0 = deterministic.
+      thinking_budget_tokens:
+        type: INTEGER
+        allowed_range: [0, 1024]
+        is_optional: true
+        description: Maximum tokens for internal reasoning. May be omitted to use dynamic thinking.
+
+  # A base model that declares no tunable parameters.
+  globex-basic:
+    family: globex
+    is_thinking_model: false
+    input_token_limit: 5000
+    supports_structured_output: false
+    supports_implicit_caching_in_batch: false
+    known_pinned_versions:
+      - globex-basic-001
+
+configs:
+  # Every parameter exactly at its range minimum; int value for the FLOAT
+  # temperature parameter.
+  ACME_SMALL_ALL_MINS:
+    model: acme-small-001
+    temperature: 0
+    max_output_tokens: 1
+
+  # Uses a non-first pinned version; every parameter exactly at its range
+  # maximum.
+  ACME_SMALL_ALL_MAXES:
+    model: acme-small-002
+    temperature: 2.0
+    max_output_tokens: 100
+
+  # Omits the optional thinking_budget_tokens parameter.
+  ACME_LARGE_DYNAMIC_THINKING:
+    model: acme-large-001
+    temperature: 1.0
+
+  # Shares a base model with ACME_LARGE_DYNAMIC_THINKING.
+  ACME_LARGE_FIXED_THINKING:
+    model: acme-large-001
+    temperature: 0.5
+    thinking_budget_tokens: 512
+
+  # No parameters at all (the base model declares none).
+  GLOBEX_BASIC_DEFAULT:
+    model: globex-basic-001

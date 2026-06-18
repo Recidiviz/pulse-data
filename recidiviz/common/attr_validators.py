@@ -524,6 +524,32 @@ def is_opt_positive_int(
         )
 
 
+def is_int_strict(instance: Any, attribute: attr.Attribute, value: int) -> None:
+    """Validator that ensures the field's value is an integer (not a value like boolean
+    that can be implicitly cast to an integer).
+    """
+    # bool is a subclass of int in Python, so isinstance(True, int) is True — reject
+    # bools explicitly.
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be an "
+            f"int. Found value [{value!r}] of type [{type(value)}]."
+        )
+
+
+def is_numerical_strict(instance: Any, attribute: attr.Attribute, value: float) -> None:
+    """Validator that ensures the field's value is a numerical value (not a value like
+    boolean that can be implicitly cast to a numerical value).
+    """
+    # bool is a subclass of int in Python, so isinstance(True, (int, float)) is True —
+    # reject bools explicitly.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be an "
+            f"int or float. Found value [{value!r}] of type [{type(value)}]."
+        )
+
+
 # Date field validators
 def is_date(instance: Any, attribute: attr.Attribute, value: Any) -> None:
     """Validates that a field is a `date`, but NOT a `datetime` object."""
@@ -630,6 +656,52 @@ def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> 
 # Dict field validators
 is_dict = attr.validators.instance_of(dict)
 is_opt_dict = is_opt(dict)
+
+
+class IsDictOfValidator:
+    """Validates that the value of an attr field is a dict whose keys are each
+    an instance of the configured `key_expected_type` and whose values are each
+    an instance of the configured `value_expected_type`. Either expected type
+    may be a tuple of types, mirroring isinstance() semantics (e.g. abstract
+    base classes and subclasses are allowed).
+    """
+
+    def __init__(
+        self,
+        key_expected_type: Type | tuple[Type, ...],
+        value_expected_type: Type | tuple[Type, ...],
+    ) -> None:
+        self._key_expected_type = key_expected_type
+        self._value_expected_type = value_expected_type
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if not isinstance(value, dict):
+            raise ValueError(
+                f"Found value for dict type field [{attribute.name}] on class "
+                f"[{type(instance)}] which has non-dict type [{type(value)}]."
+            )
+        for key, dict_value in value.items():
+            if not isinstance(key, self._key_expected_type):
+                raise ValueError(
+                    f"Found key in dict type field [{attribute.name}] on class "
+                    f"[{type(instance)}] which is not the expected type "
+                    f"[{self._key_expected_type}]: {type(key)}"
+                )
+            if not isinstance(dict_value, self._value_expected_type):
+                raise ValueError(
+                    f"Found value for key [{key}] in dict type field "
+                    f"[{attribute.name}] on class [{type(instance)}] which is "
+                    f"not the expected type [{self._value_expected_type}]: "
+                    f"{type(dict_value)}"
+                )
+
+
+def is_dict_of(
+    key_expected_type: Type | tuple[Type, ...],
+    value_expected_type: Type | tuple[Type, ...],
+) -> IsDictOfValidator:
+    return IsDictOfValidator(key_expected_type, value_expected_type)
+
 
 # Tuple field validators
 is_tuple = attr.validators.instance_of(tuple)

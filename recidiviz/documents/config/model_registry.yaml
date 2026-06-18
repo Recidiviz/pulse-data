@@ -1,0 +1,64 @@
+# The single global registry of LLM models that document extractors may call.
+# Extractors reference a named entry under `configs` (e.g.
+# GEMINI_2_5_FLASH_NO_THINKING) rather than repeating model settings.
+#
+# Parsed and validated by
+# recidiviz/documents/extraction/models/llm_model_registry.py.
+
+model_families:
+  gemini:
+    default_api_provider: vertex_ai
+
+base_models:
+  gemini-2.5-flash:
+    family: gemini
+    is_thinking_model: true
+    # Max input tokens per
+    # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash
+    input_token_limit: 1048576
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: true
+    known_pinned_versions:
+      # Stable Gemini 2.5 models have no dated/numbered version suffix and no
+      # auto-updated alias — this is the pinned GA identifier. See
+      # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+      - gemini-2.5-flash
+    parameters:
+      temperature:
+        type: FLOAT
+        # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig
+        allowed_range: [0.0, 2.0]
+        description: Controls randomness. 0.0 = deterministic.
+      max_output_tokens:
+        type: INTEGER
+        # Max output tokens per
+        # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash
+        allowed_range: [1, 65535]
+        description: Maximum tokens in the response.
+      top_p:
+        type: FLOAT
+        # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig
+        allowed_range: [0.0, 1.0]
+        description: >
+          Nucleus sampling threshold: the model samples only from the smallest
+          set of tokens whose cumulative probability is at least top_p. 1.0
+          considers the full distribution; 0.0 considers only the single
+          most-probable token (effectively greedy).
+      thinking_budget_tokens:
+        type: INTEGER
+        # https://ai.google.dev/gemini-api/docs/thinking#set-budget
+        allowed_range: [0, 24576]
+        # Optional: omit this parameter in a config to use model-managed
+        # dynamic thinking.
+        is_optional: true
+        description: >
+          Maximum tokens for internal reasoning. 0 disables thinking. May be
+          omitted to use model-managed dynamic thinking.
+
+configs:
+  GEMINI_2_5_FLASH_NO_THINKING:
+    model: gemini-2.5-flash
+    temperature: 0.0
+    max_output_tokens: 8192
+    top_p: 1.0
+    thinking_budget_tokens: 0
