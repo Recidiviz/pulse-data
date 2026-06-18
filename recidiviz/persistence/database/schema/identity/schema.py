@@ -49,8 +49,8 @@ from recidiviz.common.constants.identity import (
     ProductApp,
     SourceType,
     SplitTrigger,
-    Tenant,
 )
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity as DemographicsEthnicity
 from recidiviz.common.demographics import Gender as DemographicsGender
 from recidiviz.common.demographics import Race as DemographicsRace

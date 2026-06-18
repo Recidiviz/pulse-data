@@ -20,23 +20,6 @@ import enum
 from recidiviz.common.constants.state import external_id_types
 
 
-class Tenant(enum.Enum):
-    """Jurisdiction or organization through which a person entered the system.
-
-    Stored as a String in the DB (see StringBackedEnum) so onboarding a new
-    tenant is a code change rather than a migration. Seeded with the fake test
-    state and the Recidiviz tenant; real partner tenants are added as they
-    onboard to the Identity Service.
-    """
-
-    # TODO(#73568): Populate with real tenant values
-    US_OZ = "US_OZ"
-    """Fake state used for testing."""
-
-    RECIDIVIZ = "RECIDIVIZ"
-    """Recidiviz itself (e.g., the tenant for Recidiviz employee identities)."""
-
-
 class IdentifierType(enum.Enum):
     """Type of external identifier stored on an external_ids row.
 

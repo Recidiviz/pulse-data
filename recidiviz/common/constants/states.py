@@ -482,87 +482,21 @@ def __getattr__(name: str) -> Any:
 
 
 if typing.TYPE_CHECKING:
-    # If we are type checking, give it a class with all of the codes.
-    # TODO(python/mypy#7568): We have to define an actual class here instead of aliasing
-    # _FakeStateCode because mypy doesn't understand type aliases for enums. Once that
-    # issue is fixed, we can just do `StateCode = _FakeStateCode` here since it already
-    # includes all possible state codes.
-    class StateCode(_SharedStateCode):
-        """All possible state codes, to be used for type checking."""
-
-        # Real codes
-        US_AK = "US_AK"
-        US_AL = "US_AL"
-        US_AR = "US_AR"
-        US_AS = "US_AS"  # American Samoa
-        US_AZ = "US_AZ"
-        US_CA = "US_CA"
-        US_CO = "US_CO"
-        US_CT = "US_CT"
-        US_DC = "US_DC"  # Counties in DC have a fips "state" code, which is why we need it here
-        US_DE = "US_DE"
-        US_FL = "US_FL"
-        US_GA = "US_GA"
-        US_GU = "US_GU"  # Guam
-        US_HI = "US_HI"
-        US_IA = "US_IA"
-        US_ID = "US_ID"
-        US_IL = "US_IL"
-        US_IN = "US_IN"
-        US_KS = "US_KS"
-        US_KY = "US_KY"
-        US_LA = "US_LA"
-        US_MA = "US_MA"
-        US_MD = "US_MD"
-        US_ME = "US_ME"
-        US_MI = "US_MI"
-        US_MN = "US_MN"
-        US_MO = "US_MO"
-        US_MP = "US_MP"  #  Northern Mariana Islands
-        US_MS = "US_MS"
-        US_MT = "US_MT"
-        US_NC = "US_NC"
-        US_ND = "US_ND"
-        US_NE = "US_NE"
-        US_NH = "US_NH"
-        US_NJ = "US_NJ"
-        US_NM = "US_NM"
-        US_NV = "US_NV"
-        US_NY = "US_NY"
-        US_OH = "US_OH"
-        US_OK = "US_OK"
-        US_OR = "US_OR"
-        US_PA = "US_PA"
-        US_PR = "US_PR"
-        US_RI = "US_RI"
-        US_SC = "US_SC"
-        US_SD = "US_SD"
-        US_TN = "US_TN"
-        US_TX = "US_TX"
-        US_UM = "US_UM"  # U.S. Minor Outlying Islands
-        US_UT = "US_UT"
-        US_VA = "US_VA"
-        US_VI = "US_VI"  # U.S. Virgin Islands
-        US_VT = "US_VT"
-        US_WA = "US_WA"
-        US_WI = "US_WI"
-        US_WV = "US_WV"
-        US_WY = "US_WY"
-
-        # Playground code
-        US_OZ = "US_OZ"
-
-        # Alternate Ingest
-        # TODO(#10703): Remove this state_code after merging US_IX into US_ID
-        US_IX = "US_IX"  # US_ID
-
-        # Test codes
-        US_DD = TEST_STATE_CODE_DATAFLOW
-        US_LL = TEST_STATE_CODE_LOOKER
-        US_WW = TEST_STATE_CODE_DOCS
-        US_XX = TEST_STATE_CODE
-        US_YY = TEST_STATE_CODE_2
-
-        @classmethod
-        def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:
-            return None
+    # For type checking, `StateCode` is the full set of possible values, i.e.
+    # `_FakeStateCode` (the superset that also includes the test-only codes).
+    # We import the class under the `StateCode` name rather than assigning
+    # `StateCode = _FakeStateCode`, because a plain assignment alias makes
+    # mypy treat `StateCode` as EITHER a type or a value, but not both:
+    #   - `StateCode = _FakeStateCode` (or `StateCode: TypeAlias =
+    #     _FakeStateCode`) makes it a type, so `StateCode["US_AK"]` is parsed
+    #     as a generic type application rather than `Enum.__getitem__`.
+    #   - `StateCode: Type[_FakeStateCode] = _FakeStateCode` makes it a value,
+    #     so it is no longer usable as a type annotation.
+    # Importing the class under an alias name re-binds it fully, so
+    # `StateCode` works as a subscriptable/callable/iterable value AND as a
+    # type annotation, without re-listing every member. This is a
+    # TYPE_CHECKING-only self-import: it never executes at runtime (where
+    # `__getattr__` above resolves `StateCode`), so there is no circular
+    # import. See https://github.com/python/mypy/issues/7568.
+    # pylint: disable=import-self
+    from recidiviz.common.constants.states import _FakeStateCode as StateCode
