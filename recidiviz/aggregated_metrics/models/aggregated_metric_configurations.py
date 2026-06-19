@@ -3846,6 +3846,69 @@ DISTINCT_PRIMARY_TASKS_USERS_USED_GOOGLE_MAPS_LINK = EventDistinctUnitCountMetri
     ),
 )
 
+# Denominator for the Route Planner "% of Eligible Users" funnel: distinct registered
+# primary Tasks users who had at least one Route Planner-eligible client on their caseload
+# during the period. The underlying eligibility spans are not restricted to Tasks users,
+# but the TASKS_PRIMARY_USER unit of observation restricts this metric to registered
+# primary Tasks users.
+DISTINCT_REGISTERED_PRIMARY_TASKS_ELIGIBLE_ROUTE_PLANNER_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_tasks_eligible_route_planner_users",
+    display_name="Distinct Registered Primary Tasks Eligible Route Planner Users",
+    description="Number of distinct registered primary Tasks users who had at least one "
+    "Route Planner-eligible client on their caseload",
+    span_selector=SpanSelector(
+        span_type=SpanType.ROUTE_PLANNER_ELIGIBLE_CASELOAD_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+# Eligible-User-scoped numerators: distinct registered primary Tasks users who took each
+# Route Planner action while they had a Route Planner-eligible caseload. Pairing each with
+# DISTINCT_REGISTERED_PRIMARY_TASKS_ELIGIBLE_ROUTE_PLANNER_USERS yields the
+# "% of eligible users who did X" funnel.
+DISTINCT_REGISTERED_PRIMARY_TASKS_ELIGIBLE_USERS_VIEWED_HCRP = EventDistinctUnitCountMetric(
+    name="distinct_registered_primary_tasks_eligible_users_viewed_hcrp",
+    display_name="Distinct Registered Primary Tasks Eligible Users Who Viewed HCRP",
+    description="Number of distinct registered primary Tasks users who had at least one "
+    "client surfaced in the Home Contact Route Planner while they had a Route "
+    "Planner-eligible caseload",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": SURFACED_ROUTE_PLANNER_ACTION,
+            "user_has_eligible_caseload": ["true"],
+        },
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_TASKS_ELIGIBLE_USERS_USED_OPTIMIZE_ROUTE = EventDistinctUnitCountMetric(
+    name="distinct_registered_primary_tasks_eligible_users_used_optimize_route",
+    display_name="Distinct Registered Primary Tasks Eligible Users Who Used Optimize Route",
+    description="Number of distinct registered primary Tasks users who attempted at least "
+    "one route optimization while they had a Route Planner-eligible caseload",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": ROUTE_OPTIMIZATION_ACTION,
+            "user_has_eligible_caseload": ["true"],
+        },
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_TASKS_ELIGIBLE_USERS_USED_GOOGLE_MAPS_LINK = EventDistinctUnitCountMetric(
+    name="distinct_registered_primary_tasks_eligible_users_used_google_maps_link",
+    display_name="Distinct Registered Primary Tasks Eligible Users Who Used Google Maps Link",
+    description="Number of distinct registered primary Tasks users who emailed, copied, "
+    "or opened at least one route link while they had a Route Planner-eligible caseload",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": ROUTE_PLANNER_LINK_ACTIONS,
+            "user_has_eligible_caseload": ["true"],
+        },
+    ),
+)
+
 # CPA Usage
 DISTINCT_PROVISIONED_CASE_PLANNING_ASSISTANT_USERS = SpanDistinctUnitCountMetric(
     name="distinct_provisioned_case_planning_assistant_users",
