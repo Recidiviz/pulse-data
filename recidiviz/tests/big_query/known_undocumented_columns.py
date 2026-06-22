@@ -1748,20 +1748,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.workflows_eligibility_status_archive_sessions"
-    ): [
-        "date_gap_id",
-        "eligibility_status",
-        "end_date_exclusive",
-        "opp_specific_eligibility_grouping",
-        "opp_specific_eligibility_subgrouping",
-        "opportunity_type",
-        "person_id",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
         "analyst_data.workflows_live_completion_event_types_by_state"
     ): [
         "completion_event_type",
@@ -1776,35 +1762,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "task_type",
         "usage_event_type",
-    ],
-    BigQueryAddress.from_str(
-        "analyst_data.workflows_person_impact_funnel_status_sessions"
-    ): [
-        "date_gap_id",
-        "denial_reasons",
-        "end_date_exclusive",
-        "form_downloaded",
-        "form_started",
-        "form_submitted",
-        "form_viewed",
-        "funnel_status_session_id",
-        "in_progress",
-        "is_almost_eligible",
-        "is_eligible",
-        "is_eligible_past_30_days",
-        "is_in_candidate_population",
-        "is_justice_involved",
-        "is_surfaceable",
-        "marked_ineligible",
-        "marked_permanently_ineligible",
-        "person_id",
-        "review_approval_status",
-        "start_date",
-        "state_code",
-        "surfaced",
-        "task_completed",
-        "task_type",
-        "viewed",
     ],
     BigQueryAddress.from_str(
         "analyst_data.workflows_person_marked_ineligible_status_session_details"
@@ -3467,48 +3424,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     BigQueryAddress.from_str("observations__person_span.us_ar_ovg_sessions"): [
         "has_points",
         "points",
-    ],
-    BigQueryAddress.from_str(
-        "observations__person_span.workflows_person_impact_funnel_status_session"
-    ): [
-        "decarceral_impact_type",
-        "denial_reasons",
-        "form_downloaded",
-        "form_started",
-        "form_submitted",
-        "form_viewed",
-        "has_mandatory_due_date",
-        "in_progress",
-        "is_almost_eligible",
-        "is_eligible",
-        "is_eligible_or_almost_eligible",
-        "is_eligible_past_30_days",
-        "is_in_candidate_population",
-        "is_jii_decarceral_transition",
-        "is_justice_involved",
-        "is_surfaceable",
-        "marked_ineligible",
-        "marked_permanently_ineligible",
-        "review_approval_status",
-        "surfaced",
-        "system_type",
-        "task_completed",
-        "task_type",
-        "task_type_is_fully_launched",
-        "task_type_is_live",
-        "viewed",
-    ],
-    BigQueryAddress.from_str(
-        "observations__person_span.workflows_person_opportunity_tab_type_session"
-    ): [
-        "decarceral_impact_type",
-        "has_mandatory_due_date",
-        "is_jii_decarceral_transition",
-        "system_type",
-        "tab_type",
-        "task_type",
-        "task_type_is_fully_launched",
-        "task_type_is_live",
     ],
     BigQueryAddress.from_str(
         "observations__tasks_primary_user_event.tasks_active_usage_event"
@@ -19418,23 +19333,4 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     BigQueryAddress.from_str(
         "workflows_views.workflows_caseload_search_field_by_state"
     ): ["search_field", "state_code", "system_type"],
-    BigQueryAddress.from_str("workflows_views.workflows_eligibility_status"): [
-        "eligibility_status",
-        "opp_specific_eligibility_grouping",
-        "opp_specific_eligibility_subgrouping",
-        "opportunity_type",
-        "person_id",
-        "stable_person_external_id",
-        "stable_person_external_id_type",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("workflows_views.workflows_eligibility_status_archive"): [
-        "eligibility_status",
-        "export_date",
-        "opp_specific_eligibility_grouping",
-        "opp_specific_eligibility_subgrouping",
-        "opportunity_type",
-        "person_id",
-        "state_code",
-    ],
 }
