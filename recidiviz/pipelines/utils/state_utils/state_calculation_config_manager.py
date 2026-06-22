@@ -965,7 +965,13 @@ def get_state_specific_supervision_period_normalization_delegate(
     if state_code == StateCode.US_NE.value:
         return UsNeSupervisionNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
-        return UsNcSupervisionNormalizationDelegate()
+        if incarceration_periods is None:
+            raise ValueError(
+                "Missing StateIncarcerationPeriod entity for UsNcSupervisionNormalizationDelegate"
+            )
+        return UsNcSupervisionNormalizationDelegate(
+            incarceration_periods=incarceration_periods
+        )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_OR.value:
