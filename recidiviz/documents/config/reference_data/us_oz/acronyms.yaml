@@ -1,0 +1,11 @@
+reference_data_type: acronyms
+entries:
+  # Overrides the shared CRC entry — in US_OZ, CRC refers to the Citadel
+  # Reentry Center. Shows that a state-specific definition of an acronym takes
+  # precedence over the state-agnostic definition.
+  - acronym: CRC
+    expansion: Citadel Reentry Center
+  - acronym: GD
+    expansion: Green Dragon Inn
+  - acronym: SR
+    expansion: Shire Reckoning

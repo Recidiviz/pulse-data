@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../store/yaml_schema/schema.json
+description: >
+  Free-text supervision case notes written by reentry officers of the Reunited
+  Kingdom about members of the Fellowship of the Ring following their release
+  from incarceration. Source documents for the US_OZ playground extractor
+  collections.
+root_entity_id_type: person_external_id
+document_metadata_columns:
+  - name: note_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the case note
+  - name: note_type
+    field_type: STRING
+    description: The type of supervision contact this note documents
+  - name: note_date
+    field_type: DATE
+    description: The date the note was written
+document_generation_query: |
+  SELECT
+    notes.PersonId AS person_external_id,
+    'US_OZ_LOTR_ID' AS person_external_id_type,
+    notes.NoteId AS note_id,
+    notes.NoteType AS note_type,
+    CAST(notes.NoteDate AS DATE) AS note_date,
+    notes.NoteText AS document_text,
+    CAST(notes.NoteDate AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_oz_raw_data_up_to_date_views.lotr_case_notes_latest` notes
+  INNER JOIN `{project_id}.us_oz_raw_data_up_to_date_views.lotr_fellowship_latest` fellowship
+    ON notes.PersonId = fellowship.ID
+  WHERE notes.NoteText IS NOT NULL

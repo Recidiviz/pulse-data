@@ -1,0 +1,25 @@
+extractor_collection_name: PLAYGROUND_EMPLOYMENT_INFO
+
+input_document_collection_name: US_OZ_FELLOWSHIP_SUPERVISION_NOTES
+
+# Exercises every extractor-level override: model config, both char-count
+# caps, and the transient retry limit. The model override currently resolves
+# to the same config as the collection default — it exists to exercise the
+# override path until the registry has a second non-thinking config.
+model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+total_pending_char_count_hard_cap: 1000000
+single_job_char_count_batch_threshold: 100000
+max_transient_retry_count: 3
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id
+  FROM `{project_id}.us_oz_document_store_metadata.us_oz_fellowship_supervision_notes`
+  WHERE document_contents_id IS NOT NULL
+
+prompt_vars:
+  state_agency_name: "the Reunited Kingdom Department of Reentry"
+  state_specific_context: |
+    These notes concern persons formerly incarcerated in Middle-earth
+    facilities (Mordor, Isengard, Barad-dûr). Pay is quoted in silver pennies
+    or castar; extract the numeric amount regardless of currency. Officers
+    often refer to people by their aliases (e.g. Strider, Mithrandir).

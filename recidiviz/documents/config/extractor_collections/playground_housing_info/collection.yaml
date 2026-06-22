@@ -1,0 +1,96 @@
+name: PLAYGROUND_HOUSING_INFO
+description: >
+  Extract housing-related information from supervision case notes, including
+  the person's housing status, where they are living, and the type of housing.
+  Playground collection run against fictional US_OZ data to exercise the
+  extraction platform; never run against real state data.
+
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+
+minimum_confidence_level: inferred
+
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1US9XCZfSxwzEnI38Ex6RerqRtcYt3867m-QmAGEa3ls"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
+reference_data:
+  # The same known_organizations data the employment collection uses, rendered
+  # with housing-specific framing.
+  known_organizations:
+    prompt_var: known_entities_context
+    header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
+    groups:
+      - label: >
+          The following are NOT housing locations (do not set primary_status
+          or housed_type based on these):
+        types: [nonresidential_program, staffing_agency, employer]
+      - label: >
+          The following ARE custody locations (set primary_status=in_custody
+          when the person is living there):
+        types: [community_corrections]
+      - label: >
+          The following ARE temporary housing locations (use
+          housed_type=temporary_housing when the person is living there):
+        types: [sober_living, halfway_house, shelter, hotel_motel]
+      - label: >
+          The following may or may not be housing — determine from context
+          whether the person is living there for residential treatment
+          (housed_type=temporary_housing) or attending as an outpatient (not
+          housing):
+        types: [residential_treatment]
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: >
+    Housing information extracted from supervision case notes.
+  result_level_description: >
+    Housing information for a single case note.
+
+  # is_relevant is auto-injected — do not define it here.
+
+  inferred_fields:
+    - name: primary_status
+      type: ENUM
+      description: >
+        The person's primary housing status as described in the case note.
+      values: [housed, unhoused, in_custody, other]
+      required: true
+
+    - name: housed_type
+      type: ENUM
+      description: >
+        The type of housing the person is living in.
+      values: [permanent, temporary_housing, with_family_or_friends, other]
+      applicable_when_value:
+        primary_status: [housed]
+
+    - name: address
+      type: STRING
+      description: >
+        The address or named place where the person is living, as written in
+        the note.
+      not_applicable_when_value:
+        primary_status: [in_custody, unhoused]
+
+    - name: temporary_housing_name
+      type: STRING
+      description: >
+        The name of the temporary housing facility or program the person is
+        living in.
+      applicable_when_value:
+        housed_type: [temporary_housing]
+
+    - name: custody_facility_name
+      type: STRING
+      description: >
+        The name of the facility the person is in custody at.
+      applicable_when_value:
+        primary_status: [in_custody]
+
+entity_groups:
+  - name: residence
+    entity_fields: [address, temporary_housing_name]

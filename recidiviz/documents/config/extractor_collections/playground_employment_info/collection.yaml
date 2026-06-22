@@ -1,0 +1,127 @@
+name: PLAYGROUND_EMPLOYMENT_INFO
+description: >
+  Extract employment-related information from supervision case notes, including
+  current employment status, job search activity, and details about current
+  employers. Playground collection run against fictional US_OZ data to exercise
+  the extraction platform; never run against real state data.
+
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+
+minimum_confidence_level: inferred
+
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1XVxpTA6ymYctzpB2G24V3KAcl8eozihFlA3OjfyjSU4"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
+reference_data:
+  known_organizations:
+    prompt_var: known_entities_context
+    header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
+    groups:
+      - label: >
+          The following are NOT employers (do not extract as employment, even
+          if mentioned in the note):
+        types:
+          [
+            nonresidential_program,
+            community_corrections,
+            residential_treatment,
+            sober_living,
+            halfway_house,
+            shelter,
+            hotel_motel,
+          ]
+      - label: >
+          The following are known employers (treat a staffing_agency as
+          employment_type: temp_agency):
+        types: [staffing_agency, employer]
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: >
+    Employment information extracted from supervision case notes.
+  result_level_description: >
+    Employment information for a single case note.
+
+  # is_relevant is auto-injected — do not define it here.
+
+  inferred_fields:
+    - name: primary_status
+      type: ENUM
+      description: >
+        The person's primary employment status as described in the case note.
+      values: [employed, unemployed, other]
+      required: true
+
+    - name: search_status
+      type: ENUM
+      description: >
+        Whether the person is actively searching for employment.
+      values: [searching, not_searching, other]
+      required: true
+
+    - name: unemployment_reason
+      type: STRING
+      description: >
+        The stated reason the person is not working (e.g. poor health, recent
+        return to custody), if one is given.
+      not_applicable_when_value:
+        primary_status: [employed]
+
+    - name: employers
+      type: ARRAY_OF_STRUCT
+      description: >
+        List of current employers mentioned in the case note. A person who runs
+        their own venture is employed by that venture with
+        employment_type=self_employed.
+      applicable_when_value:
+        primary_status: [employed]
+      primary_keys: [employer_name]
+      fields:
+        - name: employer_name
+          type: STRING
+          description: Name of the employer.
+          required: true
+        - name: employment_type
+          type: ENUM
+          description: Type of employment.
+          values:
+            [employee_ft, employee_pt, self_employed, gig, temp_agency, other]
+        - name: job_title
+          type: STRING
+          description: The person's job title or role.
+        - name: pay_rate_amount
+          type: FLOAT
+          description: Pay rate amount (numeric value only).
+        - name: pay_rate_time_period
+          type: ENUM
+          description: Time period for the pay rate.
+          values: [hourly, daily, weekly, monthly, annually]
+          applicable_when_nonnull: pay_rate_amount
+
+    - name: employment_changes
+      type: ARRAY_OF_STRUCT
+      description: >
+        Employment changes mentioned in the case note (e.g. started or lost a
+        job).
+      primary_keys: [employment_change_type, employment_change_date]
+      fields:
+        - name: employment_change_type
+          type: ENUM
+          description: Type of employment change.
+          values: [started_job, lost_job, suspended, other]
+          required: true
+        - name: employment_change_date
+          type: STRING
+          description: Date of the change, if mentioned (free text).
+
+entity_groups:
+  - name: employer
+    source_array_field: employers
+    entity_fields: [employer_name]
+    # employment_type, job_title, pay_rate_amount, pay_rate_time_period:
+    # time-varying siblings, not listed -> pass through per-mention

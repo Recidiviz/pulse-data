@@ -1,0 +1,27 @@
+reference_data_type: known_organizations
+entries:
+  - name: Michel Delving Lockholes
+    organization_type: community_corrections
+    aliases: [The Lockholes]
+  - name: Citadel Reentry Center
+    organization_type: nonresidential_program
+    aliases: [CRC]
+  - name: Houses of Healing
+    organization_type: residential_treatment
+    aliases: [HoH]
+  - name: Crickhollow Sober Hole
+    organization_type: sober_living
+    aliases: [Crickhollow]
+  - name: The Forsaken Inn
+    organization_type: hotel_motel
+  - name: The Green Dragon Inn
+    organization_type: employer
+    aliases: [Green Dragon, GD Inn]
+  - name: The Prancing Pony
+    organization_type: employer
+    aliases: [The Pony]
+  - name: Glittering Caves Ventures
+    organization_type: employer
+    aliases: [Aglarond, The Glittering Caves]
+  - name: Bree Day-Labour Pool
+    organization_type: staffing_agency
