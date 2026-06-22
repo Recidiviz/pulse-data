@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for column_types.py."""
+import datetime
 import enum
 import unittest
 
-from sqlalchemy import Column, Enum
+from sqlalchemy import Column, DateTime, Enum
+from sqlalchemy.engine.default import DefaultDialect
 
-from recidiviz.persistence.database.column_types import StringBackedEnum
+from recidiviz.persistence.database.column_types import StringBackedEnum, UTCDateTime
 
 
 class _Color(enum.Enum):
@@ -64,3 +66,68 @@ class StringBackedEnumTest(unittest.TestCase):
         column = Column("color", StringBackedEnum(_Color))
         self.assertIs(type(column.type), Enum)
         self.assertFalse(column.type.native_enum)
+
+
+_DIALECT = DefaultDialect()
+UTC_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
+NAIVE_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, 0)
+
+
+class UTCDateTimeTest(unittest.TestCase):
+    """Tests for UTCDateTime."""
+
+    def test_result_value_attaches_utc(self) -> None:
+        # A naive value read from the DB (stored as UTC wall-clock) comes back
+        # UTC-aware.
+        result = UTCDateTime().process_result_value(NAIVE_DATETIME, dialect=_DIALECT)
+        self.assertEqual(
+            UTC_DATETIME,
+            result,
+        )
+        assert result is not None
+        self.assertIs(datetime.timezone.utc, result.tzinfo)
+
+    def test_result_value_none_passes_through(self) -> None:
+        self.assertIsNone(UTCDateTime().process_result_value(None, dialect=_DIALECT))
+
+    def test_bind_param_strips_utc_aware_to_naive(self) -> None:
+        result = UTCDateTime().process_bind_param(UTC_DATETIME, dialect=_DIALECT)
+        self.assertEqual(NAIVE_DATETIME, result)
+        assert result is not None
+        self.assertIsNone(result.tzinfo)
+
+    def test_bind_param_converts_non_utc_to_utc(self) -> None:
+        # A non-UTC aware value is shifted to UTC before its tzinfo is dropped.
+        plus_five = datetime.timezone(datetime.timedelta(hours=5))
+        result = UTCDateTime().process_bind_param(
+            datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=plus_five),
+            dialect=_DIALECT,
+        )
+        self.assertEqual(datetime.datetime(2026, 1, 1, 7, 0, 0), result)
+        assert result is not None
+        self.assertIsNone(result.tzinfo)
+
+    def test_bind_param_rejects_naive(self) -> None:
+        # A naive value on write is a bug: the app layer must hand over UTC-aware
+        # datetimes so the stored value's zone is unambiguous.
+        with self.assertRaisesRegex(ValueError, r"requires a timezone-aware datetime"):
+            UTCDateTime().process_bind_param(NAIVE_DATETIME, dialect=_DIALECT)
+
+    def test_bind_param_none_passes_through(self) -> None:
+        self.assertIsNone(UTCDateTime().process_bind_param(None, dialect=_DIALECT))
+
+    def test_roundtrip_preserves_utc_value(self) -> None:
+        original = UTC_DATETIME
+        column_type = UTCDateTime()
+        stored = column_type.process_bind_param(original, dialect=_DIALECT)
+        loaded = column_type.process_result_value(stored, dialect=_DIALECT)
+        self.assertEqual(original, loaded)
+
+    def test_impl_is_naive_datetime(self) -> None:
+        # impl is a plain DateTime, so the column's DDL -- and therefore generated
+        # migrations -- is identical to a vanilla DateTime column.
+        self.assertIs(DateTime, UTCDateTime.impl)
+
+    def test_usable_as_column_type(self) -> None:
+        column = Column("ts", UTCDateTime())
+        self.assertIsInstance(column.type, UTCDateTime)

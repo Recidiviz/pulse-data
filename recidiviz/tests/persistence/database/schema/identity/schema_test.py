@@ -43,7 +43,7 @@ def _new_identity(
     tenant: str = "US_OZ",
     person_type: str = "JII",
 ) -> schema.Identity:
-    now = datetime.datetime(2026, 1, 1)
+    now = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
     return schema.Identity(
         recidiviz_id=recidiviz_id or uuid.uuid4(),
         created_utc=now,
@@ -176,7 +176,9 @@ class IdentitySchemaTest(unittest.TestCase):
             surname="Doe",
             source_type="PRODUCT_APP",
             source_product_app=None,
-            last_updated_utc=datetime.datetime(2026, 1, 1),
+            last_updated_utc=datetime.datetime(
+                2026, 1, 1, tzinfo=datetime.timezone.utc
+            ),
         )
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -202,7 +204,9 @@ class IdentitySchemaTest(unittest.TestCase):
                     recidiviz_id_a=high,
                     recidiviz_id_b=low,
                     created_by="test@recidiviz.org",
-                    created_utc=datetime.datetime(2026, 1, 1),
+                    created_utc=datetime.datetime(
+                        2026, 1, 1, tzinfo=datetime.timezone.utc
+                    ),
                 )
             )
             with self.assertRaisesRegex(IntegrityError, "ck_no_merge_canonical_order"):
@@ -215,7 +219,9 @@ class IdentitySchemaTest(unittest.TestCase):
                     recidiviz_id_a=low,
                     recidiviz_id_b=high,
                     created_by="test@recidiviz.org",
-                    created_utc=datetime.datetime(2026, 1, 1),
+                    created_utc=datetime.datetime(
+                        2026, 1, 1, tzinfo=datetime.timezone.utc
+                    ),
                 )
             )
             session.commit()

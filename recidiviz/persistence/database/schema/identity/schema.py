@@ -22,15 +22,7 @@ children), candidates flagged for human review by the import DAG, and audit
 trails of merges and splits.
 """
 
-from sqlalchemy import (
-    BigInteger,
-    Boolean,
-    CheckConstraint,
-    Column,
-    Date,
-    DateTime,
-    ForeignKey,
-)
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, Date, ForeignKey
 from sqlalchemy import Identity as SaIdentity
 from sqlalchemy import Index, MetaData, PrimaryKeyConstraint, String, sql
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
@@ -55,7 +47,7 @@ from recidiviz.common.demographics import Ethnicity as DemographicsEthnicity
 from recidiviz.common.demographics import Gender as DemographicsGender
 from recidiviz.common.demographics import Race as DemographicsRace
 from recidiviz.common.demographics import Sex as DemographicsSex
-from recidiviz.persistence.database.column_types import StringBackedEnum
+from recidiviz.persistence.database.column_types import StringBackedEnum, UTCDateTime
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 IDENTITY_NAMING_CONVENTION = {
@@ -103,10 +95,10 @@ class Identity(IdentityBase):
     recidiviz_id = Column(UUID(as_uuid=True), primary_key=True)
     """Immutable Recidiviz-assigned id for this person."""
 
-    created_utc = Column(DateTime, nullable=False)
+    created_utc = Column(UTCDateTime, nullable=False)
     """When the identity record was first created."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When any field on this identity or its child attributes was last modified."""
 
     tenant = Column(StringBackedEnum(Tenant), nullable=False)
@@ -225,7 +217,7 @@ class Name(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this name row was last modified."""
 
 
@@ -270,7 +262,7 @@ class DateOfBirth(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this date-of-birth row was last modified."""
 
 
@@ -312,7 +304,7 @@ class Gender(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this gender row was last modified."""
 
 
@@ -345,7 +337,7 @@ class Race(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this race row was last modified."""
 
 
@@ -386,7 +378,7 @@ class Sex(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this sex row was last modified."""
 
 
@@ -427,7 +419,7 @@ class Ethnicity(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this ethnicity row was last modified."""
 
 
@@ -470,7 +462,7 @@ class PhoneNumber(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this phone number row was last modified."""
 
 
@@ -513,7 +505,7 @@ class Email(IdentityBase):
     source_product_app = Column(StringBackedEnum(ProductApp), nullable=True)
     """When `source_type` is `PRODUCT_APP`, the app that set the value. NULL otherwise."""
 
-    last_updated_utc = Column(DateTime, nullable=False)
+    last_updated_utc = Column(UTCDateTime, nullable=False)
     """When this email row was last modified."""
 
 
@@ -553,7 +545,7 @@ class CreateCandidate(IdentityBase):
     """JSONB description of why the cluster was held back — e.g., which
     attributes disagreed."""
 
-    detected_at_utc = Column(DateTime, nullable=False)
+    detected_at_utc = Column(UTCDateTime, nullable=False)
     """When the import run flagged this cluster."""
 
     status = Column(
@@ -599,7 +591,7 @@ class UpdateAttributeCandidate(IdentityBase):
     )
     """The identity whose attribute update was held."""
 
-    detected_at_utc = Column(DateTime, nullable=False)
+    detected_at_utc = Column(UTCDateTime, nullable=False)
     """When the import run flagged this update."""
 
     incoming_attributes = Column(JSONB, nullable=False)
@@ -637,7 +629,7 @@ class MergeCandidate(IdentityBase):
     """Tenant whose import run produced this candidate. Denormalized to allow
     efficient per-tenant cleanup without joining through identities."""
 
-    detected_at_utc = Column(DateTime, nullable=False)
+    detected_at_utc = Column(UTCDateTime, nullable=False)
     """When the merge was first proposed."""
 
     conflicting_attributes = Column(JSONB, nullable=False)
@@ -718,7 +710,7 @@ class SplitCandidate(IdentityBase):
     """JSONB structure describing the groups the split would partition the
     identity's external IDs and attributes into."""
 
-    detected_at_utc = Column(DateTime, nullable=False)
+    detected_at_utc = Column(UTCDateTime, nullable=False)
     """When the split was first proposed."""
 
     status = Column(
@@ -756,7 +748,7 @@ class MergeEvent(IdentityBase):
     """For MERGE_ENDPOINT triggers, the email of the user who called the
     endpoint (derived from their Auth0 JWT claims). NULL for IMPORT triggers."""
 
-    timestamp_utc = Column(DateTime, nullable=False)
+    timestamp_utc = Column(UTCDateTime, nullable=False)
     """When the merge was performed."""
 
 
@@ -805,7 +797,7 @@ class SplitEvent(IdentityBase):
     """For SPLIT_ENDPOINT triggers, the email of the user who called the
     endpoint. NULL otherwise."""
 
-    timestamp_utc = Column(DateTime, nullable=False)
+    timestamp_utc = Column(UTCDateTime, nullable=False)
     """When the split was performed."""
 
 
@@ -917,5 +909,5 @@ class NoMerge(IdentityBase):
     created_by = Column(String, nullable=False)
     """Email of the authenticated user who recorded this no-merge pair."""
 
-    created_utc = Column(DateTime, nullable=False)
+    created_utc = Column(UTCDateTime, nullable=False)
     """When the no-merge entry was created."""

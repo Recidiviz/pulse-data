@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Custom SQLAlchemy column types shared across database schemas."""
+import datetime
 import enum
 from typing import Any
 
 import sqlalchemy as sa
+from sqlalchemy.engine import Dialect
 
 
 class StringBackedEnum(sa.Enum):
@@ -38,3 +40,41 @@ class StringBackedEnum(sa.Enum):
         # Reject non-member values at write time, since there is no DB-level constraint.
         kwargs.setdefault("validate_strings", True)
         return sa.Enum(enum_type, **kwargs)
+
+
+class UTCDateTime(sa.types.TypeDecorator):
+    """A DateTime column whose values are UTC-aware at the application layer.
+
+    Values are stored as a naive TIMESTAMP, and output as timezone-aware UTC datetimes.
+    """
+
+    impl = sa.DateTime
+    cache_ok = True
+
+    def process_bind_param(  # pylint: disable=unused-argument
+        self, value: datetime.datetime | None, dialect: Dialect
+    ) -> datetime.datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError(
+                f"UTCDateTime column requires a timezone-aware datetime, but got "
+                f"naive value [{value}]"
+            )
+        return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+    def process_result_value(  # pylint: disable=unused-argument
+        self, value: datetime.datetime | None, dialect: Dialect
+    ) -> datetime.datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=datetime.timezone.utc)
+
+    def process_literal_param(  # pylint: disable=unused-argument
+        self, value: datetime.datetime | None, dialect: Dialect
+    ) -> str:
+        return str(value)
+
+    @property
+    def python_type(self) -> type:
+        return datetime.datetime
