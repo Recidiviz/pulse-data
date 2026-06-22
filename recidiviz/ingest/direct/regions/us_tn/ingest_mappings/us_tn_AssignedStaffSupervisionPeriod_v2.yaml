@@ -42,6 +42,7 @@ output:
                   $equal:
                     - SupervisionLevel
                     - $literal("9IS")
+                    - $literal("ISC")
                 $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
               - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervision_site: Site

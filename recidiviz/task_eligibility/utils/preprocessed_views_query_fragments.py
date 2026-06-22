@@ -22,7 +22,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 
-# TODO(#20230): Deprecate this view and move functions to state_data_query_fragments when relevant data is ingested
 # TODO(#20231): Ingest drug screens data into state_drug_screen
 # TODO(#38834): Clean up query fragments vs. criteria builders
 
