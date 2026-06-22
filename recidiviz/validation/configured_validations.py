@@ -356,6 +356,9 @@ from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_
 from recidiviz.validation.views.state.workflows.client_record_duplicate_person_external_ids import (
     CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.eligible_persons_missing_from_person_record import (
+    ELIGIBLE_PERSONS_MISSING_FROM_PERSON_RECORD_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.missing_client_record_rows_null_full_name import (
     MISSING_CLIENT_RECORD_ROWS_NULL_FULL_NAME_VIEW_BUILDER,
 )
@@ -595,6 +598,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ELIGIBLE_PERSONS_MISSING_FROM_PERSON_RECORD_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_IX_OVERDUE_F2F_CONTACT_MISSING_FROM_SUPERVISION_TASKS_VIEW_BUILDER,

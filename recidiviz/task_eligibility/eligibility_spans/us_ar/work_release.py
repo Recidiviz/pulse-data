@@ -20,7 +20,7 @@ for work release.
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
@@ -52,7 +52,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
     task_name="WORK_RELEASE",
     description=__doc__,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#34322): Clarify Class I eligibility criteria
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
