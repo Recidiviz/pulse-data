@@ -242,8 +242,14 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             response_text = response.choices[0].message.content
 
             usage = getattr(response, "usage", None)
-            input_tokens: int | None = getattr(usage, "prompt_tokens", None)
-            output_tokens: int | None = getattr(usage, "completion_tokens", None)
+            # LiteLLM normalizes to prompt_tokens/completion_tokens (OpenAI style),
+            # but Vertex AI responses via extra_body may use native field names.
+            input_tokens: int | None = getattr(usage, "prompt_tokens", None) or getattr(
+                usage, "input_tokens", None
+            )
+            output_tokens: int | None = getattr(
+                usage, "completion_tokens", None
+            ) or getattr(usage, "output_tokens", None)
             thinking_tokens: int | None = None
             if usage is not None:
                 details = getattr(usage, "completion_tokens_details", None)
