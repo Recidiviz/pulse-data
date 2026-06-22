@@ -151,7 +151,7 @@ class ProductType(Enum):
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         elif self == ProductType.SENTENCING_ASSESSMENT_REPORT:
-            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/sarAccess')"
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/sar')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
