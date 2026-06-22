@@ -65,7 +65,7 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="aggregated_metrics",
         table_id="justice_involved_workflows_provisioned_user_metrics_person_assignment_sessions",
-    ): (60 * 20),
+    ): (60 * 25),
 }
 
 
