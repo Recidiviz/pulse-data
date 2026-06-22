@@ -1,4 +1,4 @@
 document_contents_id,collection_name,run_id,upload_datetime,status,error_message
-success_aaa,fake_case_notes,run_1,2026-01-01 12:00:00,SUCCESS,
-failed_bbb,fake_case_notes,run_1,2026-02-01 12:00:00,FAILURE,timeout
-success_eee,fake_case_notes,run_0,2026-04-01 12:00:00,SUCCESS,
+success_aaa,FAKE_CASE_NOTES,run_1,2026-01-01 12:00:00,SUCCESS,
+failed_bbb,FAKE_CASE_NOTES,run_1,2026-02-01 12:00:00,FAILURE,timeout
+success_eee,FAKE_CASE_NOTES,run_0,2026-04-01 12:00:00,SUCCESS,

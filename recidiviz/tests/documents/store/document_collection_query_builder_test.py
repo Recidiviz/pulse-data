@@ -72,7 +72,7 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_config_module
+            StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
         self.metadata_address = self.config.metadata_table_address(
             self.project_id,

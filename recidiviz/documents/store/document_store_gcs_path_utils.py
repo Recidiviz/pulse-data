@@ -48,7 +48,7 @@ def gcs_path_for_document(
     return GcsfsFilePath.from_directory_and_file_name(
         dir_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
             bucket_name=document_blob_storage_bucket_name(project_id, state_code),
-            blob_name=collection_name,
+            blob_name=collection_name.lower(),
         ),
         file_name=f"{document_contents_id}.txt",
     )
@@ -66,7 +66,7 @@ def gcs_directory_for_task_output(
     CSVs."""
     return GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=temp_document_store_output_bucket_name(project_id, state_code),
-        blob_name=make_directory_path_gcsfs_safe(f"{run_id}/{collection_name}"),
+        blob_name=make_directory_path_gcsfs_safe(f"{run_id}/{collection_name.lower()}"),
     )
 
 

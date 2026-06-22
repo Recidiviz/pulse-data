@@ -1,13 +1,13 @@
 extractor_collection_name: PLAYGROUND_HOUSING_INFO
 
-input_document_collection_name: US_OZ_FELLOWSHIP_SUPERVISION_NOTES
+input_document_collection_name: FELLOWSHIP_SUPERVISION_NOTES
 
 # No overrides: this extractor exercises the all-defaults path (collection
 # default model config, code-level default caps and retry count).
 
 document_metadata_filter_query_template: |
   SELECT document_contents_id
-  FROM `{project_id}.us_oz_document_store_metadata.us_oz_fellowship_supervision_notes`
+  FROM `{project_id}.us_oz_document_store_metadata.fellowship_supervision_notes`
   WHERE document_contents_id IS NOT NULL
 
 prompt_vars:

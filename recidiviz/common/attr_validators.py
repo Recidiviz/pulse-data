@@ -62,6 +62,40 @@ def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> 
         raise ValueError("String value should not be empty.")
 
 
+_SNAKE_CASE_REGEX = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+def is_snake_case(_instance: Any, attribute: attr.Attribute, value: str) -> None:
+    """Validates that the value is a non-empty snake_case string: a lowercase
+    letter followed by any number of lowercase letters, digits, and
+    underscores.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"Expected value type str, found {type(value)}.")
+    if not _SNAKE_CASE_REGEX.fullmatch(value):
+        raise ValueError(
+            f"Field [{attribute.name}] must be snake_case (matching "
+            f"[{_SNAKE_CASE_REGEX.pattern}]), received: [{value}]"
+        )
+
+
+_UPPER_SNAKE_CASE_REGEX = re.compile(r"^[A-Z][A-Z0-9_]*$")
+
+
+def is_upper_snake_case(_instance: Any, attribute: attr.Attribute, value: str) -> None:
+    """Validates that the value is a non-empty UPPER_SNAKE_CASE string: an
+    uppercase letter followed by any number of uppercase letters, digits, and
+    underscores.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"Expected value type str, found {type(value)}.")
+    if not _UPPER_SNAKE_CASE_REGEX.fullmatch(value):
+        raise ValueError(
+            f"Field [{attribute.name}] must be UPPER_SNAKE_CASE (matching "
+            f"[{_UPPER_SNAKE_CASE_REGEX.pattern}]), received: [{value}]"
+        )
+
+
 def is_none(_instance: Any, attribute: attr.Attribute, value: Any) -> None:
     """Validator that enforces a field is always None. Useful for fields that
     exist only to satisfy a structural convention (e.g. an enum's _raw_text
@@ -505,6 +539,20 @@ def is_positive_int(instance: Any, attribute: attr.Attribute, value: int) -> Non
         raise ValueError(
             f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
             f"positive integer. Found value [{value}]"
+        )
+
+
+def is_non_negative_int(instance: Any, attribute: attr.Attribute, value: int) -> None:
+    """Validator that ensures the field value is a non-negative integer (zero
+    allowed).
+    """
+    # First validate that it's an integer
+    is_int(instance, attribute, value)
+
+    if value < 0:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"non-negative integer. Found value [{value}]"
         )
 
 

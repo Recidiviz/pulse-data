@@ -74,6 +74,56 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_required_str="foo", my_optional_str=None)
         _ = _TestClass(my_required_str="foo", my_optional_str="bar")
 
+    def test_is_snake_case(self) -> None:
+        @attr.s
+        class _TestClass:
+            value: str = attr.ib(validator=attr_validators.is_snake_case)
+
+        # Valid snake_case strings don't crash.
+        for valid in ["employer_name", "status", "foo2", "a_b_c"]:
+            _ = _TestClass(value=valid)
+
+        # Uppercase, leading digit, leading underscore, dashes, and empty all fail.
+        for invalid in ["EmployerName", "Status", "1foo", "_foo", "foo-bar", ""]:
+            with self.assertRaisesRegex(
+                ValueError,
+                re.escape(
+                    f"Field [value] must be snake_case (matching "
+                    f"[^[a-z][a-z0-9_]*$]), received: [{invalid}]"
+                ),
+            ):
+                _ = _TestClass(value=invalid)
+
+        with self.assertRaisesRegex(
+            ValueError, re.escape("Expected value type str, found <class 'int'>.")
+        ):
+            _ = _TestClass(value=5)  # type: ignore[arg-type]
+
+    def test_is_upper_snake_case(self) -> None:
+        @attr.s
+        class _TestClass:
+            value: str = attr.ib(validator=attr_validators.is_upper_snake_case)
+
+        # Valid UPPER_SNAKE_CASE strings don't crash.
+        for valid in ["EMPLOYER_NAME", "STATUS", "FOO2", "A_B_C"]:
+            _ = _TestClass(value=valid)
+
+        # Lowercase, mixed-case, leading digit, leading underscore, and empty fail.
+        for invalid in ["employer_name", "Employer_Name", "1FOO", "_FOO", ""]:
+            with self.assertRaisesRegex(
+                ValueError,
+                re.escape(
+                    f"Field [value] must be UPPER_SNAKE_CASE (matching "
+                    f"[^[A-Z][A-Z0-9_]*$]), received: [{invalid}]"
+                ),
+            ):
+                _ = _TestClass(value=invalid)
+
+        with self.assertRaisesRegex(
+            ValueError, re.escape("Expected value type str, found <class 'int'>.")
+        ):
+            _ = _TestClass(value=5)  # type: ignore[arg-type]
+
     def test_bool_validators(self) -> None:
         @attr.s
         class _TestClass:
@@ -445,6 +495,29 @@ class AttrValidatorsTest(unittest.TestCase):
         # These don't crash
         _ = _TestClass(my_required_int=1, my_optional_int=None)
         _ = _TestClass(my_required_int=1000, my_optional_int=3000)
+
+    def test_is_non_negative_integer_validator(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_int: int = attr.ib(validator=attr_validators.is_non_negative_int)
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"'my_int' must be <class 'int'> "
+            r"\(got None that is a <class 'NoneType'>\).",
+        ):
+            _ = _TestClass(my_int=None)  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_int\] on \[_TestClass\] must be a non-negative integer. "
+            r"Found value \[-1\]",
+        ):
+            _ = _TestClass(my_int=-1)
+
+        # Zero and positive values do not crash.
+        _ = _TestClass(my_int=0)
+        _ = _TestClass(my_int=1000)
 
 
 @attr.s(frozen=True)

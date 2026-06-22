@@ -48,11 +48,11 @@ class TestDocumentCollectionConfig(unittest.TestCase):
 
     def test_get_document_collection_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_case_notes", fake_config_module
+            StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
 
         self.assertEqual(config.state_code, StateCode.US_XX)
-        self.assertEqual(config.name, "fake_case_notes")
+        self.assertEqual(config.name, "FAKE_CASE_NOTES")
 
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(
@@ -71,16 +71,16 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         self.assertEqual(
             configs.keys(),
             {
-                "fake_case_notes",
-                "fake_person_id_notes",
-                "fake_staff_id_reports",
-                "fake_staff_reports",
+                "FAKE_CASE_NOTES",
+                "FAKE_PERSON_ID_NOTES",
+                "FAKE_STAFF_ID_REPORTS",
+                "FAKE_STAFF_REPORTS",
             },
         )
 
     def test_get_staff_external_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_staff_reports", fake_config_module
+            StateCode.US_XX, "FAKE_STAFF_REPORTS", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(
@@ -90,14 +90,14 @@ class TestDocumentCollectionConfig(unittest.TestCase):
 
     def test_get_person_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_person_id_notes", fake_config_module
+            StateCode.US_XX, "FAKE_PERSON_ID_NOTES", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(pk_col_names, ["person_id", "note_id"])
 
     def test_get_staff_id_config(self) -> None:
         config = get_document_collection_config(
-            StateCode.US_XX, "fake_staff_id_reports", fake_config_module
+            StateCode.US_XX, "FAKE_STAFF_ID_REPORTS", fake_config_module
         )
         pk_col_names = [col.name for col in config.primary_key_columns]
         self.assertEqual(pk_col_names, ["staff_id"])
@@ -112,7 +112,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "has duplicate column names"):
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
-                name="test_collection",
+                name="TEST_COLLECTION",
                 description="test collection for validation",
                 primary_key_columns=[
                     bigquery.SchemaField("duplicate_column", "STRING"),

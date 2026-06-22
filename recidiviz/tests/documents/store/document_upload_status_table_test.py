@@ -52,7 +52,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
         dt = datetime(2026, 1, 1, tzinfo=timezone.utc)
         row = DocumentUploadStatusTable.to_csv_row(
             document_contents_id="abc",
-            collection_name="fake_case_notes",
+            collection_name="FAKE_CASE_NOTES",
             run_id="run_1",
             upload_datetime=dt,
             status=DOCUMENT_UPLOAD_SUCCESS,
@@ -63,7 +63,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
             row,
             (
                 "abc",
-                "fake_case_notes",
+                "FAKE_CASE_NOTES",
                 "run_1",
                 "2026-01-01T00:00:00+00:00",
                 DOCUMENT_UPLOAD_SUCCESS,

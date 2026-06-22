@@ -116,8 +116,13 @@ class DocumentCollectionConfig:
     # The state this document collection belongs to.
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
 
-    # Name that uniquely identifies a collection of documents within a state.
-    name: str = attr.ib(validator=is_valid_unquoted_bq_identifier)
+    # UPPER_SNAKE_CASE name that uniquely identifies a collection of documents
+    # within a state. Lowercased wherever it becomes a BQ identifier (metadata /
+    # temp table ids) or GCS path; persisted as-is (uppercase) wherever it is
+    # stored as a column value.
+    name: str = attr.ib(
+        validator=[is_valid_unquoted_bq_identifier, attr_validators.is_upper_snake_case]
+    )
 
     # Description providing more detail about the collection, its intended use, and any other relevant information.
     description: str = attr.ib(
@@ -159,7 +164,7 @@ class DocumentCollectionConfig:
     @property
     def metadata_table_id(self) -> str:
         """Returns the BigQuery table ID for this document collection's metadata table."""
-        return self.name
+        return self.name.lower()
 
     def metadata_table_address(self, project_id: str) -> ProjectSpecificBigQueryAddress:
         """Returns the BigQuery address for this collection's metadata table."""
@@ -217,7 +222,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_document_metadata_updates_{self.name}_{make_bq_compatible_identifier(run_id)}",
+            table_id=f"temp_document_metadata_updates_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
         )
 
     def build_bq_temp_new_document_contents_schema(self) -> list[bigquery.SchemaField]:
@@ -241,7 +246,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_new_document_contents_{self.name}_{make_bq_compatible_identifier(run_id)}",
+            table_id=f"temp_new_document_contents_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
         )
 
     @classmethod
@@ -298,13 +303,15 @@ class DocumentCollectionConfig:
             _state_collections_dir(
                 state_code, config_module=config_module or default_config_module
             )
-            / f"{collection_name}.yaml"
+            / f"{collection_name.lower()}.yaml"
         )
 
     @staticmethod
     def file_path_to_config_name(file_path: Path) -> str:
-        """Returns the collection name for a given YAML config file path."""
-        return file_path.stem
+        """Returns the UPPER_SNAKE_CASE collection name for a given YAML config
+        file path (whose stem is the lowercase form).
+        """
+        return file_path.stem.upper()
 
     @staticmethod
     def file_path_to_state_code(file_path: Path) -> StateCode:
