@@ -72,6 +72,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "100",
+                    "staffExternalId": "100",
                     "stateCode": "US_XX",
                     "email": "jjjj3@xx.gov",
                     "district": "District 1",
@@ -90,6 +91,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "101",
+                    "staffExternalId": "101",
                     "stateCode": "US_XX",
                     "email": "sal.sli@xx.gov",
                     "district": "District 2",
@@ -108,6 +110,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "102",
+                    "staffExternalId": "102",
                     "stateCode": "US_XX",
                     "email": None,
                     "district": "District 3",
@@ -126,6 +129,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "103",
+                    "staffExternalId": "103",
                     "stateCode": "US_XX",
                     "email": None,
                     "district": "District 4",

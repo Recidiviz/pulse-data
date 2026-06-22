@@ -38,6 +38,7 @@ class WorkflowsIncarcerationStaffETLDelegate(WorkflowsFirestoreETLDelegate):
 
         new_document = {
             "id": data["id"],
+            "staffExternalId": data["staff_external_id"],
             "stateCode": data["state_code"],
             "email": email,
             "district": data.get("district"),

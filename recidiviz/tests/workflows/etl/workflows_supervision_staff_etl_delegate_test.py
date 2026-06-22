@@ -73,6 +73,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "100",
+                    "staffExternalId": "100",
                     "stateCode": "US_XX",
                     "email": "jjjj3@xx.gov",
                     "district": "District 1",
@@ -92,6 +93,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "101",
+                    "staffExternalId": "101",
                     "stateCode": "US_XX",
                     "email": "sal.sli@xx.gov",
                     "district": "District 2",
@@ -110,6 +112,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "102",
+                    "staffExternalId": "102",
                     "stateCode": "US_XX",
                     "district": "District 3",
                     "givenNames": "Foghorn",
@@ -127,6 +130,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "103",
+                    "staffExternalId": "103",
                     "stateCode": "US_XX",
                     "district": "District 4",
                     "givenNames": "",

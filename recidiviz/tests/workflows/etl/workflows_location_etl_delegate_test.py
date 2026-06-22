@@ -74,6 +74,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "WOMEN'S FACILITY 1",
+                    "locationId": "WOMEN'S FACILITY 1",
                     "stateCode": "US_XX",
                     "name": "Women's Facility 1",
                     "system": "INCARCERATION",
@@ -89,6 +90,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "U2",
+                    "locationId": "U2",
                     "stateCode": "US_XX",
                     "name": "Unit 2",
                     "system": "INCARCERATION",
@@ -106,6 +108,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "DISTRICT 1/2",
+                    "locationId": "DISTRICT 1/2",
                     "stateCode": "US_XX",
                     "name": "Supervision district 1/2",
                     "system": "SUPERVISION",
@@ -121,6 +124,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
                 {
                     "id": "D3",
+                    "locationId": "D3",
                     "stateCode": "US_XX",
                     "name": "Supervision district 3",
                     "system": "SUPERVISION",
