@@ -275,31 +275,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "offender_supervision_periods",
         ],
     },
-    StateCode.US_TN: {
-        "OffenderName": ["filtered_out_nicknames", "normalized_rows"],
-        "SentencesChargesAndCourtCases_v4": [
-            "all_latest_sentences_joined",
-            "all_sentence_sources_joined",
-            "cleaned_Diversion_view",
-            "cleaned_ISCSentence_view",
-            "cleaned_Sentence_view",
-            "consecutive_ISCRelated_sentences",
-            "discharge_task_deadline_array",
-            "most_recent_sentence_information",
-            "order_sentence_actions_by_date_per_sentence",
-            "special_conditions_aggregation",
-            "special_conditions_date_grouping",
-        ],
-        "StaffRoleLocationPeriods": [
-            "construct_periods",
-            "create_unique_rows",
-            "first_reported_title",
-            "key_status_change_dates",
-            "ranked_rows",
-        ],
-        "SupervisionContacts": ["contact_note_type_view"],
-        "ViolationsAndSanctions": ["sanctions_groupings"],
-    },
     StateCode.US_MO: {
         "tak158_tak026_incarceration_periods": [
             "all_sub_sub_cycle_critical_dates",
