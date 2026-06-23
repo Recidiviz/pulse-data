@@ -72,6 +72,13 @@ output_schema:
       not_applicable_when_value:
         primary_status: [employed]
 
+    - name: employment_note_summary
+      type: STRING
+      field_mode: STRUCTURAL
+      description: >
+        One-sentence summary of the employment-related content of the note,
+        composed by the model rather than extracted from the text.
+
     - name: employers
       type: ARRAY_OF_STRUCT
       description: >
@@ -97,6 +104,9 @@ output_schema:
         - name: pay_rate_amount
           type: FLOAT
           description: Pay rate amount (numeric value only).
+          # Stricter than the collection default — pay rates are only useful
+          # when stated outright, and exercises the per-field override.
+          minimum_confidence_level: explicit
         - name: pay_rate_time_period
           type: ENUM
           description: Time period for the pay rate.

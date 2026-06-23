@@ -1,0 +1,82 @@
+# Fake extractor collection used by llm_extractor_collection_config_test.py to
+# exercise happy-path edge cases without depending on any real state's configs.
+# References GLOBEX_BASIC_DEFAULT from the sibling fake_config/model_registry.yaml.
+name: FAKE_EXTRACTOR_COLLECTION
+description: Extract fictional assignment information to exercise the parser.
+
+default_model_config_name: GLOBEX_BASIC_DEFAULT
+
+minimum_confidence_level: inferred
+
+golden_eval:
+  source_sheet_uri: "https://example.com/fake-golden-eval"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
+reference_data:
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: Fictional assignment records for a batch of documents.
+  result_level_description: Fictional assignment record for a single document.
+
+  inferred_fields:
+    # ENUM, required, no constraints.
+    - name: primary_status
+      type: ENUM
+      description: The primary status described in the document.
+      values: [active, inactive, other]
+      required: true
+
+    # STRUCTURAL field — a bare value the model assigns, no companion metadata.
+    - name: status_note
+      type: STRING
+      field_mode: STRUCTURAL
+      description: A one-line model-composed summary of the status.
+
+    # Top-level field with a not_applicable_when_value constraint.
+    - name: location
+      type: STRING
+      description: The location associated with the record.
+      not_applicable_when_value:
+        primary_status: [inactive]
+
+    # Nested ARRAY_OF_STRUCT with primary_keys and an applicable_when_value
+    # constraint; its sub-fields exercise a per-field minimum_confidence_level
+    # override and an applicable_when_nonnull constraint at the inner scope.
+    - name: assignments
+      type: ARRAY_OF_STRUCT
+      description: Assignments mentioned in the document.
+      applicable_when_value:
+        primary_status: [active]
+      primary_keys: [assignment_name]
+      fields:
+        - name: assignment_name
+          type: STRING
+          description: Name of the assignment.
+          required: true
+        - name: assignment_type
+          type: ENUM
+          description: The kind of assignment.
+          values: [internal, external, other]
+        - name: rate_amount
+          type: FLOAT
+          description: Pay rate amount (numeric value only).
+          minimum_confidence_level: explicit
+        - name: rate_period
+          type: ENUM
+          description: Time period for the rate.
+          values: [hourly, monthly]
+          applicable_when_nonnull: rate_amount
+
+entity_groups:
+  # Top-level entity group (source_array_field omitted).
+  - name: location
+    entity_fields: [location]
+  # Array entity group whose entity_fields are sub-fields of `assignments`.
+  - name: assignment
+    source_array_field: assignments
+    entity_fields: [assignment_name]
