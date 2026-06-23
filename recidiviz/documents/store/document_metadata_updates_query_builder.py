@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builds queries related to temp document metadata updates table."""
+
 from datetime import datetime
 
 import attr
@@ -56,14 +57,14 @@ class DocumentMetadataUpdatesQueryBuilder:
 
     def build_new_documents_query(
         self,
-        collection_name: str,
         temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
+        document_contents_table_address: ProjectSpecificBigQueryAddress,
         target_batch_bytes: int,
     ) -> str:
         """Builds a query that selects distinct (document_contents_id, document_text)
-        pairs from the temp metadata diff table that have not already been
-        successfully uploaded for |collection_name|, and assigns each a batch
-        number based on cumulative byte size.
+        pairs from the temp metadata diff table that are not yet present in
+        the collection's persistent {name}_document_contents table, and assigns
+        each a batch number based on cumulative byte size.
 
         Batch boundaries are determined by the cumulative byte size of all
         *preceding* rows, so a batch's actual total can exceed |target_batch_bytes| by
@@ -92,9 +93,7 @@ FROM (
 )
 WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
     SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-    FROM {self.upload_status_table_address.format_address_for_query()}
-    WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
-      AND {COLLECTION_NAME} = '{collection_name}'
+    FROM {document_contents_table_address.format_address_for_query()}
 )"""
 
     def build_successful_uploads_metadata_insert_query(

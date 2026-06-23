@@ -14,15 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains source table definitions for document store metadata tables."""
+"""Contains source table definitions for document store metadata and contents tables."""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     collect_document_collection_configs,
+)
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_upload_status_table import (
     DocumentUploadStatusTable,
 )
 from recidiviz.ingest.direct.dataset_config import (
+    document_contents_dataset_for_region,
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
 )
@@ -40,7 +45,8 @@ TWO_WEEK_MS = 14 * 24 * 60 * 60 * 1000
 
 
 def collect_document_store_source_tables() -> list[SourceTableCollection]:
-    """Collects source table definitions for all document store metadata tables."""
+    """Collects source table definitions for all document store metadata and
+    contents tables."""
     collections: list[SourceTableCollection] = []
 
     for state_code in get_direct_ingest_states_existing_in_env():
@@ -60,11 +66,27 @@ def collect_document_store_source_tables() -> list[SourceTableCollection]:
             description=f"Document store metadata tables for {StateCode.get_state(state_code)}",
         )
 
+        contents_collection = SourceTableCollection(
+            dataset_id=document_contents_dataset_for_region(state_code),
+            labels=labels,
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            description=f"Document contents tables for {StateCode.get_state(state_code)}",
+        )
+
         for config in configs.values():
             metadata_collection.add_source_table(
                 table_id=config.metadata_table_id,
                 description=config.description,
                 schema_fields=config.build_bq_metadata_schema(),
+            )
+            contents_collection.add_source_table(
+                table_id=config.document_contents_table_id,
+                description=(
+                    f"Document contents table for collection [{config.name}]. "
+                    "One row per distinct document_contents_id successfully uploaded to GCS."
+                ),
+                schema_fields=config.build_bq_document_contents_schema(),
+                clustering_fields=[DOCUMENT_CONTENTS_ID_COLUMN_NAME],
             )
 
         metadata_collection.add_source_table(
@@ -74,6 +96,7 @@ def collect_document_store_source_tables() -> list[SourceTableCollection]:
         )
 
         collections.append(metadata_collection)
+        collections.append(contents_collection)
 
         collections.append(
             SourceTableCollection(

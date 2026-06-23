@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for DocumentMetadataUpdatesQueryBuilder using the BQ emulator."""
+
 from datetime import datetime
 from pathlib import Path
 
@@ -51,6 +52,9 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self.metadata_table_address = self.config.metadata_table_address(
             self.project_id
         )
+        self.document_contents_table_address = (
+            self.config.document_contents_table_address(self.project_id)
+        )
         self.upload_status_address = DocumentUploadStatusTable.get_table_address(
             project_id=self.project_id, state_code=StateCode.US_XX
         )
@@ -63,7 +67,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
     def _fixture_path(self, subdir: str, fixture_name: str) -> Path:
         return self.fixture_base_dir / subdir / f"{fixture_name}.csv"
 
-    def _load_temp_metadata_and_upload_status(self, subdir: str) -> None:
+    def _load_temp_metadata(self, subdir: str) -> None:
         self.load_fixture_into_table(
             address=self.temp_metadata_address.to_project_agnostic_address(),
             schema=self.config.build_bq_temp_document_metadata_updates_schema(),
@@ -71,6 +75,8 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
             fixture_columns=None,
             allow_comments=False,
         )
+
+    def _load_upload_status(self, subdir: str) -> None:
         self.load_fixture_into_table(
             address=self.upload_status_address.to_project_agnostic_address(),
             schema=DocumentUploadStatusTable.schema(),
@@ -79,34 +85,56 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
             allow_comments=False,
         )
 
-    def _create_empty_temp_metadata_and_upload_status(self) -> None:
+    def _load_document_contents(self, subdir: str) -> None:
+        self.load_fixture_into_table(
+            address=self.document_contents_table_address.to_project_agnostic_address(),
+            schema=self.config.build_bq_document_contents_schema(),
+            fixture_path=self._fixture_path(subdir, "document_contents_input"),
+            fixture_columns=None,
+            allow_comments=False,
+        )
+
+    def _create_empty_temp_metadata(self) -> None:
         self.create_mock_table(
             self.temp_metadata_address.to_project_agnostic_address(),
             schema=self.config.build_bq_temp_document_metadata_updates_schema(),
         )
+
+    def _create_empty_upload_status(self) -> None:
         self.create_mock_table(
             self.upload_status_address.to_project_agnostic_address(),
             schema=DocumentUploadStatusTable.schema(),
         )
 
+    def _create_empty_document_contents(self) -> None:
+        self.create_mock_table(
+            self.document_contents_table_address.to_project_agnostic_address(),
+            schema=self.config.build_bq_document_contents_schema(),
+        )
+
     def test_new_documents_query(self) -> None:
         """Fixture covers:
-        - NOTE_1: already successfully uploaded, excluded
-        - NOTE_2 + NOTE_5: same document_contents_id, deduplicated to one row
-        - NOTE_3: genuinely new document, included
+        - NOTE_1 (already_uploaded_aaa): already in this collection's
+          document_contents, excluded
+        - NOTE_2 + NOTE_5 (new_contents_bbb): same document_contents_id,
+          deduplicated to one row; not in this collection's document_contents,
+          included
+        - NOTE_3 (new_contents_ccc): genuinely new document, included
         - NOTE_4: deletion (NULL document_contents_id), excluded
-        - NOTE_6: previously failed upload, included
+        - NOTE_6 (failed_upload_ddd): not in document_contents, included
 
         With batch_bytes=20 and documents ordered by document_contents_id:
         - failed_upload_ddd (18 bytes): preceding sum = 0  -> batch 0
         - new_contents_bbb  (10 bytes): preceding sum = 18 -> batch 0
         - new_contents_ccc  (10 bytes): preceding sum = 28 -> batch 1
         """
-        self._load_temp_metadata_and_upload_status("new_documents")
+        subdir = "new_documents"
+        self._load_temp_metadata(subdir)
+        self._load_document_contents(subdir)
 
         query = self.query_builder.build_new_documents_query(
-            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            document_contents_table_address=self.document_contents_table_address,
             target_batch_bytes=20,
         )
         results = self.query(query)
@@ -114,7 +142,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self.compare_results_to_fixture(
             results=results,
             expected_output_fixture_path=self._fixture_path(
-                "new_documents", "new_documents_output"
+                subdir, "new_documents_output"
             ),
             expect_missing_fixtures_on_empty_results=False,
             create_expected=False,
@@ -130,11 +158,13 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         - doc_ddd ( 8 bytes): preceding sum = 50 -> batch 2
         - doc_eee (10 bytes): preceding sum = 58 -> batch 2
         """
-        self._load_temp_metadata_and_upload_status("new_documents_batching")
+        subdir = "new_documents_batching"
+        self._load_temp_metadata(subdir)
+        self._create_empty_document_contents()
 
         query = self.query_builder.build_new_documents_query(
-            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            document_contents_table_address=self.document_contents_table_address,
             target_batch_bytes=20,
         )
         results = self.query(query)
@@ -142,7 +172,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         self.compare_results_to_fixture(
             results=results,
             expected_output_fixture_path=self._fixture_path(
-                "new_documents_batching", "new_documents_output"
+                subdir, "new_documents_output"
             ),
             expect_missing_fixtures_on_empty_results=False,
             create_expected=False,
@@ -150,11 +180,12 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         )
 
     def test_new_documents_query_empty_temp_metadata(self) -> None:
-        self._create_empty_temp_metadata_and_upload_status()
+        self._create_empty_temp_metadata()
+        self._create_empty_document_contents()
 
         query = self.query_builder.build_new_documents_query(
-            collection_name=self.config.name,
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            document_contents_table_address=self.document_contents_table_address,
             target_batch_bytes=1_000_000_000,
         )
         results = self.query(query)
@@ -179,7 +210,9 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         - NOTE_4: no upload status entry, excluded
         - NOTE_5: successfully uploaded in previous job run, included in results
         """
-        self._load_temp_metadata_and_upload_status("successful_uploads")
+        subdir = "successful_uploads"
+        self._load_temp_metadata(subdir)
+        self._load_upload_status(subdir)
         self._create_metadata_table()
 
         query = self.query_builder.build_successful_uploads_metadata_insert_query(
@@ -193,16 +226,15 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
 
         self.compare_results_to_fixture(
             results=results,
-            expected_output_fixture_path=self._fixture_path(
-                "successful_uploads", "expected_output"
-            ),
+            expected_output_fixture_path=self._fixture_path(subdir, "expected_output"),
             expect_missing_fixtures_on_empty_results=False,
             create_expected=False,
             expect_unique_output_rows=False,
         )
 
     def test_successful_uploads_metadata_insert_empty_temp_metadata(self) -> None:
-        self._create_empty_temp_metadata_and_upload_status()
+        self._create_empty_temp_metadata()
+        self._create_empty_upload_status()
         self._create_metadata_table()
 
         query = self.query_builder.build_successful_uploads_metadata_insert_query(

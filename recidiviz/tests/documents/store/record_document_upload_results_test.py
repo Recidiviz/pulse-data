@@ -103,7 +103,8 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.recorder.run(self.discovery_result)
 
         self.bq_client.load_table_from_cloud_storage.assert_called_once()
-        self.bq_client.run_query_async.assert_called_once()
+        # 2 queries: document_contents insert + metadata insert
+        self.assertEqual(self.bq_client.run_query_async.call_count, 2)
         self.assertEqual(self.bq_client.delete_table.call_count, 2)
         deleted_addresses = {
             c.args[0] for c in self.bq_client.delete_table.call_args_list
@@ -122,7 +123,29 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.recorder.run(self.discovery_result)
 
         self.bq_client.load_table_from_cloud_storage.assert_called_once()
-        self.bq_client.run_query_async.assert_called_once()
+        # 2 queries: document_contents insert + metadata insert
+        self.assertEqual(self.bq_client.run_query_async.call_count, 2)
+        self.bq_client.delete_table.assert_not_called()
+
+    def test_document_contents_insert_failure(self) -> None:
+        """If the document_contents insert fails, the failure propagates and
+        temp tables are retained for debugging."""
+
+        def _run_query_side_effect(query_str: str, **_kwargs: object) -> MagicMock:
+            if (
+                self.config.document_contents_table_id in query_str
+                and "INSERT INTO" in query_str
+            ):
+                raise ValueError("doc_contents insert failed")
+            return self.query_job_all_docs_uploaded
+
+        self.bq_client.run_query_async.side_effect = _run_query_side_effect
+
+        with self.assertRaisesRegex(ValueError, "doc_contents insert failed"):
+            self.recorder.run(self.discovery_result)
+
+        # document_contents insert raises before metadata insert runs
+        self.assertEqual(self.bq_client.run_query_async.call_count, 1)
         self.bq_client.delete_table.assert_not_called()
 
     def test_no_new_document_contents_skips_csv_load(self) -> None:
@@ -137,8 +160,13 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         # don't upload CSVs if there are no new document contents
         self.bq_client.load_table_from_cloud_storage.assert_not_called()
-        # but still attempt to insert metadata rows
-        self.bq_client.run_query_async.assert_called_once()
+        # skip document_contents insert when there are no new contents rows;
+        # still run the metadata insert.
+        self.assertEqual(self.bq_client.run_query_async.call_count, 1)
+        self.assertNotIn(
+            self.config.document_contents_table_id,
+            self.bq_client.run_query_async.call_args.kwargs["query_str"],
+        )
 
     def test_load_upload_status_not_found_raises(self) -> None:
         load_job_mock = MagicMock()

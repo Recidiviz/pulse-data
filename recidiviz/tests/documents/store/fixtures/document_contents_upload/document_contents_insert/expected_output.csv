@@ -1,0 +1,3 @@
+document_contents_id,document_text,document_length_bytes,row_create_datetime
+existing_in_table_ddd,text d,5,2026-01-01 12:00:00+00:00
+just_uploaded_aaa,text a,5,2026-05-15 12:00:00+00:00

@@ -92,6 +92,14 @@ def document_store_metadata_dataset_for_region(
     return f"{prefix}{state_code.value.lower()}_document_store_metadata"
 
 
+def document_contents_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
+) -> str:
+    """Returns the dataset containing document contents tables for this region."""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_document_contents"
+
+
 def document_store_temp_dataset_for_region(
     state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:

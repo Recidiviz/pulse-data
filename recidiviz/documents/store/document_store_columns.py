@@ -79,7 +79,7 @@ _ALL_COLUMN_DEFINITIONS = [
         name=DOCUMENT_TEXT_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="NULLABLE",
-        description="The generated text content of the document. Present only in temporary tables during processing.",
+        description="The generated text content of the document.",
     ),
     SchemaField(
         name=DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,

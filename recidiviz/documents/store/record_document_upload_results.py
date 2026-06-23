@@ -25,6 +25,9 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.store.document_contents_upload_query_builder import (
+    DocumentContentsUploadQueryBuilder,
+)
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
     DocumentMetadataUpdatesQueryBuilder,
 )
@@ -106,14 +109,26 @@ class DocumentUploadResultRecorder:
         self,
         collection_result: SingleCollectionDocumentDiscoveryResult,
     ) -> None:
-        """Inserts rows from the temp metadata updates table into the collection metadata table for
-        documents that were successfully uploaded, then cleans up temp tables if all uploads succeeded.
-        We do not clean up temp tables if some uploads failed to preserve information for debugging.
+        """Inserts any newly-uploaded document_contents_ids for the collection into
+        the collection's document_contents table, then inserts rows from the
+        temp metadata updates table into the collection metadata table for
+        documents that were successfully uploaded. Cleans up temp tables if all
+        uploads succeeded. We do not clean up temp tables if some uploads failed
+        to preserve information for debugging.
         """
-        metadata_addr = collection_result.config.metadata_table_address(self.project_id)
-        query = DocumentMetadataUpdatesQueryBuilder(
+        query_builder = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id, state_code=self.state_code
-        ).build_successful_uploads_metadata_insert_query(
+        )
+        contents_query_builder = DocumentContentsUploadQueryBuilder(
+            project_id=self.project_id,
+            state_code=self.state_code,
+            collection_name=collection_result.collection_name,
+        )
+
+        self._insert_document_contents(collection_result, contents_query_builder)
+
+        metadata_addr = collection_result.config.metadata_table_address(self.project_id)
+        query = query_builder.build_successful_uploads_metadata_insert_query(
             config=collection_result.config,
             metadata_table_address=metadata_addr,
             temp_document_metadata_updates_address=collection_result.temp_document_metadata_updates_address,
@@ -149,6 +164,47 @@ class DocumentUploadResultRecorder:
                 rows_inserted,
                 expected_rows,
             )
+
+    def _insert_document_contents(
+        self,
+        collection_result: SingleCollectionDocumentDiscoveryResult,
+        query_builder: DocumentContentsUploadQueryBuilder,
+    ) -> None:
+        """Hydrates the collection's content-addressed document_contents table
+        with newly-uploaded document_contents_ids."""
+        if collection_result.num_new_document_contents_rows == 0:
+            logging.info(
+                "%s no new document contents rows; "
+                "skipping document_contents hydration.",
+                self._log_prefix(collection_result.collection_name),
+            )
+            return
+
+        document_contents_addr = (
+            collection_result.config.document_contents_table_address(self.project_id)
+        )
+        query = query_builder.build_document_contents_insert_query(
+            document_contents_table_address=document_contents_addr,
+            temp_new_document_contents_address=collection_result.temp_new_document_contents_address,
+            row_create_datetime=self.metadata_row_create_datetime,
+        )
+
+        logging.info(
+            "%s inserting new document_contents rows into [%s]",
+            self._log_prefix(collection_result.collection_name),
+            document_contents_addr.to_str(),
+        )
+        query_job = self.big_query_client.run_query_async(
+            query_str=query,
+            use_query_cache=False,
+        )
+        result = query_job.result()
+        logging.info(
+            "%s inserted %d document_contents rows into [%s]",
+            self._log_prefix(collection_result.collection_name),
+            result.num_dml_affected_rows or 0,
+            document_contents_addr.to_str(),
+        )
 
     def _delete_temp_tables(
         self,

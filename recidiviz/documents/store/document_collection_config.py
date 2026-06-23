@@ -38,6 +38,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents import config as default_config_module
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
     PERSON_EXTERNAL_ID_COLUMN_NAME,
@@ -50,6 +51,7 @@ from recidiviz.documents.store.document_store_columns import (
     get_document_store_column_schema,
 )
 from recidiviz.ingest.direct.dataset_config import (
+    document_contents_dataset_for_region,
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
 )
@@ -225,17 +227,6 @@ class DocumentCollectionConfig:
             table_id=f"temp_document_metadata_updates_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
         )
 
-    def build_bq_temp_new_document_contents_schema(self) -> list[bigquery.SchemaField]:
-        """Returns the BigQuery schema for the temp new document contents table
-        that tracks which document_contents_ids in this collection have not yet
-        been uploaded for the state. This is the table read from to perform the
-        actual document upload.
-        """
-        return [
-            get_document_store_column_schema(DOCUMENT_CONTENTS_ID_COLUMN_NAME),
-            get_document_store_column_schema(DOCUMENT_TEXT_COLUMN_NAME),
-        ]
-
     def temp_new_document_contents_table_address(
         self, project_id: str, run_id: str
     ) -> ProjectSpecificBigQueryAddress:
@@ -248,6 +239,32 @@ class DocumentCollectionConfig:
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=f"temp_new_document_contents_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
         )
+
+    @property
+    def document_contents_table_id(self) -> str:
+        """Returns the BigQuery table ID for this collection's document_contents table."""
+        return f"{self.name.lower()}_document_contents"
+
+    def document_contents_table_address(
+        self, project_id: str
+    ) -> ProjectSpecificBigQueryAddress:
+        """Returns the BigQuery address for this collection's document_contents table.
+        The table holds one row per distinct document_contents_id that has been successfully
+        uploaded to GCS for this collection."""
+        return ProjectSpecificBigQueryAddress(
+            project_id=project_id,
+            dataset_id=document_contents_dataset_for_region(self.state_code),
+            table_id=self.document_contents_table_id,
+        )
+
+    def build_bq_document_contents_schema(self) -> list[bigquery.SchemaField]:
+        """Returns the BigQuery schema for the collection's document_contents table."""
+        return [
+            get_document_store_column_schema(DOCUMENT_CONTENTS_ID_COLUMN_NAME),
+            get_document_store_column_schema(DOCUMENT_TEXT_COLUMN_NAME),
+            get_document_store_column_schema(DOCUMENT_LENGTH_BYTES_COLUMN_NAME),
+            get_document_store_column_schema(ROW_CREATE_DATETIME_COLUMN_NAME),
+        ]
 
     @classmethod
     def from_yaml(cls, yaml_path: Path) -> "DocumentCollectionConfig":

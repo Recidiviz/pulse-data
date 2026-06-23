@@ -89,10 +89,10 @@ class NewDocumentDiscoverer:
              diff results to a temp document metadata updates table.
           3. From the temp document metadata updates table, selects distinct
              (document_contents_id, document_text) pairs whose
-             document_contents_id does not already have a SUCCESS entry in the
-             document_upload_status table for this collection. Each row is
-             assigned a batch number based on cumulative byte size and written
-             to a temp new document contents table.
+             document_contents_id is not already present in the collection's
+             persistent document_contents table. Each row is assigned a batch
+             number based on cumulative byte size and written to a temp new
+             document contents table.
         """
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(
@@ -127,8 +127,10 @@ class NewDocumentDiscoverer:
         new_documents_query = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id, state_code=self.state_code
         ).build_new_documents_query(
-            collection_name=self.config.name,
             temp_document_metadata_updates_address=temp_metadata_address,
+            document_contents_table_address=self.config.document_contents_table_address(
+                self.project_id
+            ),
             target_batch_bytes=self.target_upload_batch_bytes,
         )
 

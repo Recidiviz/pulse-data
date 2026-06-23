@@ -1,0 +1,5 @@
+document_contents_id,document_text,document_length_bytes,document_upload_batch_number
+just_uploaded_aaa,text a,5,0
+uploaded_other_collection_bbb,text b,5,0
+failed_upload_ccc,text c,5,0
+existing_in_table_ddd,text d,5,0

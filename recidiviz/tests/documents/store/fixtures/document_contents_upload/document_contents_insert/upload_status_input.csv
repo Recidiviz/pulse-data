@@ -1,0 +1,5 @@
+document_contents_id,collection_name,run_id,upload_datetime,status,document_length_bytes,error_message
+just_uploaded_aaa,FAKE_CASE_NOTES,run_2,2026-05-15 12:00:00,SUCCESS,5,
+uploaded_other_collection_bbb,FAKE_PERSON_ID_NOTES,run_1,2026-04-01 12:00:00,SUCCESS,5,
+failed_upload_ccc,FAKE_CASE_NOTES,run_2,2026-05-15 12:00:00,FAILURE,5,timeout
+existing_in_table_ddd,FAKE_CASE_NOTES,run_2,2026-05-15 12:00:00,SUCCESS,5,
