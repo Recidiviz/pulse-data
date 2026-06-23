@@ -202,6 +202,40 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
     },
   },
   {
+    sectionHeading: "Approval Flows",
+    fields: {
+      supportsSupervisorReviewOnGrants: {
+        label: "Support Approval Flow on Grants?",
+        Edit: Checkbox,
+      },
+      supportsSupervisorReviewOnSnooze: {
+        label: "Support Approval Flow on Snooze?",
+        Edit: Checkbox,
+      },
+      supervisorReviewTabTitle: {
+        label: "Title of Supervisor Review Tab",
+      },
+      grantApprovedTabTitle: {
+        label: "Title of Grant Approved Tab",
+      },
+      grantApprovedStatusMessage: {
+        label: "Status for Opportunities Approved under Grant Review",
+      },
+      snoozeReviewStatusMessage: {
+        label: "Status for Opportunities Submitted for Snooze Review",
+      },
+      grantReviewStatusMessage: {
+        label: "Status for Opportunities Submitted for Grant Review",
+      },
+      grantReviewDropdownLabel: {
+        label: "Dropdown Text to Submit Grant for Approval",
+      },
+      reviewerFeatureVariant: {
+        label: "Feature Variant to Gate Access to Reviewing Grants",
+      },
+    },
+  },
+  {
     sectionHeading: "Subcategories",
     sectionSubhead:
       "Please consult Polaris before editing or adding all-caps labels in these fields",

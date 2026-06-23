@@ -231,3 +231,35 @@ class OpportunityConfiguration(WorkflowsBase):
     mark_submitted_on_form_download = Column(
         Boolean, nullable=False, server_default="true"
     )
+
+    # Options related to approval flows:
+    # When true, enables the grant approval flow for the opportunity (adding 'Supervisor Review' tab if absent)
+    supports_supervisor_review_on_grants = Column(
+        Boolean, nullable=False, server_default="false"
+    )
+
+    # When true, enables the snooze approval flow for the opportunity (adding 'Supervisor Review' tab if absent)
+    supports_supervisor_review_on_snooze = Column(
+        Boolean, nullable=False, server_default="false"
+    )
+
+    # The title of the tab where opportunities await review
+    supervisor_review_tab_title = Column(String, nullable=True)
+
+    # The tab title for opportunities approved for grant review (but not yet marked submitted)
+    grant_approved_tab_title = Column(String, nullable=True)
+
+    # The status bubble for opportunities approved for grant review (but not yet marked submitted)
+    grant_approved_status_message = Column(String, nullable=True)
+
+    # The status bubble for opportunities submitted for snooze review (but not yet reviewed)
+    snooze_review_status_message = Column(String, nullable=True)
+
+    # The status bubble for opportunities submitted for snooze review (but not yet reviewed)
+    grant_review_status_message = Column(String, nullable=True)
+
+    # The dropdown option text to submit grant for supervisor approval
+    grant_review_dropdown_label = Column(String, nullable=True)
+
+    # An optional feature variant to gate access to Review tab for supervisors
+    reviewer_feature_variant = Column(String, nullable=True)

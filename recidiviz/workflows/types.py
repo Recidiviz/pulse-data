@@ -103,6 +103,16 @@ class OpportunityConfig:
     empty_tab_copy: list[dict[str, str]] = attr.ib()
     tab_preface_copy: list[dict[str, str]] = attr.ib()
 
+    supports_supervisor_review_on_grants: bool = attr.ib()
+    supports_supervisor_review_on_snooze: bool = attr.ib()
+    supervisor_review_tab_title: str | None = attr.ib()
+    grant_approved_tab_title: str | None = attr.ib()
+    grant_approved_status_message: str | None = attr.ib()
+    snooze_review_status_message: str | None = attr.ib()
+    grant_review_status_message: str | None = attr.ib()
+    grant_review_dropdown_label: str | None = attr.ib()
+    reviewer_feature_variant: str | None = attr.ib()
+
     subcategory_headings: list[dict[str, str]] = attr.ib()
     subcategory_orderings: list[dict[str, Any]] = attr.ib()
     mark_submitted_options_by_tab: list[dict[str, Any]] = attr.ib()

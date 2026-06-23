@@ -136,19 +136,22 @@ Python/DB type:
 my_field = fields.Str(required=False)
 
 # Required string
-my_field = fields.Str()
+my_field = fields.Str(required=True)
 
-# Boolean
-my_field = fields.Bool()
+# Optional Boolean
+my_field = fields.Bool(required=False)
+
+# Required Boolean
+my_field = fields.Bool(required=True)
 
 # Optional list of strings
 my_field = fields.List(fields.Str(required=False))
 
 # Required list of strings
-my_field = fields.List(fields.Str())
+my_field = fields.List(fields.Str(required=True))
 
 # Required list of objects (define a nested schema class first)
-my_field = fields.List(fields.Nested(MyFieldSchema()))
+my_field = fields.List(fields.Nested(MyFieldSchema()), required=True)
 ```
 
 Do **not** touch `OpportunityConfigurationRequestSchema` or
@@ -250,7 +253,7 @@ myField: {
 If using a custom component, import it at the top of the file and create the
 component file in `fieldComponents/`.
 
-### File 8: OPTIONAL_FIELDS list (optional string fields only)
+### File 8: Frontend form component
 **`frontends/admin-panel/src/components/Workflows/OpportunityConfiguration/OpportunityConfigurationForm.tsx`**
 
 If the field is an **optional string**, add its camelCase name to the
@@ -263,8 +266,16 @@ const OPTIONAL_FIELDS: OpportunityConfigurationField[] = [
   "myField",
 ];
 ```
+If the field is a **boolean**, add its default as the initial value for a new configuration form using its camelCase name. This renders the `Checkbox` field correctly and also ensures a controlled `false` value for **optional booleans** on new form submissions.
 
-Skip this step for booleans, arrays, and required fields.
+```typescript
+const initial = {
+  // ... existing fields ...
+  myField: template?.myField ?? true, 
+};
+```
+
+Skip this step for arrays and other required fields.
 
 ### File 9: Test factory function
 **`recidiviz/tests/workflows/querier/querier_test.py`**

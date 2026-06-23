@@ -210,6 +210,21 @@ class OpportunityConfigurationsAPI(MethodView):
             submitted_tab_title=body_args.get("submitted_tab_title"),
             empty_tab_copy=body_args["empty_tab_copy"],
             tab_preface_copy=body_args["tab_preface_copy"],
+            supports_supervisor_review_on_grants=body_args[
+                "supports_supervisor_review_on_grants"
+            ],
+            supports_supervisor_review_on_snooze=body_args[
+                "supports_supervisor_review_on_snooze"
+            ],
+            supervisor_review_tab_title=body_args.get("supervisor_review_tab_title"),
+            grant_approved_tab_title=body_args.get("grant_approved_tab_title"),
+            grant_approved_status_message=body_args.get(
+                "grant_approved_status_message"
+            ),
+            snooze_review_status_message=body_args.get("snooze_review_status_message"),
+            grant_review_status_message=body_args.get("grant_review_status_message"),
+            grant_review_dropdown_label=body_args.get("grant_review_dropdown_label"),
+            reviewer_feature_variant=body_args.get("reviewer_feature_variant"),
             subcategory_headings=body_args["subcategory_headings"],
             subcategory_orderings=body_args["subcategory_orderings"],
             mark_submitted_options_by_tab=body_args["mark_submitted_options_by_tab"],

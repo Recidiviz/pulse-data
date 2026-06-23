@@ -45,6 +45,13 @@ const OPTIONAL_FIELDS: OpportunityConfigurationField[] = [
   "denialAdjective",
   "denialNoun",
   "submittedTabTitle",
+  "supervisorReviewTabTitle",
+  "grantApprovedTabTitle",
+  "grantApprovedStatusMessage",
+  "snoozeReviewStatusMessage",
+  "grantReviewStatusMessage",
+  "grantReviewDropdownLabel",
+  "reviewerFeatureVariant",
   "omsCriteriaHeader",
   "nonOmsCriteriaHeader",
   "highlightedCaseCtaCopy",
@@ -82,6 +89,10 @@ const OpportunityConfigurationForm = ({
     revisionDescription: undefined,
     variantDescription,
     featureVariant: freshVariant ? undefined : template?.featureVariant,
+    supportsSupervisorReviewOnGrants:
+      template?.supportsSupervisorReviewOnGrants ?? false,
+    supportsSupervisorReviewOnSnooze:
+      template?.supportsSupervisorReviewOnSnooze ?? false,
     markSubmittedOnFormDownload: template?.markSubmittedOnFormDownload ?? true,
   };
 

@@ -210,6 +210,8 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
         }
     )
 
@@ -231,6 +233,8 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
         }
     )
 
@@ -254,6 +258,8 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
         }
     )
 
