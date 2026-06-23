@@ -1124,6 +1124,32 @@ DAYS_PENDING_CUSTODY_365 = AssignmentSpanDaysMetric(
     window_length_days=365,
 )
 
+DAYS_SINCE_MOST_RECENT_INCARCERATION_INCIDENT = DailyAvgTimeSinceSpanStartMetric(
+    name="avg_days_since_most_recent_incarceration_incident",
+    display_name="Days Since Most Recent Incarceration Incident",
+    description="Average number of days since a person's most recent disciplinary "
+    "incident, calculated only across days when the person has had at least one prior "
+    "incident in the current continuous incarceration stay. People with no prior incidents are excluded.",
+    span_selector=SpanSelector(
+        span_type=SpanType.INCARCERATION_INCIDENT_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+AVG_DAILY_POPULATION_WITH_PRIOR_INCARCERATION_INCIDENT = DailyAvgSpanCountMetric(
+    name="avg_population_with_prior_incarceration_incident",
+    display_name="Average Population With A Prior Incarceration Incident",
+    description="Average daily count of people who have had at least one prior "
+    "disciplinary incident in the current continuous incarceration stay. This is the "
+    "denominator over which avg_days_since_most_recent_incarceration_incident is "
+    "averaged; compare against avg_daily_population to see what share of the "
+    "incarcerated population it represents.",
+    span_selector=SpanSelector(
+        span_type=SpanType.INCARCERATION_INCIDENT_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
 DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
     name="avg_days_since_most_recent_lsir",
     display_name="Days Since Most Recent LSI-R",
