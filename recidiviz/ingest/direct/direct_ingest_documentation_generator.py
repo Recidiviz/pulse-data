@@ -33,8 +33,8 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tools.docs.utils import markdown_table
@@ -114,7 +114,7 @@ class DirectIngestDocumentationGenerator:
 
         view_collector = DirectIngestViewQueryBuilderCollector(
             region=region,
-            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             expected_ingest_views=[],
         )
         views_by_raw_file = self.get_referencing_views(view_collector)

@@ -81,11 +81,11 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.pipelines.ingest.activity.dataset_config import (
@@ -279,6 +279,7 @@ def verify_ingest_view_determinism(
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
         # Since this is a script run locally, we use the context for the specified
@@ -294,7 +295,7 @@ def verify_ingest_view_determinism(
     # determinism is also covered by this state-wide stability check.
     view_query_builders = DirectIngestViewQueryBuilderCollector(
         region=region,
-        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         expected_ingest_views=launched_ingest_views,
     ).get_query_builders()
 

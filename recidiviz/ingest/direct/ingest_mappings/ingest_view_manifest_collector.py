@@ -18,7 +18,6 @@
 system."""
 import os
 import re
-from typing import Dict, List
 
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
@@ -33,6 +32,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IngestViewManifestCompilerDelegate,
     ingest_view_manifest_dir,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 
 class IngestViewManifestCollector:
@@ -42,16 +42,21 @@ class IngestViewManifestCollector:
 
     def __init__(
         self,
+        *,
         region: DirectIngestRegion,
         delegate: IngestViewManifestCompilerDelegate,
+        ingest_pipeline_type: IngestPipelineType,
     ) -> None:
         self.region = region
+        self.ingest_pipeline_type = ingest_pipeline_type
         self._manifest_compiler = IngestViewManifestCompiler(delegate)
-        self._ingest_view_to_manifest_path: Dict[str, str] = {
+        self._ingest_view_to_manifest_path: dict[str, str] = {
             self._parse_ingest_view_name(manifest_path): manifest_path
-            for manifest_path in self._get_manifest_paths(self.region)
+            for manifest_path in self._get_manifest_paths(
+                self.region, self.ingest_pipeline_type
+            )
         }
-        self._ingest_view_to_manifest: Dict[str, IngestViewManifest] = {
+        self._ingest_view_to_manifest: dict[str, IngestViewManifest] = {
             ingest_view_name: self._manifest_compiler.compile_manifest(
                 ingest_view_name=ingest_view_name
             )
@@ -59,16 +64,16 @@ class IngestViewManifestCollector:
         }
 
     @property
-    def ingest_view_to_manifest_path(self) -> Dict[str, str]:
+    def ingest_view_to_manifest_path(self) -> dict[str, str]:
         return self._ingest_view_to_manifest_path
 
     @property
-    def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
+    def ingest_view_to_manifest(self) -> dict[str, IngestViewManifest]:
         return self._ingest_view_to_manifest
 
     def launchable_ingest_views(
         self, ingest_view_contents_context: IngestViewContentsContext
-    ) -> List[str]:
+    ) -> list[str]:
         """Returns a list of ingest views that are launchable in the current project."""
         return [
             ingest_view_name
@@ -87,8 +92,12 @@ class IngestViewManifestCollector:
         return match.group(1)
 
     @staticmethod
-    def _get_manifest_paths(region: DirectIngestRegion) -> List[str]:
-        manifest_dir = ingest_view_manifest_dir(region)
+    def _get_manifest_paths(
+        region: DirectIngestRegion, ingest_pipeline_type: IngestPipelineType
+    ) -> list[str]:
+        """Returns the manifest YAML paths in this region's pipeline-specific
+        manifest subdirectory."""
+        manifest_dir = ingest_view_manifest_dir(region, ingest_pipeline_type)
 
         result = []
         for file in os.listdir(manifest_dir):

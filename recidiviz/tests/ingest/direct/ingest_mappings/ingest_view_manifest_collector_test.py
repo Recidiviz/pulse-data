@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -41,8 +42,9 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             region_module=fake_regions,
         )
         self.us_xx_ingest_view_manifest_collector = IngestViewManifestCollector(
-            us_xx_region,
-            StateSchemaIngestViewManifestCompilerDelegate(region=us_xx_region),
+            region=us_xx_region,
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=us_xx_region),
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         us_yy_region = fake_region(
@@ -51,8 +53,9 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             region_module=fake_regions,
         )
         self.us_yy_ingest_view_manifest_collector = IngestViewManifestCollector(
-            us_yy_region,
-            StateSchemaIngestViewManifestCompilerDelegate(region=us_yy_region),
+            region=us_yy_region,
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=us_yy_region),
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
     def test_ingest_view_to_manifest(self) -> None:

@@ -30,11 +30,11 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -52,7 +52,7 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
     ):
         super().__init__(
             region=region,
-            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             expected_ingest_views=expected_ingest_views,
         )
 

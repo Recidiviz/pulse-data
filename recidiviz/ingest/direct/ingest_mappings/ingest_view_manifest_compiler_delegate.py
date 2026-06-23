@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.activity import (
     deserialize_entity_factories as state_deserialize_entity_factories,
 )
@@ -116,28 +117,33 @@ class IngestViewManifestCompilerDelegate:
         )
 
 
-_INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
-
 # Supported $env properties
 IS_LOCAL_PROPERTY_NAME = "is_local"
 IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
 
 
-def ingest_view_manifest_dir(region: DirectIngestRegion) -> str:
-    """Returns the directory where all ingest view manifests for a given region live."""
+def ingest_view_manifest_dir(
+    region: DirectIngestRegion, ingest_pipeline_type: IngestPipelineType
+) -> str:
+    """Returns the directory where the given ingest pipeline's manifest YAMLs
+    live for a given region (e.g. `ingest_mappings/` for activity,
+    `identity_mappings/` for identity)."""
     if region.region_module.__file__ is None:
         raise ValueError(f"No file associated with {region.region_module}.")
     return os.path.join(
         os.path.dirname(region.region_module.__file__),
         region.region_code.lower(),
-        _INGEST_VIEW_MANIFESTS_SUBDIR,
+        ingest_pipeline_type.manifest_subdir_name,
     )
 
 
 def yaml_mappings_filepath(region: DirectIngestRegion, ingest_view_name: str) -> str:
+    # TODO(OBT-34896): Generalize to take IngestPipelineType and have both
+    # delegates call it (drops the duplicate inline path construction in
+    # IdentityIngestViewManifestCompilerDelegate.get_ingest_view_manifest_path).
     return os.path.join(
-        ingest_view_manifest_dir(region),
+        ingest_view_manifest_dir(region, IngestPipelineType.ACTIVITY),
         f"{region.region_code.lower()}_{ingest_view_name}.yaml",
     )
 

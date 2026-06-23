@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
@@ -75,6 +76,7 @@ def build_ingest_view_results_source_table_collection(
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     # We intentionally create a table for each ingest view with a defined manifest YAML,
     #  regardless of whether that ingest view is gated to produce results in this

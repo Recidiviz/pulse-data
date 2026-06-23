@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.expected_output_helpers import (
     get_expected_output_normalized_entity_classes,
@@ -103,6 +104,7 @@ class TestStateSpecificNormalizationDelegate(unittest.TestCase):
             ingest_manifest_collector = IngestViewManifestCollector(
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             )
             for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 ingest_view_context = IngestViewContentsContext.build_for_project(

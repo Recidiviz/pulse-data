@@ -74,8 +74,8 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_paths,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -206,6 +206,24 @@ class DirectIngestRegionDirStructureBase:
                 re.match(_REGION_REGEX, d),
                 f"Region [{d}] does not match expected region pattern.",
             )
+
+    def test_per_pipeline_type_subdirs_exist(self) -> None:
+        """Every region must have a view subdirectory and a manifest subdirectory
+        for each ingest pipeline type, even if empty. Callers of the two
+        collectors rely on these always existing (no missing-subdir tolerance
+        on the collector side)."""
+        for dir_path in self.region_dir_paths:
+            for ingest_pipeline_type in IngestPipelineType:
+                for subdir_name in (
+                    ingest_pipeline_type.view_subdir_name,
+                    ingest_pipeline_type.manifest_subdir_name,
+                ):
+                    subdir = os.path.join(dir_path, subdir_name)
+                    self.test.assertTrue(
+                        os.path.isdir(subdir),
+                        f"Required subdirectory [{subdir}] does not exist for "
+                        f"ingest pipeline type [{ingest_pipeline_type.value}].",
+                    )
 
     def run_check_valid_yamls_exist_in_all_regions(
         self,
@@ -370,7 +388,7 @@ class DirectIngestRegionDirStructureBase:
                 # Collect all views regardless of gating and make sure they build
                 views = DirectIngestViewQueryBuilderCollector(
                     region=region,
-                    view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+                    ingest_pipeline_type=IngestPipelineType.ACTIVITY,
                     expected_ingest_views=[],
                 ).get_query_builders()
                 for view in views:
@@ -650,6 +668,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     delegate=StateSchemaIngestViewManifestCompilerDelegate(
                         region=region
                     ),
+                    ingest_pipeline_type=IngestPipelineType.ACTIVITY,
                 )
                 ingest_view_names = list(
                     ingest_view_manifest_collector.ingest_view_to_manifest
@@ -826,11 +845,12 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         region_code=state_code.value
     )
     view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(
-        state_code=state_code, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
+        state_code=state_code, ingest_pipeline_type=IngestPipelineType.ACTIVITY
     )
     mapping_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     all_view_builders = view_collector.get_query_builders()
     all_ingest_view_names = {vb.ingest_view_name for vb in all_view_builders}
@@ -953,6 +973,7 @@ def test_ingest_pipeline_integration_test_fixture_structure(
     ingest_view_manifest_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     fixtures_directory = os.path.join(
         os.path.dirname(direct_ingest_fixtures.__file__),

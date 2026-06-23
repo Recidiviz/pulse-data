@@ -64,11 +64,11 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_raw_file_config
@@ -198,11 +198,12 @@ def _validate_and_preview_external_id(
     # TODO(OBT-34670): Take ingest pipeline type as a CLI flag instead of silently
     # defaulting to activity ingest views.
     view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(
-        state_code=state_code, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
+        state_code=state_code, ingest_pipeline_type=IngestPipelineType.ACTIVITY
     )
     mapping_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
 
     view_builder = view_collector.get_query_builder_by_view_name(ingest_view_name)

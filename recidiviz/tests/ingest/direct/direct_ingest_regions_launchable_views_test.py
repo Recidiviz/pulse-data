@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -48,6 +49,7 @@ class TestHasLaunchableIngestViewsFlagsMatchReality(TestCase):
             collector = IngestViewManifestCollector(
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             )
 
             for project_id in [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]:

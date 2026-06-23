@@ -88,6 +88,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
 )
@@ -264,6 +265,7 @@ class ProductionPathStrategy(PathStrategy):
             collector = IngestViewManifestCollector(
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             )
             for (
                 ingest_view_name,

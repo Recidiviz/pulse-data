@@ -57,11 +57,11 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.activity import entities as state_entities
@@ -83,7 +83,7 @@ def _get_ingest_view(
     # defaulting to activity ingest views.
     view_collector = DirectIngestViewQueryBuilderCollector(
         region=region,
-        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         expected_ingest_views=[],
     )
 

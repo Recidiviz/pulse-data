@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
@@ -33,7 +34,6 @@ from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     RawDataPreImportValidationType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -196,7 +196,8 @@ class KnownValuesValidation(
         # also lists identity-view references, not just activity-view references.
         referencing_ingest_views = sorted(
             DirectIngestViewQueryBuilderCollector.from_state_code(
-                state_code=self.state_code, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
+                state_code=self.state_code,
+                ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             ).get_ingest_views_referencing(self.file_tag)
         )
 

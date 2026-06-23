@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tests.tools.fixtures import test_importing
 from recidiviz.tests.utils.patch_helpers import before
 from recidiviz.tools.file_dependencies import (
@@ -590,7 +591,7 @@ class DynamicallyCollectedFileDependenciesTest(unittest.TestCase):
                 module.DirectIngestViewQueryBuilderCollector,
                 module.DirectIngestViewQueryBuilderCollector.from_state_code(
                     state_code=state_code,
-                    view_subdir_name=module.INGEST_VIEWS_SUBDIR_NAME,
+                    ingest_pipeline_type=IngestPipelineType.ACTIVITY,
                 ).get_query_builders,
             )
             for state_code in get_existing_direct_ingest_states()

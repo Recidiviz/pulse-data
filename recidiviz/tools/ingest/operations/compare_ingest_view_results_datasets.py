@@ -32,8 +32,8 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.pipelines.ingest.activity.dataset_config import (
@@ -109,7 +109,7 @@ def _collect_ingest_view_names(state_code: StateCode) -> list[str]:
     # TODO(OBT-34670): Take ingest pipeline type as a CLI flag; identity branch
     # gated on OBT-33499 (no `{tenant}_identity_ingest_view_results` dataset yet).
     view_collector = DirectIngestViewQueryBuilderCollector(
-        region=region, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
+        region=region, ingest_pipeline_type=IngestPipelineType.ACTIVITY
     )
 
     ingest_view_names = []

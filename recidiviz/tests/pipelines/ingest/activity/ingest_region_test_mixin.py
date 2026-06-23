@@ -42,8 +42,8 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
@@ -83,8 +83,9 @@ class IngestRegionTestMixin(abc.ABC):
     @classmethod
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
         return IngestViewManifestCollector(
-            cls.region(),
+            region=cls.region(),
             delegate=StateSchemaIngestViewManifestCompilerDelegate(cls.region()),
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
     @classmethod
@@ -97,7 +98,7 @@ class IngestRegionTestMixin(abc.ABC):
     def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
         return DirectIngestViewQueryBuilderCollector(
             region=cls.region(),
-            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             expected_ingest_views=cls.launchable_ingest_views(),
         )
 
