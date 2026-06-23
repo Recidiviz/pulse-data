@@ -24,7 +24,7 @@ without copy-pasting the streaming + token-bookkeeping boilerplate.
 """
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import anthropic
 
@@ -32,13 +32,22 @@ logger = logging.getLogger(__name__)
 
 ToolHandler = Callable[[dict[str, Any]], str]
 
+# Reasoning depth for adaptive thinking, passed via `output_config.effort`.
+# Replaces the fixed `thinking.budget_tokens` knob, which is rejected by
+# Opus 4.7+ models.
+Effort = Literal["low", "medium", "high", "xhigh", "max"]
+
 
 @dataclass(frozen=True)
 class AgentConfig:
     model: str
     max_iterations: int = 40
-    thinking_budget: int = 20_000
-    summary_thinking_budget: int = 10_000
+    # Effort for the agent's working turns. The investigation loop is
+    # intelligence-sensitive and agentic, so it defaults to "high".
+    effort: Effort = "high"
+    # Effort for the forced wrap-up turn when the iteration cap is hit.
+    # Summarizing is lighter work than investigating, so it runs lower.
+    summary_effort: Effort = "medium"
     max_tokens: int = 32_000
 
 
@@ -135,11 +144,12 @@ def run_agent_loop(
     messages: list[dict[str, Any]] = [{"role": "user", "content": user_message}]
     usage = _UsageTracker()
 
-    def _stream_turn(thinking_budget: int) -> anthropic.types.Message:
+    def _stream_turn(effort: Effort) -> anthropic.types.Message:
         with client.messages.stream(
             model=config.model,
             max_tokens=config.max_tokens,
-            thinking={"type": "enabled", "budget_tokens": thinking_budget},
+            thinking={"type": "adaptive"},
+            output_config={"effort": effort},
             system=[
                 {
                     "type": "text",
@@ -155,7 +165,7 @@ def run_agent_loop(
     for iteration in range(1, config.max_iterations + 1):
         logger.info("Agent iteration %d/%d", iteration, config.max_iterations)
         try:
-            response = _stream_turn(thinking_budget=config.thinking_budget)
+            response = _stream_turn(effort=config.effort)
             usage.record(response.usage)
             messages.append({"role": "assistant", "content": response.content})
 
@@ -205,7 +215,7 @@ def run_agent_loop(
         usage.output_tokens,
     )
     messages.append({"role": "user", "content": summary_instruction})
-    response = _stream_turn(thinking_budget=config.summary_thinking_budget)
+    response = _stream_turn(effort=config.summary_effort)
     usage.record(response.usage)
     text = (
         _extract_text(response) or "Investigation incomplete — reached maximum steps."
