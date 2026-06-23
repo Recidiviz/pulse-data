@@ -34,24 +34,20 @@ from concurrent import futures
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.raw_file_references_utils import (
+    get_all_referenced_file_tags,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
-)
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tools.ingest.operations.constants import (
     FILL_CHAR,
     LINE_SEPARATOR,
     LINE_WIDTH,
     RAW_DATA_DIFF_RESULTS_DATASET_ID,
-)
-from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
-    RawDataReferenceReasonsYamlLoader,
 )
 from recidiviz.tools.utils.compare_tables_helper import (
     CompareTablesResult,
@@ -102,35 +98,6 @@ def _compare_latest_view_to_sandbox(
     return result
 
 
-def _collect_file_tags_with_downstream_references(state_code: StateCode) -> set[str]:
-    """Collect all raw data file tags that have downstream references.
-
-    Identifies raw data files that are either:
-    1. Referenced by ingest views
-    2. Have explicit downstream references defined in raw_data_reference_reasons.yaml
-
-    Args:
-        state_code: The state code to collect file tags for
-
-    Returns:
-        Set of file tags that have downstream dependencies
-    """
-    region = direct_ingest_regions.get_direct_ingest_region(
-        region_code=state_code.value.lower()
-    )
-    view_collector = DirectIngestViewQueryBuilderCollector(region)
-
-    referenced_file_tags = set()
-    for ingest_view in view_collector.get_query_builders():
-        referenced_file_tags.update(ingest_view.raw_data_table_dependency_file_tags)
-
-    raw_data_references = (
-        RawDataReferenceReasonsYamlLoader.get_downstream_referencing_views(state_code)
-    )
-    referenced_file_tags.update(raw_data_references)
-    return referenced_file_tags
-
-
 def _collect_file_tags(state_code: StateCode, referenced_views_only: bool) -> set[str]:
     """Collect all raw data file tags, optionally filtering to only those with downstream references.
 
@@ -142,7 +109,7 @@ def _collect_file_tags(state_code: StateCode, referenced_views_only: bool) -> se
         Set of file tags
     """
     if referenced_views_only:
-        return _collect_file_tags_with_downstream_references(state_code)
+        return get_all_referenced_file_tags(state_code)
 
     region_raw_file_config = get_region_raw_file_config(state_code.value)
     return region_raw_file_config.raw_file_tags

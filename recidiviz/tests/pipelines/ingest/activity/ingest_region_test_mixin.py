@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
@@ -95,8 +96,9 @@ class IngestRegionTestMixin(abc.ABC):
     @classmethod
     def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
         return DirectIngestViewQueryBuilderCollector(
-            cls.region(),
-            cls.launchable_ingest_views(),
+            region=cls.region(),
+            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            expected_ingest_views=cls.launchable_ingest_views(),
         )
 
     # TODO(#36159): Delete this when all tests are based on real data and ingest view results

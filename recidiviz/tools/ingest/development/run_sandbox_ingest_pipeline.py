@@ -69,6 +69,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -165,9 +166,12 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
             state_code=state_code,
         ),
     )
+    # TODO(OBT-34670): Take ingest pipeline type as a CLI flag and dispatch over
+    # pipeline class + parameters class + output dataset, not just the collector.
     view_collector = DirectIngestViewQueryBuilderCollector(
-        region,
-        launchable_ingest_views,
+        region=region,
+        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+        expected_ingest_views=launchable_ingest_views,
     )
 
     raw_table_dependencies = {

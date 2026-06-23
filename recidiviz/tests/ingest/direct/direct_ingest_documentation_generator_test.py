@@ -17,7 +17,6 @@
 """Tests for DirectIngestDocumentationGenerator."""
 import unittest
 from collections import defaultdict
-from typing import List
 
 from mock import MagicMock, patch
 
@@ -35,6 +34,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -45,11 +45,18 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
     """A test version of DirectIngestViewQueryBuilderCollector"""
 
     def __init__(
-        self, region: DirectIngestRegion, expected_ingest_views: List[str] | None
+        self,
+        *,
+        region: DirectIngestRegion,
+        expected_ingest_views: list[str] | None,
     ):
-        super().__init__(region, expected_ingest_views)
+        super().__init__(
+            region=region,
+            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            expected_ingest_views=expected_ingest_views,
+        )
 
-    def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+    def _collect_query_builders(self) -> list[DirectIngestViewQueryBuilder]:
         builders = (
             [
                 DirectIngestViewQueryBuilder(

@@ -582,11 +582,15 @@ class DynamicallyCollectedFileDependenciesTest(unittest.TestCase):
     def ingest_view_builder_collectors(
         module: ModuleType,
     ) -> list[tuple[type, Callable]]:
+        # TODO(OBT-34669): Also emit collectors for identity-view builders so this
+        # test covers (state_code, pipeline_type) combinations rather than only
+        # (state_code, activity).
         return [
             (
                 module.DirectIngestViewQueryBuilderCollector,
                 module.DirectIngestViewQueryBuilderCollector.from_state_code(
-                    state_code
+                    state_code=state_code,
+                    view_subdir_name=module.INGEST_VIEWS_SUBDIR_NAME,
                 ).get_query_builders,
             )
             for state_code in get_existing_direct_ingest_states()

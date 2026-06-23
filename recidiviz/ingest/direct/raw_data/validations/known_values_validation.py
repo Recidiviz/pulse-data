@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     RawDataPreImportValidationType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -191,9 +192,11 @@ class KnownValuesValidation(
         """
         # TODO(#40421): filter to just relevancy if this column is actually used in an
         # ingest enum mapping, and say which mapping it is
+        # TODO(OBT-34669): Loop over both ingest pipeline types so the error message
+        # also lists identity-view references, not just activity-view references.
         referencing_ingest_views = sorted(
             DirectIngestViewQueryBuilderCollector.from_state_code(
-                state_code=self.state_code
+                state_code=self.state_code, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
             ).get_ingest_views_referencing(self.file_tag)
         )
 

@@ -75,6 +75,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -368,7 +369,9 @@ class DirectIngestRegionDirStructureBase:
 
                 # Collect all views regardless of gating and make sure they build
                 views = DirectIngestViewQueryBuilderCollector(
-                    region, expected_ingest_views=[]
+                    region=region,
+                    view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+                    expected_ingest_views=[],
                 ).get_query_builders()
                 for view in views:
                     view.build_and_print()
@@ -822,7 +825,9 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value
     )
-    view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(state_code)
+    view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(
+        state_code=state_code, view_subdir_name=INGEST_VIEWS_SUBDIR_NAME
+    )
     mapping_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),

@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.monitoring.ingest_enum_counter import emit_enum_mapping_heartbeat
@@ -113,7 +114,9 @@ class ProcessAllIngestViews(beam.PTransform):
             ingest_view_context
         )
         view_collector = DirectIngestViewQueryBuilderCollector(
-            region, all_launchable_views
+            region=region,
+            view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+            expected_ingest_views=all_launchable_views,
         )
 
         ingest_views_to_run = self.pipeline_parameters.launchable_ingest_views_to_run(

@@ -61,6 +61,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.activity import entities as state_entities
@@ -78,7 +79,13 @@ from recidiviz.utils.string import get_closest_string
 def _get_ingest_view(
     region: direct_ingest_regions.DirectIngestRegion, ingest_view_name: str
 ) -> DirectIngestViewQueryBuilder:
-    view_collector = DirectIngestViewQueryBuilderCollector(region, [])
+    # TODO(OBT-34670): Take ingest pipeline type as a CLI flag instead of silently
+    # defaulting to activity ingest views.
+    view_collector = DirectIngestViewQueryBuilderCollector(
+        region=region,
+        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+        expected_ingest_views=[],
+    )
 
     ingest_views_by_name = {
         view.ingest_view_name: view for view in view_collector.get_query_builders()

@@ -85,6 +85,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.pipelines.ingest.activity.dataset_config import (
@@ -289,8 +290,11 @@ def verify_ingest_view_determinism(
         ),
     )
 
+    # TODO(OBT-34669): Loop over both ingest pipeline types so identity-view
+    # determinism is also covered by this state-wide stability check.
     view_query_builders = DirectIngestViewQueryBuilderCollector(
-        region,
+        region=region,
+        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
         expected_ingest_views=launched_ingest_views,
     ).get_query_builders()
 

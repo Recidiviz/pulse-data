@@ -21,6 +21,7 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    INGEST_VIEWS_SUBDIR_NAME,
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
@@ -37,8 +38,13 @@ def get_file_tags_referenced_in_ingest_views(state_code: StateCode) -> set[str]:
     Returns:
         A set of file tags referenced in ingest views for the given state.
     """
+    # TODO(OBT-34669): Loop over both ingest pipeline types and union the results.
+    # SFTP/monitoring callers want "is this raw file referenced anywhere?", which
+    # should include identity-view references.
     view_collector = DirectIngestViewQueryBuilderCollector(
-        get_direct_ingest_region(region_code=state_code.value), []
+        region=get_direct_ingest_region(region_code=state_code.value),
+        view_subdir_name=INGEST_VIEWS_SUBDIR_NAME,
+        expected_ingest_views=[],
     )
     return set(DirectIngestDocumentationGenerator.get_referencing_views(view_collector))
 
