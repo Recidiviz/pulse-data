@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
     crc_work_release_time_based_criteria,
+    has_crc_release_note,
     in_crc_facility_or_pwcc_unit_1,
     incarceration_not_within_6_months_of_upcoming_eprd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
@@ -55,6 +56,10 @@ from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder im
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -62,6 +67,18 @@ US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER = (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
     )
+)
+
+# Exclude reception/diagnostic and mental-health unit residents, unless they have
+# a CRC release note (which signals they've been worked up for a CRC release).
+# Shared with the CRC work-release eligibility spans.
+US_IX_NOT_IN_RECEPTION_OR_MENTAL_HEALTH_UNIT_UNLESS_RELEASE_NOTE_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    criteria_name="US_IX_NOT_IN_RECEPTION_OR_MENTAL_HEALTH_UNIT_UNLESS_RELEASE_NOTE",
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    sub_criteria_list=[
+        not_in_reception_or_mental_health_unit.VIEW_BUILDER,
+        has_crc_release_note.VIEW_BUILDER,
+    ],
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
@@ -89,8 +106,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             sub_criteria=crc_work_release_time_based_criteria.VIEW_BUILDER,
         ),
         not_denied_for_crc.VIEW_BUILDER,
-        # Exclude reception/diagnostic and mental-health unit residents
-        not_in_reception_or_mental_health_unit.VIEW_BUILDER,
+        # Exclude reception/diagnostic and mental-health unit residents, unless
+        # they have a CRC release note
+        US_IX_NOT_IN_RECEPTION_OR_MENTAL_HEALTH_UNIT_UNLESS_RELEASE_NOTE_VIEW_BUILDER,
     ],
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
