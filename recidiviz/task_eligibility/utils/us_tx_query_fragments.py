@@ -33,6 +33,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     truncate_to_calendar_period,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -42,6 +45,15 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
     get_reason_json_fields_query_template_for_criteria,
 )
 from recidiviz.utils.string_formatting import fix_indent
+
+# Some US_TX populations are encoded as a supervision_level, not a case_type. Maps those
+# levels to the case type TES criteria should treat them as. RRC residents ingest as
+# RESIDENTIAL_PROGRAM (since #77278); RESIDENTIAL_REENTRY has no StateSupervisionCaseType
+# member, so it stays a string.
+RESIDENTIAL_REENTRY_CASE_TYPE = "RESIDENTIAL_REENTRY"
+SUPERVISION_LEVEL_TO_CASE_TYPE_OVERRIDE: dict[StateSupervisionLevel, str] = {
+    StateSupervisionLevel.RESIDENTIAL_PROGRAM: RESIDENTIAL_REENTRY_CASE_TYPE,
+}
 
 # Substance abuse program IDs that count as treatment programs requiring an
 # additional collateral contact for RRC clients (per the contact policy
