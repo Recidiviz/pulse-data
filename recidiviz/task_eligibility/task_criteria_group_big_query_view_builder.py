@@ -145,6 +145,7 @@ class TaskCriteriaGroupQueryBuilder:
         allowed_duplicate_reasons_keys: List[str],
         reasons_aggregate_function_override: dict[str, str],
         reasons_aggregate_function_use_ordering_clause: set[str],
+        reasons_aggregate_pick_latest_by: dict[str, str],
     ) -> str:
         """Returns query fragment that combines all fields across sub-criteria
         reason blobs into a single flat json, with an aggregation function that
@@ -161,6 +162,9 @@ class TaskCriteriaGroupQueryBuilder:
         )
 
         criteria_group_reasons_field_names = [reason.name for reason in reasons_fields]
+        reason_type_by_name = {
+            reason.name: str(reason.type.value) for reason in reasons_fields
+        }
         for reason_field_name in reasons_aggregate_function_override.keys():
             if reason_field_name not in criteria_group_reasons_field_names:
                 field_names_str = ", ".join(criteria_group_reasons_field_names)
@@ -168,17 +172,71 @@ class TaskCriteriaGroupQueryBuilder:
                     f"Cannot override aggregate function for reason '{reason_field_name}' since it is not in the "
                     f"{criteria_group_name} reasons fields list: {field_names_str}"
                 )
+        for value_field, key_field in reasons_aggregate_pick_latest_by.items():
+            field_names_str = ", ".join(criteria_group_reasons_field_names)
+            if value_field not in criteria_group_reasons_field_names:
+                raise ValueError(
+                    f"Cannot pick latest value for reason '{value_field}' since it is not in the "
+                    f"{criteria_group_name} reasons fields list: {field_names_str}"
+                )
+            if key_field not in criteria_group_reasons_field_names:
+                raise ValueError(
+                    f"Cannot pick latest value for reason '{value_field}' by key '{key_field}' since the "
+                    f"key is not in the {criteria_group_name} reasons fields list: {field_names_str}"
+                )
+            if value_field in reasons_aggregate_function_override:
+                raise ValueError(
+                    f"Reason '{value_field}' cannot be in both reasons_aggregate_pick_latest_by and "
+                    f"reasons_aggregate_function_override."
+                )
         reasons_query_fragment = ", ".join(
             [
-                f"{cls._get_reason_aggregate_function(reason, reasons_aggregate_function_override)}("
-                + extract_object_from_json(
-                    reason.name, str(reason.type.value), "reason_v2"
+                cls._get_reason_aggregate_expression(
+                    reason=reason,
+                    reason_type_by_name=reason_type_by_name,
+                    reasons_aggregate_function_override=reasons_aggregate_function_override,
+                    reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+                    reasons_aggregate_pick_latest_by=reasons_aggregate_pick_latest_by,
                 )
-                + f"""{cls._get_reason_aggregate_ordering_clause(reason, reasons_aggregate_function_use_ordering_clause)}) AS {reason.name}"""
                 for reason in reasons_fields
             ]
         )
         return reasons_query_fragment
+
+    @classmethod
+    def _get_reason_aggregate_expression(
+        cls,
+        *,
+        reason: ReasonsField,
+        reason_type_by_name: dict[str, str],
+        reasons_aggregate_function_override: dict[str, str],
+        reasons_aggregate_function_use_ordering_clause: set[str],
+        reasons_aggregate_pick_latest_by: dict[str, str],
+    ) -> str:
+        """Returns the per-field aggregation expression used in the flattened reason
+        blob. Fields listed in `reasons_aggregate_pick_latest_by` resolve to the
+        value associated with the latest (MAX) value of the named key field; all
+        others use their (possibly overridden) aggregate function.
+        """
+        value_expr = extract_object_from_json(
+            reason.name, str(reason.type.value), "reason_v2"
+        )
+        if reason.name in reasons_aggregate_pick_latest_by:
+            key_field = reasons_aggregate_pick_latest_by[reason.name]
+            key_expr = extract_object_from_json(
+                key_field, reason_type_by_name[key_field], "reason_v2"
+            )
+            # Pick the value tied to the latest key, with the value itself as a
+            # deterministic tiebreaker when multiple rows share that latest key.
+            return (
+                f"ARRAY_AGG({value_expr} IGNORE NULLS "
+                f"ORDER BY {key_expr} DESC, {value_expr})[SAFE_OFFSET(0)] AS {reason.name}"
+            )
+        return (
+            f"{cls._get_reason_aggregate_function(reason, reasons_aggregate_function_override)}("
+            + value_expr
+            + f"""{cls._get_reason_aggregate_ordering_clause(reason, reasons_aggregate_function_use_ordering_clause)}) AS {reason.name}"""
+        )
 
     @staticmethod
     def _get_reason_aggregate_function(
@@ -223,6 +281,7 @@ class TaskCriteriaGroupQueryBuilder:
         allowed_duplicate_reasons_keys: List[str],
         reasons_aggregate_function_override: dict[str, str],
         reasons_aggregate_function_use_ordering_clause: set[str],
+        reasons_aggregate_pick_latest_by: dict[str, str],
     ) -> str:
         """Returns a query template that performs the appropriate aggregation
         over component criteria.
@@ -256,6 +315,7 @@ FROM `{sub_criteria.table_for_query.format_address_for_query_template()}`{cls._g
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reasons_aggregate_function_override=reasons_aggregate_function_override,
             reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+            reasons_aggregate_pick_latest_by=reasons_aggregate_pick_latest_by,
         )
 
         reasons_fields = _deduplicated_reasons_fields(
@@ -440,6 +500,7 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         allowed_duplicate_reasons_keys: List[str] | None = None,
         reasons_aggregate_function_override: dict[str, str] | None = None,
         reasons_aggregate_function_use_ordering_clause: set[str] | None = None,
+        reasons_aggregate_pick_latest_by: dict[str, str] | None = None,
     ) -> None:
         """
         Args:
@@ -457,6 +518,12 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
             reasons_aggregate_function_use_ordering_clause: Map of reasons field name to
                 ordering clauses for ordering aggregation functions when necessary to
                 ensure the views are deterministic
+            reasons_aggregate_pick_latest_by: Map of reasons field name to the name of
+                another reasons field to pick the latest value by. For each entry, the
+                group surfaces the value of the keyed field tied to the latest (MAX)
+                value of the named field (e.g. {"criteria_name": "causal_date"} surfaces
+                the criteria_name of the most recent causal_date), with the value itself
+                as a deterministic tiebreaker.
         """
 
         allowed_duplicate_reasons_keys = allowed_duplicate_reasons_keys or []
@@ -464,6 +531,7 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         reasons_aggregate_function_use_ordering_clause = (
             reasons_aggregate_function_use_ordering_clause or set()
         )
+        reasons_aggregate_pick_latest_by = reasons_aggregate_pick_latest_by or {}
 
         logic_config = TaskCriteriaGroupLogicConfig.for_logic_type(logic_type)
         query_template = TaskCriteriaGroupQueryBuilder.get_query_template(
@@ -474,6 +542,7 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reasons_aggregate_function_override=reasons_aggregate_function_override,
             reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+            reasons_aggregate_pick_latest_by=reasons_aggregate_pick_latest_by,
         )
         super().__init__(
             criteria_name=criteria_name,
@@ -527,6 +596,7 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         allowed_duplicate_reasons_keys: List[str] | None = None,
         reasons_aggregate_function_override: dict[str, str] | None = None,
         reasons_aggregate_function_use_ordering_clause: set[str] | None = None,
+        reasons_aggregate_pick_latest_by: dict[str, str] | None = None,
     ) -> None:
         """
         Args:
@@ -544,6 +614,12 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             reasons_aggregate_function_use_ordering_clause: Map of reasons field name to
                 ordering clauses for ordering aggregation functions when necessary to
                 ensure the views are deterministic
+            reasons_aggregate_pick_latest_by: Map of reasons field name to the name of
+                another reasons field to pick the latest value by. For each entry, the
+                group surfaces the value of the keyed field tied to the latest (MAX)
+                value of the named field (e.g. {"criteria_name": "causal_date"} surfaces
+                the criteria_name of the most recent causal_date), with the value itself
+                as a deterministic tiebreaker.
         """
 
         state_codes = {
@@ -572,6 +648,7 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         reasons_aggregate_function_use_ordering_clause = (
             reasons_aggregate_function_use_ordering_clause or set()
         )
+        reasons_aggregate_pick_latest_by = reasons_aggregate_pick_latest_by or {}
 
         logic_config = TaskCriteriaGroupLogicConfig.for_logic_type(logic_type)
         query_template = TaskCriteriaGroupQueryBuilder.get_query_template(
@@ -582,6 +659,7 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reasons_aggregate_function_override=reasons_aggregate_function_override,
             reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+            reasons_aggregate_pick_latest_by=reasons_aggregate_pick_latest_by,
         )
         super().__init__(
             criteria_name=criteria_name,

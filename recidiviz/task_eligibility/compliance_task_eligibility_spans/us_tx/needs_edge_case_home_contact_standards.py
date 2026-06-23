@@ -45,34 +45,33 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TX_NEEDS_EDGE_CASE_HOME_CONTACT_CRITERIA_GROUP = (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-        logic_type=TaskCriteriaGroupLogicType.OR,
-        criteria_name="US_TX_NEEDS_EDGE_CASE_HOME_CONTACT",
-        sub_criteria_list=[
-            meets_initial_home_contact_trigger.VIEW_BUILDER,
-            meets_address_change_home_contact_trigger.VIEW_BUILDER,
-            meets_return_from_custody_home_contact_trigger.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[
-            "contact_cadence",
-            "contact_count",
-            "contact_due_date",
-            "last_contact_date",
-            "overdue_flag",
-            "causal_date",
-            "criteria_name",
-        ],
-        reasons_aggregate_function_override={
-            "criteria_name": "STRING_AGG",
-            "contact_cadence": "STRING_AGG",
-            "overdue_flag": "LOGICAL_OR",
-        },
-        reasons_aggregate_function_use_ordering_clause={
-            "criteria_name",
-            "contact_cadence",
-        },
-    )
+US_TX_NEEDS_EDGE_CASE_HOME_CONTACT_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_TX_NEEDS_EDGE_CASE_HOME_CONTACT",
+    sub_criteria_list=[
+        meets_initial_home_contact_trigger.VIEW_BUILDER,
+        meets_address_change_home_contact_trigger.VIEW_BUILDER,
+        meets_return_from_custody_home_contact_trigger.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[
+        "contact_cadence",
+        "contact_count",
+        "contact_due_date",
+        "last_contact_date",
+        "overdue_flag",
+        "causal_date",
+        "criteria_name",
+    ],
+    reasons_aggregate_function_override={
+        "contact_cadence": "STRING_AGG",
+        "overdue_flag": "LOGICAL_OR",
+    },
+    reasons_aggregate_function_use_ordering_clause={
+        "contact_cadence",
+    },
+    # Surface the single criteria_name tied to the latest causal_date, so the
+    # exported task names the most recent trigger (matching the MAX causal_date).
+    reasons_aggregate_pick_latest_by={"criteria_name": "causal_date"},
 )
 
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(

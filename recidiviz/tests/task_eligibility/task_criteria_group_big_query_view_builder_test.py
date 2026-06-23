@@ -773,6 +773,44 @@ WHERE state_code = 'US_KY'
 
         self.assertEqual(expected_query_template, criteria_query.view_query_template)
 
+    def test_criteria_group_pick_latest_by(self) -> None:
+        """Checks that reasons_aggregate_pick_latest_by emits a deterministic
+        ARRAY_AGG(... ORDER BY <key> DESC, <value>)[SAFE_OFFSET(0)] expression that
+        surfaces the value tied to the latest key field."""
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_KY_PICK_LATEST",
+            sub_criteria_list=[
+                CRITERIA_4_STATE_SPECIFIC,
+                CRITERIA_5_STATE_SPECIFIC,
+            ],
+            reasons_aggregate_pick_latest_by={"violations": "latest_violation_date"},
+        )
+        self.assertIn(
+            "ARRAY_AGG(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64) "
+            "IGNORE NULLS ORDER BY "
+            "SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE) DESC, "
+            "SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64))"
+            "[SAFE_OFFSET(0)] AS violations",
+            criteria_group.view_query_template,
+        )
+
+    def test_criteria_group_pick_latest_by_invalid_key(self) -> None:
+        """Checks that pick_latest_by referencing a key field that is not a reasons
+        field raises a descriptive error."""
+        with self.assertRaisesRegex(
+            ValueError, r"key is not in the .* reasons fields list"
+        ):
+            StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                logic_type=TaskCriteriaGroupLogicType.OR,
+                criteria_name="US_KY_PICK_LATEST_BAD_KEY",
+                sub_criteria_list=[
+                    CRITERIA_4_STATE_SPECIFIC,
+                    CRITERIA_5_STATE_SPECIFIC,
+                ],
+                reasons_aggregate_pick_latest_by={"violations": "nonexistent_date"},
+            )
+
     def test_criteria_group_duplicate_array_reasons_with_aggregators_and_ordering_clause(
         self,
     ) -> None:
