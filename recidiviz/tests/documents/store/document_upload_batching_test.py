@@ -76,68 +76,62 @@ class TestBuildDocumentBatches(unittest.TestCase):
         bq_client.run_query_async.return_value = mock_job
         return bq_client
 
-    def test_build_document_batches(self) -> None:
-        configs = collect_document_collection_configs(
-            StateCode.US_XX, config_module=fake_config_module
+    def test_build_document_batches_round_robin(self) -> None:
+        config = next(
+            iter(
+                collect_document_collection_configs(
+                    StateCode.US_XX, config_module=fake_config_module
+                ).values()
+            )
         )
-        config_list = list(configs.values())
+        collection_result = self._make_collection_doc_discovery_result(
+            config=config,
+            num_new_document_contents_rows=897587,
+        )
 
-        name1 = config_list[0].name
-        name2 = config_list[1 % len(config_list)].name
-        name3 = config_list[2 % len(config_list)].name
-
-        collection_results = [
-            self._make_collection_doc_discovery_result(
-                config=config_list[0],
-                num_new_document_contents_rows=897587,
-            ),
-            self._make_collection_doc_discovery_result(
-                config=config_list[1 % len(config_list)],
-                num_new_document_contents_rows=105923,
-            ),
-            self._make_collection_doc_discovery_result(
-                config=config_list[2 % len(config_list)],
-                num_new_document_contents_rows=9768899,
-            ),
-            # Should be ignored since it has zero new document contents rows.
-            self._make_collection_doc_discovery_result(
-                config=config_list[3 % len(config_list)],
-                num_new_document_contents_rows=0,
-            ),
-        ]
-
-        bq_client = self._mock_bq_client_with_batch_numbers([0, 1])
+        # 5 batches across 2 task instances → instance 0 gets batches [0, 2, 4],
+        # instance 1 gets batches [1, 3].
+        bq_client = self._mock_bq_client_with_batch_numbers([0, 1, 2, 3, 4])
         batches = build_document_batches(
-            collection_results, num_upload_task_instances=2, big_query_client=bq_client
+            collection_result=collection_result,
+            num_upload_task_instances=2,
+            big_query_client=bq_client,
         )
 
-        self.assertEqual(len(batches), 2)
         self.assertEqual(
-            batches[0],
+            batches,
             [
-                self._make_upload_batch(batch_number=0, name=name1),
-                self._make_upload_batch(batch_number=0, name=name2),
-                self._make_upload_batch(batch_number=0, name=name3),
-            ],
-        )
-        self.assertEqual(
-            batches[1],
-            [
-                self._make_upload_batch(batch_number=1, name=name1),
-                self._make_upload_batch(batch_number=1, name=name2),
-                self._make_upload_batch(batch_number=1, name=name3),
+                [
+                    self._make_upload_batch(batch_number=0, name=config.name),
+                    self._make_upload_batch(batch_number=2, name=config.name),
+                    self._make_upload_batch(batch_number=4, name=config.name),
+                ],
+                [
+                    self._make_upload_batch(batch_number=1, name=config.name),
+                    self._make_upload_batch(batch_number=3, name=config.name),
+                ],
             ],
         )
 
-    def test_empty_list(self) -> None:
+    def test_zero_new_document_contents_returns_empty_batches(self) -> None:
+        config = next(
+            iter(
+                collect_document_collection_configs(
+                    StateCode.US_XX, config_module=fake_config_module
+                ).values()
+            )
+        )
+        collection_result = self._make_collection_doc_discovery_result(
+            config=config,
+            num_new_document_contents_rows=0,
+        )
         bq_client = MagicMock()
+
         batches = build_document_batches(
-            collection_results=[],
+            collection_result=collection_result,
             num_upload_task_instances=3,
             big_query_client=bq_client,
         )
 
-        self.assertEqual(batches[0], [])
-        self.assertEqual(batches[1], [])
-        self.assertEqual(batches[2], [])
+        self.assertEqual(batches, [[], [], []])
         bq_client.run_query_async.assert_not_called()

@@ -91,9 +91,9 @@ def build_document_upload_pod_arguments(
     across |upload_task_instance_count| task instances, and returns the argv
     for each mapped DocumentUploadEntrypoint pod."""
     task_instance_batches = build_document_batches(
-        collection_results=[
-            SingleCollectionDocumentDiscoveryResult.from_dict(collection_result)
-        ],
+        collection_result=SingleCollectionDocumentDiscoveryResult.from_dict(
+            collection_result
+        ),
         num_upload_task_instances=upload_task_instance_count,
         big_query_client=BigQueryClientImpl(),
     )
