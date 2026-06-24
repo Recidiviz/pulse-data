@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for get_pathways_dynamic_filter_options."""
+"""Tests for state_specific_query_strings helpers."""
 
 import unittest
 
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_dynamic_filter_options,
+    get_pathways_incarceration_last_updated_date,
+    get_pathways_supervision_last_updated_date,
 )
 
 
@@ -98,3 +100,64 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "USING(state_code)"
         )
         self.assertEqual(using_count, 11)
+
+
+class GetPathwaysLastUpdatedDateTests(unittest.TestCase):
+    """Tests for the get_pathways_*_last_updated_date helper functions."""
+
+    def test_supervision_single_table_state_no_subquery(self) -> None:
+        result = get_pathways_supervision_last_updated_date()
+        # US_ND uses a single table — should reference it directly, not nested
+        self.assertIn("us_nd_raw_data_views.docstars_offendercasestable_all", result)
+        # Should not wrap single-table states in a subquery FROM (...)
+        self.assertNotIn(
+            "SELECT update_datetime FROM `{project_id}.us_nd_raw_data_views", result
+        )
+
+    def test_supervision_us_tn_uses_both_tables(self) -> None:
+        result = get_pathways_supervision_last_updated_date()
+        self.assertIn("us_tn_raw_data_views.SupervisionPlan_all", result)
+        self.assertIn("us_tn_raw_data_views.AssignedStaff_all", result)
+
+    def test_supervision_us_tn_subquery_takes_max_across_tables(self) -> None:
+        result = get_pathways_supervision_last_updated_date()
+        # Both US_TN tables appear as flat inner SELECTs in the UNION ALL
+        self.assertIn(
+            "SELECT 'US_TN' AS state_code, update_datetime"
+            " FROM `{project_id}.us_tn_raw_data_views.SupervisionPlan_all`",
+            result,
+        )
+        self.assertIn(
+            "SELECT 'US_TN' AS state_code, update_datetime"
+            " FROM `{project_id}.us_tn_raw_data_views.AssignedStaff_all`",
+            result,
+        )
+        # The outer GROUP BY drives the MAX across all tables for each state
+        self.assertIn("date(max(update_datetime))", result)
+        self.assertIn("GROUP BY state_code", result)
+
+    def test_supervision_all_states_present(self) -> None:
+        result = get_pathways_supervision_last_updated_date()
+        for state_code in ("US_IX", "US_ND", "US_TN", "US_ME"):
+            self.assertIn(state_code, result, f"Missing state: {state_code}")
+
+    def test_incarceration_single_table_state_no_subquery(self) -> None:
+        result = get_pathways_incarceration_last_updated_date()
+        self.assertIn("us_tn_raw_data_views.OffenderMovement_all", result)
+        self.assertNotIn(
+            "SELECT update_datetime FROM `{project_id}.us_tn_raw_data_views.OffenderMovement_all`",
+            result,
+        )
+
+    def test_incarceration_all_states_present(self) -> None:
+        result = get_pathways_incarceration_last_updated_date()
+        for state_code in (
+            "US_IX",
+            "US_ME",
+            "US_ND",
+            "US_TN",
+            "US_MI",
+            "US_CO",
+            "US_NY",
+        ):
+            self.assertIn(state_code, result, f"Missing state: {state_code}")

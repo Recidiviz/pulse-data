@@ -156,6 +156,12 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "dbo_RelAgentHistory": ["LastModifiedDateTime"],
     },
     StateCode.US_TN: {
+        "AssignedStaff": [
+            "AssignmentDueDate",
+            "EndDate",
+            "LastUpdateDate",
+            "StartDate",
+        ],
         "Classification": [
             "AppealDecisionDate",
             "AppealReceivedDate",
@@ -776,12 +782,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
     },
     StateCode.US_TN: {
         "Address": ["LastUpdateDate"],
-        "AssignedStaff": [
-            "AssignmentDueDate",
-            "EndDate",
-            "LastUpdateDate",
-            "StartDate",
-        ],
         "CellBedAssignment": ["AssignmentDateTime", "EndDate", "LastUpdateDate"],
         "DisciplinarySentence": ["LastUpdateDate", "SentenceDate"],
         "Diversion": [
