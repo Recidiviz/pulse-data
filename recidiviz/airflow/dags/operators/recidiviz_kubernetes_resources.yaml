@@ -93,11 +93,15 @@ IngestCheckRawDataFlashingEntrypoint:
       cpu: 500m
       memory: 500Mi
 
+# Sizing validated against a 30-day per-pod census in recidiviz-123 (OBT-35078):
+# peak CPU 0.86 vCPU (of 1.25), peak memory 1.55 GiB (of 2Gi). CPU cut to 1000m
+# (above the observed max). Memory trimmed conservatively to 1.75Gi -- still
+# above the 30-day max of 1.55 GiB and ~34% above p99 (1.30 GiB).
 RawDataChunkNormalizationEntrypoint:
   default_resources:
     limits:
-      cpu: 1250m
-      memory: 2Gi
+      cpu: 1000m
+      memory: 1.75Gi
 
 RawDataFileChunkingEntrypoint:
   default_resources:
