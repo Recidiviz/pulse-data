@@ -35,6 +35,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
     DirectIngestRawFileImportStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.base_entity import Entity
 
 
@@ -82,6 +83,8 @@ class DirectIngestDataflowJob(Entity, BuildableAttr, DefaultableAttr):
     region_code: str = attr.ib()
     # The ingest instance that we are running for
     ingest_instance: DirectIngestInstance = attr.ib()
+    # Which ingest pipeline kind (activity or identity) produced this job
+    pipeline_type: IngestPipelineType = attr.ib()
     # When ingest in Dataflow Airflow DAG saw the job completed and wrote this row
     completion_time: datetime.datetime = attr.ib()
     # This is only to be used for secondary reruns in order to invalidate prior secondary reruns and start over from scratch.
@@ -106,6 +109,10 @@ class DirectIngestDataflowRawTableUpperBounds(Entity, BuildableAttr, Defaultable
     raw_data_file_tag: str = attr.ib()
     # The latest update_datetime of the raw data table
     watermark_datetime: datetime.datetime = attr.ib()
+    # Which ingest pipeline kind (activity or identity) produced this watermark.
+    # Denormalized from DirectIngestDataflowJob (via job_id) so diagnostic
+    # queries can filter watermarks by pipeline type without a join.
+    pipeline_type: IngestPipelineType = attr.ib()
 
     # Cross-entity relationships
     job: DirectIngestDataflowJob = attr.ib()

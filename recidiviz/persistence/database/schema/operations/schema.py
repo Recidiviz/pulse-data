@@ -50,6 +50,12 @@ direct_ingest_instance = Enum(
     name="direct_ingest_instance",
 )
 
+ingest_pipeline_type = Enum(
+    enum_canonical_strings.ingest_pipeline_type_activity,
+    enum_canonical_strings.ingest_pipeline_type_identity,
+    name="ingest_pipeline_type",
+)
+
 direct_ingest_lock_actor = Enum(
     enum_canonical_strings.direct_ingest_lock_actor_adhoc,
     enum_canonical_strings.direct_ingest_lock_actor_process,
@@ -178,6 +184,11 @@ class DirectIngestDataflowJob(OperationsBase):
     # The ingest instance that we are running for
     ingest_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
+    # Which ingest pipeline kind (activity or identity) produced this job
+    pipeline_type = Column(
+        ingest_pipeline_type, nullable=False, index=True, server_default="ACTIVITY"
+    )
+
     # The location that the job ran in
     location = Column(String(255), nullable=True, index=True)
 
@@ -233,6 +244,13 @@ class DirectIngestDataflowRawTableUpperBounds(OperationsBase):
 
     # The latest update_datetime of the raw data table
     watermark_datetime = Column(DateTime(timezone=True), nullable=False)
+
+    # Which ingest pipeline kind (activity or identity) produced this watermark.
+    # Denormalized from direct_ingest_dataflow_job (via job_id) so diagnostic
+    # queries can filter watermarks by pipeline type without a join.
+    pipeline_type = Column(
+        ingest_pipeline_type, nullable=False, index=True, server_default="ACTIVITY"
+    )
 
 
 class DirectIngestRawDataResourceLock(OperationsBase):

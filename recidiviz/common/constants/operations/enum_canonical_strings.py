@@ -20,6 +20,10 @@
 direct_ingest_instance_primary = "PRIMARY"
 direct_ingest_instance_secondary = "SECONDARY"
 
+# IngestPipelineType enum
+ingest_pipeline_type_activity = "ACTIVITY"
+ingest_pipeline_type_identity = "IDENTITY"
+
 # DirectIngestLockActor
 direct_ingest_lock_actor_process = "PROCESS"
 direct_ingest_lock_actor_adhoc = "ADHOC"
