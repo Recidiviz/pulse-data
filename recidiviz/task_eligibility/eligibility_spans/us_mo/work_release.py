@@ -20,7 +20,7 @@ eligible for work release.
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    general_incarceration_population,
+    general_and_treatment_in_prison_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
@@ -191,7 +191,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="WORK_RELEASE",
     description=__doc__,
-    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_and_treatment_in_prison_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         educational_score_1.VIEW_BUILDER,
