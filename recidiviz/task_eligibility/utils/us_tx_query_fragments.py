@@ -18,6 +18,8 @@
 Helper SQL queries for Texas
 """
 
+from typing import Sequence
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
@@ -30,6 +32,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     truncate_to_calendar_period,
 )
@@ -115,7 +118,7 @@ def alternative_contact_cadence_reason(
 def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
     description: str,
     base_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder,
-    contact_type: str,
+    contact_type: ContactType,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
     Returns a state-specific criteria view builder indicating the spans of time when
@@ -127,7 +130,7 @@ def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
     Args:
         description (str): The description of the criteria
         base_criteria (StateSpecificTaskCriteriaBigQueryViewBuilder): The criteria that represents the standard policy on which to apply overrides
-        contact_type (int): The type of contact
+        contact_type (ContactType): The type of contact
     """
 
     standard_policy_criteria_name = base_criteria.view_id
@@ -137,7 +140,7 @@ WITH has_monthly_home_contact_requirement AS (
     SELECT * FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_materialized`
     WHERE frequency = 1
         AND frequency_date_part = 'MONTH'
-        AND contact_type = "{contact_type}"
+        AND contact_type = "{contact_type.value}"
 )
 ,
 -- Generate a monthly date array spanning all of the time over which a person may
@@ -175,7 +178,7 @@ special_monthly_contact_cadence AS (
                     LEFT(JSON_EXTRACT_SCALAR(person.full_name, "$.surname"), 1) >= "N"
                     AND MOD(EXTRACT(MONTH FROM contact_month_start_date), 2) = 1
                 )
-            THEN "{contact_type} (VIRTUAL)"
+            THEN "{contact_type.value} (VIRTUAL)"
             ELSE NULL
         END AS override_contact_type,
     FROM
@@ -272,12 +275,18 @@ SELECT
     officer_in_critically_understaffed_location,
 FROM intersection_spans_with_critical_understaffing
 """
-    criteria_name = f"US_TX_NEEDS_{contact_type.replace(' ', '_')}_CONTACT_MONTHLY_CRITICAL_UNDERSTAFFING"
+    # Derive this criteria's name from the base (standard-policy) criteria rather than
+    # from the contact_type value, so normalizing contact_type values doesn't rename the
+    # criteria (and so two bases sharing a contact_type can't collide on the same name).
+    criteria_name = f"US_TX_{standard_policy_criteria_name.upper()}".replace(
+        "_STANDARD_POLICY", "_MONTHLY_CRITICAL_UNDERSTAFFING"
+    )
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         description=description,
         state_code=StateCode.US_TX,
         criteria_spans_query_template=criteria_query,
+        contact_types=[contact_type],
         reasons_fields=[
             ReasonsField(
                 name="last_contact_date",
@@ -342,6 +351,7 @@ def contact_compliance_builder_type_agnostic(
     criteria_name: str,
     description: str,
     where_clause: str,
+    contact_types: Sequence[ContactType],
     use_alternative_contact_cadence_reason: bool = False,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state-specific criteria view builder indicating the spans of time when
@@ -352,6 +362,8 @@ def contact_compliance_builder_type_agnostic(
         criteria_name (str): The name of the criteria
         description (str): The description of the criteria
         where_clause (str): What type-agnostic contacts to filter down to
+        contact_types (list[ContactType]): The contact types that satisfy / close out
+            this criterion (the union of accepted types this criterion can be met by).
         use_alternative_contact_cadence_reason (bool): If True, COALESCE the
             pre-computed `alternative_contact_cadence_reason` from the type-agnostic
             cadence spans view into the `contact_cadence` string (e.g. surfaces
@@ -491,12 +503,12 @@ def contact_compliance_builder_type_agnostic(
     contact_count AS (
         SELECT
             *,
-            SUM (case when contact_type = "SCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_home_count,
-            SUM (case when contact_type = "SCHEDULED OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_office_count,
-            SUM (case when contact_type = "SCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_field_count,
-            SUM (case when contact_type = "UNSCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_home_count,
-            SUM (case when contact_type = "SCHEDULED VIRTUAL OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_virtual_office_count,
-            SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_field_count,
+            SUM (case when contact_type = "{ContactType.HOME_VISIT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_home_count,
+            SUM (case when contact_type = "{ContactType.OFFICE_VISIT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_office_count,
+            SUM (case when contact_type = "{ContactType.SCHEDULED_FIELD_CONTACT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_field_count,
+            SUM (case when contact_type = "{ContactType.UNSCHEDULED_HOME_VISIT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_home_count,
+            SUM (case when contact_type = "{ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_virtual_office_count,
+            SUM (case when contact_type = "{ContactType.UNSCHEDULED_FIELD_CONTACT.value}" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_field_count,
         FROM divided_periods_with_contacts
     ),
     types_and_amounts_due_cte AS (
@@ -662,6 +674,7 @@ def contact_compliance_builder_type_agnostic(
         description=description,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_TX,
+        contact_types=contact_types,
         reasons_fields=[
             ReasonsField(
                 name="last_contact_date",
@@ -882,3 +895,43 @@ def sisp_recurring_review_cadence_spans_query(
     )) AS period_start
     WHERE cadence_start_date < cadence_end_date_exclusive
     """
+
+
+def us_tx_contact_type_case_sql(*, metadata_column: str) -> str:
+    """Returns the CASE expression that maps US_TX raw contact methods/reasons to the
+    tracked `ContactType` values, emitting NULL (so the row is dropped downstream) for
+    any method with no tracked type. Shared by the completed-contacts and
+    scheduled-contacts preprocessed views, which differ only in the JSON metadata
+    column that carries the virtual-office flag.
+
+    Args:
+        metadata_column: Name of the JSON metadata column holding `$.VIRTUAL_FLAG`
+            (`supervision_contact_metadata` for completed contacts,
+            `scheduled_supervision_contact_metadata` for scheduled contacts).
+    """
+    return f"""-- Map only the contact methods that correspond to a tracked ContactType.
+-- Any other method (e.g. TELEPHONIC, ELECTRONIC, SURVEILLANCE, WRITTEN,
+-- unscheduled OFFICE/EMPLOYMENT) is not a Tasks-product contact type and
+-- maps to NULL; those rows are dropped in the final SELECT.
+CASE
+    WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%" AND contact_method_raw_text = "HOME"
+        THEN "{ContactType.UNSCHEDULED_HOME_VISIT.value}"
+    WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%" AND contact_method_raw_text = "FIELD"
+        THEN "{ContactType.UNSCHEDULED_FIELD_CONTACT.value}"
+    WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
+        THEN NULL
+    WHEN JSON_VALUE({metadata_column}, '$.VIRTUAL_FLAG') = "1"
+        AND contact_method_raw_text = 'OFFICE'
+        THEN "{ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT.value}"
+    WHEN contact_method_raw_text = "EMPLOYMENT"
+        THEN "{ContactType.SCHEDULED_FIELD_CONTACT.value}"
+    WHEN contact_method_raw_text = "HOME"
+        THEN "{ContactType.HOME_VISIT.value}"
+    WHEN contact_method_raw_text = "OFFICE"
+        -- The VIRTUAL_FLAG branch above still emits SCHEDULED_VIRTUAL_OFFICE;
+        -- only the non-virtual office type maps here.
+        THEN "{ContactType.OFFICE_VISIT.value}"
+    WHEN contact_method_raw_text = "FIELD"
+        THEN "{ContactType.SCHEDULED_FIELD_CONTACT.value}"
+    ELSE NULL
+END AS contact_type,"""

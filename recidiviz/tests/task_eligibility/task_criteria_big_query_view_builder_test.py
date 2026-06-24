@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -113,6 +114,43 @@ WHERE state_code = 'US_XX'
 """
 
         self.assertEqual(view.view_query, expected_query_template)
+
+    def test_contact_types_default_empty(self) -> None:
+        builder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+            state_code=StateCode.US_XX,
+            criteria_name="US_XX_SIMPLE_CRITERIA",
+            criteria_spans_query_template="SELECT * FROM `{project_id}.raw.foo`;",
+            description="d",
+            reasons_fields=[],
+        )
+        self.assertEqual([], builder.contact_types)
+
+    def test_contact_types_stored(self) -> None:
+        builder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+            state_code=StateCode.US_XX,
+            criteria_name="US_XX_SIMPLE_CRITERIA",
+            criteria_spans_query_template="SELECT * FROM `{project_id}.raw.foo`;",
+            description="d",
+            reasons_fields=[],
+            contact_types=[ContactType.HOME_VISIT, ContactType.UNSCHEDULED_HOME_VISIT],
+        )
+        self.assertEqual(
+            [ContactType.HOME_VISIT, ContactType.UNSCHEDULED_HOME_VISIT],
+            builder.contact_types,
+        )
+
+    def test_contact_types_rejects_non_member(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"^All contact_types must be ContactType members"
+        ):
+            StateSpecificTaskCriteriaBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                criteria_name="US_XX_SIMPLE_CRITERIA",
+                criteria_spans_query_template="SELECT * FROM `{project_id}.raw.foo`;",
+                description="d",
+                reasons_fields=[],
+                contact_types=["FOO"],  # type: ignore[list-item]
+            )
 
     def test_build_with_address_overrides(self) -> None:
         builder = StateSpecificTaskCriteriaBigQueryViewBuilder(

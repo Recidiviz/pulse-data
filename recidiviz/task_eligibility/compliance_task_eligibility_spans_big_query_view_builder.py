@@ -27,6 +27,7 @@ from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     CadenceType,
     ComplianceType,
 )
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -72,6 +73,15 @@ def compliance_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
             mode="REQUIRED",
         ),
     ]
+
+
+# Every CONTACT compliance task must declare the contact_types that close it out, except
+# for these states. US_MO models contact requirements by a one-to-many `contact_category`
+# rather than a single contact type, so its contact criteria don't (yet) declare
+# contact_types.
+# TODO(#84736): Have US_MO contact criteria declare their contact types, then remove this
+#  exemption so every CONTACT compliance task is covered.
+_STATES_EXEMPT_FROM_CONTACT_TYPES_CHECK = {StateCode.US_MO}
 
 
 class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
@@ -187,6 +197,34 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             last_task_completed_date_criteria_builder=last_task_completed_date_criteria_builder,
         )
         self.schema = compliance_task_eligibility_span_schema()
+
+        if (
+            state_code not in _STATES_EXEMPT_FROM_CONTACT_TYPES_CHECK
+            and compliance_type is ComplianceType.CONTACT
+            and criteria_spans_view_builders
+            and not self.contact_types
+        ):
+            raise ValueError(
+                f"[{state_code.value}] CONTACT compliance task [{task_name}] has "
+                f"criteria but none of them declare any contact_types. Declare the "
+                f"contact types that close out this task on one of its criteria "
+                f"builders."
+            )
+
+    @property
+    def contact_types(self) -> list[ContactType]:
+        """Returns the distinct contact types (from
+        `<state>_contact_events_preprocessed`) that close out this compliance task,
+        collected from its criteria builders (each criteria group already aggregates
+        the contact types of its sub-criteria)."""
+        # TODO(#87257): This unions the contact types across all of the task's criteria,
+        #  even types that only count toward the requirement for a subset of clients
+        #  (e.g. a virtual contact allowed at lower risk levels but not higher ones).
+        #  Decide whether to scope contact_types per risk level / criteria condition.
+        contact_types: set[ContactType] = set()
+        for criteria_builder in self.criteria_spans_view_builders:
+            contact_types.update(criteria_builder.contact_types)
+        return sorted(contact_types, key=lambda contact_type: contact_type.value)
 
     @classmethod
     def _address_for_task_name(

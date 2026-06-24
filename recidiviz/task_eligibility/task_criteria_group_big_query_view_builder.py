@@ -564,6 +564,16 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         )
         self.sub_criteria_list = sub_criteria_list
         self.logic_config = logic_config
+        # A criteria group's contact types are the union of its sub-criteria's
+        # contact types (each sub-group already aggregates its own).
+        self.contact_types = sorted(
+            {
+                contact_type
+                for sub_criteria in sub_criteria_list
+                for contact_type in sub_criteria.contact_types
+            },
+            key=lambda contact_type: contact_type.value,
+        )
 
     def get_descendant_criteria(
         self,
@@ -682,6 +692,16 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         )
         self.sub_criteria_list = sub_criteria_list
         self.logic_config = logic_config
+        # A criteria group's contact types are the union of its sub-criteria's
+        # contact types (each sub-group already aggregates its own).
+        self.contact_types = sorted(
+            {
+                contact_type
+                for sub_criteria in sub_criteria_list
+                for contact_type in sub_criteria.contact_types
+            },
+            key=lambda contact_type: contact_type.value,
+        )
 
     def drop_false_periods(self) -> "StateSpecificTaskCriteriaGroupBigQueryViewBuilder":
         """Wraps the view query to only include periods where meets_criteria

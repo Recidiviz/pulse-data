@@ -16,7 +16,10 @@
 # =============================================================================
 """Tests for the ComplianceTaskEligibilitySpansBigQueryViewBuilder."""
 import re
+import unittest
 from datetime import date
+
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_column import Bool, Date, Integer, Json, String
@@ -24,9 +27,14 @@ from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     CadenceType,
     ComplianceType,
 )
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -583,3 +591,101 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
             query_str=ROLLING_COMPLIANCE_ELIGIBILITY_VIEW_BUILDER.build().view_query,
             expected_result=expected_result,
         )
+
+
+def _contact_criteria(
+    *,
+    state_code: StateCode,
+    criteria_name: str,
+    contact_types: list[ContactType],
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=state_code,
+        criteria_name=criteria_name,
+        criteria_spans_query_template="SELECT * FROM `{project_id}.test_dataset.foo`;",
+        description="d",
+        reasons_fields=[
+            ReasonsField(
+                name="test_reason_date",
+                type=bigquery.StandardSqlTypeNames.DATE,
+                description="due date",
+            ),
+            ReasonsField(
+                name="last_contacted_date",
+                type=bigquery.StandardSqlTypeNames.DATE,
+                description="last contact",
+            ),
+        ],
+        contact_types=contact_types,
+    )
+
+
+def _compliance_builder(
+    *,
+    state_code: StateCode,
+    compliance_type: ComplianceType,
+    contact_types: list[ContactType],
+) -> ComplianceTaskEligibilitySpansBigQueryViewBuilder:
+    criteria = _contact_criteria(
+        state_code=state_code,
+        criteria_name=f"{state_code.value}_TEST_CONTACT_CRITERIA",
+        contact_types=contact_types,
+    )
+    return ComplianceTaskEligibilitySpansBigQueryViewBuilder(
+        state_code=state_code,
+        task_name="needs_test_contact",
+        candidate_population_view_builder=TEST_POPULATION_BUILDER,
+        criteria_spans_view_builders=[criteria],
+        compliance_type=compliance_type,
+        cadence_type=CadenceType.RECURRING_FIXED,
+        due_date_field="test_reason_date",
+        last_task_completed_date_field="last_contacted_date",
+    )
+
+
+class TestComplianceContactTypes(unittest.TestCase):
+    """Tests the derived contact_types property and the contact-types throw."""
+
+    def test_contact_types_derived_and_sorted(self) -> None:
+        builder = _compliance_builder(
+            state_code=StateCode.US_TX,
+            compliance_type=ComplianceType.CONTACT,
+            contact_types=[
+                ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT,
+                ContactType.HOME_VISIT,
+            ],
+        )
+        self.assertEqual(
+            [ContactType.HOME_VISIT, ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT],
+            builder.contact_types,
+        )
+
+    def test_contact_task_with_no_contact_types_raises_for_non_exempt_state(
+        self,
+    ) -> None:
+        # US_XX stands in for any state not exempt from the check.
+        with self.assertRaisesRegex(
+            ValueError, r"none of them declare any contact_types"
+        ):
+            _compliance_builder(
+                state_code=StateCode.US_XX,
+                compliance_type=ComplianceType.CONTACT,
+                contact_types=[],
+            )
+
+    def test_assessment_task_with_no_contact_types_ok(self) -> None:
+        builder = _compliance_builder(
+            state_code=StateCode.US_TX,
+            compliance_type=ComplianceType.ASSESSMENT,
+            contact_types=[],
+        )
+        self.assertEqual([], builder.contact_types)
+
+    def test_exempt_state_contact_task_with_no_contact_types_ok(self) -> None:
+        # US_MO is exempt: it models contacts by a one-to-many category, not a type.
+        builder = _compliance_builder(
+            state_code=StateCode.US_MO,
+            compliance_type=ComplianceType.CONTACT,
+            contact_types=[],
+        )
+        self.assertEqual([], builder.contact_types)

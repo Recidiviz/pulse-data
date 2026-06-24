@@ -30,6 +30,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     calc_contact_period_end_date,
     create_contact_cadence_reason,
@@ -439,7 +440,7 @@ def us_mo_contact_compliance_builder(
     contact_category: str,
     custom_contact_requirement_spans: Optional[str] = None,
     reasons_field_suffix: str = "",
-    supplementary_contact_types: Optional[List[str]] = None,
+    supplementary_contact_types: Optional[List[ContactType]] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state-specific criterion view builder identifying when someone in MO
     is due (i.e., has not met requirements) for a category of contact that can encompass
@@ -457,7 +458,7 @@ def us_mo_contact_compliance_builder(
         reasons_field_suffix (str, optional): Suffix to append to names of reasons
             fields. Can be used to make it easier to group criteria by ensuring reasons
             fields for sub-criteria have different names. Default: "" (adds no suffix).
-        supplementary_contact_types (List[str], optional): Types for any supplementary
+        supplementary_contact_types (List[ContactType], optional): Types for any supplementary
             contacts to include in the reasons blob. Can be used to include, for
             example, recent attempted contacts or contacts of a type complementary to
             the type(s) specified in the contact requirement. Should correspond with the
@@ -503,7 +504,7 @@ def us_mo_contact_compliance_builder(
     )
 
     if supplementary_contact_types is not None:
-        supplementary_contact_inclusion_condition = f"OR ce.contact_type IN ({list_to_query_string(supplementary_contact_types, quoted=True)})"
+        supplementary_contact_inclusion_condition = f"OR ce.contact_type IN ({list_to_query_string([t.value for t in supplementary_contact_types], quoted=True)})"
     else:
         supplementary_contact_inclusion_condition = ""
 

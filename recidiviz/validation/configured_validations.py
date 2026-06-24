@@ -332,6 +332,9 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.tasks.configured_validations import (
+    get_all_tasks_validations,
+)
 from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
     US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
@@ -454,6 +457,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         *get_all_task_eligibility_validations(),
         *get_all_dataflow_metrics_validations(),
         *get_all_location_metadata_validations(),
+        *get_all_tasks_validations(),
         *get_all_stable_counts_validations(region_configs),
         *get_all_outliers_validations(region_configs),
         ExistenceDataValidationCheck(

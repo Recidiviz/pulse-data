@@ -33,6 +33,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     convert_cols_to_json,
 )
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_CRITERIA_GENERAL,
@@ -156,6 +157,19 @@ FROM _aggregated{state_code_query_fragment}
 """
 
 
+def _validated_contact_types(
+    contact_types: Sequence[ContactType] | None,
+) -> list[ContactType]:
+    """Returns the contact types as a non-null list, raising if any element is not
+    a ContactType member."""
+    contact_types = list(contact_types or [])
+    if any(not isinstance(ct, ContactType) for ct in contact_types):
+        raise ValueError(
+            f"All contact_types must be ContactType members; got [{contact_types}]."
+        )
+    return contact_types
+
+
 def _get_reason_field_by_name(
     criteria: "TaskCriteriaBigQueryViewBuilder", reason_name: str
 ) -> ReasonsField:
@@ -183,6 +197,10 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         description: str,
         reasons_fields: List[ReasonsField],
         meets_criteria_default: bool = False,
+        # The contact types (from `<state>_contact_events_preprocessed`) that
+        # satisfy / close out this criterion. Empty for criteria not tied to
+        # specific contact types.
+        contact_types: Sequence[ContactType] | None = None,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -219,6 +237,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.criteria_name = criteria_name
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
+        self.contact_types = _validated_contact_types(contact_types)
 
     def get_descendant_criteria(self) -> set["TaskCriteriaBigQueryViewBuilder"]:
         """Returns all the criteria that are descendants (sub-criteria) of this
@@ -268,6 +287,10 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         description: str,
         reasons_fields: List[ReasonsField],
         meets_criteria_default: bool = False,
+        # The contact types (from `<state>_contact_events_preprocessed`) that
+        # satisfy / close out this criterion. Empty for criteria not tied to
+        # specific contact types.
+        contact_types: Sequence[ContactType] | None = None,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:
@@ -300,6 +323,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.criteria_name = criteria_name
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
+        self.contact_types = _validated_contact_types(contact_types)
 
     def get_descendant_criteria(
         self,

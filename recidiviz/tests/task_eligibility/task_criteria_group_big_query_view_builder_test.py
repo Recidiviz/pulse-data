@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for task_criteria_group_big_query_view_builder.py classes."""
+import unittest
 from datetime import date
 from typing import Any, Dict, List
 
@@ -25,6 +26,7 @@ from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
@@ -1233,4 +1235,69 @@ Combines the following criteria queries using AND logic:
                     },
                 },
             ],
+        )
+
+
+class TestCriteriaGroupContactTypes(unittest.TestCase):
+    """Tests that a criteria group unions its sub-criteria's contact types."""
+
+    @staticmethod
+    def _leaf(
+        name: str, contact_types: list[ContactType]
+    ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            state_code=StateCode.US_XX,
+            criteria_name=name,
+            criteria_spans_query_template="SELECT * FROM `{project_id}.raw.foo`;",
+            description="d",
+            reasons_fields=[],
+            contact_types=contact_types,
+        )
+
+    def test_group_unions_sub_criteria_contact_types(self) -> None:
+        group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_XX_GROUP",
+            sub_criteria_list=[
+                self._leaf("US_XX_A", [ContactType.HOME_VISIT]),
+                self._leaf(
+                    "US_XX_B",
+                    [
+                        ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT,
+                        ContactType.HOME_VISIT,
+                    ],
+                ),
+            ],
+        )
+        # Deduplicated and sorted by value ("HOME VISIT" < "SCHEDULED VIRTUAL OFFICE").
+        self.assertEqual(
+            [ContactType.HOME_VISIT, ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT],
+            group.contact_types,
+        )
+
+    def test_nested_group_unions_contact_types(self) -> None:
+        inner = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_XX_INNER",
+            sub_criteria_list=[
+                self._leaf("US_XX_A", [ContactType.HOME_VISIT]),
+                self._leaf("US_XX_B", [ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT]),
+            ],
+        )
+        outer = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="US_XX_OUTER",
+            sub_criteria_list=[
+                inner,
+                self._leaf("US_XX_C", [ContactType.SCHEDULED_FIELD_CONTACT]),
+            ],
+        )
+        # Sorted by value: "HOME VISIT" < "SCHEDULED FIELD" < "SCHEDULED VIRTUAL OFFICE".
+        self.assertEqual(
+            [
+                ContactType.HOME_VISIT,
+                ContactType.SCHEDULED_FIELD_CONTACT,
+                ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT,
+            ],
+            outer.contact_types,
         )

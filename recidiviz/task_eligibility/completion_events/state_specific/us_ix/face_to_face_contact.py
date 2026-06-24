@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows completed face-to-face (PERSONAL) contacts in US_IX."""
+"""Defines a view that shows completed face-to-face contacts in US_IX."""
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
@@ -23,14 +24,14 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 SELECT
     state_code,
     person_id,
     contact_date AS completion_event_date,
-FROM `{project_id}.tasks_views.us_ix_contact_events_preprocessed_materialized`
+FROM `{{project_id}}.tasks_views.us_ix_contact_events_preprocessed_materialized`
 WHERE
-    contact_type = 'PERSONAL'
+    contact_type = '{ContactType.FACE_TO_FACE_VISIT.value}'
     AND status = 'COMPLETED'
 """
 
