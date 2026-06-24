@@ -21,15 +21,15 @@ import unittest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
     IngestViewManifestCompiler,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
@@ -74,7 +74,7 @@ class TestGenerateEntities(unittest.TestCase):
         region = get_direct_ingest_region(
             region_code="us_dd", region_module_override=fake_regions
         )
-        delegate = StateSchemaIngestViewManifestCompilerDelegate(region=region)
+        delegate = ActivityIngestViewManifestCompilerDelegate(region=region)
         compiler = IngestViewManifestCompiler(delegate)
         cls.manifest = compiler.compile_manifest(ingest_view_name="ingest12")
 

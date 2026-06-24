@@ -29,14 +29,14 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
@@ -84,7 +84,7 @@ class IngestRegionTestMixin(abc.ABC):
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
         return IngestViewManifestCollector(
             region=cls.region(),
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(cls.region()),
+            delegate=ActivityIngestViewManifestCompilerDelegate(cls.region()),
             ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
 

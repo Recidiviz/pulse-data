@@ -29,14 +29,14 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.activity import entities as state_entities
@@ -144,7 +144,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
             ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
         ingest_view_context = IngestViewContentsContext.build_for_project(

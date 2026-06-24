@@ -79,11 +79,11 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -264,7 +264,7 @@ class ProductionPathStrategy(PathStrategy):
             )
             collector = IngestViewManifestCollector(
                 region=region,
-                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+                delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
                 ingest_pipeline_type=IngestPipelineType.ACTIVITY,
             )
             for (

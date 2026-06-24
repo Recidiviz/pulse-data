@@ -24,6 +24,9 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -36,9 +39,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -108,7 +108,7 @@ class ProcessAllIngestViews(beam.PTransform):
 
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
             ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
         all_launchable_views = ingest_manifest_collector.launchable_ingest_views(

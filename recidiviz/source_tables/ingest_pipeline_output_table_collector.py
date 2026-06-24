@@ -19,11 +19,11 @@ from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -75,7 +75,7 @@ def build_ingest_view_results_source_table_collection(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     # We intentionally create a table for each ingest view with a defined manifest YAML,

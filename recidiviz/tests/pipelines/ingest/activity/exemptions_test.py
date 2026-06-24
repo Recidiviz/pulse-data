@@ -21,14 +21,14 @@ from typing import Dict, Set
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -51,9 +51,7 @@ class TestExemptions(unittest.TestCase):
                 region = get_direct_ingest_region(region_code=state_code.value)
                 ingest_manifest_collector = IngestViewManifestCollector(
                     region=region,
-                    delegate=StateSchemaIngestViewManifestCompilerDelegate(
-                        region=region
-                    ),
+                    delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
                     ingest_pipeline_type=IngestPipelineType.ACTIVITY,
                 )
                 all_launchable_views = (

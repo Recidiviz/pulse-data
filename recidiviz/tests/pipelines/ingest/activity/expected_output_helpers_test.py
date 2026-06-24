@@ -19,11 +19,11 @@ import unittest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.activity import entities, normalized_entities
@@ -159,7 +159,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
         )
         ingest_view_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
             ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
         all_ingest_views = ingest_view_manifest_collector.ingest_view_to_manifest.keys()
@@ -192,7 +192,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
         )
         ingest_view_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
             ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
         pre_normalization_output_classes = (

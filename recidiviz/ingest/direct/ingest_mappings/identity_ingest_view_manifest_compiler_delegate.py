@@ -14,13 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Manifest compiler delegate for the identity ingest pipeline.
+"""Manifest compiler delegate for the identity ingest pipeline."""
 
-Analogous to StateSchemaIngestViewManifestCompilerDelegate in
-recidiviz/ingest/direct/ingest_mappings/ingest_view_manifest_compiler_delegate.py.
-"""
-
-import os
 from enum import Enum
 from typing import Type
 
@@ -28,7 +23,7 @@ import recidiviz.pipelines.ingest.identity
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
@@ -37,7 +32,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IS_PRODUCTION_PROPERTY_NAME,
     IS_STAGING_PROPERTY_NAME,
     IngestViewManifestCompilerDelegate,
+    yaml_mappings_filepath,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -53,39 +50,25 @@ from recidiviz.persistence.entity.identity import (
     identity_fragment_entity_factories as identity_fragment_entity_factories_module,
 )
 
-_IDENTITY_MAPPINGS_DIR_NAME = "identity_mappings"
 
-_REGIONS_DIR = os.path.dirname(regions.__file__)
-
-
-class IdentityIngestViewManifestCompilerDelegate(
-    IngestViewManifestCompilerDelegate,
-):
+class IdentityIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDelegate):
     """Manifest compiler delegate for building IdentityFragment entity trees
-    from identity mapping YAMLs stored under identity_mappings/ directories."""
+    from identity mapping YAMLs stored under `identity_mappings/` subdirectories.
+    """
 
-    def __init__(self, tenant: Tenant) -> None:
-        self.tenant = tenant
+    def __init__(self, region: DirectIngestRegion) -> None:
+        self.region = region
+        # For state-code tenants the tenant's value is the upper-case region
+        # code; future non-state tenants will require a different mechanism.
+        self.tenant = Tenant(region.region_code.upper())
         self._entity_cls_cache: dict[str, Type[Entity]] = {}
         self._enum_cls_cache: dict[str, Type[Enum]] = {}
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
-        tenant_lower = self.tenant.value.lower()
-        return os.path.join(
-            _REGIONS_DIR,
-            tenant_lower,
-            _IDENTITY_MAPPINGS_DIR_NAME,
-            f"{tenant_lower}_{ingest_view_name}.yaml",
-        )
-
-    def get_identity_ingest_view_names(self) -> list[str]:
-        """Returns names of all identity mapping views for this tenant by scanning
-        the identity_mappings directory."""
-        identity_mappings_dir = os.path.join(
-            _REGIONS_DIR, self.tenant.value.lower(), _IDENTITY_MAPPINGS_DIR_NAME
-        )
-        return self.get_ingest_view_names_from_mappings_dir(
-            identity_mappings_dir, self.tenant.value
+        return yaml_mappings_filepath(
+            region=self.region,
+            ingest_view_name=ingest_view_name,
+            ingest_pipeline_type=IngestPipelineType.IDENTITY,
         )
 
     def get_env_property_type(self, property_name: str) -> Type:

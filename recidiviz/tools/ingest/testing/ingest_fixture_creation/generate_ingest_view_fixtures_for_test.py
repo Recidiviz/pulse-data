@@ -57,11 +57,11 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.external_id_type_helpers import (
     external_id_types_by_state_code,
 )
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
@@ -202,7 +202,7 @@ def _validate_and_preview_external_id(
     )
     mapping_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
 

@@ -52,14 +52,14 @@ from tabulate import tabulate
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
@@ -154,7 +154,7 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(

@@ -42,14 +42,14 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
@@ -665,9 +665,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             ):
                 ingest_view_manifest_collector = IngestViewManifestCollector(
                     region=region,
-                    delegate=StateSchemaIngestViewManifestCompilerDelegate(
-                        region=region
-                    ),
+                    delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
                     ingest_pipeline_type=IngestPipelineType.ACTIVITY,
                 )
                 ingest_view_names = list(
@@ -849,7 +847,7 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
     )
     mapping_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     all_view_builders = view_collector.get_query_builders()
@@ -972,7 +970,7 @@ def test_ingest_pipeline_integration_test_fixture_structure(
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
     ingest_view_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     fixtures_directory = os.path.join(

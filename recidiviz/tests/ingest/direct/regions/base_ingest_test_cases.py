@@ -29,6 +29,9 @@ import unittest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -38,9 +41,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
     INGEST_MAPPING_OUTPUT_SUBDIR,
@@ -61,7 +61,7 @@ class BaseStateIngestTestCase(unittest.TestCase):
     @classmethod
     def build_ingest_view_manifest_compiler(cls) -> IngestViewManifestCompiler:
         return IngestViewManifestCompiler(
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(
+            delegate=ActivityIngestViewManifestCompilerDelegate(
                 region=get_direct_ingest_region(cls.state_code().value)
             )
         )

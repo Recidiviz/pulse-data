@@ -67,14 +67,14 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -278,7 +278,7 @@ def verify_ingest_view_determinism(
 
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
         ingest_pipeline_type=IngestPipelineType.ACTIVITY,
     )
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(

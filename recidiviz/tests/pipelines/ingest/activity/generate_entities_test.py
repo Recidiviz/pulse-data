@@ -22,14 +22,14 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
@@ -99,7 +99,7 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
             ),
         ]
         manifest_compiler = IngestViewManifestCompiler(
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=self.region())
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=self.region())
         )
         ingest_view_manifest = manifest_compiler.compile_manifest(
             ingest_view_name=ingest_view_name

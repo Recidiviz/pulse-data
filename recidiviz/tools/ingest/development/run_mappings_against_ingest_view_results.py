@@ -47,14 +47,14 @@ from recidiviz.common.constants import states
 from recidiviz.common.str_field_utils import to_string_value_converter
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
+    ActivityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
@@ -144,7 +144,7 @@ def parse_results(
     """Parses the ingest view results, collecting any errors and writing them to a file."""
     entities_module_context = entities_module_context_for_module(state_entities)
     manifest_compiler = IngestViewManifestCompiler(
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region)
+        delegate=ActivityIngestViewManifestCompilerDelegate(region=region)
     )
 
     log_path = os.path.join(tempfile.gettempdir(), "mappings_errors.txt")
@@ -212,7 +212,7 @@ def validate_ingest_view_output_schema(
     schema that was actually produced by the query.
     """
     manifest_compiler = IngestViewManifestCompiler(
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(
+        delegate=ActivityIngestViewManifestCompilerDelegate(
             region=get_direct_ingest_region(state_code.value)
         )
     )
