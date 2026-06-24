@@ -16,6 +16,7 @@
 # =============================================================================
 """Create constants and helper SQL query fragments for Missouri."""
 
+from datetime import datetime
 from typing import List, Optional
 
 from google.cloud import bigquery
@@ -156,6 +157,10 @@ MO_PROGRESSIVE_DISCIPLINE_SANCTIONS = [
     "D14",
     "D15",
 ]
+
+# This is the earliest due date we'll show for any task, even if it's overdue by more
+# than that (i.e., has an even earlier due date that wasn't met).
+MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE = datetime(2026, 4, 30)
 
 
 def classes_cte() -> str:
@@ -489,6 +494,9 @@ def us_mo_contact_compliance_builder(
     reasons_field_name_contact_cadence = f"contact_cadence{reasons_field_suffix}"
     reasons_field_name_contact_count = f"contact_count{reasons_field_suffix}"
     reasons_field_name_contact_due_date = f"contact_due_date{reasons_field_suffix}"
+    reasons_field_name_contact_display_due_date = (
+        f"contact_display_due_date{reasons_field_suffix}"
+    )
     reasons_field_name_last_contact_date = f"last_contact_date{reasons_field_suffix}"
     reasons_field_name_supplementary_contacts = (
         f"supplementary_contacts{reasons_field_suffix}"
@@ -864,6 +872,10 @@ def us_mo_contact_compliance_builder(
         contact_count AS {reasons_field_name_contact_count},
         -- next contact's due date is 1 day before the day when it would become overdue
         DATE_SUB(critical_date, INTERVAL 1 DAY) AS {reasons_field_name_contact_due_date},
+        GREATEST(
+            DATE_SUB(critical_date, INTERVAL 1 DAY),
+            '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime('%Y-%m-%d')}'
+        ) AS {reasons_field_name_contact_display_due_date},
         last_contact_date AS {reasons_field_name_last_contact_date},
         supplementary_contacts AS {reasons_field_name_supplementary_contacts},
         TO_JSON(STRUCT(
@@ -872,6 +884,10 @@ def us_mo_contact_compliance_builder(
             {create_contact_cadence_reason()} AS {reasons_field_name_contact_cadence},
             contact_count AS {reasons_field_name_contact_count},
             DATE_SUB(critical_date, INTERVAL 1 DAY) AS {reasons_field_name_contact_due_date},
+            GREATEST(
+                DATE_SUB(critical_date, INTERVAL 1 DAY),
+                '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime('%Y-%m-%d')}'
+            ) AS {reasons_field_name_contact_display_due_date},
             last_contact_date AS {reasons_field_name_last_contact_date},
             supplementary_contacts AS {reasons_field_name_supplementary_contacts}
         )) AS reason,
@@ -908,7 +924,12 @@ def us_mo_contact_compliance_builder(
             ReasonsField(
                 name=reasons_field_name_contact_due_date,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Due date of the contact",
+                description="Due date of the contact for compliance purposes",
+            ),
+            ReasonsField(
+                name=reasons_field_name_contact_display_due_date,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Due date of the contact for display on frontend",
             ),
             ReasonsField(
                 name=reasons_field_name_last_contact_date,
@@ -1085,6 +1106,10 @@ def us_mo_non_recurring_contact_compliance_builder(
         {create_initial_contact_period_reason()} AS contact_cadence,
         contact_count,
         compliance_due_date AS contact_due_date,
+        GREATEST(
+            compliance_due_date,
+            '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime('%Y-%m-%d')}'
+        ) AS contact_display_due_date,
         last_contact_date,
         contact_period_start_date,
         TO_JSON(STRUCT(
@@ -1093,6 +1118,10 @@ def us_mo_non_recurring_contact_compliance_builder(
             {create_initial_contact_period_reason()} AS contact_cadence,
             contact_count,
             compliance_due_date AS contact_due_date,
+            GREATEST(
+                compliance_due_date,
+                '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime('%Y-%m-%d')}'
+            ) AS contact_display_due_date,
             last_contact_date,
             contact_period_start_date
         )) AS reason,
@@ -1129,7 +1158,12 @@ def us_mo_non_recurring_contact_compliance_builder(
             ReasonsField(
                 name="contact_due_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Due date of the contact",
+                description="Due date of the contact for compliance purposes",
+            ),
+            ReasonsField(
+                name="contact_display_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Due date of the contact for display on frontend",
             ),
             ReasonsField(
                 name="last_contact_date",
