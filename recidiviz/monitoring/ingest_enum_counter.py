@@ -68,14 +68,30 @@ def emit_enum_mapping_heartbeat(
     field_name: str,
     ingest_view_name: str,
 ) -> None:
-    """Emits a counter.add(0) heartbeat for a single enum field.
+    """Tells Cloud Monitoring "we ran the ingest pipeline for this enum
+    field and saw no unmapped values", by writing a 0 to the same cumulative
+    counter that `log_unmapped_enum` increments.
 
-    This creates a rate=0 data point in Cloud Monitoring so the alert policy
-    evaluates to "no errors" for fields that had no unmapped values, instead
-    of seeing absent data (which with the default NO_OP missing-data policy
-    would leave any existing alert open).  For fields that *did* encounter
-    unmapped enums in the same run, the counter already incremented, so the
-    cumulative rate is still > 0 and the 0-add is harmless.
+    Why this is needed: if a pipeline run doesn't hit any unmapped values
+    for a given field, `log_unmapped_enum` never fires, and the counter
+    doesn't move, meaning there is no metric data for that field from that
+    run. The `unmapped_enum_values_in_ingest_pipeline` alert policy can't
+    tell "the pipeline ran and the field was fine" apart from "we just
+    haven't heard from any worker yet", so any prior incident on the field
+    would stay open even though the field is now fine. Writing a 0 sends a
+    present "no unmapped values this run" data point that the policy aligns
+    to 0 and uses to resolve.
+
+    Adding 0 to a cumulative counter is a no-op for the cumulative value,
+    so this is safe to call for every known enum field at the end of every
+    run, even fields that already incremented earlier in the same run. For
+    a field that did see an unmapped value this run, the counter stays at
+    its incremented value and the heartbeat just emits another data point
+    at that same value.
+
+    See the `unmapped_enum_values_in_ingest_pipeline` alert policy in the
+    `data-platform-alerting` atmos component for how the alignment,
+    aggregation, and missing-data settings consume this signal.
     """
     counter = get_monitoring_instrument(CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
     counter.add(

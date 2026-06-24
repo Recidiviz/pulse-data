@@ -1561,6 +1561,41 @@ resource "google_monitoring_metric_descriptor" "ingest_unmapped_enum_value" {
   }
 }
 
+# We want the unmapped_enum_values_in_ingest_pipeline alert below to fire
+# when any prod ingest run sees an unmapped enum value, stay firing across
+# subsequent runs that keep hitting the same value, and resolve only when a
+# later run runs clean for the field in question. To achieve that we:
+#
+#   1. Emit a present data point for every enum field on every run,
+#      regardless of whether the field saw any unmapped values.
+#
+#      log_unmapped_enum() increments a counter by 1 whenever an ingest
+#      pipeline hits a raw text value with no enum mapping, and
+#      emit_enum_mapping_heartbeat() writes a 0 to the same counter at the
+#      end of every run for every known enum field. Each Dataflow worker
+#      process exports its own time series (distinguished by an
+#      opentelemetry_id label) that starts at 0 when the worker spins up.
+#
+#   2. Align and aggregate so that any worker hitting an unmapped value
+#      anywhere surfaces as a positive number.
+#
+#      ALIGN_MAX reads, for each per-worker series, the highest value the
+#      counter reached inside the most recent hour: 0 if no unmapped values
+#      were seen, >=1 if any were. REDUCE_SUM adds those numbers across
+#      every worker and ingest view in the same (region, enum field name,
+#      enum type) group. Any group whose sum is > 0 means at least one
+#      worker somewhere saw an unmapped value in the window, which trips
+#      the COMPARISON_GT threshold of 0 and fires the alert.
+#
+#   3. Hold open incidents across the gap between runs.
+#
+#      EVALUATION_MISSING_DATA_NO_OP tells Cloud Monitoring not to
+#      re-evaluate the alert while data is missing, so when a run's workers
+#      shut down and stop reporting, any open incident stays open until the
+#      next run's workers start. If that next run finds no unmapped values
+#      for the field, the heartbeats drive the sum back to 0 and the
+#      incident resolves. If it still hits an unmapped value, the sum stays
+#      > 0 and the incident stays open.
 resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeline" {
   depends_on = [google_monitoring_metric_descriptor.ingest_unmapped_enum_value]
   alert_strategy {
@@ -1576,7 +1611,7 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
         alignment_period     = "3600s"
         cross_series_reducer = "REDUCE_SUM"
         group_by_fields      = ["resource.label.project_id", "metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
-        per_series_aligner   = "ALIGN_RATE"
+        per_series_aligner   = "ALIGN_MAX"
       }
 
       comparison      = "COMPARISON_GT"
