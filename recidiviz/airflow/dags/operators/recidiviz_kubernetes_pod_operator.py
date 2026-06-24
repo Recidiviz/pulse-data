@@ -26,6 +26,7 @@ import jinja2
 import yaml
 from airflow.models import Connection, MappedOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from airflow.providers.cncf.kubernetes.pod_generator import make_safe_label_value
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 from kubernetes.client import models as k8s
@@ -77,6 +78,48 @@ ENTRYPOINT_ARGUMENTS = [
 # Used for workload separation
 # https://cloud.google.com/kubernetes-engine/docs/how-to/workload-separation#separate-workloads-autopilot
 RECIDIVIZ_POD_ANNOTATION = "recidiviz-pod-node"
+
+# Prefix (a DNS-subdomain) for the pod labels we attach to identify the Airflow
+# task an entrypoint pod is running. Surfacing these as pod labels lets the
+# Kubernetes container CPU/memory metrics be filtered by semantic identity in
+# Cloud Monitoring (e.g. metadata.user_labels."recidiviz.org/entrypoint").
+RECIDIVIZ_LABEL_PREFIX = "recidiviz.org/"
+
+# Allowlist of entrypoint argument flags (passed as `--<key>=<value>`) that we
+# surface as pod labels. Deliberately an allowlist: high-cardinality or
+# serialized args (e.g. `--file_chunks`, `--requires_normalization_files`,
+# `--upload_batches`) must never become labels. Scoped to the facets that the
+# fully-qualified `task_id` label can't provide cleanly (it is truncated and
+# hashed once over 63 chars): the entrypoint, the state, and the export job.
+METRIC_LABEL_ARGUMENT_KEYS = frozenset(
+    {
+        "entrypoint",
+        "state_code",
+        "export_job_name",
+    }
+)
+
+
+def labels_from_arguments(argv: List[str]) -> Dict[str, str]:
+    """Returns the allowlisted `--<key>=<value>` entrypoint arguments as pod
+    labels, namespaced under `recidiviz.org/` and run through Airflow's
+    `make_safe_label_value` (the same sanitizer used for the labels
+    KubernetesPodOperator adds automatically). Args outside
+    METRIC_LABEL_ARGUMENT_KEYS, and those whose value is empty after
+    sanitization, are dropped.
+    """
+    labels: Dict[str, str] = {}
+    for arg in argv:
+        if not arg.startswith("--") or "=" not in arg:
+            continue
+        key, _, raw_value = arg[len("--") :].partition("=")
+        if key not in METRIC_LABEL_ARGUMENT_KEYS:
+            continue
+        value = make_safe_label_value(raw_value)
+        if not value:
+            continue
+        labels[f"{RECIDIVIZ_LABEL_PREFIX}{key}"] = value
+    return labels
 
 
 class KubernetesEntrypointResourceAllocator:
@@ -232,6 +275,14 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         self.container_resources = (
             KubernetesEntrypointResourceAllocator().get_resources(self.arguments)
         )
+        # Surface the entrypoint identity as pod labels so the container's
+        # CPU/memory metrics can be filtered by entrypoint, state, etc. in
+        # Cloud Monitoring. Merged on top of the labels KubernetesPodOperator
+        # adds automatically (dag_id, task_id, run_id, ...).
+        self.labels = {
+            **(self.labels or {}),
+            **labels_from_arguments(self.arguments),
+        }
         # Make task instance metadata accessible from the pod
         self.env_vars.extend(self._get_ti_metadata(context))
 
