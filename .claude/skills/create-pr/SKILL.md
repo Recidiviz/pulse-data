@@ -99,14 +99,23 @@ doesn't.
 
 Skip questions where the answer is already known from the conversation.
 
-### Step 7: Determine PR Type Label
+### Step 7: Determine PR Labels
 
-Select ONE required type label based on the changes.
+**Type label (required):** Select ONE type label based on the changes.
 
 Read `.github/pull_request_template.md` to see the available type labels and
 their descriptions.
 
 **If unclear which type applies, ASK the user.**
+
+**Region label (when state-specific):** If the PR is state-specific — its title
+is tagged with a state code (e.g. `[US_IX] ...`) or its changes are scoped to a
+single state — also add the matching `Region: US_XX` label (e.g.
+`Region: US_IX`). Note `US_ID` and `US_IX` are distinct labels; use the one the
+branch actually targets. For changes spanning multiple states use
+`Region: Multiple`; for state-agnostic changes that apply everywhere use
+`Region: All`. Skip the region label only for changes that are genuinely not
+state-related (e.g. platform/tooling).
 
 ### Step 8: Write PR Description
 
@@ -117,7 +126,11 @@ Write a **concise** description with these sections:
    Distinguish core changes from resulting refactors.
 3. **Testing**: Why you're confident this works
 
-Keep it as short as possible while being clear.
+**Keep it brief.** Include only the guidance the reviewer needs. The diff
+already shows the code — don't restate it. Point the reviewer to the high-level
+sections of the change and explain why each one is useful, call out where to
+look hardest (the load-bearing or non-obvious parts vs. mechanical churn), and
+note anything intentionally left out of scope. Then stop.
 
 ### Step 9: Show PR Draft
 
@@ -126,7 +139,7 @@ Before creating, show the user:
 ```
 Title: <pr-title>
 Base branch: <base-branch>
-Label: <type-label>
+Labels: <type-label>[, <region-label>]
 Related issues: <issues>
 
 Description:
@@ -153,11 +166,14 @@ git push -u origin <branch-name>
 3. Keep all other sections (Type of change, Checklists) unchanged
 
 ```bash
-gh pr create --draft --base "<base-branch>" --label "<type-label>" --title "<title>" --body "$(cat <<'EOF'
+gh pr create --draft --base "<base-branch>" --label "<type-label>" --label "<region-label>" --title "<title>" --body "$(cat <<'EOF'
 <filled-in template content>
 EOF
 )"
 ```
+
+Pass one `--label` per label. Omit the `--label "<region-label>"` flag entirely
+for changes with no region label (per Step 7).
 
 ### Step 12: Return the PR URL
 

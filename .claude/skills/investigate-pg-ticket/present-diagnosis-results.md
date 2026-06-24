@@ -1,5 +1,11 @@
 ## Present results of your diagnosis
 
+**Keep it brief.** The SQL evidence and its results are the deliverable —
+they're what proves the diagnosis. Surrounding prose should be minimal: the
+TLDR, a one-line finding statement, and a one-line interpretation per query.
+Don't restate query results in prose, don't pad with caveats or recaps, and
+don't write dramatic framing. Let the evidence carry the diagnosis.
+
 Begin the response with the **TLDR** heading itself. Do not write any preamble,
 lede, or framing sentence before it — no "Here's what I found", no "This is
 the smoking gun", no dramatic intros. The very first characters of the output
@@ -32,21 +38,29 @@ Then present the full details in the following format:
      from bq output)
   3. **Interpretation** (what it means)
 
+  **Put the query in a `<details>` block** so the finding and results stay
+  scannable and the SQL doesn't dominate. Put the query inside the dropdown and
+  keep its results visible outside it.
+
   Format for SQL evidence blocks:
 
-  ```sql
+  ````markdown
+  +-------------------+------------+-----------------+
+  | supervision_level | start_date | termination_date |
+  +-------------------+------------+-----------------+
+  | MAXIMUM           | 2025-09-16 | 2025-12-18      |
+  | MEDIUM            | 2025-12-19 | NULL            |
+  +-------------------+------------+-----------------+
+
+  <details><summary>Query</summary>
+
+  ​```sql
   SELECT supervision_level, start_date, termination_date
   FROM `recidiviz-123.normalized_state.state_supervision_period`
   WHERE person_id = 4857115069950340732
-
-  -- Actual bq output (copy-paste directly):
-  -- +-------------------+------------+-----------------+
-  -- | supervision_level | start_date | termination_date |
-  -- +-------------------+------------+-----------------+
-  -- | MAXIMUM           | 2025-09-16 | 2025-12-18      |
-  -- | MEDIUM            | 2025-12-19 | NULL            |
-  -- +-------------------+------------+-----------------+
-  ```
+  ​```
+  </details>
+  ````
 
 **CRITICAL:** Always run every query using `bq query` BEFORE including it. Never
 infer, guess, or hallucinate SQL syntax. If you're unsure about JSON extraction

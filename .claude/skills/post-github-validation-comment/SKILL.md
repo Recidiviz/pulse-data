@@ -19,15 +19,21 @@ Use the result. Only ask the user if the branch has no open PR or they reference
 
 ## Format
 
-Each comment opens with the setup command that produced the data being compared (sandbox load, ingest run, etc. — rename the heading to match), followed by one analysis block per result. Each analysis block is:
+Each comment opens with the current datetime, followed by the setup command that produced the data being compared (sandbox load, ingest run, etc. — rename the heading to match), followed by one analysis block per result. Each analysis block is:
 
 1. **Table** with the headline numbers.
 2. **Brief commentary** — a sentence or two on what the table shows and what's caused by this PR vs. upstream drift.
 3. **SQL** in a `<details>` block.
 
+**Datetime:** Every comment must open with the current datetime on its own line, formatted as `_YYYY-MM-DD HH:MM TZ_` (italic). Get it from `date '+%F %H:%M %Z'` rather than assuming — do not omit it.
+
+**Keep it brief.** The tables are the deliverable. Commentary is one or two sentences per block, no more. Don't restate the numbers the table already shows, don't add a preamble before the date line, and don't pad with caveats or recaps. Let the data carry the comment.
+
 Template:
 
 ````markdown
+_<YYYY-MM-DD HH:MM TZ>_
+
 ### Sandbox load command
 
 ​```
