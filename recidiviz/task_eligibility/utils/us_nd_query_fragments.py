@@ -128,7 +128,10 @@ def parole_review_dates_query() -> str:
         -- VIOLATOR records are revocation hearings, not scheduled parole reviews. We keep
         -- them in the filter so they win deduplication over stale pre-revocation MISC dates,
         -- but we surface NULL so the tool does not display a misleading future date.
-        IF(ms.SCREEN_REASON_CODE = 'VIOLATOR', CAST(NULL AS DATE), SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)) AS parole_review_date,
+        CASE
+            WHEN ms.SCREEN_REASON_CODE = 'VIOLATOR' THEN CAST(NULL AS DATE)
+            ELSE SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)
+        END AS parole_review_date,
     FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
     INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offenderbookingstable_latest` ctbk
         ON REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '') = ctbk.OFFENDER_BOOK_ID
