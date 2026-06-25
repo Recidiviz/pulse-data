@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
+description: Fake US_YY notes for testing document collection config parsing across states.
+root_entity_id_type: person_external_id
+document_metadata_columns:
+  - name: note_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the case note
+document_generation_query: |
+  SELECT
+    person_id AS person_external_id,
+    'US_YY_DOC' AS person_external_id_type,
+    note_id,
+    note_body AS document_text,
+    CAST(created_at AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_yy_raw_data.fake_notes`

@@ -25,6 +25,12 @@ from airflow.decorators import task
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
+from recidiviz.airflow.dags.utils.constants import (
+    BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID,
+    CHECK_HAS_UPDATES_TASK_ID,
+    RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID,
+    RUN_DOCUMENT_DISCOVERY_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -38,7 +44,9 @@ from recidiviz.documents.store.record_document_upload_results import (
 )
 
 
-@task.short_circuit(ignore_downstream_trigger_rules=False)
+@task.short_circuit(
+    task_id=CHECK_HAS_UPDATES_TASK_ID, ignore_downstream_trigger_rules=False
+)
 def check_has_updates(
     collection_result: dict[str, str | int] | None,
 ) -> bool:
@@ -47,7 +55,7 @@ def check_has_updates(
     return collection_result is not None
 
 
-@task
+@task(task_id=RUN_DOCUMENT_DISCOVERY_TASK_ID)
 def run_document_discovery(
     state_code: StateCode,
     collection_name: str,
@@ -81,7 +89,7 @@ def run_document_discovery(
     return collection_result.to_dict()
 
 
-@task
+@task(task_id=BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID)
 def build_document_upload_pod_arguments(
     state_code: StateCode,
     collection_result: dict[str, str | int],
@@ -110,7 +118,7 @@ def build_document_upload_pod_arguments(
     ]
 
 
-@task
+@task(task_id=RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID)
 def record_document_upload_results(
     collection_result: dict[str, str | int],
     state_code: StateCode,

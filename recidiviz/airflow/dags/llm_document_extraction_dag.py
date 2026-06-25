@@ -54,6 +54,10 @@ from recidiviz.airflow.dags.utils.config_utils import (
     get_document_collection_name_filter,
     get_state_code_filter,
 )
+from recidiviz.airflow.dags.utils.constants import (
+    AFTER_UPLOAD_NOOP_TASK_ID,
+    DOCUMENT_UPLOAD_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
@@ -138,7 +142,7 @@ def create_single_collection_branch(
             upload_task_instance_count=UPLOAD_TASK_INSTANCE_COUNT,
         )
         upload_tasks = build_mapped_kubernetes_pod_task(
-            task_id="document_upload",
+            task_id=DOCUMENT_UPLOAD_TASK_ID,
             expand_arguments=upload_pod_arguments,
         )
 
@@ -146,7 +150,7 @@ def create_single_collection_branch(
         # record_results from running, but any other task failure does block record_results.
         # This allows us to record partial results when some uploads fail.
         after_upload_noop = EmptyOperator(
-            task_id="after_upload_noop",
+            task_id=AFTER_UPLOAD_NOOP_TASK_ID,
             trigger_rule=TriggerRule.ALL_DONE,
         )
 

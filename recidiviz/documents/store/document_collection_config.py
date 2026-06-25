@@ -59,6 +59,9 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 DOCUMENT_COLLECTIONS_SUBDIR = "document_collections"
 
+TEMP_METADATA_UPDATES_TABLE_ID_PREFIX = "temp_document_metadata_updates_"
+TEMP_NEW_DOCUMENT_CONTENTS_TABLE_ID_PREFIX = "temp_new_document_contents_"
+
 
 def _state_collections_dir(state_code: StateCode, config_module: ModuleType) -> Path:
     """Returns the path to the document collections directory for a state."""
@@ -224,7 +227,10 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_document_metadata_updates_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
+            table_id=(
+                f"{TEMP_METADATA_UPDATES_TABLE_ID_PREFIX}"
+                f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"
+            ),
         )
 
     def temp_new_document_contents_table_address(
@@ -237,7 +243,10 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_new_document_contents_{self.name.lower()}_{make_bq_compatible_identifier(run_id)}",
+            table_id=(
+                f"{TEMP_NEW_DOCUMENT_CONTENTS_TABLE_ID_PREFIX}"
+                f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"
+            ),
         )
 
     @property

@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing utils for working with k8s entrypoints in the airflow context"""
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from airflow.models import BaseOperator
+from airflow.models.baseoperator import partial
+from airflow.models.mappedoperator import OperatorPartial
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -134,3 +136,56 @@ def fake_k8s_operator_with_return_value(
             save_to_gcs_xcom(fs, val)
 
     return FakeK8sOperator
+
+
+def fake_noop_k8s_operator(
+    execute_fn: Callable[[Context], None] | None = None,
+) -> type[BaseOperator]:
+    """Returns a fake k8s operator that does nothing on execute (or runs the given
+    `execute_fn`). Use for tests that don't care about the entrypoint's actual behavior
+    but need a stand-in that accepts the KubernetesPodOperator kwargs.
+
+    Discards the `arguments` kwarg. If a test needs to assert on per-task-instance argv,
+    use fake_k8s_operator_for_entrypoint (which parses and runs the entrypoint) or
+    fake_k8s_operator_with_return_value instead.
+    """
+
+    class FakeNoopK8sOperator(BaseOperator):
+        # pylint: disable=unused-argument
+        def __init__(
+            self,
+            *args: Any,
+            arguments: Optional[List[str]] = None,
+            cloud_sql_connections: Optional[List[SchemaType]] = None,
+            name: Optional[str] = None,
+            cmds: Optional[str] = None,
+            env_vars: Optional[Dict] = None,
+            **kwargs: Any,
+        ) -> None:
+            super().__init__(
+                dag=kwargs["dag"],
+                task_id=kwargs["task_id"],
+                trigger_rule=kwargs.get("trigger_rule", TriggerRule.ALL_SUCCESS),
+            )
+
+        def execute(self, context: Context) -> None:
+            if execute_fn is not None:
+                execute_fn(context)
+
+    return FakeNoopK8sOperator
+
+
+def fake_noop_kpo_partial(
+    execute_fn: Callable[[Context], None] | None = None,
+) -> Callable[..., OperatorPartial]:
+    """Returns a side_effect suitable for patching `RecidivizKubernetesPodOperator.partial`
+    that produces a no-op (or `execute_fn`-driven) operator partial. Inherits the
+    fake_noop_k8s_operator limitation that `arguments` is discarded — tests asserting
+    on per-task-instance argv should reach for fake_k8s_operator_for_entrypoint.
+    """
+    op_cls = fake_noop_k8s_operator(execute_fn=execute_fn)
+
+    def _partial(*args: Any, **kwargs: Any) -> OperatorPartial:
+        return partial(op_cls, *args, **kwargs)
+
+    return _partial

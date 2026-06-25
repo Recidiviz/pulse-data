@@ -55,3 +55,12 @@ RAW_DATA_TASKS_ALLOWED_TO_FAIL: set[str] = {
     RAISE_LOAD_PREP_ERRORS,
     RAISE_APPEND_ERRORS,
 }
+
+
+# Task ids for the per-collection tasks in the LLM document extraction DAG.
+RUN_DOCUMENT_DISCOVERY_TASK_ID = "run_document_discovery"
+CHECK_HAS_UPDATES_TASK_ID = "check_has_updates"
+BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID = "build_document_upload_pod_arguments"
+DOCUMENT_UPLOAD_TASK_ID = "document_upload"
+AFTER_UPLOAD_NOOP_TASK_ID = "after_upload_noop"
+RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID = "record_document_upload_results"
