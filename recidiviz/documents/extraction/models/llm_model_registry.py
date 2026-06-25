@@ -34,6 +34,12 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 MODEL_REGISTRY_FILENAME = "model_registry.yaml"
 
+THINKING_BUDGET_TOKENS_PARAMETER_NAME = "thinking_budget_tokens"
+"""Name of the tunable parameter that caps a thinking model's internal
+reasoning tokens. A value of 0 disables thinking; omitting it uses
+model-managed dynamic thinking.
+"""
+
 
 class LLMAPIProvider(Enum):
     """API providers we can route LLM requests through."""
@@ -450,6 +456,20 @@ class LLMModelConfig:
     @property
     def is_thinking_model(self) -> bool:
         return self.base_model.is_thinking_model
+
+    @property
+    def enables_thinking(self) -> bool:
+        """Whether requests made with this config generate thinking tokens.
+        False for a non-thinking base model, or for a thinking-capable model
+        whose `thinking_budget_tokens` is explicitly set to 0. A thinking-capable
+        model that omits the budget uses model-managed dynamic thinking, so
+        thinking is enabled.
+        """
+        if not self.base_model.is_thinking_model:
+            return False
+        if THINKING_BUDGET_TOKENS_PARAMETER_NAME not in self.parameter_values:
+            return True
+        return self.parameter_values[THINKING_BUDGET_TOKENS_PARAMETER_NAME].value != 0
 
     @property
     def input_token_limit(self) -> int:

@@ -1,10 +1,11 @@
-# Fake extractor collection used by llm_extractor_collection_config_test.py to
-# exercise happy-path edge cases without depending on any real state's configs.
-# References GLOBEX_BASIC_DEFAULT from the sibling fake_config/model_registry.yaml.
+# Fake extractor collection used by llm_extractor_collection_config_test.py and
+# llm_extractor_config_test.py to exercise happy-path edge cases without
+# depending on any real state's configs. Its default model config is a
+# first-order-valid one from the sibling fake_config/model_registry.yaml.
 name: FAKE_EXTRACTOR_COLLECTION
 description: Extract fictional assignment information to exercise the parser.
 
-default_model_config_name: GLOBEX_BASIC_DEFAULT
+default_model_config_name: ACME_LARGE_NO_THINKING
 
 minimum_confidence_level: inferred
 

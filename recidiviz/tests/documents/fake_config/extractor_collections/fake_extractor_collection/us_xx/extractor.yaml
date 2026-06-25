@@ -1,0 +1,19 @@
+# Fake state extractor config used by llm_extractor_config_test.py to exercise
+# happy-path resolution against the sibling fake_config registry, collection, and
+# document collection — without depending on any real state's configs.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+# Overrides the collection's default model config (ACME_LARGE_NO_THINKING) with a
+# different first-order-valid one, to exercise the model-override path. The
+# char-count caps and retry count are omitted to exercise the code-level defaults.
+model_config_name: ACME_LARGE_DETERMINISTIC
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id
+  FROM `{project_id}.us_xx_document_store_metadata.fake_input_notes`
+  WHERE document_contents_id IS NOT NULL
+
+prompt_vars:
+  agency_name: "the Department of Fictional Affairs"

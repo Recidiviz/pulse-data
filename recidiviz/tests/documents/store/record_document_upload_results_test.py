@@ -18,7 +18,7 @@
 
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from google.api_core.exceptions import NotFound
 
@@ -53,12 +53,15 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             metadata_row_create_datetime=self.row_create_datetime,
         )
 
+        config_module_patcher = patch(
+            "recidiviz.documents.store.document_collection_config.default_config_module",
+            fake_config_module,
+        )
+        config_module_patcher.start()
+        self.addCleanup(config_module_patcher.stop)
+
         self.config = next(
-            iter(
-                collect_document_collection_configs(
-                    self.state_code, config_module=fake_config_module
-                ).values()
-            )
+            iter(collect_document_collection_configs(self.state_code).values())
         )
         self.discovery_result = self._make_discovery_result(
             self.config,

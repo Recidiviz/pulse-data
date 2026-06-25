@@ -87,6 +87,20 @@ configs:
     temperature: 0.5
     thinking_budget_tokens: 512
 
+  # Two thinking-capable configs with thinking disabled (budget 0) — both valid
+  # for a first-order extractor (structured output + implicit batch caching,
+  # thinking off). Two of them let tests distinguish a collection's default model
+  # from a state-level override.
+  ACME_LARGE_NO_THINKING:
+    model: acme-large-001
+    temperature: 0.5
+    thinking_budget_tokens: 0
+
+  ACME_LARGE_DETERMINISTIC:
+    model: acme-large-001
+    temperature: 0.0
+    thinking_budget_tokens: 0
+
   # No parameters at all (the base model declares none).
   GLOBEX_BASIC_DEFAULT:
     model: globex-basic-001

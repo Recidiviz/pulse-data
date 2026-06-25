@@ -477,6 +477,36 @@ class ParseModelRegistryTest(TestCase):
                     },
                 ),
                 LLMModelConfig(
+                    name="ACME_LARGE_NO_THINKING",
+                    base_model=_ACME_LARGE,
+                    model="acme-large-001",
+                    parameter_values={
+                        "temperature": LLMModelFloatParameterValue(
+                            parameter_definition=_ACME_LARGE_TEMPERATURE_PARAMETER,
+                            value=0.5,
+                        ),
+                        "thinking_budget_tokens": LLMModelIntegerParameterValue(
+                            parameter_definition=_ACME_LARGE_THINKING_BUDGET_TOKENS_PARAMETER,
+                            value=0,
+                        ),
+                    },
+                ),
+                LLMModelConfig(
+                    name="ACME_LARGE_DETERMINISTIC",
+                    base_model=_ACME_LARGE,
+                    model="acme-large-001",
+                    parameter_values={
+                        "temperature": LLMModelFloatParameterValue(
+                            parameter_definition=_ACME_LARGE_TEMPERATURE_PARAMETER,
+                            value=0.0,
+                        ),
+                        "thinking_budget_tokens": LLMModelIntegerParameterValue(
+                            parameter_definition=_ACME_LARGE_THINKING_BUDGET_TOKENS_PARAMETER,
+                            value=0,
+                        ),
+                    },
+                ),
+                LLMModelConfig(
                     name="GLOBEX_BASIC_DEFAULT",
                     base_model=_GLOBEX_BASIC,
                     model="globex-basic-001",

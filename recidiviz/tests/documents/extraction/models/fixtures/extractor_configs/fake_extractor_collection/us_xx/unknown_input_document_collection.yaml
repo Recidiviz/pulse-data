@@ -1,0 +1,8 @@
+# An extractor config that is invalid in exactly one way: its
+# input_document_collection_name does not reference a known document collection.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: MISSING_NOTES
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`

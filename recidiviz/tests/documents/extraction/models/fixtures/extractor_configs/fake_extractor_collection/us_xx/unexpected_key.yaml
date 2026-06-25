@@ -1,0 +1,10 @@
+# An extractor config that is invalid in exactly one way: it declares an
+# unexpected top-level key.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`
+
+bogus_key: value

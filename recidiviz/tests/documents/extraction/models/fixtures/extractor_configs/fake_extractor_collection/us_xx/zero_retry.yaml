@@ -1,0 +1,10 @@
+# A valid extractor config that explicitly sets max_transient_retry_count to 0,
+# which must be honored rather than coerced to the code-level default.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+max_transient_retry_count: 0
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`

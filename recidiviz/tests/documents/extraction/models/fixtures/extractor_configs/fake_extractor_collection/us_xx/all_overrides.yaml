@@ -1,0 +1,18 @@
+# A valid extractor config that sets every extractor-level override: the model
+# config, both document-count thresholds, the transient retry count, and prompt vars.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+model_config_name: ACME_LARGE_DETERMINISTIC
+
+single_job_document_count_batch_threshold: 11111
+total_pending_document_count_hard_cap: 999999
+max_transient_retry_count: 7
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`
+
+prompt_vars:
+  agency: "Dept of X"
+  tone: "formal"

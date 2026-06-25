@@ -305,7 +305,7 @@ class LLMExtractorCollectionConfig:
         return config
 
 
-def _extractor_collections_dir(config_module: ModuleType | None = None) -> Path:
+def extractor_collections_dir(config_module: ModuleType | None = None) -> Path:
     """Returns the path to the extractor collections directory within
     |config_module| (the production config package by default).
     """
@@ -324,7 +324,7 @@ def load_llm_extractor_collection_configs(
     |config_module| (the production config package by default), validated
     against the model registry in the same package, keyed by collection name.
     """
-    collections_dir = _extractor_collections_dir(config_module)
+    collections_dir = extractor_collections_dir(config_module)
     if not collections_dir.is_dir():
         raise ValueError(
             f"Extractor collections directory does not exist: [{collections_dir}]."

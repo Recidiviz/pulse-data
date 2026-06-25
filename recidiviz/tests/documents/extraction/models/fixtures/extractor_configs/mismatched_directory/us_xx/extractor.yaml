@@ -1,0 +1,9 @@
+# An extractor config that is invalid in exactly one way: its declared
+# extractor_collection_name does not match its collection directory
+# (mismatched_directory).
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`

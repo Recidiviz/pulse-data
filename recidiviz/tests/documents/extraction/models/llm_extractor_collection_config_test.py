@@ -136,7 +136,7 @@ class ParseAllCollectionConfigsTest(TestCase):
         )
 
         self.assertEqual(_FAKE_COLLECTION_NAME, collection.name)
-        self.assertEqual("GLOBEX_BASIC_DEFAULT", collection.default_model_config_name)
+        self.assertEqual("ACME_LARGE_NO_THINKING", collection.default_model_config_name)
         self.assertEqual(ConfidenceLevel.INFERRED, collection.minimum_confidence_level)
 
         schema = collection.output_schema

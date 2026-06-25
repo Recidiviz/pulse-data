@@ -1,0 +1,8 @@
+# An extractor config that is invalid in exactly one way: it references a
+# collection that has no collection.yaml.
+extractor_collection_name: UNKNOWN_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`

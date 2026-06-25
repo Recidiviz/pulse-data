@@ -346,24 +346,32 @@ class DocumentCollectionConfig:
         return StateCode(file_path.parent.name.upper())
 
 
+# Cached configs are partitioned by config module so that configs loaded from
+# different modules (e.g. different test fake modules) never collide on a shared (state,
+# name) key.
 _DOCUMENT_COLLECTION_CONFIGS: dict[
-    StateCode, dict[str, DocumentCollectionConfig]
-] = defaultdict(dict)
+    ModuleType, dict[StateCode, dict[str, DocumentCollectionConfig]]
+] = defaultdict(lambda: defaultdict(dict))
 
 
-def _load_config_from_file(yaml_path: Path) -> DocumentCollectionConfig:
-    """Loads a single config and caches it in the global dict."""
+def _load_config_from_file(
+    yaml_path: Path, config_module: ModuleType
+) -> DocumentCollectionConfig:
+    """Loads a single config and caches it under |config_module| in the global
+    dict.
+    """
     if not yaml_path.is_file():
         raise ValueError(f"No config file found at [{yaml_path}]")
 
     config_name = DocumentCollectionConfig.file_path_to_config_name(yaml_path)
     state_code = DocumentCollectionConfig.file_path_to_state_code(yaml_path)
 
-    if config_name in _DOCUMENT_COLLECTION_CONFIGS[state_code]:
-        return _DOCUMENT_COLLECTION_CONFIGS[state_code][config_name]
+    state_configs = _DOCUMENT_COLLECTION_CONFIGS[config_module][state_code]
+    if config_name in state_configs:
+        return state_configs[config_name]
 
     config = DocumentCollectionConfig.from_yaml(yaml_path)
-    _DOCUMENT_COLLECTION_CONFIGS[state_code][config_name] = config
+    state_configs[config_name] = config
     return config
 
 
@@ -393,12 +401,13 @@ def collect_document_collection_configs(
     """Returns a map of document collection name to its configuration for all document
     collections defined for the given state code.
     """
+    module = config_module or default_config_module
     for yaml_path in collect_document_collection_config_yaml_paths(
-        state_code, config_module=config_module
+        state_code, config_module=module
     ):
-        _load_config_from_file(yaml_path)
+        _load_config_from_file(yaml_path, module)
 
-    return _DOCUMENT_COLLECTION_CONFIGS[state_code]
+    return _DOCUMENT_COLLECTION_CONFIGS[module][state_code]
 
 
 def get_document_collection_config(
@@ -407,13 +416,16 @@ def get_document_collection_config(
     config_module: ModuleType | None = None,
 ) -> DocumentCollectionConfig:
     """Returns the DocumentCollectionConfig for the given collection name."""
-    if collection_name in _DOCUMENT_COLLECTION_CONFIGS[state_code]:
-        return _DOCUMENT_COLLECTION_CONFIGS[state_code][collection_name]
+    module = config_module or default_config_module
+    state_configs = _DOCUMENT_COLLECTION_CONFIGS[module][state_code]
+    if collection_name in state_configs:
+        return state_configs[collection_name]
 
     return _load_config_from_file(
         DocumentCollectionConfig.config_name_to_file_path(
             state_code,
             collection_name,
-            config_module=config_module or default_config_module,
+            config_module=module,
         ),
+        module,
     )

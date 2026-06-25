@@ -1,0 +1,10 @@
+# An extractor config that is invalid in exactly one way: its override
+# model_config_name does not resolve in the model registry.
+extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
+
+input_document_collection_name: FAKE_INPUT_NOTES
+
+model_config_name: NONEXISTENT_MODEL
+
+document_metadata_filter_query_template: |
+  SELECT document_contents_id FROM `{project_id}.x.y`
