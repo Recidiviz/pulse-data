@@ -51,6 +51,16 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMOutputFieldMode,
     LLMOutputFieldType,
 )
+from recidiviz.documents.extraction.models.reference_data.acronym_reference_data_entry import (
+    AcronymReferenceDataEntry,
+)
+from recidiviz.documents.extraction.models.reference_data.llm_extractor_collection_reference_data_config import (
+    LLMExtractorCollectionReferenceDataConfig,
+    LLMExtractorCollectionReferenceDataConfigForType,
+)
+from recidiviz.documents.extraction.models.reference_data.reference_data_registry import (
+    ReferenceDataType,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -326,6 +336,9 @@ class LLMExtractorCollectionConfigTest(TestCase):
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=ConfidenceLevel.INFERRED,
             output_schema=_output_schema(),
+            reference_data_config=LLMExtractorCollectionReferenceDataConfig(
+                per_type_configs={}
+            ),
             entity_groups=entity_groups or [],
         )
 
@@ -366,12 +379,19 @@ class CollectionConfigFromYamlTest(TestCase):
         )
 
     def _parse(
-        self, *, name: str, directory_name: str | None = None, **body: Any
+        self,
+        *,
+        name: str,
+        directory_name: str | None = None,
+        include_reference_data: bool = True,
+        **body: Any,
     ) -> LLMExtractorCollectionConfig:
         """Writes a collection.yaml under a temp directory (named |directory_name|,
-        defaulting to the lowercased |name|) and parses it.
+        defaulting to the lowercased |name|) and parses it. `reference_data` is a
+        required block, so an empty one is emitted by default unless overridden in
+        |body| or suppressed via |include_reference_data|.
         """
-        contents = {
+        contents: dict[str, Any] = {
             "name": name,
             "description": _DESCRIPTION,
             "default_model_config_name": _FAKE_MODEL_CONFIG_NAME,
@@ -382,8 +402,10 @@ class CollectionConfigFromYamlTest(TestCase):
                     {"name": "a", "type": "STRING", "description": _DESCRIPTION}
                 ],
             },
-            **body,
         }
+        if include_reference_data:
+            contents["reference_data"] = {}
+        contents.update(body)
         # pylint: disable=consider-using-with
         tmp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(tmp_dir.cleanup)
@@ -423,14 +445,63 @@ class CollectionConfigFromYamlTest(TestCase):
         ):
             self._parse(name="TEST_COLLECTION", bogus_key="value")
 
-    def test_golden_eval_and_reference_data_blocks_are_tolerated(self) -> None:
-        # Present but not yet modeled — consumed and discarded, no error.
+    def test_golden_eval_block_is_tolerated(self) -> None:
+        # golden_eval is not yet modeled — consumed and discarded, no error.
         config = self._parse(
             name="TEST_COLLECTION",
             golden_eval={"source_sheet_uri": "https://example.com", "anything": 1},
-            reference_data={"acronyms": {"prompt_var": "x", "header": "y"}},
         )
         self.assertEqual("TEST_COLLECTION", config.name)
+
+    def test_reference_data_block_is_parsed(self) -> None:
+        config = self._parse(
+            name="TEST_COLLECTION",
+            reference_data={"acronyms": {"prompt_var": "x", "header": "y"}},
+        )
+        self.assertEqual(
+            LLMExtractorCollectionReferenceDataConfig(
+                per_type_configs={
+                    ReferenceDataType.ACRONYMS: LLMExtractorCollectionReferenceDataConfigForType(
+                        entry_type=AcronymReferenceDataEntry,
+                        prompt_var="x",
+                        header="y",
+                    )
+                }
+            ),
+            config.reference_data_config,
+        )
+
+    def test_empty_reference_data_block_is_empty(self) -> None:
+        # An explicit empty `reference_data: {}` block parses to an empty config.
+        config = self._parse(name="TEST_COLLECTION")
+        self.assertEqual(
+            LLMExtractorCollectionReferenceDataConfig(per_type_configs={}),
+            config.reference_data_config,
+        )
+
+    def test_missing_reference_data_block_raises(self) -> None:
+        # `reference_data` is a required block.
+        with self.assertRaises(KeyError):
+            self._parse(name="TEST_COLLECTION", include_reference_data=False)
+
+    def test_invalid_reference_data_block_raises(self) -> None:
+        # acronyms is not groupable, so declaring groups fails parsing.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found unexpected config values for reference data type [acronyms]"
+            ),
+        ):
+            self._parse(
+                name="TEST_COLLECTION",
+                reference_data={
+                    "acronyms": {
+                        "prompt_var": "x",
+                        "header": "y",
+                        "groups": [{"label": "L", "types": ["employer"]}],
+                    }
+                },
+            )
 
     def test_minimum_confidence_level_defaults_when_omitted(self) -> None:
         config = self._parse(name="TEST_COLLECTION")

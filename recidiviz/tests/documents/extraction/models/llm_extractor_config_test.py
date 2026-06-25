@@ -39,6 +39,7 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
     get_llm_extractor_config,
+    get_states_with_extractor_configs,
     load_llm_extractor_configs,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
@@ -47,6 +48,13 @@ from recidiviz.documents.extraction.models.llm_model_registry import (
     LLMModelConfig,
     LLMModelFamily,
     load_llm_model_registry,
+)
+from recidiviz.documents.extraction.models.reference_data.llm_extractor_reference_data import (
+    LLMExtractorReferenceData,
+)
+from recidiviz.documents.extraction.models.reference_data.reference_data_registry import (
+    ReferenceDataType,
+    load_full_reference_data_registry,
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
@@ -123,6 +131,11 @@ def _model_config(
 
 class ParseAllExtractorConfigsTest(TestCase):
     """Guards real configs, and exercises the fake config's happy path."""
+
+    def test_get_states_with_extractor_configs_not_empty(self) -> None:
+        # Guards against the set being empty, which would make any test that
+        # iterates over it (e.g. the reference-data load guard) pass vacuously.
+        self.assertTrue(get_states_with_extractor_configs())
 
     def test_load_all_real_configs(self) -> None:
         # Raises if any real extractor.yaml fails to parse or resolve. Does not
@@ -236,6 +249,9 @@ class LLMExtractorConfigFromYamlTest(TestCase):
             },
             model_registry=self.registry,
             document_collections_by_name=self.document_collection_configs,
+            reference_data_registries_by_data_type=load_full_reference_data_registry(
+                StateCode.US_XX, config_module=fake_config
+            ),
         )
 
     def test_minimal_config_uses_defaults(self) -> None:
@@ -260,6 +276,23 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         )
         self.assertEqual(
             DEFAULT_MAX_TRANSIENT_RETRY_COUNT, config.max_transient_retry_count
+        )
+
+    def test_resolves_reference_data(self) -> None:
+        # The fake collection declares an `acronyms` reference-data block; resolving
+        # the extractor binds it to the state's merged acronyms registry.
+        config = self._resolve_fixture(
+            "extractor_configs/fake_extractor_collection/us_xx/minimal.yaml"
+        )
+        self.assertEqual(StateCode.US_XX, config.reference_data.state_code)
+        self.assertEqual(
+            [ReferenceDataType.ACRONYMS], list(config.reference_data.per_type)
+        )
+        acronyms = config.reference_data.per_type[ReferenceDataType.ACRONYMS]
+        self.assertEqual("acronym_glossary", acronyms.config.prompt_var)
+        # shared + us_xx acronyms merged (state wins on the CRC collision).
+        self.assertEqual(
+            ["PO", "CRC", "XX"], list(acronyms.registry.entries_by_dedup_key)
         )
 
     def test_overrides_resolve(self) -> None:
@@ -342,6 +375,13 @@ class LLMExtractorConfigConstructionTest(TestCase):
             state_code=StateCode.US_XX,
             name=_INPUT_DOCUMENT_COLLECTION_NAME,
         )
+        self.reference_data = LLMExtractorReferenceData.resolve(
+            state_code=StateCode.US_XX,
+            reference_data_config=self.collection.reference_data_config,
+            reference_data_registries=load_full_reference_data_registry(
+                StateCode.US_XX, config_module=fake_config
+            ),
+        )
 
     def _config(
         self,
@@ -366,6 +406,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
             single_job_document_count_batch_threshold=single_job_document_count_batch_threshold,
             extractor_collection=self.collection,
             model_config=model_config if model_config is not None else _model_config(),
+            reference_data=self.reference_data,
             entity_group=entity_group,
         )
 

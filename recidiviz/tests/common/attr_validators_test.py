@@ -519,6 +519,112 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_int=0)
         _ = _TestClass(my_int=1000)
 
+    def test_is_subclass_of(self) -> None:
+        class _Base:
+            pass
+
+        class _Child(_Base):
+            pass
+
+        class _Unrelated:
+            pass
+
+        @attr.s
+        class _TestClass:
+            my_type: type = attr.ib(validator=attr_validators.is_subclass_of(_Base))
+
+        # The class itself and subclasses do not crash.
+        _ = _TestClass(my_type=_Base)
+        _ = _TestClass(my_type=_Child)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"\[my_type\] .* which is not a subclass of \[_Base\]: \[<class .*_Unrelated'>\].",
+        ):
+            _ = _TestClass(my_type=_Unrelated)
+
+        # An instance (not a class) is rejected.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"\[my_type\] .* which is not a subclass of \[_Base\]:",
+        ):
+            _ = _TestClass(my_type=_Child())  # type: ignore[arg-type]
+
+        # A non-type value is rejected.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"\[my_type\] .* which is not a subclass of \[_Base\]:",
+        ):
+            _ = _TestClass(my_type="not a type")  # type: ignore[arg-type]
+
+    def test_is_list_of_non_empty_str(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_list: list = attr.ib(validator=attr_validators.is_list_of_non_empty_str)
+
+        # Empty list and lists of non-empty strings do not crash.
+        _ = _TestClass(my_list=[])
+        _ = _TestClass(my_list=["a", "b"])
+
+        with self.assertRaisesRegex(ValueError, "String value should not be empty."):
+            _ = _TestClass(my_list=["a", ""])
+
+        with self.assertRaisesRegex(ValueError, "Expected value type str"):
+            _ = _TestClass(my_list=["a", 1])
+
+        with self.assertRaises((TypeError, ValueError)):
+            _ = _TestClass(my_list="not a list")  # type: ignore[arg-type]
+
+    def test_is_list_where_each(self) -> None:
+        @attr.s
+        class _SingleValidatorClass:
+            my_list: list = attr.ib(
+                validator=attr_validators.is_list_where_each(
+                    attr_validators.is_non_empty_str
+                )
+            )
+
+        _ = _SingleValidatorClass(my_list=["a", "b"])
+        with self.assertRaisesRegex(ValueError, "String value should not be empty."):
+            _ = _SingleValidatorClass(my_list=[""])
+
+        # A sequence of member validators is combined — all must pass per element.
+        @attr.s
+        class _MultiValidatorClass:
+            my_list: list = attr.ib(
+                validator=attr_validators.is_list_where_each(
+                    [attr_validators.is_non_empty_str, attr_validators.is_snake_case]
+                )
+            )
+
+        _ = _MultiValidatorClass(my_list=["foo_bar", "baz"])
+        # Fails the non-empty validator.
+        with self.assertRaisesRegex(ValueError, "String value should not be empty."):
+            _ = _MultiValidatorClass(my_list=[""])
+        # Fails the snake_case validator.
+        with self.assertRaisesRegex(ValueError, "must be snake_case"):
+            _ = _MultiValidatorClass(my_list=["NotSnake"])
+
+    def test_is_dict_where_each(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_dict: dict = attr.ib(
+                validator=attr_validators.is_dict_where_each(
+                    key_validator=attr_validators.is_str,
+                    value_validator=attr_validators.is_non_empty_str,
+                )
+            )
+
+        _ = _TestClass(my_dict={"a": "x"})
+
+        # Bad value.
+        with self.assertRaisesRegex(ValueError, "String value should not be empty."):
+            _ = _TestClass(my_dict={"a": ""})
+
+        # Bad key.
+        with self.assertRaises((TypeError, ValueError)):
+            _ = _TestClass(my_dict={1: "x"})  # type: ignore[dict-item]
+
 
 @attr.s(frozen=True)
 class _TestEmailClass:

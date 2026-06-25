@@ -1,0 +1,5 @@
+reference_data_type: known_organizations
+# State-agnostic known organizations shared across all states. Empty for now —
+# present so every reference-data category has both a state-agnostic (`shared/`)
+# and a state-specific (`{state_code}/`) place to live.
+entries: []

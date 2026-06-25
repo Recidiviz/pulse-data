@@ -234,7 +234,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=30,
+                            lineno=31,
                             col_offset=0,
                         )
                     ],
@@ -242,6 +242,15 @@ class FileDependenciesTest(unittest.TestCase):
                 "calendar": {
                     "recidiviz.common.date": [
                         Callsite(filepath="r/common/date.py", lineno=22, col_offset=0)
+                    ]
+                },
+                "collections": {
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=28,
+                            col_offset=0,
+                        )
                     ]
                 },
                 "datetime": {
@@ -378,7 +387,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=28,
+                            lineno=29,
                             col_offset=0,
                         )
                     ],
@@ -406,7 +415,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=31,
+                            lineno=32,
                             col_offset=0,
                         )
                     ],

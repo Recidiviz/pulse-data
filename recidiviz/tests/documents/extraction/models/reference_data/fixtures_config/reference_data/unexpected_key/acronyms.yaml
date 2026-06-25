@@ -1,0 +1,4 @@
+# Declares an unexpected top-level key to exercise the unused-key check.
+reference_data_type: acronyms
+entries: []
+unexpected_key: some_value

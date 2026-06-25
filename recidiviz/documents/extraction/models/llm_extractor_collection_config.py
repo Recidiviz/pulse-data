@@ -20,9 +20,8 @@ states that run an extractor — above all the output schema (the structure we
 force the model's JSON into), plus the default model config and any declared
 entity groups.
 
-The `golden_eval` and `reference_data` blocks are consumed off the YAML here so
-the unused-key check passes, but are not yet modeled — see the deferral notes in
-`from_yaml`.
+The `golden_eval` block is still consumed off the YAML and discarded so the unused-key
+check passes — see the deferral note in `from_yaml`.
 """
 from functools import cache
 from pathlib import Path
@@ -49,6 +48,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     LLMRequestOutputSchemaField,
+)
+from recidiviz.documents.extraction.models.reference_data.llm_extractor_collection_reference_data_config import (
+    LLMExtractorCollectionReferenceDataConfig,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -206,6 +208,13 @@ class LLMExtractorCollectionConfig:
     )
     """The structure we force the model's JSON output into."""
 
+    reference_data_config: LLMExtractorCollectionReferenceDataConfig = attr.ib(
+        validator=attr.validators.instance_of(LLMExtractorCollectionReferenceDataConfig)
+    )
+    """How this collection renders reference data into its prompt (state-agnostic;
+    a state's actual entries are bound when an extractor is resolved).
+    """
+
     entity_groups: list[EntityGroupConfig] = attr.ib(
         validator=attr_validators.is_list_of(EntityGroupConfig)
     )
@@ -265,10 +274,12 @@ class LLMExtractorCollectionConfig:
             else DEFAULT_MINIMUM_CONFIDENCE_LEVEL
         )
 
-        # TODO(OBT-31986): Model and validate the `reference_data` block (the
-        # typed reference-data loaders and prompt renderer). For now it is
-        # consumed off the YAML and discarded so the unused-key check passes.
-        config_dict.pop_dict_optional("reference_data")
+        reference_data_block = config_dict.pop_dict("reference_data")
+        reference_data_config = (
+            LLMExtractorCollectionReferenceDataConfig.from_yaml_dict(
+                reference_data_block
+            )
+        )
 
         # TODO(OBT-33687): Model and validate the `golden_eval` block
         # (`source_sheet_uri` + `accuracy_thresholds`, required for first-order
@@ -288,6 +299,7 @@ class LLMExtractorCollectionConfig:
             default_model_config_name=default_model_config_name,
             minimum_confidence_level=minimum_confidence_level,
             output_schema=output_schema,
+            reference_data_config=reference_data_config,
             entity_groups=[
                 EntityGroupConfig.from_yaml_dict(
                     yaml_dict=group_yaml, output_schema=output_schema

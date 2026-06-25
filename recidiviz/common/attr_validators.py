@@ -25,10 +25,15 @@ class MyClass:
 
 import datetime
 import re
+from collections.abc import Sequence
 from typing import Any, Callable, Optional, Type
 
 import attr
 import pytz
+
+# The signature of an attrs field validator, as attrs invokes it:
+# (instance, attribute, value) -> None, raising on an invalid value.
+AttrValidator = Callable[[Any, attr.Attribute, Any], None]
 
 
 class DateBelowLowerBoundError(ValueError):
@@ -53,6 +58,32 @@ def is_opt(cls_type: Type) -> Callable:
     """Returns an attrs validator that checks if the value is an instance of |cls_type|
     or None."""
     return IsOptionalValidator(cls_type)
+
+
+class IsSubclassOfValidator:
+    """Validates that the value of an attr field is a type (class) that is a
+    subclass of the configured `expected_superclass` (the superclass itself is
+    allowed, mirroring issubclass() semantics).
+    """
+
+    def __init__(self, expected_superclass: Type) -> None:
+        self._expected_superclass = expected_superclass
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if not (
+            isinstance(value, type) and issubclass(value, self._expected_superclass)
+        ):
+            raise ValueError(
+                f"Found value for field [{attribute.name}] on class "
+                f"[{type(instance)}] which is not a subclass of "
+                f"[{self._expected_superclass.__name__}]: [{value!r}]."
+            )
+
+
+def is_subclass_of(expected_superclass: Type) -> IsSubclassOfValidator:
+    """Returns an attrs validator that checks the value is a subclass of
+    |expected_superclass| (a class, not an instance)."""
+    return IsSubclassOfValidator(expected_superclass)
 
 
 def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
@@ -701,6 +732,25 @@ def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> 
         )
 
 
+def is_list_where_each(
+    member_validator: AttrValidator | Sequence[AttrValidator],
+) -> AttrValidator:
+    """Returns a validator that checks the value is a list and applies
+    |member_validator| to each element. Use this to compose a list validator with
+    a per-element constraint that goes beyond type, e.g.
+    `is_list_where_each(is_non_empty_str)`. |member_validator| may be a single
+    validator or a sequence of them, in which case all are applied to each
+    element.
+    """
+    return attr.validators.deep_iterable(
+        member_validator=member_validator, iterable_validator=is_list
+    )
+
+
+# Validates that a field is a list whose every element is a non-empty string.
+is_list_of_non_empty_str = is_list_where_each(is_non_empty_str)
+
+
 # Dict field validators
 is_dict = attr.validators.instance_of(dict)
 is_opt_dict = is_opt(dict)
@@ -749,6 +799,25 @@ def is_dict_of(
     value_expected_type: Type | tuple[Type, ...],
 ) -> IsDictOfValidator:
     return IsDictOfValidator(key_expected_type, value_expected_type)
+
+
+def is_dict_where_each(
+    *,
+    key_validator: AttrValidator | Sequence[AttrValidator],
+    value_validator: AttrValidator | Sequence[AttrValidator],
+) -> AttrValidator:
+    """Returns a validator that checks the value is a dict and applies
+    |key_validator| to each key and |value_validator| to each value. Use this to
+    compose a dict validator with per-key/value constraints that go beyond type,
+    e.g. `is_dict_where_each(key_validator=is_str, value_validator=is_non_empty_str)`.
+    Either validator may be a single validator or a sequence of them, in which
+    case all are applied.
+    """
+    return attr.validators.deep_mapping(
+        key_validator=key_validator,
+        value_validator=value_validator,
+        mapping_validator=is_dict,
+    )
 
 
 # Tuple field validators

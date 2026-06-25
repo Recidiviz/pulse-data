@@ -1,0 +1,5 @@
+# Lives at acronyms.yaml but declares a different reference_data_type, to exercise
+# the filename<->declared-type consistency check in
+# ReferenceDataRegistry.from_yaml_file_for_reference_data_type.
+reference_data_type: known_organizations
+entries: []

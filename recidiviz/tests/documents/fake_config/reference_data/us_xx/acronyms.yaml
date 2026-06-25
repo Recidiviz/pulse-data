@@ -1,0 +1,7 @@
+reference_data_type: acronyms
+entries:
+  # Overrides the shared CRC entry to exercise state-wins merge precedence.
+  - acronym: CRC
+    expansion: Citadel Reentry Center
+  - acronym: XX
+    expansion: Example Expansion

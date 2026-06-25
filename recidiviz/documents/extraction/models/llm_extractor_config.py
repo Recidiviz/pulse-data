@@ -48,6 +48,17 @@ from recidiviz.documents.extraction.models.llm_model_registry import (
     LLMModelRegistry,
     load_llm_model_registry,
 )
+from recidiviz.documents.extraction.models.reference_data.llm_extractor_reference_data import (
+    LLMExtractorReferenceData,
+)
+from recidiviz.documents.extraction.models.reference_data.reference_data_entry import (
+    ReferenceDataEntry,
+)
+from recidiviz.documents.extraction.models.reference_data.reference_data_registry import (
+    ReferenceDataType,
+    StateSpecificReferenceDataRegistry,
+    load_full_reference_data_registry,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     collect_document_collection_configs,
@@ -127,6 +138,13 @@ class LLMExtractorConfig:
     set, otherwise the collection default.
     """
 
+    reference_data: LLMExtractorReferenceData = attr.ib(
+        validator=attr.validators.instance_of(LLMExtractorReferenceData)
+    )
+    """The collection's reference-data render config bound to this state's actual
+    entries. Empty when the collection declares no reference data.
+    """
+
     entity_group: EntityGroupConfig | None = attr.ib(
         validator=attr_validators.is_opt(EntityGroupConfig)
     )
@@ -189,6 +207,9 @@ class LLMExtractorConfig:
         extractor_collections_by_name: dict[str, LLMExtractorCollectionConfig],
         model_registry: LLMModelRegistry,
         document_collections_by_name: dict[str, DocumentCollectionConfig],
+        reference_data_registries_by_data_type: dict[
+            ReferenceDataType, StateSpecificReferenceDataRegistry[ReferenceDataEntry]
+        ],
     ) -> "LLMExtractorConfig":
         """Returns the fully-resolved extractor config parsed from the
         `extractor.yaml` at |yaml_path|, deriving its state from the parent
@@ -198,7 +219,10 @@ class LLMExtractorConfig:
           - its input document collection, looked up by name in
             |document_collections_by_name| (the state's collections keyed by name);
           - its model config — the state-level override when set, otherwise the
-            collection default — looked up in |model_registry|.
+            collection default — looked up in |model_registry|;
+          - its reference data, binding the collection's render config to the
+            state's entries in |reference_data_registries| (the output of
+            `load_full_reference_data_registry` for this extractor's state).
         """
         yaml_path = Path(yaml_path)
         config_dict = YAMLDict.from_path(yaml_path)
@@ -278,6 +302,11 @@ class LLMExtractorConfig:
             ),
             extractor_collection=extractor_collection,
             model_config=model_config,
+            reference_data=LLMExtractorReferenceData.resolve(
+                state_code=input_document_collection.state_code,
+                reference_data_config=extractor_collection.reference_data_config,
+                reference_data_registries=reference_data_registries_by_data_type,
+            ),
             # Extractors defined via YAMLs are always first-order extractors (not entity
             # resolution extractors), so this value will always be None.
             entity_group=None,
@@ -288,6 +317,28 @@ class LLMExtractorConfig:
                 f"[{yaml_path}]: {repr(config_dict.get())}"
             )
         return config
+
+
+def get_states_with_extractor_configs(
+    config_module: ModuleType | None = None,
+) -> set[StateCode]:
+    """Returns the set of states that define at least one extractor under
+    |config_module| (the production config package by default), derived from the
+    `extractor_collections/{collection}/{state}/extractor.yaml` files without
+    parsing them.
+    """
+    module = config_module or default_config_module
+    collections_dir = extractor_collections_dir(module)
+    if not collections_dir.is_dir():
+        raise ValueError(
+            f"Extractor collections directory does not exist: [{collections_dir}]."
+        )
+    return {
+        LLMExtractorConfig.state_code_for_yaml_path(extractor_yaml_path)
+        for extractor_yaml_path in collections_dir.glob(
+            f"*/*/{EXTRACTOR_CONFIG_FILENAME}"
+        )
+    }
 
 
 @cache
@@ -302,42 +353,38 @@ def load_llm_extractor_configs(
     """
     module = config_module or default_config_module
     collections_dir = extractor_collections_dir(module)
-    if not collections_dir.is_dir():
-        raise ValueError(
-            f"Extractor collections directory does not exist: [{collections_dir}]."
-        )
-
     model_registry = load_llm_model_registry(module)
-    collections_by_name = load_llm_extractor_collection_configs(module)
-    document_collection_configs_by_state: dict[
-        StateCode, dict[str, DocumentCollectionConfig]
-    ] = {}
+    extractor_collections_by_name = load_llm_extractor_collection_configs(module)
 
     configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]] = {}
-    for extractor_yaml_path in sorted(
-        collections_dir.glob(f"*/*/{EXTRACTOR_CONFIG_FILENAME}")
-    ):
-        state_code = LLMExtractorConfig.state_code_for_yaml_path(extractor_yaml_path)
-        if state_code not in document_collection_configs_by_state:
-            document_collection_configs_by_state[
-                state_code
-            ] = collect_document_collection_configs(state_code, config_module=module)
-        config = LLMExtractorConfig.from_yaml(
-            extractor_yaml_path,
-            extractor_collections_by_name=collections_by_name,
-            model_registry=model_registry,
-            document_collections_by_name=document_collection_configs_by_state[
-                state_code
-            ],
+    for state_code in get_states_with_extractor_configs(module):
+        document_collections_by_name = collect_document_collection_configs(
+            state_code, config_module=module
         )
-        state_configs = configs_by_state.setdefault(state_code, {})
-        collection_name = config.extractor_collection.name
-        if collection_name in state_configs:
-            raise ValueError(
-                f"Found multiple extractor configs for collection "
-                f"[{collection_name}] in state [{state_code.value}]."
+        reference_data_registries = load_full_reference_data_registry(
+            state_code, config_module=module
+        )
+        state_configs: dict[str, LLMExtractorConfig] = {}
+        for extractor_yaml_path in sorted(
+            collections_dir.glob(
+                f"*/{state_code.value.lower()}/{EXTRACTOR_CONFIG_FILENAME}"
             )
-        state_configs[collection_name] = config
+        ):
+            config = LLMExtractorConfig.from_yaml(
+                extractor_yaml_path,
+                extractor_collections_by_name=extractor_collections_by_name,
+                model_registry=model_registry,
+                document_collections_by_name=document_collections_by_name,
+                reference_data_registries_by_data_type=reference_data_registries,
+            )
+            collection_name = config.extractor_collection.name
+            if collection_name in state_configs:
+                raise ValueError(
+                    f"Found multiple extractor configs for collection "
+                    f"[{collection_name}] in state [{state_code.value}]."
+                )
+            state_configs[collection_name] = config
+        configs_by_state[state_code] = state_configs
     return configs_by_state
 
 
