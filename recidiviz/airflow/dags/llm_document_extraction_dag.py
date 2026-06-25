@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """DAG that runs the LLM document extraction pipeline, branched per state and
-per collection within a state.
+per document collection within a state.
 
-By default all (state, collection) branches run. To target a single state, pass
-`state_code_filter` in the DAG run conf; to additionally target a single collection,
-pass `collection_name_filter` (which requires `state_code_filter` to also be set,
-since collection names are only unique within a state).
+By default all (state, document collection) branches run. To target a single state, pass
+`state_code_filter` in the DAG run conf; to additionally target a single document collection,
+pass `document_collection_name_filter` (which requires `state_code_filter` to also be set,
+since document collection names are only unique within a state).
 """
 
 from typing import Callable
@@ -75,7 +75,7 @@ UPLOAD_TASK_INSTANCE_COUNT = 10
 # validated string is roughly double the nominal depth. The 250-char
 # validate_key cap is easy to hit with long, descriptive group names.
 LLM_DOCUMENT_EXTRACTION_BRANCHING = "extraction_branching"
-COLLECTIONS_BRANCHING = "collections_branching"
+DOCUMENT_COLLECTIONS_BRANCHING = "document_collections_branching"
 RUN_ID_FORMAT_ARG = "{{ run_id }}"
 
 
@@ -83,8 +83,8 @@ def get_llm_document_extraction_branch_key(state_code: StateCode) -> str:
     return f"{state_code.value.lower()}_branch"
 
 
-def get_collection_branch_key(collection_name: str) -> str:
-    return f"{collection_name}_branch"
+def get_document_collection_branch_key(document_collection_name: str) -> str:
+    return f"{document_collection_name}_branch"
 
 
 def get_llm_document_extraction_branch_filter(dag_run: DagRun) -> list[str] | None:
@@ -95,39 +95,41 @@ def get_llm_document_extraction_branch_filter(dag_run: DagRun) -> list[str] | No
     return [get_llm_document_extraction_branch_key(StateCode(selected_state_code_str))]
 
 
-def make_collection_branch_filter(
-    state_code: StateCode, collection_names: set[str]
+def make_document_collection_branch_filter(
+    state_code: StateCode, document_collection_names: set[str]
 ) -> Callable[[DagRun], list[str] | None]:
-    """Returns a branch filter scoped to |state_code|'s collections. If
-    collection_name_filter is set, validates that the collection exists in this
-    state and selects only its branch; raises if the filter names a collection
+    """Returns a branch filter scoped to |state_code|'s document collections. If
+    document_collection_name_filter is set, validates that the document collection exists in this
+    state and selects only its branch; raises if the filter names a document collection
     not defined for this state."""
 
-    def collection_branch_filter(dag_run: DagRun) -> list[str] | None:
-        selected_collection_name = get_document_collection_name_filter(dag_run)
-        if not selected_collection_name:
+    def document_collection_branch_filter(dag_run: DagRun) -> list[str] | None:
+        selected_document_collection_name = get_document_collection_name_filter(dag_run)
+        if not selected_document_collection_name:
             return None
-        if selected_collection_name not in collection_names:
+        if selected_document_collection_name not in document_collection_names:
             raise ValueError(
-                f"collection_name_filter [{selected_collection_name}] does not "
-                f"match any collection defined for state [{state_code.value}]. "
-                f"Valid collections: {sorted(collection_names)}"
+                f"document_collection_name_filter [{selected_document_collection_name}] does not "
+                f"match any document collection defined for state [{state_code.value}]. "
+                f"Valid document collections: {sorted(document_collection_names)}"
             )
-        return [get_collection_branch_key(selected_collection_name)]
+        return [get_document_collection_branch_key(selected_document_collection_name)]
 
-    return collection_branch_filter
+    return document_collection_branch_filter
 
 
-def create_single_collection_branch(
+def create_single_document_collection_branch(
     state_code: StateCode,
-    collection_name: str,
+    document_collection_name: str,
 ) -> list[DAGNode]:
-    """Creates the per-collection task group."""
-    with TaskGroup(get_collection_branch_key(collection_name)) as branch:
+    """Creates the per-document-collection task group."""
+    with TaskGroup(
+        get_document_collection_branch_key(document_collection_name)
+    ) as branch:
         # --- Step 1: Document Discovery ---
         collection_result = run_document_discovery(
             state_code=state_code,
-            collection_name=collection_name,
+            collection_name=document_collection_name,
             run_id=RUN_ID_FORMAT_ARG,
         )
 
@@ -174,19 +176,25 @@ def create_single_collection_branch(
 def create_single_state_llm_document_extraction_branch(
     state_code: StateCode,
 ) -> list[DAGNode]:
-    """Creates the per-state task group, which nests a per-collection branching."""
+    """Creates the per-state task group, which nests a per-document-collection branching."""
     with TaskGroup(get_llm_document_extraction_branch_key(state_code)) as branch:
-        with TaskGroup(COLLECTIONS_BRANCHING):
-            collection_names = sorted(collect_document_collection_configs(state_code))
-            collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
-                get_collection_branch_key(
-                    collection_name
-                ): create_single_collection_branch(state_code, collection_name)
-                for collection_name in collection_names
+        with TaskGroup(DOCUMENT_COLLECTIONS_BRANCHING):
+            document_collection_names = sorted(
+                collect_document_collection_configs(state_code)
+            )
+            document_collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
+                get_document_collection_branch_key(
+                    document_collection_name
+                ): create_single_document_collection_branch(
+                    state_code, document_collection_name
+                )
+                for document_collection_name in document_collection_names
             }
             create_branching_by_key(
-                collection_branch_map,
-                make_collection_branch_filter(state_code, set(collection_names)),
+                document_collection_branch_map,
+                make_document_collection_branch_filter(
+                    state_code, set(document_collection_names)
+                ),
             )
 
     return [branch]

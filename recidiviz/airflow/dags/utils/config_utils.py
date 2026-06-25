@@ -42,7 +42,7 @@ class QueuingActionType(Enum):
 INGEST_INSTANCE = "ingest_instance"
 SANDBOX_PREFIX = "sandbox_prefix"
 STATE_CODE_FILTER = "state_code_filter"
-DOCUMENT_COLLECTION_NAME_FILTER = "collection_name_filter"
+DOCUMENT_COLLECTION_NAME_FILTER = "document_collection_name_filter"
 
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)

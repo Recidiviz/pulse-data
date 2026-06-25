@@ -52,9 +52,9 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.utils.types import assert_type
 
-# Per-collection tasks defined inside each collection's task group, in
+# Per-document-collection tasks defined inside each document collection's task group, in
 # upstream-to-downstream order.
-ALL_PER_COLLECTION_TASK_IDS: list[str] = [
+ALL_PER_DOCUMENT_COLLECTION_TASK_IDS: list[str] = [
     RUN_DOCUMENT_DISCOVERY_TASK_ID,
     CHECK_HAS_UPDATES_TASK_ID,
     BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID,
@@ -78,21 +78,15 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_branch = "extraction_branching.us_xx_branch"
         self.us_yy_branch = "extraction_branching.us_yy_branch"
 
-        # Per-collection branches under us_xx.
+        # Per-document-collection branches under us_xx.
         self.us_xx_fake_case_notes_collection_branch = (
-            f"{self.us_xx_branch}.collections_branching.FAKE_CASE_NOTES_branch"
+            f"{self.us_xx_branch}.document_collections_branching.FAKE_CASE_NOTES_branch"
         )
-        self.us_xx_fake_person_id_notes_collection_branch = (
-            f"{self.us_xx_branch}.collections_branching.FAKE_PERSON_ID_NOTES_branch"
-        )
-        self.us_xx_fake_staff_id_reports_collection_branch = (
-            f"{self.us_xx_branch}.collections_branching.FAKE_STAFF_ID_REPORTS_branch"
-        )
-        self.us_xx_fake_staff_reports_collection_branch = (
-            f"{self.us_xx_branch}.collections_branching.FAKE_STAFF_REPORTS_branch"
-        )
+        self.us_xx_fake_person_id_notes_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_PERSON_ID_NOTES_branch"
+        self.us_xx_fake_staff_id_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_ID_REPORTS_branch"
+        self.us_xx_fake_staff_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_REPORTS_branch"
 
-        # after_upload_noop (per-collection) and branch_end (collections_branching)
+        # after_upload_noop (per-document-collection) and branch_end (document_collections_branching)
         # are excluded from skip regexes because their ALL_DONE trigger rules let
         # them run even when their upstreams are skipped, so they succeed rather
         # than skipping.
@@ -102,33 +96,33 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_yy_always_succeeds_tasks_regex = (
             rf"^{self.us_yy_branch}\.(?:.+\.)?(?:after_upload_noop|branch_end)$"
         )
-        self.us_xx_other_collections_skippable_tasks_regexes = [
+        self.us_xx_other_document_collections_skippable_tasks_regexes = [
             rf"^{self.us_xx_fake_person_id_notes_collection_branch}\..*(?<!after_upload_noop)$",
             rf"^{self.us_xx_fake_staff_id_reports_collection_branch}\..*(?<!after_upload_noop)$",
             rf"^{self.us_xx_fake_staff_reports_collection_branch}\..*(?<!after_upload_noop)$",
         ]
-        self.us_xx_other_collections_always_succeeds_tasks_regex = (
-            rf"^{self.us_xx_branch}\.collections_branching\."
+        self.us_xx_other_document_collections_always_succeeds_tasks_regex = (
+            rf"^{self.us_xx_branch}\.document_collections_branching\."
             rf"(?!FAKE_CASE_NOTES_branch\.)[^.]+_branch\.after_upload_noop$"
         )
         # Combined helper for tests scoped to us_xx + fake_case_notes that need
-        # to skip every other collection across both states.
-        self.non_target_collection_skipped_regexes = [
+        # to skip every other document collection across both states.
+        self.non_target_document_collection_skipped_regexes = [
             self.us_yy_all_skippable_tasks_regex,
-            *self.us_xx_other_collections_skippable_tasks_regexes,
+            *self.us_xx_other_document_collections_skippable_tasks_regexes,
         ]
-        self.non_target_collection_always_succeeds_regexes = [
+        self.non_target_document_collection_always_succeeds_regexes = [
             self.us_yy_always_succeeds_tasks_regex,
-            self.us_xx_other_collections_always_succeeds_tasks_regex,
+            self.us_xx_other_document_collections_always_succeeds_tasks_regex,
         ]
         # Frame tasks (initialize, branching scaffolding, ALL_DONE noops in
-        # non-target collections) that succeed in any happy-path test scoped to
+        # non-target document collections) that succeed in any happy-path test scoped to
         # us_xx + fake_case_notes.
         self.us_xx_fake_case_notes_frame_success_regexes = [
             r"^initialize_dag\..*$",
             r"^extraction_branching\.branch_(start|end)$",
-            rf"^{self.us_xx_branch}\.collections_branching\.branch_(start|end)$",
-            *self.non_target_collection_always_succeeds_regexes,
+            rf"^{self.us_xx_branch}\.document_collections_branching\.branch_(start|end)$",
+            *self.non_target_document_collection_always_succeeds_regexes,
         ]
         # Subset of the frame above for failure-path tests where branch_end
         # also fails. Excludes the branch_end tasks because they propagate the
@@ -136,8 +130,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends = [
             r"^initialize_dag\..*$",
             r"^extraction_branching\.branch_start$",
-            rf"^{self.us_xx_branch}\.collections_branching\.branch_start$",
-            *self.non_target_collection_always_succeeds_regexes,
+            rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
+            *self.non_target_document_collection_always_succeeds_regexes,
         ]
 
         self.environment_patcher = patch.dict(
@@ -200,13 +194,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
     def _run_conf(
         *,
         state_code_filter: str | None = None,
-        collection_name_filter: str | None = None,
+        document_collection_name_filter: str | None = None,
     ) -> dict[str, str]:
         conf: dict[str, str] = {}
         if state_code_filter is not None:
             conf["state_code_filter"] = state_code_filter
-        if collection_name_filter is not None:
-            conf["collection_name_filter"] = collection_name_filter
+        if document_collection_name_filter is not None:
+            conf["document_collection_name_filter"] = document_collection_name_filter
         return conf
 
     def _mock_bq_client_no_updates(self) -> None:
@@ -274,7 +268,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
     def test_no_discovery_results(self) -> None:
         """When discovery finds no metadata updates, check_has_updates
-        short-circuits and all downstream tasks for the collection are
+        short-circuits and all downstream tasks for the document collection are
         skipped."""
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -282,7 +276,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="FAKE_CASE_NOTES",
+                    document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
@@ -298,7 +292,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
-                    *self.non_target_collection_skipped_regexes,
+                    *self.non_target_document_collection_skipped_regexes,
                 ],
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
@@ -327,10 +321,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="FAKE_CASE_NOTES",
+                    document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[],
-                expected_skipped_task_id_regexes=self.non_target_collection_skipped_regexes,
+                expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\..*$",
@@ -338,8 +332,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Result recorder ran two INSERTs: one to hydrate the collection's
-            # document_contents table and one to append to the collection's
+            # Result recorder ran two INSERTs: one to hydrate the document collection's
+            # document_contents table and one to append to the document collection's
             # metadata table.
             insert_queries = self._get_insert_query_strs()
             self.assertEqual(len(insert_queries), 2)
@@ -349,13 +343,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 self.mock_bq_client.load_table_from_cloud_storage.call_count, 1
             )
 
-            # All rows inserted, so both temp tables for the collection are
+            # All rows inserted, so both temp tables for the document collection are
             # deleted (metadata updates table + new contents table).
             self.assertEqual(self.mock_bq_client.delete_table.call_count, 2)
 
-    def test_no_filters_runs_all_states_and_collections(self) -> None:
-        """Without any filter, every (state, collection) branch runs to
-        completion. With the default 'no updates' mock, each collection's
+    def test_no_filters_runs_all_states_and_document_collections(self) -> None:
+        """Without any filter, every (state, document collection) branch runs to
+        completion. With the default 'no updates' mock, each document collection's
         discovery succeeds and check_has_updates short-circuits the rest of
         its branch."""
         with Session(bind=self.engine) as session:
@@ -367,7 +361,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     # check_has_updates short-circuits the rest of each branch
                     # because metadata_rows=0.
-                    rf"^extraction_branching\.[^.]+_branch\.collections_branching\."
+                    rf"^extraction_branching\.[^.]+_branch\.document_collections_branching\."
                     rf"[^.]+_branch\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|"
                     rf"{DOCUMENT_UPLOAD_TASK_ID}|"
@@ -377,9 +371,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # One create_table_from_query per collection (only metadata-updates
-            # call, since each collection has 0 metadata rows → no contents
-            # call). 4 US_XX collections + 1 US_YY collection = 5.
+            # One create_table_from_query per document collection (only metadata-updates
+            # call, since each document collection has 0 metadata rows → no contents
+            # call). 4 US_XX document collections + 1 US_YY document collection = 5.
             self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 5)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
@@ -398,7 +392,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="FAKE_CASE_NOTES",
+                    document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[
                     self._us_xx_fake_case_notes_collection_branch_regex(
@@ -416,10 +410,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
-                    rf"^{self.us_xx_branch}\.collections_branching\.branch_end$",
+                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_end$",
                     r"^extraction_branching\.branch_end$",
                 ],
-                expected_skipped_task_id_regexes=self.non_target_collection_skipped_regexes,
+                expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends,
                     # after_upload_noop runs (ALL_DONE), but with no work to do.
@@ -443,10 +437,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="FAKE_CASE_NOTES",
+                    document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[],
-                expected_skipped_task_id_regexes=self.non_target_collection_skipped_regexes,
+                expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\..*$",
@@ -467,7 +461,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 self.assertIn(f"--state_code={StateCode.US_XX.value}", argv)
                 self.assertTrue(
                     any("FAKE_CASE_NOTES" in arg for arg in argv),
-                    f"Expected collection name in argv, got [{argv}]",
+                    f"Expected document collection name in argv, got [{argv}]",
                 )
 
     def test_initialize_failure_skips_everything(self) -> None:
@@ -482,7 +476,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     session=session,
                     run_conf=self._run_conf(
                         state_code_filter=StateCode.US_XX.value,
-                        collection_name_filter="FAKE_CASE_NOTES",
+                        document_collection_name_filter="FAKE_CASE_NOTES",
                     ),
                     expected_failure_task_id_regexes=[
                         r"^initialize_dag\.verify_parameters$",
@@ -517,14 +511,14 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="FAKE_CASE_NOTES",
+                    document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         DOCUMENT_UPLOAD_TASK_ID
                     ),
-                    *self.non_target_collection_skipped_regexes,
+                    *self.non_target_document_collection_skipped_regexes,
                 ],
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
@@ -546,9 +540,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # Full success, both temp tables deleted.
             self.assertEqual(self.mock_bq_client.delete_table.call_count, 2)
 
-    def test_state_filter_fans_out_to_all_collections(self) -> None:
-        """state_code_filter alone runs all collections defined for the state.
-        Since in the tests we are defaulting to 'no updates', each collection's
+    def test_state_filter_fans_out_to_all_document_collections(self) -> None:
+        """state_code_filter alone runs all document collections defined for the state.
+        Since in the tests we are defaulting to 'no updates', each document collection's
         discovery runs once and check_has_updates short-circuits."""
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -558,7 +552,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
                     self.us_yy_all_skippable_tasks_regex,
-                    rf"^{self.us_xx_branch}\.collections_branching\."
+                    rf"^{self.us_xx_branch}\.document_collections_branching\."
                     r"[^.]+_branch\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
@@ -566,39 +560,39 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # One create_table_from_query per collection (only metadata-updates
-            # call, since each collection has 0 metadata rows → no contents
-            # call). Fake config defines 4 US_XX collections.
+            # One create_table_from_query per document collection (only metadata-updates
+            # call, since each document collection has 0 metadata rows → no contents
+            # call). Fake config defines 4 US_XX document collections.
             self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 4)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
-    def test_unknown_collection_name_filter_fails_branching(self) -> None:
+    def test_unknown_document_collection_name_filter_fails_branching(self) -> None:
         with Session(bind=self.engine) as session:
             self.run_dag_test(
                 self._create_dag(),
                 session=session,
                 run_conf=self._run_conf(
                     state_code_filter=StateCode.US_XX.value,
-                    collection_name_filter="does_not_exist",
+                    document_collection_name_filter="does_not_exist",
                 ),
                 expected_failure_task_id_regexes=[
-                    rf"^{self.us_xx_branch}\.collections_branching\.branch_start$",
-                    rf"^{self.us_xx_branch}\.collections_branching\.branch_end$",
+                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
+                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_end$",
                     r"^extraction_branching\.branch_end$",
-                    # Every task in every us_xx collection branch becomes
+                    # Every task in every us_xx document collection branch becomes
                     # upstream_failed except after_upload_noop, which is an
                     # ALL_DONE EmptyOperator with no body and succeeds.
-                    rf"^{self.us_xx_branch}\.collections_branching\."
+                    rf"^{self.us_xx_branch}\.document_collections_branching\."
                     rf"[^.]+_branch\.(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
                 ],
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
                     r"^extraction_branching\.branch_start$",
-                    # All us_xx collection branches' after_upload_noop tasks
+                    # All us_xx document collection branches' after_upload_noop tasks
                     # succeed (ALL_DONE).
-                    rf"^{self.us_xx_branch}\.collections_branching\."
+                    rf"^{self.us_xx_branch}\.document_collections_branching\."
                     rf"[^.]+_branch\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
                     self.us_yy_always_succeeds_tasks_regex,
                 ],
@@ -606,14 +600,18 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             self.mock_bq_client.create_table_from_query.assert_not_called()
             self.mock_bq_client.run_query_async.assert_not_called()
 
-    def test_collection_filter_without_state_filter_fails_validation(self) -> None:
-        """verify_parameters' raises when collection_name_filter is supplied without
-        state_code_filter (collection names are only unique within a state)."""
+    def test_document_collection_filter_without_state_filter_fails_validation(
+        self,
+    ) -> None:
+        """verify_parameters' raises when document_collection_name_filter is supplied without
+        state_code_filter (document collection names are only unique within a state)."""
         with Session(bind=self.engine) as session:
             self.run_dag_test(
                 self._create_dag(),
                 session=session,
-                run_conf=self._run_conf(collection_name_filter="FAKE_CASE_NOTES"),
+                run_conf=self._run_conf(
+                    document_collection_name_filter="FAKE_CASE_NOTES"
+                ),
                 expected_failure_task_id_regexes=[
                     r"^initialize_dag\.verify_parameters$",
                 ],
@@ -636,7 +634,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         absorbs the failure and record_document_upload_results still runs.
 
         Recorder inserts a partial row count (fewer than the discovery
-        expected), so the collection's temp tables are preserved for
+        expected), so the document collection's temp tables are preserved for
         debugging rather than deleted."""
         # Partial success: fewer rows inserted than the discovery expected.
         self._mock_bq_client_has_updates(rows_inserted=7)
@@ -654,14 +652,14 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     session=session,
                     run_conf=self._run_conf(
                         state_code_filter=StateCode.US_XX.value,
-                        collection_name_filter="FAKE_CASE_NOTES",
+                        document_collection_name_filter="FAKE_CASE_NOTES",
                     ),
                     expected_failure_task_id_regexes=[
                         self._us_xx_fake_case_notes_collection_branch_regex(
                             DOCUMENT_UPLOAD_TASK_ID
                         ),
                     ],
-                    expected_skipped_task_id_regexes=self.non_target_collection_skipped_regexes,
+                    expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                     expected_success_task_id_regexes=[
                         *self.us_xx_fake_case_notes_frame_success_regexes,
                         rf"^{self.us_xx_fake_case_notes_collection_branch}\."
@@ -671,7 +669,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
                 # Recorder still ran both INSERTs (document_contents + metadata)
-                # for the collection.
+                # for the document collection.
                 insert_queries = self._get_insert_query_strs()
                 self.assertEqual(len(insert_queries), 2)
 
