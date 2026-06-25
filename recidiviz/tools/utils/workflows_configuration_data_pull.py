@@ -59,6 +59,10 @@ from recidiviz.workflows.types import FullOpportunityConfig, FullOpportunityInfo
 # https://docs.google.com/spreadsheets/d/1QgYQXs0Cm0wbxJTbwL19DbqTXRVIlNpXOCzMligFHaI/edit?gid=1935068964#gid=1935068964
 WORKFLOWS_CONFIGURATION_SPREADSHEET_ID = "1QgYQXs0Cm0wbxJTbwL19DbqTXRVIlNpXOCzMligFHaI"
 
+# Keep each sheet well below Google Sheets' per-workbook 10M-cell limit.
+# Oldest rows are trimmed from the bottom when a write would push a sheet past this.
+ROW_LIMIT = 9_000
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
@@ -504,6 +508,58 @@ def add_rows_to_top_of_sheet(
     )
 
 
+def get_sheet_row_count(
+    google_spreadsheet_service: Resource,
+    spreadsheet_id: str,
+    sheet_name: str,
+) -> int:
+    """Returns the number of rows with data (including the header) in the given sheet."""
+    response = (
+        google_spreadsheet_service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=spreadsheet_id,
+            range=f"'{sheet_name}'!A:A",
+        )
+        .execute()
+    )
+    return len(response.get("values", []))
+
+
+def delete_oldest_rows(
+    google_spreadsheet_service: Resource,
+    spreadsheet_id: str,
+    sheet_id: int,
+    state_code: str,
+    logger: logging.Logger,
+    num_rows_to_delete: int,
+    current_row_count: int,
+) -> None:
+    """Deletes the oldest (bottommost) rows from the given sheet."""
+    start_index = current_row_count - num_rows_to_delete
+    end_index = current_row_count
+    google_spreadsheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={
+            "requests": [
+                {
+                    "deleteDimension": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "dimension": "ROWS",
+                            "startIndex": start_index,
+                            "endIndex": end_index,
+                        }
+                    }
+                }
+            ]
+        },
+    ).execute()
+    logger.info(
+        "Deleted %d oldest rows from %s's sheet", num_rows_to_delete, state_code
+    )
+
+
 def write_to_workflows_sheet(
     spreadsheet_id: str,
     credentials: Credentials,
@@ -593,7 +649,22 @@ def write_to_workflows_sheet(
 
         # aka if there is already a sheet for this state
         if existing_sheet:
-            sheet_id = state_code_to_sheet_id.get(state_code)
+            sheet_id = state_code_to_sheet_id[state_code]
+            current_row_count = get_sheet_row_count(
+                google_spreadsheet_service, spreadsheet_id, state_code
+            )
+            projected_row_count = current_row_count + num_rows_to_add
+            if projected_row_count > ROW_LIMIT:
+                rows_to_delete = projected_row_count - ROW_LIMIT
+                delete_oldest_rows(
+                    google_spreadsheet_service,
+                    spreadsheet_id,
+                    sheet_id,
+                    state_code,
+                    logger,
+                    rows_to_delete,
+                    current_row_count,
+                )
             add_rows_to_top_of_sheet(
                 google_spreadsheet_service,
                 spreadsheet_id,
