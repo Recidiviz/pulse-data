@@ -935,3 +935,52 @@ CASE
         THEN "{ContactType.SCHEDULED_FIELD_CONTACT.value}"
     ELSE NULL
 END AS contact_type,"""
+
+
+# Fallback case_notes JSON for eligible pilot clients who have no fee records in the
+# preprocessed view. Matches the STRUCT shape produced by array_agg_case_notes_by_person_id:
+# {note_title, note_body, event_date, criteria}.
+US_TX_FEES_NO_RECORDS_FALLBACK_CASE_NOTES = (
+    'JSON \'[{{"note_title": "No records found",'
+    ' "note_body": "If this is inconsistent with OIMS, please let us know'
+    " via feedback@recidiviz.org or the browser\\'s chat feature.\","
+    ' "event_date": null,'
+    ' "criteria": "Current Fees"}}]\''
+)
+
+
+def us_tx_fines_fees_case_notes() -> str:
+    """Returns a SQL fragment selecting active fines/fees balances as case notes.
+
+    Produces one row per active fee type with a non-zero assessed amount.
+    Eligible clients with no qualifying fee rows will have null case_notes in the
+    outer query; use US_TX_FEES_NO_RECORDS_FALLBACK_CASE_NOTES with IFNULL there.
+    Columns: person_id, criteria ('Current Fees'), note_title, note_body, event_date.
+    """
+    return f"""
+    SELECT
+        person_id,
+        "Current Fees"                                                  AS criteria,
+        -- Ex: 'CRIME VICTIM FUND' --> 'Crime victim fund'
+        INITCAP(fee_type)                                               AS note_title,
+        -- Ex: 'Amount assessed: $600.00 | Balance remaining: $20.00'
+        CONCAT(
+            "Amount assessed: ", FORMAT("$%.2f", assessed_amount),
+            " | Balance remaining: ", FORMAT("$%.2f", unpaid_balance)
+        )                                                               AS note_body,
+        -- fees.start_date surfaces the current date for the time being, but when fees sessions are hydrated with real spans, the start_date will represent the start of the current span, basically indicating the last time a fee was assessed, changed, or paid.
+        -- TODO(#78182): Hydrate fees sessions data with real spans.
+        fees.start_date                                                 AS event_date,
+    FROM `{{project_id}}.analyst_data.us_tx_fines_fees_sessions_preprocessed` fees
+    INNER JOIN (
+        SELECT DISTINCT sc.person_id
+        FROM `{{project_id}}.analyst_data.us_tx_supervision_staff_reporting_chain_materialized` sc
+        -- TODO(OBT-33896): Drop this inner join when we FSL or change the pilot population.
+        INNER JOIN `{{project_id}}.static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users` pilot
+            ON pilot.staff_id = sc.staff_id
+    ) pilot_clients
+        USING (person_id)
+    WHERE state_code = "US_TX"
+        AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+        AND fee_type NOT IN ("ALL", "ALL_NON_RESTITUTION")
+        AND assessed_amount != 0"""

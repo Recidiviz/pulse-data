@@ -146,10 +146,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_ix_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
-            # Static snapshot seeding the US_TX ERS/ARS fines-and-fees pilot; not
-            # read by the view graph, queried directly for the pilot.
-            # TODO(#86314): remove once the pilot ends and this table is dropped.
-            "static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users",
             *COMMON_VESTIGES,
         ]
     },
@@ -164,10 +160,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "sentencing_views.case_insights_record_flattened",
             # Legacy V1 Idaho tasks record archive, predates V2 pipeline
             "export_archives.us_ix_supervision_tasks_record_archive",
-            # Static snapshot seeding the US_TX ERS/ARS fines-and-fees pilot; not
-            # read by the view graph, queried directly for the pilot.
-            # TODO(#86314): remove once the pilot ends and this table is dropped.
-            "static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users",
             *COMMON_VESTIGES,
         ]
     },
