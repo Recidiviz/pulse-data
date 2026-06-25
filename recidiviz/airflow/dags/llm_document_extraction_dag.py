@@ -230,5 +230,4 @@ def create_llm_document_extraction_dag() -> None:
     initialize_dag >> llm_document_extraction_branching
 
 
-# TODO(#63822) Add dag-level tests
 llm_document_extraction_dag = create_llm_document_extraction_dag()
