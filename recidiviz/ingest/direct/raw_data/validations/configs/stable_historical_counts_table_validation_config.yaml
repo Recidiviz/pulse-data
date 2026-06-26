@@ -65,6 +65,42 @@ custom:
               "This table's median row count is driven down by some early versions of the table
               that were much smaller. The table size should be relatively stable from April 2026 onwards."
 
+  US_CO:
+    file_tags:
+      eomis_codevaluedesc:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
+            datetime_end_exclusive: "2026-06-26T00:00:00Z"
+            reason:
+              "A large set of medical diagnosis codes was legitimately removed
+              from this reference table on 2026-06-25, dropping the row count
+              from ~297k to ~213k. Excluding the pre-change imports from the
+              median calculation and skipping validation for the transition
+              file; the new baseline will rebuild from imports on 2026-06-26
+              onward."
+      eomis_effectivedate:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
+            datetime_end_exclusive: "2026-06-26T00:00:00Z"
+            reason:
+              "A large set of medical diagnosis codes was legitimately removed
+              from this reference table on 2026-06-25, dropping the row count
+              from ~26.1k to ~23.1k. Excluding the pre-change imports from the
+              median calculation and skipping validation for the transition
+              file; the new baseline will rebuild from imports on 2026-06-26
+              onward."
+      eomis_relatedcodevalue:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
+            datetime_end_exclusive: "2026-06-26T00:00:00Z"
+            reason:
+              "A large set of medical diagnosis codes was legitimately removed
+              from this reference table on 2026-06-25, dropping the row count
+              from ~141.9k to ~87.9k. Excluding the pre-change imports from the
+              median calculation and skipping validation for the transition
+              file; the new baseline will rebuild from imports on 2026-06-26
+              onward."
+
   US_MI:
     file_tags:
       COMS_Case_Managers:
