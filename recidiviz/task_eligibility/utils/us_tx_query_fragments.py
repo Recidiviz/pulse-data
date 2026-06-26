@@ -937,26 +937,37 @@ CASE
 END AS contact_type,"""
 
 
-# Fallback case_notes JSON for eligible pilot clients who have no fee records in the
-# preprocessed view. Matches the STRUCT shape produced by array_agg_case_notes_by_person_id:
-# {note_title, note_body, event_date, criteria}.
-US_TX_FEES_NO_RECORDS_FALLBACK_CASE_NOTES = (
-    'JSON \'[{{"note_title": "No records found",'
-    ' "note_body": "If this is inconsistent with OIMS, please let us know'
-    " via feedback@recidiviz.org or the browser\\'s chat feature.\","
-    ' "event_date": null,'
-    ' "criteria": "Current Fees"}}]\''
-)
+def _us_tx_fees_no_records_fallback_select(*, criteria: str) -> str:
+    """Returns a SQL SELECT producing a 'No records found' fallback row.
+
+    Caller is responsible for appending the FROM/LEFT JOIN/WHERE to complete
+    the UNION ALL block — this function only produces the SELECT columns.
+    """
+    return f"""SELECT
+        pilot_clients.person_id,
+        "{criteria}"                                                    AS criteria,
+        "No records found"                                              AS note_title,
+        "If this is inconsistent with OIMS, please let us know via feedback@recidiviz.org or the browser's chat feature."                          AS note_body,
+        CAST(NULL AS DATE)                                              AS event_date,"""
 
 
-def us_tx_fines_fees_case_notes() -> str:
+# TODO(OBT-33896): Drop this constant when we FSL.
+_US_TX_FEES_PILOT_CLIENTS_SUBQUERY = """(
+    SELECT DISTINCT sc.person_id
+    FROM `{project_id}.analyst_data.us_tx_supervision_staff_reporting_chain_materialized` sc
+    INNER JOIN `{project_id}.static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users` pilot
+        ON pilot.staff_id = sc.staff_id
+)"""
+
+
+def us_tx_fines_fees_balances_case_notes() -> str:
     """Returns a SQL fragment selecting active fines/fees balances as case notes.
 
-    Produces one row per active fee type with a non-zero assessed amount.
-    Eligible clients with no qualifying fee rows will have null case_notes in the
-    outer query; use US_TX_FEES_NO_RECORDS_FALLBACK_CASE_NOTES with IFNULL there.
-    Columns: person_id, criteria ('Current Fees'), note_title, note_body, event_date.
+    Produces one row per active fee type with a non-zero assessed amount, plus a
+    "No records found" fallback row for pilot clients with no qualifying fee records.
+    Columns: person_id, criteria ('Current Fees'), note_title (fee type), note_body (assessed amount and remaining balance), event_date (date of last fee-related interaction).
     """
+    pilot_clients = _US_TX_FEES_PILOT_CLIENTS_SUBQUERY
     return f"""
     SELECT
         person_id,
@@ -969,18 +980,118 @@ def us_tx_fines_fees_case_notes() -> str:
             " | Balance remaining: ", FORMAT("$%.2f", unpaid_balance)
         )                                                               AS note_body,
         -- fees.start_date surfaces the current date for the time being, but when fees sessions are hydrated with real spans, the start_date will represent the start of the current span, basically indicating the last time a fee was assessed, changed, or paid.
-        -- TODO(#78182): Hydrate fees sessions data with real spans.
+        -- TODO(#78182): Hydrate fees sessions data with real spans and remove above comment.
         fees.start_date                                                 AS event_date,
     FROM `{{project_id}}.analyst_data.us_tx_fines_fees_sessions_preprocessed` fees
-    INNER JOIN (
-        SELECT DISTINCT sc.person_id
-        FROM `{{project_id}}.analyst_data.us_tx_supervision_staff_reporting_chain_materialized` sc
-        -- TODO(OBT-33896): Drop this inner join when we FSL or change the pilot population.
-        INNER JOIN `{{project_id}}.static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users` pilot
-            ON pilot.staff_id = sc.staff_id
-    ) pilot_clients
+    INNER JOIN {pilot_clients} pilot_clients
         USING (person_id)
     WHERE state_code = "US_TX"
         AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
         AND fee_type NOT IN ("ALL", "ALL_NON_RESTITUTION")
-        AND assessed_amount != 0"""
+        AND assessed_amount != 0
+
+    -- TODO(OBT-33896): Drop this block when we FSL.
+    -- If a person in the pilot population does not have fee balances data, then we implement the no-records fallback JSON.
+    UNION ALL
+
+    {_us_tx_fees_no_records_fallback_select(criteria="Current Fees")}
+    FROM {pilot_clients} pilot_clients
+    LEFT JOIN (
+        SELECT DISTINCT person_id
+        FROM `{{project_id}}.analyst_data.us_tx_fines_fees_sessions_preprocessed`
+        WHERE state_code = "US_TX"
+            AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+            AND fee_type NOT IN ("ALL", "ALL_NON_RESTITUTION")
+            AND assessed_amount != 0
+    ) has_fees USING (person_id)
+    WHERE has_fees.person_id IS NULL"""
+
+
+def us_tx_fee_type_case_sql(*, column: str) -> str:
+    """Returns a CASE expression mapping FTRN_TRANS_TYPE single-letter codes to full fee type names, for use in us_tx_fines_fees_recent_payments_case_notes().
+    Used specifically for the TARCDZ_TPFEES_TRANS table, which stores all fee transactions for parole clients.
+    """
+    return f"""CASE {column}
+        WHEN 'C' THEN 'Crime Victim Fund'
+        WHEN 'S' THEN 'Supervision'
+        WHEN 'E' THEN 'Post-Secondary Education Reimbursement'
+        WHEN 'P' THEN 'Sexual Assault Program'
+        WHEN 'R' THEN 'Restitution'
+        ELSE NULL
+    END"""
+
+
+def us_tx_fines_fees_recent_payments_case_notes(
+    *,
+    n_distinct_transaction_dates: int = 3,
+    max_transactions: int = 15,
+) -> str:
+    """Returns a SQL fragment selecting recent fee transactions as case notes.
+
+    Produces one row per transaction on the most recent N distinct payment dates
+    (capped at max_transactions total), plus a "No records found" fallback row for
+    pilot clients with no transaction records.
+    Columns: person_id, criteria ('Most Recent Payments'), note_title, note_body, event_date.
+    """
+    pilot_clients = _US_TX_FEES_PILOT_CLIENTS_SUBQUERY
+
+    # Obtains all recent payments that happened on the last three distinct transaction dates, up to a total of 15 transactions.
+    recent_payments_subquery = f"""(
+        SELECT
+            ext_id.person_id,
+            "Most Recent Payments"                                          AS criteria,
+            -- Maps FTRN_TRANS_TYPE single-letter codes to readable fee type names.
+            -- Excludes V (void) and O; rows with unknown types are pre-filtered out in the inner subquery.
+            -- TODO(OBT-35355): Update when ITD confirms what FTRN_TRANS_TYPE = 'O' represents.
+            {us_tx_fee_type_case_sql(column="trans.FTRN_TRANS_TYPE")}       AS note_title,
+            FORMAT("$%.2f", SAFE_CAST(trans.FTRN_TRANS_AMT AS NUMERIC))    AS note_body,
+            DATE(trans.FTRN_DATE_POSTED)                                    AS event_date,
+        FROM (
+            -- TODO(OBT-35387): Create a preprocessed transactions view that accounts for TODO(OBT-35356) and TODO(OBT-35355)
+            -- TODO(OBT-35356): Clarify with ITD which columns can deduplicate transaction rows and how to identify voided transactions.
+            -- Pre-filter to known fee types so that DENSE_RANK and ROW_NUMBER window functions
+            -- in QUALIFY only count valid rows. Without this, large batches of void (V) rows on a
+            -- single date can consume all ROW_NUMBER slots and push valid rows past the cap.
+            SELECT DISTINCT
+                FTRN_DPS_NO,
+                FTRN_TERM_ID,
+                FTRN_DATE_POSTED,
+                FTRN_TIME_POSTED,
+                FTRN_SEQ_NO,
+                FTRN_TRANS_TYPE,
+                FTRN_TRANS_AMT
+            FROM `{{project_id}}.us_tx_raw_data_up_to_date_views.TARCDZ_TPFEES_TRANS_latest`
+            WHERE {us_tx_fee_type_case_sql(column="FTRN_TRANS_TYPE")} IS NOT NULL
+        ) trans
+        INNER JOIN (
+            SELECT external_id, person_id
+            FROM `{{project_id}}.us_tx_normalized_state.state_person_external_id`
+            WHERE id_type = 'US_TX_SID'
+        ) ext_id
+            ON ext_id.external_id = trans.FTRN_DPS_NO
+        -- TODO(OBT-33896): Drop this inner join when we FSL or change the pilot population.
+        INNER JOIN {pilot_clients} pilot_clients
+            USING (person_id)
+        QUALIFY
+            DENSE_RANK() OVER (
+                PARTITION BY ext_id.person_id
+                ORDER BY DATE(trans.FTRN_DATE_POSTED) DESC
+            ) <= {n_distinct_transaction_dates}
+            AND ROW_NUMBER() OVER (
+                PARTITION BY ext_id.person_id
+                ORDER BY DATE(trans.FTRN_DATE_POSTED) DESC, trans.FTRN_SEQ_NO
+            ) <= {max_transactions}
+    )"""
+
+    # Grabs recent payments and adds in fallback no-records JSON for clients without any transaction data
+    return f"""
+    SELECT person_id, criteria, note_title, note_body, event_date
+    FROM {recent_payments_subquery}
+    -- TODO(OBT-33896): Drop this block when we FSL or change the pilot population.
+    UNION ALL
+    {_us_tx_fees_no_records_fallback_select(criteria="Most Recent Payments")}
+    FROM {pilot_clients} pilot_clients
+    LEFT JOIN (SELECT DISTINCT person_id FROM {recent_payments_subquery}) rp
+        USING(person_id)
+    WHERE rp.person_id IS NULL
+    """
