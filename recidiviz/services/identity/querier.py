@@ -17,11 +17,215 @@
 """Data-access layer between the Identity Service Flask routes and the
 Identity Postgres database. Methods return typed domain objects.
 """
+import uuid
+from collections import defaultdict
+
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.services.identity.types import Identity
+from recidiviz.services.identity import types
+
+
+def _to_external_id(row: schema.ExternalId) -> types.ExternalId:
+    return types.ExternalId(
+        external_id=row.external_id,
+        id_type=row.id_type,
+        is_active=row.is_active,
+    )
+
+
+def _to_sourced_name(row: schema.Name) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Name(
+            surname=row.surname,
+            given_name=row.given_name,
+            middle_names=list(row.middle_names),
+            name_suffix=row.name_suffix,
+            use=row.use,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_date_of_birth(row: schema.DateOfBirth) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.DateOfBirth(
+            date=row.date,
+            canonical=row.canonical,
+            canonical_locked=row.canonical_locked,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_gender(row: schema.Gender) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Gender(
+            gender=row.gender,
+            canonical=row.canonical,
+            canonical_locked=row.canonical_locked,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_race(row: schema.Race) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Race(race=row.race),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_sex(row: schema.Sex) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Sex(
+            sex=row.sex,
+            canonical=row.canonical,
+            canonical_locked=row.canonical_locked,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_ethnicity(row: schema.Ethnicity) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Ethnicity(
+            ethnicity=row.ethnicity,
+            canonical=row.canonical,
+            canonical_locked=row.canonical_locked,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_phone_number(row: schema.PhoneNumber) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.PhoneNumber(
+            number=row.number,
+            type=row.type,
+            preferred=row.preferred,
+        ),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_email(row: schema.Email) -> types.SourcedAttributeValue:
+    return types.SourcedAttributeValue(
+        value=types.Email(address=row.address, address_hash=row.address_hash),
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_identity(row: schema.Identity) -> types.Identity:
+    """Builds a domain Identity from an ORM row, reading its eagerly-loaded
+    child collections."""
+    return types.Identity(
+        recidiviz_id=row.recidiviz_id,
+        tenant=row.tenant,
+        person_type=row.person_type,
+        status=row.status,
+        merged_into=row.merged_into,
+        last_cluster_hash=row.last_cluster_hash,
+        skip_demographic_guard=row.skip_demographic_guard,
+        created_utc=row.created_utc,
+        last_updated_utc=row.last_updated_utc,
+        external_ids=[_to_external_id(e) for e in row.external_ids],
+        attributes=types.IdentityAttributes(
+            names=[_to_sourced_name(n) for n in row.names],
+            dates_of_birth=[_to_sourced_date_of_birth(d) for d in row.dates_of_birth],
+            genders=[_to_sourced_gender(g) for g in row.genders],
+            races=[_to_sourced_race(r) for r in row.races],
+            sexes=[_to_sourced_sex(s) for s in row.sexes],
+            ethnicities=[_to_sourced_ethnicity(e) for e in row.ethnicities],
+            phone_numbers=[_to_sourced_phone_number(p) for p in row.phone_numbers],
+            emails=[_to_sourced_email(e) for e in row.emails],
+        ),
+    )
+
+
+def _to_attribute_conflict(row: schema.AttributeConflict) -> types.AttributeConflict:
+    return types.AttributeConflict(
+        attribute_type=row.attribute_type,
+        retired_value=types.SourcedAttributeValue.from_dict(
+            row.retired_value, attribute_type=row.attribute_type
+        ),
+        surviving_value=types.SourcedAttributeValue.from_dict(
+            row.surviving_value, attribute_type=row.attribute_type
+        ),
+    )
+
+
+def _to_merge_event(row: schema.MergeEvent) -> types.MergeEvent:
+    return types.MergeEvent(
+        surviving_id=row.surviving_id,
+        retired_id=row.retired_id,
+        trigger=row.trigger,
+        requested_by=row.requested_by,
+        timestamp_utc=row.timestamp_utc,
+        conflicts=[_to_attribute_conflict(c) for c in row.conflicts],
+    )
+
+
+def _to_split_event(row: schema.SplitEvent) -> types.SplitEvent:
+    # The moved external IDs and attributes are split across destinations by
+    # new_recidiviz_id, so group them by destination before assembling.
+    moved_external_ids: defaultdict[
+        uuid.UUID, list[schema.SplitEventMovedExternalId]
+    ] = defaultdict(list)
+    for moved_external_id in row.moved_external_ids:
+        moved_external_ids[moved_external_id.new_recidiviz_id].append(moved_external_id)
+
+    moved_attributes: defaultdict[
+        uuid.UUID, list[schema.SplitEventMovedAttribute]
+    ] = defaultdict(list)
+    for moved_attribute in row.moved_attributes:
+        moved_attributes[moved_attribute.new_recidiviz_id].append(moved_attribute)
+
+    return types.SplitEvent(
+        original_id=row.original_id,
+        trigger=row.trigger,
+        requested_by=row.requested_by,
+        timestamp_utc=row.timestamp_utc,
+        destinations=[
+            types.SplitDestination(
+                new_recidiviz_id=new_identity.new_recidiviz_id,
+                external_ids=[
+                    types.ExternalId(
+                        external_id=moved.external_id,
+                        id_type=moved.id_type,
+                        # The moved-external-id audit table records no is_active
+                        # flag; a moved ID is active on its new identity.
+                        is_active=True,
+                    )
+                    for moved in moved_external_ids[new_identity.new_recidiviz_id]
+                ],
+                attributes=[
+                    types.SourcedAttributeValue.from_dict(
+                        moved.attribute_value, attribute_type=moved.attribute_type
+                    )
+                    for moved in moved_attributes[new_identity.new_recidiviz_id]
+                ],
+            )
+            for new_identity in row.new_identities
+        ],
+    )
 
 
 class IdentityServiceQuerier:
@@ -32,18 +236,47 @@ class IdentityServiceQuerier:
         return SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
 
     # TODO(#71776): Remove this example and its test when we add a real method.
-    def get_all_identities(self) -> list[Identity]:
-        """Returns every identity row in the database as a typed domain object."""
+    def get_all_identities(self) -> list[types.Identity]:
+        """Returns every identity row in the database as a typed domain object.
+
+        Child attributes and external IDs are eagerly loaded via the `selectin`
+        relationships on `schema.Identity`, so no per-row follow-up queries are
+        issued.
+        """
         with SessionFactory.using_database(self.database_key) as session:
-            return [
-                Identity(
-                    recidiviz_id=row.recidiviz_id,
-                    tenant=row.tenant,
-                    person_type=row.person_type,
-                    status=row.status,
-                    merged_into=row.merged_into,
-                    created_utc=row.created_utc,
-                    last_updated_utc=row.last_updated_utc,
-                )
-                for row in session.query(schema.Identity).all()
-            ]
+            return [_to_identity(row) for row in session.query(schema.Identity).all()]
+
+    def get_identity_history(
+        self, recidiviz_id: uuid.UUID
+    ) -> types.IdentityHistory | None:
+        """Returns the identity with the given recidiviz_id paired with its merge
+        and split audit history, or None if no such identity exists.
+
+        This is a literal lookup: it does not resolve a retired recidiviz_id to
+        its surviving record. Callers that need that resolution must follow
+        `merged_into` themselves.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            identity_row = (
+                session.query(schema.Identity)
+                .filter(schema.Identity.recidiviz_id == recidiviz_id)
+                .one_or_none()
+            )
+            if identity_row is None:
+                return None
+
+            merge_event_rows = (
+                session.query(schema.MergeEvent)
+                .filter(schema.MergeEvent.surviving_id == recidiviz_id)
+                .all()
+            )
+            split_event_rows = (
+                session.query(schema.SplitEvent)
+                .filter(schema.SplitEvent.original_id == recidiviz_id)
+                .all()
+            )
+            return types.IdentityHistory(
+                identity=_to_identity(identity_row),
+                merge_events=[_to_merge_event(row) for row in merge_event_rows],
+                split_events=[_to_split_event(row) for row in split_event_rows],
+            )

@@ -1,0 +1,2 @@
+id,original_id,trigger,requested_by,timestamp_utc
+1,11111111-1111-1111-1111-111111111111,SPLIT_ENDPOINT,auditor@fake.com,2026-01-01 12:00:00

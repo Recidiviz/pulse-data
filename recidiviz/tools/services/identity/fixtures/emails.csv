@@ -1,0 +1,2 @@
+recidiviz_id,address,address_hash,source_type,source_product_app,last_updated_utc
+11111111-1111-1111-1111-111111111111,dorothy@fake.com,hash123,EXTERNAL_DATA_SYSTEM,,2026-01-01 12:00:00

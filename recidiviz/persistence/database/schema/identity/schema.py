@@ -26,7 +26,7 @@ from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, Date, Forei
 from sqlalchemy import Identity as SaIdentity
 from sqlalchemy import Index, MetaData, PrimaryKeyConstraint, String, sql
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
-from sqlalchemy.orm import DeclarativeMeta, declarative_base
+from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
 
 from recidiviz.common.constants.identity import (
     AttributeType,
@@ -131,6 +131,18 @@ class Identity(IdentityBase):
     auto-split so the update pass can correct its canonical EXTERNAL_DATA_SYSTEM
     attributes without the guard blocking. Cleared back to FALSE immediately
     after the successful update pass in the same import run."""
+
+    # Child collections, eagerly loaded via `selectin` — one batched query per
+    # collection.
+    external_ids = relationship("ExternalId", lazy="selectin")
+    names = relationship("Name", lazy="selectin")
+    dates_of_birth = relationship("DateOfBirth", lazy="selectin")
+    genders = relationship("Gender", lazy="selectin")
+    races = relationship("Race", lazy="selectin")
+    sexes = relationship("Sex", lazy="selectin")
+    ethnicities = relationship("Ethnicity", lazy="selectin")
+    phone_numbers = relationship("PhoneNumber", lazy="selectin")
+    emails = relationship("Email", lazy="selectin")
 
 
 class ExternalId(IdentityBase):
@@ -751,6 +763,9 @@ class MergeEvent(IdentityBase):
     timestamp_utc = Column(UTCDateTime, nullable=False)
     """When the merge was performed."""
 
+    # Same one-directional `selectin` pattern as Identity's children.
+    conflicts = relationship("AttributeConflict", lazy="selectin")
+
 
 class AttributeConflict(IdentityBase):
     """Snapshot of a same-source attribute conflict resolved during a merge.
@@ -799,6 +814,11 @@ class SplitEvent(IdentityBase):
 
     timestamp_utc = Column(UTCDateTime, nullable=False)
     """When the split was performed."""
+
+    # Same one-directional `selectin` pattern as Identity's children.
+    new_identities = relationship("SplitEventNewIdentity", lazy="selectin")
+    moved_external_ids = relationship("SplitEventMovedExternalId", lazy="selectin")
+    moved_attributes = relationship("SplitEventMovedAttribute", lazy="selectin")
 
 
 class SplitEventNewIdentity(IdentityBase):

@@ -1,0 +1,2 @@
+split_event_id,attribute_type,attribute_value,new_recidiviz_id
+1,EMAIL,"{""value"": {""address"": ""dot@fake.com"", ""address_hash"": ""hashdotfakecom""}, ""source_type"": ""EXTERNAL_DATA_SYSTEM"", ""source_product_app"": null, ""last_updated_utc"": ""2026-01-01T12:00:00+00:00""}",33333333-3333-3333-3333-333333333333
