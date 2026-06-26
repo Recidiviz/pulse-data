@@ -23,6 +23,7 @@ from sqlalchemy import func
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -40,13 +41,15 @@ class DirectIngestDataflowJobManager:
 
     def get_most_recent_jobs_location_and_id_by_state_and_instance(
         self,
+        pipeline_type: IngestPipelineType,
     ) -> dict[StateCode, dict[DirectIngestInstance, DataflowJobLocationID]]:
         """Returns a map with the (location, job_id) tuple for the most recent successful
-        ingest Dataflow pipeline for each state_code and ingest instance that has ever
-        had a successful pipeline complete.
+        ingest Dataflow pipeline (of the given pipeline type) for each state_code and
+        ingest instance that has ever had a successful pipeline complete.
         """
         with SessionFactory.using_database(self.database_key) as session:
             # Get the maximum completion_time for each region_code and ingest_instance
+            # (filtered to the requested pipeline type).
             max_completion_subquery = (
                 session.query(
                     schema.DirectIngestDataflowJob.region_code,
@@ -54,6 +57,9 @@ class DirectIngestDataflowJobManager:
                     func.max(schema.DirectIngestDataflowJob.completion_time).label(
                         "max_completion_time"
                     ),
+                )
+                .filter(
+                    schema.DirectIngestDataflowJob.pipeline_type == pipeline_type.value,
                 )
                 .group_by(
                     schema.DirectIngestDataflowJob.region_code,
@@ -80,6 +86,9 @@ class DirectIngestDataflowJobManager:
                         == max_completion_subquery.c.max_completion_time
                     ),
                 )
+                .filter(
+                    schema.DirectIngestDataflowJob.pipeline_type == pipeline_type.value,
+                )
                 .all()
             )
 
@@ -94,13 +103,19 @@ class DirectIngestDataflowJobManager:
             return jobs
 
     def get_most_recent_job(
-        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+        self,
+        *,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        pipeline_type: IngestPipelineType,
     ) -> Optional[DataflowJobLocationID]:
-        """For the provided state_code and ingest_instance, returns the ingest pipline
-        Dataflow job id for the most recent successful run.
+        """For the provided state_code, ingest_instance, and pipeline_type, returns the
+        ingest pipeline Dataflow job id for the most recent successful run.
         """
         all_most_recent = (
-            self.get_most_recent_jobs_location_and_id_by_state_and_instance()
+            self.get_most_recent_jobs_location_and_id_by_state_and_instance(
+                pipeline_type=pipeline_type
+            )
         )
         if state_code not in all_most_recent:
             return None
@@ -108,16 +123,22 @@ class DirectIngestDataflowJobManager:
         return all_most_recent[state_code].get(ingest_instance)
 
     def invalidate_all_dataflow_jobs(
-        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+        self,
+        *,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        pipeline_type: IngestPipelineType,
     ) -> None:
-        """For the provided state_code and ingest_instance, invalidates all Dataflow jobs for
-        that state-code and ingest instance. This should only be done after a raw data re-import
-        in SECONDARY so that these jobs cannot be considered for the watermark for the Ingest DAG.
+        """For the provided state_code, ingest_instance, and pipeline_type, invalidates
+        all Dataflow jobs for that state, instance, and pipeline type. This should only
+        be done after a raw data re-import in SECONDARY so that these jobs cannot be
+        considered for the watermark for the Ingest DAG.
         """
         with SessionFactory.using_database(self.database_key) as session:
             session.query(schema.DirectIngestDataflowJob).filter(
                 schema.DirectIngestDataflowJob.region_code == state_code.value,
                 schema.DirectIngestDataflowJob.ingest_instance == ingest_instance.value,
+                schema.DirectIngestDataflowJob.pipeline_type == pipeline_type.value,
             ).update(
                 {schema.DirectIngestDataflowJob.is_invalidated: True},
                 synchronize_session=False,
@@ -126,10 +147,12 @@ class DirectIngestDataflowJobManager:
     @environment.test_only
     def add_job(
         self,
+        *,
         job_id: str,
         location: str,
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
+        pipeline_type: IngestPipelineType,
         completion_time: datetime.datetime = datetime.datetime.now(),
         is_invalidated: bool = False,
     ) -> DataflowJobLocationID:
@@ -140,6 +163,7 @@ class DirectIngestDataflowJobManager:
                     region_code=state_code.value,
                     location=location,
                     ingest_instance=ingest_instance.value,
+                    pipeline_type=pipeline_type.value,
                     completion_time=completion_time,
                     is_invalidated=is_invalidated,
                 )

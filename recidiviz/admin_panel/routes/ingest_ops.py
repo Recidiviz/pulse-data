@@ -54,6 +54,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_between_instances,
     copy_raw_data_to_backup,
@@ -317,9 +318,14 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             dataflow_job_manager = DirectIngestDataflowJobManager()
-            dataflow_job_manager.invalidate_all_dataflow_jobs(
-                state_code, ingest_instance
-            )
+            # A raw data re-import in SECONDARY invalidates every pipeline that
+            # reads that raw data, so invalidate jobs of all pipeline types.
+            for pipeline_type in IngestPipelineType:
+                dataflow_job_manager.invalidate_all_dataflow_jobs(
+                    state_code=state_code,
+                    ingest_instance=ingest_instance,
+                    pipeline_type=pipeline_type,
+                )
             return ("", HTTPStatus.OK)
         except ValueError as error:
             logging.exception(error)

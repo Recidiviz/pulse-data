@@ -27,6 +27,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
     DirectIngestDataflowJobManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
+from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
@@ -67,6 +70,7 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             location="us-east4",
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         # earlier
@@ -75,6 +79,7 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             location="us-east2",
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         # earlier and invalidated
@@ -83,6 +88,7 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             location="us-east1",
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
@@ -93,6 +99,7 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             location="us-east4",
             ingest_instance=DirectIngestInstance.SECONDARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
@@ -102,12 +109,15 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_YY,
             location="us-east4",
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
         # Act
         actual = self.job_manager.get_most_recent_job(
-            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Assert
@@ -115,7 +125,9 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
 
         # Act 2
         all_jobs = (
-            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance()
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance(
+                pipeline_type=IngestPipelineType.ACTIVITY
+            )
         )
 
         # Assert 2
@@ -136,12 +148,15 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             location="us-east4",
             ingest_instance=DirectIngestInstance.SECONDARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
         # Act
         actual = self.job_manager.get_most_recent_job(
-            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Assert
@@ -149,7 +164,9 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
 
         # Act 2
         all_jobs = (
-            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance()
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance(
+                pipeline_type=IngestPipelineType.ACTIVITY
+            )
         )
 
         # Assert 2
@@ -160,3 +177,69 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
         }
 
         self.assertEqual(expected, all_jobs)
+
+    def test_filters_by_pipeline_type(self) -> None:
+        activity_job = self.job_manager.add_job(
+            job_id="2024-10-01_00_00_00-activity",
+            state_code=StateCode.US_XX,
+            location="us-east1",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
+            completion_time=datetime.datetime(2024, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
+        )
+        identity_job = self.job_manager.add_job(
+            job_id="2024-10-02_00_00_00-identity",
+            state_code=StateCode.US_XX,
+            location="us-east1",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.IDENTITY,
+            completion_time=datetime.datetime(2024, 10, 2, 0, 0, 0, tzinfo=pytz.UTC),
+        )
+
+        # get_most_recent_job returns only the job for the requested pipeline_type
+        self.assertEqual(
+            activity_job,
+            self.job_manager.get_most_recent_job(
+                state_code=StateCode.US_XX,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                pipeline_type=IngestPipelineType.ACTIVITY,
+            ),
+        )
+        self.assertEqual(
+            identity_job,
+            self.job_manager.get_most_recent_job(
+                state_code=StateCode.US_XX,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                pipeline_type=IngestPipelineType.IDENTITY,
+            ),
+        )
+
+        # get_most_recent_jobs_location_and_id_by_state_and_instance filters too
+        self.assertEqual(
+            {StateCode.US_XX: {DirectIngestInstance.PRIMARY: activity_job}},
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance(
+                pipeline_type=IngestPipelineType.ACTIVITY
+            ),
+        )
+        self.assertEqual(
+            {StateCode.US_XX: {DirectIngestInstance.PRIMARY: identity_job}},
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance(
+                pipeline_type=IngestPipelineType.IDENTITY
+            ),
+        )
+
+        # invalidate_all_dataflow_jobs only affects rows for the requested pipeline_type
+        self.job_manager.invalidate_all_dataflow_jobs(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
+        )
+        _, activity_job_id = activity_job
+        _, identity_job_id = identity_job
+        with SessionFactory.using_database(self.job_manager.database_key) as session:
+            invalidated_by_job_id = {
+                row.job_id: row.is_invalidated
+                for row in session.query(schema.DirectIngestDataflowJob).all()
+            }
+        self.assertTrue(invalidated_by_job_id[activity_job_id])
+        self.assertFalse(invalidated_by_job_id[identity_job_id])

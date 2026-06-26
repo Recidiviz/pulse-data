@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager i
     DirectIngestDataflowWatermarkManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
@@ -72,6 +73,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -81,12 +83,14 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             watermark_datetime=datetime.datetime(
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 8, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         # earlier
         earlier_job_id = "2020-09-01_00_00_00"
@@ -95,6 +99,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=earlier_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -102,6 +107,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 7, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         # earlier and invalidated
         invalidated_job_id = "2020-09-01_00_00_00-invalidated"
@@ -110,6 +116,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
@@ -118,6 +125,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         # other instance
         other_instance_job_id = "2020-12-01_01_01-other_instance"
@@ -126,6 +134,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=other_instance_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.SECONDARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -135,6 +144,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             watermark_datetime=datetime.datetime(
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         # other region
         other_region_job_id = "2020-12-01_01_01-other_region"
@@ -143,6 +153,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=other_region_job_id,
             state_code=StateCode.US_YY,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -152,11 +163,14 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             watermark_datetime=datetime.datetime(
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Act
         actual = self.watermark_manager.get_raw_data_watermarks_for_latest_run(
-            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Assert
@@ -176,6 +190,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=initial_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -185,12 +200,14 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             watermark_datetime=datetime.datetime(
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=initial_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 8, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         # invalidated
         invalidated_job_id = "2020-12-01_00_00_00-invalidated"
@@ -199,6 +216,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
@@ -207,17 +225,21 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="invalidated",
             watermark_datetime=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Act
         actual = self.watermark_manager.get_raw_data_watermarks_for_latest_run(
-            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         # Assert
@@ -227,4 +249,58 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
                 "invalidated": datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
                 "multiple": datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
             },
+        )
+
+    def test_get_raw_data_watermarks_filters_by_pipeline_type(self) -> None:
+        activity_job_id = "2024-10-01_00_00_00-activity"
+        identity_job_id = "2024-10-02_00_00_00-identity"
+        self.job_manager.add_job(
+            location="us-east1",
+            job_id=activity_job_id,
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
+            completion_time=datetime.datetime(2024, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
+        )
+        self.watermark_manager.add_raw_data_watermark(
+            job_id=activity_job_id,
+            state_code=StateCode.US_XX,
+            raw_data_file_tag="activity_tag",
+            watermark_datetime=datetime.datetime(2024, 7, 1, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.ACTIVITY,
+        )
+        self.job_manager.add_job(
+            location="us-east1",
+            job_id=identity_job_id,
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.IDENTITY,
+            completion_time=datetime.datetime(2024, 10, 2, 0, 0, 0, tzinfo=pytz.UTC),
+        )
+        self.watermark_manager.add_raw_data_watermark(
+            job_id=identity_job_id,
+            state_code=StateCode.US_XX,
+            raw_data_file_tag="identity_tag",
+            watermark_datetime=datetime.datetime(2024, 8, 1, tzinfo=pytz.UTC),
+            pipeline_type=IngestPipelineType.IDENTITY,
+        )
+
+        activity = self.watermark_manager.get_raw_data_watermarks_for_latest_run(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
+        )
+        identity = self.watermark_manager.get_raw_data_watermarks_for_latest_run(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.IDENTITY,
+        )
+
+        self.assertDictEqual(
+            activity,
+            {"activity_tag": datetime.datetime(2024, 7, 1, tzinfo=pytz.UTC)},
+        )
+        self.assertDictEqual(
+            identity,
+            {"identity_tag": datetime.datetime(2024, 8, 1, tzinfo=pytz.UTC)},
         )

@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
@@ -277,6 +278,7 @@ class IngestDataflowOperations(TestCase):
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -284,12 +286,14 @@ class IngestDataflowOperations(TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="normal",
             watermark_datetime=datetime.datetime(2020, 8, 1, 0, 0, 0),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="normal2",
             watermark_datetime=datetime.datetime(2020, 6, 29, 6, 0, 30),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         file_path = GcsfsFilePath.from_absolute_path(
@@ -327,6 +331,7 @@ class IngestDataflowOperations(TestCase):
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0),
         )
 
@@ -335,12 +340,14 @@ class IngestDataflowOperations(TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="non_expired",
             watermark_datetime=datetime.datetime(2020, 7, 1, 12, 0, 50),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="expired",
             watermark_datetime=datetime.datetime(2020, 7, 1, 10, 0, 0),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         file_path = GcsfsFilePath.from_absolute_path(
@@ -376,6 +383,7 @@ class IngestDataflowOperations(TestCase):
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
+            pipeline_type=IngestPipelineType.ACTIVITY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0),
         )
         self.watermark_manager.add_raw_data_watermark(
@@ -383,18 +391,21 @@ class IngestDataflowOperations(TestCase):
             state_code=StateCode.US_XX,
             raw_data_file_tag="expired",
             watermark_datetime=datetime.datetime(2020, 7, 1, 12, 0, 30),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="expired2",
             watermark_datetime=datetime.datetime(2020, 8, 1, 0, 0, 0),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
         self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="expired3",
             watermark_datetime=datetime.datetime(2020, 6, 1, 0, 0, 0),
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
 
         file_path = GcsfsFilePath.from_absolute_path(

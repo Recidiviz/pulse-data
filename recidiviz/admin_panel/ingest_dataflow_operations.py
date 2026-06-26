@@ -40,6 +40,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
@@ -132,8 +133,10 @@ def get_all_latest_ingest_jobs() -> Dict[
             Optional[DataflowPipelineMetadataResponse],
         ] = defaultdict()
 
-        most_recent_job_ids_map = (
-            DirectIngestDataflowJobManager().get_most_recent_jobs_location_and_id_by_state_and_instance()
+        # TODO(OBT-35091): Let the admin panel pick a pipeline_type (or fetch
+        # both ACTIVITY and IDENTITY) instead of hardcoding ACTIVITY here.
+        most_recent_job_ids_map = DirectIngestDataflowJobManager().get_most_recent_jobs_location_and_id_by_state_and_instance(
+            pipeline_type=IngestPipelineType.ACTIVITY
         )
 
         locations_futures = {
@@ -162,9 +165,13 @@ def get_all_latest_ingest_jobs() -> Dict[
 def get_latest_run_raw_data_watermarks(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> Dict[str, datetime.datetime]:
+    # TODO(OBT-35091): Push pipeline_type up into this function's signature (and
+    # the admin panel route above it).
     return (
         DirectIngestDataflowWatermarkManager().get_raw_data_watermarks_for_latest_run(
-            state_code, ingest_instance
+            state_code=state_code,
+            ingest_instance=ingest_instance,
+            pipeline_type=IngestPipelineType.ACTIVITY,
         )
     )
 
@@ -173,10 +180,14 @@ def get_raw_data_tags_not_meeting_watermark(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> List[str]:
     """Returns the raw data file tags with data that is older than the data used in the last non-invalidated ingest dataflow pipeline run."""
+    # TODO(OBT-35091): Push pipeline_type up into this function's signature (and
+    # the admin panel route above it).
     watermarks_by_file_tag: Dict[
         str, datetime.datetime
     ] = DirectIngestDataflowWatermarkManager().get_raw_data_watermarks_for_latest_run(
-        state_code, ingest_instance
+        state_code=state_code,
+        ingest_instance=ingest_instance,
+        pipeline_type=IngestPipelineType.ACTIVITY,
     )
 
     manager = DirectIngestRawFileMetadataManager(state_code.value, ingest_instance)

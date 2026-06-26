@@ -21,6 +21,7 @@ from typing import Dict
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -35,8 +36,15 @@ class DirectIngestDataflowWatermarkManager:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
     def get_raw_data_watermarks_for_latest_run(
-        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+        self,
+        *,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        pipeline_type: IngestPipelineType,
     ) -> Dict[str, datetime.datetime]:
+        """Returns {raw_data_file_tag: watermark_datetime} for the most recent
+        Dataflow job for the given state, instance, and pipeline type.
+        """
         with SessionFactory.using_database(self.database_key) as session:
             # Note: The data in `state` will reflect the output of the most recent job,
             # even if that job has been invalidated, so we include invalidated jobs here
@@ -46,6 +54,7 @@ class DirectIngestDataflowWatermarkManager:
                     schema.DirectIngestDataflowJob.region_code == state_code.value,
                     schema.DirectIngestDataflowJob.ingest_instance
                     == ingest_instance.value,
+                    schema.DirectIngestDataflowJob.pipeline_type == pipeline_type.value,
                 )
                 .order_by(schema.DirectIngestDataflowJob.completion_time.desc())
                 .limit(1)
@@ -70,10 +79,12 @@ class DirectIngestDataflowWatermarkManager:
     @environment.test_only
     def add_raw_data_watermark(
         self,
+        *,
         job_id: str,
         state_code: StateCode,
         raw_data_file_tag: str,
         watermark_datetime: datetime.datetime,
+        pipeline_type: IngestPipelineType,
     ) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(
@@ -82,5 +93,6 @@ class DirectIngestDataflowWatermarkManager:
                     region_code=state_code.value,
                     raw_data_file_tag=raw_data_file_tag,
                     watermark_datetime=watermark_datetime,
+                    pipeline_type=pipeline_type.value,
                 )
             )
