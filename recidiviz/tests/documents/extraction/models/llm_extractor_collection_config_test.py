@@ -21,12 +21,14 @@ entity-group resolution against the schema (now storing resolved field objects),
 cross-config resolution (model registry, parent directory), and tolerance of the
 not-yet-modeled blocks.
 """
+import json
 import re
 import tempfile
 from pathlib import Path
 from typing import Any
 from unittest import TestCase
 
+import jsonschema
 import yaml
 
 from recidiviz.documents.extraction.config_defaults import (
@@ -130,6 +132,17 @@ class ParseAllCollectionConfigsTest(TestCase):
         # not assert on any state's specifics — the fake config covers structure.
         configs = load_llm_extractor_collection_configs()
         self.assertTrue(configs)
+
+    def test_all_real_configs_generate_valid_json_schema(self) -> None:
+        # Every real collection's output schema must lower to a valid JSON Schema.
+        configs = load_llm_extractor_collection_configs()
+        self.assertTrue(configs)
+        for name, collection in configs.items():
+            with self.subTest(collection=name):
+                # check_schema is a real classmethod missing from the type stubs.
+                jsonschema.Draft202012Validator.check_schema(  # type: ignore[attr-defined]
+                    collection.generate_json_schema()
+                )
 
     def test_get_unknown_collection_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -522,3 +535,53 @@ class CollectionConfigFromYamlTest(TestCase):
             ConfidenceLevel.VERBATIM,
             config.output_schema.get_field("a").minimum_confidence_level,
         )
+
+
+class GenerateJsonSchemaTest(TestCase):
+    """Tests the `generate_json_schema` / `generate_json_schema_str` methods,
+    using the fake collection. The generated schema's shape is covered in detail
+    in llm_json_schema_generator_test.py.
+    """
+
+    def setUp(self) -> None:
+        self.collection = get_llm_extractor_collection_config(
+            _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+
+    def test_generate_json_schema_is_valid(self) -> None:
+        # Raises if the generated schema is not valid JSON Schema. check_schema is
+        # a real classmethod missing from the type stubs.
+        jsonschema.Draft202012Validator.check_schema(  # type: ignore[attr-defined]
+            self.collection.generate_json_schema()
+        )
+
+    def test_generate_json_schema_str_round_trips(self) -> None:
+        self.assertEqual(
+            self.collection.generate_json_schema(),
+            json.loads(self.collection.generate_json_schema_str()),
+        )
+
+    def test_generate_json_schema_str_is_deterministic(self) -> None:
+        self.assertEqual(
+            self.collection.generate_json_schema_str(),
+            self.collection.generate_json_schema_str(),
+        )
+
+    def test_generate_json_schema_str_preserves_meaningful_order(self) -> None:
+        # Guards against an accidental sort_keys=True, which would reorder the
+        # semantically-ordered companion fields. The assertions below use
+        # ordering pairs that DISAGREE with alphabetical order, so they would
+        # fail if the keys were sorted: the meaningful order is
+        # adversarial_interpretation, value, confidence_level, citations, but
+        # alphabetized it would be adversarial_interpretation, citations,
+        # confidence_level, value.
+        schema_str = self.collection.generate_json_schema_str()
+
+        def key_index(field_name: str) -> int:
+            return schema_str.index(f'"{field_name}"')
+
+        # value precedes confidence_level (alphabetically value sorts last).
+        self.assertLess(key_index("value"), key_index("confidence_level"))
+        # confidence_level precedes citations (alphabetically citations sorts
+        # first).
+        self.assertLess(key_index("confidence_level"), key_index("citations"))

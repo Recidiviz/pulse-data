@@ -1,0 +1,1394 @@
+{
+  "type": "object",
+  "description": "Employment information for a single case note.\n",
+  "properties": {
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "description": "Use when the document is NOT relevant.",
+          "properties": {
+            "is_relevant": {
+              "type": "boolean",
+              "description": "Whether this document contains information relevant to: Extract employment-related information from supervision case notes, including current employment status, job search activity, and details about current employers. Playground collection run against fictional US_OZ data to exercise the extraction platform; never run against real state data.\n",
+              "const": false
+            }
+          },
+          "required": [
+            "is_relevant"
+          ]
+        },
+        {
+          "type": "object",
+          "description": "Use when the document IS relevant.",
+          "properties": {
+            "is_relevant": {
+              "type": "boolean",
+              "description": "Whether this document contains information relevant to: Extract employment-related information from supervision case notes, including current employment status, job search activity, and details about current employers. Playground collection run against fictional US_OZ data to exercise the extraction platform; never run against real state data.\n",
+              "const": true
+            },
+            "primary_status": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "description": "A value was extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The person's primary employment status as described in the case note.\n",
+                      "enum": [
+                        "employed",
+                        "unemployed",
+                        "other"
+                      ]
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "value",
+                    "confidence_level",
+                    "citations"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "description": "No value could be extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "null_reason": {
+                      "type": "string",
+                      "description": "Why no value could be extracted for this field.",
+                      "enum": [
+                        "not_applicable",
+                        "no_info_found",
+                        "explicitly_unknown"
+                      ]
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "null_reason",
+                    "confidence_level"
+                  ]
+                }
+              ]
+            },
+            "search_status": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "description": "A value was extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Whether the person is actively searching for employment.\n",
+                      "enum": [
+                        "searching",
+                        "not_searching",
+                        "other"
+                      ]
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "value",
+                    "confidence_level",
+                    "citations"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "description": "No value could be extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "null_reason": {
+                      "type": "string",
+                      "description": "Why no value could be extracted for this field.",
+                      "enum": [
+                        "not_applicable",
+                        "no_info_found",
+                        "explicitly_unknown"
+                      ]
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "null_reason",
+                    "confidence_level"
+                  ]
+                }
+              ]
+            },
+            "unemployment_reason": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "description": "A value was extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The stated reason the person is not working (e.g. poor health, recent return to custody), if one is given.\n"
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "value",
+                    "confidence_level",
+                    "citations"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "description": "No value could be extracted.",
+                  "properties": {
+                    "adversarial_interpretation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                    },
+                    "null_reason": {
+                      "type": "string",
+                      "description": "Why no value could be extracted for this field.",
+                      "enum": [
+                        "not_applicable",
+                        "no_info_found",
+                        "explicitly_unknown"
+                      ]
+                    },
+                    "confidence_level": {
+                      "type": "string",
+                      "description": "The evidence quality behind this field's value.",
+                      "enum": [
+                        "speculative",
+                        "inferred",
+                        "explicit",
+                        "verbatim"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                      "items": {
+                        "type": "object",
+                        "description": "A single quote locating supporting text within the document.",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The exact quoted text from the document."
+                          },
+                          "start": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text begins."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "description": "Character offset in the document where the quoted text ends."
+                          }
+                        },
+                        "required": [
+                          "text",
+                          "start",
+                          "end"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "adversarial_interpretation",
+                    "null_reason",
+                    "confidence_level"
+                  ]
+                }
+              ]
+            },
+            "employment_note_summary": {
+              "type": "string",
+              "description": "One-sentence summary of the employment-related content of the note, composed by the model rather than extracted from the text.\n"
+            },
+            "employers": {
+              "type": "array",
+              "description": "List of current employers mentioned in the case note. A person who runs their own venture is employed by that venture with employment_type=self_employed.\n",
+              "items": {
+                "type": "object",
+                "description": "A single element of the array.",
+                "properties": {
+                  "employer_name": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Name of the employer."
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  },
+                  "employment_type": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Type of employment.",
+                            "enum": [
+                              "employee_ft",
+                              "employee_pt",
+                              "self_employed",
+                              "gig",
+                              "temp_agency",
+                              "other"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  },
+                  "job_title": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "The person's job title or role."
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  },
+                  "pay_rate_amount": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "number",
+                            "description": "Pay rate amount (numeric value only)."
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  },
+                  "pay_rate_time_period": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Time period for the pay rate.",
+                            "enum": [
+                              "hourly",
+                              "daily",
+                              "weekly",
+                              "monthly",
+                              "annually"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "employer_name"
+                ]
+              }
+            },
+            "employment_changes": {
+              "type": "array",
+              "description": "Employment changes mentioned in the case note (e.g. started or lost a job).\n",
+              "items": {
+                "type": "object",
+                "description": "A single element of the array.",
+                "properties": {
+                  "employment_change_type": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Type of employment change.",
+                            "enum": [
+                              "started_job",
+                              "lost_job",
+                              "suspended",
+                              "other"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  },
+                  "employment_change_date": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "description": "A value was extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Date of the change, if mentioned (free text)."
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "value",
+                          "confidence_level",
+                          "citations"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "description": "No value could be extracted.",
+                        "properties": {
+                          "adversarial_interpretation": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                          },
+                          "null_reason": {
+                            "type": "string",
+                            "description": "Why no value could be extracted for this field.",
+                            "enum": [
+                              "not_applicable",
+                              "no_info_found",
+                              "explicitly_unknown"
+                            ]
+                          },
+                          "confidence_level": {
+                            "type": "string",
+                            "description": "The evidence quality behind this field's value.",
+                            "enum": [
+                              "speculative",
+                              "inferred",
+                              "explicit",
+                              "verbatim"
+                            ]
+                          },
+                          "citations": {
+                            "type": "array",
+                            "description": "Exact quotes from the document supporting why no value was extracted (optional).",
+                            "items": {
+                              "type": "object",
+                              "description": "A single quote locating supporting text within the document.",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The exact quoted text from the document."
+                                },
+                                "start": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text begins."
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "description": "Character offset in the document where the quoted text ends."
+                                }
+                              },
+                              "required": [
+                                "text",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "adversarial_interpretation",
+                          "null_reason",
+                          "confidence_level"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "employment_change_type"
+                ]
+              }
+            }
+          },
+          "required": [
+            "is_relevant",
+            "primary_status",
+            "search_status"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "result"
+  ]
+}

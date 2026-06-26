@@ -135,6 +135,24 @@ class ConfidenceLevel(Enum):
         return self.rank >= minimum.rank
 
 
+class NullReason(Enum):
+    """Why an INFERRED field has no extracted value. Returned by the model on the
+    null branch of a field's output, and the allowed values of the generated
+    JSON Schema's `null_reason` property.
+    """
+
+    NOT_APPLICABLE = "not_applicable"
+    """The field does not apply given the values of other fields (e.g.
+    `employer_name` when `primary_status` is "unemployed").
+    """
+
+    NO_INFO_FOUND = "no_info_found"
+    """The document does not mention this information."""
+
+    EXPLICITLY_UNKNOWN = "explicitly_unknown"
+    """The document acknowledges the information but states it is unknown."""
+
+
 @attr.define(frozen=True, kw_only=True)
 class LLMOutputSemanticConsistencyConstraint(abc.ABC):
     """A constraint on when an output schema field may be non-null, conditioned

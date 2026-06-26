@@ -23,6 +23,7 @@ entity groups.
 The `golden_eval` block is still consumed off the YAML and discarded so the unused-key
 check passes — see the deferral note in `from_yaml`.
 """
+import json
 from functools import cache
 from pathlib import Path
 from types import ModuleType
@@ -36,6 +37,10 @@ from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.documents import config as default_config_module
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_MINIMUM_CONFIDENCE_LEVEL,
+)
+from recidiviz.documents.extraction.models.json_schema_nodes import JSONSchemaDict
+from recidiviz.documents.extraction.models.llm_json_schema_generator import (
+    LLMJsonSchemaGenerator,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
     LLMModelRegistry,
@@ -237,6 +242,22 @@ class LLMExtractorCollectionConfig:
                 f"Collection [{self.name}] declares duplicate entity group "
                 f"names: {sorted(duplicate_names)}."
             )
+
+    def generate_json_schema(self) -> JSONSchemaDict:
+        """Returns the deterministic JSON output schema that will be provided to
+        the LLM.
+        """
+        return LLMJsonSchemaGenerator.generate(self.output_schema)
+
+    def generate_json_schema_str(self) -> str:
+        """Returns a string representation of the JSON output schema that will be
+        provided to the LLM.
+        """
+
+        # NOTE: sort_keys=True is *explicitly* omitted here. The key order in the
+        # generated schema is semantically meaningful and must not be scrambled.
+        # Alphabetizing the keys would reorder them.
+        return json.dumps(self.generate_json_schema())
 
     @classmethod
     def from_yaml(

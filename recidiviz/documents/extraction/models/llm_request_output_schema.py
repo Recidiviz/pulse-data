@@ -30,12 +30,10 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
     ScalarLLMRequestOutputSchemaField,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
-
-IS_RELEVANT_FIELD_NAME = "is_relevant"
-"""Name of the relevance field the framework injects into every first-order
-output schema. Reserved — a collection's `output_schema` may not define it.
-"""
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -98,7 +96,7 @@ class LLMRequestOutputSchema:
             )
 
     @property
-    def is_relevant_field(self) -> LLMRequestOutputSchemaField:
+    def is_relevant_field(self) -> ScalarLLMRequestOutputSchemaField:
         """Returns the framework-injected `is_relevant` field: a bare
         (STRUCTURAL) boolean, always required, whose description is composed
         from the collection description.
