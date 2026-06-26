@@ -52,6 +52,7 @@ output:
                 StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
                   - 1 - Regular (Discretionary)
                   - 2 - Reparole
+                  - 6 - Streamlined Parole
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                   - Supervision Level Change # Recidiviz-made to indicate period changes due to supervision level change
                   - Parole Officer Change # Recidiviz-made to indicate new periods from parole office changes
