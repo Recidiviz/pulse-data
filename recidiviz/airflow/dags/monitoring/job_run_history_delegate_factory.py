@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.monitoring.airflow_task_runtime_delegate import (
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_calculation_dag_id,
+    get_identity_ingest_dag_id,
     get_llm_document_extraction_dag_id,
     get_metadata_maintenance_dag_id,
     get_monitoring_dag_id,
@@ -125,6 +126,13 @@ class JobRunHistoryDelegateFactory:
                 AirflowTaskRunHistoryDelegate(dag_id=dag_id),
                 # TODO(OBT-32107) Add an AirflowTaskRuntimeDelegate with reasonable
                 # runtime configs for the LLM document extraction DAG.
+            ]
+
+        if dag_id == get_identity_ingest_dag_id(project_id):
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                # TODO(OBT-33491) Add an AirflowTaskRuntimeDelegate with reasonable
+                # runtime configs for the identity ingest DAG.
             ]
 
         raise ValueError(f"No configured builder delegate for: {dag_id}")

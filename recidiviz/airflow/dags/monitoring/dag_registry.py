@@ -20,6 +20,13 @@ project.
 
 from typing import List, Set
 
+from recidiviz.airflow.dags.utils.config_utils import (
+    DOCUMENT_COLLECTION_NAME_FILTER,
+    INGEST_INSTANCE,
+    STATE_CODE_FILTER,
+    TENANT_FILTER,
+)
+
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
 
 
@@ -48,6 +55,11 @@ def get_llm_document_extraction_dag_id(project_id: str) -> str:
     return f"{project_id}_llm_document_extraction_dag"
 
 
+def get_identity_ingest_dag_id(project_id: str) -> str:
+    """Returns the id of the identity ingest DAG defined in identity_ingest_dag.py."""
+    return f"{project_id}_identity_ingest_dag"
+
+
 def get_sftp_dag_id(project: str) -> str:
     """Returns the id of the monitoring DAG defined in sftp_dag.py."""
     return f"{project}_sftp_dag"
@@ -64,6 +76,7 @@ def get_all_dag_ids(project_id: str) -> List[str]:
         get_raw_data_import_dag_id(project_id),
         get_metadata_maintenance_dag_id(project_id),
         get_llm_document_extraction_dag_id(project_id),
+        get_identity_ingest_dag_id(project_id),
     ]
 
 
@@ -81,13 +94,15 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
         return set()
     if dag_id == get_raw_data_import_dag_id(project_id):
         return {
-            "ingest_instance",
-            "state_code_filter",
+            INGEST_INSTANCE,
+            STATE_CODE_FILTER,
         }
     if dag_id == get_metadata_maintenance_dag_id(project_id):
         return set()
     if dag_id == get_llm_document_extraction_dag_id(project_id):
-        return {"state_code_filter", "document_collection_name_filter"}
+        return {STATE_CODE_FILTER, DOCUMENT_COLLECTION_NAME_FILTER}
+    if dag_id == get_identity_ingest_dag_id(project_id):
+        return {TENANT_FILTER}
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
 
 
@@ -105,9 +120,11 @@ def get_discrete_configuration_parameters(project_id: str, dag_id: str) -> List[
     if dag_id == get_sftp_dag_id(project_id):
         return []
     if dag_id == get_raw_data_import_dag_id(project_id):
-        return ["ingest_instance"]
+        return [INGEST_INSTANCE]
     if dag_id == get_metadata_maintenance_dag_id(project_id):
         return []
     if dag_id == get_llm_document_extraction_dag_id(project_id):
+        return []
+    if dag_id == get_identity_ingest_dag_id(project_id):
         return []
     raise ValueError(f"Unexpected dag_id [{dag_id}]")

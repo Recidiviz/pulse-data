@@ -18,15 +18,12 @@
 Logic for state and ingest instance specific dataflow pipelines.
 """
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Protocol, Tuple
 
 from airflow.decorators import task
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 
-from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
-    IngestDataflowPipelineTaskGroupDelegate,
-)
 from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
 )
@@ -48,6 +45,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.constants import CHECK_FOR_VALID_WATERMARKS_TASK_ID
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
+    DataflowPipelineTaskGroupDelegate,
     build_dataflow_pipeline_task_group,
 )
 from recidiviz.common.constants.states import StateCode
@@ -58,6 +56,19 @@ from recidiviz.ingest.direct.raw_data.watermark_utils import (
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
+
+
+class IngestPipelineDelegateClass(Protocol):
+    """Constructor signature shared by the activity and identity ingest delegates."""
+
+    def __call__(
+        self,
+        *,
+        state_code: StateCode,
+        max_update_datetimes_operator: CloudSqlQueryOperator,
+    ) -> DataflowPipelineTaskGroupDelegate:
+        ...
+
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -211,10 +222,15 @@ def _initialize_ingest_pipeline(
 
 
 def create_single_ingest_pipeline_group(
-    state_code: StateCode, pipeline_type: IngestPipelineType
+    *,
+    state_code: StateCode,
+    pipeline_type: IngestPipelineType,
+    delegate_class: IngestPipelineDelegateClass,
 ) -> TaskGroup:
     """
-    Creates a group that runs ingest logic for the given state.
+    Creates a group that runs ingest logic for the given state, using
+    |delegate_class| (constructed with |state_code| and the run's
+    max-update-datetimes operator) to build the Dataflow pipeline subtask.
     """
 
     operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
@@ -230,7 +246,7 @@ def create_single_ingest_pipeline_group(
         )
 
         dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
-            delegate=IngestDataflowPipelineTaskGroupDelegate(
+            delegate=delegate_class(
                 state_code=state_code,
                 max_update_datetimes_operator=get_max_update_datetimes,
             )

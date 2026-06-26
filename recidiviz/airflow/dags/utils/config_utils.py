@@ -42,6 +42,7 @@ class QueuingActionType(Enum):
 INGEST_INSTANCE = "ingest_instance"
 SANDBOX_PREFIX = "sandbox_prefix"
 STATE_CODE_FILTER = "state_code_filter"
+TENANT_FILTER = "tenant_filter"
 DOCUMENT_COLLECTION_NAME_FILTER = "document_collection_name_filter"
 
 
@@ -89,6 +90,11 @@ def get_ingest_instance(dag_run: DagRun | DagRunPydantic) -> Optional[str]:
 def get_state_code_filter(dag_run: DagRun | DagRunPydantic) -> Optional[str]:
     state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
     return state_code_filter.upper() if state_code_filter else None
+
+
+def get_tenant_filter(dag_run: DagRun | DagRunPydantic) -> Optional[str]:
+    tenant_filter = dag_run.conf.get(TENANT_FILTER)
+    return tenant_filter.upper() if tenant_filter else None
 
 
 def get_document_collection_name_filter(

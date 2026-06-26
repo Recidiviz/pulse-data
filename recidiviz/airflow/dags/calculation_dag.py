@@ -30,6 +30,9 @@ from google.api_core.retry import Retry
 from recidiviz.airflow.dags.calculation.constants import (
     STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID,
 )
+from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
+    IngestDataflowPipelineTaskGroupDelegate,
+)
 from recidiviz.airflow.dags.calculation.dataflow.metrics_pipeline_task_group_delegate import (
     MetricsDataflowPipelineTaskGroupDelegate,
 )
@@ -203,7 +206,9 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
             f"{state_code.value}_dataflow_pipelines"
         ) as state_pipelines_group:
             ingest_group = create_single_ingest_pipeline_group(
-                state_code, IngestPipelineType.ACTIVITY
+                state_code=state_code,
+                pipeline_type=IngestPipelineType.ACTIVITY,
+                delegate_class=IngestDataflowPipelineTaskGroupDelegate,
             )
 
             for pipeline_config in metric_pipeline_params_by_state.get(

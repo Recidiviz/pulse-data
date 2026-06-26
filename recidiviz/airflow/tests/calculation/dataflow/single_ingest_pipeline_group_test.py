@@ -30,6 +30,9 @@ from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
+from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
+    IngestDataflowPipelineTaskGroupDelegate,
+)
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
     _check_for_valid_watermarks_task,
     check_for_valid_watermarks,
@@ -77,7 +80,9 @@ def _create_test_single_ingest_pipeline_group_dag(state_code: StateCode) -> DAG:
     )
     def test_single_ingest_pipeline_group_dag() -> None:
         create_single_ingest_pipeline_group(
-            state_code, IngestPipelineType.ACTIVITY
+            state_code=state_code,
+            pipeline_type=IngestPipelineType.ACTIVITY,
+            delegate_class=IngestDataflowPipelineTaskGroupDelegate,
         ) >> EmptyOperator(task_id=_DOWNSTREAM_TASK_ID)
 
     return test_single_ingest_pipeline_group_dag()

@@ -30,7 +30,10 @@ from recidiviz.airflow.dags.utils.branch_utils import (
     get_branch_leaf_tasks,
     get_branch_root_tasks,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
+from recidiviz.airflow.dags.utils.config_utils import (
+    get_state_code_filter,
+    get_tenant_filter,
+)
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -39,6 +42,11 @@ from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
 def select_state_code_parameter_branch(dag_run: DagRun) -> Optional[List[str]]:
     state_code_filter = get_state_code_filter(dag_run)
     return [state_code_filter] if state_code_filter else None
+
+
+def select_tenant_parameter_branch(dag_run: DagRun) -> Optional[List[str]]:
+    tenant_filter = get_tenant_filter(dag_run)
+    return [tenant_filter] if tenant_filter else None
 
 
 def select_all_branches(
