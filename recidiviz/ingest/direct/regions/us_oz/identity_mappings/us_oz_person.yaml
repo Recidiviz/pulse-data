@@ -1,0 +1,66 @@
+# Identity mapping for the US_OZ `person` data source. Each row produces one
+# IdentityFragment with full identity attributes attached.
+manifest_language: 1.0.0
+input_columns:
+  ID: STRING
+  FirstName: STRING
+  LastName: STRING
+  DOB: DATE
+  Sex: STRING
+  Race: STRING
+  Ethnicity: STRING
+  PhoneNumber: STRING
+  Email: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: ID
+          id_type: $literal("US_OZ_IDENTITY_PERSON_ID")
+    attributes:
+      IdentityAttributes:
+        person_type: $literal_enum(PersonType.JII)
+        name:
+          IdentityName:
+            given_name: FirstName
+            surname: LastName
+        birthdate: DOB
+        sex:
+          IdentitySex:
+            sex:
+              $enum_mapping:
+                $raw_text: Sex
+                $mappings:
+                  Sex.MALE: M
+                  Sex.FEMALE: F
+                  Sex.OTHER: O
+                  Sex.EXTERNAL_UNKNOWN: U
+        races:
+          - IdentityRace:
+              race:
+                $enum_mapping:
+                  $raw_text: Race
+                  $mappings:
+                    Race.AMERICAN_INDIAN_ALASKAN_NATIVE: AI
+                    Race.ASIAN: A
+                    Race.BLACK: B
+                    Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: NH
+                    Race.OTHER: O
+                    Race.WHITE: W
+                    Race.EXTERNAL_UNKNOWN: U
+        ethnicity:
+          IdentityEthnicity:
+            ethnicity:
+              $enum_mapping:
+                $raw_text: Ethnicity
+                $mappings:
+                  Ethnicity.HISPANIC: H
+                  Ethnicity.NOT_HISPANIC: N
+                  Ethnicity.EXTERNAL_UNKNOWN: U
+        phone_numbers:
+          - IdentityPhoneNumber:
+              number: PhoneNumber
+        emails:
+          - IdentityEmail:
+              address: Email

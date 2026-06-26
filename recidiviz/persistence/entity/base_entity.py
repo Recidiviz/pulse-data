@@ -279,6 +279,12 @@ class EnumEntity(Entity):
     # name.
     RAW_TEXT_FIELD_SUFFIX = "_raw_text"
 
+    # Names of enum-typed fields that are NOT the wrapped enum value — e.g. a
+    # structural `tenant: Tenant` added by a mixin. Subclasses (or mixins
+    # combined with this class) extend this so `get_enum_field_name` ignores
+    # them when locating the singular wrapped enum field.
+    _NON_PRIMARY_ENUM_FIELD_NAMES: frozenset[str] = frozenset()
+
     # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is EnumEntity:
@@ -293,6 +299,7 @@ class EnumEntity(Entity):
             field
             for field in class_reference.fields
             if class_reference.get_field_info(field).enum_cls
+            and field not in cls._NON_PRIMARY_ENUM_FIELD_NAMES
         }
         if len(enum_fields) != 1:
             raise ValueError(

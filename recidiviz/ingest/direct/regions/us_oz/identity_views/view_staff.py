@@ -14,20 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shared mixin used by both fragment and cluster identity entities."""
-import attr
+"""Identity ingest view for US_OZ STAFF identity information."""
 
-from recidiviz.common.constants.tenants import Tenant
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
+VIEW_QUERY_TEMPLATE = """
+SELECT
+  StaffId,
+  BadgeId,
+  FirstName,
+  LastName,
+  Email
+FROM {identity_staff}
+"""
 
-@attr.s(eq=False)
-class IdentityEntityMixin:
-    """Mixin providing the `tenant` field on all identity entities, analogous
-    to `StateEntityMixin` providing `state_code` on all state entities."""
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
+    region="us_oz",
+    ingest_view_name="staff",
+    view_query_template=VIEW_QUERY_TEMPLATE,
+)
 
-    tenant: Tenant = attr.ib(validator=attr.validators.instance_of(Tenant))
-
-    # `tenant` is structural, not the wrapped enum value, so `EnumEntity`
-    # subclasses that include this mixin must exclude it when locating their
-    # singular wrapped enum field.
-    _NON_PRIMARY_ENUM_FIELD_NAMES: frozenset[str] = frozenset({"tenant"})
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

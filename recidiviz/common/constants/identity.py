@@ -29,9 +29,11 @@ class IdentifierType(enum.Enum):
     """
 
     # TODO(#81647): Populate this with real identifier types
-    RECIDIVIZ = "RECIDIVIZ"
     US_OZ_LOTR_ID = external_id_types.US_OZ_LOTR_ID
     US_OZ_KDS_PERSON_ID = external_id_types.US_OZ_KDS_PERSON_ID
+    US_OZ_IDENTITY_PERSON_ID = external_id_types.US_OZ_IDENTITY_PERSON_ID
+    US_OZ_IDENTITY_STAFF_ID = external_id_types.US_OZ_IDENTITY_STAFF_ID
+    US_OZ_IDENTITY_BADGE_ID = external_id_types.US_OZ_IDENTITY_BADGE_ID
 
 
 class PersonType(enum.Enum):
