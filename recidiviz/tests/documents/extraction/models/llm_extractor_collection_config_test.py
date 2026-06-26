@@ -124,6 +124,27 @@ def _entity_group(**raw: Any) -> EntityGroupConfig:
     )
 
 
+def _simple_schema(
+    *, collection_description: str = _COLLECTION_DESCRIPTION, field_name: str = "status"
+) -> LLMRequestOutputSchema:
+    """Returns a one-field schema, varying only the inputs a single
+    collection-version-ID test wants to perturb.
+    """
+    return LLMRequestOutputSchema.from_yaml_dict(
+        yaml_dict=YAMLDict(
+            {
+                "full_batch_description": _DESCRIPTION,
+                "result_level_description": _DESCRIPTION,
+                "inferred_fields": [
+                    {"name": field_name, "type": "STRING", "description": _DESCRIPTION}
+                ],
+            }
+        ),
+        collection_description=collection_description,
+        default_minimum_confidence_level=ConfidenceLevel.INFERRED,
+    )
+
+
 class ParseAllCollectionConfigsTest(TestCase):
     """Guards real configs, and exercises the fake config's happy path."""
 
@@ -381,6 +402,81 @@ class LLMExtractorCollectionConfigTest(TestCase):
             ),
         ):
             self._collection(entity_groups=[group, group])
+
+
+class CollectionVersionIdTest(TestCase):
+    """Tests for LLMExtractorCollectionConfig.collection_version_id."""
+
+    def _collection(
+        self,
+        *,
+        name: str = "TEST_COLLECTION",
+        output_schema: LLMRequestOutputSchema | None = None,
+    ) -> LLMExtractorCollectionConfig:
+        return LLMExtractorCollectionConfig(
+            name=name,
+            description=_DESCRIPTION,
+            default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
+            minimum_confidence_level=ConfidenceLevel.INFERRED,
+            output_schema=output_schema
+            if output_schema is not None
+            else _output_schema(),
+            reference_data_config=LLMExtractorCollectionReferenceDataConfig(
+                per_type_configs={}
+            ),
+            entity_groups=[],
+        )
+
+    def test_collection_version_id_golden(self) -> None:
+        # Pinned hash for the fake collection. A change here is a real version bump
+        # and must be consciously updated, not silently accepted.
+        collection = get_llm_extractor_collection_config(
+            _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.assertEqual(
+            "a55958b21d1f25555197cf5f9db3c1066e4a3a1cbf0809f6c6899e26c9120161",
+            collection.collection_version_id,
+        )
+
+    def test_collection_version_id_stable_across_equal_collections(self) -> None:
+        self.assertEqual(
+            self._collection().collection_version_id,
+            self._collection().collection_version_id,
+        )
+
+    def test_collection_version_id_changes_with_output_schema(self) -> None:
+        self.assertNotEqual(
+            self._collection(
+                output_schema=_simple_schema(field_name="status")
+            ).collection_version_id,
+            self._collection(
+                output_schema=_simple_schema(field_name="other_status")
+            ).collection_version_id,
+        )
+
+    def test_collection_version_id_changes_with_name(self) -> None:
+        # Versions are namespaced to a collection's name.
+        self.assertNotEqual(
+            self._collection(name="TEST_COLLECTION").collection_version_id,
+            self._collection(name="OTHER_COLLECTION").collection_version_id,
+        )
+
+    def test_collection_version_id_changes_with_collection_description(self) -> None:
+        # The collection description is folded into the generated schema via the
+        # auto-generated is_relevant field description, so a description change
+        # yields a new version ID even though it is not hashed separately.
+        self.assertNotEqual(
+            self._collection(
+                output_schema=_simple_schema(
+                    collection_description="First meaningful collection description."
+                )
+            ).collection_version_id,
+            self._collection(
+                output_schema=_simple_schema(
+                    collection_description="Second meaningful collection description."
+                )
+            ).collection_version_id,
+        )
 
 
 class CollectionConfigFromYamlTest(TestCase):

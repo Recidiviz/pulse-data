@@ -339,6 +339,96 @@ class LLMModelConfigTest(TestCase):
         )
         self.assertNotIn("thinking_budget_tokens", config.parameter_values)
 
+    @staticmethod
+    def _acme_small_config(
+        *,
+        name: str = "ACME_SMALL",
+        model: str = "acme-small-001",
+        temperature: float = 1.0,
+        max_output_tokens: int = 50,
+    ) -> LLMModelConfig:
+        """Builds an acme-small config with both parameters set, varying only the
+        attributes a single version-ID test wants to perturb.
+        """
+        return LLMModelConfig(
+            name=name,
+            base_model=_ACME_SMALL,
+            model=model,
+            parameter_values={
+                "temperature": LLMModelFloatParameterValue(
+                    parameter_definition=_ACME_SMALL_TEMPERATURE_PARAMETER,
+                    value=temperature,
+                ),
+                "max_output_tokens": LLMModelIntegerParameterValue(
+                    parameter_definition=_ACME_SMALL_MAX_OUTPUT_TOKENS_PARAMETER,
+                    value=max_output_tokens,
+                ),
+            },
+        )
+
+    def test_model_config_version_id_golden(self) -> None:
+        # Pinned hash for a registry config. A change to this value is a real
+        # version bump and must be consciously updated, not silently accepted.
+        registry = load_llm_model_registry(config_module=fake_config)
+        self.assertEqual(
+            "b905b25f4aa2614625f75e29c14727983d51f5b2b8492cc5cbfcdb297ac4c2f8",
+            registry.get_model_config("GLOBEX_BASIC_DEFAULT").model_config_version_id,
+        )
+
+    def test_model_config_version_id_stable_across_parameter_order(self) -> None:
+        # Parameter insertion order must not change the hash (guards sort_keys).
+        forward = LLMModelConfig(
+            name="ACME_SMALL",
+            base_model=_ACME_SMALL,
+            model="acme-small-001",
+            parameter_values={
+                "temperature": LLMModelFloatParameterValue(
+                    parameter_definition=_ACME_SMALL_TEMPERATURE_PARAMETER, value=1.0
+                ),
+                "max_output_tokens": LLMModelIntegerParameterValue(
+                    parameter_definition=_ACME_SMALL_MAX_OUTPUT_TOKENS_PARAMETER,
+                    value=50,
+                ),
+            },
+        )
+        reverse = LLMModelConfig(
+            name="ACME_SMALL",
+            base_model=_ACME_SMALL,
+            model="acme-small-001",
+            parameter_values={
+                "max_output_tokens": LLMModelIntegerParameterValue(
+                    parameter_definition=_ACME_SMALL_MAX_OUTPUT_TOKENS_PARAMETER,
+                    value=50,
+                ),
+                "temperature": LLMModelFloatParameterValue(
+                    parameter_definition=_ACME_SMALL_TEMPERATURE_PARAMETER, value=1.0
+                ),
+            },
+        )
+        self.assertEqual(
+            forward.model_config_version_id, reverse.model_config_version_id
+        )
+
+    def test_model_config_version_id_changes_with_pinned_model_version(self) -> None:
+        self.assertNotEqual(
+            self._acme_small_config(model="acme-small-001").model_config_version_id,
+            self._acme_small_config(model="acme-small-002").model_config_version_id,
+        )
+
+    def test_model_config_version_id_changes_with_parameter_value(self) -> None:
+        self.assertNotEqual(
+            self._acme_small_config(temperature=0.0).model_config_version_id,
+            self._acme_small_config(temperature=1.0).model_config_version_id,
+        )
+
+    def test_model_config_version_id_changes_with_name(self) -> None:
+        # Two configs identical but for their name hash differently — versions are
+        # namespaced to a config's human-readable name.
+        self.assertNotEqual(
+            self._acme_small_config(name="CONFIG_A").model_config_version_id,
+            self._acme_small_config(name="CONFIG_B").model_config_version_id,
+        )
+
 
 class LLMModelRegistryTest(TestCase):
     """Tests for LLMModelRegistry construction and lookups."""

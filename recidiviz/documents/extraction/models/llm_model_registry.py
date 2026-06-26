@@ -21,6 +21,8 @@ named model configs (reusable parameter bundles) that extractors reference by
 name instead of repeating model settings.
 """
 import abc
+import hashlib
+import json
 from enum import Enum
 from pathlib import Path
 from types import ModuleType
@@ -482,6 +484,25 @@ class LLMModelConfig:
     @property
     def supports_implicit_caching_in_batch(self) -> bool:
         return self.base_model.supports_implicit_caching_in_batch
+
+    @property
+    def model_config_version_id(self) -> str:
+        """Returns the version ID of this model config. This is a hash of every model
+        input fed to the LLM. Any change to what the model receives yields a new ID. The
+        API provider is a routing decision, not model input, so it is deliberately
+        excluded.
+        """
+        components = [
+            # We also hash the model config name because versions should be unique to
+            # model configs with a particular name.
+            self.name,
+            self.model,
+            json.dumps(
+                {name: value.value for name, value in self.parameter_values.items()},
+                sort_keys=True,
+            ),
+        ]
+        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
 
     @classmethod
     def from_yaml_dict(

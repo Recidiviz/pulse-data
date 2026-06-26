@@ -25,6 +25,7 @@ import re
 from typing import Any
 from unittest import TestCase
 
+import attr
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
@@ -34,6 +35,7 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
+    LLMExtractorCollectionConfig,
     get_llm_extractor_collection_config,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
@@ -158,6 +160,30 @@ class ParseAllExtractorConfigsTest(TestCase):
                     check_query_selects_output_columns(
                         rendered_query, {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
                     )
+
+    def test_all_real_extractors_compute_version_ids(self) -> None:
+        # Every real extractor must compute all four version IDs as 64-char hex
+        # digests, and extractor_id (the llm_extractors primary key) must be
+        # unique across all of them.
+        configs_by_state = load_llm_extractor_configs()
+        self.assertTrue(configs_by_state)
+
+        seen_extractor_ids: set[str] = set()
+        for state_configs in configs_by_state.values():
+            for config in state_configs.values():
+                with self.subTest(
+                    collection=config.extractor_collection.name,
+                    state=config.state_code.value,
+                ):
+                    self.assertNotIn(config.extractor_id, seen_extractor_ids)
+                    seen_extractor_ids.add(config.extractor_id)
+                    for version_id in (
+                        config.model_config.model_config_version_id,
+                        config.extractor_collection.collection_version_id,
+                        config.extractor_version_id,
+                        config.document_filter_id,
+                    ):
+                        self.assertRegex(version_id, r"^[0-9a-f]{64}$")
 
     def test_fake_extractor_resolves(self) -> None:
         configs_by_state = load_llm_extractor_configs(config_module=fake_config)
@@ -362,6 +388,167 @@ class LLMExtractorConfigFromYamlTest(TestCase):
             "extractor_configs/fake_extractor_collection/us_xx/zero_retry.yaml"
         )
         self.assertEqual(0, config.max_transient_retry_count)
+
+
+class LLMExtractorConfigVersionIdTest(TestCase):
+    """Tests for the computed identity and version-ID properties:
+    `extractor_id`, `extractor_version_id`, and `document_filter_id`.
+    """
+
+    def setUp(self) -> None:
+        self.collection = get_llm_extractor_collection_config(
+            _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.registry = load_llm_model_registry(config_module=fake_config)
+        self.reference_data = LLMExtractorReferenceData.resolve(
+            state_code=StateCode.US_XX,
+            reference_data_config=self.collection.reference_data_config,
+            reference_data_registries=load_full_reference_data_registry(
+                StateCode.US_XX, config_module=fake_config
+            ),
+        )
+
+    def _config(
+        self,
+        *,
+        state_code: StateCode = StateCode.US_XX,
+        model_config: LLMModelConfig | None = None,
+        extractor_collection: LLMExtractorCollectionConfig | None = None,
+        document_metadata_filter_query_template: str = _FILTER_QUERY,
+    ) -> LLMExtractorConfig:
+        # reference_data is resolved once for US_XX and reused for every state: it
+        # is not validated against the state and feeds no version ID directly (it
+        # flows in only via the prompt), so it does not affect these tests.
+        return LLMExtractorConfig(
+            state_code=state_code,
+            input_document_collection=_input_document_collection(
+                state_code=state_code, name=_INPUT_DOCUMENT_COLLECTION_NAME
+            ),
+            document_metadata_filter_query_template=document_metadata_filter_query_template,
+            prompt_vars={},
+            max_transient_retry_count=DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
+            total_pending_document_count_hard_cap=(
+                DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP
+            ),
+            single_job_document_count_batch_threshold=(
+                DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD
+            ),
+            extractor_collection=(
+                extractor_collection
+                if extractor_collection is not None
+                else self.collection
+            ),
+            model_config=(
+                model_config
+                if model_config is not None
+                else self.registry.get_model_config(_DEFAULT_MODEL_CONFIG_NAME)
+            ),
+            reference_data=self.reference_data,
+            entity_group=None,
+        )
+
+    def test_extractor_id_format(self) -> None:
+        self.assertEqual("US_XX_FAKE_EXTRACTOR_COLLECTION", self._config().extractor_id)
+
+    def test_instructions_prompt_is_placeholder(self) -> None:
+        # TODO(OBT-31987): once the real prompt builder lands, replace this
+        # assertion and rebump the extractor_version_id golden below.
+        self.assertEqual(
+            "<FAKE PLACEHOLDER PROMPT>", self._config().instructions_prompt
+        )
+
+    def test_extractor_version_id_golden(self) -> None:
+        # Pinned hash for the fake extractor. A change here is a real version bump
+        # and must be consciously updated, not silently accepted. NOTE: this will
+        # change when TODO(OBT-31987) replaces the placeholder instructions_prompt.
+        config = get_llm_extractor_config(
+            StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.assertEqual(
+            "687065c6bd26424d84e84bc881eafac82f5bd9d09042f10e8a522357aade1179",
+            config.extractor_version_id,
+        )
+
+    def test_extractor_version_id_changes_with_model_config(self) -> None:
+        self.assertNotEqual(
+            self._config(
+                model_config=self.registry.get_model_config(_DEFAULT_MODEL_CONFIG_NAME)
+            ).extractor_version_id,
+            self._config(
+                model_config=self.registry.get_model_config(_OVERRIDE_MODEL_CONFIG_NAME)
+            ).extractor_version_id,
+        )
+
+    def test_extractor_version_id_changes_with_collection(self) -> None:
+        # Same extractor_id (collection name unchanged), different output schema.
+        other_collection = attr.evolve(
+            self.collection,
+            output_schema=attr.evolve(
+                self.collection.output_schema,
+                collection_description="A different but still meaningful description.",
+            ),
+        )
+        self.assertNotEqual(
+            self._config().extractor_version_id,
+            self._config(extractor_collection=other_collection).extractor_version_id,
+        )
+
+    def test_extractor_version_id_changes_with_extractor_id(self) -> None:
+        # Only the extractor_id differs (US_XX vs US_YY); all else is held equal.
+        self.assertNotEqual(
+            self._config(state_code=StateCode.US_XX).extractor_version_id,
+            self._config(state_code=StateCode.US_YY).extractor_version_id,
+        )
+
+    def test_document_filter_id_golden(self) -> None:
+        # Pinned hash for the fake extractor's document filter.
+        config = get_llm_extractor_config(
+            StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.assertEqual(
+            "b094fc297f5403639b66ae3b2394d3fa61f724844fe041c5fe2985c360bea80a",
+            config.document_filter_id,
+        )
+
+    def test_document_filter_id_changes_with_filter_template(self) -> None:
+        self.assertNotEqual(
+            self._config(
+                document_metadata_filter_query_template=_FILTER_QUERY
+            ).document_filter_id,
+            self._config(
+                document_metadata_filter_query_template=(
+                    "SELECT document_contents_id FROM `{project_id}.other.table`"
+                )
+            ).document_filter_id,
+        )
+
+    def test_document_filter_id_changes_with_extractor_id(self) -> None:
+        # Same filter template, different extractor — the ID is namespaced to the
+        # extractor_id.
+        self.assertNotEqual(
+            self._config(state_code=StateCode.US_XX).document_filter_id,
+            self._config(state_code=StateCode.US_YY).document_filter_id,
+        )
+
+    def test_document_filter_id_independent_of_prompt_and_model(self) -> None:
+        # The filter ID folds in only the extractor_id and the filter template, so
+        # changing the model config or the collection must not change it.
+        other_collection = attr.evolve(
+            self.collection,
+            output_schema=attr.evolve(
+                self.collection.output_schema,
+                collection_description="A different but still meaningful description.",
+            ),
+        )
+        self.assertEqual(
+            self._config().document_filter_id,
+            self._config(
+                model_config=self.registry.get_model_config(
+                    _OVERRIDE_MODEL_CONFIG_NAME
+                ),
+                extractor_collection=other_collection,
+            ).document_filter_id,
+        )
 
 
 class LLMExtractorConfigConstructionTest(TestCase):

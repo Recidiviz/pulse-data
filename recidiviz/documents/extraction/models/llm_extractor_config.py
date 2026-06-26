@@ -23,6 +23,8 @@ model/cap overrides. `LLMExtractorConfig.from_yaml` parses that file and binds i
 with its already-parsed collection config, its resolved input document
 collection, and its resolved model config into one fully-resolved object.
 """
+import hashlib
+import json
 from functools import cache
 from pathlib import Path
 from types import ModuleType
@@ -191,6 +193,57 @@ class LLMExtractorConfig:
                 f"[{self.model_config.name}]. Thinking models are only permitted "
                 f"for entity-resolution extractors."
             )
+
+    @property
+    def extractor_id(self) -> str:
+        """Returns the stable, human-readable ID for this extractor (e.g.
+        `US_OZ_PLAYGROUND_EMPLOYMENT_INFO`), invariant across config versions.
+        Distinct from `extractor_version_id`, which changes whenever a versioned
+        input does.
+        """
+        return f"{self.state_code.value}_{self.extractor_collection.name}"
+
+    @property
+    def instructions_prompt(self) -> str:
+        """Returns the fully-compiled system prompt sent to the LLM with every
+        request for this extractor, with the output-format instructions,
+        reference data, and prompt vars all rendered in.
+        """
+        # TODO(OBT-31987): Build the real instructions prompt via the extractor
+        # prompt builder. Until that lands, this is unavailable, so
+        # we just stub with a fake implementation
+        return "<FAKE PLACEHOLDER PROMPT>"
+
+    @property
+    def extractor_version_id(self) -> str:
+        """Returns the version ID of this extractor. This is a hash of every input fed
+        to the LLM. Any change yields a new ID.
+        """
+
+        components = [
+            # We also hash the human-readable extractor_id because versions should be
+            # unique to extractors configs with a particular human-readable name.
+            self.extractor_id,
+            self.instructions_prompt,
+            self.model_config.model_config_version_id,
+            self.extractor_collection.collection_version_id,
+        ]
+        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
+
+    @property
+    def document_filter_id(self) -> str:
+        """Returns the version ID of this extractor's document selection: a hash
+        of the `document_metadata_filter_query_template`. Tracked separately from
+        `extractor_version_id` because the filter narrows which documents are
+        processed but is not itself fed to the LLM.
+        """
+        components = [
+            # We also hash the human-readable extractor_id because versions should be
+            # unique to extractors configs with a particular human-readable name.
+            self.extractor_id,
+            self.document_metadata_filter_query_template,
+        ]
+        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
 
     @staticmethod
     def state_code_for_yaml_path(yaml_path: str | Path) -> StateCode:

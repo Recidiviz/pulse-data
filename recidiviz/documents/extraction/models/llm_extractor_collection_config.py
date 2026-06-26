@@ -23,6 +23,7 @@ entity groups.
 The `golden_eval` block is still consumed off the YAML and discarded so the unused-key
 check passes — see the deferral note in `from_yaml`.
 """
+import hashlib
 import json
 from functools import cache
 from pathlib import Path
@@ -258,6 +259,21 @@ class LLMExtractorCollectionConfig:
         # generated schema is semantically meaningful and must not be scrambled.
         # Alphabetizing the keys would reorder them.
         return json.dumps(self.generate_json_schema())
+
+    @property
+    def collection_version_id(self) -> str:
+        """Returns the version ID of this collection. This is a hash of all the info
+        from this collection fed directly to the LLM. The collection description is not
+        hashed separately — it is baked into the prompt, so it flows into the extractor
+        version ID transitively.
+        """
+        components = [
+            # We also hash the collection name because versions should be unique to
+            # collections with a particular name.
+            self.name,
+            self.generate_json_schema_str(),
+        ]
+        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
 
     @classmethod
     def from_yaml(
