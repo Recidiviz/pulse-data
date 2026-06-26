@@ -30,23 +30,28 @@ from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
 
 
 def get_file_tags_referenced_in_ingest_views(state_code: StateCode) -> set[str]:
-    """Get all file tags referenced in ingest views for a given state.
+    """Get all file tags referenced in ingest views (across every ingest
+    pipeline type) for a given state.
 
     Args:
         state_code: The state code to check.
 
     Returns:
-        A set of file tags referenced in ingest views for the given state.
+        A set of file tags referenced in any ingest pipeline's views for the
+        given state.
     """
-    # TODO(OBT-34669): Loop over both ingest pipeline types and union the results.
-    # SFTP/monitoring callers want "is this raw file referenced anywhere?", which
-    # should include identity-view references.
-    view_collector = DirectIngestViewQueryBuilderCollector(
-        region=get_direct_ingest_region(region_code=state_code.value),
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-        expected_ingest_views=[],
-    )
-    return set(DirectIngestDocumentationGenerator.get_referencing_views(view_collector))
+    region = get_direct_ingest_region(region_code=state_code.value)
+    referenced_file_tags: set[str] = set()
+    for ingest_pipeline_type in IngestPipelineType:
+        view_collector = DirectIngestViewQueryBuilderCollector(
+            region=region,
+            ingest_pipeline_type=ingest_pipeline_type,
+            expected_ingest_views=[],
+        )
+        referenced_file_tags.update(
+            DirectIngestDocumentationGenerator.get_referencing_views(view_collector)
+        )
+    return referenced_file_tags
 
 
 def get_file_tags_referenced_in_downstream_views(state_code: StateCode) -> set[str]:

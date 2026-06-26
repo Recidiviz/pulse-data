@@ -126,7 +126,7 @@ class TestKnownValuesValidation(RawDataPreImportValidationTestCase):
             f"\nColumn name: [{self.sad_col_name}]"
             f"\nDefined known values: [{', '.join(quoted_known_values)}]."
             f'\nValues that did not parse: ["z"].'
-            f"\nThe following ingest views reference [tagBasicData]:\n\t-basic\n\t-tagBasicData\nIf this column is used in an ingest enum mapping, adding the new values will help ensure that the enum failure occurs at raw data import time instead of ingest time. If it is not used, you can (1) add the new values to list of known_values for [sad_col] if you want to keep the addition of new values as import-blocking; (2) add an import-blocking exclusion if you want to keep the existing documentation but know that it may quickly become stale; or (3) remove all known_values for [sad_col] from the yaml config to remove its designation as an enum.\n",
+            f"\nThe following ingest views reference [tagBasicData]:\n\t-basic\n\t-identityPerson\n\t-tagBasicData\nIf this column is used in an ingest enum mapping, adding the new values will help ensure that the enum failure occurs at raw data import time instead of ingest time. If it is not used, you can (1) add the new values to list of known_values for [sad_col] if you want to keep the addition of new values as import-blocking; (2) add an import-blocking exclusion if you want to keep the existing documentation but know that it may quickly become stale; or (3) remove all known_values for [sad_col] from the yaml config to remove its designation as an enum.\n",
         )
 
         self.validation_failure_test(

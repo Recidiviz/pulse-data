@@ -67,14 +67,14 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
-    ActivityIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.manifest_compiler_delegate_factory import (
+    manifest_compiler_delegate_for_pipeline_type,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -264,7 +264,8 @@ def _materialize_twice_and_return_num_different_rows(
 def verify_ingest_view_determinism(
     bq_client: BigQueryClient, state_code: StateCode
 ) -> IngestViewDeterminismResult:
-    """Verifies that each of this state's ingest views are deterministic."""
+    """Verifies that each of this state's ingest views (across every ingest
+    pipeline type) are deterministic."""
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
     dataset_prefix = f"stability_{str(uuid.uuid4())[:6]}"
 
@@ -276,28 +277,31 @@ def verify_ingest_view_determinism(
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
-    ingest_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
+    # Since this is a script run locally, we use the context for the specified
+    # project so that we don't include local-only views.
+    context = IngestViewContentsContext.build_for_project(
+        project_id=metadata.project_id(),
+        is_sandbox=False,
+        state_code=state_code,
     )
-    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        # Since this is a script run locally, we use the context for the specified
-        # project so that we don't include local-only views.
-        IngestViewContentsContext.build_for_project(
-            project_id=metadata.project_id(),
-            is_sandbox=False,
-            state_code=state_code,
-        ),
-    )
-
-    # TODO(OBT-34669): Loop over both ingest pipeline types so identity-view
-    # determinism is also covered by this state-wide stability check.
-    view_query_builders = DirectIngestViewQueryBuilderCollector(
-        region=region,
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-        expected_ingest_views=launched_ingest_views,
-    ).get_query_builders()
+    launched_ingest_views: list[str] = []
+    view_query_builders: list[DirectIngestViewQueryBuilder] = []
+    for ingest_pipeline_type in IngestPipelineType:
+        launched_for_type = IngestViewManifestCollector(
+            region=region,
+            delegate=manifest_compiler_delegate_for_pipeline_type(
+                region=region, ingest_pipeline_type=ingest_pipeline_type
+            ),
+            ingest_pipeline_type=ingest_pipeline_type,
+        ).launchable_ingest_views(context)
+        launched_ingest_views.extend(launched_for_type)
+        view_query_builders.extend(
+            DirectIngestViewQueryBuilderCollector(
+                region=region,
+                ingest_pipeline_type=ingest_pipeline_type,
+                expected_ingest_views=launched_for_type,
+            ).get_query_builders()
+        )
 
     progress = tqdm(
         total=len(launched_ingest_views),

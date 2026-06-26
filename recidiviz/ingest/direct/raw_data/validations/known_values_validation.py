@@ -192,14 +192,14 @@ class KnownValuesValidation(
         """
         # TODO(#40421): filter to just relevancy if this column is actually used in an
         # ingest enum mapping, and say which mapping it is
-        # TODO(OBT-34669): Loop over both ingest pipeline types so the error message
-        # also lists identity-view references, not just activity-view references.
-        referencing_ingest_views = sorted(
-            DirectIngestViewQueryBuilderCollector.from_state_code(
-                state_code=self.state_code,
-                ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-            ).get_ingest_views_referencing(self.file_tag)
-        )
+        referencing_ingest_views: set[str] = set()
+        for ingest_pipeline_type in IngestPipelineType:
+            referencing_ingest_views.update(
+                DirectIngestViewQueryBuilderCollector.from_state_code(
+                    state_code=self.state_code,
+                    ingest_pipeline_type=ingest_pipeline_type,
+                ).get_ingest_views_referencing(self.file_tag)
+            )
 
         if not referencing_ingest_views:
             return (
@@ -213,7 +213,7 @@ class KnownValuesValidation(
             )
 
         referencing_ingest_views_str = "\n".join(
-            f"\t-{ingest_view}" for ingest_view in referencing_ingest_views
+            f"\t-{ingest_view}" for ingest_view in sorted(referencing_ingest_views)
         )
         return (
             f"The following ingest views reference [{self.file_tag}]:"

@@ -45,6 +45,7 @@ RECIDIVIZ_PATH = os.path.dirname(recidiviz.__file__)
 DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES: dict[str, tuple[tuple[str, str], ...]] = {
     "recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector": (
         ("recidiviz/ingest/direct/regions", "*/ingest_views/**/*.py"),
+        ("recidiviz/ingest/direct/regions", "*/identity_views/**/*.py"),
         ("recidiviz/ingest/direct/regions", "*/__init__.py"),
     ),
     "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector": (

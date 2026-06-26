@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import Mock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tools.mcp.data_lineage.data_lineage_builder import BigQueryTableType
 from recidiviz.tools.mcp.data_lineage.ingest_view_lineage_builder import LineageTreeNode
 
@@ -467,6 +468,46 @@ class TestDataLineageBuilder(unittest.TestCase):
         )
         result = BigQueryTableType.classify_table(address)
         self.assertEqual(result, BigQueryTableType.INGEST_PIPELINE_OUTPUT)
+
+    def test_classify_table_type_ingest_view_activity(self) -> None:
+        """Activity-pipeline `*_ingest_view_results` tables classify as
+        INGEST_VIEW."""
+        address = BigQueryAddress(
+            dataset_id="us_xx_ingest_view_results", table_id="tagBasicData"
+        )
+        self.assertEqual(
+            BigQueryTableType.INGEST_VIEW, BigQueryTableType.classify_table(address)
+        )
+
+    def test_classify_table_type_ingest_view_identity(self) -> None:
+        """Identity-pipeline `*_identity_ingest_view_results` tables also
+        classify as INGEST_VIEW (the suffix match covers both pipelines)."""
+        address = BigQueryAddress(
+            dataset_id="us_xx_identity_ingest_view_results", table_id="identityPerson"
+        )
+        self.assertEqual(
+            BigQueryTableType.INGEST_VIEW, BigQueryTableType.classify_table(address)
+        )
+
+    def test_get_pipeline_for_ingest_view_activity(self) -> None:
+        """`*_ingest_view_results` addresses dispatch to ACTIVITY."""
+        address = BigQueryAddress(
+            dataset_id="us_xx_ingest_view_results", table_id="tagBasicData"
+        )
+        self.assertIs(
+            IngestPipelineType.ACTIVITY,
+            DataLineageBuilder._get_pipeline_for_ingest_view(address),
+        )
+
+    def test_get_pipeline_for_ingest_view_identity(self) -> None:
+        """`*_identity_ingest_view_results` addresses dispatch to IDENTITY."""
+        address = BigQueryAddress(
+            dataset_id="us_xx_identity_ingest_view_results", table_id="identityPerson"
+        )
+        self.assertIs(
+            IngestPipelineType.IDENTITY,
+            DataLineageBuilder._get_pipeline_for_ingest_view(address),
+        )
 
     def test_classify_table_type_other(self) -> None:
         """Test table type classification for other tables."""
