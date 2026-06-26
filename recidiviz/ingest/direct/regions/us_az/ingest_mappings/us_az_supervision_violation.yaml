@@ -90,6 +90,9 @@ output:
                                 - $literal("Waived")
                                 - $literal("Deceased")
                                 - $literal("Waived at PC Hearing")
+                                # These are final statuses but are almost never marked as complete.
+                                - $literal("Revoked")
+                                - $literal("Revoked with Time Credit")
                       $then: $literal_bool(True)
                     - $else: $literal_bool(False)
                 violation_response_metadata:

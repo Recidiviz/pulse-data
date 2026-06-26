@@ -415,6 +415,8 @@ def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolation
         intervention_type,
     ) = raw_text.split("@@")
 
+    if violation_type_felony == "Y":
+        return StateSupervisionViolationType.FELONY
     if (
         "Technical Violation Warrant" in violation_type_description
         or "1071" in violation_type_description
@@ -422,8 +424,6 @@ def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolation
         return StateSupervisionViolationType.TECHNICAL
     if violation_type_description == "Absconder Warrant":
         return StateSupervisionViolationType.ABSCONDED
-    if violation_type_felony == "Y":
-        return StateSupervisionViolationType.FELONY
     if violation_type_misdemeanor == "Y":
         return StateSupervisionViolationType.MISDEMEANOR
     if sanction_type or intervention_type:
