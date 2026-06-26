@@ -587,6 +587,16 @@ def is_non_negative_int(instance: Any, attribute: attr.Attribute, value: int) ->
         )
 
 
+def is_opt_non_negative_int(
+    instance: Any, attribute: attr.Attribute, value: int | None
+) -> None:
+    """Validator that ensures the field value is a non-negative integer or None."""
+    if value is None:
+        return
+
+    is_non_negative_int(instance, attribute, value)
+
+
 def is_opt_positive_int(
     instance: Any, attribute: attr.Attribute, value: int | None
 ) -> None:

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for attr_validators.py."""
+
 import datetime
 import re
 import unittest
@@ -496,28 +497,40 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_required_int=1, my_optional_int=None)
         _ = _TestClass(my_required_int=1000, my_optional_int=3000)
 
-    def test_is_non_negative_integer_validator(self) -> None:
+    def test_is_non_negative_integer_validators(self) -> None:
         @attr.s
         class _TestClass:
-            my_int: int = attr.ib(validator=attr_validators.is_non_negative_int)
+            my_required_int: int = attr.ib(
+                validator=attr_validators.is_non_negative_int
+            )
+            my_optional_int: Optional[int] = attr.ib(
+                validator=attr_validators.is_opt_non_negative_int, default=None
+            )
 
         with self.assertRaisesRegex(
             TypeError,
-            r"'my_int' must be <class 'int'> "
+            r"'my_required_int' must be <class 'int'> "
             r"\(got None that is a <class 'NoneType'>\).",
         ):
-            _ = _TestClass(my_int=None)  # type: ignore[arg-type]
+            _ = _TestClass(my_required_int=None)  # type: ignore[arg-type]
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Field \[my_int\] on \[_TestClass\] must be a non-negative integer. "
-            r"Found value \[-1\]",
+            r"Field \[my_required_int\] on \[_TestClass\] must be a non-negative "
+            r"integer. Found value \[-1\]",
         ):
-            _ = _TestClass(my_int=-1)
+            _ = _TestClass(my_required_int=-1)
 
-        # Zero and positive values do not crash.
-        _ = _TestClass(my_int=0)
-        _ = _TestClass(my_int=1000)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_optional_int\] on \[_TestClass\] must be a non-negative "
+            r"integer. Found value \[-1\]",
+        ):
+            _ = _TestClass(my_required_int=0, my_optional_int=-1)
+
+        # 0 is allowed for both
+        _ = _TestClass(my_required_int=0, my_optional_int=0)
+        _ = _TestClass(my_required_int=1000, my_optional_int=None)
 
     def test_is_subclass_of(self) -> None:
         class _Base:

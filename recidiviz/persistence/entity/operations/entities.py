@@ -34,6 +34,10 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
+from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMExtractionJobDocumentResultType,
+    LLMExtractionJobResultType,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.base_entity import Entity
@@ -324,3 +328,285 @@ class DirectIngestRawDataFlashStatus(Entity, BuildableAttr, DefaultableAttr):
     )
     # Whether or not this status row indicates that flashing is active
     flashing_in_progress: bool = attr.ib(validator=attr_validators.is_bool)
+
+
+@attr.s(eq=False)
+class LLMExtractorCollection(Entity, BuildableAttr, DefaultableAttr):
+    """A versioned LLM extractor collection. Append-only — a new row is written
+    when anything about the collection that would affect extraction output
+    changes."""
+
+    # Unique name of the extractor collection (e.g. CASE_NOTE_EMPLOYMENT_INFO).
+    collection_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Version ID that changes when anything about this collection changes that
+    # would impact extraction output.
+    collection_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Hash of the output schema for versioning.
+    output_schema_version: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # JSON Schema defining the output structure for all extractors in this collection.
+    output_schema_json: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Description of what extractors in this collection do.
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Minimum ordinal confidence level for validated output (one of:
+    # speculative, ambiguous, inferred, explicit, verbatim). Individual fields
+    # can override this default.
+    minimum_confidence_level: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # When this collection version was recorded.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractor(Entity, BuildableAttr, DefaultableAttr):
+    """A logical state-specific LLM extractor. Append-only — a new row is
+    written when a new logical extractor is first defined."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Human-readable ID for the extractor. Stable across all versions.
+    extractor_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The extractor collection this extractor belongs to. Invariant — changing
+    # requires a new extractor_id.
+    extractor_collection_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The document collection this extractor runs against. Invariant —
+    # changing requires a new extractor_id.
+    input_document_collection_name: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+    # When this extractor was first defined.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractorVersion(Entity, BuildableAttr, DefaultableAttr):
+    """A version of a logical LLM extractor's configuration. Append-only — a
+    new row is written when version-scoped configuration (prompt, model
+    config) changes."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Version ID that changes when version-scoped configuration changes.
+    extractor_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The logical extractor this version belongs to.
+    extractor_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Denormalized from LLMExtractor to support the FK to LLMExtractorCollection.
+    extractor_collection_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The collection version this extractor version targets.
+    extractor_collection_version_id: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+    # The fully-rendered instruction prompt.
+    instructions_prompt: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # SHA256 hash of the instructions prompt.
+    instructions_prompt_hash: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The model_config_name from the model registry.
+    model_config_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Hash of the resolved model config parameters.
+    model_config_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # If set, this version is skipped for new job creation.
+    invalidated_datetime_utc: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+    # Human-readable reason; nonnull iff invalidated_datetime_utc is nonnull.
+    invalidation_reason: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+    # When this version was added.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractorDocumentFilter(Entity, BuildableAttr, DefaultableAttr):
+    """A document filter definition for an extractor. Append-only — filter
+    changes do not trigger reprocessing (the filter id is not part of
+    extractor_version_id)."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The extractor associated with this filter.
+    extractor_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Filter version identifier.
+    document_filter_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # BQ query template (format arg: project_id). Output: single
+    # document_contents_id column.
+    document_metadata_filter_query_template: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+    # When this filter was added.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractionEligibleDocumentMetadata(Entity, BuildableAttr, DefaultableAttr):
+    """Per-document sizing metadata for every document ever eligible for
+    extraction. Append-only and write-once: char_count and
+    document_update_datetime are fixed for all time since document_contents_id
+    is a SHA256 of the document text."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # SHA256 hash identifying the document.
+    document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Character count of the document text; used for the per-document size
+    # guardrail and for cost observability.
+    char_count: int = attr.ib(validator=attr_validators.is_non_negative_int)
+    # The document's date (from document collection metadata). Used to order
+    # oldest-first when processing order matter (e.g. when we can't fit all
+    # pending documents in a single batch job).
+    document_update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # When this row was added.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractionEligibleDocument(Entity, BuildableAttr, DefaultableAttr):
+    """A document eligible for extraction under a given
+    (extractor version, filter) pair. Append-only."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The extractor version under which this document is eligible.
+    extractor_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The filter version under which this document was deemed eligible.
+    document_filter_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # SHA256 hash identifying the document.
+    document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # When this row was added.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractionJob(Entity, BuildableAttr, DefaultableAttr):
+    """A single LLM extraction job. A row is added when new documents are
+    identified for processing."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # UUID of the extraction job.
+    job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The extractor version this job processes documents for.
+    extractor_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # When the job started (null if not yet started).
+    start_datetime_utc: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+    # When the job was identified as completed.
+    completion_datetime_utc: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+    # SUCCESS, FAILURE, or PARTIAL_FAILURE. Nonnull iff completion_datetime_utc
+    # is set.
+    result_type: Optional[LLMExtractionJobResultType] = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.in_(LLMExtractionJobResultType)
+        )
+    )
+    # Error details. Nonnull only for FAILURE result types.
+    error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+
+
+@attr.s(eq=False)
+class LLMExtractionBatchJobMetadata(Entity, BuildableAttr, DefaultableAttr):
+    """Provider-specific metadata for a batch submission. Only populated for
+    batch jobs; a single job may have multiple rows if documents were split
+    across multiple JSONL files."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The extraction job.
+    job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # 0-indexed position of this submission within the job.
+    batch_index: int = attr.ib(validator=attr_validators.is_non_negative_int)
+    # Provider-assigned batch job ID.
+    external_job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The batch provider (e.g. VERTEX_AI_BATCH).
+    external_job_provider: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # GCS path to the JSONL input file.
+    gcs_input_uri: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # GCS path to the batch output (populated on completion).
+    gcs_output_uri: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+    # When this row was created.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractionJobDocument(Entity, BuildableAttr, DefaultableAttr):
+    """A document associated with an LLM extraction job. Written before job
+    submission; result columns are populated as documents are processed."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # UUID of the extraction job.
+    job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # SHA256 hash identifying the document.
+    document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Which batch submission this document was sent in (0-indexed). NULL for
+    # sync jobs.
+    batch_index: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+    # Submission-time ordering within the job (0-indexed). Used for internal
+    # bookkeeping and uniqueness, not for result correlation.
+    job_index: int = attr.ib(validator=attr_validators.is_non_negative_int)
+    # When the result was processed.
+    result_datetime_utc: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+    # Per-document result type. Nonnull iff result_datetime_utc is set.
+    result_type: Optional[LLMExtractionJobDocumentResultType] = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.in_(LLMExtractionJobDocumentResultType)
+        )
+    )
+    # Model's is_relevant determination. Non-null iff result_type = SUCCESS.
+    is_relevant: Optional[bool] = attr.ib(validator=attr_validators.is_opt_bool)
+    # Error details. Nonnull only for FAILURE result types.
+    error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+    # Total input tokens for this API call. Nonnull iff result_datetime_utc is set.
+    input_token_count: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+    # Output tokens excluding thinking. Nonnull iff result_datetime_utc is set.
+    output_token_count: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+    # Input tokens served from cache. Nonnull iff result_datetime_utc is set.
+    cached_input_token_count: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+    # Thinking tokens (0 if thinking disabled). Nonnull iff
+    # result_datetime_utc is set.
+    thinking_token_count: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+
+
+@attr.s(eq=False)
+class LLMExtractionCapOverride(Entity, BuildableAttr, DefaultableAttr):
+    """A temporary, time-windowed exception to an extractor's
+    total_pending_document_count_hard_cap. Auto-expires when expires_datetime_utc
+    is reached."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The specific extractor version.
+    extractor_version_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The specific filter.
+    document_filter_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Total-pending char-count cap to enforce while this override is active
+    # (raises total_pending_document_count_hard_cap).
+    override_document_count_cap: int = attr.ib(
+        validator=attr_validators.is_non_negative_int
+    )
+    # When this override expires.
+    expires_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # When this override was created.
+    row_creation_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )

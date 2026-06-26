@@ -31,12 +31,14 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
 from sqlalchemy.sql.sqltypes import Enum
@@ -79,6 +81,22 @@ direct_ingest_file_import_status = Enum(
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_validation_step,
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_import_blocked,
     name="direct_ingest_file_import_status",
+)
+
+llm_extraction_job_result_type = Enum(
+    enum_canonical_strings.llm_extraction_job_result_type_success,
+    enum_canonical_strings.llm_extraction_job_result_type_partial_failure,
+    enum_canonical_strings.llm_extraction_job_result_type_failure,
+    name="llm_extraction_job_result_type",
+)
+
+llm_extraction_job_document_result_type = Enum(
+    enum_canonical_strings.llm_extraction_job_document_result_type_success,
+    enum_canonical_strings.llm_extraction_job_document_result_type_job_level_failure,
+    enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_transient,
+    enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_permanent,
+    enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_retries_exhausted,
+    name="llm_extraction_job_document_result_type",
 )
 
 
@@ -606,3 +624,510 @@ class DirectIngestRawDataPruningMetadata(OperationsBase):
     # True iff the export lookback window for a raw file is FULL_HISTORICAL_LOOKBACK
     # If False, we assume this file has an incremental lookback window
     raw_files_contain_full_historical_lookback = Column(Boolean, nullable=False)
+
+
+class LLMExtractorCollection(OperationsBase):
+    """Append-only metadata about a versioned LLM extractor collection.
+
+    A new row is written when anything about the collection that would affect
+    extraction output (output schema, description, default minimum confidence
+    level) changes.
+    """
+
+    __tablename__ = "llm_extractor_collection"
+
+    __table_args__ = (PrimaryKeyConstraint("collection_name", "collection_version_id"),)
+
+    # Unique name of the extractor collection (e.g. CASE_NOTE_EMPLOYMENT_INFO).
+    collection_name = Column(String(255), nullable=False)
+
+    # Version ID that changes when anything about this collection changes that
+    # would impact extraction output.
+    collection_version_id = Column(String(255), nullable=False)
+
+    # Hash of the output schema for versioning.
+    output_schema_version = Column(String(255), nullable=False)
+
+    # JSON Schema defining the output structure for all extractors in this collection.
+    output_schema_json = Column(Text, nullable=False)
+
+    # Description of what extractors in this collection do.
+    description = Column(String(255), nullable=False)
+
+    # Minimum ordinal confidence level for validated output. One of:
+    # speculative, ambiguous, inferred, explicit, verbatim. Individual fields
+    # can override this default.
+    minimum_confidence_level = Column(String(255), nullable=False)
+
+    # When this collection version was recorded.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractor(OperationsBase):
+    """Append-only registry of logical state-specific LLM extractors.
+
+    A new row is written when a new logical extractor is first defined. Both
+    `extractor_collection_name` and `input_document_collection_name` are
+    invariant for a given `extractor_id` — changing either requires a new
+    `extractor_id`.
+    """
+
+    __tablename__ = "llm_extractor"
+
+    __table_args__ = (PrimaryKeyConstraint("state_code", "extractor_id"),)
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # Human-readable ID for the extractor (e.g. US_XX_CASE_NOTE_EMPLOYMENT_INFO).
+    # Stable across all versions.
+    extractor_id = Column(String(255), nullable=False)
+
+    # The extractor collection this extractor belongs to. Invariant — changing
+    # requires a new extractor_id.
+    extractor_collection_name = Column(String(255), nullable=False)
+
+    # The document collection this extractor runs against. Invariant — changing
+    # requires a new extractor_id.
+    input_document_collection_name = Column(String(255), nullable=False)
+
+    # When this extractor was first defined.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractorVersion(OperationsBase):
+    """Append-only versions of a logical LLM extractor's configuration.
+
+    A new row is written when version-scoped configuration (prompt, model
+    config) changes for a given `extractor_id`.
+    """
+
+    __tablename__ = "llm_extractor_version"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("state_code", "extractor_version_id"),
+        ForeignKeyConstraint(
+            ["extractor_collection_name", "extractor_collection_version_id"],
+            [
+                "llm_extractor_collection.collection_name",
+                "llm_extractor_collection.collection_version_id",
+            ],
+            name="llm_extractor_version_collection_fkey",
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "extractor_id"],
+            ["llm_extractor.state_code", "llm_extractor.extractor_id"],
+            name="llm_extractor_version_extractor_fkey",
+        ),
+        CheckConstraint(
+            "(invalidated_datetime_utc IS NULL) = (invalidation_reason IS NULL)",
+            name="llm_extractor_version_invalidation_fields_consistent",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # Version ID that changes when version-scoped configuration changes.
+    extractor_version_id = Column(String(255), nullable=False)
+
+    # The logical extractor this version belongs to.
+    extractor_id = Column(String(255), nullable=False)
+
+    # Denormalized from llm_extractor to support the FK to
+    # llm_extractor_collection.
+    extractor_collection_name = Column(String(255), nullable=False)
+
+    # The collection version this extractor version targets.
+    extractor_collection_version_id = Column(String(255), nullable=False)
+
+    # The fully-rendered instruction prompt.
+    instructions_prompt = Column(Text, nullable=False)
+
+    # SHA256 hash of the instructions prompt.
+    instructions_prompt_hash = Column(String(255), nullable=False)
+
+    # The model_config_name from the model registry.
+    model_config_name = Column(String(255), nullable=False)
+
+    # Hash of the resolved model config parameters.
+    model_config_version_id = Column(String(255), nullable=False)
+
+    # If set, this version is skipped for new job creation.
+    invalidated_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+
+    # Human-readable reason; nonnull iff invalidated_datetime_utc is nonnull.
+    invalidation_reason = Column(Text, nullable=True)
+
+    # When this version was added.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractorDocumentFilter(OperationsBase):
+    """Append-only document filter definitions per extractor.
+
+    Filter changes do not trigger reprocessing — `document_filter_id` is
+    intentionally not part of `extractor_version_id`.
+    """
+
+    __tablename__ = "llm_extractor_document_filter"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("state_code", "extractor_id", "document_filter_id"),
+        ForeignKeyConstraint(
+            ["state_code", "extractor_id"],
+            ["llm_extractor.state_code", "llm_extractor.extractor_id"],
+            name="llm_extractor_document_filter_extractor_fkey",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # The extractor associated with this filter.
+    extractor_id = Column(String(255), nullable=False)
+
+    # Filter version identifier.
+    document_filter_id = Column(String(255), nullable=False)
+
+    # BQ query template (format arg: project_id). Output: single
+    # document_contents_id column.
+    document_metadata_filter_query_template = Column(Text, nullable=False)
+
+    # When this filter was added.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractionEligibleDocumentMetadata(OperationsBase):
+    """Append-only, write-once per-document sizing metadata.
+
+    Holds one row per (state_code, document_contents_id) ever seen as eligible
+    under any extractor version or filter. Because `document_contents_id` is a
+    SHA256 of the document text, `char_count` and `document_update_datetime`
+    are fixed for all time and the row never needs updating.
+    """
+
+    __tablename__ = "llm_extraction_eligible_document_metadata"
+
+    __table_args__ = (PrimaryKeyConstraint("state_code", "document_contents_id"),)
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # SHA256 hash identifying the document.
+    document_contents_id = Column(String(255), nullable=False)
+
+    # Character count of the document text; used for the per-document size
+    # guardrail and for cost observability.
+    char_count = Column(Integer, nullable=False)
+
+    # The document's date (from document collection metadata). Used to order
+    # oldest-first when processing order matter (e.g. when we can't fit all
+    # pending documents in a single batch job).
+    document_update_datetime = Column(DateTime(timezone=True), nullable=False)
+
+    # When this row was added.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractionEligibleDocument(OperationsBase):
+    """Append-only list of documents eligible for extraction under a given
+    (extractor version, filter) pair."""
+
+    __tablename__ = "llm_extraction_eligible_document"
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "state_code",
+            "extractor_version_id",
+            "document_filter_id",
+            "document_contents_id",
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "extractor_version_id"],
+            [
+                "llm_extractor_version.state_code",
+                "llm_extractor_version.extractor_version_id",
+            ],
+            name="llm_extraction_eligible_document_version_fkey",
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "document_contents_id"],
+            [
+                "llm_extraction_eligible_document_metadata.state_code",
+                "llm_extraction_eligible_document_metadata.document_contents_id",
+            ],
+            name="llm_extraction_eligible_document_metadata_fkey",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # The extractor version under which this document is eligible.
+    extractor_version_id = Column(String(255), nullable=False)
+
+    # The filter version under which this document was deemed eligible.
+    document_filter_id = Column(String(255), nullable=False)
+
+    # SHA256 hash identifying the document.
+    document_contents_id = Column(String(255), nullable=False)
+
+    # When this row was added.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractionJob(OperationsBase):
+    """Tracks a single LLM extraction job.
+
+    A row is added when new documents are identified for processing. A partial
+    unique index ensures only one open (uncompleted) job exists per
+    (state_code, extractor_version_id) at a time.
+    """
+
+    __tablename__ = "llm_extraction_job"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("state_code", "job_id"),
+        ForeignKeyConstraint(
+            ["state_code", "extractor_version_id"],
+            [
+                "llm_extractor_version.state_code",
+                "llm_extractor_version.extractor_version_id",
+            ],
+            name="llm_extraction_job_extractor_version_fkey",
+        ),
+        Index(
+            "one_open_llm_extraction_job_per_extractor_version",
+            "state_code",
+            "extractor_version_id",
+            unique=True,
+            postgresql_where=text("completion_datetime_utc IS NULL"),
+        ),
+        CheckConstraint(
+            "(completion_datetime_utc IS NULL) = (result_type IS NULL)",
+            name="llm_extraction_job_completion_and_result_type_consistent",
+        ),
+        CheckConstraint(
+            "start_datetime_utc IS NOT NULL OR completion_datetime_utc IS NULL",
+            name="llm_extraction_job_completion_requires_start",
+        ),
+        CheckConstraint(
+            "completion_datetime_utc IS NULL "
+            "OR start_datetime_utc IS NULL "
+            "OR completion_datetime_utc >= start_datetime_utc",
+            name="llm_extraction_job_completion_after_start",
+        ),
+        CheckConstraint(
+            "error_message IS NULL OR result_type = 'FAILURE'",
+            name="llm_extraction_job_error_message_only_for_failure",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # UUID of the extraction job.
+    job_id = Column(String(255), nullable=False)
+
+    # The extractor version this job processes documents for.
+    extractor_version_id = Column(String(255), nullable=False)
+
+    # When the job started (null if not yet started).
+    start_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+
+    # When the job was identified as completed.
+    completion_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+
+    # SUCCESS, FAILURE, or PARTIAL_FAILURE. Nonnull iff completion_datetime_utc is set.
+    result_type = Column(llm_extraction_job_result_type, nullable=True)
+
+    # Error details. Nonnull only for FAILURE result types.
+    error_message = Column(String, nullable=True)
+
+
+class LLMExtractionBatchJobMetadata(OperationsBase):
+    """Provider-specific metadata for batch submissions.
+
+    Only populated for batch jobs. A single `llm_extraction_job` may have
+    multiple rows if documents were split across multiple JSONL files.
+    """
+
+    __tablename__ = "llm_extraction_batch_job_metadata"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("state_code", "job_id", "batch_index"),
+        ForeignKeyConstraint(
+            ["state_code", "job_id"],
+            ["llm_extraction_job.state_code", "llm_extraction_job.job_id"],
+            name="llm_extraction_batch_job_metadata_job_fkey",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # The extraction job.
+    job_id = Column(String(255), nullable=False)
+
+    # 0-indexed position of this submission within the job.
+    batch_index = Column(Integer, nullable=False)
+
+    # Provider-assigned batch job ID.
+    external_job_id = Column(String(255), nullable=False)
+
+    # The batch provider (e.g. VERTEX_AI_BATCH).
+    external_job_provider = Column(String(255), nullable=False)
+
+    # GCS path to the JSONL input file.
+    gcs_input_uri = Column(String, nullable=False)
+
+    # GCS path to the batch output (populated on completion).
+    gcs_output_uri = Column(String, nullable=True)
+
+    # When this row was created.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+
+class LLMExtractionJobDocument(OperationsBase):
+    """Documents associated with an LLM extraction job.
+
+    Written before job submission. Result columns are populated as documents
+    are processed.
+    """
+
+    __tablename__ = "llm_extraction_job_document"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("state_code", "job_id", "document_contents_id"),
+        UniqueConstraint(
+            "state_code",
+            "job_id",
+            "batch_index",
+            "job_index",
+            name="llm_extraction_job_document_job_index_unique",
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "job_id"],
+            ["llm_extraction_job.state_code", "llm_extraction_job.job_id"],
+            name="llm_extraction_job_document_job_fkey",
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "job_id", "batch_index"],
+            [
+                "llm_extraction_batch_job_metadata.state_code",
+                "llm_extraction_batch_job_metadata.job_id",
+                "llm_extraction_batch_job_metadata.batch_index",
+            ],
+            name="llm_extraction_job_document_batch_fkey",
+        ),
+        CheckConstraint(
+            "(result_datetime_utc IS NULL) = (result_type IS NULL)",
+            name="llm_extraction_job_document_result_datetime_and_type_consistent",
+        ),
+        CheckConstraint(
+            "error_message IS NULL "
+            "OR result_type IN ("
+            "'JOB_LEVEL_FAILURE',"
+            "'DOCUMENT_LEVEL_FAILURE_TRANSIENT',"
+            "'DOCUMENT_LEVEL_FAILURE_PERMANENT',"
+            "'DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED'"
+            ")",
+            name="llm_extraction_job_document_error_message_only_for_failure",
+        ),
+        CheckConstraint(
+            "(is_relevant IS NOT NULL) = (result_type IS NOT DISTINCT FROM 'SUCCESS')",
+            name="llm_extraction_job_document_is_relevant_iff_success",
+        ),
+        CheckConstraint(
+            "job_index >= 0",
+            name="llm_extraction_job_document_nonnegative_job_index",
+        ),
+        CheckConstraint(
+            "(result_datetime_utc IS NULL) = (input_token_count IS NULL)"
+            " AND (result_datetime_utc IS NULL) = (output_token_count IS NULL)"
+            " AND (result_datetime_utc IS NULL) = (cached_input_token_count IS NULL)"
+            " AND (result_datetime_utc IS NULL) = (thinking_token_count IS NULL)",
+            name="llm_extraction_job_document_token_counts_iff_result_datetime",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # UUID of the extraction job.
+    job_id = Column(String(255), nullable=False)
+
+    # SHA256 hash identifying the document.
+    document_contents_id = Column(String(255), nullable=False)
+
+    # Which batch submission this document was sent in (0-indexed). NULL for
+    # sync jobs.
+    batch_index = Column(Integer, nullable=True)
+
+    # Submission-time ordering within the job (0-indexed). Used for internal
+    # bookkeeping and uniqueness, not for result correlation — results are
+    # correlated via document_contents_id embedded in the batch request.
+    job_index = Column(Integer, nullable=False)
+
+    # When the result was processed.
+    result_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+
+    # SUCCESS, JOB_LEVEL_FAILURE, DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+    # DOCUMENT_LEVEL_FAILURE_PERMANENT, or DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED.
+    result_type = Column(llm_extraction_job_document_result_type, nullable=True)
+
+    # Model's is_relevant determination. Non-null iff result_type = SUCCESS.
+    # Denormalized for the REPROCESS_ALL_RELEVANT reprocessing directive.
+    is_relevant = Column(Boolean, nullable=True)
+
+    # Error details. Nonnull only for FAILURE result types.
+    error_message = Column(String, nullable=True)
+
+    # Total input tokens for this API call. Nonnull iff result_datetime_utc is set.
+    input_token_count = Column(Integer, nullable=True)
+
+    # Output tokens excluding thinking. Nonnull iff result_datetime_utc is set.
+    output_token_count = Column(Integer, nullable=True)
+
+    # Input tokens served from cache. Nonnull iff result_datetime_utc is set.
+    cached_input_token_count = Column(Integer, nullable=True)
+
+    # Thinking tokens (0 if thinking disabled). Nonnull iff result_datetime_utc is set.
+    thinking_token_count = Column(Integer, nullable=True)
+
+
+class LLMExtractionCapOverride(OperationsBase):
+    """Temporary, time-windowed exceptions to an extractor's
+    total_pending_document_count_hard_cap.
+
+    An override raises the cap until `expires_datetime_utc` (or until the
+    pending backlog drains below the cap), so a single override covers a
+    multi-job reprocess rather than being consumed by one job. Auto-expire.
+    """
+
+    __tablename__ = "llm_extraction_cap_override"
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "state_code", "extractor_version_id", "document_filter_id"
+        ),
+        ForeignKeyConstraint(
+            ["state_code", "extractor_version_id"],
+            [
+                "llm_extractor_version.state_code",
+                "llm_extractor_version.extractor_version_id",
+            ],
+            name="llm_extraction_cap_override_extractor_version_fkey",
+        ),
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    # The specific extractor version.
+    extractor_version_id = Column(String(255), nullable=False)
+
+    # The specific filter.
+    document_filter_id = Column(String(255), nullable=False)
+
+    # Total-pending char-count cap to enforce while this override is active
+    # (raises total_pending_document_count_hard_cap).
+    override_document_count_cap = Column(Integer, nullable=False)
+
+    # When this override expires.
+    expires_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+
+    # When this override was created.
+    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)

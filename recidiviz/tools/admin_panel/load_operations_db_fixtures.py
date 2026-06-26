@@ -60,6 +60,8 @@ def get_all_operations_table_classes_with_fixtures() -> list[Table]:
         # Skip the direct_ingest_raw_data_pruning_metadata table
         # since we don't currently use it in the admin panel
         and DirectIngestRawDataPruningMetadata.__tablename__ != table_class.name
+        # TODO(OBT-33902): Add admin panel fixtures for the LLM extraction tables.
+        and not table_class.name.startswith("llm_extract")
     ]
 
 

@@ -109,6 +109,16 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestRawFileImport",
             "DirectIngestRawDataFlashStatus",
             "DirectIngestRawDataPruningMetadata",
+            "LLMExtractorCollection",
+            "LLMExtractor",
+            "LLMExtractorVersion",
+            "LLMExtractorDocumentFilter",
+            "LLMExtractionEligibleDocumentMetadata",
+            "LLMExtractionEligibleDocument",
+            "LLMExtractionJob",
+            "LLMExtractionBatchJobMetadata",
+            "LLMExtractionJobDocument",
+            "LLMExtractionCapOverride",
         ]
 
         expected_qualified_names = _prefix_module_name(
@@ -228,6 +238,16 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_file_import",
             "direct_ingest_raw_data_flash_status",
             "direct_ingest_raw_data_pruning_metadata",
+            "llm_extractor_collection",
+            "llm_extractor",
+            "llm_extractor_version",
+            "llm_extractor_document_filter",
+            "llm_extraction_eligible_document_metadata",
+            "llm_extraction_eligible_document",
+            "llm_extraction_job",
+            "llm_extraction_batch_job_metadata",
+            "llm_extraction_job_document",
+            "llm_extraction_cap_override",
         ]
         workflows_table_names = ["opportunity", "opportunity_configuration"]
         insights_table_names = [

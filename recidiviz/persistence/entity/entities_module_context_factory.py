@@ -255,6 +255,16 @@ class _OperationsEntitiesModuleContext(EntitiesModuleContext):
             operations_entities.DirectIngestSftpIngestReadyFileMetadata.__name__,
             operations_entities.DirectIngestSftpRemoteFileMetadata.__name__,
             operations_entities.DirectIngestRawDataFlashStatus.__name__,
+            operations_entities.LLMExtractorCollection.__name__,
+            operations_entities.LLMExtractor.__name__,
+            operations_entities.LLMExtractorVersion.__name__,
+            operations_entities.LLMExtractorDocumentFilter.__name__,
+            operations_entities.LLMExtractionEligibleDocumentMetadata.__name__,
+            operations_entities.LLMExtractionEligibleDocument.__name__,
+            operations_entities.LLMExtractionJob.__name__,
+            operations_entities.LLMExtractionBatchJobMetadata.__name__,
+            operations_entities.LLMExtractionJobDocument.__name__,
+            operations_entities.LLMExtractionCapOverride.__name__,
         ]
 
     @classmethod

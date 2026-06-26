@@ -44,3 +44,21 @@ direct_ingest_raw_file_import_status_failed_pre_import_normalization_step = (
 direct_ingest_raw_file_import_status_failed_load_step = "FAILED_LOAD_STEP"
 direct_ingest_raw_file_import_status_failed_validation_step = "FAILED_VALIDATION_STEP"
 direct_ingest_raw_file_import_status_failed_import_blocked = "FAILED_IMPORT_BLOCKED"
+
+# LLMExtractionJobResultType
+llm_extraction_job_result_type_success = "SUCCESS"
+llm_extraction_job_result_type_partial_failure = "PARTIAL_FAILURE"
+llm_extraction_job_result_type_failure = "FAILURE"
+
+# LLMExtractionJobDocumentResultType
+llm_extraction_job_document_result_type_success = "SUCCESS"
+llm_extraction_job_document_result_type_job_level_failure = "JOB_LEVEL_FAILURE"
+llm_extraction_job_document_result_type_document_level_failure_transient = (
+    "DOCUMENT_LEVEL_FAILURE_TRANSIENT"
+)
+llm_extraction_job_document_result_type_document_level_failure_permanent = (
+    "DOCUMENT_LEVEL_FAILURE_PERMANENT"
+)
+llm_extraction_job_document_result_type_document_level_failure_retries_exhausted = (
+    "DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED"
+)
