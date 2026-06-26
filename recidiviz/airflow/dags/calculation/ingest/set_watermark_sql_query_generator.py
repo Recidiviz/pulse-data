@@ -28,6 +28,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 
 class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -36,11 +37,13 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     def __init__(
         self,
         region_code: str,
+        pipeline_type: IngestPipelineType,
         get_max_update_datetime_task_id: str,
         run_pipeline_task_id: str,
     ) -> None:
         super().__init__()
         self.region_code = region_code
+        self.pipeline_type = pipeline_type
         self.get_max_update_datetime_task_id = get_max_update_datetime_task_id
         self.run_pipeline_task_id = run_pipeline_task_id
 
@@ -71,14 +74,14 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     ) -> str:
         values = ", ".join(
             [
-                f"('{self.region_code.upper()}', '{file_tag}', '{max_update_datetime}', '{job_id}')"
+                f"('{self.region_code.upper()}', '{file_tag}', '{max_update_datetime}', '{job_id}', '{self.pipeline_type.value}')"
                 for file_tag, max_update_datetime in max_update_datetimes.items()
             ]
         )
 
         return f"""
             INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
-                (region_code, {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}, job_id)
+                (region_code, {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}, job_id, pipeline_type)
             VALUES
                 {values};
         """

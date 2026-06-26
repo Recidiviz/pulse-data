@@ -44,6 +44,10 @@ Example Usage:
        --state-code=US_OZ \
        --file-tag=test
 
+    python -m recidiviz.tools.ingest.operations.plant_test_watermark \
+       --state-code=US_OZ \
+       --pipeline-type=IDENTITY
+
 Clean up afterward with:
 
     python -m recidiviz.tools.ingest.operations.check_watermarks \
@@ -61,6 +65,7 @@ from sqlalchemy import text
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -80,7 +85,12 @@ _FAKE_MISSING_TAG = "ZZZZ_FAKE_MISSING_TAG"
 _PAST_WATERMARK = datetime.datetime(2024, 1, 1)
 
 
-def main(state_code: StateCode, mode: str, file_tag: str | None) -> None:
+def main(
+    state_code: StateCode,
+    mode: str,
+    file_tag: str | None,
+    pipeline_type: IngestPipelineType,
+) -> None:
     """Plants a deliberately bad watermark in staging for testing check_watermarks.py."""
     project_id = GCP_PROJECT_STAGING
     region_code = state_code.value
@@ -96,12 +106,16 @@ def main(state_code: StateCode, mode: str, file_tag: str | None) -> None:
                 if file_tag is None:
                     with SessionFactory.for_proxy(db_key) as session:
                         existing, _ = get_watermarks(
-                            session, region_code, ingest_instance
+                            session,
+                            region_code,
+                            ingest_instance,
+                            pipeline_type,
                         )
                     if not existing:
                         print(
-                            f"No existing watermarks found for {region_code}. "
-                            f"Cannot pick a file tag automatically — pass --file-tag explicitly."
+                            f"No existing watermarks found for {region_code} / "
+                            f"{pipeline_type.value}. Cannot pick a file tag "
+                            f"automatically — pass --file-tag explicitly."
                         )
                         sys.exit(1)
                     file_tag = sorted(existing.keys())[0]
@@ -130,26 +144,28 @@ def main(state_code: StateCode, mode: str, file_tag: str | None) -> None:
                 session.execute(
                     text(
                         "INSERT INTO direct_ingest_dataflow_job"
-                        " (job_id, region_code, ingest_instance, completion_time, is_invalidated)"
-                        " VALUES (:job_id, :region_code, :ingest_instance, NOW(), FALSE)"
+                        " (job_id, region_code, ingest_instance, pipeline_type, completion_time, is_invalidated)"
+                        " VALUES (:job_id, :region_code, :ingest_instance, :pipeline_type, NOW(), FALSE)"
                     ),
                     {
                         "job_id": _FAKE_JOB_ID,
                         "region_code": region_code.upper(),
                         "ingest_instance": ingest_instance.upper(),
+                        "pipeline_type": pipeline_type.value,
                     },
                 )
                 session.execute(
                     text(
                         "INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds"
-                        " (region_code, job_id, raw_data_file_tag, watermark_datetime)"
-                        " VALUES (:region_code, :job_id, :file_tag, :watermark_datetime)"
+                        " (region_code, job_id, raw_data_file_tag, watermark_datetime, pipeline_type)"
+                        " VALUES (:region_code, :job_id, :file_tag, :watermark_datetime, :pipeline_type)"
                     ),
                     {
                         "region_code": region_code.upper(),
                         "job_id": _FAKE_JOB_ID,
                         "file_tag": file_tag,
                         "watermark_datetime": watermark_datetime,
+                        "pipeline_type": pipeline_type.value,
                     },
                 )
                 session.commit()
@@ -169,7 +185,7 @@ def main(state_code: StateCode, mode: str, file_tag: str | None) -> None:
 
 
 def create_parser() -> argparse.ArgumentParser:
-
+    """Builds the argument parser for the plant-test-watermark script."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -196,6 +212,14 @@ def create_parser() -> argparse.ArgumentParser:
             "the state's existing watermarks or ZZZZ_FAKE_MISSING_TAG in missing mode"
         ),
     )
+    parser.add_argument(
+        "--pipeline-type",
+        default=IngestPipelineType.ACTIVITY,
+        type=IngestPipelineType,
+        choices=list(IngestPipelineType),
+        metavar="PIPELINE_TYPE",
+        help="pipeline type to plant the bad watermark for (default: ACTIVITY)",
+    )
     return parser
 
 
@@ -204,4 +228,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
 
     args = create_parser().parse_args()
-    main(args.state_code, args.mode, args.file_tag)
+    main(args.state_code, args.mode, args.file_tag, args.pipeline_type)

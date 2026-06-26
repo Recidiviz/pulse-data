@@ -309,6 +309,7 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.watermark_utils",
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
+        "recidiviz.ingest.direct.types.ingest_pipeline_type",
         "recidiviz.metrics.export.products",
         "recidiviz.persistence.database",
         "recidiviz.pipelines.config_paths",

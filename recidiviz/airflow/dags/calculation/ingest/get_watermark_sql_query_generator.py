@@ -30,15 +30,17 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 )
 from recidiviz.ingest.direct.raw_data.watermark_utils import WATERMARKS_QUERY_TEMPLATE
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.utils.string import StrictStringFormatter
 
 
 class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
     """Custom query generator for getting the max watermark from DirectIngestDataflowRawTableUpperBounds."""
 
-    def __init__(self, region_code: str) -> None:
+    def __init__(self, region_code: str, pipeline_type: IngestPipelineType) -> None:
         super().__init__()
         self.region_code = region_code
+        self.pipeline_type = pipeline_type
 
     def execute_postgres_query(
         self,
@@ -55,6 +57,7 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
                 self.sql_query(
                     region_code=self.region_code,
                     ingest_instance=DirectIngestInstance.PRIMARY.value,
+                    pipeline_type=self.pipeline_type,
                 )
             ).iterrows()
         }
@@ -62,9 +65,14 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
         return watermark
 
     @staticmethod
-    def sql_query(region_code: str, ingest_instance: str) -> str:
+    def sql_query(
+        region_code: str,
+        ingest_instance: str,
+        pipeline_type: IngestPipelineType,
+    ) -> str:
         return StrictStringFormatter().format(
             WATERMARKS_QUERY_TEMPLATE,
             region_code=region_code.upper(),
             ingest_instance=ingest_instance.upper(),
+            pipeline_type=pipeline_type.value,
         )

@@ -55,6 +55,7 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.raw_data.watermark_utils import (
     get_problematic_watermark_tags,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
@@ -161,6 +162,7 @@ def _verify_raw_data_flashing_not_in_progress(
 
 def _initialize_ingest_pipeline(
     state_code: StateCode,
+    pipeline_type: IngestPipelineType,
     operations_cloud_sql_conn_id: str,
 ) -> Tuple[TaskGroup, CloudSqlQueryOperator]:
     """
@@ -187,6 +189,7 @@ def _initialize_ingest_pipeline(
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=GetWatermarkSqlQueryGenerator(
                 region_code=state_code.value,
+                pipeline_type=pipeline_type,
             ),
         )
 
@@ -207,7 +210,9 @@ def _initialize_ingest_pipeline(
     return initialize_ingest_pipeline, get_max_update_datetimes
 
 
-def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
+def create_single_ingest_pipeline_group(
+    state_code: StateCode, pipeline_type: IngestPipelineType
+) -> TaskGroup:
     """
     Creates a group that runs ingest logic for the given state.
     """
@@ -220,7 +225,9 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
         (
             initialize_ingest_pipeline,
             get_max_update_datetimes,
-        ) = _initialize_ingest_pipeline(state_code, operations_cloud_sql_conn_id)
+        ) = _initialize_ingest_pipeline(
+            state_code, pipeline_type, operations_cloud_sql_conn_id
+        )
 
         dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
             delegate=IngestDataflowPipelineTaskGroupDelegate(
@@ -234,6 +241,7 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=SetWatermarkSqlQueryGenerator(
                 region_code=state_code.value,
+                pipeline_type=pipeline_type,
                 get_max_update_datetime_task_id=get_max_update_datetimes.task_id,
                 run_pipeline_task_id=run_pipeline.task_id,
             ),
@@ -244,6 +252,7 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=AddIngestJobCompletionSqlQueryGenerator(
                 region_code=state_code.value,
+                pipeline_type=pipeline_type,
                 run_pipeline_task_id=run_pipeline.task_id,
             ),
         )

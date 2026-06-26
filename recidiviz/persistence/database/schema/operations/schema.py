@@ -203,9 +203,7 @@ class DirectIngestDataflowJob(OperationsBase):
     ingest_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
     # Which ingest pipeline kind (activity or identity) produced this job
-    pipeline_type = Column(
-        ingest_pipeline_type, nullable=False, index=True, server_default="ACTIVITY"
-    )
+    pipeline_type = Column(ingest_pipeline_type, nullable=False, index=True)
 
     # The location that the job ran in
     location = Column(String(255), nullable=True, index=True)
@@ -266,9 +264,7 @@ class DirectIngestDataflowRawTableUpperBounds(OperationsBase):
     # Which ingest pipeline kind (activity or identity) produced this watermark.
     # Denormalized from direct_ingest_dataflow_job (via job_id) so diagnostic
     # queries can filter watermarks by pipeline type without a join.
-    pipeline_type = Column(
-        ingest_pipeline_type, nullable=False, index=True, server_default="ACTIVITY"
-    )
+    pipeline_type = Column(ingest_pipeline_type, nullable=False, index=True)
 
 
 class DirectIngestRawDataResourceLock(OperationsBase):

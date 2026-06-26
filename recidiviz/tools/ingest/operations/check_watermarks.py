@@ -59,6 +59,7 @@ from recidiviz.ingest.direct.raw_data.watermark_utils import (
     get_problematic_watermark_tags,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -89,12 +90,14 @@ def get_watermarks(
     session: sqlalchemy.orm.Session,
     region_code: str,
     ingest_instance: str,
+    pipeline_type: IngestPipelineType,
 ) -> tuple[dict[str, datetime.datetime], str | None]:
     """Returns (watermarks_by_tag, job_id) for the latest non-invalidated job."""
     query_str = StrictStringFormatter().format(
         WATERMARKS_QUERY_TEMPLATE,
         region_code=region_code.upper(),
         ingest_instance=ingest_instance.upper(),
+        pipeline_type=pipeline_type.value,
     )
     rows = list(session.execute(text(query_str)))
     if not rows:
@@ -104,10 +107,15 @@ def get_watermarks(
 
 
 def _get_data_needed_for_checking(
-    db_key: SQLAlchemyDatabaseKey, region_code: str, ingest_instance: str
+    db_key: SQLAlchemyDatabaseKey,
+    region_code: str,
+    ingest_instance: str,
+    pipeline_type: IngestPipelineType,
 ) -> tuple[dict[str, datetime.datetime], dict[str, datetime.datetime], str | None]:
     with SessionFactory.for_proxy(db_key) as session:
-        watermarks, job_id = get_watermarks(session, region_code, ingest_instance)
+        watermarks, job_id = get_watermarks(
+            session, region_code, ingest_instance, pipeline_type
+        )
         max_update_datetimes = _get_max_update_datetimes(
             session, region_code, ingest_instance
         )
@@ -196,16 +204,19 @@ def check_watermarks(
     db_key: SQLAlchemyDatabaseKey,
     region_code: str,
     ingest_instance: str,
+    pipeline_type: IngestPipelineType,
     list_mode: bool,
 ) -> tuple[list[str], str]:
     """Checks watermarks for a state. Returns (tags_to_fix, job_id)."""
 
     watermarks, max_update_datetimes, job_id = _get_data_needed_for_checking(
-        db_key, region_code, ingest_instance
+        db_key, region_code, ingest_instance, pipeline_type
     )
 
     if not watermarks:
-        raise ValueError(f"No watermarks found for {region_code}.")
+        raise ValueError(
+            f"No watermarks found for [{region_code}] / [{pipeline_type.value}]."
+        )
 
     assert job_id is not None
 
@@ -221,6 +232,7 @@ def check_watermarks(
 def main(
     project_id: str,
     state_code: StateCode,
+    pipeline_type: IngestPipelineType,
     list_mode: bool,
     fix: bool,
 ) -> None:
@@ -234,7 +246,7 @@ def main(
             db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
             tags_to_fix, job_id = check_watermarks(
-                db_key, region_code, ingest_instance, list_mode
+                db_key, region_code, ingest_instance, pipeline_type, list_mode
             )
 
             if not fix or not tags_to_fix:
@@ -258,7 +270,7 @@ def main(
             print(f"\nDeleted {result.rowcount} row(s). Re-running check...")
 
             tags_remaining, _ = check_watermarks(
-                db_key, region_code, ingest_instance, list_mode=False
+                db_key, region_code, ingest_instance, pipeline_type, list_mode=False
             )
 
             if tags_remaining:
@@ -282,6 +294,14 @@ def create_parser() -> argparse.ArgumentParser:
         type=StateCode,
         metavar="STATE_CODE",
         help="state code to check (e.g. US_NE)",
+    )
+    parser.add_argument(
+        "--pipeline-type",
+        default=IngestPipelineType.ACTIVITY,
+        type=IngestPipelineType,
+        choices=list(IngestPipelineType),
+        metavar="PIPELINE_TYPE",
+        help="pipeline type to check (default: ACTIVITY)",
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -311,4 +331,4 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
 
-    main(args.project_id, args.state_code, args.list, args.fix)
+    main(args.project_id, args.state_code, args.pipeline_type, args.list, args.fix)

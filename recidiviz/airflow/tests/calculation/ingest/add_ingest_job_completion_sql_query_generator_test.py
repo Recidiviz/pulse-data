@@ -29,6 +29,7 @@ from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_que
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 
 class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
@@ -41,6 +42,7 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
             "region_code": "US_XX",
             "location": "test_location",
             "ingest_instance": "PRIMARY",
+            "pipeline_type": "ACTIVITY",
             "is_invalidated": False,
         }
 
@@ -49,6 +51,28 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
             region_code="US_XX",
             location="test_location",
             ingest_instance="PRIMARY",
+            pipeline_type=IngestPipelineType.ACTIVITY,
+        )
+        self.assertEqual(query, expected_query)
+        self.assertEqual(parameters, expected_parameters)
+
+    def test_generates_sql_correctly_for_identity(self) -> None:
+        expected_query = ADD_INGEST_JOB_COMPLETION_SQL
+        expected_parameters = {
+            "job_id": "test_job_id",
+            "region_code": "US_XX",
+            "location": "test_location",
+            "ingest_instance": "PRIMARY",
+            "pipeline_type": "IDENTITY",
+            "is_invalidated": False,
+        }
+
+        query, parameters = AddIngestJobCompletionSqlQueryGenerator.insert_sql_query(
+            job_id="test_job_id",
+            region_code="US_XX",
+            location="test_location",
+            ingest_instance="PRIMARY",
+            pipeline_type=IngestPipelineType.IDENTITY,
         )
         self.assertEqual(query, expected_query)
         self.assertEqual(parameters, expected_parameters)
@@ -56,6 +80,7 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
     def test_insert_statement_generated_correctly(self) -> None:
         generator = AddIngestJobCompletionSqlQueryGenerator(
             region_code="US_XX",
+            pipeline_type=IngestPipelineType.ACTIVITY,
             run_pipeline_task_id="test_dataflow_pipeline_task_id",
         )
         mock_operator = create_autospec(CloudSqlQueryOperator)
@@ -82,12 +107,13 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
         generator.execute_postgres_query(mock_operator, mock_postgres, mock_context)
 
         mock_postgres.run.assert_called_with(
-            sql=ADD_INGEST_JOB_COMPLETION_SQL,
+            ADD_INGEST_JOB_COMPLETION_SQL,
             parameters={
                 "job_id": "test_job_id",
                 "ingest_instance": "PRIMARY",
                 "region_code": "US_XX",
                 "location": "us-east1",
+                "pipeline_type": "ACTIVITY",
                 "is_invalidated": False,
             },
         )

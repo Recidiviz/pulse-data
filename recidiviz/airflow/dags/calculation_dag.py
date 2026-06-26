@@ -59,6 +59,7 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -201,7 +202,9 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
         with TaskGroup(
             f"{state_code.value}_dataflow_pipelines"
         ) as state_pipelines_group:
-            ingest_group = create_single_ingest_pipeline_group(state_code)
+            ingest_group = create_single_ingest_pipeline_group(
+                state_code, IngestPipelineType.ACTIVITY
+            )
 
             for pipeline_config in metric_pipeline_params_by_state.get(
                 state_code.value, {}

@@ -23,6 +23,7 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy.orm
 
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -40,6 +41,7 @@ from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunch
 
 _REGION_CODE = "US_XX"
 _INGEST_INSTANCE = "PRIMARY"
+_PIPELINE_TYPE = IngestPipelineType.ACTIVITY
 _JOB_ID_1 = "2024-01-01_00_00_00-1111111111111111111"
 _JOB_ID_2 = "2024-02-01_00_00_00-2222222222222222222"
 
@@ -115,12 +117,14 @@ class TestQueryFunctions(unittest.TestCase):
         job_id: str,
         is_invalidated: bool = False,
         watermarks: dict[str, datetime.datetime],
+        pipeline_type: IngestPipelineType = IngestPipelineType.ACTIVITY,
     ) -> None:
         session.add(
             schema.DirectIngestDataflowJob(
                 job_id=job_id,
                 region_code=_REGION_CODE,
                 ingest_instance=_INGEST_INSTANCE,
+                pipeline_type=pipeline_type.value,
                 completion_time=datetime.datetime(2024, 1, 1),
                 is_invalidated=is_invalidated,
             )
@@ -132,6 +136,7 @@ class TestQueryFunctions(unittest.TestCase):
                     job_id=job_id,
                     raw_data_file_tag=tag,
                     watermark_datetime=dt,
+                    pipeline_type=pipeline_type.value,
                 )
             )
 
@@ -215,7 +220,9 @@ class TestQueryFunctions(unittest.TestCase):
             )
             session.commit()
 
-            watermarks, job_id = get_watermarks(session, _REGION_CODE, _INGEST_INSTANCE)
+            watermarks, job_id = get_watermarks(
+                session, _REGION_CODE, _INGEST_INSTANCE, _PIPELINE_TYPE
+            )
 
         self.assertEqual(job_id, _JOB_ID_1)
         self.assertEqual(watermarks["tag_a"], _DT(2024, 1, 5))
@@ -237,7 +244,9 @@ class TestQueryFunctions(unittest.TestCase):
             )
             session.commit()
 
-            watermarks, job_id = get_watermarks(session, _REGION_CODE, _INGEST_INSTANCE)
+            watermarks, job_id = get_watermarks(
+                session, _REGION_CODE, _INGEST_INSTANCE, _PIPELINE_TYPE
+            )
 
         # Should pick the max job_id (_JOB_ID_2 sorts higher lexicographically)
         self.assertEqual(job_id, _JOB_ID_2)
@@ -260,14 +269,18 @@ class TestQueryFunctions(unittest.TestCase):
             )
             session.commit()
 
-            watermarks, job_id = get_watermarks(session, _REGION_CODE, _INGEST_INSTANCE)
+            watermarks, job_id = get_watermarks(
+                session, _REGION_CODE, _INGEST_INSTANCE, _PIPELINE_TYPE
+            )
 
         self.assertEqual(job_id, _JOB_ID_1)
         self.assertEqual(watermarks["tag_a"], _DT(2024, 1, 1))
 
     def test_get_watermarks_empty_when_no_jobs(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            watermarks, job_id = get_watermarks(session, _REGION_CODE, _INGEST_INSTANCE)
+            watermarks, job_id = get_watermarks(
+                session, _REGION_CODE, _INGEST_INSTANCE, _PIPELINE_TYPE
+            )
 
         self.assertEqual(watermarks, {})
         self.assertIsNone(job_id)
@@ -277,10 +290,52 @@ class TestQueryFunctions(unittest.TestCase):
             "recidiviz.tools.ingest.operations.check_watermarks._get_data_needed_for_checking",
             return_value=({}, {}, None),
         ):
-            with self.assertRaisesRegex(ValueError, "No watermarks found for US_XX"):
+            with self.assertRaisesRegex(
+                ValueError, r"No watermarks found for \[US_XX\] / \[ACTIVITY\]"
+            ):
                 check_watermarks(
-                    self.database_key, _REGION_CODE, _INGEST_INSTANCE, list_mode=False
+                    self.database_key,
+                    _REGION_CODE,
+                    _INGEST_INSTANCE,
+                    _PIPELINE_TYPE,
+                    list_mode=False,
                 )
+
+    def test_get_watermarks_filters_by_pipeline_type(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self._add_job_and_watermarks(
+                session,
+                job_id=_JOB_ID_1,
+                watermarks={"tag_a": _DT(2024, 1, 1)},
+                pipeline_type=IngestPipelineType.ACTIVITY,
+            )
+            self._add_job_and_watermarks(
+                session,
+                job_id=_JOB_ID_2,
+                watermarks={"tag_a": _DT(2024, 2, 1)},
+                pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            session.commit()
+
+            activity_watermarks, activity_job_id = get_watermarks(
+                session,
+                _REGION_CODE,
+                _INGEST_INSTANCE,
+                IngestPipelineType.ACTIVITY,
+            )
+            identity_watermarks, identity_job_id = get_watermarks(
+                session,
+                _REGION_CODE,
+                _INGEST_INSTANCE,
+                IngestPipelineType.IDENTITY,
+            )
+
+        self.assertEqual(activity_job_id, _JOB_ID_1)
+        self.assertEqual(activity_watermarks["tag_a"], _DT(2024, 1, 1))
+        self.assertEqual(identity_job_id, _JOB_ID_2)
+        self.assertEqual(identity_watermarks["tag_a"], _DT(2024, 2, 1))
 
 
 class TestBuildTagRows(unittest.TestCase):

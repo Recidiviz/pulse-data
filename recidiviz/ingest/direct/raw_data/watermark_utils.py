@@ -37,8 +37,8 @@ GROUP BY file_tag;
 """
 
 # Selects watermarks and job_id for the most recent non-invalidated job.
-# The {region_code} and {ingest_instance} placeholders must be filled in by
-# callers (e.g. via StrictStringFormatter).
+# The {region_code}, {ingest_instance}, and {pipeline_type} placeholders must be
+# filled in by callers (e.g. via StrictStringFormatter).
 WATERMARKS_QUERY_TEMPLATE = """
 SELECT raw_data_file_tag, watermark_datetime, job_id
 FROM direct_ingest_dataflow_raw_table_upper_bounds
@@ -47,6 +47,7 @@ WHERE job_id IN (
     FROM direct_ingest_dataflow_job
     WHERE region_code = '{region_code}'
     AND ingest_instance = '{ingest_instance}'
+    AND pipeline_type = '{pipeline_type}'
     AND is_invalidated = FALSE
 )
 """

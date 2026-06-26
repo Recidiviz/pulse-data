@@ -31,6 +31,7 @@ from recidiviz.airflow.dags.calculation.ingest.get_watermark_sql_query_generator
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 
 class TestGetWatermarkSqlQueryGenerator(unittest.TestCase):
@@ -45,19 +46,46 @@ WHERE job_id IN (
     FROM direct_ingest_dataflow_job
     WHERE region_code = 'US_XX'
     AND ingest_instance = 'PRIMARY'
+    AND pipeline_type = 'ACTIVITY'
     AND is_invalidated = FALSE
 )
 """
         self.assertEqual(
             GetWatermarkSqlQueryGenerator.sql_query(
-                region_code="US_XX", ingest_instance="PRIMARY"
+                region_code="US_XX",
+                ingest_instance="PRIMARY",
+                pipeline_type=IngestPipelineType.ACTIVITY,
+            ),
+            expected_query,
+        )
+
+    def test_generates_sql_correctly_for_identity(self) -> None:
+        expected_query = """
+SELECT raw_data_file_tag, watermark_datetime, job_id
+FROM direct_ingest_dataflow_raw_table_upper_bounds
+WHERE job_id IN (
+    SELECT MAX(job_id)
+    FROM direct_ingest_dataflow_job
+    WHERE region_code = 'US_XX'
+    AND ingest_instance = 'PRIMARY'
+    AND pipeline_type = 'IDENTITY'
+    AND is_invalidated = FALSE
+)
+"""
+        self.assertEqual(
+            GetWatermarkSqlQueryGenerator.sql_query(
+                region_code="US_XX",
+                ingest_instance="PRIMARY",
+                pipeline_type=IngestPipelineType.IDENTITY,
             ),
             expected_query,
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
     def test_watermark_retrieved_correctly(self) -> None:
-        generator = GetWatermarkSqlQueryGenerator(region_code="US_XX")
+        generator = GetWatermarkSqlQueryGenerator(
+            region_code="US_XX", pipeline_type=IngestPipelineType.ACTIVITY
+        )
 
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)

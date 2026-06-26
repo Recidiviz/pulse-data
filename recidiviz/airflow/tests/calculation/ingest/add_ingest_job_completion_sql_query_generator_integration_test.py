@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -48,41 +49,55 @@ class AddIngestJobCompletionSqlQueryGeneratorIntegrationTest(AirflowIntegrationT
     def tearDownClass(cls) -> None:
         super().tearDownClass()
 
-    def test_insert_query_executes_successfully(self) -> None:
-        """Test that the insert query executes successfully against a local database."""
+    def _run_insert_and_verify(
+        self, pipeline_type: IngestPipelineType, job_id: str
+    ) -> None:
+        """Tests that the insert query writes the correct values for the given
+        pipeline_type.
+        """
         generator = AddIngestJobCompletionSqlQueryGenerator(
             region_code="US_XX",
+            pipeline_type=pipeline_type,
             run_pipeline_task_id="test_dataflow_pipeline_task_id",
         )
 
         postgres_hook = self.postgres_hooks[self.operations_db]
 
-        # Mock the operator and context
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_context = create_autospec(Context)
 
-        # Mock the xcom_pull to return pipeline data
         mock_operator.xcom_pull.return_value = {
-            "id": "test_job_id_123",
+            "id": job_id,
             "location": "us-east1",
         }
 
-        # Execute the query
         generator.execute_postgres_query(mock_operator, postgres_hook, mock_context)
 
-        # Verify the record was inserted by querying the database
         result = postgres_hook.get_first(
             """
-            SELECT job_id, region_code, location, ingest_instance, is_invalidated
+            SELECT job_id, region_code, location, ingest_instance, pipeline_type, is_invalidated
             FROM direct_ingest_dataflow_job
             WHERE job_id = %(job_id)s
             """,
-            parameters={"job_id": "test_job_id_123"},
+            parameters={"job_id": job_id},
         )
 
         self.assertIsNotNone(result)
-        self.assertEqual(result[0], "test_job_id_123")  # job_id
-        self.assertEqual(result[1], "US_XX")  # region_code
-        self.assertEqual(result[2], "us-east1")  # location
-        self.assertEqual(result[3], "PRIMARY")  # ingest_instance
-        self.assertFalse(result[4])  # is_invalidated
+        self.assertEqual(result[0], job_id)
+        self.assertEqual(result[1], "US_XX")
+        self.assertEqual(result[2], "us-east1")
+        self.assertEqual(result[3], "PRIMARY")
+        self.assertEqual(result[4], pipeline_type.value)
+        self.assertFalse(result[5])
+
+    def test_insert_query_executes_successfully_for_activity(self) -> None:
+        self._run_insert_and_verify(
+            pipeline_type=IngestPipelineType.ACTIVITY,
+            job_id="test_activity_job_id",
+        )
+
+    def test_insert_query_executes_successfully_for_identity(self) -> None:
+        self._run_insert_and_verify(
+            pipeline_type=IngestPipelineType.IDENTITY,
+            job_id="test_identity_job_id",
+        )

@@ -48,6 +48,7 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
@@ -75,9 +76,9 @@ def _create_test_single_ingest_pipeline_group_dag(state_code: StateCode) -> DAG:
         catchup=False,
     )
     def test_single_ingest_pipeline_group_dag() -> None:
-        create_single_ingest_pipeline_group(state_code) >> EmptyOperator(
-            task_id=_DOWNSTREAM_TASK_ID
-        )
+        create_single_ingest_pipeline_group(
+            state_code, IngestPipelineType.ACTIVITY
+        ) >> EmptyOperator(task_id=_DOWNSTREAM_TASK_ID)
 
     return test_single_ingest_pipeline_group_dag()
 

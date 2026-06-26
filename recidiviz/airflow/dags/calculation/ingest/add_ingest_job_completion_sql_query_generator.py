@@ -25,21 +25,28 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 ADD_INGEST_JOB_COMPLETION_SQL = """
     INSERT INTO direct_ingest_dataflow_job
-        (job_id, region_code, location, ingest_instance, completion_time, is_invalidated)
+        (job_id, region_code, location, ingest_instance, pipeline_type, completion_time, is_invalidated)
     VALUES
-        (%(job_id)s, %(region_code)s, %(location)s, %(ingest_instance)s, NOW(), %(is_invalidated)s);
+        (%(job_id)s, %(region_code)s, %(location)s, %(ingest_instance)s, %(pipeline_type)s, NOW(), %(is_invalidated)s);
 """
 
 
 class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     """Custom query generator for adding job completion info to DirectIngestDataflowJob."""
 
-    def __init__(self, region_code: str, run_pipeline_task_id: str) -> None:
+    def __init__(
+        self,
+        region_code: str,
+        pipeline_type: IngestPipelineType,
+        run_pipeline_task_id: str,
+    ) -> None:
         super().__init__()
         self.region_code = region_code
+        self.pipeline_type = pipeline_type
         self.run_pipeline_task_id = run_pipeline_task_id
 
     def execute_postgres_query(
@@ -59,18 +66,24 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
             location=pipeline["location"],
             region_code=self.region_code,
             ingest_instance=DirectIngestInstance.PRIMARY.value,
+            pipeline_type=self.pipeline_type,
         )
         postgres_hook.run(query, parameters=parameters)
 
     @staticmethod
     def insert_sql_query(
-        job_id: str, region_code: str, location: str, ingest_instance: str
+        job_id: str,
+        region_code: str,
+        location: str,
+        ingest_instance: str,
+        pipeline_type: IngestPipelineType,
     ) -> tuple[str, dict[str, Any]]:
         parameters = {
             "job_id": job_id,
             "region_code": region_code.upper(),
             "location": location,
             "ingest_instance": ingest_instance.upper(),
+            "pipeline_type": pipeline_type.value,
             "is_invalidated": False,
         }
 

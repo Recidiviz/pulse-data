@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.calculation.ingest.set_watermark_sql_query_generator
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 
 class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
@@ -35,6 +36,7 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
     def setUp(self) -> None:
         self.generator = SetWatermarkSqlQueryGenerator(
             region_code="US_XX",
+            pipeline_type=IngestPipelineType.ACTIVITY,
             get_max_update_datetime_task_id="test_get_max_update_datetime_task_id",
             run_pipeline_task_id="test_dataflow_pipeline_task_id",
         )
@@ -42,9 +44,9 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
     def test_generates_sql_correctly(self) -> None:
         expected_query = """
             INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
-                (region_code, raw_data_file_tag, watermark_datetime, job_id)
+                (region_code, raw_data_file_tag, watermark_datetime, job_id, pipeline_type)
             VALUES
-                ('US_XX', 'test_raw_data_file_tag', '2023-01-26 00:00:0.000000+00', 'test_job_id'), ('US_XX', 'test_raw_data_file_tag_2', '2023-01-27 00:00:0.000000+00', 'test_job_id');
+                ('US_XX', 'test_raw_data_file_tag', '2023-01-26 00:00:0.000000+00', 'test_job_id', 'ACTIVITY'), ('US_XX', 'test_raw_data_file_tag_2', '2023-01-27 00:00:0.000000+00', 'test_job_id', 'ACTIVITY');
         """
 
         data = {
@@ -52,6 +54,29 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
             "test_raw_data_file_tag_2": "2023-01-27 00:00:0.000000+00",
         }
         result = self.generator.insert_sql_query(
+            job_id="test_job_id",
+            max_update_datetimes=data,
+        )
+        self.assertEqual(result, expected_query)
+
+    def test_generates_sql_correctly_for_identity(self) -> None:
+        identity_generator = SetWatermarkSqlQueryGenerator(
+            region_code="US_XX",
+            pipeline_type=IngestPipelineType.IDENTITY,
+            get_max_update_datetime_task_id="test_get_max_update_datetime_task_id",
+            run_pipeline_task_id="test_dataflow_pipeline_task_id",
+        )
+        expected_query = """
+            INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
+                (region_code, raw_data_file_tag, watermark_datetime, job_id, pipeline_type)
+            VALUES
+                ('US_XX', 'test_raw_data_file_tag', '2023-01-26 00:00:0.000000+00', 'test_job_id', 'IDENTITY');
+        """
+
+        data = {
+            "test_raw_data_file_tag": "2023-01-26 00:00:0.000000+00",
+        }
+        result = identity_generator.insert_sql_query(
             job_id="test_job_id",
             max_update_datetimes=data,
         )
@@ -80,8 +105,8 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
         mock_postgres.run.assert_called_with(
             """
             INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
-                (region_code, raw_data_file_tag, watermark_datetime, job_id)
+                (region_code, raw_data_file_tag, watermark_datetime, job_id, pipeline_type)
             VALUES
-                ('US_XX', 'test_raw_data_file_tag', '2023-01-26 00:00:0.000000+00', 'test_job_id'), ('US_XX', 'test_raw_data_file_tag_2', '2023-01-27 00:00:0.000000+00', 'test_job_id');
+                ('US_XX', 'test_raw_data_file_tag', '2023-01-26 00:00:0.000000+00', 'test_job_id', 'ACTIVITY'), ('US_XX', 'test_raw_data_file_tag_2', '2023-01-27 00:00:0.000000+00', 'test_job_id', 'ACTIVITY');
         """
         )
