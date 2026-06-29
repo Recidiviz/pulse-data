@@ -1055,38 +1055,6 @@
     width: 24
     height: 6
 
-  - name: scb_OffenderJcbInternalStatus
-    title: scb_OffenderJcbInternalStatus
-    explore: us_ix_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_ix_scb_OffenderJcbInternalStatus.primary_key,
-      us_ix_scb_OffenderJcbInternalStatus.OffenderJcbInternalStatusId,
-      us_ix_scb_OffenderJcbInternalStatus.OffenderId,
-      us_ix_scb_OffenderJcbInternalStatus.OffenderStartInternalStatusId,
-      us_ix_scb_OffenderJcbInternalStatus.OffenderEndInternalStatusId,
-      us_ix_scb_OffenderJcbInternalStatus.Inactive,
-      us_ix_scb_OffenderJcbInternalStatus.StartDate__raw,
-      us_ix_scb_OffenderJcbInternalStatus.EndDate__raw,
-      us_ix_scb_OffenderJcbInternalStatus.SubmittedDate__raw,
-      us_ix_scb_OffenderJcbInternalStatus.Locking,
-      us_ix_scb_OffenderJcbInternalStatus.InsertUserId,
-      us_ix_scb_OffenderJcbInternalStatus.InsertDate__raw,
-      us_ix_scb_OffenderJcbInternalStatus.UpdateUserId,
-      us_ix_scb_OffenderJcbInternalStatus.UpdateDate__raw,
-      us_ix_scb_OffenderJcbInternalStatus.file_id,
-      us_ix_scb_OffenderJcbInternalStatus.is_deleted]
-    sorts: [us_ix_scb_OffenderJcbInternalStatus.StartDate__raw]
-    note_display: hover
-    note_text: "Contains records linking an offender to a start and end internal status over a date range. Each row captures the internal status transition window for an offender, including the start and end statuses and the dates the span began and ended."
-    listen: 
-      View Type: us_ix_ind_Offender.view_type
-      US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 156
-    col: 0
-    width: 24
-    height: 6
-
   - name: scl_Charge
     title: scl_Charge
     explore: us_ix_raw_data
@@ -1129,7 +1097,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 162
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1175,7 +1143,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 168
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1223,7 +1191,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 174
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1255,7 +1223,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 180
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1303,7 +1271,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 186
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1396,7 +1364,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 192
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1450,7 +1418,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 198
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1494,7 +1462,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 204
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1589,7 +1557,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 210
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -1637,7 +1605,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 216
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -1684,7 +1652,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 222
+    row: 216
     col: 0
     width: 24
     height: 6
