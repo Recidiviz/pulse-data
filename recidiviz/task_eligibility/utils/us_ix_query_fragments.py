@@ -30,6 +30,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SENTENCE_SESSIONS_V2_ALL_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     current_violent_statutes_being_served,
 )
@@ -799,24 +803,31 @@ FROM grouped_sub_sessions
 )"""
 
 
-def eprd_within_x_months_query(
+def eprd_within_x_months_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
     num_months: int,
     meets_criteria_bool: bool = True,
-    indent_level: int = 8,
-) -> str:
-    """
-    Defines a criteria span view that shows periods of time during which someone is
-    within x months of their Earliest Possible Release Date (EPRD) and has not yet
-    passed that date.
+    meets_criteria_default: bool = False,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a US_IX criteria view builder for whether someone is (or, when
+    meets_criteria_bool is False, is not) within `num_months` of their upcoming
+    Earliest Possible Release Date (EPRD) and has not yet passed that date.
 
     Args:
+        criteria_name (str): Name of the criteria.
+        description (str): Description of the criteria.
         num_months (int): Number of months to use for the leading window time.
-        meets_criteria_bool (bool): Whether to return spans that meet or do not meet
-            the criteria. Defaults to True.
-        indent_level (int): Indent level for the query. Defaults to 8.
+        meets_criteria_bool (bool): Whether spans meet or do not meet the criteria.
+            Defaults to True.
+        meets_criteria_default (bool): meets_criteria value to use for periods the query
+            produces no span for (e.g. when there is no upcoming EPRD). Defaults to
+            False.
     """
     meets_criteria_condition = "" if meets_criteria_bool else "NOT"
-    query = f"""
+    query_template = fix_indent(
+        f"""
     WITH {eprd_cte()},
     critical_date_spans AS (
         SELECT
@@ -859,9 +870,45 @@ def eprd_within_x_months_query(
         full_term_release_date,
         earliest_possible_release_date
     FROM critical_date_has_passed_spans
-    WHERE start_date IS DISTINCT FROM end_date"""
-
-    return fix_indent(query, indent_level=indent_level)
+    WHERE start_date IS DISTINCT FROM end_date""",
+        indent_level=8,
+    )
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        sentence_sessions_v2_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
+        state_code=StateCode.US_IX,
+        meets_criteria_default=meets_criteria_default,
+        reasons_fields=[
+            ReasonsField(
+                name="parole_eligibility_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Parole Eligibility Date (PED): The date on which the person becomes eligible for parole.",
+            ),
+            ReasonsField(
+                name="tentative_parole_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Tentative Parole Date (TPD): The date on which the person is tentatively scheduled for parole.",
+            ),
+            ReasonsField(
+                name="parole_hearing_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
+            ),
+            ReasonsField(
+                name="full_term_release_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Full Term Release Date (FTRD): The maximum full term release date.",
+            ),
+            ReasonsField(
+                name="earliest_possible_release_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Earliest Possible Release Date (EPRD): The earliest possible date on which the person can be released from incarceration.",
+            ),
+        ],
+    )
 
 
 def us_ix_active_supervision_population_view_builder(
