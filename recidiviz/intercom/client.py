@@ -25,6 +25,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from recidiviz.intercom.types import (
     IntercomExportJobResponse,
+    IntercomJobStatus,
     IntercomTicket,
     IntercomTicketResponse,
 )
@@ -124,7 +125,7 @@ class IntercomAPIClient:
         data = response.json()
         return IntercomExportJobResponse(
             job_identifier=data["job_identifier"],
-            status=data["status"],
+            status=IntercomJobStatus(data["status"]),
             download_url=data["download_url"],
             download_expires_at=data["download_expires_at"],
         )
@@ -150,7 +151,7 @@ class IntercomAPIClient:
         data = response.json()
         return IntercomExportJobResponse(
             job_identifier=data["job_identifier"],
-            status=data["status"],
+            status=IntercomJobStatus(data["status"]),
             download_url=data["download_url"],
             download_expires_at=data["download_expires_at"],
         )

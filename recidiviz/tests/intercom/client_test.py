@@ -24,7 +24,11 @@ import pytest
 import requests
 
 from recidiviz.intercom.client import IntercomAPIClient
-from recidiviz.intercom.types import IntercomExportJobResponse, IntercomTicketResponse
+from recidiviz.intercom.types import (
+    IntercomExportJobResponse,
+    IntercomJobStatus,
+    IntercomTicketResponse,
+)
 
 TIME_NOW = datetime.now(timezone.utc)
 TIME_2018 = datetime(2018, 1, 1, tzinfo=timezone.utc)
@@ -54,7 +58,7 @@ def intercom_api_client_fixture() -> IntercomAPIClient:  # type: ignore
                     fake_response.status_code = 200
                     fake_response.json.return_value = {
                         "job_identifier": "orzzsbd7hk67xyu",
-                        "status": "completed",
+                        "status": IntercomJobStatus.COMPLETED,
                         "download_url": "example.com",
                         "download_expires_at": "1674917488",
                     }
@@ -72,7 +76,7 @@ def intercom_api_client_fixture() -> IntercomAPIClient:  # type: ignore
                     fake_response.status_code = 200
                     fake_response.json.return_value = {
                         "job_identifier": "orzzsbd7hk67xyu",
-                        "status": "completed",
+                        "status": IntercomJobStatus.COMPLETED,
                         "download_url": "example.com",
                         "download_expires_at": "1674917488",
                     }
@@ -200,7 +204,7 @@ def test_create_data_export(
     # Assert
     assert result_export_job_response == IntercomExportJobResponse(
         job_identifier="orzzsbd7hk67xyu",
-        status="completed",
+        status=IntercomJobStatus.COMPLETED,
         download_url="example.com",
         download_expires_at="1674917488",
     )
@@ -259,7 +263,7 @@ def test_get_export_status(
     result_export_response = intercom_api_client.get_export_status(job_identifier)
 
     # Assert
-    assert result_export_response.status == "completed"
+    assert result_export_response.status == IntercomJobStatus.COMPLETED
 
 
 def test_download_export_data(

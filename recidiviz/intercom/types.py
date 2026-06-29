@@ -16,6 +16,7 @@
 # =============================================================================
 """Intercom-related types"""
 
+from enum import Enum
 from typing import Any
 
 import attr
@@ -61,14 +62,25 @@ class IntercomTicketResponse:
         return cattrs.unstructure(self)
 
 
+class IntercomJobStatus(Enum):
+    """Represents an Intercom export job response status."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    FAILED = "failed"
+    COMPLETED = "completed"
+    NO_DATA = "no_data"
+    CANCELED = "canceled"
+
+
 @attr.frozen
 class IntercomExportJobResponse:
     """Represents an Intercom export job response."""
 
     # Unique identifier for the export job
     job_identifier: str
-    # Status of the export job (pending, completed, failed)
-    status: str
+    # Status of the export job
+    status: IntercomJobStatus
     # URL to download the export data (populated when status is completed)
     download_url: str
     # Timestamp when the download URL expires
