@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  CFOFICER: STRING
+  role_type_raw: STRING
+  role_subtype_raw: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  seq: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: CFOFICER
+          id_type: $literal("US_NC_STAFF")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - CFOFICER
+                - seq
+          start_date: start_date
+          end_date: end_date
+          role_type:
+            $enum_mapping:
+              $raw_text: role_type_raw
+              $mappings:
+                StateStaffRoleType.SUPERVISION_OFFICER: "SUPERVISION_OFFICER"
+                StateStaffRoleType.CASE_MANAGER: "CASE_MANAGER"
+          role_subtype:
+            $enum_mapping:
+              $raw_text: role_subtype_raw
+              $mappings:
+                StateStaffRoleSubtype.CASE_MANAGER: "CASE_MANAGER"
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - "PROB/PAROLE OFFICER"
+                  - "PROB/PAR FIELD SPECIALIST"
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - "SUPERVISOR"
+                  - "PROGRAM SUPERVISOR I"
+                  - "SPECIAL OPS INVEST SUPERVISOR"
+                  - "CHIEF PROB AND PAR OFFICER"
+                  - "CHIEF PROB/PAR OFFICER"
+                StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
+                  - "JUDICIAL DIST MANAGER I"
+                  - "ASSIST JUD DISTRICT MGR I"
+                  - "JUDICIAL DISTRICT MGR I"
+                  - "JUDICIAL DISTRICT MGR II"
+                  - "JUDICIAL DISTRICT MGR III"
+                  - "ASSIST JUD DISTRICT MGR II"
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP: "SPECIAL OPS CHIEF"
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - "ADMIN OFFICER II"
+                  - "JUVENILE COURT COUNSELOR"
+                  - "CORR SERGEANT III"
