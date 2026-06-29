@@ -20,6 +20,9 @@ Identity Postgres database. Methods return typed domain objects.
 import uuid
 from collections import defaultdict
 
+from sqlalchemy.orm import Session
+
+from recidiviz.common.constants.identity import IdentityStatus
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -228,6 +231,29 @@ def _to_split_event(row: schema.SplitEvent) -> types.SplitEvent:
     )
 
 
+def _resolve_surviving_recidiviz_id(
+    session: Session, recidiviz_id: uuid.UUID
+) -> uuid.UUID | None:
+    """Walks the merged_into chain from `recidiviz_id` to the surviving ACTIVE
+    record and returns its recidiviz_id, or None if `recidiviz_id` is not found.
+
+    Every RETIRED row is guaranteed by the schema's CHECK and foreign-key
+    constraints to point at an existing record via `merged_into`, so the walk
+    always terminates at an ACTIVE record."""
+    current_id = recidiviz_id
+    while True:
+        row = (
+            session.query(schema.Identity.status, schema.Identity.merged_into)
+            .filter(schema.Identity.recidiviz_id == current_id)
+            .one_or_none()
+        )
+        if row is None:
+            return None
+        if row.status is IdentityStatus.ACTIVE:
+            return current_id
+        current_id = row.merged_into
+
+
 class IdentityServiceQuerier:
     """Implements Querier abstractions for the Identity Service data source."""
 
@@ -235,48 +261,56 @@ class IdentityServiceQuerier:
     def database_key(self) -> SQLAlchemyDatabaseKey:
         return SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
 
-    # TODO(#71776): Remove this example and its test when we add a real method.
-    def get_all_identities(self) -> list[types.Identity]:
-        """Returns every identity row in the database as a typed domain object.
+    def get_identity(
+        self, recidiviz_id: uuid.UUID, *, resolve_retired: bool
+    ) -> types.Identity | None:
+        """Returns the identity for the given recidiviz_id, or None if not found.
+
+        When `resolve_retired` is True and the given recidiviz_id has been retired
+        (merged into another record), this follows the `merged_into` chain
+        (possibly multiple hops) and returns the surviving Identity instead. When
+        False, the record is returned as stored, even if it is RETIRED.
 
         Child attributes and external IDs are eagerly loaded via the `selectin`
-        relationships on `schema.Identity`, so no per-row follow-up queries are
-        issued.
+        relationships on `schema.Identity`.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            return [_to_identity(row) for row in session.query(schema.Identity).all()]
-
-    def get_identity_history(
-        self, recidiviz_id: uuid.UUID
-    ) -> types.IdentityHistory | None:
-        """Returns the identity with the given recidiviz_id paired with its merge
-        and split audit history, or None if no such identity exists.
-
-        This is a literal lookup: it does not resolve a retired recidiviz_id to
-        its surviving record. Callers that need that resolution must follow
-        `merged_into` themselves.
-        """
-        with SessionFactory.using_database(self.database_key) as session:
+            target_id = (
+                _resolve_surviving_recidiviz_id(session, recidiviz_id)
+                if resolve_retired
+                else recidiviz_id
+            )
+            if target_id is None:
+                return None
             identity_row = (
                 session.query(schema.Identity)
-                .filter(schema.Identity.recidiviz_id == recidiviz_id)
+                .filter(schema.Identity.recidiviz_id == target_id)
                 .one_or_none()
             )
             if identity_row is None:
                 return None
+            return _to_identity(identity_row)
 
+    def get_identity_history(self, identity: types.Identity) -> types.IdentityHistory:
+        """Returns the given identity paired with its merge and split audit history.
+
+        The caller is responsible for resolving retired records first (e.g. via
+        `get_identity(..., resolve_retired=True)`); this reads the audit events
+        recorded against `identity.recidiviz_id`.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
             merge_event_rows = (
                 session.query(schema.MergeEvent)
-                .filter(schema.MergeEvent.surviving_id == recidiviz_id)
+                .filter(schema.MergeEvent.surviving_id == identity.recidiviz_id)
                 .all()
             )
             split_event_rows = (
                 session.query(schema.SplitEvent)
-                .filter(schema.SplitEvent.original_id == recidiviz_id)
+                .filter(schema.SplitEvent.original_id == identity.recidiviz_id)
                 .all()
             )
             return types.IdentityHistory(
-                identity=_to_identity(identity_row),
+                identity=identity,
                 merge_events=[_to_merge_event(row) for row in merge_event_rows],
                 split_events=[_to_split_event(row) for row in split_event_rows],
             )

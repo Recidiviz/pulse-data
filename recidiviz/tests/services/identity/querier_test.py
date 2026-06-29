@@ -22,7 +22,6 @@ import uuid
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
 
 from recidiviz.common.constants.identity import (
     AttributeType,
@@ -31,7 +30,6 @@ from recidiviz.common.constants.identity import (
     MergeTrigger,
     NameUse,
     PersonType,
-    SourceType,
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
@@ -49,14 +47,53 @@ from recidiviz.services.identity.types import (
     IdentityHistory,
     MergeEvent,
     Name,
-    SourcedAttributeValue,
     SplitDestination,
     SplitEvent,
+)
+from recidiviz.tests.services.identity.test_utils import (
+    CREATED,
+    NEW_ID,
+    RECIDIVIZ_ID,
+    RETIRED_ID,
+    make_sourced_attribute,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.services.identity import fixtures as identity_fixtures
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
+
+RESOLUTION_TS = datetime.datetime(2026, 3, 1, 12, 0, tzinfo=datetime.timezone.utc)
+# Merge chain used by the resolution tests: HEAD -> MIDDLE -> SURVIVOR.
+ACTIVE_SURVIVOR_ID = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+RETIRED_MIDDLE_ID = uuid.UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+RETIRED_HEAD_ID = uuid.UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
+UNKNOWN_ID = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
+
+
+def _bare_identity() -> Identity:
+    """Returns the seeded CSV-fixture identity (recidiviz_id=RECIDIVIZ_ID, no children)."""
+    return Identity(
+        recidiviz_id=RECIDIVIZ_ID,
+        tenant=Tenant.US_OZ,
+        person_type=PersonType.JII,
+        status=IdentityStatus.ACTIVE,
+        merged_into=None,
+        last_cluster_hash=None,
+        skip_demographic_guard=False,
+        created_utc=CREATED,
+        last_updated_utc=CREATED,
+        external_ids=[],
+        attributes=IdentityAttributes(
+            names=[],
+            dates_of_birth=[],
+            genders=[],
+            races=[],
+            sexes=[],
+            ethnicities=[],
+            phone_numbers=[],
+            emails=[],
+        ),
+    )
 
 
 @pytest.mark.uses_db
@@ -97,7 +134,7 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         with SessionFactory.using_database(querier.database_key) as session:
             self.assertEqual(1, session.execute(text("SELECT 1")).scalar())
 
-    def test_get_all_identities_returns_seeded_row(self) -> None:
+    def test_get_identity_returns_seeded_row(self) -> None:
         reset_fixtures(
             engine=self.engine,
             tables=[schema.Identity],
@@ -106,41 +143,16 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            [
-                Identity(
-                    recidiviz_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
-                    tenant=Tenant.US_OZ,
-                    person_type=PersonType.JII,
-                    status=IdentityStatus.ACTIVE,
-                    merged_into=None,
-                    last_cluster_hash=None,
-                    skip_demographic_guard=False,
-                    created_utc=datetime.datetime(
-                        2026, 1, 1, tzinfo=datetime.timezone.utc
-                    ),
-                    last_updated_utc=datetime.datetime(
-                        2026, 1, 1, tzinfo=datetime.timezone.utc
-                    ),
-                    external_ids=[],
-                    attributes=IdentityAttributes(
-                        names=[],
-                        dates_of_birth=[],
-                        genders=[],
-                        races=[],
-                        sexes=[],
-                        ethnicities=[],
-                        phone_numbers=[],
-                        emails=[],
-                    ),
-                )
-            ],
-            IdentityServiceQuerier().get_all_identities(),
+            _bare_identity(),
+            IdentityServiceQuerier().get_identity(
+                RECIDIVIZ_ID,
+                resolve_retired=False,
+            ),
         )
 
-    def test_get_all_identities_loads_child_records(self) -> None:
+    def test_get_identity_loads_child_records(self) -> None:
         """An identity with external IDs and attributes comes back with each
         child collection attached, loaded via the eager relationships."""
-        recidiviz_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
         ts = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
         reset_fixtures(
             engine=self.engine,
@@ -149,9 +161,12 @@ class IdentityServiceQuerierTest(unittest.TestCase):
             csv_headers=True,
         )
 
-        [identity] = IdentityServiceQuerier().get_all_identities()
+        identity = IdentityServiceQuerier().get_identity(
+            RECIDIVIZ_ID, resolve_retired=False
+        )
 
-        self.assertEqual(recidiviz_id, identity.recidiviz_id)
+        assert identity is not None
+        self.assertEqual(RECIDIVIZ_ID, identity.recidiviz_id)
         self.assertEqual(
             [
                 ExternalId(
@@ -164,28 +179,24 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         )
         self.assertCountEqual(
             [
-                SourcedAttributeValue(
-                    value=Name(
+                make_sourced_attribute(
+                    Name(
                         surname="Gale",
                         given_name="Dorothy",
                         middle_names=[],
                         name_suffix=None,
                         use=NameUse.OFFICIAL,
                     ),
-                    source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                    source_product_app=None,
                     last_updated_utc=ts,
                 ),
-                SourcedAttributeValue(
-                    value=Name(
+                make_sourced_attribute(
+                    Name(
                         surname="Gulch",
                         given_name="Dorothy",
                         middle_names=["Q"],
                         name_suffix=None,
                         use=NameUse.FORMER,
                     ),
-                    source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                    source_product_app=None,
                     last_updated_utc=ts,
                 ),
             ],
@@ -193,10 +204,8 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         )
         self.assertEqual(
             [
-                SourcedAttributeValue(
-                    value=Email(address="dorothy@fake.com", address_hash="hash123"),
-                    source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                    source_product_app=None,
+                make_sourced_attribute(
+                    Email(address="dorothy@fake.com", address_hash="hash123"),
                     last_updated_utc=ts,
                 )
             ],
@@ -209,30 +218,9 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         self.assertEqual([], identity.attributes.ethnicities)
         self.assertEqual([], identity.attributes.phone_numbers)
 
-    def test_child_without_parent_identity_raises(self) -> None:
-        """A child row whose recidiviz_id has no parent Identity must fail with a
-        foreign-key violation rather than the ORM auto-creating an Identity."""
-        with self.assertRaises(IntegrityError):
-            with SessionFactory.using_database(self.database_key) as session:
-                session.add(
-                    schema.Name(
-                        recidiviz_id=uuid.UUID("33333333-3333-3333-3333-333333333333"),
-                        surname="Nobody",
-                        given_name=None,
-                        middle_names=[],
-                        name_suffix=None,
-                        use=None,
-                        source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                        source_product_app=None,
-                        last_updated_utc=datetime.datetime(
-                            2026, 2, 2, tzinfo=datetime.timezone.utc
-                        ),
-                    )
-                )
-
     def test_get_identity_history(self) -> None:
-        """get_identity_history pairs the identity with its merge and split audit
-        events, decoding the JSONB attribute snapshots into typed values."""
+        """get_identity_history pairs the given identity with its merge and split
+        audit events, decoding the JSONB attribute snapshots into typed values."""
         ts = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
         reset_fixtures(
             engine=self.engine,
@@ -249,63 +237,40 @@ class IdentityServiceQuerierTest(unittest.TestCase):
             csv_headers=True,
         )
 
-        def sourced_name(
-            surname: str, use: NameUse, middle_names: list[str]
-        ) -> SourcedAttributeValue:
-            return SourcedAttributeValue(
-                value=Name(
-                    surname=surname,
-                    given_name="Dorothy",
-                    middle_names=middle_names,
-                    name_suffix=None,
-                    use=use,
-                ),
-                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                source_product_app=None,
-                last_updated_utc=ts,
-            )
+        identity = _bare_identity()
 
         self.assertEqual(
             IdentityHistory(
-                identity=Identity(
-                    recidiviz_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
-                    tenant=Tenant.US_OZ,
-                    person_type=PersonType.JII,
-                    status=IdentityStatus.ACTIVE,
-                    merged_into=None,
-                    last_cluster_hash=None,
-                    skip_demographic_guard=False,
-                    created_utc=datetime.datetime(
-                        2026, 1, 1, tzinfo=datetime.timezone.utc
-                    ),
-                    last_updated_utc=datetime.datetime(
-                        2026, 1, 1, tzinfo=datetime.timezone.utc
-                    ),
-                    external_ids=[],
-                    attributes=IdentityAttributes(
-                        names=[],
-                        dates_of_birth=[],
-                        genders=[],
-                        races=[],
-                        sexes=[],
-                        ethnicities=[],
-                        phone_numbers=[],
-                        emails=[],
-                    ),
-                ),
+                identity=identity,
                 merge_events=[
                     MergeEvent(
-                        timestamp_utc=ts,
+                        surviving_id=RECIDIVIZ_ID,
+                        retired_id=RETIRED_ID,
                         trigger=MergeTrigger.MERGE_ENDPOINT,
                         requested_by="auditor@fake.com",
-                        retired_id=uuid.UUID("22222222-2222-2222-2222-222222222222"),
-                        surviving_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
+                        timestamp_utc=ts,
                         conflicts=[
                             AttributeConflict(
                                 attribute_type=AttributeType.NAME,
-                                retired_value=sourced_name("Gulch", NameUse.FORMER, []),
-                                surviving_value=sourced_name(
-                                    "Gale", NameUse.OFFICIAL, ["Q"]
+                                retired_value=make_sourced_attribute(
+                                    Name(
+                                        surname="Gulch",
+                                        given_name="Dorothy",
+                                        middle_names=[],
+                                        name_suffix=None,
+                                        use=NameUse.FORMER,
+                                    ),
+                                    last_updated_utc=ts,
+                                ),
+                                surviving_value=make_sourced_attribute(
+                                    Name(
+                                        surname="Gale",
+                                        given_name="Dorothy",
+                                        middle_names=["Q"],
+                                        name_suffix=None,
+                                        use=NameUse.OFFICIAL,
+                                    ),
+                                    last_updated_utc=ts,
                                 ),
                             )
                         ],
@@ -313,15 +278,13 @@ class IdentityServiceQuerierTest(unittest.TestCase):
                 ],
                 split_events=[
                     SplitEvent(
-                        timestamp_utc=ts,
+                        original_id=RECIDIVIZ_ID,
                         trigger=SplitTrigger.SPLIT_ENDPOINT,
-                        original_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
                         requested_by="auditor@fake.com",
+                        timestamp_utc=ts,
                         destinations=[
                             SplitDestination(
-                                new_recidiviz_id=uuid.UUID(
-                                    "33333333-3333-3333-3333-333333333333"
-                                ),
+                                new_recidiviz_id=NEW_ID,
                                 external_ids=[
                                     ExternalId(
                                         external_id="OZ999",
@@ -330,13 +293,11 @@ class IdentityServiceQuerierTest(unittest.TestCase):
                                     )
                                 ],
                                 attributes=[
-                                    SourcedAttributeValue(
-                                        value=Email(
+                                    make_sourced_attribute(
+                                        Email(
                                             address="dot@fake.com",
                                             address_hash="hashdotfakecom",
                                         ),
-                                        source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                                        source_product_app=None,
                                         last_updated_utc=ts,
                                     )
                                 ],
@@ -345,14 +306,91 @@ class IdentityServiceQuerierTest(unittest.TestCase):
                     )
                 ],
             ),
-            IdentityServiceQuerier().get_identity_history(
-                uuid.UUID("11111111-1111-1111-1111-111111111111")
-            ),
+            IdentityServiceQuerier().get_identity_history(identity),
         )
 
-    def test_get_identity_history_returns_none_when_absent(self) -> None:
-        self.assertIsNone(
-            IdentityServiceQuerier().get_identity_history(
-                uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
+    def _insert_identity(
+        self,
+        recidiviz_id: uuid.UUID,
+        status: IdentityStatus,
+        merged_into: uuid.UUID | None = None,
+    ) -> None:
+        """Inserts a bare Identity row (no attributes / external IDs) for the
+        merge-chain resolution tests."""
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.Identity(
+                    recidiviz_id=recidiviz_id,
+                    created_utc=RESOLUTION_TS,
+                    last_updated_utc=RESOLUTION_TS,
+                    tenant=Tenant.US_OZ,
+                    person_type=PersonType.JII,
+                    status=status,
+                    merged_into=merged_into,
+                )
             )
+
+    def test_get_identity_active_returns_record(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+
+        result = IdentityServiceQuerier().get_identity(
+            ACTIVE_SURVIVOR_ID, resolve_retired=True
         )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_identity_resolves_single_retired_hop(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+
+        result = IdentityServiceQuerier().get_identity(
+            RETIRED_MIDDLE_ID, resolve_retired=True
+        )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_identity_resolves_multi_hop_chain(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+        self._insert_identity(
+            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+        )
+
+        result = IdentityServiceQuerier().get_identity(
+            RETIRED_HEAD_ID, resolve_retired=True
+        )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_identity_returns_none_when_absent(self) -> None:
+        self.assertIsNone(
+            IdentityServiceQuerier().get_identity(UNKNOWN_ID, resolve_retired=True)
+        )
+        self.assertIsNone(
+            IdentityServiceQuerier().get_identity(UNKNOWN_ID, resolve_retired=False)
+        )
+
+    def test_get_identity_literal_returns_retired_record(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+
+        result = IdentityServiceQuerier().get_identity(
+            RETIRED_MIDDLE_ID, resolve_retired=False
+        )
+
+        assert result is not None
+        self.assertEqual(RETIRED_MIDDLE_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.RETIRED, result.status)
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.merged_into)

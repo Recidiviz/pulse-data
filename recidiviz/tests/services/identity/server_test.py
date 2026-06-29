@@ -17,16 +17,21 @@
 """Tests for the Identity Service Flask app."""
 from http import HTTPStatus
 from unittest import TestCase
+from unittest.mock import patch
 
 from recidiviz.services.identity.server import app
 from recidiviz.tests.services.identity.test_utils import (
     DEFAULT_MAPPING,
     MAPPED_SERVICE_ACCOUNT,
+    RECIDIVIZ_ID,
     STRANGER_SERVICE_ACCOUNT,
+    build_full_identity,
     mock_iap_environment,
 )
 
 IAP_HEADERS = {"x-goog-iap-jwt-assertion": "anything"}
+
+QUERIER_PATH = "recidiviz.services.identity.server.IdentityServiceQuerier"
 
 
 class IdentityServiceServerTest(TestCase):
@@ -77,3 +82,85 @@ class IdentityServiceServerTest(TestCase):
                 "frame-ancestors 'none'",
                 response.headers["Content-Security-Policy"],
             )
+
+
+class GetIdentityEndpointTest(TestCase):
+    """Tests for GET /identity/<recidiviz_id>, with the querier mocked out."""
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+
+    def test_returns_default_form(self) -> None:
+        identity = build_full_identity().identity
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_identity.return_value = identity
+            response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertEqual(str(RECIDIVIZ_ID), body["recidivizId"])
+        self.assertEqual("ACTIVE", body["status"])
+        self.assertNotIn("mergeEvents", body)
+        self.assertNotIn("isActive", body["externalIds"][0])
+        self.assertIn("dateOfBirth", body["attributes"])
+        self.assertNotIn("datesOfBirth", body["attributes"])
+        mock_querier_cls.return_value.get_identity.assert_called_once_with(
+            RECIDIVIZ_ID, resolve_retired=True
+        )
+
+    def test_returns_full_form(self) -> None:
+        identity_history = build_full_identity()
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier = mock_querier_cls.return_value
+            mock_querier.get_identity.return_value = identity_history.identity
+            mock_querier.get_identity_history.return_value = identity_history
+            response = self.client.get(
+                f"/identity/{RECIDIVIZ_ID}?full=true", headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertTrue(body["externalIds"][0]["isActive"])
+        self.assertIn("datesOfBirth", body["attributes"])
+        self.assertEqual(1, len(body["mergeEvents"]))
+        self.assertEqual(1, len(body["splitEvents"]))
+        mock_querier.get_identity_history.assert_called_once_with(
+            identity_history.identity
+        )
+
+    def test_returns_404_when_not_found(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_identity.return_value = None
+            response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_returns_404_for_non_uuid_path(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get("/identity/not-a-uuid", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_returns_400_for_invalid_full_param(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH):
+            response = self.client.get(
+                f"/identity/{RECIDIVIZ_ID}?full=banana", headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_403_for_unmapped_caller(self) -> None:
+        with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
+            response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
