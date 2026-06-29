@@ -27,108 +27,37 @@ You need two things to start:
 
 If either is missing, **ASK the user** before proceeding.
 
-## Column ignore lists
+## Step 1: Run the change-detection script
 
-These columns are excluded from the change-detection query because when they
-change it's because *something else* changed, not because they are the
-underlying driver:
+Run the helper script to get a month-by-month overview and per-field change rates:
 
-**`state_supervision_period`:**
-```
-supervision_period_id, external_id, state_code, county_code,
-sequence_num, start_date, termination_date
-```
-
-**`state_incarceration_period`:**
-```
-incarceration_period_id, external_id, state_code, county_code,
-sequence_num, admission_date, release_date
+```bash
+uv run python -m recidiviz.tools.ingest.investigations.stable_counts_change_detection \
+    --project-id recidiviz-staging \
+    --state-code <STATE_CODE> \
+    --entity <state_supervision_period|state_incarceration_period>
 ```
 
-## Step 1: Generate and run the change-detection query
+The script outputs two tables:
+- **Month Overview**: total period count per month, distinct people, and
+  month-over-month change % (entries exceeding ±25% are flagged with `**`).
+- **Field Change Rates**: for each field, the % of periods where it differs from
+  the previous period for the same person, filtered to fields that exceed 15% in
+  at least one month.
 
-Run the following BQ script to auto-generate a per-field change-rate query,
-then immediately run the generated query. Use `bq query` with
-`--nouse_legacy_sql` and `--project_id recidiviz-staging`.
+Use `--field-threshold 10` to lower the filter, `--lookback-months 24` to widen
+the window, or `--output-csv /tmp/out.csv` to save the full data for further
+analysis.
 
-```sql
-DECLARE project STRING;
-DECLARE state_code STRING;
-DECLARE target_table_name STRING;
-DECLARE start_date_col STRING;
-DECLARE columns_to_ignore ARRAY<STRING>;
-DECLARE cols ARRAY<STRING>;
-DECLARE sql STRING;
-
-SET project = 'recidiviz-staging';
-SET state_code = '<STATE_CODE>';
-SET target_table_name = '<TABLE_NAME>';
-
--- For state_supervision_period:
-SET start_date_col = 'start_date';
--- For state_incarceration_period, replace the line above with:
--- SET start_date_col = 'admission_date';
-
--- For state_supervision_period:
-SET columns_to_ignore = ['supervision_period_id', 'external_id', 'state_code',
-  'county_code', 'sequence_num', 'start_date', 'termination_date'];
--- For state_incarceration_period, replace the line above with:
--- SET columns_to_ignore = ['incarceration_period_id', 'external_id',
---   'state_code', 'county_code', 'sequence_num', 'admission_date', 'release_date'];
-
-EXECUTE IMMEDIATE FORMAT("""
-  SELECT ARRAY_AGG(column_name)
-  FROM `%s.normalized_state.INFORMATION_SCHEMA.COLUMNS`
-  WHERE table_name = @table_name
-    AND column_name NOT IN UNNEST(@ignore)
-""", project) INTO cols
-USING target_table_name AS table_name, columns_to_ignore AS ignore;
-
-SET sql = (
-  SELECT '''
-    WITH prep_cte AS (
-      SELECT
-        *,
-        date_trunc(''' || start_date_col || ''', month) start_date_year_month,
-        '''
-        || string_agg("LAG(" || col || ") OVER (partition by person_id order by sequence_num) as prev_" || col, ',\n') ||
-        '''
-      FROM ''' || project || `normalized_state.'''
-      || target_table_name ||
-      '''`
-      WHERE state_code = "'''
-      || state_code || '"' ||
-      '''
-    )
-    SELECT
-      start_date_year_month,
-      '''
-      || STRING_AGG(
-          "COUNTIF(" || col || " is distinct from prev_" || col || ") change_in_" || col || ",\n"
-          || "(COUNTIF((" || col || " is distinct from prev_" || col || ')) / count(*)) * 100 as percent_change_in_' || col,
-          ',\n'
-        ) || '''
-    , count(distinct person_id) as distinct_people,
-    count(*) as total_rows
-    FROM prep_cte
-    GROUP BY start_date_year_month
-    ORDER BY start_date_year_month DESC;
-  '''
-  FROM UNNEST(cols) AS col
-);
-
-SELECT sql;
-```
-
-**This query returns a SQL string.** Copy the output, strip the outer quotes and
-escape sequences, and run it as a second `bq query`. The result has one row per
-`start_date_year_month` with a change count and change percentage for every
-field.
+**Note on ~100% rates in early months:** Months that predate the state's
+onboarding in our system will show ~100% change rates for all fields — this is
+expected (those periods have no prior period to compare against). Focus on the
+months where the state has been actively sending daily data.
 
 ## Step 2: Identify the anomalous months and driving fields
 
-Look for months where the `percent_change_in_<field>` columns jump
-significantly above historical baseline. Key signals:
+Look for months where the Month Overview flags a `**` change or where the Field
+Change Rates show a sudden spike above recent baseline. Key signals:
 
 - A **sudden spike** in a month that was previously stable (baseline ~10-20%,
   spike to 50-90%) is a strong indicator of a data event.
