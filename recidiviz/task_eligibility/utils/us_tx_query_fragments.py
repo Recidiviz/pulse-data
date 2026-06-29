@@ -58,6 +58,21 @@ SUPERVISION_LEVEL_TO_CASE_TYPE_OVERRIDE: dict[StateSupervisionLevel, str] = {
     StateSupervisionLevel.RESIDENTIAL_PROGRAM: RESIDENTIAL_REENTRY_CASE_TYPE,
 }
 
+# Supervision events that can trigger a risk assessment to come due, mapped to their
+# tie-breaker priority (lower wins when multiple events fall on the same date for the
+# same person). This is the authoritative set of event types: the US_TX_MEETS_RISK_
+# ASSESSMENT_EVENT_TRIGGERS criteria builds its priority lookup from this mapping, and
+# any event_type in `us_tx_risk_assessment_events` not listed here would be silently
+# dropped by that criteria (guarded by a validation).
+RISK_ASSESSMENT_EVENT_TYPE_PRIORITIES: dict[str, int] = {
+    "assessment_completed": 1,
+    "supervision_start_with_prior_assessment": 2,
+    "supervision_start_no_prior_assessment": 3,
+    "case_type_start": 4,
+    "case_type_end_with_prior_assessment": 5,
+    "case_type_end_no_prior_assessment": 6,
+}
+
 # Substance abuse program IDs that count as treatment programs requiring an
 # additional collateral contact for RRC clients (per the contact policy
 # encoded in US_TX_NEEDS_SCHEDULED_COLLATERAL_CONTACT). DWI, SACP, and

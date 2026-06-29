@@ -395,8 +395,20 @@ from recidiviz.validation.views.static_reference_tables.experiment_assignments_u
 from recidiviz.validation.views.static_reference_tables.us_tx_contact_standards_bucket_concurrency_validation import (
     US_TX_CONTACT_STANDARDS_BUCKET_CONCURRENCY_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.static_reference_tables.us_tx_contact_standards_column_values_validation import (
+    US_TX_CONTACT_STANDARDS_COLUMN_VALUES_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.static_reference_tables.us_tx_contact_standards_condition_columns_validation import (
     US_TX_CONTACT_STANDARDS_CONDITION_COLUMNS_VALIDATION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.static_reference_tables.us_tx_risk_assessment_event_types_validation import (
+    US_TX_RISK_ASSESSMENT_EVENT_TYPES_VALIDATION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.static_reference_tables.us_tx_risk_assessment_reference_cadence_config_validation import (
+    US_TX_RISK_ASSESSMENT_REFERENCE_CADENCE_CONFIG_VALIDATION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.static_reference_tables.us_tx_risk_assessment_reference_duplicate_keys_validation import (
+    US_TX_RISK_ASSESSMENT_REFERENCE_DUPLICATE_KEYS_VALIDATION_VIEW_BUILDER,
 )
 from recidiviz.validation.views.task_eligibility.completion_event_type_mismatch import (
     COMPLETION_EVENT_TYPE_MISMATCH_VIEW_BUILDER,
@@ -633,6 +645,22 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_TX_CONTACT_STANDARDS_BUCKET_CONCURRENCY_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TX_CONTACT_STANDARDS_COLUMN_VALUES_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TX_RISK_ASSESSMENT_REFERENCE_CADENCE_CONFIG_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TX_RISK_ASSESSMENT_REFERENCE_DUPLICATE_KEYS_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TX_RISK_ASSESSMENT_EVENT_TYPES_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
