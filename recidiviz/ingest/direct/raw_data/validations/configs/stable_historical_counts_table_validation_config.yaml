@@ -68,38 +68,17 @@ custom:
   US_CO:
     file_tags:
       eomis_codevaluedesc:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
-            datetime_end_exclusive: "2026-06-26T00:00:00Z"
-            reason:
-              "A large set of medical diagnosis codes was legitimately removed
-              from this reference table on 2026-06-25, dropping the row count
-              from ~297k to ~213k. Excluding the pre-change imports from the
-              median calculation and skipping validation for the transition
-              file; the new baseline will rebuild from imports on 2026-06-26
-              onward."
+        tolerance_override:
+          percent_change_tolerance: .50
+          reason: "Bulk updates to this table are expected as sets of codes are added or removed."
       eomis_effectivedate:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
-            datetime_end_exclusive: "2026-06-26T00:00:00Z"
-            reason:
-              "A large set of medical diagnosis codes was legitimately removed
-              from this reference table on 2026-06-25, dropping the row count
-              from ~26.1k to ~23.1k. Excluding the pre-change imports from the
-              median calculation and skipping validation for the transition
-              file; the new baseline will rebuild from imports on 2026-06-26
-              onward."
+        tolerance_override:
+          percent_change_tolerance: .50
+          reason: "Bulk updates to this table are expected as sets of codes are added or removed."
       eomis_relatedcodevalue:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2025-01-01T00:00:00Z"
-            datetime_end_exclusive: "2026-06-26T00:00:00Z"
-            reason:
-              "A large set of medical diagnosis codes was legitimately removed
-              from this reference table on 2026-06-25, dropping the row count
-              from ~141.9k to ~87.9k. Excluding the pre-change imports from the
-              median calculation and skipping validation for the transition
-              file; the new baseline will rebuild from imports on 2026-06-26
-              onward."
+        tolerance_override:
+          percent_change_tolerance: .50
+          reason: "Bulk updates to this table are expected as sets of codes are added or removed."
 
   US_MI:
     file_tags:
