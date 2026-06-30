@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,32 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Script that creates sandbox datasets (as appropriate) and launches a sandbox
-activity ingest pipeline for the given state.
+identity ingest pipeline for the given tenant.
 
 Usage:
-    python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
+    python -m recidiviz.tools.ingest.development.run_sandbox_identity_ingest_pipeline \
         --project PROJECT_ID \
-        --state_code US_XX \
+        --tenant US_XX \
         --output_sandbox_prefix output_sandbox_prefix \
         [--raw_data_source_instance INSTANCE] \
         [--skip_build True/False]
 
-Examples:
-    python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
+Example:
+    python -m recidiviz.tools.ingest.development.run_sandbox_identity_ingest_pipeline \
         --project recidiviz-staging \
-        --state_code US_XX \
+        --tenant US_OZ \
         --output_sandbox_prefix my_prefix
-
-    python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
-        --project recidiviz-staging \
-        --state_code US_CA \
-        --output_sandbox_prefix my_prefix \
-        --raw_data_source_instance SECONDARY \
-        --ingest_view_results_only True \
-        --pre_normalization_only True \
-        --skip_build True \
-        --ingest_views_to_run "person staff" \
-        --service_account_email something@recidiviz-staging.iam.gserviceaccount.com
 """
 import json
 import logging
@@ -48,12 +37,13 @@ import logging
 from tabulate import tabulate
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
-from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
-    IngestPipelineParameters,
+from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
+    IdentityIngestPipelineParameters,
 )
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_dataflow_sandbox,
@@ -72,11 +62,11 @@ from recidiviz.tools.utils.script_helpers import (
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def run_sandbox_ingest_pipeline(
-    params: IngestPipelineParameters, skip_build: bool
+def run_sandbox_identity_ingest_pipeline(
+    params: IdentityIngestPipelineParameters, skip_build: bool
 ) -> None:
-    """Creates appropriate sandbox datasets then runs the sandbox pipeline with the
-    given parameters.
+    """Creates appropriate sandbox datasets then runs the sandbox identity ingest
+    pipeline with the given parameters.
     """
     output_sandbox_prefix = params.output_sandbox_prefix
     if not output_sandbox_prefix:
@@ -93,31 +83,17 @@ def run_sandbox_ingest_pipeline(
         ),
     )
 
-    if params.ingest_views_to_run and not params.pre_normalization_only:
-        prompt_for_confirmation(
-            f"⚠️This pipeline will run entity normalization against a limited set of "
-            f"ingest views: {params.ingest_views_to_run}. Normalization may crash or "
-            f"produce unpredictable results if this set of views was not selected "
-            f"carefully. For example, you cannot normalize entities that reference "
-            f"staff external_id values without also ingesting the view(s) that produce "
-            f"StateStaff. It's generally advised that you pair the "
-            f"--ingest_views_to_run argument with --pre_normalization_only. Are you "
-            f"sure you want to proceed?"
-        )
-
     output_datasets = [
-        params.ingest_view_results_output,
-        params.pre_normalization_output,
+        getattr(params, prop_name)
+        for prop_name in params.get_output_dataset_property_names()
     ]
-    if not params.pre_normalization_only:
-        output_datasets.append(params.normalized_output)
 
     prompt_for_confirmation(
         "\n\nCreating Sandbox Pipeline With Parameters:\n"
         + tabulate(
             [
                 ("Job Name", params.job_name),
-                ("State Code", params.state_code),
+                ("Tenant", params.tenant),
                 ("Project", params.project),
                 ("Output Datasets", output_datasets),
             ],
@@ -129,7 +105,7 @@ def run_sandbox_ingest_pipeline(
 
     create_or_update_dataflow_sandbox(
         sandbox_dataset_prefix=output_sandbox_prefix,
-        pipelines=[IngestPipelineType.ACTIVITY.pipeline_name],
+        pipelines=[IngestPipelineType.IDENTITY.pipeline_name],
         recreate=True,
         state_code_filter=StateCode(params.state_code),
     )
@@ -139,38 +115,44 @@ def run_sandbox_ingest_pipeline(
 
 @requires_google_adc
 def main() -> None:
-    """Creates sandbox datasets (as appropriate) and launches a sandbox activity
+    """Creates sandbox datasets (as appropriate) and launches a sandbox identity
     ingest pipeline as specified by the script args.
     """
     parser = common_sandbox_argument_parser()
     parser.add_argument(
-        "--state_code",
-        help="The state code that the export should occur for",
-        type=StateCode,
-        choices=get_existing_direct_ingest_states(),
+        "--tenant",
+        help="The tenant to run the identity ingest pipeline for. Choices are "
+        "restricted to state-convertible tenants.",
+        type=Tenant,
+        choices=[
+            Tenant.from_state_code(state_code)
+            for state_code in get_existing_direct_ingest_states()
+        ],
         required=True,
     )
     known_args, remaining_args = parser.parse_known_args()
+    tenant = known_args.tenant
+    state_code = tenant.to_state_code()
     # Re-add the args the wrapper's argparse consumed above so the pipeline's
     # own argparse (invoked by `parse_from_args` below) can see them too.
     remaining_args += [
-        "--state_code",
-        known_args.state_code.value,
+        "--tenant",
+        tenant.value,
         *build_extra_pipeline_parameter_args(
             project=known_args.project,
-            state_code=known_args.state_code,
+            state_code=state_code,
             raw_data_source_instance=known_args.raw_data_source_instance,
-            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
+            ingest_pipeline_type=IngestPipelineType.IDENTITY,
         ),
     ]
 
-    params = IngestPipelineParameters.parse_from_args(
+    params = IdentityIngestPipelineParameters.parse_from_args(
         remaining_args, sandbox_pipeline=True
     )
-    if params.state_code != known_args.state_code.value:
+    if params.tenant != tenant.value:
         raise ValueError(
-            f"Generated params state_code [{params.state_code}] does not match the "
-            f"input state_code [{known_args.state_code.value}]."
+            f"Generated params tenant [{params.tenant}] does not match the "
+            f"input tenant [{tenant.value}]."
         )
     if params.raw_data_source_instance != known_args.raw_data_source_instance.value:
         raise ValueError(
@@ -180,7 +162,7 @@ def main() -> None:
         )
 
     with local_project_id_override(params.project):
-        run_sandbox_ingest_pipeline(params, skip_build=known_args.skip_build)
+        run_sandbox_identity_ingest_pipeline(params, skip_build=known_args.skip_build)
 
 
 if __name__ == "__main__":

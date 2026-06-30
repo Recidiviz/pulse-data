@@ -10,11 +10,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for manifest_compiler_delegate_for_pipeline_type."""
+"""Tests for `ingest_pipeline_type_utils`."""
 
 import unittest
 from typing import cast
@@ -25,12 +22,46 @@ from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compi
 from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
     IdentityIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.ingest_mappings.manifest_compiler_delegate_factory import (
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
+from recidiviz.persistence.entity.activity import entities as activity_entities_module
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_fragment_entities_module,
+)
+from recidiviz.pipelines.ingest.ingest_pipeline_type_utils import (
+    entities_module_for_pipeline_type,
     manifest_compiler_delegate_for_pipeline_type,
 )
-from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
+
+
+class TestEntitiesModuleForPipelineType(unittest.TestCase):
+    """Tests for `entities_module_for_pipeline_type`."""
+
+    def test_activity_returns_activity_entities_module(self) -> None:
+        self.assertIs(
+            entities_module_for_pipeline_type(IngestPipelineType.ACTIVITY),
+            activity_entities_module,
+        )
+
+    def test_identity_returns_identity_fragment_entities_module(self) -> None:
+        self.assertIs(
+            entities_module_for_pipeline_type(IngestPipelineType.IDENTITY),
+            identity_fragment_entities_module,
+        )
+
+    def test_every_pipeline_type_is_handled(self) -> None:
+        for ingest_pipeline_type in IngestPipelineType:
+            with self.subTest(ingest_pipeline_type=ingest_pipeline_type):
+                entities_module_for_pipeline_type(ingest_pipeline_type)
+
+    def test_unhandled_pipeline_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"^Unexpected ingest_pipeline_type: \[BOGUS\]$"
+        ):
+            entities_module_for_pipeline_type(
+                cast(IngestPipelineType, "BOGUS"),
+            )
 
 
 class TestManifestCompilerDelegateForPipelineType(unittest.TestCase):

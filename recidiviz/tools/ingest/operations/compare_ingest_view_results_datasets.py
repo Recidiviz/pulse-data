@@ -106,8 +106,9 @@ def _collect_ingest_view_names(state_code: StateCode) -> list[str]:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
-    # TODO(OBT-34670): Take ingest pipeline type as a CLI flag; identity branch
-    # gated on OBT-33499 (no `{tenant}_identity_ingest_view_results` dataset yet).
+    # TODO(OBT-33499): Once the identity pipeline writes a
+    # `{tenant}_identity_ingest_view_results` dataset, take ingest pipeline
+    # type as a CLI flag and dispatch this collector on it.
     view_collector = DirectIngestViewQueryBuilderCollector(
         region=region, ingest_pipeline_type=IngestPipelineType.ACTIVITY
     )

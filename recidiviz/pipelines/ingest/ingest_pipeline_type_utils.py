@@ -10,12 +10,11 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Factory that maps an `IngestPipelineType` to the matching concrete
-`IngestViewManifestCompilerDelegate` instance for a given region."""
+"""Factories that map an `IngestPipelineType` to the type-specific entities
+module and manifest compiler delegate used by that pipeline."""
+from types import ModuleType
+
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
@@ -27,6 +26,22 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
+from recidiviz.persistence.entity.activity import entities as activity_entities_module
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_fragment_entities_module,
+)
+
+
+def entities_module_for_pipeline_type(
+    ingest_pipeline_type: IngestPipelineType,
+) -> ModuleType:
+    """Returns the entities module whose classes are produced by the given
+    `ingest_pipeline_type`'s manifest compiler."""
+    if ingest_pipeline_type is IngestPipelineType.ACTIVITY:
+        return activity_entities_module
+    if ingest_pipeline_type is IngestPipelineType.IDENTITY:
+        return identity_fragment_entities_module
+    raise ValueError(f"Unexpected ingest_pipeline_type: [{ingest_pipeline_type}]")
 
 
 def manifest_compiler_delegate_for_pipeline_type(
@@ -35,7 +50,7 @@ def manifest_compiler_delegate_for_pipeline_type(
     ingest_pipeline_type: IngestPipelineType,
 ) -> IngestViewManifestCompilerDelegate:
     """Returns the `IngestViewManifestCompilerDelegate` that compiles manifests
-    for the given pipeline type in the given region."""
+    for the given `ingest_pipeline_type` in the given `region`."""
     if ingest_pipeline_type is IngestPipelineType.ACTIVITY:
         return ActivityIngestViewManifestCompilerDelegate(region=region)
     if ingest_pipeline_type is IngestPipelineType.IDENTITY:

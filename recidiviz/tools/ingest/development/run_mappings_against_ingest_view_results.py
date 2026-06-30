@@ -25,7 +25,8 @@ Example Usage:
     python -m recidiviz.tools.ingest.development.run_mappings_against_ingest_view_results \
         --project-id recidiviz-staging \
         --state-code US_ND \
-        --ingest-view-name elite_alias
+        --ingest-view-name elite_alias \
+        [--ingest-pipeline-type ACTIVITY|IDENTITY]
 """
 
 import argparse
@@ -47,9 +48,6 @@ from recidiviz.common.constants import states
 from recidiviz.common.str_field_utils import to_string_value_converter
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
-    ActivityIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -64,12 +62,15 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
+from recidiviz.pipelines.ingest.ingest_pipeline_type_utils import (
+    entities_module_for_pipeline_type,
+    manifest_compiler_delegate_for_pipeline_type,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -77,13 +78,13 @@ from recidiviz.utils.string import get_closest_string
 
 
 def _get_ingest_view(
-    region: direct_ingest_regions.DirectIngestRegion, ingest_view_name: str
+    region: direct_ingest_regions.DirectIngestRegion,
+    ingest_view_name: str,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> DirectIngestViewQueryBuilder:
-    # TODO(OBT-34670): Take ingest pipeline type as a CLI flag instead of silently
-    # defaulting to activity ingest views.
     view_collector = DirectIngestViewQueryBuilderCollector(
         region=region,
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
+        ingest_pipeline_type=ingest_pipeline_type,
         expected_ingest_views=[],
     )
 
@@ -102,11 +103,13 @@ def _get_ingest_view(
 
 
 def query_ingest_view(
-    region: direct_ingest_regions.DirectIngestRegion, ingest_view_name: str
+    region: direct_ingest_regions.DirectIngestRegion,
+    ingest_view_name: str,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> BigQueryResultsContentsHandle[str]:
     """Queries latest ingest view and returns results"""
     big_query_client = BigQueryClientImpl()
-    ingest_view = _get_ingest_view(region, ingest_view_name)
+    ingest_view = _get_ingest_view(region, ingest_view_name, ingest_pipeline_type)
 
     query = ingest_view.build_query(
         query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
@@ -140,11 +143,16 @@ def parse_results(
     contents_handle: BigQueryResultsContentsHandle,
     write_results: bool,
     state_code: states.StateCode,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
-    entities_module_context = entities_module_context_for_module(state_entities)
+    entities_module_context = entities_module_context_for_module(
+        entities_module_for_pipeline_type(ingest_pipeline_type)
+    )
     manifest_compiler = IngestViewManifestCompiler(
-        delegate=ActivityIngestViewManifestCompilerDelegate(region=region)
+        delegate=manifest_compiler_delegate_for_pipeline_type(
+            region=region, ingest_pipeline_type=ingest_pipeline_type
+        )
     )
 
     log_path = os.path.join(tempfile.gettempdir(), "mappings_errors.txt")
@@ -206,14 +214,18 @@ def parse_results(
 
 
 def validate_ingest_view_output_schema(
-    state_code: states.StateCode, ingest_view_name: str, query_job: QueryJob
+    state_code: states.StateCode,
+    ingest_view_name: str,
+    query_job: QueryJob,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> None:
     """Validates that the input_columns in the ingest view mappings YAML matches the
     schema that was actually produced by the query.
     """
     manifest_compiler = IngestViewManifestCompiler(
-        delegate=ActivityIngestViewManifestCompilerDelegate(
-            region=get_direct_ingest_region(state_code.value)
+        delegate=manifest_compiler_delegate_for_pipeline_type(
+            region=get_direct_ingest_region(state_code.value),
+            ingest_pipeline_type=ingest_pipeline_type,
         )
     )
     manifest = manifest_compiler.compile_manifest(ingest_view_name=ingest_view_name)
@@ -246,16 +258,29 @@ def validate_ingest_view_output_schema(
 
 
 def main(
-    state_code: states.StateCode, ingest_view_name: str, write_results: bool
+    state_code: states.StateCode,
+    ingest_view_name: str,
+    write_results: bool,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> None:
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
 
-    contents_handle = query_ingest_view(region, ingest_view_name)
+    contents_handle = query_ingest_view(region, ingest_view_name, ingest_pipeline_type)
     validate_ingest_view_output_schema(
-        state_code, ingest_view_name, contents_handle.query_job
+        state_code,
+        ingest_view_name,
+        contents_handle.query_job,
+        ingest_pipeline_type,
     )
 
-    parse_results(region, ingest_view_name, contents_handle, write_results, state_code)
+    parse_results(
+        region,
+        ingest_view_name,
+        contents_handle,
+        write_results,
+        state_code,
+        ingest_pipeline_type,
+    )
 
 
 if __name__ == "__main__":
@@ -287,6 +312,15 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--ingest-pipeline-type",
+        type=IngestPipelineType,
+        choices=list(IngestPipelineType),
+        default=IngestPipelineType.ACTIVITY,
+        help="Which ingest pipeline's views and mappings to run against. Defaults "
+        "to ACTIVITY.",
+    )
+
+    parser.add_argument(
         "--write-results",
         nargs="?",
         const=True,
@@ -308,4 +342,5 @@ if __name__ == "__main__":
             state_code=args.state_code,
             ingest_view_name=args.ingest_view_name,
             write_results=args.write_results,
+            ingest_pipeline_type=args.ingest_pipeline_type,
         )

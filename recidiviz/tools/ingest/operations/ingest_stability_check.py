@@ -73,9 +73,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.manifest_compiler_delegate_factory import (
-    manifest_compiler_delegate_for_pipeline_type,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -90,6 +87,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
+)
+from recidiviz.pipelines.ingest.ingest_pipeline_type_utils import (
+    manifest_compiler_delegate_for_pipeline_type,
 )
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils import metadata

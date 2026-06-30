@@ -57,9 +57,6 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.external_id_type_helpers import (
     external_id_types_by_state_code,
 )
-from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
-    ActivityIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -70,6 +67,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
+)
+from recidiviz.pipelines.ingest.ingest_pipeline_type_utils import (
+    manifest_compiler_delegate_for_pipeline_type,
 )
 from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_raw_file_config
 from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
@@ -171,6 +171,16 @@ def _parse_args() -> argparse.Namespace:
             "auto-confirmed. Useful for non-interactive use (e.g. Claude Code)."
         ),
     )
+    parser.add_argument(
+        "--ingest_pipeline_type",
+        type=IngestPipelineType,
+        choices=list(IngestPipelineType),
+        default=IngestPipelineType.ACTIVITY,
+        help=(
+            "Which ingest pipeline's views and mappings to generate fixtures for. "
+            "Defaults to ACTIVITY."
+        ),
+    )
     args = parser.parse_args()
     state_id_types = external_id_types_by_state_code()[args.state_code]
     if args.external_id_type not in state_id_types:
@@ -188,6 +198,7 @@ def _validate_and_preview_external_id(
     ingest_view_name: str,
     external_id_type: str,
     external_id_values: list[str],
+    ingest_pipeline_type: IngestPipelineType,
     skip_prompts: bool = False,
 ) -> DirectIngestViewQueryBuilder:
     """
@@ -195,15 +206,15 @@ def _validate_and_preview_external_id(
     Returns the view builder for the ingest view.
     """
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
-    # TODO(OBT-34670): Take ingest pipeline type as a CLI flag instead of silently
-    # defaulting to activity ingest views.
     view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(
-        state_code=state_code, ingest_pipeline_type=IngestPipelineType.ACTIVITY
+        state_code=state_code, ingest_pipeline_type=ingest_pipeline_type
     )
     mapping_collector = IngestViewManifestCollector(
         region=region,
-        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
+        delegate=manifest_compiler_delegate_for_pipeline_type(
+            region=region, ingest_pipeline_type=ingest_pipeline_type
+        ),
+        ingest_pipeline_type=ingest_pipeline_type,
     )
 
     view_builder = view_collector.get_query_builder_by_view_name(ingest_view_name)
@@ -330,6 +341,7 @@ def main() -> None:
         args.ingest_view_name,
         args.external_id_type,
         args.external_id_values,
+        ingest_pipeline_type=args.ingest_pipeline_type,
         skip_prompts=args.skip_prompts,
     )
     dataset = raw_tables_dataset_for_region(

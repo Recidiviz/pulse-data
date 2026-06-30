@@ -419,6 +419,8 @@ def main() -> int:
         "recidiviz.persistence.database.schema_type",
         "recidiviz.persistence.entity",
         "recidiviz.persistence.errors",
+        # Pulled in transitively by `IngestPipelineType.pipeline_name`.
+        "recidiviz.pipelines.pipeline_names",
         "recidiviz.utils",
         "recidiviz.utils.environment",
     }
@@ -520,6 +522,8 @@ def main() -> int:
         "recidiviz.persistence.database.reserved_words",
         "recidiviz.persistence.database.schema_type",
         "recidiviz.persistence.entity",
+        # Pulled in transitively by `IngestPipelineType.pipeline_name`.
+        "recidiviz.pipelines.pipeline_names",
         "recidiviz.github.github_client",
         "recidiviz.github.github_constants",
         "recidiviz.github.github_issue",
@@ -875,6 +879,8 @@ def main() -> int:
                 "recidiviz.datasets.static_data.terraform_managed.config",
                 "recidiviz.pipelines.dataflow_config",
                 "recidiviz.pipelines.ingest.activity.dataset_config",
+                # Pulled in transitively by `IngestPipelineType.pipeline_name`.
+                "recidiviz.pipelines.pipeline_names",
                 "recidiviz.pipelines.supplemental.dataset_config",
                 "recidiviz.source_tables.externally_managed.datasets",
                 "recidiviz.source_tables.yaml_managed.datasets",

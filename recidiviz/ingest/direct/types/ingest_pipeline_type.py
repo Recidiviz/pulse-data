@@ -18,6 +18,11 @@
 mapping subdirectories it consumes."""
 import enum
 
+from recidiviz.pipelines.pipeline_names import (
+    IDENTITY_INGEST_PIPELINE_NAME,
+    INGEST_PIPELINE_NAME,
+)
+
 
 class IngestPipelineType(enum.Enum):
     """Identifies a kind of ingest pipeline.
@@ -42,6 +47,12 @@ class IngestPipelineType(enum.Enum):
         pipeline's manifest YAML files live."""
         return _PIPELINE_TYPE_TO_MANIFEST_SUBDIR[self]
 
+    @property
+    def pipeline_name(self) -> str:
+        """Returns the registered pipeline name (as defined in
+        `recidiviz/pipelines/pipeline_names.py`) for this pipeline type."""
+        return _PIPELINE_TYPE_TO_PIPELINE_NAME[self]
+
 
 _PIPELINE_TYPE_TO_VIEW_SUBDIR: dict[IngestPipelineType, str] = {
     IngestPipelineType.ACTIVITY: "ingest_views",
@@ -51,4 +62,9 @@ _PIPELINE_TYPE_TO_VIEW_SUBDIR: dict[IngestPipelineType, str] = {
 _PIPELINE_TYPE_TO_MANIFEST_SUBDIR: dict[IngestPipelineType, str] = {
     IngestPipelineType.ACTIVITY: "ingest_mappings",
     IngestPipelineType.IDENTITY: "identity_mappings",
+}
+
+_PIPELINE_TYPE_TO_PIPELINE_NAME: dict[IngestPipelineType, str] = {
+    IngestPipelineType.ACTIVITY: INGEST_PIPELINE_NAME,
+    IngestPipelineType.IDENTITY: IDENTITY_INGEST_PIPELINE_NAME,
 }

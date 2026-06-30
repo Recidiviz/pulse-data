@@ -262,6 +262,10 @@ class ProductionPathStrategy(PathStrategy):
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=state_code.value.lower()
             )
+            # This script is a one-off used to migrate activity ingest mappings'
+            # `input_columns` from list to dict format. Identity mappings were
+            # added after that migration and have used the dict format from the
+            # start, so there is no identity counterpart for this script to run.
             collector = IngestViewManifestCollector(
                 region=region,
                 delegate=ActivityIngestViewManifestCompilerDelegate(region=region),

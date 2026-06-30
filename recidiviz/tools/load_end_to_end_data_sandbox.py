@@ -63,6 +63,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.metrics.export.export_config import (
     VIEW_COLLECTION_EXPORT_INDEX,
     ExportViewCollectionConfig,
@@ -97,7 +98,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_dataflow_sandbox,
 )
-from recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline import (
+from recidiviz.tools.ingest.development.sandbox_pipeline_utils import (
     get_raw_data_upper_bound_dates_json_for_sandbox_pipeline,
 )
 from recidiviz.tools.load_views_to_sandbox import (
@@ -134,11 +135,16 @@ def get_ingest_pipeline_params(
     sandbox_username: str,
     output_sandbox_prefix: str,
 ) -> IngestPipelineParameters:
+    """Builds parameters for the activity ingest pipeline. This script is
+    activity-only. Its downstream chain (metrics, views, exports) has no
+    identity-pipeline parallel.
+    """
     raw_data_upper_bound_dates_json = (
         get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
-            project_id,
-            state_code,
-            raw_data_source_instance,
+            project_id=project_id,
+            state_code=state_code,
+            raw_data_source_instance=raw_data_source_instance,
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         )
     )
 
