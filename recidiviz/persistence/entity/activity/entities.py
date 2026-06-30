@@ -3347,9 +3347,6 @@ class StateChargeV2(
                 # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1015-10-12.
                 StateCode.US_AR,
-                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as high as 2109-06-19.
-                StateCode.US_NE,
             },
         ),
     )
@@ -3572,9 +3569,6 @@ class StateSentenceLength(
                 # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as high as 9999-12-31.
                 StateCode.US_MO,
-                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as high as 2924-02-01.
-                StateCode.US_NE,
             },
         ),
     )
@@ -3684,13 +3678,7 @@ class StateSentenceGroupLength(
     # all sentences in the term.
     projected_full_term_release_date_max_external: datetime.date | None = attr.ib(
         default=None,
-        validator=reasonable_projected_sentence_date_validator(
-            exempted_states={
-                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as high as 2924-02-01.
-                StateCode.US_NE,
-            },
-        ),
+        validator=reasonable_projected_sentence_date_validator(),
     )
 
     # Metadata field with additional sentence group length attributes
