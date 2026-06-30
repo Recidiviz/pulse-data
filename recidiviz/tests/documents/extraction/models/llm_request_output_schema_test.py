@@ -45,6 +45,10 @@ def _field(name: str, *, field_type: str = "STRING", **extra: Any) -> dict[str, 
     return {"name": name, "type": field_type, "description": _DESCRIPTION, **extra}
 
 
+def _enum_values(*names: str) -> list[dict[str, str]]:
+    return [{"name": name, "description": f"{_DESCRIPTION} ({name})"} for name in names]
+
+
 def _build_schema(
     *user_fields: dict[str, Any],
     collection_description: str = _COLLECTION_DESCRIPTION,
@@ -78,7 +82,7 @@ class LLMRequestOutputSchemaTest(TestCase):
 
     def test_is_relevant_field_shape(self) -> None:
         schema = _build_schema(
-            _field("primary_status", field_type="ENUM", values=["x"])
+            _field("primary_status", field_type="ENUM", values=_enum_values("x"))
         )
         is_relevant = schema.is_relevant_field
         self.assertEqual(IS_RELEVANT_FIELD_NAME, is_relevant.name)
@@ -136,7 +140,11 @@ class LLMRequestOutputSchemaTest(TestCase):
         # after it.
         schema = _build_schema(
             _field("employer", applicable_when_value={"status": ["employed"]}),
-            _field("status", field_type="ENUM", values=["employed", "unemployed"]),
+            _field(
+                "status",
+                field_type="ENUM",
+                values=_enum_values("employed", "unemployed"),
+            ),
         )
         constraint = schema.get_field("employer").semantic_consistency_constraints[0]
         assert isinstance(constraint, ApplicableWhenValueConstraint)

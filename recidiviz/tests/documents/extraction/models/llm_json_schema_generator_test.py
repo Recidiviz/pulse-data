@@ -51,6 +51,27 @@ def _field(name: str, *, field_type: str = "STRING", **extra: Any) -> dict[str, 
     return {"name": name, "type": field_type, "description": _DESCRIPTION, **extra}
 
 
+def _enum_value_description(name: str) -> str:
+    """Returns a per-value description, unique per value name (enum value
+    descriptions must be distinct within a field).
+    """
+    return f"{_DESCRIPTION} ({name})"
+
+
+def _enum_value(name: str) -> dict[str, str]:
+    return {"name": name, "description": _enum_value_description(name)}
+
+
+def _expected_enum_description(*value_names: str) -> str:
+    """Returns the description the generator emits for an ENUM field whose values
+    were built with `_enum_value`.
+    """
+    rendered_values = "\n".join(
+        f"  - {name}: {_enum_value_description(name)}" for name in value_names
+    )
+    return f"{_DESCRIPTION.rstrip('.')}. Allowed values:\n{rendered_values}"
+
+
 def _build_schema(*user_fields: dict[str, Any]) -> LLMRequestOutputSchema:
     return LLMRequestOutputSchema.from_yaml_dict(
         yaml_dict=YAMLDict(
@@ -164,11 +185,22 @@ class InferredFieldSchemaTest(TestCase):
 
     def test_value_branch_value_is_enum_for_enum_field(self) -> None:
         field_schema = _relevant_branch(
-            _generate(_field("status", field_type="ENUM", values=["x", "y"]))
+            _generate(
+                _field(
+                    "status",
+                    field_type="ENUM",
+                    values=[_enum_value("x"), _enum_value("y")],
+                )
+            )
         )["properties"]["status"]
         value = field_schema["anyOf"][0]["properties"]["value"]
         self.assertEqual(
-            {"type": "string", "description": _DESCRIPTION, "enum": ["x", "y"]}, value
+            {
+                "type": "string",
+                "description": _expected_enum_description("x", "y"),
+                "enum": ["x", "y"],
+            },
+            value,
         )
 
     def test_confidence_level_enum_lists_all_levels(self) -> None:
@@ -212,13 +244,17 @@ class StructuralFieldSchemaTest(TestCase):
                 _field(
                     "kind",
                     field_type="ENUM",
-                    values=["x", "y"],
+                    values=[_enum_value("x"), _enum_value("y")],
                     field_mode="STRUCTURAL",
                 )
             )
         )["properties"]["kind"]
         self.assertEqual(
-            {"type": "string", "description": _DESCRIPTION, "enum": ["x", "y"]},
+            {
+                "type": "string",
+                "description": _expected_enum_description("x", "y"),
+                "enum": ["x", "y"],
+            },
             field_schema,
         )
 
@@ -270,7 +306,7 @@ class ArrayOfStructSchemaTest(TestCase):
                         _field(
                             "kind",
                             field_type="ENUM",
-                            values=["a"],
+                            values=[_enum_value("a")],
                             field_mode="STRUCTURAL",
                         ),
                     ],
@@ -297,7 +333,11 @@ class ArrayOfStructSchemaTest(TestCase):
         self.assertIn("anyOf", items["employer_name"])
         # STRUCTURAL enum sub-field -> bare enum.
         self.assertEqual(
-            {"type": "string", "description": _DESCRIPTION, "enum": ["a"]},
+            {
+                "type": "string",
+                "description": _expected_enum_description("a"),
+                "enum": ["a"],
+            },
             items["kind"],
         )
 

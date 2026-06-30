@@ -97,31 +97,52 @@ class LLMOutputFieldMode(Enum):
     """
 
 
-class ConfidenceLevel(Enum):
+class DescribedEnum(Enum):
+    """An enum whose members each carry a human-readable description of when that
+    value applies. The descriptions are baked into a generated schema/prompt
+    description (the JSON Schema `enum` keyword carries only the bare values), so
+    the model knows what each value means.
+    """
+
+    @classmethod
+    def get_value_descriptions(cls) -> dict["DescribedEnum", str]:
+        """Returns the description of each member, keyed by member."""
+        raise NotImplementedError
+
+
+class ConfidenceLevel(DescribedEnum):
     """Discrete label indicating the evidence quality behind an extraction."""
 
     # NOTE: These are listed in order from least confident to most confident. DO NOT
     #  CHANGE THE ORDER OF THESE ENUMS RELATIVE TO EACH OTHER.
     SPECULATIVE = "speculative"
-    """Lowest confidence: a plausible alternative reading of the document exists
-    (i.e. the model recorded an adversarial interpretation), so there is genuine
-    doubt about whether the extracted value is correct.
-    """
-
     INFERRED = "inferred"
-    """The value follows from one clear inferential step over direct evidence in
-    the document; there is no adversarial interpretation.
-    """
-
     EXPLICIT = "explicit"
-    """The value is directly stated in the document, with at most minor
-    normalization (synonym, abbreviation, or paraphrase).
-    """
-
     VERBATIM = "verbatim"
-    """Highest confidence: the value appears exactly as-is in the document — the
-    citation text IS the value, with zero rewording or substitution.
-    """
+
+    @classmethod
+    def get_value_descriptions(cls) -> dict["DescribedEnum", str]:
+        return {
+            cls.SPECULATIVE: (
+                "Lowest confidence: a plausible alternative reading of the "
+                "document exists (i.e. the model recorded an adversarial "
+                "interpretation), so there is genuine doubt about whether the "
+                "extracted value is correct."
+            ),
+            cls.INFERRED: (
+                "The value follows from one clear inferential step over direct "
+                "evidence in the document; there is no adversarial interpretation."
+            ),
+            cls.EXPLICIT: (
+                "The value is directly stated in the document, with at most minor "
+                "normalization (synonym, abbreviation, or paraphrase)."
+            ),
+            cls.VERBATIM: (
+                "Highest confidence: the value appears exactly as-is in the "
+                "document — the citation text IS the value, with zero rewording or "
+                "substitution."
+            ),
+        }
 
     @property
     def rank(self) -> int:
@@ -135,22 +156,61 @@ class ConfidenceLevel(Enum):
         return self.rank >= minimum.rank
 
 
-class NullReason(Enum):
+class NullReason(DescribedEnum):
     """Why an INFERRED field has no extracted value. Returned by the model on the
     null branch of a field's output, and the allowed values of the generated
     JSON Schema's `null_reason` property.
     """
 
     NOT_APPLICABLE = "not_applicable"
-    """The field does not apply given the values of other fields (e.g.
-    `employer_name` when `primary_status` is "unemployed").
-    """
-
     NO_INFO_FOUND = "no_info_found"
-    """The document does not mention this information."""
-
     EXPLICITLY_UNKNOWN = "explicitly_unknown"
-    """The document acknowledges the information but states it is unknown."""
+
+    @classmethod
+    def get_value_descriptions(cls) -> dict["DescribedEnum", str]:
+        return {
+            cls.NOT_APPLICABLE: (
+                "The field does not apply given the values of other fields (e.g. "
+                '`employer_name` when `primary_status` is "unemployed").'
+            ),
+            cls.NO_INFO_FOUND: "The document does not mention this information.",
+            cls.EXPLICITLY_UNKNOWN: (
+                "The document acknowledges the information but states it is unknown."
+            ),
+        }
+
+
+def _render_description_with_value_guidance(
+    description: str, value_descriptions: list[tuple[str, str]]
+) -> str:
+    """Returns |description| with a bulleted list of each allowed value and what
+    it means appended, so a reader (the model) knows when to choose each value.
+    """
+    rendered_values = "\n".join(
+        f"  - {name}: {value_description}"
+        for name, value_description in value_descriptions
+    )
+    return f"{description.rstrip().rstrip('.')}. Allowed values:\n{rendered_values}"
+
+
+def description_with_enum_value_guidance(
+    *, description: str, enum_cls: type[DescribedEnum]
+) -> str:
+    """Returns |description| with each of |enum_cls|'s allowed values and its
+    meaning appended, in member-definition order. Used to bake value guidance
+    into a schema/prompt description for a field whose allowed values come from a
+    Python enum.
+    """
+    value_descriptions = enum_cls.get_value_descriptions()
+    rendered: list[tuple[str, str]] = []
+    for member in enum_cls:
+        if member not in value_descriptions:
+            raise ValueError(
+                f"Enum [{enum_cls.__name__}] is missing a value description for "
+                f"member [{member.name}]."
+            )
+        rendered.append((member.value, value_descriptions[member]))
+    return _render_description_with_value_guidance(description, rendered)
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -202,10 +262,12 @@ class LLMRequestOutputSchemaField(abc.ABC):
     a column and/or struct sub-field name in downstream views) and snake_case.
     """
 
-    description: str = attr.ib(
+    _description: str = attr.ib(
         validator=recidiviz_attr_validators.is_meaningful_description
     )
-    """What this field represents. Included in the prompt."""
+    """What this field represents. Included in the prompt. Read it through the 
+    `description` property — subclasses (e.g. ENUM) may augment it.
+    """
 
     required: bool = attr.ib(validator=attr_validators.is_bool)
     """Whether this field must be non-null when the document is relevant. A
@@ -224,6 +286,13 @@ class LLMRequestOutputSchemaField(abc.ABC):
     @abc.abstractmethod
     def field_type(self) -> LLMOutputFieldType:
         """Returns the value type of this field."""
+
+    @property
+    def description(self) -> str:
+        """Returns what this field represents, as surfaced to the model in the
+        prompt.
+        """
+        return self._description
 
     @property
     def field_mode(self) -> LLMOutputFieldMode:
@@ -419,7 +488,10 @@ class LLMRequestOutputSchemaField(abc.ABC):
                 description=description,
                 required=required,
                 inferred_field_config=inferred_field_config,
-                values=yaml_dict.pop_list("values", str),
+                values=[
+                    EnumValueDefinition.from_yaml_dict(value_yaml)
+                    for value_yaml in yaml_dict.pop_dicts("values")
+                ],
             )
         elif field_type is LLMOutputFieldType.ARRAY_OF_STRUCT:
             field = ArrayOfStructLLMRequestOutputSchemaField(
@@ -516,23 +588,84 @@ class ScalarLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
 
 
 @attr.define(frozen=True, kw_only=True)
-class EnumLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
-    """An output schema field whose value is one of a fixed set of allowed enum
-    values.
+class EnumValueDefinition:
+    """One allowed value of an ENUM output schema field, paired with what it
+    means. The description is rendered into the field's JSON-schema/prompt
+    description so the model knows when to choose each value.
     """
 
-    values: list[str] = attr.ib(
-        validator=[attr_validators.is_non_empty_list, attr_validators.is_list_of(str)]
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The allowed value exactly as it appears in output (e.g. `employee_ft`)."""
+
+    description: str = attr.ib(
+        validator=recidiviz_attr_validators.is_meaningful_description
     )
-    """Allowed enum values."""
+    """What this value means / when to choose it."""
+
+    @classmethod
+    def from_yaml_dict(cls, yaml_dict: YAMLDict) -> "EnumValueDefinition":
+        """Returns one enum value parsed from an element of a field's `values`
+        block (`{name, description}`).
+        """
+        definition = cls(
+            name=yaml_dict.pop("name", str),
+            description=yaml_dict.pop("description", str),
+        )
+        if yaml_dict:
+            raise ValueError(
+                f"Found unexpected config values for enum value "
+                f"[{definition.name}]: {repr(yaml_dict.get())}"
+            )
+        return definition
+
+
+@attr.define(frozen=True, kw_only=True)
+class EnumLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+    """An output schema field whose value is one of a fixed set of allowed enum
+    values, each carrying its own description.
+    """
+
+    values: list[EnumValueDefinition] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(EnumValueDefinition),
+        ]
+    )
+    """Allowed enum values, each with a description."""
 
     @values.validator
-    def _check_values(self, _attribute: "attr.Attribute", value: list[str]) -> None:
-        if duplicate_values := {v for v in value if value.count(v) > 1}:
+    def _check_values(
+        self, _attribute: "attr.Attribute", value: list[EnumValueDefinition]
+    ) -> None:
+        names = [definition.name for definition in value]
+        if duplicate_values := {n for n in names if names.count(n) > 1}:
             raise ValueError(
                 f"ENUM field [{self.name}] declares duplicate allowed values: "
                 f"{sorted(duplicate_values)}."
             )
+        descriptions = [definition.description for definition in value]
+        if duplicate_descriptions := {
+            d for d in descriptions if descriptions.count(d) > 1
+        }:
+            raise ValueError(
+                f"ENUM field [{self.name}] declares duplicate value descriptions: "
+                f"{sorted(duplicate_descriptions)}."
+            )
+
+    @property
+    def value_names(self) -> list[str]:
+        """Returns the allowed value names, without their descriptions."""
+        return [definition.name for definition in self.values]
+
+    @property
+    def description(self) -> str:
+        """Returns the field description with each allowed value's meaning baked
+        in, since the JSON Schema `enum` keyword carries only the bare value names.
+        """
+        return _render_description_with_value_guidance(
+            self._description,
+            [(value.name, value.description) for value in self.values],
+        )
 
     @property
     def field_type(self) -> LLMOutputFieldType:
@@ -661,11 +794,11 @@ class _EnumValueConditionConstraint(LLMOutputSemanticConsistencyConstraint):
     """
 
     def __attrs_post_init__(self) -> None:
-        if invalid_values := set(self.values) - set(self.condition_field.values):
+        if invalid_values := set(self.values) - set(self.condition_field.value_names):
             raise ValueError(
                 f"Value condition on ENUM field [{self.condition_field.name}] "
                 f"lists values {sorted(invalid_values)} that are not among its "
-                f"allowed values: {self.condition_field.values}."
+                f"allowed values: {self.condition_field.value_names}."
             )
 
     @classmethod

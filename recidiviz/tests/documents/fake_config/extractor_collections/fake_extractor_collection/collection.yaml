@@ -29,7 +29,13 @@ output_schema:
     - name: primary_status
       type: ENUM
       description: The primary status described in the document.
-      values: [active, inactive, other]
+      values:
+        - name: active
+          description: The record is currently active.
+        - name: inactive
+          description: The record is currently inactive.
+        - name: other
+          description: A status that is neither active nor inactive.
       required: true
 
     # STRUCTURAL field — a bare value the model assigns, no companion metadata.
@@ -62,7 +68,13 @@ output_schema:
         - name: assignment_type
           type: ENUM
           description: The kind of assignment.
-          values: [internal, external, other]
+          values:
+            - name: internal
+              description: An assignment internal to the organization.
+            - name: external
+              description: An assignment external to the organization.
+            - name: other
+              description: An assignment that is neither internal nor external.
         - name: rate_amount
           type: FLOAT
           description: Pay rate amount (numeric value only).
@@ -70,7 +82,11 @@ output_schema:
         - name: rate_period
           type: ENUM
           description: Time period for the rate.
-          values: [hourly, monthly]
+          values:
+            - name: hourly
+              description: The rate is per hour.
+            - name: monthly
+              description: The rate is per month.
           applicable_when_nonnull: rate_amount
 
 entity_groups:

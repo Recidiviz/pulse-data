@@ -42,7 +42,7 @@
                     },
                     "value": {
                       "type": "string",
-                      "description": "The person's primary employment status as described in the case note.\n",
+                      "description": "The person's primary employment status as described in the case note. Allowed values:\n  - employed: The person currently has a job, including self-employment, gig, day labor, or cash work.\n  - unemployed: The person is explicitly not currently working.\n  - other: A status that is neither clearly employed nor unemployed (e.g. receiving non-employment income).",
                       "enum": [
                         "employed",
                         "unemployed",
@@ -51,7 +51,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -108,7 +108,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -117,7 +117,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -176,7 +176,7 @@
                     },
                     "value": {
                       "type": "string",
-                      "description": "Whether the person is actively searching for employment.\n",
+                      "description": "Whether the person is actively searching for employment. Allowed values:\n  - searching: The person is actively looking for work (applications, job fairs, workforce referrals).\n  - not_searching: The person is explicitly not looking for work.\n  - other: Search activity is mentioned but does not fit searching or not_searching.",
                       "enum": [
                         "searching",
                         "not_searching",
@@ -185,7 +185,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -242,7 +242,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -251,7 +251,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -314,7 +314,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -371,7 +371,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -380,7 +380,7 @@
                     },
                     "confidence_level": {
                       "type": "string",
-                      "description": "The evidence quality behind this field's value.",
+                      "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                       "enum": [
                         "speculative",
                         "inferred",
@@ -454,7 +454,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -511,7 +511,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -520,7 +520,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -579,7 +579,7 @@
                           },
                           "value": {
                             "type": "string",
-                            "description": "Type of employment.",
+                            "description": "Type of employment. Allowed values:\n  - employee_ft: A full-time employee (stated explicitly as full-time).\n  - employee_pt: A part-time employee (stated explicitly as part-time).\n  - self_employed: The person runs their own business, freelances, or is otherwise self-employed.\n  - gig: App-based or platform work (e.g. DoorDash, Uber, TaskRabbit).\n  - temp_agency: Employment through a staffing or temp agency.\n  - other: An employment type that does not fit any of the above.",
                             "enum": [
                               "employee_ft",
                               "employee_pt",
@@ -591,7 +591,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -648,7 +648,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -657,7 +657,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -720,7 +720,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -777,7 +777,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -786,7 +786,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -849,7 +849,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -906,7 +906,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -915,7 +915,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -974,7 +974,7 @@
                           },
                           "value": {
                             "type": "string",
-                            "description": "Time period for the pay rate.",
+                            "description": "Time period for the pay rate. Allowed values:\n  - hourly: The pay rate is per hour.\n  - daily: The pay rate is per day.\n  - weekly: The pay rate is per week.\n  - monthly: The pay rate is per month.\n  - annually: The pay rate is per year.",
                             "enum": [
                               "hourly",
                               "daily",
@@ -985,7 +985,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -1042,7 +1042,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1051,7 +1051,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -1123,7 +1123,7 @@
                           },
                           "value": {
                             "type": "string",
-                            "description": "Type of employment change.",
+                            "description": "Type of employment change. Allowed values:\n  - started_job: The person started a new job.\n  - lost_job: The person was fired, laid off, or otherwise lost a job.\n  - suspended: The person was suspended from a job.\n  - other: An employment change that does not fit any of the above.",
                             "enum": [
                               "started_job",
                               "lost_job",
@@ -1133,7 +1133,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -1190,7 +1190,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1199,7 +1199,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -1262,7 +1262,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",
@@ -1319,7 +1319,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n  - not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n  - no_info_found: The document does not mention this information.\n  - explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1328,7 +1328,7 @@
                           },
                           "confidence_level": {
                             "type": "string",
-                            "description": "The evidence quality behind this field's value.",
+                            "description": "The evidence quality behind this field's value. Allowed values:\n  - speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n  - inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n  - explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n  - verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
                             "enum": [
                               "speculative",
                               "inferred",

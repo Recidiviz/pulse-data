@@ -87,7 +87,7 @@ def _output_schema() -> LLMRequestOutputSchema:
                     {
                         "name": "primary_status",
                         "type": "ENUM",
-                        "values": ["employed"],
+                        "values": [{"name": "employed", "description": _DESCRIPTION}],
                         "description": _DESCRIPTION,
                     },
                     {"name": "address", "type": "STRING", "description": _DESCRIPTION},
@@ -434,7 +434,7 @@ class CollectionVersionIdTest(TestCase):
             _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "a55958b21d1f25555197cf5f9db3c1066e4a3a1cbf0809f6c6899e26c9120161",
+            "5316c853eb0da0fa02651510d21bd43a6e4554fa2b83c486efaf998fd8ad769b",
             collection.collection_version_id,
         )
 

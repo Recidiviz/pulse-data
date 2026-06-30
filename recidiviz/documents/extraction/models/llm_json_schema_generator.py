@@ -58,12 +58,14 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
+    DescribedEnum,
     EnumLLMRequestOutputSchemaField,
     LLMOutputFieldMode,
     LLMOutputFieldType,
     LLMRequestOutputSchemaField,
     NullReason,
     ScalarLLMRequestOutputSchemaField,
+    description_with_enum_value_guidance,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     ADVERSARIAL_INTERPRETATION_FIELD_NAME,
@@ -238,7 +240,7 @@ class LLMJsonSchemaGenerator:
             description="No value could be extracted.",
             properties={
                 ADVERSARIAL_INTERPRETATION_FIELD_NAME: cls._adversarial_interpretation_schema(),
-                NULL_REASON_FIELD_NAME: EnumJSONSchema.for_enum(
+                NULL_REASON_FIELD_NAME: cls._described_enum_schema(
                     enum_cls=NullReason,
                     description="Why no value could be extracted for this field.",
                 ),
@@ -268,7 +270,8 @@ class LLMJsonSchemaGenerator:
         """
         if isinstance(field, EnumLLMRequestOutputSchemaField):
             return EnumJSONSchema(
-                description=field.description, values=list(field.values)
+                description=field.description,
+                values=field.value_names,
             )
         if isinstance(field, ScalarLLMRequestOutputSchemaField):
             return ScalarJSONSchema(
@@ -278,6 +281,20 @@ class LLMJsonSchemaGenerator:
         raise ValueError(
             f"Cannot build a bare value schema for field [{field.name}] of type "
             f"[{field.field_type}]."
+        )
+
+    @staticmethod
+    def _described_enum_schema(
+        *, enum_cls: type[DescribedEnum], description: str
+    ) -> EnumJSONSchema:
+        """Returns an enum node whose allowed values come from |enum_cls|, with
+        each value's meaning baked into the description.
+        """
+        return EnumJSONSchema.for_enum(
+            enum_cls=enum_cls,
+            description=description_with_enum_value_guidance(
+                description=description, enum_cls=enum_cls
+            ),
         )
 
     @staticmethod
@@ -293,10 +310,10 @@ class LLMJsonSchemaGenerator:
             return JSONScalarType.NUMBER
         raise ValueError(f"Unexpected scalar field type: [{scalar_type}].")
 
-    @staticmethod
-    def _confidence_level_schema() -> EnumJSONSchema:
+    @classmethod
+    def _confidence_level_schema(cls) -> EnumJSONSchema:
         """Returns the schema for the `confidence_level` property."""
-        return EnumJSONSchema.for_enum(
+        return cls._described_enum_schema(
             enum_cls=ConfidenceLevel,
             description="The evidence quality behind this field's value.",
         )

@@ -30,12 +30,15 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ApplicableWhenValueConstraint,
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
+    DescribedEnum,
     EnumLLMRequestOutputSchemaField,
     LLMOutputFieldMode,
     LLMOutputFieldType,
     LLMRequestOutputSchemaField,
     NotApplicableWhenValueConstraint,
+    NullReason,
     ScalarLLMRequestOutputSchemaField,
+    description_with_enum_value_guidance,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -45,6 +48,14 @@ _DESCRIPTION = "A description that is long enough to be meaningful."
 def _field(name: str, *, field_type: str = "STRING", **extra: Any) -> dict[str, Any]:
     """Returns a raw field-definition dict for use as one entry of a scope."""
     return {"name": name, "type": field_type, "description": _DESCRIPTION, **extra}
+
+
+def _enum_values(*names: str) -> list[dict[str, str]]:
+    """Returns raw `{name, description}` enum value dicts for an ENUM field. Each
+    description is unique per name, since a field's value descriptions must be
+    distinct.
+    """
+    return [{"name": name, "description": f"{_DESCRIPTION} ({name})"} for name in names]
 
 
 def _build(
@@ -124,7 +135,11 @@ class ConstraintResolutionTest(TestCase):
 
     def test_value_condition_builds_correct_subclass_holding_enum_field(self) -> None:
         fields = _build(
-            _field("status", field_type="ENUM", values=["employed", "unemployed"]),
+            _field(
+                "status",
+                field_type="ENUM",
+                values=_enum_values("employed", "unemployed"),
+            ),
             _field("employer", applicable_when_value={"status": ["employed"]}),
             _field("reason", not_applicable_when_value={"status": ["employed"]}),
         )
@@ -160,7 +175,11 @@ class ConstraintResolutionTest(TestCase):
             ),
         ):
             _build(
-                _field("status", field_type="ENUM", values=["employed", "unemployed"]),
+                _field(
+                    "status",
+                    field_type="ENUM",
+                    values=_enum_values("employed", "unemployed"),
+                ),
                 _field("employer", applicable_when_value={"status": ["retired"]}),
             )
 
@@ -173,8 +192,8 @@ class ConstraintResolutionTest(TestCase):
             ),
         ):
             _build(
-                _field("status", field_type="ENUM", values=["employed"]),
-                _field("tenure", field_type="ENUM", values=["long"]),
+                _field("status", field_type="ENUM", values=_enum_values("employed")),
+                _field("tenure", field_type="ENUM", values=_enum_values("long")),
                 _field(
                     "employer",
                     applicable_when_value={"status": ["employed"], "tenure": ["long"]},
@@ -195,7 +214,7 @@ class FieldModeTest(TestCase):
             ),
         ):
             _build(
-                _field("status", field_type="ENUM", values=["employed"]),
+                _field("status", field_type="ENUM", values=_enum_values("employed")),
                 _field(
                     "employer",
                     required=True,
@@ -224,7 +243,7 @@ class FieldModeTest(TestCase):
             ),
         ):
             _build(
-                _field("status", field_type="ENUM", values=["employed"]),
+                _field("status", field_type="ENUM", values=_enum_values("employed")),
                 _field(
                     "employer",
                     field_mode="STRUCTURAL",
@@ -268,7 +287,32 @@ class TypeInvariantsTest(TestCase):
                 _field(
                     "status",
                     field_type="ENUM",
-                    values=["employed", "employed", "unemployed"],
+                    values=_enum_values("employed", "employed", "unemployed"),
+                )
+            )
+
+    def test_enum_with_duplicate_value_descriptions_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "ENUM field [status] declares duplicate value descriptions: "
+                "['The very same description.']."
+            ),
+        ):
+            _build(
+                _field(
+                    "status",
+                    field_type="ENUM",
+                    values=[
+                        {
+                            "name": "employed",
+                            "description": "The very same description.",
+                        },
+                        {
+                            "name": "unemployed",
+                            "description": "The very same description.",
+                        },
+                    ],
                 )
             )
 
@@ -323,7 +367,11 @@ class TypeInvariantsTest(TestCase):
                 field_type="ARRAY_OF_STRUCT",
                 primary_keys=["name"],
                 fields=[
-                    _field("employment_type", field_type="ENUM", values=["ft", "pt"]),
+                    _field(
+                        "employment_type",
+                        field_type="ENUM",
+                        values=_enum_values("ft", "pt"),
+                    ),
                     _field("name", applicable_when_value={"employment_type": ["ft"]}),
                 ],
             )
@@ -348,7 +396,7 @@ class TypeInvariantsTest(TestCase):
             ),
         ):
             _build(
-                _field("status", field_type="ENUM", values=["employed"]),
+                _field("status", field_type="ENUM", values=_enum_values("employed")),
                 _field(
                     "employers",
                     field_type="ARRAY_OF_STRUCT",
@@ -403,7 +451,7 @@ class EnumHelpersTest(TestCase):
 
     def test_enum_and_array_dispatch(self) -> None:
         enum_field, array_field = _build(
-            _field("e", field_type="ENUM", values=["x"]),
+            _field("e", field_type="ENUM", values=_enum_values("x")),
             _field(
                 "a",
                 field_type="ARRAY_OF_STRUCT",
@@ -435,3 +483,92 @@ class EnumHelpersTest(TestCase):
         self.assertFalse(
             ConfidenceLevel.SPECULATIVE.meets_minimum(ConfidenceLevel.INFERRED)
         )
+
+
+class EnumFieldDescriptionTest(TestCase):
+    """`EnumLLMRequestOutputSchemaField.description` bakes in each value's meaning."""
+
+    def test_description_bakes_in_value_guidance(self) -> None:
+        (status,) = _build(
+            _field(
+                "status",
+                field_type="ENUM",
+                values=[
+                    {"name": "employed", "description": "Has a job."},
+                    {"name": "unemployed", "description": "Has no job."},
+                ],
+            )
+        )
+        self.assertEqual(
+            f"{_DESCRIPTION.rstrip('.')}. Allowed values:\n"
+            "  - employed: Has a job.\n"
+            "  - unemployed: Has no job.",
+            status.description,
+        )
+
+    def test_description_normalizes_trailing_whitespace_and_period(self) -> None:
+        # Folded YAML scalars (`>`) arrive with a trailing newline — it must not
+        # leak into the baked description as "...\n. Allowed values".
+        (status,) = _build(
+            _field(
+                "status",
+                field_type="ENUM",
+                description="Trailing whitespace here.\n",
+                values=[{"name": "a", "description": "The a value."}],
+            )
+        )
+        self.assertEqual(
+            "Trailing whitespace here. Allowed values:\n  - a: The a value.",
+            status.description,
+        )
+
+
+class _PartiallyDescribedEnum(DescribedEnum):
+    """A DescribedEnum whose `get_value_descriptions` omits a member, to exercise
+    the missing-description guard.
+    """
+
+    A = "a"
+    B = "b"
+
+    @classmethod
+    def get_value_descriptions(cls) -> dict[DescribedEnum, str]:
+        return {cls.A: "The A value."}
+
+
+class DescribedEnumGuidanceTest(TestCase):
+    """`description_with_enum_value_guidance` and the built-in DescribedEnums."""
+
+    def test_bakes_member_descriptions_in_definition_order(self) -> None:
+        self.assertEqual(
+            "Why no value could be extracted. Allowed values:\n"
+            "  - not_applicable: The field does not apply given the values of "
+            "other fields (e.g. `employer_name` when `primary_status` is "
+            '"unemployed").\n'
+            "  - no_info_found: The document does not mention this information.\n"
+            "  - explicitly_unknown: The document acknowledges the information "
+            "but states it is unknown.",
+            description_with_enum_value_guidance(
+                description="Why no value could be extracted.", enum_cls=NullReason
+            ),
+        )
+
+    def test_missing_value_description_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Enum [_PartiallyDescribedEnum] is missing a value description for "
+                "member [B]."
+            ),
+        ):
+            description_with_enum_value_guidance(
+                description="Some description.", enum_cls=_PartiallyDescribedEnum
+            )
+
+    def test_builtin_described_enums_cover_every_member(self) -> None:
+        # Each member must have a description, or schema generation would raise.
+        for enum_cls in (ConfidenceLevel, NullReason):
+            with self.subTest(enum_cls=enum_cls.__name__):
+                description_with_enum_value_guidance(
+                    description="A description.", enum_cls=enum_cls
+                )

@@ -54,14 +54,26 @@ output_schema:
       type: ENUM
       description: >
         The person's primary employment status as described in the case note.
-      values: [employed, unemployed, other]
+      values:
+        - name: employed
+          description: The person currently has a job, including self-employment, gig, day labor, or cash work.
+        - name: unemployed
+          description: The person is explicitly not currently working.
+        - name: other
+          description: A status that is neither clearly employed nor unemployed (e.g. receiving non-employment income).
       required: true
 
     - name: search_status
       type: ENUM
       description: >
         Whether the person is actively searching for employment.
-      values: [searching, not_searching, other]
+      values:
+        - name: searching
+          description: The person is actively looking for work (applications, job fairs, workforce referrals).
+        - name: not_searching
+          description: The person is explicitly not looking for work.
+        - name: other
+          description: Search activity is mentioned but does not fit searching or not_searching.
       required: true
 
     - name: unemployment_reason
@@ -97,7 +109,18 @@ output_schema:
           type: ENUM
           description: Type of employment.
           values:
-            [employee_ft, employee_pt, self_employed, gig, temp_agency, other]
+            - name: employee_ft
+              description: A full-time employee (stated explicitly as full-time).
+            - name: employee_pt
+              description: A part-time employee (stated explicitly as part-time).
+            - name: self_employed
+              description: The person runs their own business, freelances, or is otherwise self-employed.
+            - name: gig
+              description: App-based or platform work (e.g. DoorDash, Uber, TaskRabbit).
+            - name: temp_agency
+              description: Employment through a staffing or temp agency.
+            - name: other
+              description: An employment type that does not fit any of the above.
         - name: job_title
           type: STRING
           description: The person's job title or role.
@@ -110,7 +133,17 @@ output_schema:
         - name: pay_rate_time_period
           type: ENUM
           description: Time period for the pay rate.
-          values: [hourly, daily, weekly, monthly, annually]
+          values:
+            - name: hourly
+              description: The pay rate is per hour.
+            - name: daily
+              description: The pay rate is per day.
+            - name: weekly
+              description: The pay rate is per week.
+            - name: monthly
+              description: The pay rate is per month.
+            - name: annually
+              description: The pay rate is per year.
           applicable_when_nonnull: pay_rate_amount
 
     - name: employment_changes
@@ -123,7 +156,15 @@ output_schema:
         - name: employment_change_type
           type: ENUM
           description: Type of employment change.
-          values: [started_job, lost_job, suspended, other]
+          values:
+            - name: started_job
+              description: The person started a new job.
+            - name: lost_job
+              description: The person was fired, laid off, or otherwise lost a job.
+            - name: suspended
+              description: The person was suspended from a job.
+            - name: other
+              description: An employment change that does not fit any of the above.
           required: true
         - name: employment_change_date
           type: STRING

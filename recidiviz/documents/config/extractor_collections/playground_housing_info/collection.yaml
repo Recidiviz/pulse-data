@@ -57,14 +57,30 @@ output_schema:
       type: ENUM
       description: >
         The person's primary housing status as described in the case note.
-      values: [housed, unhoused, in_custody, other]
+      values:
+        - name: housed
+          description: The person currently has somewhere to live (a home, an apartment, or a temporary housing arrangement).
+        - name: unhoused
+          description: The person explicitly has nowhere indoors to live (homeless, living in a vehicle, etc.).
+        - name: in_custody
+          description: The person is currently living in an incarceration facility (jail or prison).
+        - name: other
+          description: A housing status that does not fit any of the above.
       required: true
 
     - name: housed_type
       type: ENUM
       description: >
         The type of housing the person is living in.
-      values: [permanent, temporary_housing, with_family_or_friends, other]
+      values:
+        - name: permanent
+          description: A stable residence the person rents or owns.
+        - name: temporary_housing
+          description: A temporary arrangement such as a shelter, sober living home, treatment program, transitional program, or hotel/motel.
+        - name: with_family_or_friends
+          description: The person is staying in someone else's home (family, partner, or friend).
+        - name: other
+          description: A housing type that does not fit any of the above.
       applicable_when_value:
         primary_status: [housed]
 
