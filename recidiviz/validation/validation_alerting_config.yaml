@@ -99,7 +99,7 @@ state_config:
   US_NE:
     slack_channel: us-nebraska
     default_assignees:
-      - lydiamasri2
+      - not-a-doctor-stromberg
   US_NY:
     slack_channel: us-new-york
     default_assignees:
@@ -114,7 +114,7 @@ state_config:
   US_TN:
     slack_channel: us-tennessee
     default_assignees:
-      - lydiamasri2
+      - santymendoza
   US_TX:
     slack_channel: us-texas
     default_assignees:
