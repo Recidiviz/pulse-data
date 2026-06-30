@@ -444,14 +444,13 @@ WHERE meets_criteria
 """
 
 
-# TODO(#35405): Turn this into a general criteria builder, rather than string output
 def no_supervision_sanction_within_time_interval(
     *,
     date_interval: int,
     date_part: str,
     supervision_sanctions_cte: str,
 ) -> str:
-    """Identify spans of time during which individuals in TN have NOT had a supervision sanction
+    """Identify spans of time during which individuals have NOT had a supervision sanction
     within a specified time interval (e.g., within the past 2 years).
 
     Args:
