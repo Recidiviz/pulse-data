@@ -20,10 +20,14 @@ Helper SQL queries for Michigan
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
@@ -1300,6 +1304,97 @@ def secondary_officer_dockets_cte() -> str:
                 ref2.description = 'Active'
                 -- only include Parole/Probation dockets
                 AND ref1.description IN ('Probation', 'Parole')
-            GROUP BY 1 
+            GROUP BY 1
         )
     """
+
+
+# `Program_End_Reason` values in COMS_Program_Recommendations that indicate the
+# person completed the program.
+COMS_PROGRAM_COMPLETION_END_REASONS = ["Completed", "GED/HSE Verified"]
+
+# Raw datetime columns in the _latest view are strings of this format.
+_RAW_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _parse_raw_date(col_name: str) -> str:
+    """Returns SQL parsing a raw COMS datetime string column into a DATE."""
+    return f"DATE(SAFE.PARSE_DATETIME('{_RAW_DATETIME_FORMAT}', SUBSTR({col_name}, 1, 19)))"
+
+
+def build_program_completion_count_query_template(
+    *,
+    program_name_patterns: list[str],
+    count_column_name: str,
+) -> str:
+    """Returns a query template that counts completed program completions whose
+    COMS `Program` name matches any of the given LIKE patterns, as a cumulative,
+    span-based count.
+
+    Completions are deduplicated by program recommendation + program start date,
+    and each such (recommendation, start date) completion contributes to the
+    count from its completion (end) date onward, with no time window.
+
+    program_name_patterns: SQL LIKE patterns (case-sensitive, `%` wildcards
+        allowed) for the COMS `Program` names that make up this program level.
+    count_column_name: name of the output column holding the cumulative count.
+    """
+    # Expanded into an OR of LIKEs rather than `LIKE ANY (...)`, which the
+    # BigQuery emulator used in view-graph validation does not support.
+    program_name_match_clause = " OR ".join(
+        f"program.Program LIKE '{pattern}'" for pattern in program_name_patterns
+    )
+    return f"""
+-- Completed program recommendations, one row per completion, deduplicated by
+-- program recommendation + program start date.
+WITH completed_programs AS (
+    SELECT
+        pei.state_code,
+        pei.person_id,
+        -- Unique identifier for a completion: the dedup key is program
+        -- recommendation + start date, so key the count on that pair. Start_Date
+        -- can be NULL, so coalesce it to keep the id (and the count) intact.
+        CONCAT(program.Program_Recommendation_Id, '|', COALESCE(program.Start_Date, '')) AS completion_id,
+        {_parse_raw_date('program.End_Date')} AS completion_date,
+    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Program_Recommendations_latest` program
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON program.Offender_Number = pei.external_id
+        AND pei.state_code = 'US_MI'
+        AND pei.id_type = 'US_MI_DOC'
+    WHERE ({program_name_match_clause})
+        AND program.Program_End_Reason IN ({list_to_query_string(COMS_PROGRAM_COMPLETION_END_REASONS, quoted=True)})
+        AND program.End_Date IS NOT NULL
+    -- Deduplicate by program recommendation + program start date
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY program.Program_Recommendation_Id, program.Start_Date
+        ORDER BY program.End_Date
+    ) = 1
+)
+,
+-- Each completion contributes to the count from its completion date onward
+-- (open-ended span), so the count as of any date is cumulative.
+completion_spans AS (
+    SELECT
+        person_id,
+        state_code,
+        completion_id,
+        completion_date AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+    FROM completed_programs
+)
+,
+-- Break overlapping completion spans into non-overlapping sub-sessions
+{create_sub_sessions_with_attributes(
+    'completion_spans',
+    index_columns=['person_id', 'state_code'],
+)}
+-- Count the distinct completed programs active in each sub-session
+SELECT
+    person_id,
+    state_code,
+    start_date,
+    end_date AS end_date_exclusive,
+    COUNT(DISTINCT completion_id) AS {count_column_name},
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
+"""

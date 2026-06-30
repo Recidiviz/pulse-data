@@ -60,6 +60,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inv
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_age import (
+    US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_high import (
+    US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_moderate import (
+    US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
 )
@@ -295,6 +304,18 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"
     ),
+    **{
+        VIEW_BUILDER.address: (
+            "New MI classification form sub-score input view. Not yet referenced "
+            "downstream; will be consumed once the MI classification form scoring "
+            "is built (Maggie Taylor, 2026-06-25)"
+        )
+        for VIEW_BUILDER in [
+            US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
+        ]
+    },
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "partners summit analysis (Andrew Gaidus, 2025-07-02)"
