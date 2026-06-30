@@ -20,6 +20,7 @@ unique id to the task_id name on Dataflow
 """
 import logging
 import time
+from random import sample
 from typing import Any, Dict
 
 from airflow.providers.google.cloud.hooks.dataflow import (
@@ -68,9 +69,49 @@ def _collect_log_messages(
 class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     """A custom implementation of the DataflowStartFlexTemplateOperator for flex templates."""
 
+    def __init__(
+        self,
+        *,
+        fallback_regions: list[str] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        # Other GCP regions to fall back to when the job's region is out of capacity.
+        # On ZONE_RESOURCE_POOL_EXHAUSTED / QUOTA_EXCEEDED the capacity retry samples one
+        # of these (excluding the current region). Empty disables region fallback (the
+        # retry then stays in the original region, as before).
+        self.fallback_regions: list[str] = fallback_regions or []
+
     @property
     def job_name(self) -> str:
         return self.body["launchParameter"]["jobName"]
+
+    def _switch_to_fallback_region(self) -> str | None:
+        """Samples a fallback region other than the current one, rewrites the launch
+        body's region-specific `subnetwork` to it, and updates `self.location` so the
+        next launch targets the new region. Returns the new region, or None if no
+        fallback region is available."""
+        # `location` is defined by the base operator's __init__; pylint doesn't see that
+        # and flags the read below because we reassign it at the end of this method.
+        # pylint: disable=access-member-before-definition
+        current_region = self.location
+        # pylint: enable=access-member-before-definition
+        candidates = [r for r in self.fallback_regions if r != current_region]
+        if not candidates:
+            return None
+        new_region = sample(candidates, 1)[0]
+        environment = self.body["launchParameter"].get("environment", {})
+        if "subnetwork" in environment:
+            environment["subnetwork"] = environment["subnetwork"].replace(
+                f"/regions/{current_region}/", f"/regions/{new_region}/"
+            )
+        logging.info(
+            "Retrying in region [%s] (was [%s]) due to capacity exhaustion.",
+            new_region,
+            current_region,
+        )
+        self.location = new_region
+        return new_region
 
     def get_job(self) -> Dict[Any, Any]:
         """Retrieves the most recent Dataflow job with job_name.
@@ -154,6 +195,10 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
                     logging.info(
                         "Retrying once more in 5 minutes due to zonal resource exhaustion"
                     )
+
+                    # Fall back to a different region (if any are configured) so the
+                    # retry isn't relaunched into the same exhausted region.
+                    self._switch_to_fallback_region()
 
                     # Sleep in a loop to allow interrupts
                     for _ in range(300):

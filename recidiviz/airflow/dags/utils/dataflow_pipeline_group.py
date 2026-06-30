@@ -33,10 +33,17 @@ from recidiviz.airflow.dags.utils.constants import (
     DATAFLOW_OPERATOR_TASK_ID,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.pipeline_parameters import (
     PipelineParameters,
     PipelineParametersT,
 )
+
+# The set of regions we run pipelines in / have provisioned (default subnet + Private
+# Google Access). On capacity exhaustion the operator samples a fallback from these.
+FALLBACK_REGIONS = sorted(set(DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE.values()))
 
 
 class UpstreamTaskOutputs:
@@ -130,6 +137,7 @@ def build_dataflow_pipeline_task_group(
                 },
             ),
             project_id=get_project_id(),
+            fallback_regions=FALLBACK_REGIONS,
         )
 
     return dataflow_pipeline_group, run_pipeline

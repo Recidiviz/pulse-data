@@ -180,6 +180,30 @@ locals {
   nat_prefix = var.project_id == "recidiviz-123" ? "recidiviz-production" : var.project_id
 }
 
+module "nat_us_east5" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-east5"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-east5"
+  region      = "us-east5"
+}
+
+module "nat_us_south1" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-south1"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-south1"
+  region      = "us-south1"
+}
+
+module "nat_us_west4" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-west4"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-west4"
+  region      = "us-west4"
+}
+
 
 locals {
   # Private Google Access IPs

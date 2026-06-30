@@ -22,7 +22,6 @@ import json
 import logging
 import os.path
 import re
-from random import sample
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 import attr
@@ -62,22 +61,6 @@ PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
 PIPELINE_SANDBOX_USERNAME_ARG_NAME = "sandbox_username"
 
 PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
-
-# For machine architectures only available in certain regions / zones, specifies the regions and zones where that
-# architecture is available.
-ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS = {
-    "c4a": {
-        "us-central1": ["a", "b", "c"],
-        "us-west1": ["a", "c"],
-        "us-east1": ["b", "c", "d"],
-        "us-east4": ["a", "b", "c"],
-    },
-    "c4d": {
-        "us-central1": ["a", "b"],
-        "us-east1": ["b", "c"],
-        "us-east4": ["a", "b", "c"],
-    },
-}
 
 
 @attr.define(kw_only=True)
@@ -173,6 +156,9 @@ class PipelineParameters:
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
+    # Optional explicit worker zone override. When unset (the default), no zone is
+    # pinned and Dataflow selects a zone within `region` based on capacity at launch
+    # (regional placement). Only set this to force workers into a specific zone.
     worker_zone: str | None = attr.ib(default=None)
     machine_type: str = attr.ib(
         default="c4a-highcpu-32", validator=attr_validators.is_str
@@ -287,16 +273,6 @@ class PipelineParameters:
                 f"Found non-default values for these fields: "
                 f"{self._get_non_default_sandbox_indicator_parameters()}"
             )
-
-        architecture, _, _ = self.machine_type.split("-", 3)
-        if (
-            self.worker_zone is None
-            and architecture in ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS
-        ):
-            zone = sample(
-                ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS[architecture][self.region], 1
-            )[0]
-            self.worker_zone = f"{self.region}-{zone}"
 
     @staticmethod
     def _to_job_name_friendly(s: str) -> str:
@@ -568,31 +544,34 @@ class PipelineParameters:
 
     def flex_template_launch_body(self) -> Dict[str, Any]:
         project_id = self.project
+        environment: Dict[str, Any] = {
+            "additionalUserLabels": self.resource_labels,
+            "machineType": self.machine_type,
+            "diskSizeGb": self.disk_gb_size,
+            "tempLocation": f"gs://{project_id}-dataflow-templates-temporary/temp/",
+            "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
+            "additionalExperiments": [
+                "shuffle-mode=service",
+                "use-beam-bq-sink",
+                "use-runner-v2",
+                # TODO(#28197): Add this flag back when google resolves
+                #  https://github.com/GoogleCloudPlatform/cloud-profiler-python/issues/142
+                # "enable_google_cloud_profiler",
+            ],
+            "network": "default",
+            "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{self.region}/subnetworks/default",
+            "ipConfiguration": "WORKER_IP_PRIVATE",
+            "serviceAccountEmail": self.service_account_email or "",
+        }
+        # When no worker zone is explicitly pinned, omit it so Dataflow performs
+        # regional placement and selects a zone with available capacity at launch.
+        if self.worker_zone is not None:
+            environment["workerZone"] = self.worker_zone
         return {
             "launchParameter": {
                 "containerSpecGcsPath": self.template_gcs_path(project_id),
                 "jobName": self.job_name,
                 "parameters": self.template_parameters,
-                # DEFAULTS
-                "environment": {
-                    "additionalUserLabels": self.resource_labels,
-                    "machineType": self.machine_type,
-                    "diskSizeGb": self.disk_gb_size,
-                    "workerZone": self.worker_zone,
-                    "tempLocation": f"gs://{project_id}-dataflow-templates-temporary/temp/",
-                    "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
-                    "additionalExperiments": [
-                        "shuffle-mode=service",
-                        "use-beam-bq-sink",
-                        "use-runner-v2",
-                        # TODO(#28197): Add this flag back when google resolves
-                        #  https://github.com/GoogleCloudPlatform/cloud-profiler-python/issues/142
-                        # "enable_google_cloud_profiler",
-                    ],
-                    "network": "default",
-                    "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{self.region}/subnetworks/default",
-                    "ipConfiguration": "WORKER_IP_PRIVATE",
-                    "serviceAccountEmail": self.service_account_email or "",
-                },
+                "environment": environment,
             }
         }

@@ -129,3 +129,59 @@ class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
             "Retrying once more in 5 minutes due to zonal resource exhaustion",
             "\n".join(logs.output),
         )
+        # With no fallback_regions configured, the retry stays in the original region.
+        self.assertEqual(
+            "us-central1",
+            self.mock_hook.start_flex_template.call_args.kwargs["location"],
+        )
+
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    def test_execute_retry_samples_fallback_region(
+        self, _sleep_patch: MagicMock
+    ) -> None:
+        original_subnetwork = (
+            "https://www.googleapis.com/compute/v1/projects/test-project/"
+            "regions/us-central1/subnetworks/default"
+        )
+        task = RecidivizDataflowFlexTemplateOperator(
+            task_id="fallback_task",
+            project_id="test-project",
+            body={
+                "launchParameter": {
+                    "jobName": "test-job",
+                    "environment": {"subnetwork": original_subnetwork},
+                }
+            },
+            location="us-central1",
+            fallback_regions=["us-central1", "us-east1", "us-west2"],
+        )
+        self.mock_hook.is_job_dataflow_running.return_value = False
+        self.mock_hook.start_flex_template.side_effect = Exception("Job has failed!")
+        self.mock_get_job.return_value = {
+            "currentState": DataflowJobStatus.JOB_STATE_FAILED,
+            "id": "2023-09-18_07_09_47-16912541725945987225",
+            "createTime": "2023-09-18T14:09:47.864426Z",
+        }
+        self.mock_logs_client.list_entries.return_value = [
+            MagicMock(payload="ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS")
+        ]
+
+        with self.assertRaises(Exception):
+            _ = execute_task(self.dag, task)
+
+        # Initial launch + one retry in a sampled fallback region.
+        self.assertEqual(2, self.mock_hook.start_flex_template.call_count)
+        retry_kwargs = self.mock_hook.start_flex_template.call_args.kwargs
+        self.assertNotEqual("us-central1", retry_kwargs["location"])
+        self.assertIn(retry_kwargs["location"], {"us-east1", "us-west2"})
+        self.assertEqual(task.location, retry_kwargs["location"])
+        # The region-specific subnetwork is rewritten to the new region.
+        self.assertEqual(
+            f"/regions/{task.location}/subnetworks/default",
+            retry_kwargs["body"]["launchParameter"]["environment"]["subnetwork"].split(
+                "test-project"
+            )[1],
+        )

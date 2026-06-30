@@ -46,20 +46,6 @@ ALL_PARAMETERS_SUBCLASSES: List[Type[PipelineParameters]] = [
     SupplementalPipelineParameters,
 ]
 
-C4A_MACHINE_TYPE_AVAILABILITY = {
-    "us-central1-a",
-    "us-central1-b",
-    "us-central1-c",
-    "us-west1-a",
-    "us-west1-c",
-    "us-east1-b",
-    "us-east1-c",
-    "us-east1-d",
-    "us-east4-a",
-    "us-east4-b",
-    "us-east4-c",
-}
-
 
 class TestValidPipelineParameters(unittest.TestCase):
     """
@@ -87,7 +73,15 @@ class TestValidPipelineParameters(unittest.TestCase):
                 region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
                 **d,
             )
-            self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
+            # No zone is pinned by default: Dataflow performs regional placement, so
+            # the launch body omits workerZone.
+            self.assertIsNone(parameters.worker_zone)
+            self.assertNotIn(
+                "workerZone",
+                parameters.flex_template_launch_body()["launchParameter"][
+                    "environment"
+                ],
+            )
 
     def test_supplemental_pipelines_for_valid_parameters(self) -> None:
         supplemental_pipelines = self.PIPELINE_CONFIG.pop_dicts(
@@ -103,7 +97,30 @@ class TestValidPipelineParameters(unittest.TestCase):
                 region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
                 **d,
             )
-            self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
+            self.assertIsNone(parameters.worker_zone)
+            self.assertNotIn(
+                "workerZone",
+                parameters.flex_template_launch_body()["launchParameter"][
+                    "environment"
+                ],
+            )
+
+    def test_explicit_worker_zone_override_is_honored(self) -> None:
+        parameters = MetricsPipelineParameters(
+            project=self.PROJECT_ID,
+            region="us-central1",
+            state_code="US_XX",
+            pipeline="incarceration_metrics",
+            metric_types="INCARCERATION_ADMISSION",
+            worker_zone="us-central1-b",
+        )
+        self.assertEqual("us-central1-b", parameters.worker_zone)
+        self.assertEqual(
+            "us-central1-b",
+            parameters.flex_template_launch_body()["launchParameter"]["environment"][
+                "workerZone"
+            ],
+        )
 
     def test_valid_get_input_dataset_property_names(self) -> None:
         for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
