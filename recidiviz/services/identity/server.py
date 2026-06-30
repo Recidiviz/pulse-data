@@ -16,28 +16,33 @@
 # =============================================================================
 """Backend entry point for the Identity Service API server."""
 import logging
-import uuid
 from http import HTTPStatus
 
-from flask import Flask, Response, g, jsonify, request
+from flask import Flask, Response, g
+from flask_smorest import Api
 
-from recidiviz.services.identity.api_schemas import (
-    IdentityHistorySchema,
-    IdentitySchema,
-)
 from recidiviz.services.identity.constants import (
     DEV_CALLER_SERVICE_ACCOUNT,
     IAP_BACKEND_SERVICE_ID_SECRET_NAME,
 )
 from recidiviz.services.identity.exceptions import UnknownCallerError
 from recidiviz.services.identity.helpers import get_source_product_app
-from recidiviz.services.identity.querier import IdentityServiceQuerier
+from recidiviz.services.identity.identity_blueprint import identity_blueprint
 from recidiviz.utils import structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
 from recidiviz.utils.environment import in_development, in_gcp
-from recidiviz.utils.params import get_bool_param_value
 
 app = Flask(__name__)
+
+api = Api(
+    app,
+    spec_kwargs={
+        "title": "default",
+        "version": "1.0.0",
+        "openapi_version": "3.1.0",
+    },
+)
+app.register_blueprint(identity_blueprint)
 
 if in_gcp():
     structured_logging.setup_gunicorn()
@@ -88,32 +93,3 @@ def set_headers(response: Response) -> Response:
 def health() -> tuple[str, HTTPStatus]:
     """Returns 200, used by GCP uptime checks to verify that workers are up."""
     return "", HTTPStatus.OK
-
-
-@app.route("/identity/<uuid:recidiviz_id>")
-def identity(recidiviz_id: uuid.UUID) -> tuple[Response | str, HTTPStatus]:
-    """Returns the identity for the given Recidiviz ID.
-
-    A retired Recidiviz ID resolves to its surviving record. Pass `?full=true`
-    to include audit history (merge/split events) and internal bookkeeping.
-    """
-    try:
-        full = get_bool_param_value("full", request.args, default=False)
-    except ValueError:
-        return (
-            f"Invalid value for 'full' parameter: {request.args.get('full')}",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    querier = IdentityServiceQuerier()
-    identity_record = querier.get_identity(recidiviz_id, resolve_retired=True)
-    if identity_record is None:
-        return (
-            f"No identity found for recidiviz_id {recidiviz_id}",
-            HTTPStatus.NOT_FOUND,
-        )
-
-    if full:
-        history = querier.get_identity_history(identity_record)
-        return jsonify(IdentityHistorySchema().dump(history)), HTTPStatus.OK
-    return jsonify(IdentitySchema().dump(identity_record)), HTTPStatus.OK

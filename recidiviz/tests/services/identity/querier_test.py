@@ -68,6 +68,8 @@ ACTIVE_SURVIVOR_ID = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 RETIRED_MIDDLE_ID = uuid.UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 RETIRED_HEAD_ID = uuid.UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
 UNKNOWN_ID = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
+CYCLED_ID = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+SPLIT_DESTINATION_ID = uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
 
 
 def _bare_identity() -> Identity:
@@ -394,3 +396,164 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         self.assertEqual(RETIRED_MIDDLE_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.RETIRED, result.status)
         self.assertEqual(ACTIVE_SURVIVOR_ID, result.merged_into)
+
+    def test_get_identity_raises_on_cycle(self) -> None:
+        # Insert a self-referential cycle: CYCLED_ID's merged_into points to itself.
+        # PostgreSQL allows this for self-referential FKs (the row satisfies its own
+        # FK after insert). This is the kind of corrupt state we guard against.
+        self._insert_identity(CYCLED_ID, IdentityStatus.RETIRED, merged_into=CYCLED_ID)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"^Cycle detected in merged_into chain starting from \[{CYCLED_ID}\]: "
+            rf"revisited \[{CYCLED_ID}\]$",
+        ):
+            IdentityServiceQuerier().get_identity(CYCLED_ID, resolve_retired=True)
+
+
+@pytest.mark.uses_db
+class GetByExternalIdTest(unittest.TestCase):
+    """Tests for IdentityServiceQuerier.get_by_external_id."""
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
+
+    def _insert_identity(
+        self,
+        recidiviz_id: uuid.UUID,
+        status: IdentityStatus,
+        merged_into: uuid.UUID | None = None,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.Identity(
+                    recidiviz_id=recidiviz_id,
+                    created_utc=RESOLUTION_TS,
+                    last_updated_utc=RESOLUTION_TS,
+                    tenant=Tenant.US_OZ,
+                    person_type=PersonType.JII,
+                    status=status,
+                    merged_into=merged_into,
+                )
+            )
+
+    def _insert_external_id(
+        self,
+        recidiviz_id: uuid.UUID,
+        external_id: str,
+        id_type: IdentifierType,
+        *,
+        is_active: bool = True,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.ExternalId(
+                    recidiviz_id=recidiviz_id,
+                    external_id=external_id,
+                    id_type=id_type,
+                    is_active=is_active,
+                )
+            )
+
+    def test_get_by_external_id_active_returns_identity(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_external_id(
+            ACTIVE_SURVIVOR_ID, "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        result = IdentityServiceQuerier().get_by_external_id(
+            "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_external_id_resolves_single_retired_hop(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+        self._insert_external_id(
+            RETIRED_MIDDLE_ID, "EXT456", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        result = IdentityServiceQuerier().get_by_external_id(
+            "EXT456", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_external_id_resolves_multi_hop_chain(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+        self._insert_identity(
+            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+        )
+        self._insert_external_id(
+            RETIRED_HEAD_ID, "EXT789", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        result = IdentityServiceQuerier().get_by_external_id(
+            "EXT789", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_external_id_unknown_returns_none(self) -> None:
+        self.assertIsNone(
+            IdentityServiceQuerier().get_by_external_id(
+                "UNKNOWN", IdentifierType.US_OZ_KDS_PERSON_ID
+            )
+        )
+
+    def test_get_by_external_id_returns_split_destination(self) -> None:
+        # After a split, the original identity keeps an inactive row for the moved
+        # external_id and the destination identity gets a new active row. The lookup
+        # must return the destination (the active owner of the external_id).
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(SPLIT_DESTINATION_ID, IdentityStatus.ACTIVE)
+        self._insert_external_id(
+            ACTIVE_SURVIVOR_ID,
+            "EXT123",
+            IdentifierType.US_OZ_KDS_PERSON_ID,
+            is_active=False,
+        )
+        self._insert_external_id(
+            SPLIT_DESTINATION_ID, "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        result = IdentityServiceQuerier().get_by_external_id(
+            "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        )
+
+        assert result is not None
+        self.assertEqual(SPLIT_DESTINATION_ID, result.recidiviz_id)

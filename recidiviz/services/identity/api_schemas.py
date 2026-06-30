@@ -296,3 +296,17 @@ class SearchResponseSchema(CamelCaseSchema):
 
     results = fields.List(fields.Nested(IdentitySchema()))
     next_cursor = fields.Str(allow_none=True)
+
+
+class IdentityByUuidRequestSchema(marshmallow.Schema):
+    """Validates query parameters for GET /identity/<recidiviz_id>."""
+
+    full = fields.Bool(load_default=False)
+
+
+class IdentityByExternalIdRequestSchema(marshmallow.Schema):
+    """Validates query parameters for GET /identity."""
+
+    external_id = fields.Str(required=True)
+    id_type = fields.Enum(IdentifierType, by_value=True, required=True)
+    full = fields.Bool(load_default=False)

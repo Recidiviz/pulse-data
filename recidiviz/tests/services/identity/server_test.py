@@ -19,6 +19,7 @@ from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import patch
 
+from recidiviz.common.constants.identity import IdentifierType
 from recidiviz.services.identity.server import app
 from recidiviz.tests.services.identity.test_utils import (
     DEFAULT_MAPPING,
@@ -31,7 +32,7 @@ from recidiviz.tests.services.identity.test_utils import (
 
 IAP_HEADERS = {"x-goog-iap-jwt-assertion": "anything"}
 
-QUERIER_PATH = "recidiviz.services.identity.server.IdentityServiceQuerier"
+QUERIER_PATH = "recidiviz.services.identity.identity_blueprint.IdentityServiceQuerier"
 
 
 class IdentityServiceServerTest(TestCase):
@@ -162,5 +163,99 @@ class GetIdentityEndpointTest(TestCase):
     def test_returns_403_for_unmapped_caller(self) -> None:
         with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
             response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+
+
+class GetIdentityByExternalIdEndpointTest(TestCase):
+    """Tests for GET /identity?external_id=X&id_type=Y."""
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+
+    def test_returns_default_form(self) -> None:
+        identity = build_full_identity().identity
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_by_external_id.return_value = identity
+            response = self.client.get(
+                "/identity?external_id=A123&id_type=US_OZ_LOTR_ID",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertEqual(str(RECIDIVIZ_ID), body["recidivizId"])
+        self.assertEqual("ACTIVE", body["status"])
+        self.assertNotIn("mergeEvents", body)
+        self.assertNotIn("isActive", body["externalIds"][0])
+        mock_querier_cls.return_value.get_by_external_id.assert_called_once_with(
+            "A123", IdentifierType.US_OZ_LOTR_ID
+        )
+
+    def test_returns_full_form(self) -> None:
+        identity_history = build_full_identity()
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier = mock_querier_cls.return_value
+            mock_querier.get_by_external_id.return_value = identity_history.identity
+            mock_querier.get_identity_history.return_value = identity_history
+            response = self.client.get(
+                "/identity?external_id=A123&id_type=US_OZ_LOTR_ID&full=true",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertTrue(body["externalIds"][0]["isActive"])
+        self.assertIn("datesOfBirth", body["attributes"])
+        self.assertEqual(1, len(body["mergeEvents"]))
+        self.assertEqual(1, len(body["splitEvents"]))
+        mock_querier.get_identity_history.assert_called_once_with(
+            identity_history.identity
+        )
+
+    def test_returns_404_when_not_found(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_by_external_id.return_value = None
+            response = self.client.get(
+                "/identity?external_id=UNKNOWN&id_type=US_OZ_LOTR_ID",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_returns_400_for_missing_external_id(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?id_type=US_OZ_LOTR_ID",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_bad_id_type(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?external_id=A123&id_type=NOT_A_REAL_TYPE",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_403_for_unmapped_caller(self) -> None:
+        with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
+            response = self.client.get(
+                "/identity?external_id=A123&id_type=US_OZ_LOTR_ID",
+                headers=IAP_HEADERS,
+            )
 
         self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)

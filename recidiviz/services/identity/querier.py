@@ -22,7 +22,7 @@ from collections import defaultdict
 
 from sqlalchemy.orm import Session
 
-from recidiviz.common.constants.identity import IdentityStatus
+from recidiviz.common.constants.identity import IdentifierType, IdentityStatus
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -237,11 +237,12 @@ def _resolve_surviving_recidiviz_id(
     """Walks the merged_into chain from `recidiviz_id` to the surviving ACTIVE
     record and returns its recidiviz_id, or None if `recidiviz_id` is not found.
 
-    Every RETIRED row is guaranteed by the schema's CHECK and foreign-key
-    constraints to point at an existing record via `merged_into`, so the walk
-    always terminates at an ACTIVE record."""
+    The schema enforces that every RETIRED row points at an existing record via
+    `merged_into`, but does not enforce acyclicity. A cycle raises ValueError."""
     current_id = recidiviz_id
-    while True:
+    seen: set[uuid.UUID] = set()
+    while current_id not in seen:
+        seen.add(current_id)
         row = (
             session.query(schema.Identity.status, schema.Identity.merged_into)
             .filter(schema.Identity.recidiviz_id == current_id)
@@ -252,6 +253,10 @@ def _resolve_surviving_recidiviz_id(
         if row.status is IdentityStatus.ACTIVE:
             return current_id
         current_id = row.merged_into
+    raise ValueError(
+        f"Cycle detected in merged_into chain starting from "
+        f"[{recidiviz_id}]: revisited [{current_id}]"
+    )
 
 
 class IdentityServiceQuerier:
@@ -314,3 +319,26 @@ class IdentityServiceQuerier:
                 merge_events=[_to_merge_event(row) for row in merge_event_rows],
                 split_events=[_to_split_event(row) for row in split_event_rows],
             )
+
+    def get_by_external_id(
+        self, external_id: str, id_type: IdentifierType
+    ) -> types.Identity | None:
+        """Returns the active identity for the given external ID and ID type, or
+        None if no active (external_id, id_type) pair exists.
+
+        If the identity attached to the external ID is RETIRED, follows the
+        merged_into chain and returns the surviving ACTIVE identity.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            row = (
+                session.query(schema.ExternalId.recidiviz_id)
+                .filter(
+                    schema.ExternalId.external_id == external_id,
+                    schema.ExternalId.id_type == id_type,
+                    schema.ExternalId.is_active.is_(True),
+                )
+                .one_or_none()
+            )
+        if row is None:
+            return None
+        return self.get_identity(row.recidiviz_id, resolve_retired=True)
