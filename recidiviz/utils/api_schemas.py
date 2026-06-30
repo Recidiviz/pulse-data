@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@ from marshmallow import RAISE, Schema, pre_load
 from marshmallow.fields import Field
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
+from recidiviz.utils.flask import jsonify_response
 from recidiviz.utils.types import assert_type
 
 ModelT = TypeVar("ModelT", bound=BaseModel)

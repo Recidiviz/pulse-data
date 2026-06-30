@@ -20,10 +20,7 @@ from typing import Any, Dict
 
 from marshmallow import Schema, ValidationError, fields, validates_schema
 
-from recidiviz.case_triage.api_schemas_utils import (
-    CamelCaseSchema,
-    CamelOrSnakeCaseSchema,
-)
+from recidiviz.utils.api_schemas import CamelCaseSchema, CamelOrSnakeCaseSchema
 
 
 class ProxySchema(Schema):

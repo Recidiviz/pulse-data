@@ -19,7 +19,7 @@
 
 from marshmallow import fields
 
-from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
+from recidiviz.utils.api_schemas import CamelCaseSchema
 
 
 class ConfigurationSchema(CamelCaseSchema):

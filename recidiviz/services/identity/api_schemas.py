@@ -21,7 +21,6 @@ import attr
 import marshmallow
 from marshmallow import fields
 
-from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
 from recidiviz.common import demographics
 from recidiviz.common.constants.identity import (
     AttributeType,
@@ -37,6 +36,7 @@ from recidiviz.common.constants.identity import (
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.services.identity import types
+from recidiviz.utils.api_schemas import CamelCaseSchema
 
 # Internal reconciliation bookkeeping stripped from the demographic attributes in the
 # default serialized form. Dotted paths reach into the nested `value` schema.

@@ -23,10 +23,7 @@ from flask_smorest.fields import Upload
 from marshmallow import fields, post_load, pre_dump
 from sqlalchemy.engine.row import Row
 
-from recidiviz.case_triage.api_schemas_utils import (
-    CamelCaseSchema,
-    CamelOrSnakeCaseSchema,
-)
+from recidiviz.utils.api_schemas import CamelCaseSchema, CamelOrSnakeCaseSchema
 
 
 class UserSchema(CamelCaseSchema):

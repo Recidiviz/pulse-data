@@ -25,7 +25,6 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.exceptions import BadRequest
 from werkzeug.http import parse_set_header
 
-from recidiviz.case_triage.api_schemas_utils import load_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_transformer import (
@@ -48,6 +47,7 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata as PublicPathwaysMetricMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.api_schemas import load_api_schema
 from recidiviz.utils.environment import in_gcp_production, in_offline_mode
 
 FILTER_STRING_PATTERN = r"filters\[(\w+)\]"

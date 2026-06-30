@@ -23,9 +23,9 @@ from marshmallow import fields
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagNode
-from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
 from recidiviz.common.attr_converters import optional_enum_value_from_enum
 from recidiviz.source_tables.source_table_config import SourceTableConfig
+from recidiviz.utils.api_schemas import CamelCaseSchema
 
 
 class BigQueryNodeType(Enum):

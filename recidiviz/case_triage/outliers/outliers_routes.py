@@ -31,7 +31,6 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
-from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
@@ -49,6 +48,7 @@ from recidiviz.outliers.types import (
     VitalsMetric,
 )
 from recidiviz.utils.environment import in_gcp_production
+from recidiviz.utils.flask import jsonify_response
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 

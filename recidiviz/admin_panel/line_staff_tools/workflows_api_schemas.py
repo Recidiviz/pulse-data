@@ -18,12 +18,9 @@
 
 from marshmallow import fields
 
-from recidiviz.case_triage.api_schemas_utils import (
-    CamelCaseSchema,
-    CamelOrSnakeCaseSchema,
-)
 from recidiviz.case_triage.workflows.api_schemas import WorkflowsConfigSchema
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
+from recidiviz.utils.api_schemas import CamelCaseSchema, CamelOrSnakeCaseSchema
 
 
 class StateCodeSchema(CamelCaseSchema):

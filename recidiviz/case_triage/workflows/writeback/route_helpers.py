@@ -21,7 +21,6 @@ from http import HTTPStatus
 from flask import Response, jsonify, make_response, request
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
-from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.case_triage.workflows.writeback.base import (
     RequestDataT,
     WritebackExecutorInterface,
@@ -30,6 +29,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     SingleCloudTaskQueueManager,
 )
+from recidiviz.utils.flask import jsonify_response
 
 WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE = "workflows-external-system-requests-queue"
 

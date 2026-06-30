@@ -810,11 +810,7 @@ def main() -> int:
         "recidiviz.services.identity.server",
         valid_module_prefixes=make_module_matcher(
             {
-                "recidiviz.case_triage.api_schemas_utils",
-                "recidiviz.case_triage.workflows.utils",
-                "recidiviz.case_triage.workflows.constants",
                 "recidiviz.common",
-                "recidiviz.firestore.firestore_client",
                 "recidiviz.monitoring",
                 "recidiviz.persistence.database",
                 "recidiviz.persistence.entity",

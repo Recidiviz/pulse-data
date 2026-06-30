@@ -18,17 +18,10 @@
 import datetime
 import enum
 import logging
-from http import HTTPStatus
 from typing import Optional
-
-from flask import Response, jsonify, make_response
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
-
-
-def jsonify_response(message: str, response_code: HTTPStatus) -> Response:
-    return make_response(jsonify(message=message), response_code)
 
 
 def allowed_twilio_dev_recipient(recipient_phone_number: str) -> bool:
