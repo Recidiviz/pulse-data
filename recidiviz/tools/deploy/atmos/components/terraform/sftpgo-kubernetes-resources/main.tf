@@ -64,14 +64,20 @@ resource "helm_release" "sftpgo" {
   version   = local.sftpgo_version
   wait      = true
 
-  values = [file("values.yaml")]
+  values = [
+    file("values.yaml"),
+    yamlencode({
+      services = {
+        sftp-public = {
+          loadBalancerIP = google_compute_address.default.address
+          loadBalancerSourceRanges = length(local.sftp_allowed_ips) > 0 ? local.sftp_allowed_ips : null
+        }
+      }
+    })
+  ]
 
   set = concat(
     [
-      {
-        name = "services.sftp-public.loadBalancerIp",
-        value = google_compute_address.default.address
-      },
       {
         name  = "serviceAccount.name"
         value = kubernetes_service_account.sftpgo.metadata[0].name
@@ -145,7 +151,7 @@ resource "sftpgo_user" "sftp_user" {
   }
 
   # Reference the created virtual folders
-  virtual_folders = [
+  virtual_folders = length(var.sftpgo_virtual_folders) == 0 ? null : [
     for folder in var.sftpgo_virtual_folders : {
       name         = folder.name
       virtual_path = folder.mount_path
@@ -167,7 +173,7 @@ resource "sftpgo_user" "sftp_user" {
   )
 
   password    = local.sftpgo_user_password
-  public_keys = local.sftpgo_user_public_key != "" ? [local.sftpgo_user_public_key] : []
+  public_keys = local.sftpgo_user_public_key != "" ? [local.sftpgo_user_public_key] : null
   status      = 1 # enabled
 }
 

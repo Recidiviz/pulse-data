@@ -8,6 +8,8 @@ services:
   sftp-public:
     type: LoadBalancer
     externalTrafficPolicy: Local
+    loadBalancerIP: "" # Set via Terraform
+    loadBalancerSourceRanges: [] # Set via Terraform when sftp_allowed_ips is configured
     annotations:
       cloud.google.com/l4-rbs: "enabled"
       networking.gke.io/weighted-load-balancing: "pods-per-node"
