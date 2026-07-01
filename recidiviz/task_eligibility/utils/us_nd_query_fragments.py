@@ -147,10 +147,9 @@ def parole_review_dates_query() -> str:
     -- with MISC/PERSONAL even though parole_review_date is nulled in the output above.
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY peid.person_id
-        ORDER BY
-            (SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE) DESC,
-            IF(SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE, SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE), NULL) DESC NULLS LAST,
-            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) DESC
+        ORDER BY CAST(REPLACE(SCREEN_SEQ, '.00','') AS INT64) DESC, 
+        -- Tiebreak using the later date when data entry errors lead to shared SCREEN_SEQ
+        SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) DESC
     ) = 1
     """
 
