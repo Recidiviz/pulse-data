@@ -30,6 +30,7 @@ from recidiviz.common.constants.identity import (
     MergeTrigger,
     NameUse,
     PersonType,
+    SourceType,
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
@@ -70,6 +71,7 @@ RETIRED_HEAD_ID = uuid.UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
 UNKNOWN_ID = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
 CYCLED_ID = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
 SPLIT_DESTINATION_ID = uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
+OTHER_TENANT_ID = uuid.UUID("99999999-9999-9999-9999-999999999999")
 
 
 def _bare_identity() -> Identity:
@@ -557,3 +559,138 @@ class GetByExternalIdTest(unittest.TestCase):
 
         assert result is not None
         self.assertEqual(SPLIT_DESTINATION_ID, result.recidiviz_id)
+
+
+@pytest.mark.uses_db
+class GetByEmailHashTest(unittest.TestCase):
+    """Tests for IdentityServiceQuerier.get_by_email_hash."""
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
+
+    def _insert_identity(
+        self,
+        recidiviz_id: uuid.UUID,
+        status: IdentityStatus,
+        *,
+        tenant: Tenant = Tenant.US_OZ,
+        merged_into: uuid.UUID | None = None,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.Identity(
+                    recidiviz_id=recidiviz_id,
+                    created_utc=RESOLUTION_TS,
+                    last_updated_utc=RESOLUTION_TS,
+                    tenant=tenant,
+                    person_type=PersonType.JII,
+                    status=status,
+                    merged_into=merged_into,
+                )
+            )
+
+    def _insert_email(
+        self,
+        recidiviz_id: uuid.UUID,
+        address_hash: str,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.Email(
+                    recidiviz_id=recidiviz_id,
+                    address="test@example.com",
+                    address_hash=address_hash,
+                    source_type=SourceType.EXTERNAL_DATA_SYSTEM,
+                    source_product_app=None,
+                    last_updated_utc=RESOLUTION_TS,
+                )
+            )
+
+    def test_get_by_email_hash_filters_by_tenant(self) -> None:
+        self._insert_identity(
+            ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE, tenant=Tenant.US_OZ
+        )
+        self._insert_email(ACTIVE_SURVIVOR_ID, "hash-abc")
+        self._insert_identity(
+            OTHER_TENANT_ID, IdentityStatus.ACTIVE, tenant=Tenant.US_XX
+        )
+        self._insert_email(OTHER_TENANT_ID, "hash-abc")
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_XX)
+
+        assert result is not None
+        self.assertEqual(OTHER_TENANT_ID, result.recidiviz_id)
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_YY)
+        assert result is None
+
+    def test_get_by_email_hash_active_returns_identity(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_email(ACTIVE_SURVIVOR_ID, "hash-abc")
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_email_hash_resolves_single_retired_hop(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+        self._insert_email(RETIRED_MIDDLE_ID, "hash-abc")
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_email_hash_resolves_multi_hop_chain(self) -> None:
+        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        self._insert_identity(
+            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        )
+        self._insert_identity(
+            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+        )
+        self._insert_email(RETIRED_HEAD_ID, "hash-abc")
+
+        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
+
+        assert result is not None
+        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(IdentityStatus.ACTIVE, result.status)
+
+    def test_get_by_email_hash_unknown_returns_none(self) -> None:
+        self.assertIsNone(
+            IdentityServiceQuerier().get_by_email_hash("no-such-hash", Tenant.US_OZ)
+        )

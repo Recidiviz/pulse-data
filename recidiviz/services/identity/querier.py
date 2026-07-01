@@ -20,9 +20,11 @@ Identity Postgres database. Methods return typed domain objects.
 import uuid
 from collections import defaultdict
 
+from sqlalchemy import case
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.identity import IdentifierType, IdentityStatus
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -342,3 +344,41 @@ class IdentityServiceQuerier:
         if row is None:
             return None
         return self.get_identity(row.recidiviz_id, resolve_retired=True)
+
+    def get_by_email_hash(
+        self, email_hash: str, tenant: Tenant
+    ) -> types.Identity | None:
+        """Returns the active identity for the given email_hash and tenant, or None.
+
+        Queries Email by address_hash joined to Identity by tenant. Orders ACTIVE
+        identities first so that the common path (email on an active record) avoids
+        the merged_into chain walk. If the owning identity is RETIRED, follows
+        merged_into to the surviving ACTIVE record.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            row = (
+                session.query(schema.Email.recidiviz_id, schema.Identity.status)
+                .join(
+                    schema.Identity,
+                    schema.Email.recidiviz_id == schema.Identity.recidiviz_id,
+                )
+                .filter(
+                    schema.Email.address_hash == email_hash,
+                    schema.Identity.tenant == tenant,
+                )
+                .order_by(
+                    case(
+                        (schema.Identity.status == IdentityStatus.ACTIVE, 0),
+                        else_=1,
+                    ),
+                    schema.Identity.recidiviz_id,
+                )
+                # address_hash is not DB-unique; ordering makes the result deterministic when hashes collide.
+                .first()
+            )
+        if row is None:
+            return None
+        return self.get_identity(
+            row.recidiviz_id,
+            resolve_retired=row.status is not IdentityStatus.ACTIVE,
+        )

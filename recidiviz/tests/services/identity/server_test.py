@@ -20,6 +20,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.common.constants.identity import IdentifierType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.services.identity.server import app
 from recidiviz.tests.services.identity.test_utils import (
     DEFAULT_MAPPING,
@@ -255,6 +256,133 @@ class GetIdentityByExternalIdEndpointTest(TestCase):
         with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
             response = self.client.get(
                 "/identity?external_id=A123&id_type=US_OZ_LOTR_ID",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+
+
+class GetIdentityByEmailHashEndpointTest(TestCase):
+    """Tests for GET /identity?tenant=X&email_hash=Y."""
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+
+    def test_returns_default_form(self) -> None:
+        identity = build_full_identity().identity
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_by_email_hash.return_value = identity
+            response = self.client.get(
+                "/identity?tenant=US_OZ&email_hash=hashtestfakecom",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertEqual(str(RECIDIVIZ_ID), body["recidivizId"])
+        self.assertEqual("ACTIVE", body["status"])
+        self.assertNotIn("mergeEvents", body)
+        self.assertNotIn("isActive", body["externalIds"][0])
+        mock_querier_cls.return_value.get_by_email_hash.assert_called_once_with(
+            "hashtestfakecom", Tenant.US_OZ
+        )
+
+    def test_returns_full_form(self) -> None:
+        identity_history = build_full_identity()
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier = mock_querier_cls.return_value
+            mock_querier.get_by_email_hash.return_value = identity_history.identity
+            mock_querier.get_identity_history.return_value = identity_history
+            response = self.client.get(
+                "/identity?tenant=US_OZ&email_hash=hashtestfakecom&full=true",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertTrue(body["externalIds"][0]["isActive"])
+        self.assertIn("datesOfBirth", body["attributes"])
+        self.assertEqual(1, len(body["mergeEvents"]))
+        self.assertEqual(1, len(body["splitEvents"]))
+        mock_querier.get_identity_history.assert_called_once_with(
+            identity_history.identity
+        )
+
+    def test_returns_404_when_not_found(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_by_email_hash.return_value = None
+            response = self.client.get(
+                "/identity?tenant=US_OZ&email_hash=nosuchhash",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_returns_400_for_missing_tenant(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?email_hash=hashtestfakecom",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_missing_email_hash(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?tenant=US_OZ",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_bad_tenant(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?tenant=NOT_A_REAL_TENANT&email_hash=hashtestfakecom",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_both_modes_provided(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity?external_id=A123&id_type=US_OZ_LOTR_ID&tenant=US_OZ&email_hash=hashtestfakecom",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_no_params(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ):
+            response = self.client.get(
+                "/identity",
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_403_for_unmapped_caller(self) -> None:
+        with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
+            response = self.client.get(
+                "/identity?tenant=US_OZ&email_hash=hashtestfakecom",
                 headers=IAP_HEADERS,
             )
 

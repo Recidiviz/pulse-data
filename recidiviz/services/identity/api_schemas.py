@@ -304,9 +304,48 @@ class IdentityByUuidRequestSchema(marshmallow.Schema):
     full = fields.Bool(load_default=False)
 
 
-class IdentityByExternalIdRequestSchema(marshmallow.Schema):
-    """Validates query parameters for GET /identity."""
+class IdentityByQueryParametersRequestSchema(marshmallow.Schema):
+    """Validates query parameters for GET /identity.
 
-    external_id = fields.Str(required=True)
-    id_type = fields.Enum(IdentifierType, by_value=True, required=True)
+    Exactly one of two lookup modes must be provided:
+    - external_id + id_type
+    - tenant + email_hash
+    """
+
+    # Mode 1: external ID lookup
+    external_id = fields.Str(load_default=None)
+    id_type = fields.Enum(IdentifierType, by_value=True, load_default=None)
+    # Mode 2: email hash lookup
+    tenant = fields.Enum(Tenant, by_value=True, load_default=None)
+    email_hash = fields.Str(load_default=None)
+    # Shared
     full = fields.Bool(load_default=False)
+
+    @marshmallow.validates_schema
+    def validate_lookup_mode(self, data: dict, **_kwargs: Any) -> None:
+        has_external_id = data["external_id"] is not None
+        has_id_type = data["id_type"] is not None
+        has_tenant = data["tenant"] is not None
+        has_email_hash = data["email_hash"] is not None
+
+        external_id_mode = has_external_id or has_id_type
+        email_hash_mode = has_tenant or has_email_hash
+
+        if external_id_mode and email_hash_mode:
+            raise marshmallow.ValidationError(
+                "Provide either external_id+id_type or tenant+email_hash, not both."
+            )
+        if external_id_mode:
+            if not (has_external_id and has_id_type):
+                raise marshmallow.ValidationError(
+                    "Both external_id and id_type are required."
+                )
+        elif email_hash_mode:
+            if not (has_tenant and has_email_hash):
+                raise marshmallow.ValidationError(
+                    "Both tenant and email_hash are required."
+                )
+        else:
+            raise marshmallow.ValidationError(
+                "Provide either external_id+id_type or tenant+email_hash."
+            )

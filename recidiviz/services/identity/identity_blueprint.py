@@ -23,7 +23,7 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
 from recidiviz.services.identity.api_schemas import (
-    IdentityByExternalIdRequestSchema,
+    IdentityByQueryParametersRequestSchema,
     IdentityByUuidRequestSchema,
     IdentityHistorySchema,
     IdentitySchema,
@@ -35,7 +35,7 @@ identity_blueprint = Blueprint("identity", "identity")
 
 @identity_blueprint.route("/identity/<uuid:recidiviz_id>")
 class IdentityByRecidivizIdAPI(MethodView):
-    """GET /identity/<recidiviz_id> — look up an identity by its Recidiviz UUID."""
+    """CRUD endpoints for /identity/<recidiviz_id>."""
 
     @identity_blueprint.arguments(
         IdentityByUuidRequestSchema,
@@ -64,33 +64,41 @@ class IdentityByRecidivizIdAPI(MethodView):
 
 
 @identity_blueprint.route("/identity")
-class IdentityByExternalIdAPI(MethodView):
-    """GET /identity?external_id=X&id_type=Y — look up an identity by external ID."""
+class IdentityAPI(MethodView):
+    """CRUD endpoints for /identity."""
 
     @identity_blueprint.arguments(
-        IdentityByExternalIdRequestSchema,
+        IdentityByQueryParametersRequestSchema,
         location="query",
         error_status_code=HTTPStatus.BAD_REQUEST,
     )
     @identity_blueprint.response(HTTPStatus.OK)
     def get(self, params: dict) -> Response:
-        """Returns the active identity for the given external ID and ID type.
+        """Returns the active identity for the given lookup params.
 
-        A retired identity resolves to its surviving record. Pass `?full=true`
-        to include audit history (merge/split events) and internal bookkeeping.
+        Accepts either external_id+id_type or tenant+email_hash. A retired
+        identity resolves to its surviving record. Pass `?full=true` to include
+        audit history (merge/split events) and internal bookkeeping.
         """
         querier = IdentityServiceQuerier()
-        identity_record = querier.get_by_external_id(
-            params["external_id"], params["id_type"]
-        )
-        if identity_record is None:
-            abort(
-                HTTPStatus.NOT_FOUND,
-                message=(
-                    f"No identity found for external_id [{params['external_id']}] "
-                    f"id_type [{params['id_type'].value}]"
-                ),
+        if params["external_id"] is not None:
+            identity_record = querier.get_by_external_id(
+                params["external_id"], params["id_type"]
             )
+            not_found_msg = (
+                f"No identity found for external_id [{params['external_id']}] "
+                f"id_type [{params['id_type'].value}]"
+            )
+        else:
+            identity_record = querier.get_by_email_hash(
+                params["email_hash"], params["tenant"]
+            )
+            not_found_msg = (
+                f"No identity found for email_hash [{params['email_hash']}] "
+                f"tenant [{params['tenant'].value}]"
+            )
+        if identity_record is None:
+            abort(HTTPStatus.NOT_FOUND, message=not_found_msg)
         if params["full"]:
             history = querier.get_identity_history(identity_record)
             return jsonify(IdentityHistorySchema().dump(history))
