@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: identity_person
+file_description: |-
+  Identity pipeline test data. Each row is one JII person with their
+  identity attributes (name, date of birth, sex, race, ethnicity, 
+  phone number, email).
+data_classification: source
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: A number used to uniquely identify this person.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_DD_IDENTITY_PERSON_ID
+    is_primary_for_external_id_type: True
+  - name: FirstName
+    description: The person's first name.
+    is_pii: True
+  - name: LastName
+    description: The person's last name.
+    is_pii: True
+  - name: DOB
+    description: The person's date of birth in YYYY-MM-DD format.
+    is_pii: True
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
+  - name: Sex
+    description: The person's sex. Raw values are mapped to the Sex enum.
+    known_values:
+      - value: M
+        description: Male
+      - value: F
+        description: Female
+      - value: O
+        description: Other
+      - value: U
+        description: Source recorded sex as unknown
+  - name: Race
+    description: The person's race. Raw values are mapped to the Race enum.
+    known_values:
+      - value: AI
+        description: American Indian / Alaskan Native
+      - value: A
+        description: Asian
+      - value: B
+        description: Black
+      - value: NH
+        description: Native Hawaiian / Pacific Islander
+      - value: O
+        description: Other
+      - value: W
+        description: White
+      - value: U
+        description: Source recorded race as unknown
+  - name: Ethnicity
+    description: The person's ethnicity. Raw values are mapped to the Ethnicity enum.
+    known_values:
+      - value: H
+        description: Hispanic
+      - value: N
+        description: Not Hispanic
+      - value: U
+        description: Source recorded ethnicity as unknown
+  - name: PhoneNumber
+    description: The person's phone number.
+    is_pii: True
+  - name: Email
+    description: The person's email address.
+    is_pii: True

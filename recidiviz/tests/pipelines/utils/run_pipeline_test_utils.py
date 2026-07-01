@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.activity.normalized_state_entity import (
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
 from recidiviz.pipelines.ingest.transforms import write_root_entities_to_bq
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
@@ -149,7 +150,10 @@ def run_test_pipeline(
         write_to_bq_class = (
             f"recidiviz.pipelines.supplemental.{class_name}.pipeline.WriteToBigQuery"
         )
-    elif issubclass(pipeline_cls, StateIngestPipeline):
+    elif issubclass(pipeline_cls, (StateIngestPipeline, IdentityIngestPipeline)):
+        # Both ingest pipelines share `ProcessIngestView`; identity passes
+        # `output_dataset=None` so the patched class is never invoked, but
+        # patching it is harmless.
         write_to_bq_class = (
             "recidiviz.pipelines.ingest.transforms.process_ingest_view.WriteToBigQuery"
         )
@@ -258,8 +262,6 @@ def default_arg_list_for_pipeline(
     pipeline_args: List[str] = [
         "--project",
         project_id,
-        "--state_code",
-        state_code,
         "--pipeline",
         pipeline.pipeline_name().lower(),
         "--output_sandbox_prefix",
@@ -273,6 +275,25 @@ def default_arg_list_for_pipeline(
                 (", ".join([str(id_value) for id_value in root_entity_id_filter_set])),
             ]
         )
+
+    if issubclass(pipeline, IdentityIngestPipeline):
+        # Identity's template_metadata.json requires --tenant (not --state_code).
+        # v1 identity only supports state-code tenants; pass the test's
+        # state_code value as the tenant.
+        pipeline_args.extend(["--tenant", state_code])
+        if not (
+            raw_data_upper_bound_dates_json := additional_pipeline_args.get(
+                "raw_data_upper_bound_dates_json"
+            )
+        ):
+            raw_data_upper_bound_dates_json = "{}"
+        pipeline_args.extend(
+            ["--raw_data_upper_bound_dates_json", raw_data_upper_bound_dates_json]
+        )
+        return pipeline_args
+
+    # Every non-identity pipeline is keyed by --state_code.
+    pipeline_args.extend(["--state_code", state_code])
 
     if issubclass(pipeline, MetricPipeline):
         pipeline_args.extend(

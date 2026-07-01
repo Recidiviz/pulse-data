@@ -1,0 +1,31 @@
+manifest_language: 1.0.0
+input_columns:
+  StaffId: STRING
+  BadgeId: STRING
+  FirstName: STRING
+  LastName: STRING
+  Email: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: StaffId
+          id_type: $literal("US_DD_IDENTITY_STAFF_ID")
+      - $conditional:
+          - $if:
+              $not_null: BadgeId
+            $then:
+              IdentityExternalId:
+                external_id: BadgeId
+                id_type: $literal("US_DD_IDENTITY_BADGE_ID")
+    attributes:
+      IdentityAttributes:
+        person_type: $literal_enum(PersonType.STAFF)
+        name:
+          IdentityName:
+            given_name: FirstName
+            surname: LastName
+        emails:
+          - IdentityEmail:
+              address: Email

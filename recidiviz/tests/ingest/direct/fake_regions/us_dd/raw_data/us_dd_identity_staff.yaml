@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: identity_staff
+file_description: |-
+  Identity pipeline test data. Each row is one STAFF member with their 
+  identity attributes (name, email).
+data_classification: source
+primary_key_cols:
+  - StaffId
+columns:
+  - name: StaffId
+    description: An identifier for this staff member.
+    is_pii: True
+    field_type: staff_external_id
+    external_id_type: US_DD_IDENTITY_STAFF_ID
+    is_primary_for_external_id_type: True
+  - name: BadgeId
+    description: |-
+      The physical-access badge number for this staff member, if any.
+      Null for staff members who do not have a badge issued.
+    is_pii: True
+    field_type: staff_external_id
+    external_id_type: US_DD_IDENTITY_BADGE_ID
+    is_primary_for_external_id_type: True
+    null_values:
+      - ""
+  - name: FirstName
+    description: The staff member's first name.
+    is_pii: True
+  - name: LastName
+    description: The staff member's last name.
+    is_pii: True
+  - name: Email
+    description: The staff member's email address.
+    is_pii: True
