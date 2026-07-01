@@ -31,7 +31,6 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
-    IdentityFragment,
 )
 from recidiviz.pipelines.ingest.identity.cluster_entity_conversion_utils import (
     convert_attributes_to_cluster_kwargs,
@@ -39,12 +38,9 @@ from recidiviz.pipelines.ingest.identity.cluster_entity_conversion_utils import 
 from recidiviz.pipelines.ingest.identity.merge_identity_attributes import (
     merge_identity_attributes,
 )
+from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.transforms.types import ClusterKey
-from recidiviz.pipelines.ingest.types import (
-    ExternalIdKey,
-    IngestViewName,
-    UpperBoundDate,
-)
+from recidiviz.pipelines.ingest.types import ExternalIdKey
 
 CLUSTER_MEMBERSHIPS = "cluster_memberships"
 FRAGMENTS_WITH_DATES = "fragments_with_dates"
@@ -63,12 +59,7 @@ class BuildIdentityClusters(beam.PTransform):
         input_or_inputs: dict[
             str,
             beam.PCollection[tuple[ExternalIdKey, ClusterKey]]
-            | beam.PCollection[
-                tuple[
-                    ExternalIdKey,
-                    tuple[UpperBoundDate, IngestViewName, IdentityFragment],
-                ]
-            ],
+            | beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
         ],
     ) -> beam.PCollection[IdentityCluster]:
         """Takes a dict with two keyed PCollections and produces one
@@ -125,12 +116,7 @@ class BuildIdentityClusters(beam.PTransform):
             ExternalIdKey,
             dict[str, Iterable],
         ],
-    ) -> Iterator[
-        tuple[
-            ClusterKey,
-            tuple[UpperBoundDate, IngestViewName, IdentityFragment],
-        ]
-    ]:
+    ) -> Iterator[tuple[ClusterKey, SourcedIdentityFragment]]:
         """For each fragment associated with an external ID, yields an entry
         keyed by the cluster (a sorted tuple of all external IDs in the
         cluster to which this external ID belongs).
@@ -171,7 +157,7 @@ class BuildIdentityClusters(beam.PTransform):
         self,
         cluster_key_and_fragments: tuple[
             ClusterKey,
-            Iterable[tuple[UpperBoundDate, IngestViewName, IdentityFragment]],
+            Iterable[SourcedIdentityFragment],
         ],
     ) -> IdentityCluster:
         """Folds the cluster's full timeline of fragments into one
