@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  CFOFICER: STRING
+  CFFACLID: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  seq: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: CFOFICER
+          id_type: $literal("US_NC_STAFF")
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - CFOFICER
+                - seq
+          location_external_id: CFFACLID
+          start_date: start_date
+          end_date: end_date
