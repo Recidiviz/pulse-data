@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the state ingest pipeline."""
+"""Tests the activity ingest pipeline end-to-end."""
 import json
 import re
 from types import ModuleType
-from typing import Optional
 from unittest import mock
 
 from recidiviz.common.constants.states import StateCode
@@ -31,22 +30,22 @@ from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     start_pipeline_delegate_getter_patchers,
 )
-from recidiviz.tests.pipelines.ingest.activity.pipeline_test_case import (
-    StateIngestPipelineTestCase,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_pipeline_test_case import (
+    ActivityIngestPipelineTestCase,
 )
 
 INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME = "ingest_integration"
 
 
-class TestStateIngestPipeline(StateIngestPipelineTestCase):
-    """Tests the state ingest pipeline all the way through using state code US_DD."""
+class TestActivityIngestPipeline(ActivityIngestPipelineTestCase):
+    """Tests the activity ingest pipeline end-to-end."""
 
     @classmethod
     def state_code(cls) -> StateCode:
         return StateCode.US_DD
 
     @classmethod
-    def region_module_override(cls) -> Optional[ModuleType]:
+    def region_module_override(cls) -> ModuleType | None:
         return fake_regions
 
     def setUp(self) -> None:
@@ -82,41 +81,41 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         for patcher in self.generic_pipeline_delegate_patchers:
             patcher.stop()
 
-    def test_state_ingest_pipeline(self) -> None:
+    def test_activity_ingest_pipeline(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_simple",
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
-    def test_state_ingest_pipeline_ingest_view_results_only(self) -> None:
+    def test_activity_ingest_pipeline_ingest_view_results_only(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_ingest_view_results_only",
             ingest_view_results_only=True,
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
-    def test_state_ingest_pipeline_pre_normalization_only(self) -> None:
+    def test_activity_ingest_pipeline_pre_normalization_only(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_pre_normalization_only",
             pre_normalization_only=True,
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
-    def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
+    def test_activity_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
         subset_of_ingest_views = ["ingest12"]
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_ingest_views_to_run_subset",
             ingest_views_to_run=" ".join(subset_of_ingest_views),
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
@@ -130,7 +129,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
                 "[ingestMultipleRootExternalIds] with no data: {'table3'}"
             ),
         ):
-            self.run_test_ingest_pipeline(
+            self.run_test_activity_ingest_pipeline(
                 test_name="missing_upper_bounds",
                 raw_data_upper_bound_dates_json_override=json.dumps(
                     {
@@ -156,7 +155,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_simple",
             raw_data_upper_bound_dates_json_override=json.dumps(
                 {
@@ -171,14 +170,14 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             ),
         )
 
-    def test_state_ingest_pipeline_overwrites_all_tables_each_time(self) -> None:
+    def test_activity_ingest_pipeline_overwrites_all_tables_each_time(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
         )
 
         # First run a pipeline with ALL views enabled. We should get the same results
         # as the basic pipeline integration test.
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_simple",
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
@@ -187,7 +186,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         # if we had just run with this ingest view without running another pipeline
         # first, i.e. we should fully overwrite the output dataset.
         subset_of_ingest_views = ["ingest12"]
-        self.run_test_ingest_pipeline(
+        self.run_test_activity_ingest_pipeline(
             test_name="integration_ingest_views_to_run_subset",
             ingest_views_to_run=" ".join(subset_of_ingest_views),
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,

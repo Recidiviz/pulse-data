@@ -51,13 +51,13 @@ from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
-from recidiviz.tests.pipelines.ingest.activity.ingest_region_test_mixin import (
-    IngestRegionTestMixin,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_region_test_mixin import (
+    ActivityIngestRegionTestMixin,
 )
 
 
 class TestMergeIngestViewRootEntityTrees(
-    BigQueryEmulatorTestCase, IngestRegionTestMixin
+    BigQueryEmulatorTestCase, ActivityIngestRegionTestMixin
 ):
     """Tests the MergeIngestViewRootEntityTrees PTransform with state entities."""
 

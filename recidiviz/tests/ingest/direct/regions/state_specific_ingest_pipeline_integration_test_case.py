@@ -37,8 +37,8 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     ingest_view_results_directory,
     read_ingest_view_results_fixture,
 )
-from recidiviz.tests.pipelines.ingest.activity.pipeline_test_case import (
-    StateIngestPipelineTestCase,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_pipeline_test_case import (
+    ActivityIngestPipelineTestCase,
 )
 
 PIPELINE_INTEGRATION_TEST_NAME = "pipeline_integration"
@@ -65,13 +65,13 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
         return input_or_inputs | beam.Create(self.fake_ingest_view_results)
 
 
-class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase):
+class StateSpecificIngestPipelineIntegrationTestCase(ActivityIngestPipelineTestCase):
     """
     This class provides an integration test to be used by all states that do ingest.
 
     It currently reads in fixture files of ingest view output, rather than beginning with
     raw data.
-    TODO(#22059): Standardize fixture formats and consolidate this with StateIngestPipelineTestCase
+    TODO(#22059): Standardize fixture formats and consolidate this with ActivityIngestPipelineTestCase
     """
 
     def setUp(self) -> None:
@@ -190,7 +190,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
 
     # TODO(#36159): Delete this when all tests are based on real data and ingest view results
     # TODO(#22059): Remove this method and replace with the implementation on
-    # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
+    # ActivityIngestPipelineTestCase when fixture formats and data loading is standardized.
     def run_legacy_test_state_pipeline_from_deprecated_fixtures(
         self, create_expected: bool = False
     ) -> None:
@@ -201,7 +201,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
             "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
             self.legacy_generate_ingest_view_results_for_one_date,
         ):
-            self.run_test_ingest_pipeline(
+            self.run_test_activity_ingest_pipeline(
                 test_name=PIPELINE_INTEGRATION_TEST_NAME,
                 create_expected=create_expected,
                 build_for_integration_test=True,
@@ -219,7 +219,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
             "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
             self.generate_ingest_view_results_for_one_date,
         ):
-            self.run_test_ingest_pipeline(
+            self.run_test_activity_ingest_pipeline(
                 test_name=PIPELINE_INTEGRATION_TEST_NAME,
                 create_expected=create_expected_output,
                 build_for_integration_test=True,

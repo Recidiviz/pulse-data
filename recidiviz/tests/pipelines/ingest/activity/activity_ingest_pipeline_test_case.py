@@ -14,50 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Base TestCase class for tests that run ingest pipelines."""
-from typing import Optional
-
-import apache_beam
-from mock import patch
-from mock.mock import _patch
-from more_itertools import one
-
+"""Base TestCase class for tests that run the activity ingest pipeline."""
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
-from recidiviz.source_tables import ingest_pipeline_output_table_collector
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_raw_data_source_table_collections_for_state_and_instance,
-)
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_view_results_source_table_collection,
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
-from recidiviz.tests.big_query.big_query_emulator_test_case import (
-    BigQueryEmulatorTestCase,
-)
-from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
-    DirectIngestRawDataFixtureLoader,
-)
 from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
-from recidiviz.tests.pipelines.fake_bigquery import (
-    FakeReadFromBigQueryWithEmulator,
-    FakeWriteToBigQueryEmulator,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_region_test_mixin import (
+    ActivityIngestRegionTestMixin,
 )
-from recidiviz.tests.pipelines.ingest.activity.ingest_region_test_mixin import (
-    IngestRegionTestMixin,
+from recidiviz.tests.pipelines.ingest.ingest_pipeline_test_case import (
+    IngestPipelineTestCase,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
@@ -68,11 +47,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
-    """Base TestCase class for tests that run ingest pipelines."""
-
-    wipe_emulator_data_on_teardown = False
-    direct_ingest_regions_patcher: _patch | None
+class ActivityIngestPipelineTestCase(
+    IngestPipelineTestCase, ActivityIngestRegionTestMixin
+):
+    """Base TestCase class for tests that run the activity ingest pipeline."""
 
     @classmethod
     def expected_output_collections(cls) -> list[SourceTableCollection]:
@@ -93,70 +71,6 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         ]
 
     @classmethod
-    def get_source_tables(cls) -> list[SourceTableCollection]:
-        raw_data_collections = (
-            build_raw_data_source_table_collections_for_state_and_instance(
-                cls.state_code(),
-                DirectIngestInstance.PRIMARY,
-                region_module_override=cls.region_module_override(),
-            )
-        )
-
-        # For performance reasons, only load the schemas for the actual tables we'll
-        # need in this test.
-
-        # Filter down to just tables in the us_xx_raw_data dataset
-        raw_tables_dataset = raw_tables_dataset_for_region(
-            state_code=cls.state_code(), instance=DirectIngestInstance.PRIMARY
-        )
-        us_xx_raw_data_collection = one(
-            c for c in raw_data_collections if c.dataset_id == raw_tables_dataset
-        )
-        return [
-            *cls.expected_output_collections(),
-            us_xx_raw_data_collection,
-        ]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.direct_ingest_regions_patcher = None
-        if cls.region_module_override():
-            cls.direct_ingest_regions_patcher = patch(
-                f"{ingest_pipeline_output_table_collector.__name__}.direct_ingest_regions",
-                autospec=True,
-            )
-            mock_direct_ingest_regions = cls.direct_ingest_regions_patcher.start()
-            mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
-                lambda region_code: get_direct_ingest_region(
-                    region_code, region_module_override=cls.region_module_override()
-                )
-            )
-        super().setUpClass()
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.region_patcher = patch(
-            "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region"
-        )
-        self.region_patcher.start().return_value = self.region()
-        self.raw_fixture_loader = DirectIngestRawDataFixtureLoader(
-            state_code=self.state_code(),
-            emulator_test=self,
-            region_module=self.region_module_override(),
-        )
-
-    def tearDown(self) -> None:
-        self.region_patcher.stop()
-        self._clear_emulator_table_data()
-        super().tearDown()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        if cls.direct_ingest_regions_patcher:
-            cls.direct_ingest_regions_patcher.stop()
-
-    @classmethod
     def expected_ingest_view_dataset(cls) -> str:
         return ingest_view_materialization_results_dataset(
             cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
@@ -174,53 +88,21 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
-    def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
-        self.raw_fixture_loader.load_raw_fixtures_to_emulator(
-            self.ingest_view_collector().get_query_builders(),
-            ingest_test_identifier=test_name,
-            create_tables=False,
-        )
-
-    def create_fake_bq_read_source_constructor(
-        self,
-        query: str,
-        # pylint: disable=unused-argument
-        use_standard_sql: bool,
-        validate: bool,
-        bigquery_job_labels: dict[str, str],
-    ) -> FakeReadFromBigQueryWithEmulator:
-        return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
-
-    def create_fake_bq_write_sink_constructor(
-        self,
-        # pylint: disable=unused-argument
-        output_table: str,
-        output_dataset: str,
-        write_disposition: apache_beam.io.BigQueryDisposition,
-    ) -> FakeWriteToBigQueryEmulator:
-        return FakeWriteToBigQueryEmulator(
-            output_dataset=output_dataset,
-            output_table=output_table,
-            write_disposition=write_disposition,
-            test_case=self,
-        )
-
-    def run_test_ingest_pipeline(
+    def run_test_activity_ingest_pipeline(
         self,
         test_name: str,
         create_expected: bool = False,
         ingest_view_results_only: bool = False,
         pre_normalization_only: bool = False,
-        ingest_views_to_run: Optional[str] = None,
+        ingest_views_to_run: str | None = None,
         build_for_integration_test: bool = False,
-        raw_data_upper_bound_dates_json_override: Optional[str] = None,
+        raw_data_upper_bound_dates_json_override: str | None = None,
     ) -> None:
-        """Runs an ingest pipeline, writing output the the BQ emulator and comparing
-        that output against a set of expected fixture files.
+        """Runs the activity ingest pipeline against the BQ emulator and
+        compares the output against fixture files.
 
-        If you are updating ingest logic and expect logic to change, set
-        create_expected=True to have this test output the pipeline results to the
-        fixture files.
+        If you are updating activity ingest logic and expect outputs to change,
+        set ``create_expected=True`` to regenerate the fixture files.
         """
         run_test_pipeline(
             pipeline_cls=StateIngestPipeline,
@@ -247,7 +129,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             ) in collection.source_tables_by_address.items():
                 # We run everything as a sandbox, so we remove the sandbox prefix for fixture purposes
                 fixture_address = BigQueryAddress(
-                    dataset_id=address.dataset_id.lstrip(
+                    dataset_id=address.dataset_id.removeprefix(
                         DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX + "_"
                     ),
                     table_id=address.table_id,

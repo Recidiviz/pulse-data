@@ -40,12 +40,12 @@ from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
-from recidiviz.tests.pipelines.ingest.activity.pipeline_test_case import (
-    StateIngestPipelineTestCase,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_pipeline_test_case import (
+    ActivityIngestPipelineTestCase,
 )
 
 
-class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
+class TestGenerateIngestViewResults(ActivityIngestPipelineTestCase):
     """Tests the GenerateIngestViewResults PTransform."""
 
     @classmethod

@@ -33,13 +33,13 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
-from recidiviz.tests.pipelines.ingest.activity.ingest_region_test_mixin import (
-    IngestRegionTestMixin,
+from recidiviz.tests.pipelines.ingest.activity.activity_ingest_region_test_mixin import (
+    ActivityIngestRegionTestMixin,
 )
 
 
 class TestGetRootExternalIdClusterEdges(
-    BigQueryEmulatorTestCase, IngestRegionTestMixin
+    BigQueryEmulatorTestCase, ActivityIngestRegionTestMixin
 ):
     """Tests the GetRootExternalIds PTransform."""
 

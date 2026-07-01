@@ -14,97 +14,50 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a helper mixin for accessing information about a given ingest region and its
-associated test fixture files.
-"""
-import abc
+"""Helper mixin for tests that run the activity ingest pipeline against a
+specific region."""
 import os
 from datetime import datetime
-from types import ModuleType
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    DirectIngestRegion,
-    get_direct_ingest_region,
-)
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
-)
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     LEGACY_INTEGRATION_INPUT_SUBDIR,
     load_dataframe_from_path,
 )
+from recidiviz.tests.pipelines.ingest.ingest_region_test_mixin import (
+    IngestRegionTestMixin,
+)
 
 
-class IngestRegionTestMixin(abc.ABC):
-    """A helper mixin for accessing information about a given ingest region and its
-    associated test fixture files.
+class ActivityIngestRegionTestMixin(IngestRegionTestMixin):
+    """Helper mixin for tests that run the activity ingest pipeline against a
+    specific region.
     """
 
     @classmethod
-    @abc.abstractmethod
-    def state_code(cls) -> StateCode:
-        """Must be implemented by subclasses to return the StateCode for the test."""
+    def ingest_pipeline_type(cls) -> IngestPipelineType:
+        return IngestPipelineType.ACTIVITY
 
     @classmethod
-    @abc.abstractmethod
-    def region_module_override(cls) -> Optional[ModuleType]:
-        """Must be implemented by subclasses to return the region module override."""
-
-    @classmethod
-    def region(cls) -> DirectIngestRegion:
-        return get_direct_ingest_region(
-            region_code=cls.state_code().value.lower(),
-            region_module_override=cls.region_module_override() or regions,
-        )
-
-    @classmethod
-    def state_code_str_upper(cls) -> str:
-        return cls.state_code().value.upper()
-
-    @classmethod
-    def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
-        return IngestViewManifestCollector(
-            region=cls.region(),
-            delegate=ActivityIngestViewManifestCompilerDelegate(cls.region()),
-            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-        )
-
-    @classmethod
-    def launchable_ingest_views(cls) -> list[str]:
-        return cls.ingest_view_manifest_collector().launchable_ingest_views(
-            IngestViewContentsContext.build_for_tests(state_code=cls.state_code())
-        )
-
-    @classmethod
-    def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
-        return DirectIngestViewQueryBuilderCollector(
-            region=cls.region(),
-            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-            expected_ingest_views=cls.launchable_ingest_views(),
-        )
+    def manifest_compiler_delegate(cls) -> IngestViewManifestCompilerDelegate:
+        return ActivityIngestViewManifestCompilerDelegate(cls.region())
 
     # TODO(#36159): Delete this when all tests are based on real data and ingest view results
     # TODO(#22059): Remove this method and replace with the implementation on
-    # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
+    # ActivityIngestPipelineTestCase when fixture formats and data loading is standardized.
     def read_legacy_extract_and_merge_fixture(
         self,
         *,
