@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a PTransform that processes all ingest views for an ingest pipeline"""
+"""PTransform that processes all ingest views for the activity ingest pipeline"""
 from typing import Dict, Tuple
 
 import apache_beam as beam
@@ -23,7 +23,6 @@ from apache_beam.pvalue import PBegin, PDone
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.gating import RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
@@ -40,9 +39,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
 )
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
@@ -50,11 +46,19 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.monitoring.ingest_enum_counter import emit_enum_mapping_heartbeat
 from recidiviz.monitoring.providers import get_global_meter_provider
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.pipelines.ingest.activity.exemptions import (
+    INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
+)
 from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
     IngestPipelineParameters,
 )
-from recidiviz.pipelines.ingest.activity.process_ingest_view import ProcessIngestView
+from recidiviz.pipelines.ingest.raw_data_upper_bound_dates import (
+    validate_and_backfill_raw_data_upper_bound_dates,
+)
+from recidiviz.pipelines.ingest.transforms.process_ingest_view import ProcessIngestView
 from recidiviz.pipelines.ingest.types import (
     ExternalIdKey,
     IngestViewName,
@@ -63,15 +67,10 @@ from recidiviz.pipelines.ingest.types import (
 from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
 
 
-class ProcessAllIngestViews(beam.PTransform):
-    """A PTransform that processes all ingest views for an ingest pipeline, outputting
-    Python entity trees that have been merged within the same ingest view and date.
+class ProcessAllActivityIngestViews(beam.PTransform):
+    """PTransform that processes all ingest views for the activity ingest pipeline."""
 
-    If the parameters specify that we should produce ingest view results only, those
-    results will be persisted and this transform will return an empty PCollection.
-    """
-
-    def __init__(self, pipeline_parameters: IngestPipelineParameters):
+    def __init__(self, pipeline_parameters: IngestPipelineParameters) -> None:
         super().__init__()
         self.pipeline_parameters = pipeline_parameters
 
@@ -80,6 +79,14 @@ class ProcessAllIngestViews(beam.PTransform):
     ) -> beam.PCollection[
         Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
     ]:
+        """Processes all ingest views for the activity ingest pipeline, outputting
+        Python entity trees that have been merged within the same ingest view and
+        date.
+
+        If the parameters specify that we should produce ingest view results only,
+        those results will be persisted and this transform will return an empty
+        PCollection.
+        """
         raw_data_source_instance = DirectIngestInstance(
             self.pipeline_parameters.raw_data_source_instance
         )
@@ -94,17 +101,6 @@ class ProcessAllIngestViews(beam.PTransform):
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=state_code.value
         )
-
-        all_raw_file_tags = DirectIngestRegionRawFileConfig(
-            state_code.value, region_module=region.region_module
-        ).raw_file_tags
-
-        if unexpected_file_tags := set(raw_data_upper_bound_dates) - all_raw_file_tags:
-            raise ValueError(
-                f"Found unexpected file tags in raw_data_upper_bound_dates. These are "
-                f"not valid raw file tags for [{state_code.value}]: "
-                f"[{unexpected_file_tags}]. "
-            )
 
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
@@ -130,40 +126,13 @@ class ProcessAllIngestViews(beam.PTransform):
                     f"Found invalid ingest view for {state_code}: {ingest_view_name}"
                 )
 
-            ingest_view_query_builder = view_collector.get_query_builder_by_view_name(
-                ingest_view_name
-            )
-
-            raw_files_with_data = set(raw_data_upper_bound_dates)
-            if dependencies_missing_data := (
-                ingest_view_query_builder.raw_data_table_dependency_file_tags
-                - raw_files_with_data
-            ):
-                allowed_empty = RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW.get(
-                    state_code, {}
-                ).get(ingest_view_name, set())
-                if still_missing := dependencies_missing_data - allowed_empty:
-                    raise ValueError(
-                        f"Found dependency table(s) of ingest view [{ingest_view_name}] with no "
-                        f"data: {still_missing}"
-                    )
-                # For exempted empty tables, pppulate raw_data_upper_bound_dates using
-                # the max upper bound of this view's other (populated) dependencies so
-                # the pipeline can still execute. The table is empty, so the exact
-                # datetime we bound the data by doesn't matter.
-                populated_upper_bounds = [
-                    raw_data_upper_bound_dates[ft]
-                    for ft in ingest_view_query_builder.raw_data_table_dependency_file_tags
-                    if raw_data_upper_bound_dates.get(ft)
-                ]
-                if not populated_upper_bounds:
-                    raise ValueError(
-                        f"At least one raw data dependency of view [{ingest_view_name}] "
-                        f"must be hydrated."
-                    )
-                fill_upper_bound = max(populated_upper_bounds)
-                for file_tag in dependencies_missing_data:
-                    raw_data_upper_bound_dates[file_tag] = fill_upper_bound
+        raw_data_upper_bound_dates = validate_and_backfill_raw_data_upper_bound_dates(
+            state_code=state_code,
+            region=region,
+            view_collector=view_collector,
+            view_names=ingest_views_to_run,
+            raw_data_upper_bound_dates=raw_data_upper_bound_dates,
+        )
 
         if set(ingest_views_to_run) != set(all_launchable_views):
             _ = (
@@ -201,8 +170,14 @@ class ProcessAllIngestViews(beam.PTransform):
                     ingest_view_name
                 ],
                 ingest_view_context=ingest_view_context,
+                expected_root_entity_types=(StatePerson, StateStaff),
+                entities_module=state_entities,
                 output_dataset=self.pipeline_parameters.ingest_view_results_output,
                 ingest_view_results_only=self.pipeline_parameters.ingest_view_results_only,
+                should_throw_on_conflicts=(
+                    ingest_view_name
+                    not in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(state_code, {})
+                ),
                 resource_labels=self.pipeline_parameters.resource_labels,
             )
             merged_root_entities_with_dates_per_ingest_view[

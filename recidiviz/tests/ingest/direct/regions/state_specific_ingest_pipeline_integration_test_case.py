@@ -30,7 +30,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
-from recidiviz.pipelines.ingest.activity.generate_ingest_view_results import (
+from recidiviz.pipelines.ingest.transforms.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
@@ -198,7 +198,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         passed in directly.
         """
         with patch(
-            "recidiviz.pipelines.ingest.activity.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
             self.legacy_generate_ingest_view_results_for_one_date,
         ):
             self.run_test_ingest_pipeline(
@@ -216,7 +216,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         the results of individual ingest view tests.
         """
         with patch(
-            "recidiviz.pipelines.ingest.activity.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
             self.generate_ingest_view_results_for_one_date,
         ):
             self.run_test_ingest_pipeline(

@@ -146,7 +146,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             )
 
     @mock.patch.dict(
-        "recidiviz.pipelines.ingest.activity.process_all_ingest_views.RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW",
+        "recidiviz.pipelines.ingest.raw_data_upper_bound_dates.RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW",
         {StateCode.US_DD: {"ingestMultipleRootExternalIds": {"table3"}}},
     )
     def test_missing_raw_data_upper_bound_dates_with_exemption(self) -> None:

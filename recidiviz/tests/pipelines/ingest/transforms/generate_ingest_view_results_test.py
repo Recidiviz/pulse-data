@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
-from recidiviz.pipelines.ingest.activity.generate_ingest_view_results import (
+from recidiviz.pipelines.ingest.transforms.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME

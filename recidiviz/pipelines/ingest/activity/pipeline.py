@@ -70,8 +70,8 @@ from recidiviz.pipelines.ingest.activity.normalize_root_entities import (
 from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
     IngestPipelineParameters,
 )
-from recidiviz.pipelines.ingest.activity.process_all_ingest_views import (
-    ProcessAllIngestViews,
+from recidiviz.pipelines.ingest.activity.process_all_activity_ingest_views import (
+    ProcessAllActivityIngestViews,
 )
 from recidiviz.pipelines.ingest.activity.run_validations import RunValidations
 from recidiviz.pipelines.ingest.transforms.cluster_root_external_ids import (
@@ -172,8 +172,10 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
 
         merged_root_entities_with_dates = (
             p
-            | "Process ingest views"
-            >> ProcessAllIngestViews(pipeline_parameters=self.pipeline_parameters)
+            | "Process activity ingest views"
+            >> ProcessAllActivityIngestViews(
+                pipeline_parameters=self.pipeline_parameters
+            )
         )
 
         if self.pipeline_parameters.ingest_view_results_only:
