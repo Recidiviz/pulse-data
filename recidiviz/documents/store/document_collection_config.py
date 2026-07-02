@@ -36,6 +36,11 @@ from recidiviz.big_query.big_query_utils import (
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents import config as default_config_module
+from recidiviz.documents.dataset_config import (
+    document_contents_dataset_for_region,
+    document_store_metadata_dataset_for_region,
+    document_store_temp_dataset_for_region,
+)
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
@@ -49,11 +54,6 @@ from recidiviz.documents.store.document_store_columns import (
     STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
     STAFF_ID_COLUMN_NAME,
     get_document_store_column_schema,
-)
-from recidiviz.ingest.direct.dataset_config import (
-    document_contents_dataset_for_region,
-    document_store_metadata_dataset_for_region,
-    document_store_temp_dataset_for_region,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 

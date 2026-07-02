@@ -23,11 +23,11 @@ from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.dataset_config import (
+    document_store_metadata_dataset_for_region,
+)
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
-)
-from recidiviz.ingest.direct.dataset_config import (
-    document_store_metadata_dataset_for_region,
 )
 
 DOCUMENT_UPLOAD_SUCCESS = "SUCCESS"
