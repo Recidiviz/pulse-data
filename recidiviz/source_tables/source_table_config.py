@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Classes for BigQuery source tables"""
+
 import abc
 import typing
 from typing import Any
@@ -448,9 +449,11 @@ class SourceTableConfig:
             external_data_configuration=table.external_data_configuration,
             time_partitioning=table.time_partitioning,
             # In BQ, require_partition_filter defaults to False when not set.
-            require_partition_filter=table.require_partition_filter
-            if table.require_partition_filter is not None
-            else (False if table.time_partitioning is not None else None),
+            require_partition_filter=(
+                table.require_partition_filter
+                if table.require_partition_filter is not None
+                else (False if table.time_partitioning is not None else None)
+            ),
         )
 
 
@@ -526,6 +529,18 @@ class IngestViewResultsSourceTableLabel(SourceTableLabel[StateCode]):
 @attr.define
 class DocumentStoreSourceTableLabel(SourceTableLabel[StateCode]):
     """Label for source tables in a state-specific document store dataset"""
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+
+    @property
+    def value(self) -> StateCode:
+        return self.state_code
+
+
+@attr.define
+class ExtractionResultsSourceTableLabel(SourceTableLabel[StateCode]):
+    """Label for source tables in a state-specific LLM document-extraction
+    results dataset."""
 
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
 

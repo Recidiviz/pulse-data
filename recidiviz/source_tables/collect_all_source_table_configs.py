@@ -21,6 +21,9 @@ from types import ModuleType
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.models.llm_extractor_config import (
+    load_llm_extractor_configs,
+)
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -48,6 +51,9 @@ from recidiviz.source_tables.document_store_source_table_collection import (
 )
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     collect_externally_managed_source_table_collections,
+)
+from recidiviz.source_tables.extraction_results_source_table_collection import (
+    collect_extraction_results_source_table_collections,
 )
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
@@ -224,6 +230,9 @@ def build_source_table_repository_for_collected_schemata(
             *get_dataflow_output_source_table_collections(),
             *collect_sentencing_source_tables(),
             *collect_document_store_source_tables(),
+            *collect_extraction_results_source_table_collections(
+                configs=load_llm_extractor_configs()
+            ),
         ],
     )
 
