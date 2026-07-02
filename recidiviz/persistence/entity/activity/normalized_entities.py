@@ -3683,9 +3683,6 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
                 # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_MI,
-                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_TN,
             },
         )
     )
@@ -3700,9 +3697,6 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
                 # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as high as 2025-04-01.
                 StateCode.US_AR,
-                # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_TN,
             },
         ),
     )
@@ -3751,19 +3745,7 @@ class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdE
 
     # Attributes
     #   - When
-    start_date: date = attr.ib(
-        # TODO(#40469): Reset validator to just STANDARD_REASONABLE_PAST_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=state_exempted_validator(
-            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-            exempted_state_validator=attr_validators.is_date,
-            exempted_states={
-                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_TN,
-            },
-        )
-    )
+    start_date: date = attr.ib(validator=STANDARD_REASONABLE_PAST_DATE_VALIDATOR)
     end_date: date | None = attr.ib(
         default=None,
         validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
@@ -3810,25 +3792,12 @@ class NormalizedStateStaffLocationPeriod(NormalizedStateEntity, HasExternalIdEnt
                 # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as high as 2025-04-07.
                 StateCode.US_AR,
-                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_TN,
             },
         )
     )
     end_date: date | None = attr.ib(
         default=None,
-        # TODO(#40469): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=state_exempted_validator(
-            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-            exempted_state_validator=attr_validators.is_opt_date,
-            exempted_states={
-                # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_TN,
-            },
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     #   - What
