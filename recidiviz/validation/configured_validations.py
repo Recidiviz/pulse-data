@@ -300,6 +300,9 @@ from recidiviz.validation.views.state.stable_counts.configured_validations impor
 from recidiviz.validation.views.state.stale_raw_data_based_on_sentinel_dates import (
     STALE_RAW_DATA_BASED_ON_SENTINEL_DATES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.supervision_district_reference_issues import (
+    SUPERVISION_DISTRICT_REFERENCE_ISSUES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -609,6 +612,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SUPERVISION_DISTRICT_REFERENCE_ISSUES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
