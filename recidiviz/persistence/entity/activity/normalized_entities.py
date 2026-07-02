@@ -3021,10 +3021,6 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
                 #  - Found dates as low as 1780-01-01.
                 #  - Found dates as high as 9999-12-28.
                 StateCode.US_MI,
-                # TODO(#42895): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as low as 0001-01-22.
-                #  - Found dates as high as 3012-08-30.
-                StateCode.US_UT,
             },
         )
     )
@@ -3044,10 +3040,6 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
                 #  - Found dates as low as 1753-01-01.
                 #  - Found dates as high as 9999-12-01.
                 StateCode.US_MI,
-                # TODO(#42895): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as low as 0020-10-12.
-                #  - Found dates as high as 8201-09-12.
-                StateCode.US_UT,
             },
         ),
     )
@@ -3453,10 +3445,6 @@ class NormalizedStatePerson(
                 # TODO(#40488): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
                 #  - Found dates as low as 0001-01-01.
                 StateCode.US_NC,
-                # TODO(#40489): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                #  - Found dates as low as 0973-07-14.
-                #  - Found dates as high as 6196-10-12.
-                StateCode.US_UT,
             },
         ),
     )
@@ -3498,8 +3486,6 @@ class NormalizedStatePerson(
             exempted_states={
                 # TODO(#55643): US_IX has ~27 invalid emails as of 1/6/26
                 StateCode.US_IX,
-                # TODO(#55645): US_UT has ~200+ invalid emails as of 1/6/26
-                StateCode.US_UT,
             },
         ),
     )
@@ -3872,8 +3858,6 @@ class NormalizedStateStaff(
             attr_validators.is_opt_valid_email,
             exempted_state_validator=attr_validators.is_opt_valid_email_legacy,
             exempted_states={
-                # TODO(#55646): US_AZ has 1 invalid email (suspicious username) as of 1/6/26
-                StateCode.US_AZ,
                 # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
                 StateCode.US_IA,
                 # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
