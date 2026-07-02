@@ -12,6 +12,7 @@ input_columns:
   address_city: STRING
   address_state: STRING
   address_zip: STRING
+  address_notes: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -43,3 +44,4 @@ output:
             $normalized_values_json_dict:
               release_plan_type_id: ReleasePlanTypeId
               primary_address: PrimaryAddress
+              address_notes: address_notes

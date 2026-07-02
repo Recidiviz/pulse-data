@@ -10,6 +10,13 @@ explore: us_ix_raw_data_template {
   description: "Data pertaining to an individual in Idaho ATLAS"
   group_label: "Raw State Data"
   label: "US_IX Raw Data"
+  join: us_ix_OffenderBenefitsDocument {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_OffenderBenefitsDocument.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_OffenderBenefitsDocument"
+  }
+
   join: us_ix_asm_Assessment {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_asm_Assessment.OffenderId};;
     type: full_outer
