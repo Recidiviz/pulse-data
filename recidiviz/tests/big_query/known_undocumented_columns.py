@@ -3163,12 +3163,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "status",
         "tasks_contact_type",
     ],
-    BigQueryAddress.from_str("observations__person_event.supervision_contact_due"): [
-        "contact_missed",
-        "last_contact_date",
-        "task_display_name",
-        "task_name",
-    ],
     BigQueryAddress.from_str("observations__person_event.supervision_level_change"): [
         "change_type",
         "new_supervision_level",
