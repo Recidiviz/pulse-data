@@ -109,36 +109,6 @@
     width: 24
     height: 6
 
-  - name: OffenderBenefitsDocument
-    title: OffenderBenefitsDocument
-    explore: us_ix_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_ix_OffenderBenefitsDocument.primary_key,
-      us_ix_OffenderBenefitsDocument.OffenderBenefitsDocumentId,
-      us_ix_OffenderBenefitsDocument.OffenderId,
-      us_ix_OffenderBenefitsDocument.DocumentTypeId,
-      us_ix_OffenderBenefitsDocument.DocumentTypeStatusId,
-      us_ix_OffenderBenefitsDocument.AppliedOn__raw,
-      us_ix_OffenderBenefitsDocument.NotAppliedReason,
-      us_ix_OffenderBenefitsDocument.InsertUserId,
-      us_ix_OffenderBenefitsDocument.InsertDate__raw,
-      us_ix_OffenderBenefitsDocument.Locking,
-      us_ix_OffenderBenefitsDocument.UpdateUserId,
-      us_ix_OffenderBenefitsDocument.UpdateDate__raw,
-      us_ix_OffenderBenefitsDocument.file_id,
-      us_ix_OffenderBenefitsDocument.is_deleted]
-    sorts: [us_ix_OffenderBenefitsDocument.AppliedOn__raw]
-    note_display: hover
-    note_text: "Contains the type of documents that have been uploaded for a given client. ie driver's license, medical card, etc"
-    listen: 
-      View Type: us_ix_ind_Offender.view_type
-      US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 6
-    col: 0
-    width: 24
-    height: 6
-
   - name: asm_Assessment
     title: asm_Assessment
     explore: us_ix_raw_data
@@ -181,7 +151,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 12
+    row: 6
     col: 0
     width: 24
     height: 6
@@ -213,7 +183,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 18
+    row: 12
     col: 0
     width: 24
     height: 6
@@ -262,7 +232,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 24
+    row: 18
     col: 0
     width: 24
     height: 6
@@ -312,7 +282,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 30
+    row: 24
     col: 0
     width: 24
     height: 6
@@ -344,7 +314,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 36
+    row: 30
     col: 0
     width: 24
     height: 6
@@ -396,7 +366,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 42
+    row: 36
     col: 0
     width: 24
     height: 6
@@ -445,7 +415,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 48
+    row: 42
     col: 0
     width: 24
     height: 6
@@ -500,7 +470,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 54
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -544,7 +514,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 60
+    row: 54
     col: 0
     width: 24
     height: 6
@@ -573,7 +543,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 66
+    row: 60
     col: 0
     width: 24
     height: 6
@@ -602,7 +572,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 72
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -629,7 +599,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 78
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -660,7 +630,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 84
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -698,7 +668,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 90
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -736,6 +706,36 @@
     sorts: [us_ix_ind_EmploymentHistory.EmploymentHistoryId]
     note_display: hover
     note_text: "Details each offender's employment history in the form of distinct employment periods."
+    listen: 
+      View Type: us_ix_ind_Offender.view_type
+      US_IX_DOC: us_ix_ind_Offender.OffenderId
+    row: 90
+    col: 0
+    width: 24
+    height: 6
+
+  - name: ind_OffenderBenefitsDocument
+    title: ind_OffenderBenefitsDocument
+    explore: us_ix_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ix_ind_OffenderBenefitsDocument.primary_key,
+      us_ix_ind_OffenderBenefitsDocument.OffenderBenefitsDocumentId,
+      us_ix_ind_OffenderBenefitsDocument.OffenderId,
+      us_ix_ind_OffenderBenefitsDocument.DocumentTypeId,
+      us_ix_ind_OffenderBenefitsDocument.DocumentTypeStatusId,
+      us_ix_ind_OffenderBenefitsDocument.AppliedOn__raw,
+      us_ix_ind_OffenderBenefitsDocument.NotAppliedReason,
+      us_ix_ind_OffenderBenefitsDocument.InsertUserId,
+      us_ix_ind_OffenderBenefitsDocument.InsertDate__raw,
+      us_ix_ind_OffenderBenefitsDocument.Locking,
+      us_ix_ind_OffenderBenefitsDocument.UpdateUserId,
+      us_ix_ind_OffenderBenefitsDocument.UpdateDate__raw,
+      us_ix_ind_OffenderBenefitsDocument.file_id,
+      us_ix_ind_OffenderBenefitsDocument.is_deleted]
+    sorts: [us_ix_ind_OffenderBenefitsDocument.AppliedOn__raw]
+    note_display: hover
+    note_text: "Contains the type of documents that have been uploaded for a given client. ie driver's license, medical card, etc"
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
