@@ -143,6 +143,7 @@ class TestSchemaUtils(unittest.TestCase):
             "user_override",
             "state_role_permissions",
             "permissions_override",
+            "edovo_course_completions",
         ]
         justice_counts_table_names = [
             "source",

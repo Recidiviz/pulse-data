@@ -21,8 +21,16 @@ application; now only defines tables for roster management of the dashboard appl
 
 from datetime import timezone
 
-from sqlalchemy import TIMESTAMP, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy import (
+    TIMESTAMP,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql import func
 
@@ -89,6 +97,50 @@ class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     routes = Column(JSONB(none_as_null=True), nullable=True)
     feature_variants = Column(JSONB(none_as_null=True), nullable=True)
     jii_permissions = Column(JSONB(none_as_null=True), nullable=True)
+
+
+class EdovoCourseCompletion(CaseTriageBase):
+    """Records each Edovo course completion received for earned-time processing."""
+
+    __tablename__ = "edovo_course_completions"
+
+    # Best-effort, capture-time no-double-credit guard. This dedups on the
+    # external id, which is NOT a stable 1:1 handle for a person (a person can
+    # acquire new external ids over time, or hold several of the same type), so
+    # it cannot fully guarantee one credit per person per course. The
+    # authoritative no-double-credit check happens downstream once the external
+    # id is resolved to an internal person_id.
+    # TODO(OBT-23210): Enforce authoritative per-person no-double-credit downstream.
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_external_id",
+            "course_id",
+            name="edovo_course_completions_no_double_credit",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    idempotency_key = Column(UUID(as_uuid=True), nullable=False, unique=True)
+    # External, DOC-facing identifier for the learner (e.g. the CO ADC number),
+    # together with the external_id type it corresponds to. We store the external
+    # id rather than the Recidiviz-internal person_id; resolution to the internal
+    # id happens downstream during earned-time credit processing.
+    person_external_id = Column(String(255), nullable=False)
+    id_type = Column(String(255), nullable=False)
+    state_code = Column(String(255), nullable=False)
+    course_id = Column(String(255), nullable=False)
+    course_name = Column(String(255), nullable=False)
+    # Float (not Numeric): unbounded Postgres NUMERIC does not survive the
+    # Cloud SQL -> BigQuery federated export. content_hours is an expected
+    # completion time (e.g. 3.5h), so double precision is more than sufficient.
+    content_hours = Column(Float, nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=False)
+    # When Recidiviz received the inbound request (set by the route). Kept
+    # server_default as a safety net for direct inserts that omit it.
+    received_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class PermissionsOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):

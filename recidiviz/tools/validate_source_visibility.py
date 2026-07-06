@@ -669,6 +669,9 @@ def main() -> int:
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
                 "recidiviz.ingest.views.dataset_config",
                 "recidiviz.intercom",
+                # Pulled in transitively by BigQueryClientImpl, which the Edovo
+                # course-completion route uses to resolve a person by DOC id.
+                "recidiviz.metrics",
                 "recidiviz.monitoring",
                 "recidiviz.observations",
                 "recidiviz.outliers",
@@ -677,6 +680,8 @@ def main() -> int:
                 "recidiviz.workflows",
                 "recidiviz.persistence",
                 "recidiviz.segment.product_type",
+                # Used to wire up Case Triage scoped sessions (current_session).
+                "recidiviz.server_config",
                 "recidiviz.tools.jii.hydrate_test_data",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",

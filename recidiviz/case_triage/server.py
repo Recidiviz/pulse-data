@@ -32,6 +32,7 @@ import recidiviz
 from recidiviz.calculator.query.state.views.dashboard.shared_pathways.pathways_helpers import (
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
+from recidiviz.case_triage.edovo.edovo_routes import create_edovo_api_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
@@ -50,6 +51,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.server_config import initialize_scoped_sessions
 from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
 from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import (
@@ -78,6 +80,11 @@ app = Flask(__name__)
 # Need to silence mypy error `Cannot assign to a method`
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
 register_error_handlers(app)
+
+# Wire up the Case Triage scoped session so blueprints that use
+# `current_session` (e.g. the Edovo course-completion endpoint) work in the
+# deployed server. Mirrors the admin panel's setup.
+initialize_scoped_sessions(app)
 
 jii_api_blueprint = create_jii_api_blueprint()
 
@@ -153,6 +160,7 @@ def set_headers(response: Response) -> Response:
 pathways_api_blueprint = create_pathways_api_blueprint()
 workflows_blueprint = create_workflows_api_blueprint()
 outliers_api_blueprint = create_outliers_api_blueprint()
+edovo_blueprint = create_edovo_api_blueprint()
 
 csrf = CSRFProtect(app)
 # Disable CSRF protection for workflows+outliers routes because the session id changes between
@@ -162,6 +170,8 @@ csrf = CSRFProtect(app)
 csrf.exempt(workflows_blueprint)
 csrf.exempt(outliers_api_blueprint)
 csrf.exempt(jii_api_blueprint)
+# Edovo uses HMAC-SHA256 request signing — no session cookie, no CSRF token needed.
+csrf.exempt(edovo_blueprint)
 
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 # Only the pathways endpoints are accessible in offline mode
@@ -169,6 +179,7 @@ if not in_offline_mode():
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
     app.register_blueprint(outliers_api_blueprint, url_prefix="/outliers")
     app.register_blueprint(jii_api_blueprint, url_prefix="/jii")
+    app.register_blueprint(edovo_blueprint, url_prefix="/edovo")
 
     @app.route("/")
     def index() -> Response:
