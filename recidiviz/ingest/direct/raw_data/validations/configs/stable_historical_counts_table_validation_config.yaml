@@ -71,6 +71,14 @@ custom:
         tolerance_override:
           percent_change_tolerance: .50
           reason: "Bulk updates to this table are expected as sets of codes are added or removed."
+      eomis_deleteddatabasercd:
+        tolerance_override:
+          percent_change_tolerance: 0.2
+          reason:
+            "Table of deleted database records that grows organically over time
+            (median ~1210 in March 2026, ~1400 by June 2026). The steady climb
+            makes the current count run ~11% above the lagging 90-day median;
+            0.2 accommodates continued organic growth."
       eomis_effectivedate:
         tolerance_override:
           percent_change_tolerance: .50
