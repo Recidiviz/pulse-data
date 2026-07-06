@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,15 +63,15 @@ def has_at_least_x_negative_tests_in_time_interval(
             person_id,
             start_date,
             end_date,
-            count(*) AS num_screens_within_time_interval,
-            TO_JSON(
+            COUNT(*) AS num_screens_within_time_interval,
+            TO_JSON(STRUCT(
                 ARRAY_AGG(
                     STRUCT(
                         drug_screen_date AS negative_screen_date,
                         result_raw_text_primary AS negative_screen_result
                     ) ORDER BY drug_screen_date
-                )
-            ) AS reason,
+                ) AS negative_drug_screen_history_array
+            )) AS reason,
             ARRAY_AGG(
                 STRUCT(
                     drug_screen_date AS negative_screen_date,

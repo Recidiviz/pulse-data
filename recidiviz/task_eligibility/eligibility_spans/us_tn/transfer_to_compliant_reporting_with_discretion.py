@@ -29,7 +29,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
-    fines_fees_eligible,
     ineligible_for_compliant_reporting_no_further_requirement,
     negative_arrest_check_in_past_year,
     no_high_sanctions_in_past_year,
@@ -45,6 +44,7 @@ from recidiviz.task_eligibility.criteria_condition import (
 )
 from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_to_compliant_reporting_no_discretion import (
     _REQUIRED_CRITERIA,
+    FINES_FEES_CRITERIA_GROUP,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -58,9 +58,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA
-    ]
-    + [ineligible_for_compliant_reporting_no_further_requirement.VIEW_BUILDER],
+        *_REQUIRED_CRITERIA,
+        ineligible_for_compliant_reporting_no_further_requirement.VIEW_BUILDER,
+    ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
@@ -83,7 +83,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         description="Recent CR rejections (not permanent)",
                     ),
                     LessThanOrEqualCriteriaCondition(
-                        criteria=fines_fees_eligible.VIEW_BUILDER,
+                        criteria=FINES_FEES_CRITERIA_GROUP,
                         reasons_numerical_field="amount_owed",
                         value=2000,
                         description="< $2,000 in fines and fees remaining",
@@ -117,7 +117,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         description="No recent CR rejections (not permanent)",
                     ),
                     EligibleCriteriaCondition(
-                        criteria=fines_fees_eligible.VIEW_BUILDER,
+                        criteria=FINES_FEES_CRITERIA_GROUP,
                         description="Meets fines/fees requirement",
                     ),
                     EligibleCriteriaCondition(
