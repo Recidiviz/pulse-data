@@ -27,11 +27,15 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_limited_supervision_2025_policy,
 )
-from recidiviz.task_eligibility.criteria.general import supervision_level_is_not_limited
+from recidiviz.task_eligibility.criteria.general import (
+    has_active_sentence,
+    supervision_level_is_not_limited,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_ineligible_cr_offense_2025_policy,
     supervision_type_is_misdemeanor_probationer,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -62,9 +66,23 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         supervision_type_is_misdemeanor_probationer.VIEW_BUILDER,
+        # Many judgement orders, especially for folks on probation, don't make it into
+        # TOMIS or are delayed in being entered into TOMIS. We include
+        # `has_active_sentence` as a safeguard to flag against the possibility that we
+        # say someone "meets criteria" while not having complete sentencing data for
+        # them.
+        has_active_sentence.VIEW_BUILDER,
         # filter out clients already on CR
         supervision_level_is_not_limited.VIEW_BUILDER,
     ],
+    # We include this as an almost-eligible condition so that if we don't seem to have
+    # current sentencing data for someone, they can still appear in the tool if they
+    # meet all other criteria, but they'll be flagged to the user as needing to have
+    # their offenses double-checked.
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=has_active_sentence.VIEW_BUILDER,
+        description="Does not have active sentence according to TOMIS, which may indicate incomplete sentencing information",
+    ),
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
 )
 

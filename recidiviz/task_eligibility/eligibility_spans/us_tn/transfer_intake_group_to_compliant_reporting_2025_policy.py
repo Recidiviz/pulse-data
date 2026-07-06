@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_limited_supervision_2025_policy,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    has_active_sentence,
     no_positive_drug_screens_since_intake_supervision_level,
     no_supervision_violation_report_since_intake_supervision_level,
 )
@@ -41,7 +42,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     not_on_community_supervision_for_life,
     supervision_type_is_misdemeanor_probationer,
 )
-from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_minimum_group_to_compliant_reporting_2025_policy import (
     _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
 )
@@ -94,15 +98,34 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
+        # Many judgement orders, especially for folks on probation, don't make it into
+        # TOMIS or are delayed in being entered into TOMIS. We include
+        # `has_active_sentence` as a safeguard to flag against the possibility that we
+        # say someone "meets criteria" while not having complete sentencing data for
+        # them.
+        has_active_sentence.VIEW_BUILDER,
         # Filter out misdemeanor probationer clients from this pathway to ensure TES
         # spans for different CR (2025) pathways are mutually exclusive.
         StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=supervision_type_is_misdemeanor_probationer.VIEW_BUILDER,
         ),
     ],
-    almost_eligible_condition=NotEligibleCriteriaCondition(
-        criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
-        description="No FEEP code in last 90 days and no permanent exemption",
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            NotEligibleCriteriaCondition(
+                criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
+                description="No FEEP code in last 90 days and no permanent exemption",
+            ),
+            # We include this as an almost-eligible condition so that if we don't seem
+            # to have current sentencing data for someone, they can still appear in the
+            # tool if they meet all other criteria, but they'll be flagged to the user
+            # as needing to have their offenses double-checked.
+            NotEligibleCriteriaCondition(
+                criteria=has_active_sentence.VIEW_BUILDER,
+                description="Does not have active sentence according to TOMIS, which may indicate incomplete sentencing information",
+            ),
+        ],
+        at_least_n_conditions_true=1,
     ),
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
 )
