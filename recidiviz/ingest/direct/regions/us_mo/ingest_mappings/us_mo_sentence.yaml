@@ -22,6 +22,7 @@ input_columns:
   BU_SF: STRING
   initial_status_desc: STRING
   initial_status_code: STRING
+  initial_status_pfi: STRING
 unused_columns:
   - parent_sentence_external_id_array
 variables:
@@ -87,6 +88,9 @@ output:
                     - initial_status_desc
                   $separator: "@@"
               $custom_parser: us_mo_custom_enum_parsers.parse_supervision_sentencing_authority
+          sentence_metadata:
+            $normalized_values_json_dict:
+              initial_status_pfi: initial_status_pfi
           charges:
             - StateChargeV2:
                 external_id: $variable(sentence_external_id)
