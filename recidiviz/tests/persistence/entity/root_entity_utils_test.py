@@ -18,6 +18,7 @@
 import unittest
 
 from recidiviz.persistence.entity.activity import entities, normalized_entities
+from recidiviz.persistence.entity.identity import identity_fragment_entities
 from recidiviz.persistence.entity.root_entity_utils import (
     get_entity_class_to_root_entity_class,
     get_root_entity_class_for_entity,
@@ -70,6 +71,58 @@ class RootEntityUtilsTest(unittest.TestCase):
                 normalized_entities.NormalizedStateStaffRolePeriod
             ),
         )
+
+    def test_get_root_entity_class_identity_fragment(self) -> None:
+        # The fragment root and entities that back-edge directly to it resolve
+        # via the direct-field check.
+        self.assertEqual(
+            identity_fragment_entities.IdentityFragment,
+            get_root_entity_class_for_entity(
+                identity_fragment_entities.IdentityFragment
+            ),
+        )
+        self.assertEqual(
+            identity_fragment_entities.IdentityFragment,
+            get_root_entity_class_for_entity(
+                identity_fragment_entities.IdentityExternalId
+            ),
+        )
+        self.assertEqual(
+            identity_fragment_entities.IdentityFragment,
+            get_root_entity_class_for_entity(
+                identity_fragment_entities.IdentityAttributes
+            ),
+        )
+        # Demographic entities back-edge to the intermediate IdentityAttributes,
+        # not to the root directly, so they resolve via the back-edge walk.
+        self.assertEqual(
+            identity_fragment_entities.IdentityFragment,
+            get_root_entity_class_for_entity(identity_fragment_entities.IdentityName),
+        )
+        self.assertEqual(
+            identity_fragment_entities.IdentityFragment,
+            get_root_entity_class_for_entity(identity_fragment_entities.IdentityRace),
+        )
+
+    def test_get_entity_class_to_root_entity_class_identity_fragment(self) -> None:
+        root_entity_mapping = get_entity_class_to_root_entity_class(
+            entities_module=identity_fragment_entities
+        )
+
+        # Every fragment entity (root, direct back-edge, and through-intermediate
+        # alike) maps to the IdentityFragment root.
+        for entity_cls in (
+            identity_fragment_entities.IdentityFragment,
+            identity_fragment_entities.IdentityExternalId,
+            identity_fragment_entities.IdentityAttributes,
+            identity_fragment_entities.IdentityName,
+            identity_fragment_entities.IdentityRace,
+            identity_fragment_entities.IdentityEmail,
+        ):
+            self.assertEqual(
+                identity_fragment_entities.IdentityFragment,
+                root_entity_mapping[entity_cls],
+            )
 
     def test_get_root_entity_id_person(self) -> None:
         person = entities.StatePerson.new_with_defaults(

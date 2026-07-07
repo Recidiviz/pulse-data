@@ -75,6 +75,15 @@ identity_attributes:
       with a `_raw_text` companion.
     birthdate: The person's date of birth.
 
+identity_fragment:
+  fields:
+    identity_fragment_id: >-
+      SHA-256 of the fragment's serialized content, assigned by the identity
+      ingest pipeline before the fragment tree is written to BQ. Relates a
+      fragment's child rows (attributes, name, races, etc.) back to the
+      fragment. Debug-only: the fragment tables exist to investigate
+      pre-clustering output. Not a stable person identifier.
+
 identity_cluster_external_id:
   fields: *identity_external_id_fields
 

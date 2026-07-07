@@ -197,6 +197,15 @@ class IdentityFragment(
         default=None, validator=is_opt(IdentityAttributes)
     )
 
+    # SHA-256 of the fragment's serialized content. Full semantics documented in
+    # entity_field_descriptions.yaml.
+    #
+    # Assigned late, unlike IdentityCluster.identity_cluster_id (computed in
+    # __attrs_post_init__ on a fully-formed, frozen cluster), so can be None:
+    # fragments are merged and mutated after construction, so a post-init hash
+    # would go stale.
+    identity_fragment_id: str | None = attr.ib(default=None, validator=is_opt_str)
+
     def get_external_ids(self) -> Sequence[IdentityExternalId]:
         return self.external_ids
 
