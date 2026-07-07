@@ -51,12 +51,12 @@ from recidiviz.pipelines.ingest.transforms.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.source_tables.identity_pipeline_output_table_collector import (
-    build_identity_cluster_output_source_table_collection,
-)
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
+)
+from recidiviz.source_tables.identity_pipeline_output_table_collector import (
+    build_identity_cluster_output_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (

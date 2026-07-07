@@ -26,7 +26,7 @@ from more_itertools import one
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.source_tables import ingest_pipeline_output_table_collector
+from recidiviz.source_tables import activity_pipeline_output_table_collector
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_raw_data_source_table_collections_for_state_and_instance,
 )
@@ -86,7 +86,7 @@ class IngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
         cls.direct_ingest_regions_patcher = None
         if cls.region_module_override():
             cls.direct_ingest_regions_patcher = patch(
-                f"{ingest_pipeline_output_table_collector.__name__}.direct_ingest_regions",
+                f"{activity_pipeline_output_table_collector.__name__}.direct_ingest_regions",
                 autospec=True,
             )
             mock_direct_ingest_regions = cls.direct_ingest_regions_patcher.start()

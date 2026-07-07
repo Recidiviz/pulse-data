@@ -10,11 +10,11 @@ from recidiviz.pipelines.pipeline_names import (
     SUPPLEMENTAL_PIPELINE_NAME,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.source_tables.activity_pipeline_output_table_collector import (
+    build_activity_pipeline_output_source_table_collections,
+)
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_pipeline_output_source_table_collections,
-)
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
@@ -73,6 +73,6 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
     return [
         dataflow_metrics,
         supplemental_data,
-        *build_ingest_pipeline_output_source_table_collections(),
+        *build_activity_pipeline_output_source_table_collections(),
         *build_identity_pipeline_output_source_table_collections(),
     ]

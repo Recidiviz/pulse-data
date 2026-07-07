@@ -31,7 +31,7 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
 )
 from recidiviz.persistence.entity.identity import identity_cluster_entities
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )

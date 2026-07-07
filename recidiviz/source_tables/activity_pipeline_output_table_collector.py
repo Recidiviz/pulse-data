@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for building source table collections for ingest pipeline outputs."""
-from google.cloud import bigquery
-
+"""Helpers for building source table collections for activity ingest pipeline
+outputs.
+"""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
@@ -38,8 +38,10 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.constants import INGEST_VIEW_RESULTS_SCHEMA_COLUMNS
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
+from recidiviz.source_tables.ingest_pipeline_output_helpers import (
+    build_ingest_view_results_source_table_collection_from_manifests,
+)
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     IngestViewResultsSourceTableLabel,
@@ -55,46 +57,26 @@ def build_ingest_view_results_source_table_collection(
     """Build the source table collection for the `us_xx_ingest_view_results` ingest
     pipeline output dataset for a given state.
     """
-    dataset_id = ingest_view_materialization_results_dataset(state_code)
-    collection = SourceTableCollection(
-        dataset_id=dataset_id,
-        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+    region = direct_ingest_regions.get_direct_ingest_region(
+        region_code=state_code.value
+    )
+    return build_ingest_view_results_source_table_collection_from_manifests(
+        dataset_id=ingest_view_materialization_results_dataset(state_code),
+        description=(
+            f"Contains materialized ingest view results produced by the ingest "
+            f"pipeline for {state_code.value}."
+        ),
         labels=[
             IngestViewResultsSourceTableLabel(state_code=state_code),
             DataflowPipelineSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
-        description=(
-            f"Contains materialized ingest view results produced by the ingest "
-            f"pipeline for {state_code.value}."
+        manifest_collector=IngestViewManifestCollector(
+            region=region,
+            delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
+            ingest_pipeline_type=IngestPipelineType.ACTIVITY,
         ),
     )
-
-    region = direct_ingest_regions.get_direct_ingest_region(
-        region_code=state_code.value
-    )
-    ingest_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=ActivityIngestViewManifestCompilerDelegate(region=region),
-        ingest_pipeline_type=IngestPipelineType.ACTIVITY,
-    )
-    # We intentionally create a table for each ingest view with a defined manifest YAML,
-    #  regardless of whether that ingest view is gated to produce results in this
-    #  environment. This keeps the list of expected tables stable across local and
-    #  deployed environments.
-    for (
-        ingest_view_name,
-        manifest,
-    ) in ingest_manifest_collector.ingest_view_to_manifest.items():
-        schema = [
-            bigquery.SchemaField(
-                name=column_name, field_type=type_name, mode="NULLABLE"
-            )
-            for column_name, type_name in manifest.input_column_to_type.items()
-        ] + INGEST_VIEW_RESULTS_SCHEMA_COLUMNS
-
-        collection.add_source_table(table_id=ingest_view_name, schema_fields=schema)
-    return collection
 
 
 def build_state_output_source_table_collection(
@@ -170,11 +152,11 @@ def _build_normalized_state_output_source_table_collections() -> list[
     ]
 
 
-def build_ingest_pipeline_output_source_table_collections() -> list[
+def build_activity_pipeline_output_source_table_collections() -> list[
     SourceTableCollection
 ]:
-    """Builds the collection of source tables that are output by any ingest
-    pipeline.
+    """Builds the collection of source tables that are output by the activity
+    ingest pipeline.
     """
     return [
         *_build_ingest_view_results_output_source_table_collections(),

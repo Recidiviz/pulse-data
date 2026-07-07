@@ -25,7 +25,7 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_ingest_view_results_source_table_collection,
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,

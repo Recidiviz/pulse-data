@@ -26,7 +26,7 @@ from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
-from recidiviz.source_tables import ingest_pipeline_output_table_collector
+from recidiviz.source_tables import activity_pipeline_output_table_collector
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -52,7 +52,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 return_value=self.existing_states,
             ),
             patch(
-                f"{ingest_pipeline_output_table_collector.__name__}.get_direct_ingest_states_existing_in_env",
+                f"{activity_pipeline_output_table_collector.__name__}.get_direct_ingest_states_existing_in_env",
                 return_value=self.existing_states,
             ),
         ]
@@ -60,7 +60,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             patcher.start()
 
         self.direct_ingest_regions_patcher = patch(
-            f"{ingest_pipeline_output_table_collector.__name__}.direct_ingest_regions",
+            f"{activity_pipeline_output_table_collector.__name__}.direct_ingest_regions",
             autospec=True,
         )
         self.mock_direct_ingest_regions = self.direct_ingest_regions_patcher.start()

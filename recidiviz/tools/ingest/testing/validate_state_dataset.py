@@ -86,7 +86,7 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )
