@@ -389,6 +389,9 @@ from recidiviz.validation.views.state.workflows.us_ix_overdue_f2f_contact_missin
 from recidiviz.validation.views.state.workflows.us_mi_flag_new_offense_codes import (
     US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.us_mi_scc_review_start_date_incorrect_denials import (
+    US_MI_SCC_REVIEW_START_DATE_INCORRECT_DENIALS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff import (
     WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
 )
@@ -518,6 +521,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MI_SCC_REVIEW_START_DATE_INCORRECT_DENIALS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
