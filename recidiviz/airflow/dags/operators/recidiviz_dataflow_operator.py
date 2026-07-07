@@ -48,6 +48,13 @@ timestamp >= "{job_creation_time}"
 ZONAL_RESOURCES_EXHAUSTED = "ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS"
 QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
 
+# Error log entries can lag job failure by tens of seconds (Cloud Logging ingestion),
+# especially for launcher-VM failures where the job dies seconds after creation. Poll
+# the log fetch up to this many times, waiting between attempts, before concluding a
+# failed job has no error logs to match against.
+LOG_FETCH_ATTEMPTS = 5
+LOG_FETCH_WAIT_SECONDS = 15
+
 
 def _collect_log_messages(
     project_id: str, job_id: str, job_creation_time: str
@@ -179,11 +186,26 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
 
             if job["currentState"] == DataflowJobStatus.JOB_STATE_FAILED:
                 logging.info("Fetching logs for failed job...")
-                log_messages = _collect_log_messages(
-                    project_id=self.project_id,
-                    job_id=job["id"],
-                    job_creation_time=job["createTime"],
-                )
+                log_messages: list[str] = []
+                for attempt in range(LOG_FETCH_ATTEMPTS):
+                    if attempt:
+                        logging.info(
+                            "No error logs found yet for failed job; waiting %s "
+                            "seconds to re-fetch (attempt %s/%s)...",
+                            LOG_FETCH_WAIT_SECONDS,
+                            attempt + 1,
+                            LOG_FETCH_ATTEMPTS,
+                        )
+                        # Sleep in a loop to allow interrupts
+                        for _ in range(LOG_FETCH_WAIT_SECONDS):
+                            time.sleep(1)
+                    log_messages = _collect_log_messages(
+                        project_id=self.project_id,
+                        job_id=job["id"],
+                        job_creation_time=job["createTime"],
+                    )
+                    if log_messages:
+                        break
 
                 for message in log_messages:
                     logging.info(message)
