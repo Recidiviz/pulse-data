@@ -349,3 +349,9 @@ class IdentityByQueryParametersRequestSchema(marshmallow.Schema):
             raise marshmallow.ValidationError(
                 "Provide either external_id+id_type or tenant+email_hash."
             )
+
+
+class ImportRequestSchema(marshmallow.Schema):
+    """Validates the body of POST /import."""
+
+    tenant = fields.Enum(Tenant, by_value=True, required=True)

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """flask_smorest Blueprint and MethodView classes for the Identity Service API."""
+import logging
 import uuid
 from http import HTTPStatus
 
@@ -27,6 +28,7 @@ from recidiviz.services.identity.api_schemas import (
     IdentityByUuidRequestSchema,
     IdentityHistorySchema,
     IdentitySchema,
+    ImportRequestSchema,
 )
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 
@@ -103,3 +105,28 @@ class IdentityAPI(MethodView):
             history = querier.get_identity_history(identity_record)
             return jsonify(IdentityHistorySchema().dump(history))
         return jsonify(IdentitySchema().dump(identity_record))
+
+
+@identity_blueprint.route("/import")
+class ImportAPI(MethodView):
+    """Endpoint the Batch Identity Clustering DAG calls after writing a tenant's
+    clustering results to BigQuery, to trigger reconciliation of those results
+    into the Identity Service's Postgres state."""
+
+    @identity_blueprint.arguments(
+        ImportRequestSchema, error_status_code=HTTPStatus.BAD_REQUEST
+    )
+    @identity_blueprint.response(HTTPStatus.ACCEPTED)
+    def post(self, params: dict) -> Response:
+        """Accepts an import request for the given tenant and returns 202.
+
+        TODO(OBT-37693) Replace the real implementation.
+        """
+        tenant = params["tenant"]
+        logging.info(
+            "Received /import request for tenant [%s]; import not yet implemented.",
+            tenant.value,
+        )
+        response = jsonify({})
+        response.status_code = HTTPStatus.ACCEPTED
+        return response
