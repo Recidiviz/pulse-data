@@ -122,10 +122,10 @@ resource "google_service_account" "alert_forwarder" {
 
 # Cloud Run service
 resource "google_cloud_run_v2_service" "alert_forwarder" {
-  name     = var.service_name
-  location = var.region
-  project  = var.project_id
-  provider = google-beta
+  name                = var.service_name
+  location            = var.region
+  project             = var.project_id
+  provider            = google-beta
   deletion_protection = false
 
   template {
@@ -213,7 +213,7 @@ resource "google_cloud_run_v2_service" "alert_forwarder" {
   }
 
   lifecycle {
-    ignore_changes = []
+    ignore_changes  = []
     prevent_destroy = false
   }
 }
@@ -339,6 +339,30 @@ resource "google_pubsub_topic_iam_member" "monitoring_publisher" {
   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
 }
 
+# Allow the dashboard projects' Cloud Monitoring notification service agents to publish to the
+# forwarder topic (their pubsub notification channels point here, e.g. for the Typesense alerts).
+data "google_project" "dashboard_staging" {
+  project_id = "recidiviz-dashboard-staging"
+}
+
+data "google_project" "dashboard_production" {
+  project_id = "recidiviz-dashboard-production"
+}
+
+resource "google_pubsub_topic_iam_member" "dashboard_staging_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.monitoring_alerts.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.dashboard_staging.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_topic_iam_member" "dashboard_production_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.monitoring_alerts.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.dashboard_production.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
+}
+
 # IAM: Secret Manager access for PagerDuty keys
 resource "google_project_iam_member" "secret_accessor" {
   project = var.project_id
@@ -400,7 +424,7 @@ resource "google_monitoring_alert_policy" "dlq_depth" {
   }
 
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
       The alert forwarder dead letter queue has unprocessed messages.
 
       This indicates that the alert forwarder service failed to process some Cloud Monitoring alerts

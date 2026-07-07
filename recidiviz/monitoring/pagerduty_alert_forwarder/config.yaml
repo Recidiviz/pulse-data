@@ -122,6 +122,92 @@ rules:
     actions:
       suppress: true
 
+  # ---- Typesense (Dashboards Project; alert policies are defined in the recidiviz-dashboards repo) ----
+  # Severity: in production, page on critical and only notify on warnings (the env rule above sets
+  # everything in this project to `error`, which would over-page warnings). Staging stays `warning`
+  # (notify) via the "Dashboard Staging Alerts" rule, so staging never pages.
+  - name: "Typesense Production - Critical"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-production"
+      incident.policy_name:
+        contains: "Typesense"
+      incident.severity: "CRITICAL"
+    actions:
+      severity: critical
+
+  - name: "Typesense Production - Warning"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-production"
+      incident.policy_name:
+        contains: "Typesense"
+      incident.severity: "WARNING"
+    actions:
+      severity: warning
+
+  # Friendly titles (the env prefix rule below prepends [STAGING] / 🚨 [PRODUCTION]).
+  - name: "Typesense - Endpoint Down"
+    match:
+      incident.policy_name:
+        contains: "Typesense endpoint down"
+    actions:
+      title_transform: "Typesense: unreachable (/health failing)"
+
+  - name: "Typesense - Quorum Down"
+    match:
+      incident.policy_name:
+        contains: "Typesense quorum/health down"
+    actions:
+      title_transform: "Typesense: quorum lost / cluster unhealthy"
+
+  - name: "Typesense - Disk High"
+    match:
+      incident.policy_name:
+        contains: "Typesense disk usage high"
+    actions:
+      title_transform: "Typesense: disk almost full (OUT_OF_DISK risk)"
+
+  - name: "Typesense - Memory High"
+    match:
+      incident.policy_name:
+        contains: "Typesense memory usage high"
+    actions:
+      title_transform: "Typesense: memory pressure (OOM risk)"
+
+  - name: "Typesense - Pods Restarting"
+    match:
+      incident.policy_name:
+        contains: "Typesense pods restarting"
+    actions:
+      title_transform: "Typesense: pods restarting / crashlooping"
+
+  - name: "Typesense - Replicas Degraded"
+    match:
+      incident.policy_name:
+        contains: "Typesense replicas degraded"
+    actions:
+      title_transform: "Typesense: degraded — a quorum member is down"
+
+  - name: "Typesense - Requests Overloaded"
+    match:
+      incident.policy_name:
+        contains: "Typesense requests overloaded"
+    actions:
+      title_transform: "Typesense: overloaded — rejecting requests (503)"
+
+  - name: "Typesense - Write Backlog"
+    match:
+      incident.policy_name:
+        contains: "Typesense write backlog"
+    actions:
+      title_transform: "Typesense: write backlog growing"
+
+  - name: "Typesense - Search Latency High"
+    match:
+      incident.policy_name:
+        contains: "Typesense search latency high"
+    actions:
+      title_transform: "Typesense: search latency high"
+
   # Lastly, apply staging / production prefixes
   - name: "Production Alerts - Prefix Title"
     match:

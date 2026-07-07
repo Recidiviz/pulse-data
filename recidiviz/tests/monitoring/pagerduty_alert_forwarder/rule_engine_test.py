@@ -906,3 +906,71 @@ class TestRuleEngineIntegration(unittest.TestCase):
         self.assertEqual(result["pagerduty_service"], "GCP Infrastructure")
         # Title should be the original summary since no transformations apply
         self.assertEqual(result["title"], "Some random alert")
+
+    def test_production_typesense_critical_pages(self) -> None:
+        """Production Typesense critical -> critical severity + friendly title (pages)."""
+        alert = {
+            "incident": {
+                "incident_id": "ts-prod-crit",
+                "policy_name": "Typesense quorum/health down (us-central1)",
+                "resource": {
+                    "labels": {"project_id": "recidiviz-dashboard-production"}
+                },
+                "severity": "CRITICAL",
+                "summary": "probe_success == 0 for 3m",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Env rule sets error; the Typesense critical rule elevates to critical.
+        self.assertEqual(result["severity"], "critical")
+        self.assertEqual(result["pagerduty_service"], "[PRODUCTION] Dashboards Project")
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Typesense: quorum lost / cluster unhealthy",
+        )
+
+    def test_production_typesense_warning_does_not_page(self) -> None:
+        """Production Typesense warning -> warning severity (not the env's error), so it notifies."""
+        alert = {
+            "incident": {
+                "incident_id": "ts-prod-warn",
+                "policy_name": "Typesense search latency high (us-central1)",
+                "resource": {
+                    "labels": {"project_id": "recidiviz-dashboard-production"}
+                },
+                "severity": "WARNING",
+                "summary": "search latency > 300ms for 10m",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[PRODUCTION] Dashboards Project")
+        self.assertEqual(
+            result["title"], "🚨 [PRODUCTION] Typesense: search latency high"
+        )
+
+    def test_staging_typesense_critical_notifies_not_pages(self) -> None:
+        """Staging Typesense critical stays warning (notify, not page) via the env rule."""
+        alert = {
+            "incident": {
+                "incident_id": "ts-stg-crit",
+                "policy_name": "Typesense disk usage high (us-central1)",
+                "resource": {"labels": {"project_id": "recidiviz-dashboard-staging"}},
+                "severity": "CRITICAL",
+                "summary": "PVC utilization > 0.9 on any node for 10m",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # The production critical rule does NOT match staging; env staging rule -> warning.
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[STAGING] Dashboards Project")
+        self.assertEqual(
+            result["title"],
+            "[STAGING] Typesense: disk almost full (OUT_OF_DISK risk)",
+        )

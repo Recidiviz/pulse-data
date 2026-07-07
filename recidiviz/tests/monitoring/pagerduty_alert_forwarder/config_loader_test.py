@@ -280,21 +280,36 @@ rules:
         policy_names_in_config = set()
         partial_matches_in_config = set()
 
+        # Some alert policies forwarded through this service are defined in OTHER repos (e.g. the
+        # Dashboards-project "Typesense" policies live in the pulse-dashboard repo, not in this
+        # repo's monitoring_alert_policy.tf). They're validated in their own repo, so exempt them.
+        external_policy_name_substrings = ("typesense",)
+
+        def _is_external_policy(value: str) -> bool:
+            return any(sub in value.lower() for sub in external_policy_name_substrings)
+
         for rule in self.real_config.rules:
             for match_condition in rule.match.conditions:
-                # Check if this condition is matching on incident.policy_name
-                if match_condition.field_path == "incident.policy_name":
-                    condition = match_condition.condition
+                # Only consider conditions matching on incident.policy_name
+                if match_condition.field_path != "incident.policy_name":
+                    continue
 
-                    if isinstance(condition, EqualityCondition):
-                        # Exact match - add the expected value
+                condition = match_condition.condition
+
+                if isinstance(condition, EqualityCondition):
+                    # Exact match - add the expected value
+                    if not _is_external_policy(str(condition.expected_value)):
                         policy_names_in_config.add(str(condition.expected_value))
-                    elif isinstance(condition, InCondition):
-                        # Multiple allowed values - add all
-                        for value in condition.allowed_values:
-                            policy_names_in_config.add(str(value))
-                    elif isinstance(condition, ContainsCondition):
-                        # Substring match - validate separately
+                elif isinstance(condition, InCondition):
+                    # Multiple allowed values - add all
+                    policy_names_in_config.update(
+                        str(value)
+                        for value in condition.allowed_values
+                        if not _is_external_policy(str(value))
+                    )
+                elif isinstance(condition, ContainsCondition):
+                    # Substring match - validate separately
+                    if not _is_external_policy(condition.search_term):
                         partial_matches_in_config.add(condition)
 
         # Load Terraform file and extract display_name values
