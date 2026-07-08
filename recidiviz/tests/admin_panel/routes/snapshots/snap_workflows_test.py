@@ -14,14 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""
-Snapshots for recidiviz/tests/admin_panel/routes/workflows_test.py
-Update by running `pytest recidiviz/tests/admin_panel/routes/workflows_test.py --snapshot-update`
-You will need to replace this header afterward.
-"""
-
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
+"""
+Snapshots for recidiviz/tests/admin_panel/routes/workflows_test.py
+Update snapshots automatically by running `pytest recidiviz/tests/admin_panel/routes/workflows_test.py --snapshot-update`
+Remember to include a docstring like this after updating the snapshots for Pylint purposes
+"""
 from __future__ import unicode_literals
 
 from snapshottest import Snapshot
@@ -80,6 +79,7 @@ snapshots[
         "omsCriteriaHeader": "Validated by data from OMS",
         "overdueOpportunityCalloutCopy": "overdue for opportunity",
         "priority": "NORMAL",
+        "reasonsRequiringApproval": ["DENY"],
         "reviewerFeatureVariant": "feature_variant",
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],
@@ -161,6 +161,7 @@ snapshots[
         "omsCriteriaHeader": "Validated by data from OMS",
         "overdueOpportunityCalloutCopy": "overdue for opportunity",
         "priority": "NORMAL",
+        "reasonsRequiringApproval": ["DENY"],
         "reviewerFeatureVariant": "feature_variant",
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],
@@ -242,6 +243,7 @@ snapshots[
         "omsCriteriaHeader": "Validated by data from OMS",
         "overdueOpportunityCalloutCopy": "overdue for opportunity",
         "priority": "NORMAL",
+        "reasonsRequiringApproval": ["DENY"],
         "reviewerFeatureVariant": "feature_variant",
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],

@@ -155,6 +155,7 @@ export const babyOpportunityConfigurationSchema = z
 
     supportsSupervisorReviewOnGrants: z.boolean().default(false),
     supportsSupervisorReviewOnSnooze: z.boolean().default(false),
+    reasonsRequiringApproval: z.array(z.string()).default([]),
     supervisorReviewTabTitle: nullishAsUndefined(z.string()),
     grantApprovedTabTitle: nullishAsUndefined(z.string()),
     grantApprovedStatusMessage: nullishAsUndefined(z.string()),

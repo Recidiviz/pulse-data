@@ -94,6 +94,7 @@ def generate_config(
         tab_preface_copy=[{"tab": "Pending", "text": "Pending people"}],
         supports_supervisor_review_on_grants=True,
         supports_supervisor_review_on_snooze=True,
+        reasons_requiring_approval=["DENY"],
         supervisor_review_tab_title="Supervisor Review",
         grant_approved_tab_title="Approved by Supervisor",
         grant_approved_status_message="Approved by Supervisor",

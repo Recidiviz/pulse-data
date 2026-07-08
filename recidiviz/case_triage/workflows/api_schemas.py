@@ -192,6 +192,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     tab_preface_copy = fields.List(fields.Nested(TabTextSchema))
     supports_supervisor_review_on_grants = fields.Bool(required=True)
     supports_supervisor_review_on_snooze = fields.Bool(required=True)
+    reasons_requiring_approval = fields.List(fields.Str(), required=True)
     supervisor_review_tab_title = fields.Str(required=False)
     grant_approved_tab_title = fields.Str(required=False)
     grant_approved_status_message = fields.Str(required=False)
@@ -212,6 +213,15 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     case_notes_title = fields.Str(required=False)
     skip_form_preview = fields.Bool()
     mark_submitted_on_form_download = fields.Bool(required=False)
+
+    @validates_schema
+    def validate_reasons_requiring_approval(self, data: Dict, **_kwargs: Any) -> None:
+        denial_reason_keys = {r["key"] for r in data.get("denial_reasons", [])}
+        invalid = set(data["reasons_requiring_approval"]) - denial_reason_keys
+        if invalid:
+            raise ValidationError(
+                f"reasons_requiring_approval contains keys not in denial_reasons: {invalid}"
+            )
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

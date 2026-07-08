@@ -212,6 +212,7 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "isAlert": False,
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
         }
     )
 
@@ -235,6 +236,7 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "isAlert": False,
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
         }
     )
 
@@ -260,6 +262,7 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "isAlert": False,
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
         }
     )
 

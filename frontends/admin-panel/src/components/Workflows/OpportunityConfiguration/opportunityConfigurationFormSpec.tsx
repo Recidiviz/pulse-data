@@ -36,6 +36,10 @@ import {
   NotificationsView,
 } from "./fieldComponents/Notifications";
 import {
+  ReasonsRequiringApprovalEditWrapper,
+  ReasonsRequiringApprovalViewWrapper,
+} from "./fieldComponents/ReasonsRequiringApproval";
+import {
   SidebarComponentsEdit,
   SidebarComponentsView,
 } from "./fieldComponents/SidebarComponents";
@@ -211,6 +215,12 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
       supportsSupervisorReviewOnSnooze: {
         label: "Support Approval Flow on Snooze?",
         Edit: Checkbox,
+      },
+      reasonsRequiringApproval: {
+        label: "Denial Reasons Requiring Supervisor Approval",
+        multiple: true,
+        Edit: ReasonsRequiringApprovalEditWrapper,
+        View: ReasonsRequiringApprovalViewWrapper,
       },
       supervisorReviewTabTitle: {
         label: "Title of Supervisor Review Tab",

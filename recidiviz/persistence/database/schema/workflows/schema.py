@@ -263,3 +263,8 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # An optional feature variant to gate access to Review tab for supervisors
     reviewer_feature_variant = Column(String, nullable=True)
+
+    # Denial reasons that require supervisor approval before an opportunity can be marked ineligible
+    reasons_requiring_approval = Column(
+        ARRAY(String), nullable=False, server_default="{}"
+    )

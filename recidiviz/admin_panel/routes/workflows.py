@@ -216,6 +216,7 @@ class OpportunityConfigurationsAPI(MethodView):
             supports_supervisor_review_on_snooze=body_args[
                 "supports_supervisor_review_on_snooze"
             ],
+            reasons_requiring_approval=body_args["reasons_requiring_approval"],
             supervisor_review_tab_title=body_args.get("supervisor_review_tab_title"),
             grant_approved_tab_title=body_args.get("grant_approved_tab_title"),
             grant_approved_status_message=body_args.get(

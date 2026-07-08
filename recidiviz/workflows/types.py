@@ -105,6 +105,7 @@ class OpportunityConfig:
 
     supports_supervisor_review_on_grants: bool = attr.ib()
     supports_supervisor_review_on_snooze: bool = attr.ib()
+    reasons_requiring_approval: list[str] = attr.ib()
     supervisor_review_tab_title: str | None = attr.ib()
     grant_approved_tab_title: str | None = attr.ib()
     grant_approved_status_message: str | None = attr.ib()

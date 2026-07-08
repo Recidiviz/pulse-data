@@ -9,7 +9,8 @@ description: Add a new field to opportunity configs in the workflows admin panel
 
 Opportunity configs are the customizable settings that control how workflow
 opportunities appear in the admin panel and the front-end app. Each field
-propagates through 9 files across the backend and frontend.
+propagates through up to 12 files across the backend and frontend (a few are
+conditional on the field's type and nullability).
 
 **What this skill does**: Gathers the field spec from the user, then makes
 all necessary code changes and generates the database migration.
@@ -78,7 +79,8 @@ code.
 
 ## Step 2: Make Code Changes
 
-Make changes to all 9 files in the order below. Read each file before editing.
+Make changes to all applicable files in the order below. Read each file before
+editing.
 
 ### File 1: Database schema
 **`recidiviz/persistence/database/schema/workflows/schema.py`**
@@ -312,6 +314,24 @@ my_field=False,   # boolean
 my_field=None,    # optional string
 ```
 
+### File 12: API schema validation test (required fields only)
+**`recidiviz/tests/case_triage/workflows/workflows_api_schemas_test.py`**
+
+**Only needed when the Marshmallow field is `required=True`.** Skip this file
+entirely for optional fields.
+
+`WorkflowsConfigSchemaTest` defines `valid_schema_test(...)` payloads that must
+satisfy the schema. Adding a new required field makes every previously-valid
+payload invalid until the field is present, so add it to **each**
+`valid_schema_test` case (currently `test_valid_data`, `test_manual_snooze`,
+`test_auto_snooze`) with a valid value:
+
+```python
+"myField": [],       # required array
+"myField": False,    # required boolean
+"myField": "value",  # required string
+```
+
 ---
 
 ## Step 3: Generate the Alembic Migration
@@ -352,6 +372,7 @@ uv run pytest \
   recidiviz/tests/workflows/querier/querier_test.py \
   recidiviz/tests/admin_panel/routes/workflows_test.py \
   recidiviz/tests/case_triage/workflows/workflows_routes_test.py \
+  recidiviz/tests/case_triage/workflows/workflows_api_schemas_test.py \
   -x -q
 ```
 

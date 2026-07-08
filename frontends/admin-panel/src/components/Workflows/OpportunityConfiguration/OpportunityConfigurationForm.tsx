@@ -127,6 +127,15 @@ const OpportunityConfigurationForm = ({
               values[f]?.length ? values[f] : undefined,
             ])
           ),
+          // On save, drops any reasonsRequiringApproval whose associated
+          // denialReason no longer exists, so stale keys are never persisted.
+          reasonsRequiringApproval: (
+            values.reasonsRequiringApproval ?? []
+          ).filter((reason: string) =>
+            (values.denialReasons ?? []).some(
+              ({ key }: { key: string }) => key === reason
+            )
+          ),
           notifications: addNotificationIds(values.notifications),
         });
         const success = await presenter.createOpportunityConfiguration(config);
