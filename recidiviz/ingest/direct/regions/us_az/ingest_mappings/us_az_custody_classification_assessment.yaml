@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `custody_classification_assessment` to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  CLASSIFICATION_ID: STRING
+  PERSON_ID: STRING
+  START_DTM: STRING
+  TOTAL_SCORE: STRING
+  RECOMMENDED_CUSTODY_LEVEL: STRING
+  ASSIGNED_CUSTODY_LEVEL: STRING
+  IS_OVERRIDE: STRING
+  CUSTODY_REDUCTION_FLAG: STRING
+  SCORE_TYPE: STRING
+  MST_SERIOUS_SCORE: STRING
+  PR_MST_SERIOUS_SCORE: STRING
+  ESCAPE_HISTORY_SCORE: STRING
+  DSCPLN_VIO_SCORE: STRING
+  GANG_AFF_SCORE: STRING
+  AGE_SCORE: STRING
+  PROGRAM_SCORE: STRING
+  NON_DISCRETIONARY_CU: STRING
+  NON_DISCRETIONARY_CU_LEVEL: STRING
+  NON_DISCRETIONARY_IR: STRING
+  NON_DISCRETIONARY_IR_LEVEL: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - CLASSIFICATION_ID
+                - $literal("CUSTODY_CLASS")
+          assessment_date: START_DTM
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.AZ_CUSTODY_CLASS)
+          assessment_score: TOTAL_SCORE
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RECOMMENDED_CUSTODY_LEVEL
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - Minimum
+                StateAssessmentLevel.MEDIUM:
+                  - Medium
+                StateAssessmentLevel.HIGH:
+                  - Close
+                StateAssessmentLevel.MAXIMUM:
+                  - Maximum
+          assessment_metadata:
+            $normalized_values_json_dict:
+              ASSIGNED_CUSTODY_LEVEL: ASSIGNED_CUSTODY_LEVEL
+              IS_OVERRIDE: IS_OVERRIDE
+              CUSTODY_REDUCTION_FLAG: CUSTODY_REDUCTION_FLAG
+              SCORE_TYPE: SCORE_TYPE
+              MST_SERIOUS_SCORE: MST_SERIOUS_SCORE
+              PR_MST_SERIOUS_SCORE: PR_MST_SERIOUS_SCORE
+              ESCAPE_HISTORY_SCORE: ESCAPE_HISTORY_SCORE
+              DSCPLN_VIO_SCORE: DSCPLN_VIO_SCORE
+              GANG_AFF_SCORE: GANG_AFF_SCORE
+              AGE_SCORE: AGE_SCORE
+              PROGRAM_SCORE: PROGRAM_SCORE
+              NON_DISCRETIONARY_CU: NON_DISCRETIONARY_CU
+              NON_DISCRETIONARY_CU_LEVEL: NON_DISCRETIONARY_CU_LEVEL
+              NON_DISCRETIONARY_IR: NON_DISCRETIONARY_IR
+              NON_DISCRETIONARY_IR_LEVEL: NON_DISCRETIONARY_IR_LEVEL

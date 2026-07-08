@@ -130,6 +130,7 @@ state_assessment_type_mi_csj_481 = "MI_CSJ_481"
 state_assessment_type_mi_security_class = "MI_SECURITY_CLASS"
 state_assessment_type_ut_security_assess = "UT_SECURITY_ASSESS"
 state_assessment_type_ia_custody_class = "IA_CUSTODY_CLASS"
+state_assessment_type_az_custody_class = "AZ_CUSTODY_CLASS"
 
 state_assessment_level_minimum = "MINIMUM"
 state_assessment_level_low = "LOW"

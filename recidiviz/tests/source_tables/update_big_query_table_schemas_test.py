@@ -174,6 +174,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_az_ingest_view_results.case_manager_relationship_periods",
     "us_az_ingest_view_results.ccrra_assessment",
     "us_az_ingest_view_results.community_risk_level_assessment",
+    "us_az_ingest_view_results.custody_classification_assessment",
     "us_az_ingest_view_results.incarceration_incidents",
     "us_az_ingest_view_results.incarceration_periods",
     "us_az_ingest_view_results.mh_assessment",

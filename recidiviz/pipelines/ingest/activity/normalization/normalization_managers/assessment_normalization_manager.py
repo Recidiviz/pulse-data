@@ -241,6 +241,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.MI_SECURITY_CLASS,
                 StateAssessmentType.UT_SECURITY_ASSESS,
                 StateAssessmentType.IA_CUSTODY_CLASS,
+                StateAssessmentType.AZ_CUSTODY_CLASS,
             ]:
                 pass
             else:
