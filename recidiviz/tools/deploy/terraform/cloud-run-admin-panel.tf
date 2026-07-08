@@ -85,6 +85,20 @@ resource "google_cloud_run_service" "admin_panel" {
             memory = "2Gi"
           }
         }
+
+        # Hold traffic on the old revision until a gunicorn worker has finished
+        # importing the app and can actually respond — this service backs Auth0
+        # login-flow endpoints, so a deploy-rollover stall blocks logins.
+        startup_probe {
+          initial_delay_seconds = 0
+          period_seconds        = 10
+          timeout_seconds       = 5
+          failure_threshold     = 24
+
+          http_get {
+            path = "/health"
+          }
+        }
       }
       service_account_name = google_service_account.admin_panel_cloud_run.email
     }

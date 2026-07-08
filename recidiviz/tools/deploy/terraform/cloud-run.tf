@@ -227,6 +227,23 @@ resource "google_cloud_run_service" "case-triage" {
             memory = "2048Mi"
           }
         }
+
+        # Without an explicit probe, Cloud Run uses a TCP check on $PORT, which the
+        # gunicorn master passes as soon as it binds the socket.
+        # This renders requests during a deploy stalled until the import completes.
+        # Probing /health instead keeps traffic on the old revision until a worker responds.
+        # The window below (failure_threshold * period_seconds = 240s, Cloud Run's maximum)
+        # comfortably covers the ~2 minute app import.
+        startup_probe {
+          initial_delay_seconds = 0
+          period_seconds        = 10
+          timeout_seconds       = 5
+          failure_threshold     = 24
+
+          http_get {
+            path = "/health"
+          }
+        }
       }
 
       service_account_name = google_service_account.cloud_run.email
@@ -450,6 +467,20 @@ resource "google_cloud_run_service" "public-pathways" {
           limits = {
             cpu    = "2000m"
             memory = "2048Mi"
+          }
+        }
+
+        # Hold traffic on the old revision until a gunicorn worker has finished
+        # importing the app and can actually respond. See the explanation on the
+        # case-triage-web startup_probe above.
+        startup_probe {
+          initial_delay_seconds = 0
+          period_seconds        = 10
+          timeout_seconds       = 5
+          failure_threshold     = 24
+
+          http_get {
+            path = "/health"
           }
         }
       }

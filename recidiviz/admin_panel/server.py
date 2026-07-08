@@ -21,7 +21,7 @@ import os
 from http import HTTPStatus
 from typing import Optional, Tuple
 
-from flask import Flask, send_from_directory
+from flask import Flask, request, send_from_directory
 from flask_smorest import Api
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
@@ -52,6 +52,8 @@ structured_logging.setup_gunicorn()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
+HEALTH_ENDPOINT_PATH = "/health"
+
 _STATIC_FOLDER = os.path.abspath(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -80,10 +82,18 @@ requires_authorization = build_compute_engine_auth_decorator(
 )
 
 
-@app.before_request
 @requires_authorization
-def auth_middleware() -> None:
+def _enforce_authorization() -> None:
     pass
+
+
+@app.before_request
+def auth_middleware() -> None | Tuple[str, HTTPStatus]:
+    # The Cloud Run startup probe hits /health directly on the container,
+    # bypassing the load balancer and IAP, so it cannot carry an IAP JWT.
+    if request.path == HEALTH_ENDPOINT_PATH:
+        return None
+    return _enforce_authorization()
 
 
 api = Api(
@@ -173,7 +183,7 @@ def index() -> Response:
     return send_from_directory(_STATIC_FOLDER, "index.html")
 
 
-@app.route("/health")
+@app.route(HEALTH_ENDPOINT_PATH)
 def health() -> Tuple[str, HTTPStatus]:
     """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are
     up and serving requests."""
