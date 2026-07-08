@@ -290,12 +290,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
     },
-    BigQueryAddress(
-        dataset_id="segment_events",
-        table_id="all_sentencing_assessment_report_segment_events",
-    ): (
-        "Union view for Sentencing Assessment Report segment events. Kept for potential future use."
-    ),
     SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: (
         "Consolidated archive view for supervision task records across states. "
         "Will be used for cross-state task analysis (Sophie Pepin, 2026-04-22)"

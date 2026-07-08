@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,12 @@ class MetricUnitOfObservationType(Enum):
 
     INSIGHTS_PRIMARY_USER = "INSIGHTS_PRIMARY_USER"
     INSIGHTS_PROVISIONED_USER = "INSIGHTS_PROVISIONED_USER"
+    SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER = (
+        "SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER"
+    )
+    SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER = (
+        "SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER"
+    )
     SUPERVISION_OFFICER = "OFFICER"
     PERSON_ID = "PERSON"
     TASKS_PRIMARY_USER = "TASKS_PRIMARY_USER"

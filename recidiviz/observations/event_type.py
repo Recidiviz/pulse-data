@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,6 +58,9 @@ class EventType(Enum):
     RISK_SCORE_ASSESSMENT = "RISK_SCORE_ASSESSMENT"
     ROUTE_PLANNER_ACTIVE_USAGE_EVENT = "ROUTE_PLANNER_ACTIVE_USAGE_EVENT"
     SENTENCES_IMPOSED = "SENTENCES_IMPOSED"
+    SENTENCING_ASSESSMENT_REPORT_ACTIVE_USAGE_EVENT = (
+        "SENTENCING_ASSESSMENT_REPORT_ACTIVE_USAGE_EVENT"
+    )
     SOLITARY_CONFINEMENT_END = "SOLITARY_CONFINEMENT_END"
     SOLITARY_CONFINEMENT_START = "SOLITARY_CONFINEMENT_START"
     SUPERVISING_OFFICER_CHANGE = "SUPERVISING_OFFICER_CHANGE"
@@ -186,6 +189,10 @@ class EventType(Enum):
             EventType.JII_TABLET_APP_USER_PAGE_VIEW,
         ]:
             return MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER
+        if self in [
+            EventType.SENTENCING_ASSESSMENT_REPORT_ACTIVE_USAGE_EVENT,
+        ]:
+            return MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"

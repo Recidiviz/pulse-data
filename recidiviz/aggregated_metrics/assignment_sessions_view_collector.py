@@ -319,6 +319,58 @@ def _get_insights_provisioned_user_population_selector(
             )
 
 
+def _get_sentencing_assessment_report_provisioned_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return None
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+
+
+def _get_sentencing_assessment_report_primary_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return None
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION,
+                span_conditions_dict={},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION,
+                span_conditions_dict={},
+            )
+
+
 def _get_tasks_provisioned_user_population_selector(
     population_type: MetricPopulationType,
 ) -> SpanSelector | None:
@@ -450,6 +502,16 @@ def get_standard_population_selector_for_unit_of_observation(
             return _get_workflows_provisioned_user_population_selector(population_type)
         case MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER:
             return _get_insights_provisioned_user_population_selector(population_type)
+        case MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER:
+            return _get_sentencing_assessment_report_primary_user_population_selector(
+                population_type
+            )
+        case MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER:
+            return (
+                _get_sentencing_assessment_report_provisioned_user_population_selector(
+                    population_type
+                )
+            )
         case MetricUnitOfObservationType.TASKS_PRIMARY_USER:
             return _get_tasks_primary_user_population_selector(population_type)
         case MetricUnitOfObservationType.TASKS_PROVISIONED_USER:

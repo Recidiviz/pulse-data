@@ -91,6 +91,12 @@ class SpanType(Enum):
         "WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION"
     )
     WORKFLOWS_PROVISIONED_USER_SESSION = "WORKFLOWS_PROVISIONED_USER_SESSION"
+    SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION = (
+        "SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION"
+    )
+    SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION = (
+        "SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION"
+    )
 
     @classmethod
     def observation_type_category(cls) -> str:
@@ -164,5 +170,13 @@ class SpanType(Enum):
             return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
         if self in [SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION]:
             return MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER
+        if self in [
+            SpanType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION
+        ]:
+            return MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER
+        if self in [SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION]:
+            return (
+                MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER
+            )
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")

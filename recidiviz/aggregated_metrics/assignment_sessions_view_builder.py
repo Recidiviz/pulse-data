@@ -1093,6 +1093,202 @@ FROM `{project_id}.analyst_data.jii_tablet_app_provisioned_user_registration_ses
     ): """
 SELECT *, TRUE AS in_signed_state FROM `{project_id}.analyst_data.jii_tablet_app_provisioned_user_registration_sessions_materialized`
 """,
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    TRUE AS in_signed_state,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.LOCATION,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    location_name,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+    AND is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+    AND is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive, 
+    TRUE AS in_signed_state,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.LOCATION,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    location_name,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.sentencing_assessment_report_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
 }
 
 

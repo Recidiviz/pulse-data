@@ -163,6 +163,24 @@ class MetricUnitOfObservation:
                     ),
                     _STATE_CODE_COLUMN,
                 ]
+            case MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER:
+                return [
+                    String(
+                        name="email_address",
+                        description="The email address for the Sentencing Assessment Report primary user being observed.",
+                        mode="NULLABLE",
+                    ),
+                    _STATE_CODE_COLUMN,
+                ]
+            case MetricUnitOfObservationType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER:
+                return [
+                    String(
+                        name="email_address",
+                        description="The email address for the Sentencing Assessment Report provisioned user being observed.",
+                        mode="NULLABLE",
+                    ),
+                    _STATE_CODE_COLUMN,
+                ]
 
     @property
     def primary_key_column_names(self) -> FrozenSet[str]:
