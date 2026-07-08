@@ -67,6 +67,9 @@ class CoreEntity:
         table_name = cls.get_table_id()
         return table_name.removeprefix("state_") + "_id"
 
+    # TODO(OBT-37718): Widen get_id/set_id and downstream typing to int | str as
+    # it is wrong for entities with string primary keys (e.g. IdentityFragment,
+    # IdentityCluster). (mypy can't see this because getattr returns Any).
     def get_id(self) -> int:
         return getattr(self, self.get_class_id_name())
 

@@ -20,7 +20,6 @@ from typing import List, Set, Union, cast
 
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.activity import entities
 from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StateSentenceStatusSnapshot,
@@ -58,6 +57,7 @@ def generate_primary_keys_for_root_entity_tree(
 
     while queue:
         entity = cast(Entity, queue.pop(0))
+        entities_module_context = entities_module_context_for_entity(entity)
         if isinstance(entity, (StatePerson, StateStaff)):
             entity.set_id(root_primary_key)
         elif isinstance(entity, StateSentenceStatusSnapshot):
@@ -101,13 +101,12 @@ def generate_primary_keys_for_root_entity_tree(
             entity.set_id(
                 generate_primary_key(
                     json.dumps(
-                        serialize_entity_into_json(entity, entities_module=entities),
+                        serialize_entity_into_json(entity, entities_module_context),
                         sort_keys=True,
                     ),
                     state_code,
                 )
             )
-        entities_module_context = entities_module_context_for_entity(entity)
         field_index = entities_module_context.field_index()
         forward_fields = field_index.get_all_entity_fields(
             entity.__class__, EntityFieldType.FORWARD_EDGE

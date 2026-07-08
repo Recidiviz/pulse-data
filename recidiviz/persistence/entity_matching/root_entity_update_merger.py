@@ -72,7 +72,9 @@ _MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge, entities.StateChargeV2]
 
 def state_person_address_period_key(address_period: StatePersonAddressPeriod) -> str:
     return json.dumps(
-        serialize_entity_into_json(address_period, entities_module=entities),
+        serialize_entity_into_json(
+            address_period, entities_module_context_for_module(entities)
+        ),
         sort_keys=True,
     )
 
@@ -81,7 +83,9 @@ def state_person_housing_status_period_key(
     housing_status_period: StatePersonHousingStatusPeriod,
 ) -> str:
     return json.dumps(
-        serialize_entity_into_json(housing_status_period, entities_module=entities),
+        serialize_entity_into_json(
+            housing_status_period, entities_module_context_for_module(entities)
+        ),
         sort_keys=True,
     )
 
@@ -91,7 +95,8 @@ def state_person_staff_relationship_period_key(
 ) -> str:
     return json.dumps(
         serialize_entity_into_json(
-            person_staff_relationship_period, entities_module=entities
+            person_staff_relationship_period,
+            entities_module_context_for_module(entities),
         ),
         sort_keys=True,
     )

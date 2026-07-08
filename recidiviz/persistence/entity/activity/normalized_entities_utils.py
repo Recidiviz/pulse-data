@@ -204,9 +204,7 @@ def _unique_object_id_for_entity(
     ).get_class_id_name()
 
     entities_module_context = entities_module_context_for_entity(entity)
-    entity_json = serialize_entity_into_json(
-        entity, entities_module=entities_module_context.entities_module()
-    )
+    entity_json = serialize_entity_into_json(entity, entities_module_context)
     extra_json_fields = {}
     # At this point in normalization we may not have set the backedges to the root
     # entity on this entity - if we have not, include the root entity primary key value

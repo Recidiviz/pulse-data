@@ -56,6 +56,7 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
+    IdentityFragment,
     IdentityGender,
     IdentityName,
     IdentityRace,
@@ -158,6 +159,7 @@ class TestJsonSerializableDict(unittest.TestCase):
             )
 
     def test_serialize_entity_into_json(self) -> None:
+        context = entities_module_context_for_module(entities)
         person = StatePerson(
             person_id=123, state_code="US_XX", gender=StateGender.FEMALE
         )
@@ -207,7 +209,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sex_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(person, entities),
+            serialize_entity_into_json(person, context),
         )
 
         # Simple entity with one-to-many relationship with root
@@ -229,7 +231,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "person_id": 123,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment, entities),
+            serialize_entity_into_json(assessment, context),
         )
 
         # Entity with many-to-many relationship with child
@@ -255,7 +257,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sentencing_authority_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(sentence, entities),
+            serialize_entity_into_json(sentence, context),
         )
 
         # Entity with indirect connection to root entity
@@ -289,10 +291,11 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status_raw_text": None,
                 "statute": None,
             },
-            serialize_entity_into_json(charge, entities),
+            serialize_entity_into_json(charge, context),
         )
 
     def test_serialize_entity_into_json_normalized(self) -> None:
+        context = entities_module_context_for_module(normalized_entities)
         person = NormalizedStatePerson(
             person_id=123,
             state_code="US_XX",
@@ -347,7 +350,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sex_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(person, normalized_entities),
+            serialize_entity_into_json(person, context),
         )
 
         # Simple entity with one-to-many relationship with root
@@ -372,7 +375,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sequence_num": 1,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment, normalized_entities),
+            serialize_entity_into_json(assessment, context),
         )
 
         # Entity with many-to-many relationship with child
@@ -404,7 +407,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status": "PENDING",
                 "status_raw_text": None,
             },
-            serialize_entity_into_json(sentence, normalized_entities),
+            serialize_entity_into_json(sentence, context),
         )
 
         # Entity with indirect connection to root entity
@@ -444,7 +447,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status_raw_text": None,
                 "statute": None,
             },
-            serialize_entity_into_json(charge, normalized_entities),
+            serialize_entity_into_json(charge, context),
         )
 
     def test_serialize_entity_into_json_null_person(self) -> None:
@@ -475,7 +478,9 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "person_id": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment, entities),
+            serialize_entity_into_json(
+                assessment, entities_module_context_for_module(entities)
+            ),
         )
 
 
@@ -576,7 +581,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
         )
         assert cluster.name is not None
 
-        name_row = serialize_entity_into_json(cluster.name, identity_cluster_entities)
+        name_row = serialize_entity_into_json(
+            cluster.name, entities_module_context_for_module(identity_cluster_entities)
+        )
 
         self.assertEqual(name_row["identity_cluster_id"], cluster.identity_cluster_id)
 
@@ -594,9 +601,73 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
             name=IdentityClusterName(tenant=Tenant.US_XX, given_name="John"),
         )
 
-        root_row = serialize_entity_into_json(cluster, identity_cluster_entities)
+        root_row = serialize_entity_into_json(
+            cluster, entities_module_context_for_module(identity_cluster_entities)
+        )
 
         self.assertNotIn("identity_cluster_name_id", root_row)
+
+
+class TestSerializeEntityIntoJsonWithFragmentEntities(unittest.TestCase):
+    """Tests for serialize_entity_into_json with identity fragment entities, whose
+    demographic entities reach the IdentityFragment root only through the
+    intermediate IdentityAttributes (which has no primary key of its own)."""
+
+    def setUp(self) -> None:
+        self.context = entities_module_context_for_module(identity_entities)
+        self.race = IdentityRace(
+            tenant=Tenant.US_XX, race=Race.BLACK, race_raw_text="B"
+        )
+        self.attrs = IdentityAttributes(
+            tenant=Tenant.US_XX,
+            person_type=PersonType.JII,
+            races=[self.race],
+        )
+        self.external_id = IdentityExternalId(
+            tenant=Tenant.US_XX, external_id="EXT_001", id_type="US_XX_T1"
+        )
+        self.fragment = IdentityFragment(
+            tenant=Tenant.US_XX,
+            external_ids=[self.external_id],
+            attributes=self.attrs,
+            identity_fragment_id="fragment_id_001",
+        )
+        self.race.identity_attributes = self.attrs
+        self.attrs.fragment = self.fragment
+        self.external_id.fragment = self.fragment
+
+    def test_child_of_intermediate_row_carries_root_id(self) -> None:
+        """A demographic entity's back edge points at the intermediate
+        IdentityAttributes, but its row carries the root IdentityFragment's id,
+        matching the identity_fragment_id FK column in the BQ schema."""
+        self.assertEqual(
+            {
+                "tenant": "US_XX",
+                "race": "BLACK",
+                "race_raw_text": "B",
+                "identity_fragment_id": "fragment_id_001",
+            },
+            serialize_entity_into_json(self.race, self.context),
+        )
+
+    def test_intermediate_row_carries_root_id(self) -> None:
+        """The intermediate IdentityAttributes has no id of its own; its row
+        carries the root's id via its direct 1:1 back edge."""
+        attrs_row = serialize_entity_into_json(self.attrs, self.context)
+
+        self.assertEqual(attrs_row["identity_fragment_id"], "fragment_id_001")
+        self.assertNotIn("identity_attributes_id", attrs_row)
+
+    def test_many_to_one_child_row_carries_root_id(self) -> None:
+        eid_row = serialize_entity_into_json(self.external_id, self.context)
+
+        self.assertEqual(eid_row["identity_fragment_id"], "fragment_id_001")
+
+    def test_root_row(self) -> None:
+        self.assertEqual(
+            {"tenant": "US_XX", "identity_fragment_id": "fragment_id_001"},
+            serialize_entity_into_json(self.fragment, self.context),
+        )
 
 
 class TestSerializeEntityTreeIntoJsonWithActivityEntities(unittest.TestCase):

@@ -104,8 +104,5 @@ class SerializeEntities(beam.DoFn):
 
             yield beam.pvalue.TaggedOutput(
                 entity.get_table_id(),
-                serialize_entity_into_json(
-                    entity,
-                    entities_module=self._entities_module_context.entities_module(),
-                ),
+                serialize_entity_into_json(entity, self._entities_module_context),
             )

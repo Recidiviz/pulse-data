@@ -35,11 +35,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_many_to_many_relationships_in_module,
     get_association_table_id,
-    get_entity_class_in_module_with_name,
-    is_many_to_one_relationship,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
-    get_root_entity_class_for_entity,
+    entity_class_for_foreign_key_column,
 )
 
 STATE_CODE_COL = "state_code"
@@ -56,7 +54,7 @@ def get_bq_schema_for_entities_module(
     table_to_schema = _get_association_table_to_schema_map(entities_module)
     for entity_cls in get_all_entity_classes_in_module(entities_module):
         table_to_schema[entity_cls.get_table_id()] = _get_bq_schema_for_entity_class(
-            entities_module, entities_module_context, entity_cls
+            entities_module_context, entity_cls
         )
     return table_to_schema
 
@@ -71,12 +69,12 @@ def get_bq_schema_for_entity_table(
 
 
 def _get_bq_schema_for_entity_class(
-    entities_module: ModuleType,
     entities_module_context: EntitiesModuleContext,
     entity_cls: Type[Entity],
 ) -> list[SchemaField]:
     """Derives a BQ table schema for the provided Entity class."""
     schema = []
+    foreign_key_column_names: set[str] = set()
     attr_class_reference = attribute_field_type_reference_for_class(entity_cls)
 
     # Sort fields by their declaration order so we produce schemas with
@@ -94,27 +92,38 @@ def _get_bq_schema_for_entity_class(
             )
             continue
 
-        referenced_cls = get_entity_class_in_module_with_name(
-            entities_module, field_info.referenced_cls_name
+        foreign_key_entity_cls = entity_class_for_foreign_key_column(
+            entities_module_context=entities_module_context,
+            entity_cls=entity_cls,
+            field_name=field,
         )
-        if referenced_cls != get_root_entity_class_for_entity(
-            entity_cls
-        ) and not is_many_to_one_relationship(entity_cls, referenced_cls):
+        if foreign_key_entity_cls is None:
             continue
 
-        # The entity_cls has a foreign key reference to the referenced class on
-        # its table. The FK column name and type match the referenced class's
-        # primary-key field.
-        foreign_key_field_name = referenced_cls.get_class_id_name()
-        schema.append(
-            schema_field_for_attribute(
-                foreign_key_field_name,
-                attribute_field_type_reference_for_class(referenced_cls)
-                .get_field_info(foreign_key_field_name)
-                .attribute,
-                description=f"Foreign key reference to {referenced_cls.get_table_id()}",
-            )
+        # The entity_cls table carries the referenced entity's id in a foreign
+        # key column whose name and type match that entity's primary-key field.
+        foreign_key_field_name = foreign_key_entity_cls.get_class_id_name()
+        foreign_key_column = schema_field_for_attribute(
+            foreign_key_field_name,
+            attribute_field_type_reference_for_class(foreign_key_entity_cls)
+            .get_field_info(foreign_key_field_name)
+            .attribute,
+            description=(
+                f"Foreign key reference to {foreign_key_entity_cls.get_table_id()}"
+            ),
         )
+
+        # No schema today has two fields that produce the same foreign key
+        # column; if one ever does, fail so the collision is resolved
+        # explicitly rather than silently merged.
+        if foreign_key_field_name in foreign_key_column_names:
+            raise ValueError(
+                f"Entity [{entity_cls.__name__}] has multiple relationship "
+                f"fields that produce a foreign key column named "
+                f"[{foreign_key_field_name}]."
+            )
+        foreign_key_column_names.add(foreign_key_field_name)
+        schema.append(foreign_key_column)
 
     return schema
 

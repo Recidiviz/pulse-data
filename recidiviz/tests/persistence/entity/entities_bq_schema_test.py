@@ -30,15 +30,18 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
     get_bq_schema_for_entity_table,
 )
-from recidiviz.persistence.entity.identity import identity_cluster_entities
+from recidiviz.persistence.entity.identity import (
+    identity_cluster_entities,
+    identity_fragment_entities,
+)
 from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+from recidiviz.tests.persistence.entity import fake_entities
+from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,
 )
-from recidiviz.tests.persistence.entity import fake_entities
 
 
 class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
@@ -218,6 +221,28 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         pk_field = one(f for f in schema if f.name == "identity_cluster_id")
         self.assertEqual("STRING", pk_field.field_type)
         self.assertEqual("NULLABLE", pk_field.mode)
+
+    def test_identity_fragment_tables_all_join_to_root(self) -> None:
+        """Every fragment table carries a STRING identity_fragment_id column:
+        the root table as its primary key, and every child table as an FK to
+        the root, even for entities that reach the root only through the
+        intermediate IdentityAttributes. No table carries an id column for
+        that keyless intermediate.
+        """
+        schema = get_bq_schema_for_entities_module(identity_fragment_entities)
+        for table_id, fields in schema.items():
+            with self.subTest(table_id=table_id):
+                id_field = one(f for f in fields if f.name == "identity_fragment_id")
+                self.assertEqual("STRING", id_field.field_type)
+                self.assertEqual("NULLABLE", id_field.mode)
+                if table_id != "identity_fragment":
+                    self.assertEqual(
+                        "Foreign key reference to identity_fragment",
+                        id_field.description,
+                    )
+                self.assertFalse(
+                    any(f.name == "identity_attributes_id" for f in fields)
+                )
 
     def test_parity_with_source_table_collection_us_xx_state(self) -> None:
         """Tests that get_bq_schema_for_entities_module() creates a schema that
