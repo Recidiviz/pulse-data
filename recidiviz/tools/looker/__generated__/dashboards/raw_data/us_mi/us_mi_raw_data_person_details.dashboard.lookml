@@ -647,8 +647,8 @@
       us_mi_ADH_SECURITY_CLASSIFICATION.ManagementLevel,
       us_mi_ADH_SECURITY_CLASSIFICATION.TrueSecurityLevel,
       us_mi_ADH_SECURITY_CLASSIFICATION.ActualPlacementLevel,
-      us_mi_ADH_SECURITY_CLASSIFICATION.WaiverReason,
       us_mi_ADH_SECURITY_CLASSIFICATION.DepartureReason,
+      us_mi_ADH_SECURITY_CLASSIFICATION.WaiverReason,
       us_mi_ADH_SECURITY_CLASSIFICATION.file_id,
       us_mi_ADH_SECURITY_CLASSIFICATION.is_deleted]
     sorts: [us_mi_ADH_SECURITY_CLASSIFICATION.FinalizedDate__raw]
