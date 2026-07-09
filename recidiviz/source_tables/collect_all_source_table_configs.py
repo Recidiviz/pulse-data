@@ -55,6 +55,9 @@ from recidiviz.source_tables.externally_managed.collect_externally_managed_sourc
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
 )
+from recidiviz.source_tables.intercom_exports_source_table import (
+    build_intercom_export_tracker_table,
+)
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
 )
@@ -233,6 +236,7 @@ def build_source_table_repository_for_collected_schemata(
             *collect_extraction_results_source_table_collections(
                 configs=load_llm_extractor_configs()
             ),
+            build_intercom_export_tracker_table(),
         ],
     )
 
