@@ -36,6 +36,10 @@ from recidiviz.common.constants.identity import (
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.persistence.database.schema.identity import schema
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity import types
 from recidiviz.services.identity.constants import DEV_CALLER_SERVICE_ACCOUNT
 
@@ -295,3 +299,91 @@ def build_full_identity() -> types.IdentityHistory:
             )
         ],
     )
+
+
+# ---------------------------------------------------------------------------
+# Database row builders shared across the identity service test modules.
+# Prefer the CSV fixtures in recidiviz/tools/services/identity/fixtures/
+# (RECIDIVIZ_ID as an ACTIVE identity, RETIRED_ID as a RETIRED identity merged
+# into it) loaded via `reset_fixtures`; use these to layer on the one
+# additional property a given test is specifically exercising.
+# ---------------------------------------------------------------------------
+
+_IDENTITY_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+
+
+def insert_identity(
+    *,
+    recidiviz_id: uuid.UUID,
+    status: IdentityStatus = IdentityStatus.ACTIVE,
+    tenant: Tenant = Tenant.US_OZ,
+    person_type: PersonType = PersonType.JII,
+    merged_into: uuid.UUID | None = None,
+) -> None:
+    """Inserts a bare Identity row (no attributes / external IDs) directly into
+    the identity schema, for tests that need a scenario beyond the CSV fixtures
+    (e.g. an extra merge-chain hop, a second tenant, a corrupt cycle)."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.Identity(
+                recidiviz_id=recidiviz_id,
+                created_utc=CREATED,
+                last_updated_utc=CREATED,
+                tenant=tenant,
+                person_type=person_type,
+                status=status,
+                merged_into=merged_into,
+            )
+        )
+
+
+def insert_external_id(
+    *,
+    recidiviz_id: uuid.UUID,
+    external_id: str,
+    id_type: IdentifierType = IdentifierType.US_OZ_KDS_PERSON_ID,
+    is_active: bool = True,
+) -> None:
+    """Inserts an ExternalId row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.ExternalId(
+                recidiviz_id=recidiviz_id,
+                external_id=external_id,
+                id_type=id_type,
+                is_active=is_active,
+            )
+        )
+
+
+def insert_name(*, recidiviz_id: uuid.UUID, given_name: str, surname: str) -> None:
+    """Inserts a Name row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.Name(
+                recidiviz_id=recidiviz_id,
+                given_name=given_name,
+                surname=surname,
+                middle_names=[],
+                name_suffix=None,
+                use=NameUse.OFFICIAL,
+                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
+                source_product_app=None,
+                last_updated_utc=CREATED,
+            )
+        )
+
+
+def insert_email(*, recidiviz_id: uuid.UUID, address_hash: str) -> None:
+    """Inserts an Email row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.Email(
+                recidiviz_id=recidiviz_id,
+                address="test@example.com",
+                address_hash=address_hash,
+                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
+                source_product_app=None,
+                last_updated_utc=CREATED,
+            )
+        )

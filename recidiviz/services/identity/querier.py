@@ -30,6 +30,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity import types
+from recidiviz.services.identity.resolution_helpers import resolve_surviving_ids
 
 
 def _to_external_id(row: schema.ExternalId) -> types.ExternalId:
@@ -233,32 +234,27 @@ def _to_split_event(row: schema.SplitEvent) -> types.SplitEvent:
     )
 
 
-def _resolve_surviving_recidiviz_id(
-    session: Session, recidiviz_id: uuid.UUID
-) -> uuid.UUID | None:
-    """Walks the merged_into chain from `recidiviz_id` to the surviving ACTIVE
-    record and returns its recidiviz_id, or None if `recidiviz_id` is not found.
-
-    The schema enforces that every RETIRED row points at an existing record via
-    `merged_into`, but does not enforce acyclicity. A cycle raises ValueError."""
-    current_id = recidiviz_id
-    seen: set[uuid.UUID] = set()
-    while current_id not in seen:
-        seen.add(current_id)
-        row = (
-            session.query(schema.Identity.status, schema.Identity.merged_into)
-            .filter(schema.Identity.recidiviz_id == current_id)
-            .one_or_none()
-        )
-        if row is None:
-            return None
-        if row.status is IdentityStatus.ACTIVE:
-            return current_id
-        current_id = row.merged_into
-    raise ValueError(
-        f"Cycle detected in merged_into chain starting from "
-        f"[{recidiviz_id}]: revisited [{current_id}]"
+def _resolve_surviving_identities(
+    session: Session, recidiviz_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, types.Identity | None]:
+    """Returns a mapping from each id in `recidiviz_ids` to its surviving ACTIVE
+    Identity, or None if the id does not exist.
+    Raises IdentityHistoryIntegrityException if a merged_into hop references a
+    nonexistent record, or if a chain contains a cycle."""
+    surviving_id_by_input = resolve_surviving_ids(session, recidiviz_ids)
+    surviving_ids = set(filter(None, surviving_id_by_input.values()))
+    surviving_rows = (
+        session.query(schema.Identity)
+        .filter(schema.Identity.recidiviz_id.in_(surviving_ids))
+        .all()
+        if surviving_ids
+        else []
     )
+    identity_by_id = {row.recidiviz_id: _to_identity(row) for row in surviving_rows}
+    return {
+        input_id: identity_by_id[surviving_id] if surviving_id is not None else None
+        for input_id, surviving_id in surviving_id_by_input.items()
+    }
 
 
 class IdentityServiceQuerier:
@@ -282,16 +278,13 @@ class IdentityServiceQuerier:
         relationships on `schema.Identity`.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            target_id = (
-                _resolve_surviving_recidiviz_id(session, recidiviz_id)
-                if resolve_retired
-                else recidiviz_id
-            )
-            if target_id is None:
-                return None
+            if resolve_retired:
+                return _resolve_surviving_identities(session, [recidiviz_id])[
+                    recidiviz_id
+                ]
             identity_row = (
                 session.query(schema.Identity)
-                .filter(schema.Identity.recidiviz_id == target_id)
+                .filter(schema.Identity.recidiviz_id == recidiviz_id)
                 .one_or_none()
             )
             if identity_row is None:

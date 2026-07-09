@@ -19,9 +19,10 @@ import datetime
 import os
 import unittest
 import uuid
+from typing import Any
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 from recidiviz.common.constants.identity import (
     AttributeType,
@@ -30,7 +31,6 @@ from recidiviz.common.constants.identity import (
     MergeTrigger,
     NameUse,
     PersonType,
-    SourceType,
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
@@ -38,6 +38,7 @@ from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 from recidiviz.services.identity.types import (
     AttributeConflict,
@@ -56,6 +57,9 @@ from recidiviz.tests.services.identity.test_utils import (
     NEW_ID,
     RECIDIVIZ_ID,
     RETIRED_ID,
+    insert_email,
+    insert_external_id,
+    insert_identity,
     make_sourced_attribute,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -63,10 +67,8 @@ from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunch
 from recidiviz.tools.services.identity import fixtures as identity_fixtures
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
-RESOLUTION_TS = datetime.datetime(2026, 3, 1, 12, 0, tzinfo=datetime.timezone.utc)
-# Merge chain used by the resolution tests: HEAD -> MIDDLE -> SURVIVOR.
-ACTIVE_SURVIVOR_ID = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-RETIRED_MIDDLE_ID = uuid.UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+# The multi-hop resolution tests build on the CSV-fixture-seeded merge chain
+# (RECIDIVIZ_ID ACTIVE <- RETIRED_ID RETIRED) by adding one more hop on top.
 RETIRED_HEAD_ID = uuid.UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
 UNKNOWN_ID = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
 CYCLED_ID = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
@@ -313,59 +315,91 @@ class IdentityServiceQuerierTest(unittest.TestCase):
             IdentityServiceQuerier().get_identity_history(identity),
         )
 
-    def _insert_identity(
-        self,
-        recidiviz_id: uuid.UUID,
-        status: IdentityStatus,
-        merged_into: uuid.UUID | None = None,
-    ) -> None:
-        """Inserts a bare Identity row (no attributes / external IDs) for the
-        merge-chain resolution tests."""
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.Identity(
-                    recidiviz_id=recidiviz_id,
-                    created_utc=RESOLUTION_TS,
-                    last_updated_utc=RESOLUTION_TS,
-                    tenant=Tenant.US_OZ,
-                    person_type=PersonType.JII,
-                    status=status,
-                    merged_into=merged_into,
-                )
-            )
-
     def test_get_identity_active_returns_record(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
+        )
 
         result = IdentityServiceQuerier().get_identity(
-            ACTIVE_SURVIVOR_ID, resolve_retired=True
+            RECIDIVIZ_ID, resolve_retired=True
         )
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_identity_resolves_single_retired_hop(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
 
-        result = IdentityServiceQuerier().get_identity(
-            RETIRED_MIDDLE_ID, resolve_retired=True
-        )
+        result = IdentityServiceQuerier().get_identity(RETIRED_ID, resolve_retired=True)
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
-    def test_get_identity_resolves_multi_hop_chain(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+    def test_get_identity_resolves_single_retired_hop_without_redundant_queries(
+        self,
+    ) -> None:
+        """A single-hop retired resolution should query the `identities` table 3
+        times total (the input row, the survivor's row, and the final full-row
+        fetch) -- the same as a direct chain walk would need -- not 4. It must not
+        re-fetch the input row's (status, merged_into) a second time just to
+        satisfy the batch resolver's frontier query. (Queries against child tables
+        like external_ids/emails/names, loaded via `selectin` relationships, are
+        excluded -- they're unrelated to the chain-resolution logic under test.)"""
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_identity(
-            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+
+        identities_table_selects: list[str] = []
+
+        def record_select(
+            _conn: Any,
+            _cursor: Any,
+            statement: str,
+            _parameters: Any,
+            _context: Any,
+            _executemany: bool,
+        ) -> None:
+            if statement.lstrip().upper().startswith("SELECT") and (
+                "FROM identities" in statement
+            ):
+                identities_table_selects.append(statement)
+
+        event.listen(self.engine, "before_cursor_execute", record_select)
+        try:
+            result = IdentityServiceQuerier().get_identity(
+                RETIRED_ID, resolve_retired=True
+            )
+        finally:
+            event.remove(self.engine, "before_cursor_execute", record_select)
+
+        assert result is not None
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
+        self.assertEqual(3, len(identities_table_selects))
+
+    def test_get_identity_resolves_multi_hop_chain(self) -> None:
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
+        )
+        insert_identity(
+            recidiviz_id=RETIRED_HEAD_ID,
+            status=IdentityStatus.RETIRED,
+            merged_into=RETIRED_ID,
         )
 
         result = IdentityServiceQuerier().get_identity(
@@ -373,7 +407,7 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         )
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_identity_returns_none_when_absent(self) -> None:
@@ -385,28 +419,34 @@ class IdentityServiceQuerierTest(unittest.TestCase):
         )
 
     def test_get_identity_literal_returns_retired_record(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
 
         result = IdentityServiceQuerier().get_identity(
-            RETIRED_MIDDLE_ID, resolve_retired=False
+            RETIRED_ID, resolve_retired=False
         )
 
         assert result is not None
-        self.assertEqual(RETIRED_MIDDLE_ID, result.recidiviz_id)
+        self.assertEqual(RETIRED_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.RETIRED, result.status)
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.merged_into)
+        self.assertEqual(RECIDIVIZ_ID, result.merged_into)
 
     def test_get_identity_raises_on_cycle(self) -> None:
         # Insert a self-referential cycle: CYCLED_ID's merged_into points to itself.
         # PostgreSQL allows this for self-referential FKs (the row satisfies its own
         # FK after insert). This is the kind of corrupt state we guard against.
-        self._insert_identity(CYCLED_ID, IdentityStatus.RETIRED, merged_into=CYCLED_ID)
+        insert_identity(
+            recidiviz_id=CYCLED_ID,
+            status=IdentityStatus.RETIRED,
+            merged_into=CYCLED_ID,
+        )
 
         with self.assertRaisesRegex(
-            ValueError,
+            IdentityHistoryIntegrityException,
             rf"^Cycle detected in merged_into chain starting from \[{CYCLED_ID}\]: "
             rf"revisited \[{CYCLED_ID}\]$",
         ):
@@ -442,92 +482,59 @@ class GetByExternalIdTest(unittest.TestCase):
             cls.postgres_launch_result
         )
 
-    def _insert_identity(
-        self,
-        recidiviz_id: uuid.UUID,
-        status: IdentityStatus,
-        merged_into: uuid.UUID | None = None,
-    ) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.Identity(
-                    recidiviz_id=recidiviz_id,
-                    created_utc=RESOLUTION_TS,
-                    last_updated_utc=RESOLUTION_TS,
-                    tenant=Tenant.US_OZ,
-                    person_type=PersonType.JII,
-                    status=status,
-                    merged_into=merged_into,
-                )
-            )
-
-    def _insert_external_id(
-        self,
-        recidiviz_id: uuid.UUID,
-        external_id: str,
-        id_type: IdentifierType,
-        *,
-        is_active: bool = True,
-    ) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.ExternalId(
-                    recidiviz_id=recidiviz_id,
-                    external_id=external_id,
-                    id_type=id_type,
-                    is_active=is_active,
-                )
-            )
-
     def test_get_by_external_id_active_returns_identity(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_external_id(
-            ACTIVE_SURVIVOR_ID, "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity, schema.ExternalId],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
 
         result = IdentityServiceQuerier().get_by_external_id(
-            "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+            "OZ123", IdentifierType.US_OZ_KDS_PERSON_ID
         )
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_external_id_resolves_single_retired_hop(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_external_id(
-            RETIRED_MIDDLE_ID, "EXT456", IdentifierType.US_OZ_KDS_PERSON_ID
-        )
+        insert_external_id(recidiviz_id=RETIRED_ID, external_id="EXT456")
 
         result = IdentityServiceQuerier().get_by_external_id(
             "EXT456", IdentifierType.US_OZ_KDS_PERSON_ID
         )
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_external_id_resolves_multi_hop_chain(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_identity(
-            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+        insert_identity(
+            recidiviz_id=RETIRED_HEAD_ID,
+            status=IdentityStatus.RETIRED,
+            merged_into=RETIRED_ID,
         )
-        self._insert_external_id(
-            RETIRED_HEAD_ID, "EXT789", IdentifierType.US_OZ_KDS_PERSON_ID
-        )
+        insert_external_id(recidiviz_id=RETIRED_HEAD_ID, external_id="EXT789")
 
         result = IdentityServiceQuerier().get_by_external_id(
             "EXT789", IdentifierType.US_OZ_KDS_PERSON_ID
         )
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_external_id_unknown_returns_none(self) -> None:
@@ -541,17 +548,17 @@ class GetByExternalIdTest(unittest.TestCase):
         # After a split, the original identity keeps an inactive row for the moved
         # external_id and the destination identity gets a new active row. The lookup
         # must return the destination (the active owner of the external_id).
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(SPLIT_DESTINATION_ID, IdentityStatus.ACTIVE)
-        self._insert_external_id(
-            ACTIVE_SURVIVOR_ID,
-            "EXT123",
-            IdentifierType.US_OZ_KDS_PERSON_ID,
-            is_active=False,
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_external_id(
-            SPLIT_DESTINATION_ID, "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
+        insert_identity(recidiviz_id=SPLIT_DESTINATION_ID, status=IdentityStatus.ACTIVE)
+        insert_external_id(
+            recidiviz_id=RECIDIVIZ_ID, external_id="EXT123", is_active=False
         )
+        insert_external_id(recidiviz_id=SPLIT_DESTINATION_ID, external_id="EXT123")
 
         result = IdentityServiceQuerier().get_by_external_id(
             "EXT123", IdentifierType.US_OZ_KDS_PERSON_ID
@@ -590,58 +597,25 @@ class GetByEmailHashTest(unittest.TestCase):
             cls.postgres_launch_result
         )
 
-    def _insert_identity(
-        self,
-        recidiviz_id: uuid.UUID,
-        status: IdentityStatus,
-        *,
-        tenant: Tenant = Tenant.US_OZ,
-        merged_into: uuid.UUID | None = None,
-    ) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.Identity(
-                    recidiviz_id=recidiviz_id,
-                    created_utc=RESOLUTION_TS,
-                    last_updated_utc=RESOLUTION_TS,
-                    tenant=tenant,
-                    person_type=PersonType.JII,
-                    status=status,
-                    merged_into=merged_into,
-                )
-            )
-
-    def _insert_email(
-        self,
-        recidiviz_id: uuid.UUID,
-        address_hash: str,
-    ) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.Email(
-                    recidiviz_id=recidiviz_id,
-                    address="test@example.com",
-                    address_hash=address_hash,
-                    source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                    source_product_app=None,
-                    last_updated_utc=RESOLUTION_TS,
-                )
-            )
-
     def test_get_by_email_hash_filters_by_tenant(self) -> None:
-        self._insert_identity(
-            ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE, tenant=Tenant.US_OZ
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_email(ACTIVE_SURVIVOR_ID, "hash-abc")
-        self._insert_identity(
-            OTHER_TENANT_ID, IdentityStatus.ACTIVE, tenant=Tenant.US_XX
+        insert_email(recidiviz_id=RECIDIVIZ_ID, address_hash="hash-abc")
+        insert_identity(
+            recidiviz_id=OTHER_TENANT_ID,
+            status=IdentityStatus.ACTIVE,
+            tenant=Tenant.US_XX,
         )
-        self._insert_email(OTHER_TENANT_ID, "hash-abc")
+        insert_email(recidiviz_id=OTHER_TENANT_ID, address_hash="hash-abc")
 
         result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
 
         result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_XX)
 
@@ -652,42 +626,52 @@ class GetByEmailHashTest(unittest.TestCase):
         assert result is None
 
     def test_get_by_email_hash_active_returns_identity(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_email(ACTIVE_SURVIVOR_ID, "hash-abc")
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity, schema.Email],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
+        )
 
-        result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
+        result = IdentityServiceQuerier().get_by_email_hash("hash123", Tenant.US_OZ)
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_email_hash_resolves_single_retired_hop(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_email(RETIRED_MIDDLE_ID, "hash-abc")
+        insert_email(recidiviz_id=RETIRED_ID, address_hash="hash-abc")
 
         result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_email_hash_resolves_multi_hop_chain(self) -> None:
-        self._insert_identity(ACTIVE_SURVIVOR_ID, IdentityStatus.ACTIVE)
-        self._insert_identity(
-            RETIRED_MIDDLE_ID, IdentityStatus.RETIRED, merged_into=ACTIVE_SURVIVOR_ID
+        reset_fixtures(
+            engine=self.engine,
+            tables=[schema.Identity],
+            fixture_directory=os.path.dirname(identity_fixtures.__file__),
+            csv_headers=True,
         )
-        self._insert_identity(
-            RETIRED_HEAD_ID, IdentityStatus.RETIRED, merged_into=RETIRED_MIDDLE_ID
+        insert_identity(
+            recidiviz_id=RETIRED_HEAD_ID,
+            status=IdentityStatus.RETIRED,
+            merged_into=RETIRED_ID,
         )
-        self._insert_email(RETIRED_HEAD_ID, "hash-abc")
+        insert_email(recidiviz_id=RETIRED_HEAD_ID, address_hash="hash-abc")
 
         result = IdentityServiceQuerier().get_by_email_hash("hash-abc", Tenant.US_OZ)
 
         assert result is not None
-        self.assertEqual(ACTIVE_SURVIVOR_ID, result.recidiviz_id)
+        self.assertEqual(RECIDIVIZ_ID, result.recidiviz_id)
         self.assertEqual(IdentityStatus.ACTIVE, result.status)
 
     def test_get_by_email_hash_unknown_returns_none(self) -> None:

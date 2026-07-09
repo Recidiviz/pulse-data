@@ -25,6 +25,7 @@ from recidiviz.services.identity.constants import (
     DEV_CALLER_SERVICE_ACCOUNT,
     IAP_BACKEND_SERVICE_ID_SECRET_NAME,
 )
+from recidiviz.services.identity.error_handlers import register_error_handlers
 from recidiviz.services.identity.exceptions import UnknownCallerError
 from recidiviz.services.identity.helpers import get_source_product_app
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
@@ -43,6 +44,7 @@ api = Api(
     },
 )
 app.register_blueprint(identity_blueprint)
+register_error_handlers(app)
 
 if in_gcp():
     structured_logging.setup_gunicorn()

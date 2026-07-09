@@ -19,3 +19,10 @@
 
 class UnknownCallerError(ValueError):
     """Raised when an authenticated caller is not in the source-app mapping."""
+
+
+class IdentityHistoryIntegrityException(ValueError):
+    """Raised when stored identity data violates an invariant the merge/split
+    audit trail is supposed to guarantee -- e.g. a merged_into chain that
+    references a nonexistent record, or a cycle in that chain. Indicates
+    corrupt data requiring investigation, not a caller error."""

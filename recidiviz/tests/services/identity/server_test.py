@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from recidiviz.common.constants.identity import IdentifierType
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
 from recidiviz.services.identity.server import app
 from recidiviz.tests.services.identity.test_utils import (
     DEFAULT_MAPPING,
@@ -142,6 +143,29 @@ class GetIdentityEndpointTest(TestCase):
             response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
 
         self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_returns_500_for_corrupt_merge_chain(self) -> None:
+        # A broken merged_into chain (an intermediate record's merge target
+        # deleted) makes the querier raise IdentityHistoryIntegrityException rather
+        # than return None. This must not leak out as an unhandled exception /
+        # HTML error page -- it should come back as a structured JSON error.
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.get_identity.side_effect = (
+                IdentityHistoryIntegrityException(
+                    "Identity [11111111-1111-1111-1111-111111111111] referenced "
+                    "via merged_into chain from "
+                    "[22222222-2222-2222-2222-222222222222] does not exist."
+                )
+            )
+            response = self.client.get(f"/identity/{RECIDIVIZ_ID}", headers=IAP_HEADERS)
+
+        self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+        body = response.get_json()
+        assert body is not None
+        self.assertEqual("identity_integrity_error", body["code"])
+        self.assertIn("does not exist", body["description"])
 
     def test_returns_404_for_non_uuid_path(self) -> None:
         with mock_iap_environment(
