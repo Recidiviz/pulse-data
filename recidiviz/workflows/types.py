@@ -118,6 +118,8 @@ class OpportunityConfig:
     subcategory_orderings: list[dict[str, Any]] = attr.ib()
     mark_submitted_options_by_tab: list[dict[str, Any]] = attr.ib()
 
+    enabled_columns: list[dict[str, str | None]] = attr.ib()
+
     oms_criteria_header: Optional[str] = attr.ib()
     non_oms_criteria_header: Optional[str] = attr.ib()
     non_oms_criteria: list[dict[str, Optional[str]]] = attr.ib()

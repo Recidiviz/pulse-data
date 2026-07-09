@@ -210,6 +210,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "enabledColumns": [
+                {
+                    "columnId": "PERSON_NAME",
+                    "columnHeader": "Name",
+                    "cellValue": "{{record.personName}}",
+                },
+                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
             "reasonsRequiringApproval": [],
@@ -234,6 +242,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "enabledColumns": [
+                {
+                    "columnId": "PERSON_NAME",
+                    "columnHeader": "Name",
+                    "cellValue": "{{record.personName}}",
+                },
+                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
             "reasonsRequiringApproval": [],
@@ -260,6 +276,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+            "enabledColumns": [
+                {
+                    "columnId": "PERSON_NAME",
+                    "columnHeader": "Name",
+                    "cellValue": "{{record.personName}}",
+                },
+                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
             "reasonsRequiringApproval": [],
@@ -331,5 +355,88 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "sidebarComponents": ["CaseNotes"],
             "methodologyUrl": "https://example.com/",
             "isAlert": False,
+        }
+    )
+
+    # Otherwise-valid config whose only problem is two columns sharing a column ID.
+    test_duplicate_column_id = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [
+                {"columnId": "STATUS", "columnHeader": "Status", "cellValue": None},
+                {"columnId": "STATUS", "columnHeader": "State", "cellValue": None},
+            ],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
+        }
+    )
+
+    # Column IDs that are distinct as written but collide once normalized
+    # (stripped + upper-cased) by EnabledColumnSchema's post_load.
+    test_duplicate_column_id_after_normalization = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [
+                {"columnId": "STATUS"},
+                {"columnId": "  status  "},
+            ],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
+        }
+    )
+
+    # Column IDs that differ only by space vs underscore collide once normalized
+    # (spaces are replaced with underscores) by EnabledColumnSchema's post_load.
+    test_duplicate_column_id_underscore_vs_space = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [
+                {"columnId": "PERSON NAME"},
+                {"columnId": "PERSON_NAME"},
+            ],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
         }
     )

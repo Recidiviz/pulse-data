@@ -18,7 +18,7 @@
 import re
 from typing import Any, Dict
 
-from marshmallow import Schema, ValidationError, fields, validates_schema
+from marshmallow import Schema, ValidationError, fields, post_load, validates_schema
 
 from recidiviz.utils.api_schemas import CamelCaseSchema, CamelOrSnakeCaseSchema
 
@@ -124,6 +124,36 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         text = fields.Str()
         tooltip = fields.Str(required=False)
 
+    class EnabledColumnSchema(CamelCaseSchema):
+        column_id = fields.Str(required=True)
+        column_header = fields.Str(required=False, allow_none=True, load_default=None)
+        cell_value = fields.Str(required=False, allow_none=True, load_default=None)
+
+        @post_load
+        # pylint: disable=unused-argument
+        def normalize_column_id(
+            self, data: Dict[str, Any], **kwargs: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Normalize column_id to upper-case with surrounding whitespace stripped."""
+            column_id = data["column_id"].strip().upper().replace(" ", "_")
+            if not column_id:
+                raise ValidationError(
+                    {"column_id": ["Must not be empty or whitespace."]}
+                )
+            data["column_id"] = column_id
+            return data
+
+        @post_load
+        # pylint: disable=unused-argument
+        def empty_strings_to_none(
+            self, data: Dict[str, Any], **kwargs: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Coerce empty-string optional values to None."""
+            for field_name in ("column_header", "cell_value"):
+                if data.get(field_name) == "":
+                    data[field_name] = None
+            return data
+
     class DenialReasonsSchema(CamelCaseSchema):
         key = fields.Str()
         text = fields.Str()
@@ -203,6 +233,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     subcategory_headings = fields.List(fields.Nested(SubcategoryHeadingSchema))
     subcategory_orderings = fields.List(fields.Nested(TabTextListSchema))
     mark_submitted_options_by_tab = fields.List(fields.Nested(TabTextListSchema))
+    enabled_columns = fields.List(fields.Nested(EnabledColumnSchema()), required=True)
     oms_criteria_header = fields.Str(required=False)
     non_oms_criteria_header = fields.Str(required=False)
     non_oms_criteria = fields.List(fields.Nested(KeylessCriteriaCopySchema()))
@@ -221,6 +252,16 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         if invalid:
             raise ValidationError(
                 f"reasons_requiring_approval contains keys not in denial_reasons: {invalid}"
+            )
+
+    @validates_schema
+    def validate_enabled_columns(self, data: Dict, **_kwargs: Any) -> None:
+        # catches both exact duplicate columnIDs and ones that collide only after normalization
+        column_ids = [column["column_id"] for column in data.get("enabled_columns", [])]
+        duplicates = {c for c in column_ids if column_ids.count(c) > 1}
+        if duplicates:
+            raise ValidationError(
+                f"Cannot define the same Column ID twice: [{duplicates}]"
             )
 
 

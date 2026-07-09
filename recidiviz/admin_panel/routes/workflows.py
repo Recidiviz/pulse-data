@@ -229,6 +229,7 @@ class OpportunityConfigurationsAPI(MethodView):
             subcategory_headings=body_args["subcategory_headings"],
             subcategory_orderings=body_args["subcategory_orderings"],
             mark_submitted_options_by_tab=body_args["mark_submitted_options_by_tab"],
+            enabled_columns=body_args["enabled_columns"],
             oms_criteria_header=body_args.get("oms_criteria_header"),
             non_oms_criteria_header=body_args.get("non_oms_criteria_header"),
             non_oms_criteria=body_args["non_oms_criteria"],

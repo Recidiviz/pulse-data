@@ -32,6 +32,10 @@ import {
   DenialReasonsView,
 } from "./fieldComponents/DenialReasons";
 import {
+  EnabledColumnsEdit,
+  EnabledColumnsView,
+} from "./fieldComponents/EnabledColumns";
+import {
   NotificationsEdit,
   NotificationsView,
 } from "./fieldComponents/Notifications";
@@ -264,6 +268,17 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         multiple: true,
         Edit: TabTextListEdit,
         View: TabTextListView,
+      },
+    },
+  },
+  {
+    sectionHeading: "Table View",
+    fields: {
+      enabledColumns: {
+        label: "Enabled Columns",
+        multiple: true,
+        Edit: EnabledColumnsEdit,
+        View: EnabledColumnsView,
       },
     },
   },

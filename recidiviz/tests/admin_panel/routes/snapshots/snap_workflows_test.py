@@ -52,6 +52,14 @@ snapshots[
         "eligibilityDateText": "date text",
         "eligibleCriteriaCopy": [],
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
+        "enabledColumns": [
+            {
+                "columnId": "PERSON_NAME",
+                "columnHeader": "Name",
+                "cellValue": "{{record.personName}}",
+            },
+            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+        ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",
         "grantApprovedTabTitle": "Approved by Supervisor",
@@ -134,6 +142,14 @@ snapshots[
         "eligibilityDateText": "date text",
         "eligibleCriteriaCopy": [],
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
+        "enabledColumns": [
+            {
+                "columnId": "PERSON_NAME",
+                "columnHeader": "Name",
+                "cellValue": "{{record.personName}}",
+            },
+            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+        ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",
         "grantApprovedTabTitle": "Approved by Supervisor",
@@ -216,6 +232,14 @@ snapshots[
         "eligibilityDateText": "date text",
         "eligibleCriteriaCopy": [],
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
+        "enabledColumns": [
+            {
+                "columnId": "PERSON_NAME",
+                "columnHeader": "Name",
+                "cellValue": "{{record.personName}}",
+            },
+            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+        ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",
         "grantApprovedTabTitle": "Approved by Supervisor",

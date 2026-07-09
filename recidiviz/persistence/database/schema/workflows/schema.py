@@ -268,3 +268,6 @@ class OpportunityConfiguration(WorkflowsBase):
     reasons_requiring_approval = Column(
         ARRAY(String), nullable=False, server_default="{}"
     )
+
+    # Columns to display (in order) in the table view
+    enabled_columns = Column(JSON, nullable=False, server_default="{}")

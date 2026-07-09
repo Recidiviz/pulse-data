@@ -57,6 +57,16 @@ const keylessCriteriaCopySchema = z
   )
   .default([]);
 
+const enabledColumnsSchema = z
+  .array(
+    z.object({
+      columnId: z.string(),
+      columnHeader: nullishAsUndefined(z.string()),
+      cellValue: nullishAsUndefined(z.string()),
+    })
+  )
+  .default([]);
+
 export const notificationsSchema = z
   .array(
     z.object({
@@ -167,6 +177,8 @@ export const babyOpportunityConfigurationSchema = z
     subcategoryHeadings: subcategoryHeadingSchema,
     subcategoryOrderings: tabTextListSchema,
     markSubmittedOptionsByTab: tabTextListSchema,
+
+    enabledColumns: enabledColumnsSchema,
 
     omsCriteriaHeader: nullishAsUndefined(z.string()),
     nonOmsCriteriaHeader: nullishAsUndefined(z.string()),

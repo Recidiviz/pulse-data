@@ -147,10 +147,10 @@ my_field = fields.Bool(required=False)
 my_field = fields.Bool(required=True)
 
 # Optional list of strings
-my_field = fields.List(fields.Str(required=False))
+my_field = fields.List(fields.Str())
 
-# Required list of strings
-my_field = fields.List(fields.Str(required=True))
+# Required list of strings 
+my_field = fields.List(fields.Str(), required=True)
 
 # Required list of objects (define a nested schema class first)
 my_field = fields.List(fields.Nested(MyFieldSchema()), required=True)
@@ -385,24 +385,39 @@ uv run pytest \
   --snapshot-update -q
 ```
 
-**After updating snapshots**, two cleanup steps are required because
-`--snapshot-update` regenerates each file in snapshottest's own style:
+**After updating snapshots**, run these two cleanup steps (black first, then
+header restore) because `--snapshot-update` rewrites each file in snapshottest's
+own style — stripping the license block *and* the Pylint docstring, and
+reformatting the body — in **both** files.
 
-1. **Run black** on `snap_workflows_test.py` to restore double-quote, compact
-   formatting (snapshottest writes single quotes and expands dicts):
+1. **Run black on BOTH files.** Snapshottest writes single quotes, un-wraps the
+   `snapshots[...] = [` keys, and drops blank lines — in `snap_querier_test.py`
+   too (its `GenericRepr` values are untouched, but its assignment lines are
+   not). Black restores the committed style:
    ```bash
-   uv run black recidiviz/tests/admin_panel/routes/snapshots/snap_workflows_test.py
+   uv run black \
+     recidiviz/tests/workflows/querier/snapshots/snap_querier_test.py \
+     recidiviz/tests/admin_panel/routes/snapshots/snap_workflows_test.py
    ```
-   (`snap_querier_test.py` uses `GenericRepr` strings, not dicts, so black
-   isn't needed there.)
 
-2. **Restore license headers** in both snapshot files —
-   `--snapshot-update` strips everything above the `# -*- coding` line.
-   For each file, check the previous version and prepend the header:
+2. **Restore the license block AND docstring.** They sit on opposite sides of
+   the `# -*- coding`/`# snapshottest` comments (license above, docstring
+   below), so anchor on `from __future__` — the first line identical in HEAD and
+   the regenerated file, below both — taking everything before it from HEAD and
+   everything from it onward from the black-formatted file:
    ```bash
-   git show HEAD:recidiviz/tests/workflows/querier/snapshots/snap_querier_test.py | head -25
-   git show HEAD:recidiviz/tests/admin_panel/routes/snapshots/snap_workflows_test.py | head -25
+   for f in \
+     recidiviz/tests/workflows/querier/snapshots/snap_querier_test.py \
+     recidiviz/tests/admin_panel/routes/snapshots/snap_workflows_test.py; do
+     git show "HEAD:$f" | sed '/^from __future__/,$d' > /tmp/hdr.txt
+     sed -n '/^from __future__/,$p' "$f" > /tmp/body.txt
+     cat /tmp/hdr.txt /tmp/body.txt > /tmp/restored.py && mv /tmp/restored.py "$f"
+   done
    ```
+
+**Verify:** `git diff` both snapshot files and confirm the *only* changed lines
+are your new field's value. Any header, quote, or blank-line churn means a step
+above was missed.
 
 ---
 

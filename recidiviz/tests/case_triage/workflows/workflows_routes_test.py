@@ -2218,6 +2218,14 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             subcategory_headings=[],
             subcategory_orderings=[],
             mark_submitted_options_by_tab=[],
+            enabled_columns=[
+                {
+                    "column_id": "PERSON_NAME",
+                    "column_header": "Name",
+                    "cell_value": "{{record.personName}}",
+                },
+                {"column_id": "STATUS", "column_header": None, "cell_value": None},
+            ],
             oms_criteria_header="Validated by data from OMS",
             non_oms_criteria_header="Requirements to check",
             non_oms_criteria=[{}],

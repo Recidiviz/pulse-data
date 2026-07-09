@@ -71,7 +71,10 @@ const helpers = Object.fromEntries(
   ])
 );
 
-const handlebarsValidator: RuleObject["validator"] = async (_, value) => {
+export const handlebarsValidator: RuleObject["validator"] = async (
+  _,
+  value
+) => {
   if (!value) return;
   const template = Handlebars.compile(value, { noEscape: true });
   template({ value }, { helpers });
