@@ -63,11 +63,20 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inv
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_age import (
     US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_prev_level_5_release import (
+    US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_high import (
     US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_moderate import (
     US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_recent_ad_seg import (
+    US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_vfo_level import (
+    US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
@@ -308,6 +317,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
             US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
             US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
         ]
     },
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
