@@ -1398,3 +1398,50 @@ SELECT
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4
 """
+
+
+# Regex patterns for categorizing Michigan incarceration incidents by offense code.
+# Matched against OFFENSE_CODE_LIST in incident_metadata (e.g., "102,203").
+# Each pattern anchors to a digit prefix — codes are stored as strings like "102", "214".
+_US_MI_VIOLENT_OFFENSE_CODE_PATTERN = (
+    r"\d02|\d03|\d04|\d05|\d07|\d08|\d09|\d10|\d11|\d15|\d16|\d13|\d51|\d52|\d53|\d22"
+)
+_US_MI_FIGHT_THREATEN_POW_OFFENSE_CODE_PATTERN = r"\d12|\d14|\d29"
+
+
+def mi_classification_policy_2026_incidents() -> str:
+    """Returns a SQL CTE that retrieves Michigan Class I and II incarceration incidents
+    with relevant metadata.
+
+    Pulls from us_mi_incarceration_incidents_preprocessed_materialized, which already
+    filters to Class I/II incidents with non-dismissed outcomes.
+
+    Incident categories:
+    - violent: offense codes matching the violent pattern
+    - fight_threaten_pow: offense codes matching the fight/threaten/POW pattern
+    - other_class_i_or_ii: any Class I or II incident not in the above categories
+    """
+    return f"""(
+        SELECT
+            i.person_id,
+            i.state_code,
+            i.incarceration_incident_id,
+            i.incident_date,
+            i.incident_type_raw_text,
+            CASE
+                WHEN i.incident_severity = 'HIGHEST' THEN 'I'
+                WHEN i.incident_severity = 'SECOND_HIGHEST' THEN 'II'
+            END AS incident_class,
+            CASE
+                WHEN REGEXP_CONTAINS(
+                    JSON_EXTRACT_SCALAR(i.incident_metadata, '$.OFFENSE_CODE_LIST'),
+                    r'{_US_MI_VIOLENT_OFFENSE_CODE_PATTERN}'
+                ) THEN 'violent'
+                WHEN REGEXP_CONTAINS(
+                    JSON_EXTRACT_SCALAR(i.incident_metadata, '$.OFFENSE_CODE_LIST'),
+                    r'{_US_MI_FIGHT_THREATEN_POW_OFFENSE_CODE_PATTERN}'
+                ) THEN 'fight_threaten_pow'
+                ELSE 'other_class_i_or_ii'
+            END AS incident_category,
+        FROM `{{project_id}}.analyst_data.us_mi_incarceration_incidents_preprocessed_materialized` i
+    )"""

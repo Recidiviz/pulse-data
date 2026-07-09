@@ -1323,18 +1323,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "unpaid_balance_within_supervision_session",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.us_tn_incarceration_incidents_classification_preprocessed"
-    ): [
-        "custodial_authority_session_id",
-        "event_date",
-        "incarceration_incident_id",
-        "incident_class",
-        "infraction_type_raw_text",
-        "is_violent",
-        "person_id",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
         "analyst_data.us_tn_incarceration_incidents_preprocessed"
     ): [
         "assault_score",

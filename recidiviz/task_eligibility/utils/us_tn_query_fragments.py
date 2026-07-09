@@ -692,7 +692,7 @@ def offense_severity_to_q2_score(assessment_type: str) -> str:
     return f"CASE {' '.join(when_clauses)} END"
 
 
-def classification_v2_incidents() -> str:
+def tn_classification_policy_2026_incidents() -> str:
     """
     Returns a SQL CTE that retrieves TN incarceration incidents with relevant metadata.
 
@@ -785,7 +785,7 @@ def incident_based_caf_score_query_template(
         incident_filter_condition: A WHERE clause condition to filter which incidents
             are included in the scoring. This should reference columns available in
             the `us_tn_incarceration_incidents_preprocessed` table
-            (e.g., "incident_class IN ('A', 'B') AND NOT is_violent").
+            (e.g., "incident_class = 'A' AND incident_category = 'non_violent'").
         max_total_score: If set, caps total_score at this value using LEAST(). Useful
             when individual window scores can sum beyond the policy maximum.
     """
@@ -947,9 +947,12 @@ def incident_based_caf_score_query_template(
     )
     ,
     relevant_incidents AS (
-        SELECT * 
-        FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_classification_preprocessed_materialized`
-        WHERE {incident_filter_condition}
+        SELECT
+            * EXCEPT (incident_date),
+            incident_date AS event_date,
+        FROM `{{project_id}}.analyst_data.incarceration_incidents_classification_preprocessed_materialized`
+        WHERE state_code = 'US_TN'
+            AND {incident_filter_condition}
     )
     ,
     -- Count incidents within each time window (e.g., 0-6 months, 6-12 months, etc.)
