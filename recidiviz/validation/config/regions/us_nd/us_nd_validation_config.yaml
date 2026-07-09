@@ -94,10 +94,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 25
     override_reason: TODO(#26250) - Needs investigation
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 100
+    hard_num_allowed_rows_override: 150
     override_reason: |-
       Will slowly grow until we rerun the CJARS script, which is currently loosely owned
-      by DSI.
+      by DSI. TODO(OBT-37927)
   - validation_name: workflows_primary_users_not_in_state_staff
     hard_num_allowed_rows_override: 60
     override_reason: |-
