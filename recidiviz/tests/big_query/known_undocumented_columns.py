@@ -17739,12 +17739,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "reasons_v2",
         "state_code",
     ],
-    BigQueryAddress.from_str("workflows_views.us_mi_resident_metadata"): [
-        "earliest_release_date",
-        "is_life",
-        "maximum_release_date",
-        "person_id",
-    ],
     BigQueryAddress.from_str(
         "workflows_views.us_mi_supervision_level_downgrade_record"
     ): [
