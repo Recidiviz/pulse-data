@@ -21,6 +21,7 @@ Example usage:
     python -m recidiviz.tools.ingest.operations.compare_ingest_view_results_datasets \
         --state-code US_CA \
         --sandbox-dataset-prefix my_sandbox \
+        [--pipeline-type ACTIVITY] \
         [--project-id recidiviz-123]
 """
 import argparse
@@ -39,6 +40,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
 )
+from recidiviz.pipelines.ingest.identity.dataset_config import (
+    identity_ingest_view_results_dataset_for_tenant,
+)
 from recidiviz.tools.ingest.operations.constants import (
     FILL_CHAR,
     INGEST_VIEW_DIFF_RESULTS_DATASET_ID,
@@ -51,6 +55,25 @@ from recidiviz.tools.utils.compare_tables_helper import (
 )
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+
+
+def _ingest_view_results_dataset_for_pipeline_type(
+    ingest_pipeline_type: IngestPipelineType,
+    state_code: StateCode,
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the ingest view results dataset name for the given pipeline
+    type + state. Identity v1 only supports state-code tenants; the state code
+    is used as the tenant."""
+    if ingest_pipeline_type is IngestPipelineType.ACTIVITY:
+        return ingest_view_materialization_results_dataset(
+            state_code=state_code, sandbox_dataset_prefix=sandbox_dataset_prefix
+        )
+    if ingest_pipeline_type is IngestPipelineType.IDENTITY:
+        return identity_ingest_view_results_dataset_for_tenant(
+            tenant=state_code.value, sandbox_dataset_prefix=sandbox_dataset_prefix
+        )
+    raise ValueError(f"Unexpected ingest_pipeline_type: [{ingest_pipeline_type}]")
 
 
 def _compare_ingest_view_to_sandbox(
@@ -94,11 +117,14 @@ def _compare_ingest_view_to_sandbox(
     return result
 
 
-def _collect_ingest_view_names(state_code: StateCode) -> list[str]:
-    """Collect all ingest view names for the given state.
+def _collect_ingest_view_names(
+    state_code: StateCode, ingest_pipeline_type: IngestPipelineType
+) -> list[str]:
+    """Collect all ingest view names for the given state + pipeline type.
 
     Args:
         state_code: The state code to collect ingest view names for
+        ingest_pipeline_type: The ingest pipeline whose views to enumerate
 
     Returns:
         List of ingest view names
@@ -106,11 +132,8 @@ def _collect_ingest_view_names(state_code: StateCode) -> list[str]:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
-    # TODO(OBT-33499): Once the identity pipeline writes a
-    # `{tenant}_identity_ingest_view_results` dataset, take ingest pipeline
-    # type as a CLI flag and dispatch this collector on it.
     view_collector = DirectIngestViewQueryBuilderCollector(
-        region=region, ingest_pipeline_type=IngestPipelineType.ACTIVITY
+        region=region, ingest_pipeline_type=ingest_pipeline_type
     )
 
     ingest_view_names = []
@@ -126,6 +149,7 @@ def compare_ingest_view_results_to_sandbox(
     sandbox_dataset_prefix: str,
     project_id: str,
     comparison_output_dataset_id: str,
+    ingest_pipeline_type: IngestPipelineType,
 ) -> None:
     """Compare all ingest view results between deployed and sandbox datasets.
     Runs comparisons in parallel and logs statistics about differences found.
@@ -135,13 +159,17 @@ def compare_ingest_view_results_to_sandbox(
         sandbox_dataset_prefix: Prefix used for the sandbox dataset name
         project_id: The GCP project ID containing both datasets
         comparison_output_dataset_id: The dataset ID to write comparison results to
+        ingest_pipeline_type: Which pipeline's ingest view results to compare
+            (ACTIVITY reads from `{state}_ingest_view_results`; IDENTITY reads
+            from `{tenant}_identity_ingest_view_results`).
     """
-    ingest_view_names = _collect_ingest_view_names(state_code)
+    ingest_view_names = _collect_ingest_view_names(state_code, ingest_pipeline_type)
 
-    ingest_views_dataset_id = ingest_view_materialization_results_dataset(
-        state_code=state_code,
+    ingest_views_dataset_id = _ingest_view_results_dataset_for_pipeline_type(
+        ingest_pipeline_type=ingest_pipeline_type, state_code=state_code
     )
-    sandbox_dataset_id = ingest_view_materialization_results_dataset(
+    sandbox_dataset_id = _ingest_view_results_dataset_for_pipeline_type(
+        ingest_pipeline_type=ingest_pipeline_type,
         state_code=state_code,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
@@ -243,6 +271,17 @@ def _parse_arguments() -> argparse.Namespace:
         help="A prefix used for the sandbox dataset.",
     )
     parser.add_argument(
+        "--pipeline-type",
+        type=IngestPipelineType,
+        choices=list(IngestPipelineType),
+        default=IngestPipelineType.ACTIVITY,
+        help=(
+            "Which pipeline's ingest view results to compare. ACTIVITY reads "
+            "from `{state}_ingest_view_results`; IDENTITY reads from "
+            "`{tenant}_identity_ingest_view_results`. Defaults to ACTIVITY."
+        ),
+    )
+    parser.add_argument(
         "--project-id",
         type=str,
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
@@ -261,6 +300,7 @@ def main() -> None:
         sandbox_dataset_prefix=args.sandbox_dataset_prefix,
         project_id=args.project_id,
         comparison_output_dataset_id=f"{args.sandbox_dataset_prefix}_{INGEST_VIEW_DIFF_RESULTS_DATASET_ID}",
+        ingest_pipeline_type=args.pipeline_type,
     )
 
 

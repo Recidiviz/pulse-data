@@ -98,9 +98,8 @@ class ProcessIngestView(beam.PTransform):
         ``update_datetime``.
 
         When ``output_dataset is None`` the intermediate landing-table write is
-        skipped (the identity pipeline has no such dataset). When
-        ``ingest_view_results_only=True`` parsing is skipped and an empty
-        PCollection is returned.
+        skipped. When ``ingest_view_results_only=True`` parsing is skipped and
+        an empty PCollection is returned.
 
         Example output element::
 

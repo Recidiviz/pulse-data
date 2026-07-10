@@ -148,7 +148,7 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 ingest_view_context=ingest_view_context,
                 expected_root_entity_types=(IdentityFragment,),
                 entities_module=identity_fragment_entities,
-                output_dataset=None,
+                output_dataset=self.pipeline_parameters.ingest_view_results_output_dataset,
                 ingest_view_results_only=False,
                 should_throw_on_conflicts=True,
                 resource_labels=self.pipeline_parameters.resource_labels,

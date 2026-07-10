@@ -26,7 +26,10 @@ from more_itertools import one
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.source_tables import activity_pipeline_output_table_collector
+from recidiviz.source_tables import (
+    activity_pipeline_output_table_collector,
+    identity_pipeline_output_table_collector,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_raw_data_source_table_collections_for_state_and_instance,
 )
@@ -50,7 +53,7 @@ class IngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     """Shared base for activity and identity ingest pipeline tests."""
 
     wipe_emulator_data_on_teardown = False
-    direct_ingest_regions_patcher: _patch | None
+    direct_ingest_regions_patchers: list[_patch]
 
     @classmethod
     @abc.abstractmethod
@@ -83,18 +86,27 @@ class IngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.direct_ingest_regions_patcher = None
+        cls.direct_ingest_regions_patchers = []
         if cls.region_module_override():
-            cls.direct_ingest_regions_patcher = patch(
-                f"{activity_pipeline_output_table_collector.__name__}.direct_ingest_regions",
-                autospec=True,
-            )
-            mock_direct_ingest_regions = cls.direct_ingest_regions_patcher.start()
-            mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
-                lambda region_code: get_direct_ingest_region(
-                    region_code, region_module_override=cls.region_module_override()
+            # Both source-table-collector modules import `direct_ingest_regions`
+            # at top level and call `get_direct_ingest_region` from it; patch
+            # each module's reference so their fake-region lookups honor the
+            # override.
+            for module in (
+                activity_pipeline_output_table_collector,
+                identity_pipeline_output_table_collector,
+            ):
+                patcher = patch(
+                    f"{module.__name__}.direct_ingest_regions",
+                    autospec=True,
                 )
-            )
+                mock_direct_ingest_regions = patcher.start()
+                mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+                    lambda region_code: get_direct_ingest_region(
+                        region_code, region_module_override=cls.region_module_override()
+                    )
+                )
+                cls.direct_ingest_regions_patchers.append(patcher)
         super().setUpClass()
 
     def setUp(self) -> None:
@@ -117,8 +129,8 @@ class IngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
-        if cls.direct_ingest_regions_patcher:
-            cls.direct_ingest_regions_patcher.stop()
+        for patcher in cls.direct_ingest_regions_patchers:
+            patcher.stop()
 
     def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
         self.raw_fixture_loader.load_raw_fixtures_to_emulator(

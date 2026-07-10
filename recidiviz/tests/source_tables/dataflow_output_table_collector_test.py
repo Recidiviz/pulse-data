@@ -185,6 +185,32 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
                 ],
             )
 
+    def test_identity_ingest_view_results(self) -> None:
+        """Tests the expected output schema of the identity ingest pipeline's
+        ingest-view-results debug output, one collection per tenant."""
+        identity_collections = self.source_table_repository.get_collections_with_labels(
+            labels=[
+                DataflowPipelineSourceTableLabel(
+                    pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
+                )
+            ]
+        )
+        results_collections = [
+            c
+            for c in identity_collections
+            if c.dataset_id.endswith("_identity_ingest_view_results")
+        ]
+
+        state_codes = get_direct_ingest_states_existing_in_env()
+        self.assertEqual(len(results_collections), len(state_codes))
+        self.assertEqual(
+            {c.dataset_id for c in results_collections},
+            {
+                f"{state_code.value.lower()}_identity_ingest_view_results"
+                for state_code in state_codes
+            },
+        )
+
     def assert_source_tables_match(
         self,
         normalized_collection: SourceTableCollection,

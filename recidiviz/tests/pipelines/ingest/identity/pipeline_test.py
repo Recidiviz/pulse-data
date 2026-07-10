@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the identity ingest pipeline end-to-end."""
+import json
 from types import ModuleType
 
 from recidiviz.common.constants.tenants import Tenant
@@ -37,6 +38,21 @@ class TestIdentityIngestPipeline(IdentityIngestPipelineTestCase):
     def region_module_override(cls) -> ModuleType | None:
         return fake_regions
 
+    def setUp(self) -> None:
+        super().setUp()
+        # Explicit upper-bound dates keep `__upper_bound_datetime_inclusive` in
+        # the ingest-view-results tables deterministic across runs (the loader's
+        # default is `datetime.now()`).
+        self.us_dd_upper_bound_dates_json = json.dumps(
+            {
+                "identity_person": "2026-06-15T00:00:00.000000",
+                "identity_staff": "2026-06-15T00:00:00.000000",
+            }
+        )
+
     def test_identity_ingest_pipeline(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INTEGRATION_TEST_NAME)
-        self.run_test_identity_ingest_pipeline(test_name=INTEGRATION_TEST_NAME)
+        self.run_test_identity_ingest_pipeline(
+            test_name=INTEGRATION_TEST_NAME,
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_bound_dates_json,
+        )

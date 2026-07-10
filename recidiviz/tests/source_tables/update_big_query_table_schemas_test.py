@@ -2032,6 +2032,8 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_oz_identity_fragment.identity_phone_number",
     "us_oz_identity_fragment.identity_race",
     "us_oz_identity_fragment.identity_sex",
+    "us_oz_identity_ingest_view_results.person",
+    "us_oz_identity_ingest_view_results.staff",
     "us_oz_ingest_view_results.ageid_staff",
     "us_oz_ingest_view_results.ageid_staff_supervisor",
     "us_oz_ingest_view_results.eg_movements",

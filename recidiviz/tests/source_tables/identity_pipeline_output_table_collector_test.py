@@ -174,17 +174,16 @@ class TestBuildIdentityPipelineOutputSourceTableCollections(unittest.TestCase):
     """Tests for build_identity_pipeline_output_source_table_collections."""
 
     def test_collections_per_tenant(self) -> None:
-        # TODO(OBT-33499): When the `{tenant}_identity_ingest_view_results` debug
-        # collection is added, update this to expect 3 collections per tenant.
         state_codes = get_direct_ingest_states_existing_in_env()
         collections = build_identity_pipeline_output_source_table_collections()
-        self.assertEqual(len(collections), 2 * len(state_codes))
+        self.assertEqual(len(collections), 3 * len(state_codes))
         self.assertEqual(
             {c.dataset_id for c in collections},
             {
                 dataset_id
                 for state_code in state_codes
                 for dataset_id in (
+                    f"{state_code.value.lower()}_identity_ingest_view_results",
                     f"{state_code.value.lower()}_identity_fragment",
                     f"{state_code.value.lower()}_identity_cluster",
                 )

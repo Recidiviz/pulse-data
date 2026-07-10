@@ -16,12 +16,16 @@
 # =============================================================================
 """Base TestCase class for tests that run the identity ingest pipeline."""
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    MATERIALIZATION_TIME_COL_NAME,
+)
 from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
 )
 from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
+    build_identity_ingest_view_results_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
@@ -36,6 +40,8 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     run_test_pipeline,
 )
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class IdentityIngestPipelineTestCase(
@@ -45,10 +51,19 @@ class IdentityIngestPipelineTestCase(
 
     @classmethod
     def expected_output_collections(cls) -> list[SourceTableCollection]:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            ingest_view_results_collection = (
+                build_identity_ingest_view_results_source_table_collection(cls.tenant())
+            )
+
+        collections = [
+            ingest_view_results_collection,
+            build_identity_cluster_output_source_table_collection(cls.tenant()),
+        ]
+
         return [
-            build_identity_cluster_output_source_table_collection(
-                cls.tenant()
-            ).as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX),
+            c.as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX)
+            for c in collections
         ]
 
     @classmethod
@@ -84,7 +99,10 @@ class IdentityIngestPipelineTestCase(
         )
 
         for collection in self.expected_output_collections():
-            for address in collection.source_tables_by_address:
+            for (
+                address,
+                source_table,
+            ) in collection.source_tables_by_address.items():
                 # We run everything as a sandbox, so we remove the sandbox
                 # prefix for fixture purposes.
                 fixture_address = BigQueryAddress(
@@ -96,12 +114,20 @@ class IdentityIngestPipelineTestCase(
                 fixture_path = fixture_path_for_address(
                     self.state_code(), fixture_address, test_name
                 )
+                # The ingest_view_results tables have a materialization-time
+                # column populated with `datetime.now()` at pipeline run time;
+                # exclude it from fixture comparison so runs are deterministic.
+                columns_to_ignore = [
+                    field.name
+                    for field in source_table.schema_fields
+                    if field.name == MATERIALIZATION_TIME_COL_NAME
+                ]
 
                 try:
                     self.compare_table_to_fixture(
                         address,
                         expected_output_fixture_path=fixture_path,
-                        columns_to_ignore=[],
+                        columns_to_ignore=columns_to_ignore,
                         create_expected=create_expected,
                         expect_missing_fixtures_on_empty_results=True,
                         expect_unique_output_rows=True,
