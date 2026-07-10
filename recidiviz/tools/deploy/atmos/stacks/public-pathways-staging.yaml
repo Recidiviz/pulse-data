@@ -37,3 +37,5 @@ components:
       vars:
         managed_ssl_certificate_domains:
           - "pathways-staging.recidiviz.org"
+        # Refuse TLS < 1.2 handshakes at the frontend (GovRAMP AC-17(2))
+        min_tls_version: TLS_1_2
