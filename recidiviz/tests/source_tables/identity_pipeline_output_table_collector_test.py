@@ -20,18 +20,34 @@ from unittest.mock import patch
 
 from more_itertools import one
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.pipelines.pipeline_names import IDENTITY_INGEST_PIPELINE_NAME
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
+    build_identity_fragment_output_source_table_collection,
     build_identity_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import DataflowPipelineSourceTableLabel
 
-_TENANT = "US_OZ"
-_EXPECTED_TABLE_IDS: set[str] = {
+_TENANT = Tenant.US_OZ
+
+_EXPECTED_FRAGMENT_TABLE_IDS: set[str] = {
+    "identity_fragment",
+    "identity_attributes",
+    "identity_email",
+    "identity_ethnicity",
+    "identity_external_id",
+    "identity_gender",
+    "identity_name",
+    "identity_phone_number",
+    "identity_race",
+    "identity_sex",
+}
+
+_EXPECTED_CLUSTER_TABLE_IDS: set[str] = {
     "identity_cluster",
     "identity_cluster_email",
     "identity_cluster_ethnicity",
@@ -42,6 +58,60 @@ _EXPECTED_TABLE_IDS: set[str] = {
     "identity_cluster_race",
     "identity_cluster_sex",
 }
+
+
+class TestBuildIdentityFragmentOutputSourceTableCollection(unittest.TestCase):
+    """Tests for build_identity_fragment_output_source_table_collection."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = "recidiviz-456"
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_dataset_id_is_tenant_specific(self) -> None:
+        collection = build_identity_fragment_output_source_table_collection(_TENANT)
+        self.assertEqual(collection.dataset_id, "us_oz_identity_fragment")
+
+    def test_carries_identity_ingest_pipeline_label(self) -> None:
+        collection = build_identity_fragment_output_source_table_collection(_TENANT)
+        label = one(collection.labels)
+        self.assertIsInstance(label, DataflowPipelineSourceTableLabel)
+        self.assertEqual(label.value, IDENTITY_INGEST_PIPELINE_NAME)
+
+    def test_emits_one_table_per_fragment_entity(self) -> None:
+        collection = build_identity_fragment_output_source_table_collection(_TENANT)
+        self.assertEqual(
+            {t.address.table_id for t in collection.source_tables},
+            _EXPECTED_FRAGMENT_TABLE_IDS,
+        )
+
+    def test_all_tables_cluster_on_identity_fragment_id(self) -> None:
+        """Every fragment table carries and is clustered on identity_fragment_id,
+        the join key relating a fragment's child rows back to it."""
+        collection = build_identity_fragment_output_source_table_collection(_TENANT)
+        for source_table in collection.source_tables:
+            self.assertEqual(
+                source_table.clustering_fields,
+                ["identity_fragment_id"],
+                f"Table [{source_table.address.table_id}] is not clustered on "
+                f"identity_fragment_id",
+            )
+
+    def test_identity_fragment_id_fk_is_string(self) -> None:
+        """A demographic table reaches the root only through the intermediate
+        IdentityAttributes, so its identity_fragment_id FK must be STRING."""
+        collection = build_identity_fragment_output_source_table_collection(_TENANT)
+        child_table = one(
+            t for t in collection.source_tables if t.address.table_id == "identity_name"
+        )
+        fk_field = one(
+            f for f in child_table.schema_fields if f.name == "identity_fragment_id"
+        )
+        self.assertEqual("STRING", fk_field.field_type)
 
 
 class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
@@ -70,7 +140,7 @@ class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
         collection = build_identity_cluster_output_source_table_collection(_TENANT)
         self.assertEqual(
             {t.address.table_id for t in collection.source_tables},
-            _EXPECTED_TABLE_IDS,
+            _EXPECTED_CLUSTER_TABLE_IDS,
         )
 
     def test_all_tables_cluster_on_identity_cluster_id(self) -> None:
@@ -103,17 +173,20 @@ class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
 class TestBuildIdentityPipelineOutputSourceTableCollections(unittest.TestCase):
     """Tests for build_identity_pipeline_output_source_table_collections."""
 
-    def test_one_collection_per_tenant(self) -> None:
-        # TODO(OBT-33498), TODO(OBT-33499): When the `{tenant}_identity` and
-        # `{tenant}_identity_ingest_view_results` debug collections are added,
-        # update this to expect 3 collections per tenant.
+    def test_collections_per_tenant(self) -> None:
+        # TODO(OBT-33499): When the `{tenant}_identity_ingest_view_results` debug
+        # collection is added, update this to expect 3 collections per tenant.
         state_codes = get_direct_ingest_states_existing_in_env()
         collections = build_identity_pipeline_output_source_table_collections()
-        self.assertEqual(len(collections), len(state_codes))
+        self.assertEqual(len(collections), 2 * len(state_codes))
         self.assertEqual(
             {c.dataset_id for c in collections},
             {
-                f"{state_code.value.lower()}_identity_cluster"
+                dataset_id
                 for state_code in state_codes
+                for dataset_id in (
+                    f"{state_code.value.lower()}_identity_fragment",
+                    f"{state_code.value.lower()}_identity_cluster",
+                )
             },
         )

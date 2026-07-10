@@ -106,7 +106,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
             # Output collections
             build_state_output_source_table_collection(StateCode.US_DD),
             build_normalized_state_output_source_table_collection(StateCode.US_DD),
-            build_identity_cluster_output_source_table_collection(_TENANT.value),
+            build_identity_cluster_output_source_table_collection(_TENANT),
         ]
 
         return [c.as_sandbox_collection(_SANDBOX_PREFIX) for c in collections]

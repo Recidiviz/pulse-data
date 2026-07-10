@@ -47,8 +47,8 @@ class IdentityIngestPipelineTestCase(
     def expected_output_collections(cls) -> list[SourceTableCollection]:
         return [
             build_identity_cluster_output_source_table_collection(
-                cls.tenant().value
-            ).as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX)
+                cls.tenant()
+            ).as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX),
         ]
 
     @classmethod

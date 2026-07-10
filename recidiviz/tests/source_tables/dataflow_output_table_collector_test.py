@@ -100,15 +100,63 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
             ],
         )
 
+    def _identity_collections_with_dataset_suffix(
+        self, suffix: str
+    ) -> list[SourceTableCollection]:
+        """Returns the identity ingest pipeline collections whose dataset id ends
+        with |suffix|. The cluster and fragment collections share the identity
+        pipeline label, so the dataset suffix distinguishes them."""
+        return [
+            collection
+            for collection in self.source_table_repository.get_collections_with_labels(
+                labels=[
+                    DataflowPipelineSourceTableLabel(
+                        pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
+                    )
+                ]
+            )
+            if collection.dataset_id.endswith(suffix)
+        ]
+
+    def test_identity_fragment(self) -> None:
+        """Tests the expected output schema of the identity ingest pipeline's
+        debug pre-clustering fragment output, one collection per tenant."""
+        identity_collections = self._identity_collections_with_dataset_suffix(
+            "_identity_fragment"
+        )
+
+        state_codes = get_direct_ingest_states_existing_in_env()
+        self.assertEqual(len(identity_collections), len(state_codes))
+        self.assertEqual(
+            {c.dataset_id for c in identity_collections},
+            {
+                f"{state_code.value.lower()}_identity_fragment"
+                for state_code in state_codes
+            },
+        )
+
+        for collection in identity_collections:
+            self.assert_source_tables_match(
+                collection,
+                expected_addresses=[
+                    f"{collection.dataset_id}.identity_attributes",
+                    f"{collection.dataset_id}.identity_email",
+                    f"{collection.dataset_id}.identity_ethnicity",
+                    f"{collection.dataset_id}.identity_external_id",
+                    f"{collection.dataset_id}.identity_fragment",
+                    f"{collection.dataset_id}.identity_gender",
+                    f"{collection.dataset_id}.identity_name",
+                    f"{collection.dataset_id}.identity_phone_number",
+                    f"{collection.dataset_id}.identity_race",
+                    f"{collection.dataset_id}.identity_sex",
+                ],
+            )
+
     def test_identity_cluster(self) -> None:
-        """Tests the expected output schema of the identity ingest pipeline,
-        one collection per tenant."""
-        identity_collections = self.source_table_repository.get_collections_with_labels(
-            labels=[
-                DataflowPipelineSourceTableLabel(
-                    pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
-                )
-            ]
+        """Tests the expected output schema of the identity ingest pipeline's
+        cluster output, one collection per tenant."""
+        identity_collections = self._identity_collections_with_dataset_suffix(
+            "_identity_cluster"
         )
 
         state_codes = get_direct_ingest_states_existing_in_env()
