@@ -16,6 +16,7 @@
 # =============================================================================
 """Intercom-related types"""
 
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -85,6 +86,30 @@ class IntercomExportJobResponse:
     download_url: str
     # Timestamp when the download URL expires
     download_expires_at: str
+
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+class IntercomCloudRunJobStatus(Enum):
+    """Represents an Intercom cloud run job status."""
+
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+
+@attr.frozen
+class IntercomCloudRunJobInfo:
+    """Represents an Intercom export cloud run job."""
+
+    # The datetime of the cloud run export job
+    export_datetime: datetime
+    # The timestamp for start of export window, inclusive
+    export_window_start_inclusive: datetime
+    # The timestamp for end of export window, inclusive
+    export_window_end_inclusive: datetime
+    # The state of the export job (SUCCESS or FAILURE)
+    status: IntercomCloudRunJobStatus
 
     def to_json(self) -> dict[str, Any]:
         return cattrs.unstructure(self)
