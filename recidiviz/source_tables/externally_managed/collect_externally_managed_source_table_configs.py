@@ -33,6 +33,7 @@ from recidiviz.source_tables.externally_managed.datasets import (
     EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
     JII_TEXTING_DASHBOARDS_DB_US_IX,
     JII_TEXTING_DASHBOARDS_DB_US_TX,
+    MEETINGS_DASHBOARDS_DB_US_NE,
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
@@ -87,6 +88,9 @@ def collect_externally_managed_source_table_collections(
             only_check_required_columns=True,
         ),
         JII_TEXTING_DASHBOARDS_DB_US_IX: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_NE: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
     }

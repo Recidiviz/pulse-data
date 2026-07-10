@@ -1,0 +1,18 @@
+task_name: "bad_bq_type"
+description: "Config with an invalid bq_type."
+
+source_dataset: "test_dataset"
+source_table: "TestEvaluationRun"
+state_code: "US_OZ"
+
+metadata_fields:
+  - column_name: "id"
+    source_column_name: "id"
+    bq_type: "STRING"
+    description: "Unique identifier."
+
+scores_fields:
+  - column_name: "overall_grade"
+    json_path: "$.overall.grade"
+    bq_type: "NOT_A_VALID_TYPE"
+    description: "Overall grade."

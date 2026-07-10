@@ -1,0 +1,43 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ne
+  table_id: NotetakingPipelineRun
+description: >
+  Notetaking pipeline runs. One row per pipeline execution. Referenced by
+  NotetakingEvaluationRun.pipelineRunId. Used to resolve meetingId for
+  downstream joins between LLMAJ eval scores and human annotations.
+schema:
+  - name: id
+    type: STRING
+    mode: NULLABLE
+    description: >
+      Unique identifier for this pipeline run. Referenced as pipelineRunId
+      in NotetakingEvaluationRun.
+  - name: createdAt
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: Timestamp when the pipeline run was created.
+  - name: meetingId
+    type: STRING
+    mode: NULLABLE
+    description: Identifier of the meeting this pipeline run covers.
+  - name: langsmithTraceId
+    type: STRING
+    mode: NULLABLE
+    description: LangSmith trace ID for debugging the pipeline run.
+  - name: personPseudonymizedId
+    type: STRING
+    mode: NULLABLE
+    description: Pseudonymized identifier of the person associated with this meeting.
+  - name: status
+    type: STRING
+    mode: NULLABLE
+    description: Execution status of the pipeline run.
+  - name: errorDetails
+    type: STRING
+    mode: NULLABLE
+    description: Error details if the pipeline run failed.
+  - name: configVersion
+    type: STRING
+    mode: NULLABLE
+    description: Version of the notetaking pipeline configuration used for this run.
+clustering_fields: null

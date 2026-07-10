@@ -146,6 +146,10 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_ix_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
+            # NotetakingPipelineRun is registered for future use joining LLMAJ eval
+            # scores to meeting metadata; not yet referenced by any deployed view.
+            # TODO(#38079): remove once a downstream view joins on pipelineRunId.
+            "meetings_dashboards_db_us_ne.NotetakingPipelineRun",
             *COMMON_VESTIGES,
         ]
     },
@@ -160,6 +164,10 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "sentencing_views.case_insights_record_flattened",
             # Legacy V1 Idaho tasks record archive, predates V2 pipeline
             "export_archives.us_ix_supervision_tasks_record_archive",
+            # NotetakingPipelineRun is registered for future use joining LLMAJ eval
+            # scores to meeting metadata; not yet referenced by any deployed view.
+            # TODO(#38079): remove once a downstream view joins on pipelineRunId.
+            "meetings_dashboards_db_us_ne.NotetakingPipelineRun",
             *COMMON_VESTIGES,
         ]
     },

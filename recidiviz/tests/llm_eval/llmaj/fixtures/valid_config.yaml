@@ -1,0 +1,31 @@
+task_name: "test_eval"
+description: "A test LLMAJ evaluation task."
+
+source_dataset: "test_dataset"
+source_table: "TestEvaluationRun"
+state_code: "US_OZ"
+
+metadata_fields:
+  - column_name: "id"
+    source_column_name: "id"
+    bq_type: "STRING"
+    description: "Unique identifier."
+  - column_name: "created_at"
+    source_column_name: "createdAt"
+    bq_type: "TIMESTAMP"
+    description: "Timestamp when the run was created."
+
+scores_fields:
+  - column_name: "overall_grade"
+    json_path: "$.overall.grade"
+    bq_type: "STRING"
+    description: "Overall grade (GOOD/PARTIAL/BAD)."
+  - column_name: "overall_score"
+    json_path: "$.overall.score"
+    bq_type: "FLOAT64"
+    description: "Numeric overall score."
+  - column_name: "overall_omissions"
+    json_path: "$.overall.omissions"
+    bq_type: "STRING"
+    mode: "REPEATED"
+    description: "JSON array of omissions."

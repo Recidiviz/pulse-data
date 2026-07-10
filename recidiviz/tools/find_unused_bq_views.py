@@ -634,6 +634,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Union view for Public Pathways segment events. Kept for potential future use. "
         "(Jen Overgaag, 2026-04-21)"
     ),
+    BigQueryAddress.from_str("llm_eval__llmaj.notetaking_evaluation_scores_parsed"): (
+        "New LLMAJ eval scores view. Will be referenced by a calibration view joining "
+        "LLMAJ scores to human Label Studio annotations (mayukas, 2026-07-08)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

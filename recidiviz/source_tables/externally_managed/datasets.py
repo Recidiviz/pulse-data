@@ -51,6 +51,8 @@ JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
 
 JII_TEXTING_DASHBOARDS_DB_US_IX: str = "jii_texting_dashboards_db_us_ix"
 
+MEETINGS_DASHBOARDS_DB_US_NE: str = "meetings_dashboards_db_us_ne"
+
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
         f"Contains one-off validation data provided directed by "
@@ -100,4 +102,5 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data exported from Intercom",
     JII_TEXTING_DASHBOARDS_DB_US_TX: "Stores JII Texting dashboard data for Texas.",
     JII_TEXTING_DASHBOARDS_DB_US_IX: "Stores JII Texting dashboard data for Idaho.",
+    MEETINGS_DASHBOARDS_DB_US_NE: "Stores LLMAJ evaluation run data for the Nebraska notetaking module.",
 }

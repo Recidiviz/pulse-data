@@ -1,0 +1,19 @@
+task_name: "unexpected_key"
+description: "Config with an unexpected top-level key."
+
+source_dataset: "test_dataset"
+source_table: "TestEvaluationRun"
+state_code: "US_OZ"
+not_a_real_key: "surprise"
+
+metadata_fields:
+  - column_name: "id"
+    source_column_name: "id"
+    bq_type: "STRING"
+    description: "Unique identifier."
+
+scores_fields:
+  - column_name: "overall_grade"
+    json_path: "$.overall.grade"
+    bq_type: "STRING"
+    description: "Overall grade."

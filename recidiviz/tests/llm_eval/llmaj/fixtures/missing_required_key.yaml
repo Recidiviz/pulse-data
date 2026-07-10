@@ -1,0 +1,17 @@
+task_name: "missing_required_key"
+description: "Config with a scores_field missing the required json_path key."
+
+source_dataset: "test_dataset"
+source_table: "TestEvaluationRun"
+state_code: "US_OZ"
+
+metadata_fields:
+  - column_name: "id"
+    source_column_name: "id"
+    bq_type: "STRING"
+    description: "Unique identifier."
+
+scores_fields:
+  - column_name: "overall_grade"
+    bq_type: "STRING"
+    description: "Overall grade — missing json_path."
