@@ -60,6 +60,7 @@ US_TX_NEEDS_TYPE_AGNOSTIC_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaGr
         "contact_types_accepted",
         "supervision_level",
         "case_type",
+        "is_full_period",
     ],
 )
 

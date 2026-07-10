@@ -118,6 +118,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 (Date, "due_date", "NULLABLE"),
                 (Date, "display_due_date", "NULLABLE"),
                 (Date, "last_task_completed_date", "NULLABLE"),
+                (Bool, "is_full_period", "NULLABLE"),
                 (Bool, "is_overdue", "REQUIRED"),
             ],
         )
@@ -351,6 +352,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 2, 8),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 1, 1),
+                "is_full_period": None,
                 "is_overdue": False,
             },
             {
@@ -381,6 +383,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 4, 3),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 4, 1),
+                "is_full_period": None,
                 "is_overdue": False,
             },
             {
@@ -411,6 +414,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 4, 10),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 4, 1),
+                "is_full_period": None,
                 "is_overdue": False,
             },
         ]
@@ -538,6 +542,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 1, 31),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 1, 1),
+                "is_full_period": None,
                 "is_overdue": False,
             },
             # Pre-due-date portion: eligible, not yet overdue (includes the due date itself)
@@ -553,6 +558,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 2, 29),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 1, 15),
+                "is_full_period": None,
                 "is_overdue": False,
             },
             # Entirely overdue span (due_date + 1 day <= start_date)
@@ -568,6 +574,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 3, 31),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 1, 15),
+                "is_full_period": None,
                 "is_overdue": True,
             },
             # Post-due-date portion: eligible and overdue (from overdue_splits, starts day after due date)
@@ -583,6 +590,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "due_date": date(2024, 2, 29),
                 "display_due_date": None,
                 "last_task_completed_date": date(2024, 1, 15),
+                "is_full_period": None,
                 "is_overdue": True,
             },
         ]

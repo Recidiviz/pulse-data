@@ -28,6 +28,9 @@ from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     ComplianceType,
 )
 from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
+from recidiviz.calculator.query.state.views.tasks.tasks_schemas import (
+    IS_FULL_PERIOD_COLUMN,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -65,6 +68,14 @@ def compliance_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
         Date(
             name="last_task_completed_date",
             description="The date when the compliance task was last completed, extracted from the criteria reason fields.",
+            mode="NULLABLE",
+        ),
+        Bool(
+            name=IS_FULL_PERIOD_COLUMN,
+            description="For contact compliance tasks that opt in, whether the contact "
+            "cadence period retains at least the configured fraction of its full natural "
+            "length. False marks a partial stub truncated by a supervision boundary. NULL "
+            "for tasks that don't set it.",
             mode="NULLABLE",
         ),
         Bool(
@@ -292,6 +303,30 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             else "CAST(NULL AS DATE)"
         )
 
+        # Surface the contact cadence period's is_full_period flag whenever the due_date
+        # criteria declares it (contact cadence criteria always do), so downstream Outliers
+        # views can exclude partial-period stubs without affecting TES/Workflows. NULL for
+        # tasks whose criteria don't declare it (e.g. assessments).
+        extract_is_full_period = any(
+            field.name == IS_FULL_PERIOD_COLUMN
+            for field in due_date_criteria_builder.reasons_fields
+        )
+        if extract_is_full_period:
+            if due_date_criteria_builder not in criteria_reason_fields_dict:
+                criteria_reason_fields_dict[due_date_criteria_builder] = []
+            if (
+                IS_FULL_PERIOD_COLUMN
+                not in criteria_reason_fields_dict[due_date_criteria_builder]
+            ):
+                criteria_reason_fields_dict[due_date_criteria_builder].append(
+                    IS_FULL_PERIOD_COLUMN
+                )
+        is_full_period_sql = (
+            f"reasons_extract.{IS_FULL_PERIOD_COLUMN}"
+            if extract_is_full_period
+            else "CAST(NULL AS BOOL)"
+        )
+
         nonnull_end_date = nonnull_end_date_clause("joined.end_date")
 
         base_ctes = f"""
@@ -326,6 +361,7 @@ joined AS (
         reasons_extract.{due_date_field} AS due_date,
         {display_due_date_sql} AS display_due_date,
         reasons_extract.{last_task_completed_date_field} AS last_task_completed_date,
+        {is_full_period_sql} AS {IS_FULL_PERIOD_COLUMN},
     FROM base_tes
     LEFT JOIN reasons_extract
     USING (state_code, person_id, start_date)
@@ -366,7 +402,7 @@ not_overdue AS (
             ELSE end_date
         END AS end_date,
         is_eligible, reasons, reasons_v2, ineligible_criteria,
-        due_date, display_due_date, last_task_completed_date,
+        due_date, display_due_date, last_task_completed_date, {IS_FULL_PERIOD_COLUMN},
         -- Case 2: entire span is overdue
         CASE
             WHEN is_eligible AND due_date IS NOT NULL
@@ -384,7 +420,7 @@ overdue_splits AS (
         DATE_ADD(due_date, INTERVAL 1 DAY) AS start_date,
         end_date,
         is_eligible, reasons, reasons_v2, ineligible_criteria,
-        due_date, display_due_date, last_task_completed_date,
+        due_date, display_due_date, last_task_completed_date, {IS_FULL_PERIOD_COLUMN},
         TRUE AS is_overdue,
     FROM joined
     WHERE

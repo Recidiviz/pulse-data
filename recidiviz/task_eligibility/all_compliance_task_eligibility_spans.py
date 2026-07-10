@@ -23,6 +23,9 @@ from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, String
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.views.tasks.tasks_schemas import (
+    IS_FULL_PERIOD_COLUMN,
+)
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
     compliance_task_eligibility_span_schema,
@@ -73,6 +76,7 @@ def all_compliance_task_eligibility_spans_schema() -> list[BigQueryViewColumn]:
         base["due_date"],
         base["display_due_date"],
         base["last_task_completed_date"],
+        base[IS_FULL_PERIOD_COLUMN],
     ]
 
 
@@ -102,7 +106,7 @@ def get_compliance_eligibility_spans_unioned_view_builders() -> Sequence[
         def get_criteria_select_statement(
             vb: ComplianceTaskEligibilitySpansBigQueryViewBuilder,
         ) -> str:
-            return f"SELECT state_code, person_id, '{vb.task_name}' AS task_name, start_date, end_date, is_eligible, is_overdue, reasons, reasons_v2, ineligible_criteria, due_date, display_due_date, last_task_completed_date"
+            return f"SELECT state_code, person_id, '{vb.task_name}' AS task_name, start_date, end_date, is_eligible, is_overdue, reasons, reasons_v2, ineligible_criteria, due_date, display_due_date, last_task_completed_date, {IS_FULL_PERIOD_COLUMN}"
 
         dataset_id = compliance_task_eligibility_spans_state_specific_dataset(
             state_code

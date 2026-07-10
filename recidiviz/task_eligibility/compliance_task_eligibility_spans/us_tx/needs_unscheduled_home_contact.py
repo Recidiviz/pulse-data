@@ -60,6 +60,7 @@ US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = (
             "period_type",
             "contact_cadence",
             "scheduled_contact_dates",
+            "is_full_period",
         ],
     )
 )

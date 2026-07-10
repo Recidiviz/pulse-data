@@ -36,6 +36,9 @@ from recidiviz.calculator.query.state.views.tasks.contact_type import ContactTyp
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     truncate_to_calendar_period,
 )
+from recidiviz.calculator.query.state.views.tasks.tasks_schemas import (
+    IS_FULL_PERIOD_COLUMN,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -314,6 +317,13 @@ FROM intersection_spans_with_critical_understaffing
                 description="Due date of the contact.",
             ),
             ReasonsField(
+                name=IS_FULL_PERIOD_COLUMN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Whether the contact cadence period retains at least "
+                "the configured fraction of its full natural length. False marks "
+                "a partial stub truncated by a supervision boundary.",
+            ),
+            ReasonsField(
                 name="type_of_contact",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Type of contact due.",
@@ -418,6 +428,7 @@ def contact_compliance_builder_type_agnostic(
             CAST(p.contact_period_end AS DATE) AS contact_period_end,
             DATE_ADD(CAST(p.contact_period_end AS DATE), INTERVAL 1 DAY) as contact_period_end_exclusive,
             ci.contact_type,
+            p.{IS_FULL_PERIOD_COLUMN},
             {"p.alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_type_agnostic_materialized` p
         LEFT JOIN contact_info ci
@@ -439,6 +450,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {IS_FULL_PERIOD_COLUMN},
             {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
         UNION DISTINCT
@@ -452,6 +464,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {IS_FULL_PERIOD_COLUMN},
             {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
         UNION DISTINCT
@@ -465,6 +478,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {IS_FULL_PERIOD_COLUMN},
             {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
         WHERE contact_date IS NOT NULL
@@ -487,6 +501,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {IS_FULL_PERIOD_COLUMN},
             {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM critical_dates
     ),
@@ -504,6 +519,7 @@ def contact_compliance_builder_type_agnostic(
             contact_types_accepted,
             frequency,
             frequency_date_part,
+            p.{IS_FULL_PERIOD_COLUMN},
             {"p.alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM divided_periods p
         LEFT JOIN contact_info ci
@@ -548,6 +564,7 @@ def contact_compliance_builder_type_agnostic(
             period_end as end_date,
             contact_period_start,
             DATE_SUB(contact_period_end_exclusive, INTERVAL 1 DAY) as contact_due_date,
+            {IS_FULL_PERIOD_COLUMN},
             cc.supervision_level,
             cc.case_type,
             CASE
@@ -614,6 +631,7 @@ def contact_compliance_builder_type_agnostic(
             end_date,
             meets_criteria,
             contact_due_date,
+            {IS_FULL_PERIOD_COLUMN},
             types_and_amounts_done,
             types_and_amounts_due,
             RTRIM(contact_types_accepted,",") as contact_types_accepted,
@@ -668,6 +686,7 @@ def contact_compliance_builder_type_agnostic(
       TO_JSON(STRUCT(
         last_contact_date,
         contact_due_date,
+        {IS_FULL_PERIOD_COLUMN},
         types_and_amounts_due,
         types_and_amounts_done,
         period_type,
@@ -700,6 +719,13 @@ def contact_compliance_builder_type_agnostic(
                 name="contact_due_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Due date of the contact.",
+            ),
+            ReasonsField(
+                name=IS_FULL_PERIOD_COLUMN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Whether the contact cadence period retains at least "
+                "the configured fraction of its full natural length. False marks "
+                "a partial stub truncated by a supervision boundary.",
             ),
             ReasonsField(
                 name="types_and_amounts_due",

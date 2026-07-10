@@ -983,7 +983,9 @@ CONTACT_DUE_DATES = EventCountMetric(
     description="Number of contact due dates, counting distinct by date and type",
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT_DUE,
-        event_conditions_dict={},
+        # Exclude due dates that come solely from a partial (truncated) contact cadence
+        # period so they don't count against the officer's contact-completion rate.
+        event_conditions_dict={"is_full_period": ["true"]},
     ),
     event_segmentation_columns=["task_name"],
 )
@@ -994,7 +996,7 @@ CONTACT_DUE_DATES_MET = EventCountMetric(
     description="Number of contact due dates for which all requirements were completed prior to due date, counting distinct by date and type",
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT_DUE,
-        event_conditions_dict={"contact_missed": ["false"]},
+        event_conditions_dict={"contact_missed": ["false"], "is_full_period": ["true"]},
     ),
     event_segmentation_columns=["task_name"],
 )
