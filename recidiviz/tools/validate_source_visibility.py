@@ -290,6 +290,18 @@ def main() -> int:
                     "recidiviz.persistence",
                 }
             )
+        if "identity" in pipeline.__name__:
+            valid_prefixes = valid_prefixes.union(
+                {
+                    "recidiviz.big_query.big_query_address_formatter",
+                    "recidiviz.big_query.big_query_query_builder",
+                    "recidiviz.calculator.query.bq_utils",
+                    "recidiviz.calculator.query.sessions_query_fragments",
+                    "recidiviz.ingest.direct",
+                    "recidiviz.monitoring",
+                    "recidiviz.persistence",
+                }
+            )
         success &= check_dependencies_for_entrypoint(
             pipeline.__name__,
             valid_module_prefixes=make_module_matcher(valid_prefixes),

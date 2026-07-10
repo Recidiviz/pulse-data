@@ -43,6 +43,7 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
@@ -117,6 +118,9 @@ class TestReferenceViews(unittest.TestCase):
                         normalized_state_dataset_for_state_code(state_code)
                     )
                 elif issubclass(pipeline, StateIngestPipeline):
+                    # No extra allowed datasets
+                    pass
+                elif issubclass(pipeline, IdentityIngestPipeline):
                     # No extra allowed datasets
                     pass
                 else:

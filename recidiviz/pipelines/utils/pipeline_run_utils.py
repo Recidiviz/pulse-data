@@ -26,6 +26,7 @@ from recidiviz.pipelines import metrics as metrics_pipeline_top_level
 from recidiviz.pipelines import supplemental as supplemental_pipeline_top_level
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest import activity as activity_ingest_pipeline_top_level
+from recidiviz.pipelines.ingest import identity as identity_ingest_pipeline_top_level
 
 
 def collect_all_pipeline_names() -> List[str]:
@@ -97,9 +98,9 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
     return pipeline_file_modules
 
 
-# TODO(#88681): Add identity ingest pipeline to this list.
 _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     supplemental_pipeline_top_level,
     metrics_pipeline_top_level,
     activity_ingest_pipeline_top_level,
+    identity_ingest_pipeline_top_level,
 ]
