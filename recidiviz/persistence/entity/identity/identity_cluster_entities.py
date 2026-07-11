@@ -57,8 +57,8 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     set_backedges,
 )
-from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
-    IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+from recidiviz.persistence.entity.identity import (
+    identity_cluster_entities_module_context,
 )
 from recidiviz.persistence.entity.identity.identity_cluster_entity import (
     IdentityClusterEntity,
@@ -222,7 +222,8 @@ class IdentityCluster(
 
     def __attrs_post_init__(self) -> None:
         all_entities = get_all_entities_from_tree(
-            self, IDENTITY_CLUSTER_ENTITIES_CONTEXT
+            self,
+            identity_cluster_entities_module_context.IDENTITY_CLUSTER_ENTITIES_CONTEXT,
         )
         mismatched_tenants = sorted(
             {
@@ -238,10 +239,14 @@ class IdentityCluster(
                 f"{self.tenant!r}; found mismatched tenants: {mismatched_tenants}"
             )
 
-        set_backedges(self, IDENTITY_CLUSTER_ENTITIES_CONTEXT)
+        set_backedges(
+            self,
+            identity_cluster_entities_module_context.IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+        )
 
         json_entity_tree = serialize_entity_tree_into_json(
-            self, IDENTITY_CLUSTER_ENTITIES_CONTEXT
+            self,
+            identity_cluster_entities_module_context.IDENTITY_CLUSTER_ENTITIES_CONTEXT,
         )
         json_entity_tree.pop("identity_cluster_id")
         json_entity_tree.pop("cluster_hash")

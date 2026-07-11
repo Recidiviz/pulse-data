@@ -46,11 +46,11 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
 )
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities_module_context,
+)
 from recidiviz.persistence.entity.identity.identity_entity_mixin import (
     IdentityEntityMixin,
-)
-from recidiviz.persistence.entity.identity.identity_fragment_entities_module_context import (
-    IDENTITY_FRAGMENT_ENTITIES_CONTEXT,
 )
 from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
@@ -164,7 +164,9 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     _FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK = frozenset({"tenant", "person_type"})
 
     def __attrs_post_init__(self) -> None:
-        field_index = IDENTITY_FRAGMENT_ENTITIES_CONTEXT.field_index()
+        field_index = (
+            identity_fragment_entities_module_context.IDENTITY_FRAGMENT_ENTITIES_CONTEXT.field_index()
+        )
         non_empty = field_index.get_fields_with_non_empty_values(
             self, EntityFieldType.FLAT_FIELD
         ) | field_index.get_fields_with_non_empty_values(

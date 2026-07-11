@@ -27,7 +27,7 @@ SELECT
   ID,
   FirstName,
   LastName,
-  DOB,
+  CAST(CAST(DOB AS DATETIME) AS DATE) AS DOB,
   Sex,
   Race,
   Ethnicity,
