@@ -989,7 +989,7 @@ def _us_tx_fees_no_records_fallback_select(*, criteria: str) -> str:
         "{criteria}"                                                    AS criteria,
         "No records found"                                              AS note_title,
         "If this is inconsistent with OIMS, please let us know via feedback@recidiviz.org or the browser's chat feature."                          AS note_body,
-        CAST(NULL AS DATE)                                              AS event_date,"""
+        CAST(CURRENT_DATE('US/Eastern') AS DATE)                        AS event_date,"""
 
 
 # TODO(OBT-33896): Drop this constant when we FSL.
