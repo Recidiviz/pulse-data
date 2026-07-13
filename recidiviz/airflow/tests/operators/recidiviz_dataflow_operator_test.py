@@ -245,3 +245,121 @@ class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
                 "test-project"
             )[1],
         )
+
+    @staticmethod
+    def _fake_compute_service(zones: list[str]) -> MagicMock:
+        """Returns a mock compute service whose machineTypes().aggregatedList()
+        reports the machine type as available in exactly |zones|."""
+        service = MagicMock()
+        service.machineTypes.return_value.aggregatedList.return_value.execute.return_value = {
+            "items": {f"zones/{zone}": {"machineTypes": [{}]} for zone in zones}
+        }
+        return service
+
+    def _machine_type_task(
+        self, fallback_regions: list[str]
+    ) -> RecidivizDataflowFlexTemplateOperator:
+        """Returns an operator in us-central1 whose launch body pins a machine type
+        and a region-specific subnetwork, with the standard capacity-failure mocks
+        arranged."""
+        task = RecidivizDataflowFlexTemplateOperator(
+            task_id="machine_type_task",
+            project_id="test-project",
+            body={
+                "launchParameter": {
+                    "jobName": "test-job",
+                    "environment": {
+                        "machineType": "c4d-highcpu-32",
+                        "subnetwork": (
+                            "https://www.googleapis.com/compute/v1/projects/"
+                            "test-project/regions/us-central1/subnetworks/default"
+                        ),
+                    },
+                }
+            },
+            location="us-central1",
+            fallback_regions=fallback_regions,
+        )
+        self.mock_hook.is_job_dataflow_running.return_value = False
+        self.mock_hook.start_flex_template.side_effect = Exception("Job has failed!")
+        self.mock_get_job.return_value = {
+            "currentState": DataflowJobStatus.JOB_STATE_FAILED,
+            "id": "2023-09-18_07_09_47-16912541725945987225",
+            "createTime": "2023-09-18T14:09:47.864426Z",
+        }
+        self.mock_logs_client.list_entries.return_value = [
+            MagicMock(payload="ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS")
+        ]
+        return task
+
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    @patch("recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.build")
+    def test_fallback_filters_to_regions_with_machine_type(
+        self, mock_build: MagicMock, _sleep_patch: MagicMock
+    ) -> None:
+        task = self._machine_type_task(
+            fallback_regions=["us-central1", "us-south1", "us-west4"]
+        )
+        # The machine type only exists in the current region and us-west4 — never
+        # us-south1 — so the sampled fallback is deterministic.
+        mock_build.return_value = self._fake_compute_service(
+            ["us-central1-a", "us-west4-a", "us-west4-b"]
+        )
+
+        with self.assertRaises(Exception):
+            _ = execute_task(self.dag, task)
+
+        retry_kwargs = self.mock_hook.start_flex_template.call_args.kwargs
+        self.assertEqual("us-west4", retry_kwargs["location"])
+        self.assertIn(
+            "/regions/us-west4/",
+            retry_kwargs["body"]["launchParameter"]["environment"]["subnetwork"],
+        )
+
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    @patch("recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.build")
+    def test_fallback_availability_lookup_failure_uses_unfiltered_list(
+        self, mock_build: MagicMock, _sleep_patch: MagicMock
+    ) -> None:
+        task = self._machine_type_task(fallback_regions=["us-central1", "us-west4"])
+        mock_build.side_effect = Exception("compute API unavailable")
+
+        with self.assertRaises(Exception):
+            _ = execute_task(self.dag, task)
+
+        # The lookup failure must not block the fallback retry.
+        self.assertEqual(2, self.mock_hook.start_flex_template.call_count)
+        retry_kwargs = self.mock_hook.start_flex_template.call_args.kwargs
+        self.assertEqual("us-west4", retry_kwargs["location"])
+
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    @patch("recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.build")
+    def test_fallback_no_regions_with_machine_type_stays_in_region(
+        self, mock_build: MagicMock, _sleep_patch: MagicMock
+    ) -> None:
+        task = self._machine_type_task(
+            fallback_regions=["us-central1", "us-south1", "us-west2"]
+        )
+        # The machine type exists nowhere among the fallback candidates.
+        mock_build.return_value = self._fake_compute_service(["us-central1-a"])
+
+        with self.assertRaises(Exception):
+            _ = execute_task(self.dag, task)
+
+        # The retry proceeds in the original region with an unmodified body.
+        self.assertEqual(2, self.mock_hook.start_flex_template.call_count)
+        retry_kwargs = self.mock_hook.start_flex_template.call_args.kwargs
+        self.assertEqual("us-central1", retry_kwargs["location"])
+        self.assertIn(
+            "/regions/us-central1/",
+            retry_kwargs["body"]["launchParameter"]["environment"]["subnetwork"],
+        )

@@ -93,17 +93,58 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     def job_name(self) -> str:
         return self.body["launchParameter"]["jobName"]
 
+    def _regions_with_machine_type(self, machine_type: str) -> set[str] | None:
+        """Returns the regions where |machine_type| is available, or None if the
+        lookup fails (callers should then skip availability filtering)."""
+        try:
+            service = build("compute", "v1", cache_discovery=False)
+            result = (
+                service.machineTypes()
+                .aggregatedList(
+                    project=self.project_id, filter=f'name="{machine_type}"'
+                )
+                .execute()
+            )
+            return {
+                zone.removeprefix("zones/").rsplit("-", 1)[0]
+                for zone, data in result["items"].items()
+                if "machineTypes" in data
+            }
+        except Exception:
+            logging.warning(
+                "Failed to look up regional availability for machine type [%s]; "
+                "skipping availability filtering of fallback regions.",
+                machine_type,
+                exc_info=True,
+            )
+            return None
+
     def _switch_to_fallback_region(self) -> str | None:
-        """Samples a fallback region other than the current one, rewrites the launch
-        body's region-specific `subnetwork` to it, and updates `self.location` so the
-        next launch targets the new region. Returns the new region, or None if no
-        fallback region is available."""
+        """Samples a fallback region other than the current one where the launch
+        body's machine type is available, rewrites the body's region-specific
+        `subnetwork` to it, and updates `self.location` so the next launch targets
+        the new region. Returns the new region, or None if no fallback region is
+        available."""
         # `location` is defined by the base operator's __init__; pylint doesn't see that
         # and flags the read below because we reassign it at the end of this method.
         # pylint: disable=access-member-before-definition
         current_region = self.location
         # pylint: enable=access-member-before-definition
         candidates = [r for r in self.fallback_regions if r != current_region]
+        machine_type = (
+            self.body["launchParameter"].get("environment", {}).get("machineType")
+        )
+        if candidates and machine_type:
+            available_regions = self._regions_with_machine_type(machine_type)
+            if available_regions is not None:
+                candidates = [r for r in candidates if r in available_regions]
+                if not candidates:
+                    logging.info(
+                        "No fallback regions have machine type [%s] available; "
+                        "retrying in the original region [%s].",
+                        machine_type,
+                        current_region,
+                    )
         if not candidates:
             return None
         new_region = sample(candidates, 1)[0]
