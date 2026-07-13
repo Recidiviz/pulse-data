@@ -3852,6 +3852,20 @@ DISTINCT_PRIMARY_TASKS_USERS_VIEWED_HCRP = EventDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_PRIMARY_TASKS_USERS_VIEWED_HCRP_USING_MOBILE = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_viewed_hcrp_using_mobile",
+    display_name="Distinct Primary Tasks Users Who Viewed HCRP Using Mobile",
+    description="Number of distinct primary Tasks users who had at least one client "
+    "surfaced in the Home Contact Route Planner using a mobile device",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": SURFACED_ROUTE_PLANNER_ACTION,
+            "is_mobile": ["true"],
+        },
+    ),
+)
+
 DISTINCT_PRIMARY_TASKS_USERS_USED_OPTIMIZE_ROUTE = EventDistinctUnitCountMetric(
     name="distinct_primary_tasks_users_used_optimize_route",
     display_name="Distinct Primary Tasks Users Who Used Optimize Route",
