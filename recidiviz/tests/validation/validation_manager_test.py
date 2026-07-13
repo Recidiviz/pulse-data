@@ -786,7 +786,6 @@ class TestFetchValidations(TestCase):
                 "US_CO",
                 "US_IA",
                 "US_IX",
-                "US_ME",
                 "US_MI",
                 "US_MO",
                 "US_ND",

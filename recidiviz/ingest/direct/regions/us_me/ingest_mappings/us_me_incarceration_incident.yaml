@@ -2,6 +2,9 @@
 # This file associates the columns outputted from the query in `view_IncarcerationIncident` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
+# US_ME ingest is turned off; this view no longer runs in staging or production.
+launch_env:
+  $env: is_local
 input_columns:
   Cis_100_Client_Id: STRING
   Incident_Id: STRING

@@ -56,8 +56,9 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.utils import metadata
 
-# These are specified manually so as not to depend on every workflows ViewBuilder. The unit test
-# test_opportunities_list_matches_workflows_config verifies we're in sync with configured ME opportunities
+# These are specified manually so as not to depend on every workflows ViewBuilder. This
+# pipeline is no longer run (US_ME Workflows opportunities were removed from
+# workflows_opportunity_configs.py), so this list is frozen at its last-known-good state.
 ME_OPPORTUNITY_TYPES = [
     "usMeEarlyTermination",
     "usMeSCCP",

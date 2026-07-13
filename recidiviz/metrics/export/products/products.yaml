@@ -44,8 +44,6 @@ products:
         environment: production
       - state_code: US_IA
         environment: production
-      - state_code: US_ME
-        environment: production
       - state_code: US_MO
         environment: production
       - state_code: US_NC
@@ -150,8 +148,6 @@ products:
         environment: production
       - state_code: US_MI
         environment: production
-      - state_code: US_ME
-        environment: production
       - state_code: US_MO
         environment: production
       - state_code: US_NC
@@ -230,8 +226,6 @@ products:
     states:
       - state_code: US_IX
         environment: production
-      - state_code: US_ME
-        environment: production
   - name: JII Texting
     description: JII Texting is a tool used to message JII on an ongoing basis
     exports:
@@ -249,8 +243,6 @@ products:
       - state_code: US_AZ
         environment: production
       - state_code: US_CO
-        environment: production
-      - state_code: US_ME
         environment: production
       - state_code: US_NC
         environment: production

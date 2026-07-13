@@ -2,6 +2,9 @@
 # This file associates the columns outputted from the query in `view_CURRENT_STATUS_incarceration_periods` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
+# US_ME ingest is turned off; this view no longer runs in staging or production.
+launch_env:
+  $env: is_local
 input_columns:
   client_id: STRING
   start_date: DATE

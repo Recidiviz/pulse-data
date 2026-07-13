@@ -2,6 +2,9 @@
 # This file associates the columns outputted from the query in `view_sentence_status` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
+# US_ME ingest is turned off; this view no longer runs in staging or production.
+launch_env:
+  $env: is_local
 input_columns:
   Client_Id: STRING
   Court_Order_Id: STRING
