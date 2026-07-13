@@ -18,7 +18,7 @@
 for state-specific decisions involved in categorizing various attributes of
 commitment from supervision admissions."""
 import abc
-from typing import Optional, Set
+from typing import Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -51,13 +51,14 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDeleg
         """
         return False
 
-    def admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
-        self,
-    ) -> Set[str]:
-        """Returns the set of commitment from supervision admission reason raw texts for which
-        we should prioritize periods that *overlap* with the date of admission to
-        incarceration, as opposed to prioritizing periods that have already terminated
-        by the date of admission.
+    # pylint: disable=unused-argument
+    def should_prioritize_overlaps_in_pre_commitment_sp_search(
+        self, admission_reason_raw_text: Optional[str]
+    ) -> bool:
+        """Returns whether, for a commitment from supervision admission with the given
+        |admission_reason_raw_text|, we should prioritize periods that *overlap* with
+        the date of admission to incarceration, as opposed to prioritizing periods
+        that have already terminated by the date of admission.
 
         Default behavior is always prioritizing periods that have terminated prior to
         the admission. Should be overridden by state-specific implementations if
@@ -67,7 +68,7 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDeleg
         terminated after commitment periods begin.
         """
 
-        return set()
+        return False
 
     # pylint: disable=unused-argument
     def get_commitment_from_supervision_supervision_type(

@@ -178,6 +178,60 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(overlapping_parole_period, pre_commitment_supervision_period)
 
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_overlap_normalized_prefix(
+        self,
+    ) -> None:
+        """Tests that a commitment whose admission_reason_raw_text has been rewritten
+        during normalization to the PAROLE_REVOCATION_NORMALIZED_PREFIX plus the
+        original raw text (e.g. a BED_ASSIGNMENT_CHANGE reclassified as a parole
+        revocation) prioritizes the overlapping parole period, just like a commitment
+        with the bare "PV" raw text does. Regression test for a bug where the two
+        raw text forms diverged because the overlap-prioritization check only did an
+        exact string match instead of a prefix match."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
+        admission_reason_raw_text = (
+            f"{PAROLE_REVOCATION_NORMALIZED_PREFIX}-BED_ASSIGNMENT_CHANGE"
+        )
+
+        # Overlapping parole period
+        overlapping_parole_period = NormalizedStateSupervisionPeriod(
+            supervision_period_id=111,
+            sequence_num=0,
+            external_id="sp1",
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        # Terminated parole period.
+        terminated_parole_period = NormalizedStateSupervisionPeriod(
+            supervision_period_id=222,
+            sequence_num=1,
+            external_id="sp2",
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
+                supervision_periods=[
+                    terminated_parole_period,
+                    overlapping_parole_period,
+                ],
+            )
+        )
+
+        self.assertEqual(overlapping_parole_period, pre_commitment_supervision_period)
+
     def test_us_nd_pre_commitment_supervision_period_parole_revocation_rev_term(
         self,
     ) -> None:

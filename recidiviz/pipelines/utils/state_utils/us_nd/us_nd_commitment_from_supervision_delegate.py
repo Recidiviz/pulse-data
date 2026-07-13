@@ -39,6 +39,16 @@ from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_incarceration_period_norm
 )
 
 
+def _admission_raw_text_matches_key(admission_reason_raw_text: str, key: str) -> bool:
+    """Returns whether |admission_reason_raw_text| matches |key|, either exactly or,
+    for the PAROLE/PROBATION revocation normalized prefix keys, as a prefix."""
+    return admission_reason_raw_text == key or (
+        key
+        in (PAROLE_REVOCATION_NORMALIZED_PREFIX, PROBATION_REVOCATION_NORMALIZED_PREFIX)
+        and admission_reason_raw_text.startswith(key)
+    )
+
+
 class UsNdCommitmentFromSupervisionDelegate(
     StateSpecificCommitmentFromSupervisionDelegate
 ):
@@ -60,9 +70,9 @@ class UsNdCommitmentFromSupervisionDelegate(
         """
         return True
 
-    def admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
-        self,
-    ) -> Set[str]:
+    def should_prioritize_overlaps_in_pre_commitment_sp_search(
+        self, admission_reason_raw_text: Optional[str]
+    ) -> bool:
         """In US_ND there are different expectations for when a supervision period
         will be terminated relative to the date of a commitment from
         supervision admission based on the |admission_reason| on the commitment.
@@ -74,9 +84,11 @@ class UsNdCommitmentFromSupervisionDelegate(
         # However, for PROBATION, we prioritize periods that have terminated before the
         # |admission_date|, since we expect probation periods to be terminated at the
         # time of a probation revocation admission
+        if admission_reason_raw_text is None:
+            return False
 
         # Filter dictionary by keeping admission reason raw texts whose associated supervision types are PAROLE.
-        filtered_admission_raw_texts: Set[str] = {
+        parole_admission_raw_texts: Set[str] = {
             key
             for (
                 key,
@@ -85,7 +97,10 @@ class UsNdCommitmentFromSupervisionDelegate(
             if value == StateSupervisionPeriodSupervisionType.PAROLE
         }
 
-        return filtered_admission_raw_texts
+        return any(
+            _admission_raw_text_matches_key(admission_reason_raw_text, raw_text)
+            for raw_text in parole_admission_raw_texts
+        )
 
     def get_commitment_from_supervision_supervision_type(
         self,
@@ -132,15 +147,7 @@ class UsNdCommitmentFromSupervisionDelegate(
         supervision_type_matched_with_raw_text = [
             val
             for key, val in PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT.items()
-            if key == admission_reason_raw_text
-            or (
-                key
-                in (
-                    PAROLE_REVOCATION_NORMALIZED_PREFIX,
-                    PROBATION_REVOCATION_NORMALIZED_PREFIX,
-                )
-                and admission_reason_raw_text.startswith(key)
-            )
+            if _admission_raw_text_matches_key(admission_reason_raw_text, key)
         ]
 
         # If there is exactly one match with the admission reason raw text, return the supervision type associated.

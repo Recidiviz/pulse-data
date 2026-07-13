@@ -406,9 +406,8 @@ def _get_commitment_from_supervision_supervision_period(
         # holds, because we do not expect supervision periods to have already
         # terminated on the date someone is admitted to a board hold
         is_commitment_from_board_hold
-    ) or (
+    ) or commitment_from_supervision_delegate.should_prioritize_overlaps_in_pre_commitment_sp_search(
         admission_reason_raw_text
-        in commitment_from_supervision_delegate.admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search()
     ):
         valid_pre_commitment_periods = (
             overlapping_periods if overlapping_periods else terminated_periods
