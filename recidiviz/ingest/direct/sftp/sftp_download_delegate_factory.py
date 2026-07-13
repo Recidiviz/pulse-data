@@ -24,9 +24,6 @@ from recidiviz.ingest.direct.regions.us_ca.us_ca_sftp_download_delegate import (
 from recidiviz.ingest.direct.regions.us_ix.us_ix_sftp_download_delegate import (
     UsIxSftpDownloadDelegate,
 )
-from recidiviz.ingest.direct.regions.us_me.us_me_sftp_download_delegate import (
-    UsMeSftpDownloadDelegate,
-)
 from recidiviz.ingest.direct.regions.us_mi.us_mi_sftp_download_delegate import (
     UsMiSftpDownloadDelegate,
 )
@@ -52,8 +49,6 @@ class SftpDownloadDelegateFactory:
             return UsIxSftpDownloadDelegate()
         if region_code == StateCode.US_PA.value:
             return UsPaSftpDownloadDelegate()
-        if region_code == StateCode.US_ME.value:
-            return UsMeSftpDownloadDelegate()
         if region_code == StateCode.US_MI.value:
             return UsMiSftpDownloadDelegate()
         if region_code == StateCode.US_MO.value:

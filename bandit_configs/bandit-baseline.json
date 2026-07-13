@@ -13600,19 +13600,6 @@
       "nosec": 0,
       "skipped_tests": 0
     },
-    "recidiviz/ingest/direct/regions/us_me/us_me_sftp_download_delegate.py": {
-      "CONFIDENCE.HIGH": 0,
-      "CONFIDENCE.LOW": 0,
-      "CONFIDENCE.MEDIUM": 0,
-      "CONFIDENCE.UNDEFINED": 0,
-      "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 0,
-      "SEVERITY.MEDIUM": 0,
-      "SEVERITY.UNDEFINED": 0,
-      "loc": 38,
-      "nosec": 0,
-      "skipped_tests": 0
-    },
     "recidiviz/ingest/direct/regions/us_mi/__init__.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,

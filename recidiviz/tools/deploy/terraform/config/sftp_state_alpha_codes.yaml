@@ -1,7 +1,6 @@
 # State codes for states with that have a direct ingest sftp queue
 - US_IX
 - US_PA
-- US_ME
 - US_MI
 - US_MO
 - US_CA
