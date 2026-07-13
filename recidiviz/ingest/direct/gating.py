@@ -1037,6 +1037,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "LBAKRDTA_TAK076": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "LBAKRDTA_TAK090": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "LBAKRDTA_TAK091": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "LBAKRDTA_TAK118": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "LBAKRDTA_TAK130": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "LBAKRDTA_TAK142": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "LBAKRDTA_TAK158": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
