@@ -67,20 +67,18 @@ output:
                         $include_nulls: True
                     $custom_parser: us_mo_custom_enum_parsers.parse_incarceration_period_termination_reason
           specialized_purpose_for_incarceration:
-            $enum_mapping:
-              $raw_text: PFI
-              $mappings:
-                StateSpecializedPurposeForIncarceration.GENERAL:
-                  - "S" # Serving Sentence
-                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION:
-                  - "O" # 120-Day Shock
-                  - "R" # Regimented Disc Program
-                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
-                  - "A" # Assessment
-                  - "I" # Inst Treatment Center
-                  - "L" # Long Term Drug Treatment
-              $ignore:
-                - "X"
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: PFI
+                    - $not_in:
+                        $value: PFI
+                        $options:
+                          - $literal("X") # Missing
+                $then:
+                  $enum_mapping:
+                    $raw_text: PFI
+                    $custom_parser: us_mo_custom_enum_parsers.parse_pfi
           housing_unit_category:
             $enum_mapping:
               $raw_text: HOUSING_TYPE

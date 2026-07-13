@@ -37,6 +37,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
@@ -1485,6 +1486,25 @@ def parse_supervision_sentencing_authority(raw_text: str) -> StateSentencingAuth
     if "IS COMP" in imposition_status_desc.upper():
         return StateSentencingAuthority.OTHER_STATE
     return sentencing_authority_from_county(county_code)
+
+
+def parse_pfi(raw_text: str) -> StateSpecializedPurposeForIncarceration:
+    """Returns PFI given a subcycle PFI. If the PFI field contains SHOCK120 followed by a status code,
+    it denotes that the person's TAK026 status data should be used to infer a shock incarceration PFI."""
+    if (
+        "SHOCK120" in raw_text  # 120-Day Shock
+        or raw_text == "R"  # Regimented Disc Program
+    ):
+        return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+    if raw_text == "S":  # Serving Sentence
+        return StateSpecializedPurposeForIncarceration.GENERAL
+    if raw_text in (
+        "A",  # Assessment
+        "I",  # Inst Treatment Center
+        "L",  # Long Term Drug Treatment
+    ):
+        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+    return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
 
 
 def sentencing_authority_from_county(raw_text: str) -> StateSentencingAuthority:
