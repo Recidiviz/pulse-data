@@ -67,7 +67,7 @@ from recidiviz.tests.documents import fake_config
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
-_COLLECTION_DESCRIPTION = "Extract employment information from case notes."
+_RELEVANCE_CRITERIA = "Whether the document mentions employment information"
 # A model config that exists in recidiviz/tests/documents/fake_config/model_registry.yaml.
 _FAKE_MODEL_CONFIG_NAME = "GLOBEX_BASIC_DEFAULT"
 # The collection defined under recidiviz/tests/documents/fake_config/.
@@ -112,7 +112,7 @@ def _output_schema() -> LLMRequestOutputSchema:
                 ],
             }
         ),
-        collection_description=_COLLECTION_DESCRIPTION,
+        relevance_criteria=_RELEVANCE_CRITERIA,
         default_minimum_confidence_level=ConfidenceLevel.INFERRED,
     )
 
@@ -125,7 +125,7 @@ def _entity_group(**raw: Any) -> EntityGroupConfig:
 
 
 def _simple_schema(
-    *, collection_description: str = _COLLECTION_DESCRIPTION, field_name: str = "status"
+    *, relevance_criteria: str = _RELEVANCE_CRITERIA, field_name: str = "status"
 ) -> LLMRequestOutputSchema:
     """Returns a one-field schema, varying only the inputs a single
     collection-version-ID test wants to perturb.
@@ -140,7 +140,7 @@ def _simple_schema(
                 ],
             }
         ),
-        collection_description=collection_description,
+        relevance_criteria=relevance_criteria,
         default_minimum_confidence_level=ConfidenceLevel.INFERRED,
     )
 
@@ -367,6 +367,7 @@ class LLMExtractorCollectionConfigTest(TestCase):
         return LLMExtractorCollectionConfig(
             name=name,
             description=_DESCRIPTION,
+            relevance_criteria=_RELEVANCE_CRITERIA,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=ConfidenceLevel.INFERRED,
             output_schema=_output_schema(),
@@ -416,6 +417,7 @@ class CollectionVersionIdTest(TestCase):
         return LLMExtractorCollectionConfig(
             name=name,
             description=_DESCRIPTION,
+            relevance_criteria=_RELEVANCE_CRITERIA,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=ConfidenceLevel.INFERRED,
             output_schema=output_schema
@@ -434,7 +436,7 @@ class CollectionVersionIdTest(TestCase):
             _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "5316c853eb0da0fa02651510d21bd43a6e4554fa2b83c486efaf998fd8ad769b",
+            "a561a38757f65c4a09aa7716f8bdba2bbf5d4c83932cb56ad619b570c0290102",
             collection.collection_version_id,
         )
 
@@ -461,19 +463,19 @@ class CollectionVersionIdTest(TestCase):
             self._collection(name="OTHER_COLLECTION").collection_version_id,
         )
 
-    def test_collection_version_id_changes_with_collection_description(self) -> None:
-        # The collection description is folded into the generated schema via the
-        # auto-generated is_relevant field description, so a description change
-        # yields a new version ID even though it is not hashed separately.
+    def test_collection_version_id_changes_with_relevance_criteria(self) -> None:
+        # relevance_criteria is folded into the generated schema via the
+        # auto-generated is_relevant field description, so a change to it yields a
+        # new version ID even though it is not hashed separately.
         self.assertNotEqual(
             self._collection(
                 output_schema=_simple_schema(
-                    collection_description="First meaningful collection description."
+                    relevance_criteria="Whether the document mentions its first subject."
                 )
             ).collection_version_id,
             self._collection(
                 output_schema=_simple_schema(
-                    collection_description="Second meaningful collection description."
+                    relevance_criteria="Whether the document mentions its second subject."
                 )
             ).collection_version_id,
         )
@@ -493,12 +495,15 @@ class CollectionConfigFromYamlTest(TestCase):
         name: str,
         directory_name: str | None = None,
         include_reference_data: bool = True,
+        include_relevance_criteria: bool = True,
         **body: Any,
     ) -> LLMExtractorCollectionConfig:
         """Writes a collection.yaml under a temp directory (named |directory_name|,
         defaulting to the lowercased |name|) and parses it. `reference_data` is a
         required block, so an empty one is emitted by default unless overridden in
-        |body| or suppressed via |include_reference_data|.
+        |body| or suppressed via |include_reference_data|. `relevance_criteria` is
+        required and emitted by default unless suppressed via
+        |include_relevance_criteria|.
         """
         contents: dict[str, Any] = {
             "name": name,
@@ -512,6 +517,8 @@ class CollectionConfigFromYamlTest(TestCase):
                 ],
             },
         }
+        if include_relevance_criteria:
+            contents["relevance_criteria"] = _RELEVANCE_CRITERIA
         if include_reference_data:
             contents["reference_data"] = {}
         contents.update(body)
@@ -530,6 +537,28 @@ class CollectionConfigFromYamlTest(TestCase):
         config = self._parse(name="TEST_COLLECTION")
         self.assertEqual("TEST_COLLECTION", config.name)
         self.assertEqual(_FAKE_MODEL_CONFIG_NAME, config.default_model_config_name)
+        self.assertEqual(_RELEVANCE_CRITERIA, config.relevance_criteria)
+
+    def test_missing_relevance_criteria_raises(self) -> None:
+        # relevance_criteria is required; description is a task statement, not a
+        # relevance condition, so it cannot stand in.
+        with self.assertRaisesRegex(
+            KeyError, re.escape("Expected nonnull [relevance_criteria]")
+        ):
+            self._parse(name="TEST_COLLECTION", include_relevance_criteria=False)
+
+    def test_relevance_criteria_wrong_prefix_raises(self) -> None:
+        # It is used verbatim as the is_relevant description and the prompt's
+        # relevance criterion, so it must be a "Whether the document ..." statement
+        # — a bare "the document ..." clause is rejected.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape('must be a statement beginning with "Whether the document"'),
+        ):
+            self._parse(
+                name="TEST_COLLECTION",
+                relevance_criteria="the document mentions jobs and pay",
+            )
 
     def test_name_directory_mismatch_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, "does not match its parent directory"):

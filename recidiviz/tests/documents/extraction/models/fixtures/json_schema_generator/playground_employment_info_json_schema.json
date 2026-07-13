@@ -10,7 +10,7 @@
           "properties": {
             "is_relevant": {
               "type": "boolean",
-              "description": "Whether this document contains information relevant to: Extract employment-related information from supervision case notes, including current employment status, job search activity, and details about current employers. Playground collection run against fictional US_OZ data to exercise the extraction platform; never run against real state data.\n",
+              "description": "Whether the document mentions jobs, work, pay, employers, or job searching\n",
               "const": false
             }
           },
@@ -24,7 +24,7 @@
           "properties": {
             "is_relevant": {
               "type": "boolean",
-              "description": "Whether this document contains information relevant to: Extract employment-related information from supervision case notes, including current employment status, job search activity, and details about current employers. Playground collection run against fictional US_OZ data to exercise the extraction platform; never run against real state data.\n",
+              "description": "Whether the document mentions jobs, work, pay, employers, or job searching\n",
               "const": true
             },
             "primary_status": {

@@ -215,11 +215,11 @@ def description_with_enum_value_guidance(
 
 @attr.define(frozen=True, kw_only=True)
 class LLMOutputSemanticConsistencyConstraint(abc.ABC):
-    """A constraint on when an output schema field may be non-null, conditioned
-    on the value of a sibling field at the same schema level. Constraints are
-    one-directional: they restrict when a field can be non-null but never
-    require it to be non-null, so a null field always satisfies them. Rendered
-    into natural language in the prompt AND enforced programmatically in
+    """A constraint relating an output schema field to the value of a sibling
+    field at the same schema level. Most constraints gate applicability — they
+    restrict when a field may be non-null, so a null field always satisfies them
+    — while RequiredWhenValueConstraint instead requires the field to be present.
+    Rendered into natural language in the prompt AND enforced programmatically in
     validation. Each subclass holds a direct reference to its condition field.
     """
 
@@ -344,15 +344,20 @@ class LLMRequestOutputSchemaField(abc.ABC):
         later). Used to order a scope's fields by dependency.
         """
         dependency_names: set[str] = set()
-        if (
-            nonnull_condition_field := field_yaml_dict.peek_optional(
-                "applicable_when_nonnull", str
-            )
-        ) is not None:
-            dependency_names.add(nonnull_condition_field)
+        for nonnull_condition_key in (
+            "applicable_when_nonnull",
+            "required_when_nonnull",
+        ):
+            if (
+                nonnull_condition_field := field_yaml_dict.peek_optional(
+                    nonnull_condition_key, str
+                )
+            ) is not None:
+                dependency_names.add(nonnull_condition_field)
         for value_condition_key in (
             "applicable_when_value",
             "not_applicable_when_value",
+            "required_when_value",
         ):
             if (
                 value_condition := field_yaml_dict.peek_optional(
@@ -523,9 +528,9 @@ class LLMRequestOutputSchemaField(abc.ABC):
     ) -> list[LLMOutputSemanticConsistencyConstraint]:
         """Returns the semantic-consistency constraints parsed off a field's
         YAML block, consuming the `applicable_when_nonnull`,
-        `applicable_when_value`, and `not_applicable_when_value` keys and
-        resolving each condition against the already-built
-        |already_built_fields_by_name|.
+        `required_when_nonnull`, `applicable_when_value`,
+        `not_applicable_when_value`, and `required_when_value` keys and resolving
+        each condition against the already-built |already_built_fields_by_name|.
         """
         constraints: list[LLMOutputSemanticConsistencyConstraint] = []
         if (
@@ -537,6 +542,18 @@ class LLMRequestOutputSchemaField(abc.ABC):
                 ApplicableWhenNonnullConstraint(
                     condition_field=already_built_fields_by_name[
                         nonnull_condition_field
+                    ]
+                )
+            )
+        if (
+            required_nonnull_condition_field := yaml_dict.pop_optional(
+                "required_when_nonnull", str
+            )
+        ) is not None:
+            constraints.append(
+                RequiredWhenNonnullConstraint(
+                    condition_field=already_built_fields_by_name[
+                        required_nonnull_condition_field
                     ]
                 )
             )
@@ -558,6 +575,16 @@ class LLMRequestOutputSchemaField(abc.ABC):
             constraints.append(
                 NotApplicableWhenValueConstraint.from_yaml_dict(
                     not_applicable_when_value_yaml, already_built_fields_by_name
+                )
+            )
+        if (
+            required_when_value_yaml := yaml_dict.pop_dict_optional(
+                "required_when_value"
+            )
+        ) is not None:
+            constraints.append(
+                RequiredWhenValueConstraint.from_yaml_dict(
+                    required_when_value_yaml, already_built_fields_by_name
                 )
             )
         return constraints
@@ -754,13 +781,13 @@ class ArrayOfStructLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
 # Defined after the field subclasses so the value-condition constraints can
 # reference EnumLLMRequestOutputSchemaField directly in their validators.
 @attr.define(frozen=True, kw_only=True)
-class ApplicableWhenNonnullConstraint(LLMOutputSemanticConsistencyConstraint):
-    """The field may only be non-null when its condition field is also
+class _NonnullConditionConstraint(LLMOutputSemanticConsistencyConstraint):
+    """Shared base for constraints conditioned on a sibling field being
     non-null.
     """
 
     condition_field: LLMRequestOutputSchemaField = attr.ib()
-    """The sibling field that must be non-null for this field to be non-null."""
+    """The sibling field whose non-null presence this constraint conditions on."""
 
     @condition_field.validator
     def _check_condition_field(
@@ -773,6 +800,22 @@ class ApplicableWhenNonnullConstraint(LLMOutputSemanticConsistencyConstraint):
                 f"condition_field must be an output schema field, received "
                 f"[{type(value)}]."
             )
+
+
+@attr.define(frozen=True, kw_only=True)
+class ApplicableWhenNonnullConstraint(_NonnullConditionConstraint):
+    """The field may only be non-null when its condition field is also
+    non-null.
+    """
+
+
+@attr.define(frozen=True, kw_only=True)
+class RequiredWhenNonnullConstraint(_NonnullConditionConstraint):
+    """The field must be set when its condition field is non-null. The nonnull
+    counterpart of RequiredWhenValueConstraint; pair it with an
+    ApplicableWhenNonnullConstraint on the same condition field to express a
+    strict "both set or both null" relationship.
+    """
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -841,4 +884,14 @@ class ApplicableWhenValueConstraint(_EnumValueConditionConstraint):
 class NotApplicableWhenValueConstraint(_EnumValueConditionConstraint):
     """The field must be null when its ENUM condition field is one of the
     listed values.
+    """
+
+
+@attr.define(frozen=True, kw_only=True)
+class RequiredWhenValueConstraint(_EnumValueConditionConstraint):
+    """The field must be present — a scalar non-null, or an array non-empty —
+    when its ENUM condition field is one of the listed values. Unlike the gating
+    constraints, this one *requires* the field rather than restricting when it
+    may be set; pair it with an `ApplicableWhenValueConstraint` on the same
+    values to express a strict "set iff" relationship.
     """

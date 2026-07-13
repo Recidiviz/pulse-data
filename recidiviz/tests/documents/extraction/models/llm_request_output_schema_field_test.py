@@ -37,6 +37,8 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
     NotApplicableWhenValueConstraint,
     NullReason,
+    RequiredWhenNonnullConstraint,
+    RequiredWhenValueConstraint,
     ScalarLLMRequestOutputSchemaField,
     description_with_enum_value_guidance,
 )
@@ -199,6 +201,106 @@ class ConstraintResolutionTest(TestCase):
                     applicable_when_value={"status": ["employed"], "tenure": ["long"]},
                 ),
             )
+
+
+class RealisticConstraintUsageTest(TestCase):
+    """Worked examples of every semantic-consistency constraint on one realistic
+    employment schema, plus the two composition idioms we build from them. Reads
+    as the reference for how the `*_when_*` field keys are meant to be used.
+
+    The constraints (single field):
+      - `applicable_when_value`     — the field may only be non-null for certain
+                                      values of an ENUM sibling.
+      - `not_applicable_when_value` — the inverse: the field must be null for
+                                      certain values of an ENUM sibling.
+      - `applicable_when_nonnull`   — the field may only be non-null when a sibling
+                                      is itself non-null.
+
+    The idioms (pair a gating constraint with a requiring one on the same sibling):
+      - "set iff a value"  = `applicable_when_value` + `required_when_value`
+      - "both or neither"  = `applicable_when_nonnull` + `required_when_nonnull`
+    """
+
+    @staticmethod
+    def _employment_fields() -> dict[str, LLMRequestOutputSchemaField]:
+        """Returns a realistic employment schema exercising every constraint,
+        keyed by field name.
+        """
+        fields = _build(
+            _field(
+                "primary_status",
+                field_type="ENUM",
+                values=_enum_values("employed", "unemployed", "other"),
+            ),
+            # Only relevant when the person is employed.
+            _field(
+                "employer_name",
+                applicable_when_value={"primary_status": ["employed"]},
+            ),
+            # Benefits information does not apply when the person is employed.
+            _field(
+                "benefits_type",
+                not_applicable_when_value={"primary_status": ["employed"]},
+            ),
+            # "Set iff unemployed": gated to `unemployed` AND required for it.
+            _field(
+                "unemployment_reason",
+                applicable_when_value={"primary_status": ["unemployed"]},
+                required_when_value={"primary_status": ["unemployed"]},
+            ),
+            _field("pay_rate_amount", field_type="FLOAT"),
+            # "Both or neither": a period only when there is an amount, and
+            # required whenever there is one.
+            _field(
+                "pay_rate_period",
+                field_type="ENUM",
+                values=_enum_values("hourly", "weekly", "monthly"),
+                applicable_when_nonnull="pay_rate_amount",
+                required_when_nonnull="pay_rate_amount",
+            ),
+        )
+        return {field.name: field for field in fields}
+
+    def test_applicable_when_value(self) -> None:
+        fields = self._employment_fields()
+        (constraint,) = fields["employer_name"].semantic_consistency_constraints
+        assert isinstance(constraint, ApplicableWhenValueConstraint)
+        self.assertIs(fields["primary_status"], constraint.condition_field)
+        self.assertEqual(["employed"], constraint.values)
+
+    def test_not_applicable_when_value(self) -> None:
+        fields = self._employment_fields()
+        (constraint,) = fields["benefits_type"].semantic_consistency_constraints
+        assert isinstance(constraint, NotApplicableWhenValueConstraint)
+        self.assertIs(fields["primary_status"], constraint.condition_field)
+        self.assertEqual(["employed"], constraint.values)
+
+    def test_set_iff_a_value_pairs_applicable_and_required(self) -> None:
+        constraints = self._employment_fields()[
+            "unemployment_reason"
+        ].semantic_consistency_constraints
+        applicable = next(
+            c for c in constraints if isinstance(c, ApplicableWhenValueConstraint)
+        )
+        required = next(
+            c for c in constraints if isinstance(c, RequiredWhenValueConstraint)
+        )
+        self.assertEqual(["unemployed"], applicable.values)
+        self.assertEqual(["unemployed"], required.values)
+        self.assertEqual("primary_status", applicable.condition_field.name)
+        self.assertEqual("primary_status", required.condition_field.name)
+
+    def test_both_or_neither_pairs_applicable_and_required_nonnull(self) -> None:
+        fields = self._employment_fields()
+        constraints = fields["pay_rate_period"].semantic_consistency_constraints
+        applicable = next(
+            c for c in constraints if isinstance(c, ApplicableWhenNonnullConstraint)
+        )
+        required = next(
+            c for c in constraints if isinstance(c, RequiredWhenNonnullConstraint)
+        )
+        self.assertIs(fields["pay_rate_amount"], applicable.condition_field)
+        self.assertIs(fields["pay_rate_amount"], required.condition_field)
 
 
 class FieldModeTest(TestCase):

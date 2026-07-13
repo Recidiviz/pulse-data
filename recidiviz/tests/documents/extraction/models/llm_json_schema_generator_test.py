@@ -44,7 +44,7 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
-_COLLECTION_DESCRIPTION = "Extract employment information from case notes."
+_RELEVANCE_CRITERIA = "Whether the document mentions employment information"
 
 
 def _field(name: str, *, field_type: str = "STRING", **extra: Any) -> dict[str, Any]:
@@ -81,7 +81,7 @@ def _build_schema(*user_fields: dict[str, Any]) -> LLMRequestOutputSchema:
                 "inferred_fields": list(user_fields),
             }
         ),
-        collection_description=_COLLECTION_DESCRIPTION,
+        relevance_criteria=_RELEVANCE_CRITERIA,
         default_minimum_confidence_level=ConfidenceLevel.INFERRED,
     )
 

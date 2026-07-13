@@ -28,6 +28,7 @@ import json
 from functools import cache
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import attr
 
@@ -62,6 +63,27 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 EXTRACTOR_COLLECTIONS_DIR_NAME = "extractor_collections"
 COLLECTION_CONFIG_FILENAME = "collection.yaml"
+
+# relevance_criteria is used verbatim as the full relevance statement — both the
+# auto-generated is_relevant field description and the prompt's relevance criterion
+# — so it must read as a complete "Whether ..." statement. We require this exact
+# prefix so it reads correctly in both spots.
+RELEVANCE_CRITERIA_REQUIRED_PREFIX = "Whether the document"
+
+
+def _is_valid_relevance_criteria(
+    instance: Any, attribute: attr.Attribute, value: str
+) -> None:
+    """Validates that relevance_criteria is a meaningful statement beginning with
+    "Whether the document" (see RELEVANCE_CRITERIA_REQUIRED_PREFIX).
+    """
+    recidiviz_attr_validators.is_meaningful_description(instance, attribute, value)
+    if not value.startswith(RELEVANCE_CRITERIA_REQUIRED_PREFIX):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f'statement beginning with "{RELEVANCE_CRITERIA_REQUIRED_PREFIX}". '
+            f"Found value [{value}]."
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -192,8 +214,12 @@ class LLMExtractorCollectionConfig:
     description: str = attr.ib(
         validator=recidiviz_attr_validators.is_meaningful_description
     )
-    """Human-readable description of what the collection extracts. Used to
-    auto-generate the `is_relevant` field description.
+    """Human-readable description of what the collection extracts."""
+
+    relevance_criteria: str = attr.ib(validator=_is_valid_relevance_criteria)
+    """The full relevance statement for a document, phrased as a "Whether the
+    document ..." clause (e.g. "Whether the document mentions jobs, work, pay,
+    employers, or job searching").
     """
 
     default_model_config_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -325,14 +351,16 @@ class LLMExtractorCollectionConfig:
         config_dict.pop_dict_optional("golden_eval")
 
         description = config_dict.pop("description", str)
+        relevance_criteria = config_dict.pop("relevance_criteria", str)
         output_schema = LLMRequestOutputSchema.from_yaml_dict(
             yaml_dict=config_dict.pop_dict("output_schema"),
-            collection_description=description,
+            relevance_criteria=relevance_criteria,
             default_minimum_confidence_level=minimum_confidence_level,
         )
         config = cls(
             name=name,
             description=description,
+            relevance_criteria=relevance_criteria,
             default_model_config_name=default_model_config_name,
             minimum_confidence_level=minimum_confidence_level,
             output_schema=output_schema,

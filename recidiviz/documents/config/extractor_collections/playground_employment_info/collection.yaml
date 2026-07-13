@@ -4,6 +4,8 @@ description: >
   current employment status, job search activity, and details about current
   employers. Playground collection run against fictional US_OZ data to exercise
   the extraction platform; never run against real state data.
+relevance_criteria: >
+  Whether the document mentions jobs, work, pay, employers, or job searching
 
 default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 

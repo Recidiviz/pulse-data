@@ -4,6 +4,8 @@ description: >
   the person's housing status, where they are living, and the type of housing.
   Playground collection run against fictional US_OZ data to exercise the
   extraction platform; never run against real state data.
+relevance_criteria: >
+  Whether the document mentions the person's living situation
 
 default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 

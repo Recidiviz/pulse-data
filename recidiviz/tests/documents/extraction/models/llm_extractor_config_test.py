@@ -465,7 +465,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "44c5718daff2bb7a13742c34c1e1bee50877573cef39d90a167ce09de8fdc974",
+            "9b73e0ff3189300557e36880026a276980e4411a371887fbb5defe533c11d769",
             config.extractor_version_id,
         )
 
@@ -485,7 +485,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             self.collection,
             output_schema=attr.evolve(
                 self.collection.output_schema,
-                collection_description="A different but still meaningful description.",
+                relevance_criteria="Whether the document mentions a different subject.",
             ),
         )
         self.assertNotEqual(
@@ -537,7 +537,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             self.collection,
             output_schema=attr.evolve(
                 self.collection.output_schema,
-                collection_description="A different but still meaningful description.",
+                relevance_criteria="Whether the document mentions a different subject.",
             ),
         )
         self.assertEqual(

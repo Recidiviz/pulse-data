@@ -38,7 +38,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
-_COLLECTION_DESCRIPTION = "Extract employment information from case notes."
+_RELEVANCE_CRITERIA = "Whether the document mentions employment information"
 
 
 def _field(name: str, *, field_type: str = "STRING", **extra: Any) -> dict[str, Any]:
@@ -51,7 +51,7 @@ def _enum_values(*names: str) -> list[dict[str, str]]:
 
 def _build_schema(
     *user_fields: dict[str, Any],
-    collection_description: str = _COLLECTION_DESCRIPTION,
+    relevance_criteria: str = _RELEVANCE_CRITERIA,
     **output_schema_extra: Any,
 ) -> LLMRequestOutputSchema:
     output_schema_dict: dict[str, Any] = {
@@ -62,7 +62,7 @@ def _build_schema(
     }
     return LLMRequestOutputSchema.from_yaml_dict(
         yaml_dict=YAMLDict(output_schema_dict),
-        collection_description=collection_description,
+        relevance_criteria=relevance_criteria,
         default_minimum_confidence_level=ConfidenceLevel.INFERRED,
     )
 
@@ -89,7 +89,7 @@ class LLMRequestOutputSchemaTest(TestCase):
         self.assertEqual(LLMOutputFieldType.BOOLEAN, is_relevant.field_type)
         self.assertEqual(LLMOutputFieldMode.STRUCTURAL, is_relevant.field_mode)
         self.assertTrue(is_relevant.required)
-        self.assertIn(_COLLECTION_DESCRIPTION, is_relevant.description)
+        self.assertEqual(_RELEVANCE_CRITERIA, is_relevant.description)
 
     def test_all_fields_prepends_is_relevant_then_user_fields_in_order(self) -> None:
         schema = _build_schema(_field("a"), _field("b"), _field("c"))

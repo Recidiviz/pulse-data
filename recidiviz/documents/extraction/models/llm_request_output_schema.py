@@ -53,11 +53,13 @@ class LLMRequestOutputSchema:
     )
     """Description of a single extraction result."""
 
-    collection_description: str = attr.ib(
+    relevance_criteria: str = attr.ib(
         validator=recidiviz_attr_validators.is_meaningful_description
     )
-    """The owning collection's description. Held here only to compose the
-    auto-generated description of the framework-injected `is_relevant` field.
+    """The owning collection's full relevance statement — a "Whether the document
+    ..." clause (e.g. "Whether the document mentions jobs, work, pay, employers,
+    or job searching"). Used verbatim as the description of the framework-injected
+    `is_relevant` field.
     """
 
     user_defined_fields: list[LLMRequestOutputSchemaField] = attr.ib(
@@ -98,15 +100,12 @@ class LLMRequestOutputSchema:
     @property
     def is_relevant_field(self) -> ScalarLLMRequestOutputSchemaField:
         """Returns the framework-injected `is_relevant` field: a bare
-        (STRUCTURAL) boolean, always required, whose description is composed
-        from the collection description.
+        (STRUCTURAL) boolean, always required, whose description is the
+        collection's relevance criteria verbatim.
         """
         return ScalarLLMRequestOutputSchemaField(
             name=IS_RELEVANT_FIELD_NAME,
-            description=(
-                f"Whether this document contains information relevant to: "
-                f"{self.collection_description}"
-            ),
+            description=self.relevance_criteria,
             required=True,
             inferred_field_config=None,
             scalar_type=LLMOutputFieldType.BOOLEAN,
@@ -135,18 +134,18 @@ class LLMRequestOutputSchema:
         cls,
         *,
         yaml_dict: YAMLDict,
-        collection_description: str,
+        relevance_criteria: str,
         default_minimum_confidence_level: ConfidenceLevel,
     ) -> "LLMRequestOutputSchema":
         """Returns the output schema parsed from a collection's `output_schema`
-        block. |collection_description| is used to compose the injected
-        `is_relevant` field's description; each field's effective minimum
-        confidence level resolves against |default_minimum_confidence_level|.
+        block. |relevance_criteria| is used to compose the injected `is_relevant`
+        field's description; each field's effective minimum confidence level
+        resolves against |default_minimum_confidence_level|.
         """
         schema = cls(
             full_batch_description=yaml_dict.pop("full_batch_description", str),
             result_level_description=yaml_dict.pop("result_level_description", str),
-            collection_description=collection_description,
+            relevance_criteria=relevance_criteria,
             user_defined_fields=LLMRequestOutputSchemaField.build_output_schema_fields(
                 field_yamls=yaml_dict.pop_dicts("inferred_fields"),
                 default_minimum_confidence_level=default_minimum_confidence_level,
