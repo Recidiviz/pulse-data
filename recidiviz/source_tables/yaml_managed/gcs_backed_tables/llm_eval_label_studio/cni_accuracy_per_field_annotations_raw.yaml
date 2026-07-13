@@ -1,0 +1,112 @@
+address:
+  dataset_id: label_studio
+  table_id: cni_accuracy_per_field_annotations_raw
+description:
+  Raw Label Studio annotation exports for the cni_accuracy_per_field task.
+  GCS-backed external table reading directly from the label-studio export bucket.
+  Auto-generated from recidiviz/llm_eval/label_studio/config/cni_accuracy_per_field.yaml
+  — do not edit manually.
+schema:
+  - name: id
+    type: INT64
+    mode: NULLABLE
+    description: Label Studio annotation ID.
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: Timestamp when the annotation was submitted.
+  - name: lead_time
+    type: FLOAT64
+    mode: NULLABLE
+    description: Time in seconds the annotator spent on the task.
+  - name: was_cancelled
+    type: BOOL
+    mode: NULLABLE
+    description: Whether the annotation was cancelled rather than submitted.
+  - name: completed_by
+    type: RECORD
+    mode: NULLABLE
+    description: Annotator who completed this annotation.
+    fields:
+      - name: email
+        type: STRING
+        mode: NULLABLE
+        description: Email address of the annotator.
+  - name: task
+    type: RECORD
+    mode: NULLABLE
+    description: The Label Studio task this annotation belongs to.
+    fields:
+      - name: id
+        type: INT64
+        mode: NULLABLE
+        description: Label Studio task ID.
+      - name: inner_id
+        type: INT64
+        mode: NULLABLE
+        description: Task sequence number within the Label Studio project.
+      - name: data
+        type: RECORD
+        mode: NULLABLE
+        description: Task input data fields.
+        fields:
+          - name: document_id
+            type: STRING
+            mode: NULLABLE
+            description: Unique identifier for the extracted document.
+          - name: document_text
+            type: STRING
+            mode: NULLABLE
+            description: Raw text of the source document.
+          - name: field_name
+            type: STRING
+            mode: NULLABLE
+            description: Name of the extracted field being annotated.
+          - name: task_order
+            type: INT64
+            mode: NULLABLE
+            description: Ordering of the task within the annotation batch.
+          - name: extracted_value
+            type: STRING
+            mode: NULLABLE
+            description: LLM-extracted value for the field.
+          - name: field_description
+            type: STRING
+            mode: NULLABLE
+            description: Description of the field shown to the annotator.
+          - name: extractor_version_id
+            type: STRING
+            mode: NULLABLE
+            description: Version identifier for the extractor that produced this result.
+  - name: result
+    type: RECORD
+    mode: REPEATED
+    description: Annotation result items, one per annotated field.
+    fields:
+      - name: type
+        type: STRING
+        mode: NULLABLE
+        description: Label Studio result type (e.g. choices, textarea).
+      - name: from_name
+        type: STRING
+        mode: NULLABLE
+        description: Name of the annotated field.
+      - name: value
+        type: RECORD
+        mode: NULLABLE
+        description: The annotated value.
+        fields:
+          - name: choices
+            type: STRING
+            mode: REPEATED
+            description: Selected choices for choice-type fields.
+          - name: text
+            type: STRING
+            mode: REPEATED
+            description: Text value for textarea-type fields.
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-label-studio/cni-labeling/accuracy_per_field/*.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

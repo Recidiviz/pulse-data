@@ -28,7 +28,7 @@ def collect_source_tables_from_yamls_by_dataset(
     """Returns a list of SourceTableConfig for all source tables defined in YAMLs
     that can be found inside the |yamls_root_path|.
     """
-    yaml_paths = glob.glob(os.path.join(yamls_root_path, "**/*.yaml"))
+    yaml_paths = glob.glob(os.path.join(yamls_root_path, "**/*.yaml"), recursive=True)
 
     source_tables_by_dataset = defaultdict(list)
     for yaml_path in yaml_paths:

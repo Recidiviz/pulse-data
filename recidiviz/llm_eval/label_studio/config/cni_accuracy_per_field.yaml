@@ -1,0 +1,53 @@
+task_name: "cni_accuracy_per_field"
+description: >
+  CNI per-field accuracy: human annotators label whether individual
+  LLM-extracted field values are correct, and if not, the reason for
+  incorrectness.
+labelstudio_project_ids:
+  recidiviz-staging: 7
+gcs_export_prefix: "cni-labeling/accuracy_per_field"
+
+task_data_fields:
+  - column_name: "document_id"
+    description: "Unique identifier for the extracted document."
+    bq_type: "STRING"
+  - column_name: "document_text"
+    description: "Raw text of the source document."
+    bq_type: "STRING"
+  - column_name: "field_name"
+    description: "Name of the extracted field being annotated."
+    bq_type: "STRING"
+  - column_name: "task_order"
+    description: "Ordering of the task within the annotation batch."
+    bq_type: "INT64"
+  - column_name: "extracted_value"
+    description: "LLM-extracted value for the field."
+    bq_type: "STRING"
+  - column_name: "field_description"
+    description: "Description of the field shown to the annotator."
+    bq_type: "STRING"
+  - column_name: "extractor_version_id"
+    description: "Version identifier for the extractor that produced this result."
+    bq_type: "STRING"
+
+# Columns that form the natural key for coverage analysis. The annotation
+# summary view groups by these to produce one row per annotated item.
+primary_key_fields:
+  - "document_id"
+  - "extractor_version_id"
+  - "field_name"
+
+annotation_fields:
+  - column_name: "is_correct"
+    description: "Whether the LLM-extracted field value is correct."
+    ls_type: "choices"
+    bq_type: "BOOL"
+    transform: "choices_to_bool"
+    irr_included: true
+
+  # Only present when is_correct = false. NULL when the annotation is correct.
+  - column_name: "incorrect_reason"
+    description: "Reason the extracted value is incorrect, if applicable."
+    ls_type: "choices"
+    bq_type: "STRING"
+    transform: "choices_single_select"

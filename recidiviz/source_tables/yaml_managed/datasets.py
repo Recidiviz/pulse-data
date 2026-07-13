@@ -39,6 +39,8 @@ HYDRATION_ARCHIVE: str = "hydration_archive"
 # External tables backed by Google Sheets
 GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
 
+LABEL_STUDIO_DATASET: str = "label_studio"
+
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
     EXPORT_ARCHIVES_DATASET: (
@@ -53,6 +55,7 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores tables that are backed by Google Sheets."
     ),
     HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
+    LABEL_STUDIO_DATASET: "Stores raw Label Studio annotation exports as GCS-backed external tables.",
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."
     ),
