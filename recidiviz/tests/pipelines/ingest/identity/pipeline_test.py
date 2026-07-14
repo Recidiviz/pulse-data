@@ -17,6 +17,7 @@
 """Tests the identity ingest pipeline end-to-end."""
 import json
 from types import ModuleType
+from unittest import mock
 
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.tests.ingest.direct import fake_regions
@@ -52,7 +53,20 @@ class TestIdentityIngestPipeline(IdentityIngestPipelineTestCase):
 
     def test_identity_ingest_pipeline(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INTEGRATION_TEST_NAME)
-        self.run_test_identity_ingest_pipeline(
-            test_name=INTEGRATION_TEST_NAME,
-            raw_data_upper_bound_dates_json_override=self.us_dd_upper_bound_dates_json,
+        # Verify the pipeline wires up the enum mapping heartbeat step, passing
+        # is_sandbox_pipeline through. The harness always runs as a sandbox, so
+        # the heartbeats themselves are suppressed (attach_enum_mapping_heartbeats
+        # is covered directly in enum_mapping_heartbeats_test.py).
+        with mock.patch(
+            "recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views.attach_enum_mapping_heartbeats"
+        ) as mock_attach_heartbeats:
+            self.run_test_identity_ingest_pipeline(
+                test_name=INTEGRATION_TEST_NAME,
+                raw_data_upper_bound_dates_json_override=self.us_dd_upper_bound_dates_json,
+            )
+        mock_attach_heartbeats.assert_called_once()
+        self.assertTrue(mock_attach_heartbeats.call_args.kwargs["is_sandbox_pipeline"])
+        self.assertEqual(
+            self.state_code().value,
+            mock_attach_heartbeats.call_args.kwargs["state_code"],
         )

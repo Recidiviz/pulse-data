@@ -38,6 +38,9 @@ from recidiviz.persistence.entity.identity import identity_fragment_entities
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
 )
+from recidiviz.pipelines.ingest.enum_mapping_heartbeats import (
+    attach_enum_mapping_heartbeats,
+)
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
@@ -154,7 +157,19 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 resource_labels=self.pipeline_parameters.resource_labels,
             )
 
-        return (
+        merged_fragments: beam.PCollection[
+            tuple[ExternalIdKey, SourcedIdentityFragment]
+        ] = (
             merged_fragments_per_view.values()
             | "Flatten merged fragments" >> beam.Flatten()
         )
+
+        attach_enum_mapping_heartbeats(
+            merged_results=merged_fragments,
+            is_sandbox_pipeline=self.pipeline_parameters.is_sandbox_pipeline,
+            state_code=state_code.value,
+            ingest_manifest_collector=ingest_manifest_collector,
+            view_names=identity_view_names,
+        )
+
+        return merged_fragments
