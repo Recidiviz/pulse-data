@@ -63,6 +63,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 EXTRACTOR_COLLECTIONS_DIR_NAME = "extractor_collections"
 COLLECTION_CONFIG_FILENAME = "collection.yaml"
+PROMPT_TEMPLATE_FILENAME = "prompt_template.txt"
 
 # relevance_criteria is used verbatim as the full relevance statement — both the
 # auto-generated is_relevant field description and the prompt's relevance criterion
@@ -222,6 +223,14 @@ class LLMExtractorCollectionConfig:
     employers, or job searching").
     """
 
+    prompt_template: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The collection's hand-written `prompt_template.txt` — mostly
+    prompt-specific prose with `{placeholder}` gaps the prompt generator fills
+    (`{output_instructions}`, `{reference_data}`, and the extractor's
+    prompt_vars). Read from the `prompt_template.txt` sibling of this
+    collection's `collection.yaml`.
+    """
+
     default_model_config_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Name of the model registry config extractors in this collection use
     unless their state-specific extractor config overrides it. Validated at parse time
@@ -297,6 +306,10 @@ class LLMExtractorCollectionConfig:
             # We also hash the collection name because versions should be unique to
             # collections with a particular name.
             self.name,
+            # The prompt template is fed to the LLM, so a template edit must bump
+            # the version (prompt_vars and reference data are state-specific and
+            # flow into the extractor version ID instead).
+            self.prompt_template,
             self.generate_json_schema_str(),
         ]
         return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
@@ -352,6 +365,13 @@ class LLMExtractorCollectionConfig:
 
         description = config_dict.pop("description", str)
         relevance_criteria = config_dict.pop("relevance_criteria", str)
+        prompt_template_path = yaml_path.parent / PROMPT_TEMPLATE_FILENAME
+        if not prompt_template_path.exists():
+            raise ValueError(
+                f"Collection [{name}] is missing its required prompt template at "
+                f"[{prompt_template_path}]."
+            )
+        prompt_template = prompt_template_path.read_text(encoding="utf-8")
         output_schema = LLMRequestOutputSchema.from_yaml_dict(
             yaml_dict=config_dict.pop_dict("output_schema"),
             relevance_criteria=relevance_criteria,
@@ -361,6 +381,7 @@ class LLMExtractorCollectionConfig:
             name=name,
             description=description,
             relevance_criteria=relevance_criteria,
+            prompt_template=prompt_template,
             default_model_config_name=default_model_config_name,
             minimum_confidence_level=minimum_confidence_level,
             output_schema=output_schema,

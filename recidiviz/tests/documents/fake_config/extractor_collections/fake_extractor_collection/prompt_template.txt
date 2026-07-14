@@ -1,0 +1,5 @@
+You are extracting fictional assignment information for {agency_name}.
+
+{output_instructions}
+
+{reference_data}

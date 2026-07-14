@@ -1,9 +1,13 @@
 # A valid extractor config declaring only the required fields, so the model
-# resolves to the collection default and the char-count caps, retry count, and
-# prompt vars all fall back to their code-level defaults / empty.
+# resolves to the collection default and the char-count caps and retry count all
+# fall back to their code-level defaults. Supplies only the one prompt var the
+# collection's template requires.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
 input_document_collection_name: FAKE_INPUT_NOTES
 
 document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
+
+prompt_vars:
+  agency_name: "the Department of Fictional Affairs"

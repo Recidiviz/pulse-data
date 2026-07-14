@@ -14,5 +14,4 @@ document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
 
 prompt_vars:
-  agency: "Dept of X"
-  tone: "formal"
+  agency_name: "Dept of X"

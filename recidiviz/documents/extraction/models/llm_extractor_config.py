@@ -61,13 +61,43 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
     StateSpecificReferenceDataRegistry,
     load_full_reference_data_registry,
 )
+from recidiviz.documents.extraction.prompt_generation.llm_extractor_output_format_instructions_generator import (
+    LLMExtractorOutputFormatInstructionsGenerator,
+)
+from recidiviz.documents.extraction.prompt_generation.llm_extractor_reference_data_generator import (
+    LLMExtractorReferenceDataGenerator,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     collect_document_collection_configs,
 )
+from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.string_formatting import collapse_blank_lines
 from recidiviz.utils.yaml_dict import YAMLDict
 
 EXTRACTOR_CONFIG_FILENAME = "extractor.yaml"
+
+# Prompt-template variables the extractor fills in itself, rendered from the
+# collection's schema and reference data rather than supplied per-state. A
+# state's `prompt_vars` may not redeclare these.
+OUTPUT_INSTRUCTIONS_TEMPLATE_VAR = "output_instructions"
+REFERENCE_DATA_TEMPLATE_VAR = "reference_data"
+RESERVED_PROMPT_TEMPLATE_VARS = frozenset(
+    {OUTPUT_INSTRUCTIONS_TEMPLATE_VAR, REFERENCE_DATA_TEMPLATE_VAR}
+)
+
+
+def _prompt_vars_do_not_shadow_reserved(
+    instance: "LLMExtractorConfig", _attribute: attr.Attribute, value: dict[str, str]
+) -> None:
+    """Validates that no state-supplied prompt var reuses a reserved template
+    variable name (which the extractor fills in itself)."""
+    if shadowed := sorted(set(value) & RESERVED_PROMPT_TEMPLATE_VARS):
+        raise ValueError(
+            f"Extractor [{instance.extractor_collection.name}] for "
+            f"[{instance.state_code.value}] declares prompt_vars that shadow "
+            f"reserved template variables: {shadowed}."
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -97,7 +127,10 @@ class LLMExtractorConfig:
     """
 
     prompt_vars: dict[str, str] = attr.ib(
-        validator=attr_validators.is_dict_of(str, str)
+        validator=[
+            attr_validators.is_dict_of(str, str),
+            _prompt_vars_do_not_shadow_reserved,
+        ]
     )
     """Dictionary holding values for the extractor collection-defined prompt template 
     variables that must be supplied by each state-specific extractor. Empty when the 
@@ -155,6 +188,47 @@ class LLMExtractorConfig:
     first-order thinking-model ban below is scoped to configs where this is None.
     """
 
+    instructions_prompt: str = attr.ib(init=False, eq=False, repr=False)
+    """The fully-compiled system prompt sent to the LLM with every request for
+    this extractor, with the output-format instructions, reference data, and
+    prompt vars all rendered into the collection's `prompt_template`. Built once
+    at construction (not recompiled on each access).
+
+    The `prompt_template` supports two reserved variables the extractor fills in
+    itself — `{output_instructions}` (which fields to fill and how to structure
+    INFERRED results) and `{reference_data}` (acronyms, known organizations,
+    etc.) — plus any additional variables supplied via `prompt_vars`.
+    """
+
+    @instructions_prompt.default
+    def _build_instructions_prompt(self) -> str:
+        template_variables = {
+            **{key: value.strip() for key, value in self.prompt_vars.items()},
+            OUTPUT_INSTRUCTIONS_TEMPLATE_VAR: LLMExtractorOutputFormatInstructionsGenerator.generate(
+                self.extractor_collection.output_schema
+            ),
+            REFERENCE_DATA_TEMPLATE_VAR: LLMExtractorReferenceDataGenerator.generate(
+                self.reference_data
+            ),
+        }
+
+        all_expected_prompt_vars = (
+            set(self.prompt_vars.keys()) | RESERVED_PROMPT_TEMPLATE_VARS
+        )
+
+        if missing_reserved := (
+            set(template_variables.keys()) - all_expected_prompt_vars
+        ):
+            raise ValueError(
+                f"Found template variables missing from RESERVED_PROMPT_TEMPLATE_VARS: "
+                f"{missing_reserved}"
+            )
+
+        formatted = StrictStringFormatter().format(
+            self.extractor_collection.prompt_template, **template_variables
+        )
+        return collapse_blank_lines(formatted)
+
     def __attrs_post_init__(self) -> None:
         if self.state_code != self.input_document_collection.state_code:
             raise ValueError(
@@ -202,17 +276,6 @@ class LLMExtractorConfig:
         input does.
         """
         return f"{self.state_code.value}_{self.extractor_collection.name}"
-
-    @property
-    def instructions_prompt(self) -> str:
-        """Returns the fully-compiled system prompt sent to the LLM with every
-        request for this extractor, with the output-format instructions,
-        reference data, and prompt vars all rendered in.
-        """
-        # TODO(OBT-31987): Build the real instructions prompt via the extractor
-        # prompt builder. Until that lands, this is unavailable, so
-        # we just stub with a fake implementation
-        return "<FAKE PLACEHOLDER PROMPT>"
 
     @property
     def extractor_version_id(self) -> str:

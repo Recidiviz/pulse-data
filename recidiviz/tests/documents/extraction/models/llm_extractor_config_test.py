@@ -22,6 +22,7 @@ Covers the resolution of a state's `extractor.yaml` into a fully-bound
 construction), and the happy path against the fake config module.
 """
 import re
+from pathlib import Path
 from typing import Any
 from unittest import TestCase
 
@@ -185,6 +186,34 @@ class ParseAllExtractorConfigsTest(TestCase):
                     ):
                         self.assertRegex(version_id, r"^[0-9a-f]{64}$")
 
+    def test_all_real_extractors_build_instructions_prompt(self) -> None:
+        # instructions_prompt is compiled at construction, so a template/prompt-var
+        # or generator failure would already surface above — this makes the guard
+        # explicit: every real extractor must produce a non-empty compiled prompt.
+        configs_by_state = load_llm_extractor_configs()
+        self.assertTrue(configs_by_state)
+        for state_configs in configs_by_state.values():
+            for config in state_configs.values():
+                with self.subTest(
+                    collection=config.extractor_collection.name,
+                    state=config.state_code.value,
+                ):
+                    self.assertTrue(config.instructions_prompt.strip())
+
+    def test_playground_employment_instructions_prompt_matches_golden(self) -> None:
+        # End-to-end golden for a real config: template + output instructions +
+        # reference data + prompt vars assembled into the final prompt. Exercises
+        # the stack's config features (required_when_*/type_notes) that the US_OZ
+        # employment collection declares. Regenerate the fixture from
+        # `.instructions_prompt` if the template or a generator intentionally changes.
+        config = get_llm_extractor_config(StateCode.US_OZ, "PLAYGROUND_EMPLOYMENT_INFO")
+        expected = Path(
+            fixtures.as_filepath(
+                "instructions_prompt/playground_employment_info_us_oz.txt"
+            )
+        ).read_text(encoding="utf-8")
+        self.assertEqual(expected, config.instructions_prompt)
+
     def test_fake_extractor_resolves(self) -> None:
         configs_by_state = load_llm_extractor_configs(config_module=fake_config)
         self.assertEqual([StateCode.US_XX], list(configs_by_state))
@@ -282,8 +311,8 @@ class LLMExtractorConfigFromYamlTest(TestCase):
 
     def test_minimal_config_uses_defaults(self) -> None:
         # A config declaring only the required fields: the model resolves to the
-        # collection default, prompt vars are empty, and the caps/retry fall back
-        # to the code-level defaults.
+        # collection default, prompt vars carry only the one the template requires,
+        # and the caps/retry fall back to the code-level defaults.
         config = self._resolve_fixture(
             "extractor_configs/fake_extractor_collection/us_xx/minimal.yaml"
         )
@@ -291,7 +320,9 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         self.assertEqual(
             _INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
         )
-        self.assertEqual({}, config.prompt_vars)
+        self.assertEqual(
+            {"agency_name": "the Department of Fictional Affairs"}, config.prompt_vars
+        )
         self.assertEqual(
             DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
             config.single_job_document_count_batch_threshold,
@@ -331,7 +362,7 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         self.assertEqual(999999, config.total_pending_document_count_hard_cap)
         self.assertEqual(7, config.max_transient_retry_count)
 
-        self.assertEqual({"agency": "Dept of X", "tone": "formal"}, config.prompt_vars)
+        self.assertEqual({"agency_name": "Dept of X"}, config.prompt_vars)
 
     def test_collection_name_directory_mismatch_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -390,6 +421,105 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         self.assertEqual(0, config.max_transient_retry_count)
 
 
+# The full compiled prompt for the fake US_XX extractor: the fake collection's
+# `prompt_template.txt` with `{agency_name}` filled from prompt_vars and the
+# `{output_instructions}` / `{reference_data}` blocks generated from its schema
+# and reference data. Regenerate from `.instructions_prompt` if the template, a
+# generator, or the fake collection/reference-data fixtures intentionally change.
+_EXPECTED_FAKE_INSTRUCTIONS_PROMPT = """\
+You are extracting fictional assignment information for the Department of Fictional Affairs.
+
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is
+considered relevant according to the following criteria:
+Whether the document mentions a fictional assignment record
+If it is not relevant, set is_relevant to false and use null_reason='no_info_found'
+for all other fields.
+
+Output fields:
+- is_relevant (boolean, bare value): Whether the document mentions a fictional assignment record
+- primary_status (enum): The primary status described in the document. Allowed values:
+  - active: The record is currently active.
+  - inactive: The record is currently inactive.
+  - other: A status that is neither active nor inactive.
+- status_note (string, bare value): A one-line model-composed summary of the status.
+- location (string): The location associated with the record.
+- assignments (list): Assignments mentioned in the document.
+  - assignment_name (string): Name of the assignment.
+  - assignment_type (enum): The kind of assignment. Allowed values:
+    - internal: An assignment internal to the organization.
+    - external: An assignment external to the organization.
+    - other: An assignment that is neither internal nor external.
+  - rate_amount (number): Pay rate amount (numeric value only).
+  - rate_period (enum): Time period for the rate. Allowed values:
+    - hourly: The rate is per hour.
+    - monthly: The rate is per month.
+
+Fields must be logically consistent:
+- `location` must be null with null_reason='not_applicable' when `primary_status` is one of ['inactive'].
+- `assignments` applies only when `primary_status` is one of ['active']; otherwise leave it empty.
+- `assignments[].rate_period` applies only when `rate_amount` is set; otherwise set it to null with null_reason='not_applicable'.
+
+Each document produces exactly one extraction result object, conforming
+to the output schema supplied separately with this request. Each field
+listed above is reported with a metadata wrapper, in one of two shapes
+(the schema enforces exactly one). Emit only the keys shown for the
+shape you use — the key that distinguishes the other shape
+(`value` or `null_reason`) is absent, not
+null. Within a shape, include every key shown. Exceptions:
+- fields tagged "bare value", which you output directly
+- "list" fields, which are arrays whose elements are objects (each sub-field follows these same rules)
+
+When you extract a value:
+  {
+    "adversarial_interpretation": <The strongest alternative reading of the source text — how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists.>,
+    "value": <the extracted value>,
+    "confidence_level": "speculative" | "inferred" | "explicit" | "verbatim",
+    "citations": [
+      {
+        "text": <The exact quoted text from the document.>,
+        "start": <Character offset in the document where the quoted text begins.>,
+        "end": <Character offset in the document where the quoted text ends.>,
+      },
+      ...
+    ],  // Exact quotes from the document supporting the extracted value; at least one is required.
+  }
+
+When you cannot extract a value:
+  {
+    "adversarial_interpretation": <The strongest alternative reading of the source text — how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists.>,
+    "null_reason": "not_applicable" | "no_info_found" | "explicitly_unknown",
+    "confidence_level": "speculative" | "inferred" | "explicit" | "verbatim",
+    "citations": [
+      {
+        "text": <The exact quoted text from the document.>,
+        "start": <Character offset in the document where the quoted text begins.>,
+        "end": <Character offset in the document where the quoted text ends.>,
+      },
+      ...
+    ],  // Exact quotes from the document supporting why no value was extracted. Required, but may be empty — include a quote only when one shows the absence (e.g. for explicitly_unknown).
+  }
+
+- When `adversarial_interpretation` is non-null, set
+  `confidence_level` to "speculative".
+
+`confidence_level` values, ordered from least to most
+confident:
+- "speculative": Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.
+- "inferred": The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.
+- "explicit": The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).
+- "verbatim": Highest confidence: the value appears exactly as-is in the document — the citation text IS the value, with zero rewording or substitution.
+
+`null_reason` values, used only on the null shape above:
+- "not_applicable": The field does not apply given the values of the other fields it depends on — for example, a field that is only meaningful for a particular value of another field, when that value does not hold.
+- "no_info_found": The document does not mention this information.
+- "explicitly_unknown": The document acknowledges the information but states it is unknown.
+
+COMMON ABBREVIATIONS:
+- "PO" = Parole Officer
+- "CRC" = Citadel Reentry Center
+- "XX" = Example Expansion"""
+
+
 class LLMExtractorConfigVersionIdTest(TestCase):
     """Tests for the computed identity and version-ID properties:
     `extractor_id`, `extractor_version_id`, and `document_filter_id`.
@@ -425,7 +555,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
                 state_code=state_code, name=_INPUT_DOCUMENT_COLLECTION_NAME
             ),
             document_metadata_filter_query_template=document_metadata_filter_query_template,
-            prompt_vars={},
+            prompt_vars={"agency_name": "the Department of Fictional Affairs"},
             max_transient_retry_count=DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
             total_pending_document_count_hard_cap=(
                 DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP
@@ -450,22 +580,19 @@ class LLMExtractorConfigVersionIdTest(TestCase):
     def test_extractor_id_format(self) -> None:
         self.assertEqual("US_XX_FAKE_EXTRACTOR_COLLECTION", self._config().extractor_id)
 
-    def test_instructions_prompt_is_placeholder(self) -> None:
-        # TODO(OBT-31987): once the real prompt builder lands, replace this
-        # assertion and rebump the extractor_version_id golden below.
+    def test_instructions_prompt_matches_golden(self) -> None:
         self.assertEqual(
-            "<FAKE PLACEHOLDER PROMPT>", self._config().instructions_prompt
+            _EXPECTED_FAKE_INSTRUCTIONS_PROMPT, self._config().instructions_prompt
         )
 
     def test_extractor_version_id_golden(self) -> None:
         # Pinned hash for the fake extractor. A change here is a real version bump
-        # and must be consciously updated, not silently accepted. NOTE: this will
-        # change when TODO(OBT-31987) replaces the placeholder instructions_prompt.
+        # and must be consciously updated, not silently accepted.
         config = get_llm_extractor_config(
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "8d0adf3ba9f146dd09c32a79201a8578d0830a83f3ebe2df3d5a4e5e3fd2787d",
+            "f05e68e6fb1b0acb096812f51d744a5a61f4a24378126a100058068fd97a616e",
             config.extractor_version_id,
         )
 
@@ -576,6 +703,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
         state_code: StateCode = StateCode.US_XX,
         model_config: LLMModelConfig | None = None,
         entity_group: Any = None,
+        prompt_vars: dict[str, str] | None = None,
         single_job_document_count_batch_threshold: int = (
             DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD
         ),
@@ -587,7 +715,11 @@ class LLMExtractorConfigConstructionTest(TestCase):
             state_code=state_code,
             input_document_collection=self.input_document_collection,
             document_metadata_filter_query_template=_FILTER_QUERY,
-            prompt_vars={},
+            prompt_vars=(
+                prompt_vars
+                if prompt_vars is not None
+                else {"agency_name": "the Department of Fictional Affairs"}
+            ),
             max_transient_retry_count=DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
             total_pending_document_count_hard_cap=total_pending_document_count_hard_cap,
             single_job_document_count_batch_threshold=single_job_document_count_batch_threshold,
@@ -633,6 +765,30 @@ class LLMExtractorConfigConstructionTest(TestCase):
     def test_first_order_thinking_model_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, "binds thinking-enabled model config"):
             self._config(model_config=_model_config(enables_thinking=True))
+
+    def test_prompt_vars_shadowing_reserved_var_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"declares prompt_vars that shadow reserved template variables: "
+            r"\['output_instructions'\]",
+        ):
+            self._config(
+                prompt_vars={
+                    "agency_name": "the Department of Fictional Affairs",
+                    "output_instructions": "sneaky override",
+                }
+            )
+
+    def test_unused_prompt_var_raises(self) -> None:
+        # A prompt var the template does not reference is a config error, surfaced
+        # by StrictStringFormatter when the prompt is compiled at construction.
+        with self.assertRaisesRegex(ValueError, r"Unused kwargs passed: .*not_a_var"):
+            self._config(
+                prompt_vars={
+                    "agency_name": "the Department of Fictional Affairs",
+                    "not_a_var": "value",
+                }
+            )
 
     def test_entity_resolution_allows_thinking_model(self) -> None:
         # The thinking ban is scoped to first-order (entity_group is None); an ER

@@ -8,3 +8,6 @@ max_transient_retry_count: 0
 
 document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
+
+prompt_vars:
+  agency_name: "the Department of Fictional Affairs"

@@ -35,10 +35,10 @@ reference_data:
             shelter,
             hotel_motel,
           ]
-      - label: >
-          The following are known employers (treat a staffing_agency as
-          employment_type: temp_agency):
+      - label: "The following are known employers:"
         types: [staffing_agency, employer]
+        type_notes:
+          staffing_agency: "treat as employment_type: temp_agency"
   acronyms:
     prompt_var: acronym_glossary
     header: "COMMON ABBREVIATIONS:"
@@ -101,6 +101,8 @@ output_schema:
         employment_type=self_employed.
       applicable_when_value:
         primary_status: [employed]
+      required_when_value:
+        primary_status: [employed]
       primary_keys: [employer_name]
       fields:
         - name: employer_name
@@ -147,6 +149,7 @@ output_schema:
             - name: annually
               description: The pay rate is per year.
           applicable_when_nonnull: pay_rate_amount
+          required_when_nonnull: pay_rate_amount
 
     - name: employment_changes
       type: ARRAY_OF_STRUCT

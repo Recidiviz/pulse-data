@@ -68,6 +68,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
 _RELEVANCE_CRITERIA = "Whether the document mentions employment information"
+_PROMPT_TEMPLATE = "Extract the fields.\n\n{output_instructions}\n\n{reference_data}\n"
 # A model config that exists in recidiviz/tests/documents/fake_config/model_registry.yaml.
 _FAKE_MODEL_CONFIG_NAME = "GLOBEX_BASIC_DEFAULT"
 # The collection defined under recidiviz/tests/documents/fake_config/.
@@ -368,6 +369,7 @@ class LLMExtractorCollectionConfigTest(TestCase):
             name=name,
             description=_DESCRIPTION,
             relevance_criteria=_RELEVANCE_CRITERIA,
+            prompt_template=_PROMPT_TEMPLATE,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=ConfidenceLevel.INFERRED,
             output_schema=_output_schema(),
@@ -418,6 +420,7 @@ class CollectionVersionIdTest(TestCase):
             name=name,
             description=_DESCRIPTION,
             relevance_criteria=_RELEVANCE_CRITERIA,
+            prompt_template=_PROMPT_TEMPLATE,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=ConfidenceLevel.INFERRED,
             output_schema=output_schema
@@ -436,7 +439,7 @@ class CollectionVersionIdTest(TestCase):
             _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "89a1be73484237cf7798105bb0e50ac3c03102ceccb4c7d0ac53857adaa74464",
+            "ded9ba750354c5d8e4cf5d10e97ea5f50e551ac2e4ea2c322ce8e2cacfe06306",
             collection.collection_version_id,
         )
 
@@ -496,6 +499,7 @@ class CollectionConfigFromYamlTest(TestCase):
         directory_name: str | None = None,
         include_reference_data: bool = True,
         include_relevance_criteria: bool = True,
+        include_prompt_template: bool = True,
         **body: Any,
     ) -> LLMExtractorCollectionConfig:
         """Writes a collection.yaml under a temp directory (named |directory_name|,
@@ -503,7 +507,8 @@ class CollectionConfigFromYamlTest(TestCase):
         required block, so an empty one is emitted by default unless overridden in
         |body| or suppressed via |include_reference_data|. `relevance_criteria` is
         required and emitted by default unless suppressed via
-        |include_relevance_criteria|.
+        |include_relevance_criteria|. A required `prompt_template.txt` sibling is
+        written unless suppressed via |include_prompt_template|.
         """
         contents: dict[str, Any] = {
             "name": name,
@@ -527,6 +532,8 @@ class CollectionConfigFromYamlTest(TestCase):
         self.addCleanup(tmp_dir.cleanup)
         collection_dir = Path(tmp_dir.name) / (directory_name or name.lower())
         collection_dir.mkdir()
+        if include_prompt_template:
+            (collection_dir / "prompt_template.txt").write_text(_PROMPT_TEMPLATE)
         yaml_path = collection_dir / "collection.yaml"
         yaml_path.write_text(yaml.dump(contents, sort_keys=False))
         return LLMExtractorCollectionConfig.from_yaml(
@@ -538,6 +545,14 @@ class CollectionConfigFromYamlTest(TestCase):
         self.assertEqual("TEST_COLLECTION", config.name)
         self.assertEqual(_FAKE_MODEL_CONFIG_NAME, config.default_model_config_name)
         self.assertEqual(_RELEVANCE_CRITERIA, config.relevance_criteria)
+        self.assertEqual(_PROMPT_TEMPLATE, config.prompt_template)
+
+    def test_missing_prompt_template_raises(self) -> None:
+        # The prompt_template.txt sibling is required.
+        with self.assertRaisesRegex(
+            ValueError, re.escape("is missing its required prompt template")
+        ):
+            self._parse(name="TEST_COLLECTION", include_prompt_template=False)
 
     def test_missing_relevance_criteria_raises(self) -> None:
         # relevance_criteria is required; description is a task statement, not a
