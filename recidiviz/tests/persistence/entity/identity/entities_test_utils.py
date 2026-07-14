@@ -20,11 +20,16 @@ import datetime
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
+from recidiviz.persistence.entity.entity_utils import (
+    set_backedges_allowing_intermediate_entities,
+)
 from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
 )
-from recidiviz.utils.types import assert_type
+from recidiviz.persistence.entity.identity.identity_fragment_entities_module_context import (
+    IDENTITY_FRAGMENT_ENTITIES_CONTEXT,
+)
 
 _TENANT = Tenant.US_XX
 
@@ -37,13 +42,9 @@ def generate_full_graph_identity_fragment(
     defined between objects.
 
     Args:
-        set_back_edges: explicitly sets the direct-parent back edges on the
-            graph (`IdentityExternalId.fragment` and `IdentityAttributes.fragment`
-            point to the root; the leaf entities under `IdentityAttributes`
-            point back via `identity_attributes`). Unlike the activity pattern,
-            the leaf entities do not have a back edge to the root
-            `IdentityFragment` because the fragment tree is two-level rather
-            than flat, so the generic `set_backedges` helper is not used here.
+        set_back_edges: if true, populates the back edges linking each entity in
+            the fragment to its parent and, through the tree, to the root fragment.
+            If false, returns the fragment with its back edges unset.
 
     Returns:
         A test instance of an `IdentityFragment`.
@@ -115,19 +116,9 @@ def generate_full_graph_identity_fragment(
     )
 
     if set_back_edges:
-        attributes = assert_type(
-            fragment.attributes, identity_fragment_entities.IdentityAttributes
+        set_backedges_allowing_intermediate_entities(
+            fragment, IDENTITY_FRAGMENT_ENTITIES_CONTEXT
         )
-        for external_id in fragment.external_ids:
-            external_id.fragment = fragment
-        attributes.fragment = fragment
-        for singular_field in ("name", "gender", "sex", "ethnicity"):
-            child = getattr(attributes, singular_field)
-            if child is not None:
-                child.identity_attributes = attributes
-        for list_field in ("races", "phone_numbers", "emails"):
-            for child in getattr(attributes, list_field):
-                child.identity_attributes = attributes
 
     return fragment
 

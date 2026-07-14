@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
+    identity_fragment_dataset_for_tenant,
     identity_ingest_view_results_dataset_for_tenant,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -81,6 +82,14 @@ class IdentityIngestPipelineParameters(PipelineParameters):
         )
 
     @property
+    def fragment_output_dataset(self) -> str:
+        return self.get_output_dataset(
+            default_dataset_id=identity_fragment_dataset_for_tenant(
+                assert_type(self.tenant, str)
+            )
+        )
+
+    @property
     def clustering_output_dataset(self) -> str:
         return self.get_output_dataset(
             default_dataset_id=identity_cluster_dataset_for_tenant(
@@ -105,4 +114,8 @@ class IdentityIngestPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:
-        return ["clustering_output_dataset", "ingest_view_results_output_dataset"]
+        return [
+            "ingest_view_results_output_dataset",
+            "fragment_output_dataset",
+            "clustering_output_dataset",
+        ]

@@ -44,11 +44,20 @@ from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineTyp
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.identity import identity_cluster_entities
+from recidiviz.persistence.entity.identity import (
+    identity_cluster_entities,
+    identity_fragment_entities,
+)
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
 )
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
+    IdentityFragment,
+)
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest.identity.assign_identity_fragment_ids import (
+    AssignIdentityFragmentIds,
+)
 from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     CLUSTER_MEMBERSHIPS,
     FRAGMENTS_WITH_DATES,
@@ -93,8 +102,9 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
 
     def run_pipeline(self, p: Pipeline) -> None:
         tenant = Tenant(self.pipeline_parameters.tenant)
-        # v1 only supports tenants that are state codes; non-state tenants are
-        # rejected by `IdentityIngestPipelineParameters.raw_data_input_dataset`.
+        # v1 only supports tenants that are state codes;
+        # `IdentityIngestPipelineParameters.raw_data_input_dataset` rejects
+        # non-state tenants.
         state_code = tenant.to_state_code()
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=state_code.value
@@ -124,17 +134,24 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             )
         )
 
+        # The pre-clustering fragments feed two branches: clustering (below) and
+        # the debug {tenant}_identity_fragment output. MergeIngestViewRootEntityTrees
+        # emits each fragment once per external ID it carries.
+        # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
+        # pylint: disable=E1120
+        fragments: beam.PCollection[IdentityFragment] = (
+            merged_identity_fragments
+            | "Drop external_id keys" >> beam.Values()
+            | "Drop dates and view names from fragments"
+            >> beam.Map(lambda item: item[2])
+        )
+
         # Extract co-occurrence edges from fragments, cluster external IDs via
         # connected components, and emit a sorted cluster tuple keyed by each
         # external ID so downstream stages can use the cluster as a
         # deterministic key.
-        # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
-        # pylint: disable=E1120
         cluster_memberships: beam.PCollection[tuple[ExternalIdKey, ClusterKey]] = (
-            merged_identity_fragments
-            | "Drop external_id keys before clustering" >> beam.Values()
-            | "Drop dates and view names from fragments"
-            >> beam.Map(lambda item: item[2])
+            fragments
             | "Extract cluster edges" >> beam.ParDo(GetRootExternalIdClusterEdges())
             | "Cluster external_ids" >> ClusterRootExternalIds()
             | "Sort each cluster for deterministic key"
@@ -157,5 +174,28 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
                     identity_cluster_entities
                 ).keys(),
                 entities_module=identity_cluster_entities,
+            )
+        )
+
+        # Write each pre-clustering IdentityFragment's serialized rows to the
+        # debug {tenant}_identity_fragment.* tables, deduplicating on the
+        # content-hash id: the ingest-view merge emits each fragment once per
+        # external ID it carries, so byte-identical copies collapse to one row,
+        # while genuinely distinct per-external-ID merges (different content,
+        # different id) each keep their own row.
+        _ = (
+            fragments
+            | "Assign identity fragment ids" >> AssignIdentityFragmentIds()
+            | "Key fragments by id"
+            >> beam.Map(lambda fragment: (fragment.identity_fragment_id, fragment))
+            | "Group fragments by id" >> beam.GroupByKey()
+            | "Deduplicate fragments" >> beam.Map(lambda kv: next(iter(kv[1])))
+            | f"Write IdentityFragments to {self.pipeline_parameters.fragment_output_dataset}"
+            >> WriteRootEntitiesToBQ(
+                output_dataset=self.pipeline_parameters.fragment_output_dataset,
+                output_table_ids=get_bq_schema_for_entities_module(
+                    identity_fragment_entities
+                ).keys(),
+                entities_module=identity_fragment_entities,
             )
         )

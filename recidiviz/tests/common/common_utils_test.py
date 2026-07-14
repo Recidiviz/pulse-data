@@ -26,6 +26,7 @@ from recidiviz.common.common_utils import (
     date_spans_overlap_exclusive,
     date_spans_overlap_inclusive,
     get_external_id,
+    get_hash_of_json,
     is_generated_id,
 )
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -59,6 +60,23 @@ class CommonUtilsTest(unittest.TestCase):
         self.assertEqual(
             "id_type:id_str", create_synthetic_id(external_id=id_str, id_type=id_type)
         )
+
+    def test_get_hash_of_json_is_deterministic_and_key_order_independent(self) -> None:
+        self.assertEqual(
+            get_hash_of_json({"a": 1, "b": [2, 3]}),
+            get_hash_of_json({"b": [2, 3], "a": 1}),
+        )
+
+    def test_get_hash_of_json_differs_for_different_content(self) -> None:
+        self.assertNotEqual(
+            get_hash_of_json({"a": 1}),
+            get_hash_of_json({"a": 2}),
+        )
+
+    def test_get_hash_of_json_is_sha256_hex_digest(self) -> None:
+        result = get_hash_of_json({"a": 1})
+        self.assertEqual(64, len(result))
+        self.assertTrue(all(c in "0123456789abcdef" for c in result))
 
     def test_get_external_id(self) -> None:
         synthetic_id = "id_type:11:111"

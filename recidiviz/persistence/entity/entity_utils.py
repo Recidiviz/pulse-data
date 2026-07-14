@@ -545,8 +545,44 @@ def deep_entity_update(
 def set_backedges(
     element: Entity | RootEntity, entities_module_context: EntitiesModuleContext
 ) -> Entity | RootEntity:
-    """Set the backedges of the root entity tree using DFS traversal of the root
-    entity tree."""
+    """Sets the back edges of the entity tree via DFS traversal.
+
+    Checks that every non-root entity has a direct back edge to the root, and
+    raises if not. (For trees with intermediate (non-root) entities whose leaves
+    back-edge only to a parent rather than the root, use
+    `set_backedges_allowing_intermediate_entities` instead.)
+    """
+    return _set_backedges(element, entities_module_context, require_root_back_edge=True)
+
+
+def set_backedges_allowing_intermediate_entities(
+    element: Entity | RootEntity, entities_module_context: EntitiesModuleContext
+) -> Entity | RootEntity:
+    """Sets the back edges of the entity tree via DFS traversal.
+
+    Allows non-root entities that have no direct back edge to the root, as in
+    trees with intermediate (non-root) entities whose leaves back-edge to a
+    parent rather than the root (e.g. the identity fragment tree, whose
+    demographic leaves back-edge to the intermediate `IdentityAttributes`). (For
+    flat trees where every entity should reference the root, use
+    `set_backedges` instead.)
+    """
+    return _set_backedges(
+        element, entities_module_context, require_root_back_edge=False
+    )
+
+
+def _set_backedges(
+    element: Entity | RootEntity,
+    entities_module_context: EntitiesModuleContext,
+    *,
+    require_root_back_edge: bool,
+) -> Entity | RootEntity:
+    """Shared implementation for the `set_backedges*` wrappers; see those for
+    behavior. When |require_root_back_edge| is True, a non-root entity that has
+    no field referencing the root raises; when False, that is allowed (the tree
+    connects leaves to the root only through intermediate entities).
+    """
     field_index = entities_module_context.field_index()
     root = cast(Entity, element)
     root_entity_cls = root.__class__
@@ -578,52 +614,63 @@ def set_backedges(
             related_entity_cls = get_entity_class_in_module_with_name(
                 entities_module_context.entities_module(), related_entity_cls_name
             )
-            reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
-                base_cls=related_entity_cls,
-                referenced_cls_name=current_parent_cls.__name__,
+            # Each child gets two back edges wired up the tree:
+            #
+            # 1. To its direct parent. Every entity has this field, so a missing
+            #    one is always an error.
+            _set_back_edges_to(
+                target_entity=current_parent,
+                target_entity_cls=current_parent_cls,
+                related_entities=related_entities,
+                related_entity_cls=related_entity_cls,
+                required=True,
             )
-            if not reverse_relationship_field:
-                # In the context of a FORWARD_EDGE type field, this should always
-                # be nonnull.
-                raise ValueError(
-                    f"Found no field on [{related_entity_cls}] referencing objects "
-                    f"of type [{current_parent_cls}]"
-                )
-
-            reverse_relationship_field_type = attr_field_type_for_field_name(
-                related_entity_cls, reverse_relationship_field
-            )
-            update_reverse_references_on_related_entities(
-                updated_entity=current_parent,
-                new_related_entities=related_entities,
-                reverse_relationship_field=reverse_relationship_field,
-                reverse_relationship_field_type=reverse_relationship_field_type,
-            )
-
-            root_reverse_relationship_field = (
-                attr_field_name_storing_referenced_cls_name(
-                    base_cls=related_entity_cls,
-                    referenced_cls_name=root_entity_cls.__name__,
-                )
-            )
-
-            if not root_reverse_relationship_field:
-                raise ValueError(
-                    f"Found no field on [{related_entity_cls}] referencing root "
-                    f"entities of type [{root_entity_cls}]"
-                )
-
-            root_reverse_relationship_field_type = attr_field_type_for_field_name(
-                related_entity_cls, root_reverse_relationship_field
-            )
-            update_reverse_references_on_related_entities(
-                updated_entity=root,
-                new_related_entities=related_entities,
-                reverse_relationship_field=root_reverse_relationship_field,
-                reverse_relationship_field_type=root_reverse_relationship_field_type,
+            # 2. To the root entity. Flat trees give every entity this field;
+            #    trees with intermediate entities may not, so require it only
+            #    when the caller asks (see the set_backedges* wrappers).
+            _set_back_edges_to(
+                target_entity=root,
+                target_entity_cls=root_entity_cls,
+                related_entities=related_entities,
+                related_entity_cls=related_entity_cls,
+                required=require_root_back_edge,
             )
             stack.extend(related_entities)
     return element
+
+
+def _set_back_edges_to(
+    *,
+    target_entity: Entity,
+    target_entity_cls: Type[Entity],
+    related_entities: List[Entity],
+    related_entity_cls: Type[Entity],
+    required: bool,
+) -> None:
+    """Points each of |related_entities| back at |target_entity| by setting the
+    field on |related_entity_cls| that references |target_entity_cls|. If that
+    class has no such field: raises when |required|, otherwise does nothing.
+    """
+    reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+        base_cls=related_entity_cls,
+        referenced_cls_name=target_entity_cls.__name__,
+    )
+    if not reverse_relationship_field:
+        if required:
+            raise ValueError(
+                f"Found no field on [{related_entity_cls}] referencing objects "
+                f"of type [{target_entity_cls}]"
+            )
+        return
+
+    update_reverse_references_on_related_entities(
+        updated_entity=target_entity,
+        new_related_entities=related_entities,
+        reverse_relationship_field=reverse_relationship_field,
+        reverse_relationship_field_type=attr_field_type_for_field_name(
+            related_entity_cls, reverse_relationship_field
+        ),
+    )
 
 
 def get_many_to_many_relationships(

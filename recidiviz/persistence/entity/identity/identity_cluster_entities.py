@@ -27,10 +27,7 @@ is no `IdentityClusterAttributes` intermediate. `person_type` and
 entities (name, gender, sex, races, ethnicity, phone numbers, emails).
 """
 import datetime
-import hashlib
-import json
 from collections.abc import Sequence
-from typing import Any
 
 import attr
 
@@ -44,6 +41,7 @@ from recidiviz.common.attr_validators import (
     is_valid_email,
     is_valid_phone_number,
 )
+from recidiviz.common.common_utils import get_hash_of_json
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
@@ -255,8 +253,8 @@ class IdentityCluster(
         # constructed tree (including back-edges, which `set_backedges` above
         # derives), so they can't be determined at construction time, but must
         # be computed here.
-        self.identity_cluster_id = _hash_json(json_entity_tree["external_ids"])
-        self.cluster_hash = _hash_json(json_entity_tree)
+        self.identity_cluster_id = get_hash_of_json(json_entity_tree["external_ids"])
+        self.cluster_hash = get_hash_of_json(json_entity_tree)
 
     def get_external_ids(self) -> Sequence["IdentityClusterExternalId"]:
         return self.external_ids
@@ -274,9 +272,3 @@ class IdentityCluster(
             f"[{cls.__name__}] is the flattened root of the cluster tree and "
             f"has no single fragment-tree counterpart"
         )
-
-
-def _hash_json(payload: list[dict[str, Any]] | dict[str, Any]) -> str:
-    return hashlib.sha256(
-        json.dumps(payload, sort_keys=True).encode("utf-8")
-    ).hexdigest()

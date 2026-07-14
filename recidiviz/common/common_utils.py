@@ -17,7 +17,9 @@
 
 "Utils to be shared across recidiviz project"
 import datetime
+import hashlib
 import itertools
+import json
 import logging
 import uuid
 from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Type, TypeVar
@@ -32,6 +34,14 @@ DELIMITER = ":"
 
 def create_generated_id() -> str:
     return str(uuid.uuid4()) + GENERATED_ID_SUFFIX
+
+
+def get_hash_of_json(payload: list[dict[str, Any]] | dict[str, Any]) -> str:
+    """Returns a deterministic SHA-256 hex digest of the JSON-serializable
+    |payload|, computed over a stable (sorted-key) JSON encoding."""
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode("utf-8")
+    ).hexdigest()
 
 
 def is_generated_id(id_str: Optional[str]) -> bool:

@@ -25,6 +25,7 @@ from recidiviz.pipelines.ingest.identity.dataset_config import (
 from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
+    build_identity_fragment_output_source_table_collection,
     build_identity_ingest_view_results_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
@@ -58,6 +59,7 @@ class IdentityIngestPipelineTestCase(
 
         collections = [
             ingest_view_results_collection,
+            build_identity_fragment_output_source_table_collection(cls.tenant()),
             build_identity_cluster_output_source_table_collection(cls.tenant()),
         ]
 
