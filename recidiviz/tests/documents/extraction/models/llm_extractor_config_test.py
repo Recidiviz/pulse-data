@@ -465,7 +465,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "9b73e0ff3189300557e36880026a276980e4411a371887fbb5defe533c11d769",
+            "4ff370cc0d715585f317420b6c44cbe8ca310ae91779eb994b9001da8f618542",
             config.extractor_version_id,
         )
 

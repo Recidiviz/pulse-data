@@ -603,8 +603,8 @@ class EnumFieldDescriptionTest(TestCase):
         )
         self.assertEqual(
             f"{_DESCRIPTION.rstrip('.')}. Allowed values:\n"
-            "  - employed: Has a job.\n"
-            "  - unemployed: Has no job.",
+            "- employed: Has a job.\n"
+            "- unemployed: Has no job.",
             status.description,
         )
 
@@ -620,7 +620,27 @@ class EnumFieldDescriptionTest(TestCase):
             )
         )
         self.assertEqual(
-            "Trailing whitespace here. Allowed values:\n  - a: The a value.",
+            "Trailing whitespace here. Allowed values:\n- a: The a value.",
+            status.description,
+        )
+
+    def test_value_descriptions_are_stripped(self) -> None:
+        # Folded YAML scalars (`>`) arrive with surrounding whitespace on each
+        # value description too — it must not leak into the rendered bullet.
+        (status,) = _build(
+            _field(
+                "status",
+                field_type="ENUM",
+                values=[
+                    {"name": "employed", "description": "  Has a job.\n"},
+                    {"name": "unemployed", "description": "Has no job.\n"},
+                ],
+            )
+        )
+        self.assertEqual(
+            f"{_DESCRIPTION.rstrip('.')}. Allowed values:\n"
+            "- employed: Has a job.\n"
+            "- unemployed: Has no job.",
             status.description,
         )
 
@@ -644,11 +664,11 @@ class DescribedEnumGuidanceTest(TestCase):
     def test_bakes_member_descriptions_in_definition_order(self) -> None:
         self.assertEqual(
             "Why no value could be extracted. Allowed values:\n"
-            "  - not_applicable: The field does not apply given the values of "
+            "- not_applicable: The field does not apply given the values of "
             "other fields (e.g. `employer_name` when `primary_status` is "
             '"unemployed").\n'
-            "  - no_info_found: The document does not mention this information.\n"
-            "  - explicitly_unknown: The document acknowledges the information "
+            "- no_info_found: The document does not mention this information.\n"
+            "- explicitly_unknown: The document acknowledges the information "
             "but states it is unknown.",
             description_with_enum_value_guidance(
                 description="Why no value could be extracted.", enum_cls=NullReason

@@ -187,7 +187,7 @@ def _render_description_with_value_guidance(
     it means appended, so a reader (the model) knows when to choose each value.
     """
     rendered_values = "\n".join(
-        f"  - {name}: {value_description}"
+        f"- {name}: {value_description.strip()}"
         for name, value_description in value_descriptions
     )
     return f"{description.rstrip().rstrip('.')}. Allowed values:\n{rendered_values}"

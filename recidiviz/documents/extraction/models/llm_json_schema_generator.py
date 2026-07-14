@@ -34,8 +34,9 @@ kept together here rather than spread across the model classes:
     model weighs alternative readings before committing), then the
     `value` / `null_reason`, then `confidence_level`, then `citations`. This
     order must be preserved when serializing.
-  - On the value branch, `citations` carries `minItems: 1` — a value extraction
-    must cite its source; on the null branch citations are optional.
+  - `citations` is required on both branches, but on the value branch it carries
+    `minItems: 1` — a value extraction must cite its source — while on the null
+    branch it may be empty (a quote is included only when one shows the absence).
 
 STRUCTURAL fields are emitted as bare values (no companion metadata), and
 ARRAY_OF_STRUCT fields as bare arrays whose item sub-fields recurse through the
@@ -139,12 +140,7 @@ class LLMJsonSchemaGenerator:
             description="Use when the document IS relevant.",
             properties=properties,
             required=[
-                IS_RELEVANT_FIELD_NAME,
-                *(
-                    field.name
-                    for field in output_schema.user_defined_fields
-                    if field.required
-                ),
+                field.name for field in output_schema.all_fields if field.required
             ],
         )
 
@@ -170,7 +166,7 @@ class LLMJsonSchemaGenerator:
             return AnyOfJSONSchema(
                 branches=[
                     cls._nonnull_value_inferred_field_schema(field),
-                    cls._null_value_inferred_field_schema(),
+                    cls.null_inferred_field_branch_schema(),
                 ]
             )
         if field.field_mode is LLMOutputFieldMode.STRUCTURAL:
@@ -208,56 +204,62 @@ class LLMJsonSchemaGenerator:
         """Returns the schema used for an INFERRED field when the inferred value is
         nonnull.
         """
-        return ObjectJSONSchema(
-            description="A value was extracted.",
-            properties={
-                ADVERSARIAL_INTERPRETATION_FIELD_NAME: cls._adversarial_interpretation_schema(),
-                VALUE_FIELD_NAME: cls._bare_field_value_schema(field),
-                CONFIDENCE_LEVEL_FIELD_NAME: cls._confidence_level_schema(),
-                CITATIONS_FIELD_NAME: ArrayJSONSchema(
-                    description=(
-                        "Exact quotes from the document supporting the extracted "
-                        "value; at least one is required."
-                    ),
-                    items=cls._citation_item_schema(),
-                    min_items=1,
-                ),
-            },
-            required=[
-                ADVERSARIAL_INTERPRETATION_FIELD_NAME,
-                VALUE_FIELD_NAME,
-                CONFIDENCE_LEVEL_FIELD_NAME,
-                CITATIONS_FIELD_NAME,
-            ],
+        return cls.nonnull_inferred_field_branch_schema(
+            value_node=cls._bare_field_value_schema(field)
         )
 
     @classmethod
-    def _null_value_inferred_field_schema(cls) -> ObjectJSONSchema:
-        """Returns the schema used for an INFERRED field when the inferred value is
-        null.
+    def nonnull_inferred_field_branch_schema(
+        cls, *, value_node: JSONSchemaNode
+    ) -> ObjectJSONSchema:
+        """Returns the value-branch wrapper for an INFERRED field. |value_node| is
+        the schema for the extracted value itself.
         """
+        properties: dict[str, JSONSchemaNode] = {
+            ADVERSARIAL_INTERPRETATION_FIELD_NAME: cls._adversarial_interpretation_schema(),
+            VALUE_FIELD_NAME: value_node,
+            CONFIDENCE_LEVEL_FIELD_NAME: cls._confidence_level_schema(),
+            CITATIONS_FIELD_NAME: ArrayJSONSchema(
+                description=(
+                    "Exact quotes from the document supporting the extracted "
+                    "value; at least one is required."
+                ),
+                items=cls._citation_item_schema(),
+                min_items=1,
+            ),
+        }
+        return ObjectJSONSchema(
+            description="A value was extracted.",
+            properties=properties,
+            required=list(properties),
+        )
+
+    @classmethod
+    def null_inferred_field_branch_schema(cls) -> ObjectJSONSchema:
+        """Returns the null-branch wrapper for an INFERRED field (used when no value
+        could be extracted).
+        """
+        properties: dict[str, JSONSchemaNode] = {
+            ADVERSARIAL_INTERPRETATION_FIELD_NAME: cls._adversarial_interpretation_schema(),
+            NULL_REASON_FIELD_NAME: cls._described_enum_schema(
+                enum_cls=NullReason,
+                description="Why no value could be extracted for this field.",
+            ),
+            CONFIDENCE_LEVEL_FIELD_NAME: cls._confidence_level_schema(),
+            CITATIONS_FIELD_NAME: ArrayJSONSchema(
+                description=(
+                    "Exact quotes from the document supporting why no value "
+                    "was extracted. Required, but may be empty — include a "
+                    "quote only when one shows the absence (e.g. for "
+                    "explicitly_unknown)."
+                ),
+                items=cls._citation_item_schema(),
+            ),
+        }
         return ObjectJSONSchema(
             description="No value could be extracted.",
-            properties={
-                ADVERSARIAL_INTERPRETATION_FIELD_NAME: cls._adversarial_interpretation_schema(),
-                NULL_REASON_FIELD_NAME: cls._described_enum_schema(
-                    enum_cls=NullReason,
-                    description="Why no value could be extracted for this field.",
-                ),
-                CONFIDENCE_LEVEL_FIELD_NAME: cls._confidence_level_schema(),
-                CITATIONS_FIELD_NAME: ArrayJSONSchema(
-                    description=(
-                        "Exact quotes from the document supporting why no value "
-                        "was extracted (optional)."
-                    ),
-                    items=cls._citation_item_schema(),
-                ),
-            },
-            required=[
-                ADVERSARIAL_INTERPRETATION_FIELD_NAME,
-                NULL_REASON_FIELD_NAME,
-                CONFIDENCE_LEVEL_FIELD_NAME,
-            ],
+            properties=properties,
+            required=list(properties),
         )
 
     @classmethod

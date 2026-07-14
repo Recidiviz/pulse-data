@@ -27,6 +27,10 @@ import json
 from typing import Any
 from unittest import TestCase
 
+from recidiviz.documents.extraction.models.json_schema_nodes import (
+    JSONScalarType,
+    ScalarJSONSchema,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     load_llm_extractor_collection_configs,
 )
@@ -67,7 +71,7 @@ def _expected_enum_description(*value_names: str) -> str:
     were built with `_enum_value`.
     """
     rendered_values = "\n".join(
-        f"  - {name}: {_enum_value_description(name)}" for name in value_names
+        f"- {name}: {_enum_value_description(name)}" for name in value_names
     )
     return f"{_DESCRIPTION.rstrip('.')}. Allowed values:\n{rendered_values}"
 
@@ -176,9 +180,15 @@ class InferredFieldSchemaTest(TestCase):
             ],
             list(null_branch["properties"]),
         )
-        # Null branch does not require citations.
+        # Null branch requires citations too, but (unlike the value branch) it
+        # may be empty — required with no minItems.
         self.assertEqual(
-            ["adversarial_interpretation", "null_reason", "confidence_level"],
+            [
+                "adversarial_interpretation",
+                "null_reason",
+                "confidence_level",
+                "citations",
+            ],
             null_branch["required"],
         )
         self.assertNotIn("minItems", null_branch["properties"]["citations"])
@@ -227,6 +237,53 @@ class InferredFieldSchemaTest(TestCase):
                 ["string", "null"],
                 branch["properties"]["adversarial_interpretation"]["type"],
             )
+
+
+class BranchBuilderTest(TestCase):
+    """Tests the public value/null branch-wrapper builders directly. These are
+    consumed by downstream prompt-generation code, so their contract is pinned
+    here independently of full-schema generation.
+    """
+
+    def test_nonnull_inferred_field_branch_schema_wraps_value_node(self) -> None:
+        value_node = ScalarJSONSchema(
+            description="SENTINEL VALUE NODE", json_type=JSONScalarType.BOOLEAN
+        )
+        branch = LLMJsonSchemaGenerator.nonnull_inferred_field_branch_schema(
+            value_node=value_node
+        ).to_json_schema()
+
+        self.assertEqual(
+            ["adversarial_interpretation", "value", "confidence_level", "citations"],
+            list(branch["properties"]),
+        )
+        self.assertEqual(list(branch["properties"]), branch["required"])
+        # The caller-supplied value node is placed verbatim at `value`.
+        self.assertEqual(value_node.to_json_schema(), branch["properties"]["value"])
+        # A non-null value must cite at least one supporting quote.
+        self.assertEqual(1, branch["properties"]["citations"]["minItems"])
+
+    def test_null_inferred_field_branch_schema_shape(self) -> None:
+        branch = (
+            LLMJsonSchemaGenerator.null_inferred_field_branch_schema().to_json_schema()
+        )
+
+        self.assertEqual(
+            [
+                "adversarial_interpretation",
+                "null_reason",
+                "confidence_level",
+                "citations",
+            ],
+            list(branch["properties"]),
+        )
+        # Citations are required on the null branch too, but may be empty.
+        self.assertEqual(list(branch["properties"]), branch["required"])
+        self.assertNotIn("minItems", branch["properties"]["citations"])
+        self.assertEqual(
+            [reason.value for reason in NullReason],
+            branch["properties"]["null_reason"]["enum"],
+        )
 
 
 class StructuralFieldSchemaTest(TestCase):
