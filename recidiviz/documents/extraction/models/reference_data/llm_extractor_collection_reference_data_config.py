@@ -66,6 +66,15 @@ class LLMExtractorCollectionKnownOrganizationGroup:
     )
     """The organization types whose known organizations fall into this group."""
 
+    type_notes: dict[OrganizationType, str] = attr.ib(
+        factory=dict,
+        validator=attr_validators.is_dict_of(OrganizationType, str),
+    )
+    """Optional per-organization-type prompt note, appended to that type's
+    sub-section header (e.g. `staffing_agency` -> "treat as employment_type:
+    temp_agency"). Each key must be one of `organization_types`.
+    """
+
     def __attrs_post_init__(self) -> None:
         if duplicate_types := {
             organization_type
@@ -76,6 +85,14 @@ class LLMExtractorCollectionKnownOrganizationGroup:
                 f"Known organization group [{self.label}] lists duplicate "
                 f"organization types: {sorted(t.value for t in duplicate_types)}."
             )
+        if annotated_non_member_types := set(self.type_notes) - set(
+            self.organization_types
+        ):
+            raise ValueError(
+                f"Known organization group [{self.label}] declares type_notes for "
+                f"types not in the group: "
+                f"{sorted(t.value for t in annotated_non_member_types)}."
+            )
 
     @classmethod
     def from_yaml_dict(
@@ -84,12 +101,19 @@ class LLMExtractorCollectionKnownOrganizationGroup:
         """Returns the group parsed from one element of a known_organizations
         config's `groups` block.
         """
+        type_notes: dict[OrganizationType, str] = {}
+        if (notes_yaml := yaml_dict.pop_dict_optional("type_notes")) is not None:
+            for organization_type_name in list(notes_yaml.keys()):
+                type_notes[OrganizationType(organization_type_name)] = notes_yaml.pop(
+                    organization_type_name, str
+                )
         group = cls(
             label=yaml_dict.pop("label", str).strip(),
             organization_types=[
                 OrganizationType(organization_type)
                 for organization_type in yaml_dict.pop_list("types", str)
             ],
+            type_notes=type_notes,
         )
         if yaml_dict:
             raise ValueError(

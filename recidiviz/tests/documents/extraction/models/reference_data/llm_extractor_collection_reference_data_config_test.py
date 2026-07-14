@@ -39,7 +39,7 @@ from recidiviz.utils.yaml_dict import YAMLDict, YAMLDictValueType
 
 # A single group covering every organization type — the minimal valid grouping.
 _ALL_TYPES_GROUP = LLMExtractorCollectionKnownOrganizationGroup(
-    label="All organizations.", organization_types=list(OrganizationType)
+    label="All organizations", organization_types=list(OrganizationType)
 )
 _ALL_TYPE_VALUES: list[YAMLDictValueType] = [
     organization_type.value for organization_type in OrganizationType
@@ -52,7 +52,7 @@ class LLMExtractorCollectionKnownOrganizationGroupTest(TestCase):
     def test_from_yaml_dict(self) -> None:
         self.assertEqual(
             LLMExtractorCollectionKnownOrganizationGroup(
-                label="Employers.",
+                label="Employers",
                 organization_types=[
                     OrganizationType.EMPLOYER,
                     OrganizationType.STAFFING_AGENCY,
@@ -60,10 +60,50 @@ class LLMExtractorCollectionKnownOrganizationGroupTest(TestCase):
             ),
             LLMExtractorCollectionKnownOrganizationGroup.from_yaml_dict(
                 YAMLDict(
-                    {"label": "Employers.", "types": ["employer", "staffing_agency"]}
+                    {"label": "Employers", "types": ["employer", "staffing_agency"]}
                 )
             ),
         )
+
+    def test_from_yaml_dict_with_type_notes(self) -> None:
+        self.assertEqual(
+            LLMExtractorCollectionKnownOrganizationGroup(
+                label="Employers",
+                organization_types=[
+                    OrganizationType.EMPLOYER,
+                    OrganizationType.STAFFING_AGENCY,
+                ],
+                type_notes={
+                    OrganizationType.STAFFING_AGENCY: "treat as employment_type: temp_agency"
+                },
+            ),
+            LLMExtractorCollectionKnownOrganizationGroup.from_yaml_dict(
+                YAMLDict(
+                    {
+                        "label": "Employers",
+                        "types": ["employer", "staffing_agency"],
+                        "type_notes": {
+                            "staffing_agency": "treat as employment_type: temp_agency"
+                        },
+                    }
+                )
+            ),
+        )
+
+    def test_type_notes_for_non_member_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"declares type_notes for types not in the group: \['staffing_agency'\]",
+        ):
+            LLMExtractorCollectionKnownOrganizationGroup.from_yaml_dict(
+                YAMLDict(
+                    {
+                        "label": "L",
+                        "types": ["employer"],
+                        "type_notes": {"staffing_agency": "note"},
+                    }
+                )
+            )
 
     def test_duplicate_organization_types_raise(self) -> None:
         with self.assertRaisesRegex(
@@ -149,7 +189,7 @@ class LLMExtractorCollectionKnownOrganizationConfigTest(TestCase):
                 groups=[
                     _ALL_TYPES_GROUP,
                     LLMExtractorCollectionKnownOrganizationGroup(
-                        label="Employers again.",
+                        label="Employers again",
                         organization_types=[OrganizationType.EMPLOYER],
                     ),
                 ],
@@ -165,7 +205,7 @@ class LLMExtractorCollectionKnownOrganizationConfigTest(TestCase):
                 header="h",
                 groups=[
                     LLMExtractorCollectionKnownOrganizationGroup(
-                        label="Only employers.",
+                        label="Only employers",
                         organization_types=[OrganizationType.EMPLOYER],
                     )
                 ],
@@ -192,7 +232,7 @@ class LLMExtractorCollectionReferenceDataConfigTest(TestCase):
                         "prompt_var": "known_entities_context",
                         "header": "KNOWN ENTITIES:",
                         "groups": [
-                            {"label": "All organizations.", "types": _ALL_TYPE_VALUES}
+                            {"label": "All organizations", "types": _ALL_TYPE_VALUES}
                         ],
                     },
                     "acronyms": {
@@ -236,7 +276,7 @@ class LLMExtractorCollectionReferenceDataConfigTest(TestCase):
                         "known_organizations": {
                             "prompt_var": "shared",
                             "header": "h",
-                            "groups": [{"label": "All.", "types": _ALL_TYPE_VALUES}],
+                            "groups": [{"label": "All", "types": _ALL_TYPE_VALUES}],
                         },
                         "acronyms": {"prompt_var": "shared", "header": "h"},
                     }

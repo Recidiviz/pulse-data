@@ -38,3 +38,13 @@ class OrganizationTypeTest(TestCase):
             organization_type.description for organization_type in OrganizationType
         ]
         self.assertEqual(len(descriptions), len(set(descriptions)))
+
+    def test_descriptions_have_no_trailing_period(self) -> None:
+        # Descriptions are composed into a `<description>[ (note)]:` header when
+        # rendered, so they must not carry a trailing period.
+        for organization_type in OrganizationType:
+            self.assertFalse(
+                organization_type.description.endswith("."),
+                f"[{organization_type.value}] description ends with a period: "
+                f"[{organization_type.description}]",
+            )

@@ -47,21 +47,21 @@ class OrganizationType(Enum):
         prompt context when organizations of this type are rendered.
         """
         if self is OrganizationType.COMMUNITY_CORRECTIONS:
-            return "Custody or community-corrections facilities people are confined to."
+            return "Custody or community-corrections facilities people are confined to"
         if self is OrganizationType.NONRESIDENTIAL_PROGRAM:
-            return "Programs people attend but do not live at."
+            return "Programs people attend but do not live at"
         if self is OrganizationType.RESIDENTIAL_TREATMENT:
-            return "Treatment facilities that may be residential or outpatient."
+            return "Treatment facilities that may be residential or outpatient"
         if self is OrganizationType.SOBER_LIVING:
-            return "Sober living homes."
+            return "Sober living homes"
         if self is OrganizationType.HALFWAY_HOUSE:
-            return "Transitional / halfway housing."
+            return "Transitional / halfway housing"
         if self is OrganizationType.SHELTER:
-            return "Emergency or homeless shelters."
+            return "Emergency or homeless shelters"
         if self is OrganizationType.HOTEL_MOTEL:
-            return "Hotels, motels, inns, and lodging houses."
+            return "Hotels, motels, inns, and lodging houses"
         if self is OrganizationType.EMPLOYER:
-            return "Employers."
+            return "Employers"
         if self is OrganizationType.STAFFING_AGENCY:
-            return "Temp / staffing agencies that place people in jobs."
+            return "Temp / staffing agencies that place people in jobs"
         raise ValueError(f"Unexpected OrganizationType: [{self}]")
