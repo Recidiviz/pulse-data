@@ -1012,6 +1012,7 @@ snapshots[
         "contactDueDate": "2026-02-28",
         "contactCompleted": True,
         "contactCompletedDate": "2026-03-11",
+        "lateContactCompletedDate": None,
     },
     {
         "fullName": "Shalya Quin",
@@ -1023,5 +1024,6 @@ snapshots[
         "contactDueDate": "2026-01-12",
         "contactCompleted": False,
         "contactCompletedDate": None,
+        "lateContactCompletedDate": "2026-02-05",
     },
 ]

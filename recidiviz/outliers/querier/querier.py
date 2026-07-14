@@ -1173,6 +1173,7 @@ class OutliersQuerier:
                 SupervisionContactsdDilldown.contact_due_date,
                 SupervisionContactsdDilldown.contact_completed,
                 SupervisionContactsdDilldown.contact_completed_date,
+                SupervisionContactsdDilldown.late_contact_completed_date,
             )
             .filter(SupervisionContactsdDilldown.officer_id == officer.external_id)
             .all()
@@ -1190,6 +1191,11 @@ class OutliersQuerier:
                 contact_completed=row.contact_completed,
                 contact_completed_date=date.fromisoformat(row.contact_completed_date)
                 if row.contact_completed_date
+                else None,
+                late_contact_completed_date=date.fromisoformat(
+                    row.late_contact_completed_date
+                )
+                if row.late_contact_completed_date
                 else None,
             )
             for row in rows

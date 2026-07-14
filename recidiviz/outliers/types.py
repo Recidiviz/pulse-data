@@ -581,6 +581,7 @@ class SupervisionContactsDrilldownEntity:
     contact_due_date: date
     contact_completed: bool
     contact_completed_date: Optional[date]
+    late_contact_completed_date: Optional[date]
 
     def to_json(self) -> Dict[str, Any]:
         result = cattrs.unstructure(self)
@@ -589,6 +590,10 @@ class SupervisionContactsDrilldownEntity:
         if result.get("contact_completed_date"):
             result["contact_completed_date"] = result[
                 "contact_completed_date"
+            ].isoformat()
+        if result.get("late_contact_completed_date"):
+            result["late_contact_completed_date"] = result[
+                "late_contact_completed_date"
             ].isoformat()
         return result
 

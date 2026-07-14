@@ -429,3 +429,4 @@ class SupervisionContactsdDilldown(InsightsBase):
     contact_due_date = Column(Date, primary_key=True)
     contact_completed = Column(Boolean)
     contact_completed_date = Column(String)
+    late_contact_completed_date = Column(String)
