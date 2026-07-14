@@ -17,7 +17,7 @@
 """Tests for the provider-agnostic LLM extraction client types."""
 from unittest import TestCase
 
-from google.genai import types  # pylint: disable=no-name-in-module
+from google.genai import types
 
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
