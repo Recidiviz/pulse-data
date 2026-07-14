@@ -638,6 +638,26 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "New LLMAJ eval scores view. Will be referenced by a calibration view joining "
         "LLMAJ scores to human Label Studio annotations (mayukas, 2026-07-08)"
     ),
+    BigQueryAddress.from_str("analyst_data.us_ar_education_records_preprocessed"): (
+        "Preprocessed staging view for AR education records. Used by the FDE process to "
+        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
+        "(Jessica Liu, 07/01/2026)"
+    ),
+    BigQueryAddress.from_str("analyst_data.us_ar_program_achievements_preprocessed"): (
+        "Preprocessed staging view for AR program achievements. Used by the FDE process to "
+        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
+        "(Jessica Liu, 07/01/2026)"
+    ),
+    BigQueryAddress.from_str("analyst_data.us_ar_program_referrals_preprocessed"): (
+        "Preprocessed staging view for AR program referrals. Used by the FDE process to "
+        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
+        "(Jessica Liu, 07/01/2026)"
+    ),
+    BigQueryAddress.from_str("earned_time.us_ar_ged_course_completions"): (
+        "View for AR GED course completions. Used by the FDE process to "
+        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
+        "(Jessica Liu, 07/01/2026)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

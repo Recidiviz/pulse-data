@@ -24,6 +24,15 @@ from functools import cache
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_education_records_preprocessed import (
+    VIEW_BUILDER as US_AR_EDUCATION_RECORDS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_program_achievements_preprocessed import (
+    VIEW_BUILDER as US_AR_PROGRAM_ACHIEVEMENTS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_program_referrals_preprocessed import (
+    VIEW_BUILDER as US_AR_PROGRAM_REFERRALS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
@@ -268,6 +277,9 @@ def state_specific_deployed_views_without_state_code_columns(
     missing_state_code_col_addresses = {
         *raw_data_latest_views_no_state_code_column,
         *raw_data_views_no_state_code_column,
+        US_AR_EDUCATION_RECORDS_PREPROCESSED_VIEW_BUILDER.address,
+        US_AR_PROGRAM_ACHIEVEMENTS_PREPROCESSED_VIEW_BUILDER.address,
+        US_AR_PROGRAM_REFERRALS_PREPROCESSED_VIEW_BUILDER.address,
         US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,
         US_IA_PROGRAM_INVENTORY_OFFICE_VISITS_VIEW_BUILDER.address,

@@ -54,7 +54,7 @@ from recidiviz.tools.eomis.parsing import (
 
 TEST_BASE_URL = "https://eomistest.doc.arkansas.gov"
 PROD_BASE_URL = "https://eomis.adc.arkansas.gov"
-DEFAULT_VIEW = "recidiviz-staging.arushi_scratch.us_ar_completion_writeback"
+DEFAULT_VIEW = "recidiviz-staging.earned_time.us_ar_ged_course_completions_materialized"
 DEFAULT_PROJECT_ID = "recidiviz-staging"
 
 GED_PROGRAM_LABEL = "School (GED)"
@@ -694,8 +694,8 @@ def load_bq_candidates(
             certificate_award_date,
             referral_application_date,
             referral_status,
-            completed_in_prior_incarceration_flag,
-            entered_in_prior_incarceration_flag
+            is_completed_in_prior_incarceration_flag AS completed_in_prior_incarceration_flag,
+            is_referral_last_updated_in_prior_incarceration_flag AS entered_in_prior_incarceration_flag
         FROM `{view}`
         WHERE OFFENDERID IS NOT NULL
         ORDER BY certificate_award_date, OFFENDERID
