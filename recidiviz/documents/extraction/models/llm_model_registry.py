@@ -20,6 +20,7 @@ access info), base models (fixed traits and tunable-parameter catalogs), and
 named model configs (reusable parameter bundles) that extractors reference by
 name instead of repeating model settings.
 """
+
 import abc
 import hashlib
 import json
