@@ -108,7 +108,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -243,7 +243,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -373,7 +373,7 @@
                     },
                     "null_reason": {
                       "type": "string",
-                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                       "enum": [
                         "not_applicable",
                         "no_info_found",
@@ -514,7 +514,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -652,7 +652,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -782,7 +782,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -912,7 +912,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1049,7 +1049,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1198,7 +1198,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",
@@ -1328,7 +1328,7 @@
                           },
                           "null_reason": {
                             "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of other fields (e.g. `employer_name` when `primary_status` is \"unemployed\").\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
+                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
                             "enum": [
                               "not_applicable",
                               "no_info_found",

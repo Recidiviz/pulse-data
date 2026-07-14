@@ -17,7 +17,13 @@
 """Tests for string_formatting.py"""
 import unittest
 
-from recidiviz.utils.string_formatting import fix_indent, truncate_string_if_necessary
+from recidiviz.utils.string_formatting import (
+    collapse_blank_lines,
+    collapse_whitespace,
+    fix_indent,
+    render_list,
+    truncate_string_if_necessary,
+)
 
 
 class TestFixIndent(unittest.TestCase):
@@ -82,6 +88,104 @@ FROM (
     SELECT * FROM table
 )"""
         self.assertEqual(expected_s, fix_indent(s, indent_level=0))
+
+
+class TestCollapseWhitespace(unittest.TestCase):
+    """Tests for collapse_whitespace."""
+
+    def test_collapses_runs_including_newlines_and_strips(self) -> None:
+        self.assertEqual(
+            "one two three",
+            collapse_whitespace("  one   two\n\tthree  "),
+        )
+
+    def test_already_collapsed_is_unchanged(self) -> None:
+        self.assertEqual("one two three", collapse_whitespace("one two three"))
+
+    def test_empty_string(self) -> None:
+        self.assertEqual("", collapse_whitespace("   \n  "))
+
+
+class TestCollapseBlankLines(unittest.TestCase):
+    """Tests for collapse_blank_lines."""
+
+    def test_collapses_runs_of_blank_lines_to_one(self) -> None:
+        source = """\
+a
+
+
+
+
+b"""
+        expected = """\
+a
+
+b"""
+        self.assertEqual(expected, collapse_blank_lines(source))
+
+    def test_single_blank_line_is_preserved(self) -> None:
+        text = """\
+a
+
+b"""
+        self.assertEqual(text, collapse_blank_lines(text))
+
+    def test_strips_leading_and_trailing_whitespace(self) -> None:
+        source = """
+
+a
+
+
+b
+
+"""
+        expected = """\
+a
+
+b"""
+        self.assertEqual(expected, collapse_blank_lines(source))
+
+
+class TestRenderList(unittest.TestCase):
+    """Tests for render_list."""
+
+    def test_single_line_items(self) -> None:
+        expected = """\
+- a
+- b"""
+        self.assertEqual(expected, render_list(["a", "b"]))
+
+    def test_empty_iterable(self) -> None:
+        self.assertEqual("", render_list([]))
+
+    def test_multi_line_item_hanging_indents_continuations(self) -> None:
+        expected = """\
+- first line
+  second line
+  third line"""
+        self.assertEqual(expected, render_list(["first line\nsecond line\nthird line"]))
+
+    def test_blank_continuation_line_becomes_empty(self) -> None:
+        # A blank line inside an item must not carry hanging-indent whitespace.
+        expected = """\
+- first line
+
+  third line"""
+        self.assertEqual(expected, render_list(["first line\n\nthird line"]))
+
+    def test_custom_bullet_char_widens_hanging_indent(self) -> None:
+        expected = """\
+* first line
+  second line"""
+        self.assertEqual(
+            expected, render_list(["first line\nsecond line"], bullet_char="*")
+        )
+
+    def test_indent_level_reindents_whole_list(self) -> None:
+        expected = """\
+    - a
+    - b"""
+        self.assertEqual(expected, render_list(["a", "b"], indent_level=4))
 
 
 class TestTruncateString(unittest.TestCase):

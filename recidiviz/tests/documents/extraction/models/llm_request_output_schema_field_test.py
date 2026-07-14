@@ -664,9 +664,10 @@ class DescribedEnumGuidanceTest(TestCase):
     def test_bakes_member_descriptions_in_definition_order(self) -> None:
         self.assertEqual(
             "Why no value could be extracted. Allowed values:\n"
-            "- not_applicable: The field does not apply given the values of "
-            "other fields (e.g. `employer_name` when `primary_status` is "
-            '"unemployed").\n'
+            "- not_applicable: The field does not apply given the values of the "
+            "other fields it depends on — for example, a field that is only "
+            "meaningful for a particular value of another field, when that value "
+            "does not hold.\n"
             "- no_info_found: The document does not mention this information.\n"
             "- explicitly_unknown: The document acknowledges the information "
             "but states it is unknown.",

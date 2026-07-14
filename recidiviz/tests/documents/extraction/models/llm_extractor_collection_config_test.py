@@ -436,7 +436,7 @@ class CollectionVersionIdTest(TestCase):
             _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "c5a347fbd5252a512cea3f5921539b0140f5c0a9ce18cd15db45a306e436dc53",
+            "89a1be73484237cf7798105bb0e50ac3c03102ceccb4c7d0ac53857adaa74464",
             collection.collection_version_id,
         )
 

@@ -170,8 +170,9 @@ class NullReason(DescribedEnum):
     def get_value_descriptions(cls) -> dict["DescribedEnum", str]:
         return {
             cls.NOT_APPLICABLE: (
-                "The field does not apply given the values of other fields (e.g. "
-                '`employer_name` when `primary_status` is "unemployed").'
+                "The field does not apply given the values of the other fields it "
+                "depends on — for example, a field that is only meaningful for a "
+                "particular value of another field, when that value does not hold."
             ),
             cls.NO_INFO_FOUND: "The document does not mention this information.",
             cls.EXPLICITLY_UNKNOWN: (
