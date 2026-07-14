@@ -8,7 +8,7 @@ description:
   — do not edit manually.
 schema:
   - name: id
-    type: INT64
+    type: INTEGER
     mode: NULLABLE
     description: Label Studio annotation ID.
   - name: created_at
@@ -16,11 +16,11 @@ schema:
     mode: NULLABLE
     description: Timestamp when the annotation was submitted.
   - name: lead_time
-    type: FLOAT64
+    type: FLOAT
     mode: NULLABLE
     description: Time in seconds the annotator spent on the task.
   - name: was_cancelled
-    type: BOOL
+    type: BOOLEAN
     mode: NULLABLE
     description: Whether the annotation was cancelled rather than submitted.
   - name: completed_by
@@ -38,11 +38,11 @@ schema:
     description: The Label Studio task this annotation belongs to.
     fields:
       - name: id
-        type: INT64
+        type: INTEGER
         mode: NULLABLE
         description: Label Studio task ID.
       - name: inner_id
-        type: INT64
+        type: INTEGER
         mode: NULLABLE
         description: Task sequence number within the Label Studio project.
       - name: data
@@ -75,7 +75,7 @@ schema:
             mode: NULLABLE
             description: Which provider produced the best transcript.
           - name: transcript_best_confidence
-            type: FLOAT64
+            type: FLOAT
             mode: NULLABLE
             description: Confidence score of the best transcript.
           - name: case_note

@@ -38,12 +38,25 @@ _OUTPUT_DIR = os.path.join(
     "llm_eval_label_studio",
 )
 
+# BQ returns legacy SQL type aliases (INTEGER, FLOAT, BOOLEAN) for deployed fields.
+# Use legacy names in YAMLs so the schema comparison logic sees no diff.
+_STANDARD_TO_LEGACY_BQ_TYPE: dict[str, str] = {
+    "INT64": "INTEGER",
+    "FLOAT64": "FLOAT",
+    "BOOL": "BOOLEAN",
+}
+
+
+def _bq_type_name(standard_type: str) -> str:
+    return _STANDARD_TO_LEGACY_BQ_TYPE.get(standard_type, standard_type)
+
+
 # Infrastructure fields present in every Label Studio annotation export,
 # independent of task config.
 _INFRASTRUCTURE_FIELDS: list[dict] = [
     {
         "name": "id",
-        "type": "INT64",
+        "type": "INTEGER",
         "mode": "NULLABLE",
         "description": "Label Studio annotation ID.",
     },
@@ -55,13 +68,13 @@ _INFRASTRUCTURE_FIELDS: list[dict] = [
     },
     {
         "name": "lead_time",
-        "type": "FLOAT64",
+        "type": "FLOAT",
         "mode": "NULLABLE",
         "description": "Time in seconds the annotator spent on the task.",
     },
     {
         "name": "was_cancelled",
-        "type": "BOOL",
+        "type": "BOOLEAN",
         "mode": "NULLABLE",
         "description": "Whether the annotation was cancelled rather than submitted.",
     },
@@ -132,7 +145,7 @@ def _data_fields_for_config(
     return [
         {
             "name": field.column_name,
-            "type": field.bq_type.value,
+            "type": _bq_type_name(field.bq_type.value),
             "mode": "NULLABLE",
             "description": field.description,
         }
@@ -150,13 +163,13 @@ def build_raw_table_yaml_dict(config: LabelStudioTaskConfig) -> dict:
         "fields": [
             {
                 "name": "id",
-                "type": "INT64",
+                "type": "INTEGER",
                 "mode": "NULLABLE",
                 "description": "Label Studio task ID.",
             },
             {
                 "name": "inner_id",
-                "type": "INT64",
+                "type": "INTEGER",
                 "mode": "NULLABLE",
                 "description": "Task sequence number within the Label Studio project.",
             },
