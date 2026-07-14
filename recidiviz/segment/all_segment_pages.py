@@ -26,7 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
-    SEGMENT_FRONTEND_TRACKING_DATASETS,
     build_segment_event_view_query_template,
     segment_event_schema,
 )
@@ -42,6 +41,13 @@ _NULL_UTM_COLS_SNIPPET = ", ".join(
 )
 
 _DATASETS_WITH_UTM_COLS = [PULSE_DASHBOARD_SEGMENT_DATASET]
+
+# TODO(OBT-22475): Include JII tablet page views here once we have proper handling for them in segment_event_big_query_view_builder.py
+# TODO(OBT-39139): Include public pathways dashboard views here once we have proper handling for them in segment_event_big_query_view_builder.py
+_STAFF_PAGES_DATASETS = [
+    PULSE_DASHBOARD_SEGMENT_DATASET,
+    CASE_PLANNING_PRODUCTION_DATASET,
+]
 
 event_schema = {col.name: col for col in segment_event_schema()}
 _SCHEMA = [
@@ -95,9 +101,9 @@ ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         (
             _get_pages_query_template(dataset, _UTM_COLS)
             if dataset in _DATASETS_WITH_UTM_COLS
-            else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(CASE_PLANNING_PRODUCTION_DATASET, [])})"
+            else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(dataset, [])})"
         )
-        for dataset in SEGMENT_FRONTEND_TRACKING_DATASETS
+        for dataset in _STAFF_PAGES_DATASETS
     ),
     view_id=_VIEW_ID,
     description=__doc__,
