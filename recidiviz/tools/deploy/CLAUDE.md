@@ -140,6 +140,22 @@ git log --oneline <prev_tag>..<deployed_tag> -- <path>
 git show <deployed_tag>:<path/to/file.py>
 ```
 
+`git show <tag>:<path>` is only for *reading* a file's content — it does not
+check out the tree. If you need to *run* something as deployed (e.g.
+reproducing a task locally against a real project), `git show` is not
+enough: executing against whatever the working tree currently has checked
+out silently runs the wrong commit, and a clean/passing result from that is
+a false negative, not a real repro. Use an isolated worktree instead of
+switching the user's checked-out branch:
+
+```bash
+git worktree add <scratch_path> <deployed_tag>
+cd <scratch_path> && uv sync --all-extras  # lockfile may differ from HEAD
+uv run python -m <the.tools.script> ...
+# when done:
+git worktree remove <scratch_path>
+```
+
 If an env-specific failure (e.g., prod fails, staging passes) has identical
 deployed code in both envs, the divergence is almost certainly **infra
 state**, not code. Compare live resources — `bq ls --connection`,

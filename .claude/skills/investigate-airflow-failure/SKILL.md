@@ -170,6 +170,43 @@ If the failure is in the PythonOperator wrapper layer, find the task's
 registration in its `*_dag.py` file (e.g. `monitoring_dag.py`,
 `calculation_dag.py`) to locate the `python_callable`.
 
+## Step 6.5: Reproducing locally — pin to the deployed tag with a worktree, not just `git show`
+
+Sometimes the GCS task log doesn't have enough detail — e.g. the failing
+function wraps and hides its real per-item errors by redirecting logging to a
+file (`redirect_logging_to_file`-style patterns), which lands inside the
+pod's ephemeral filesystem and is unrecoverable once the pod is gone. If the
+task has a corresponding standalone script under `recidiviz/tools/` that can
+be run locally against the same project (confirm it's read-only before
+running), reproducing the failure locally is often faster and more reliable
+than chasing pod access — and any file it writes lands on your real
+filesystem where you can just read it.
+
+**But this only works if you actually run the code at the deployed tag.**
+`git show <deployed_tag>:<path>` is fine for *reading* source (Step 6), but
+if you need to *execute* something, you must check out that exact commit —
+running a script against whatever the working tree currently has checked out
+silently reproduces the wrong code version. This is a trap: if the deployed
+tag contains a recent change the working tree doesn't have yet (or vice
+versa), the local run can complete cleanly with no error at all, and that
+false-negative looks exactly like a real, exculpatory repro. Don't assume the
+working tree matches the deployed tag without checking
+(`git merge-base --is-ancestor HEAD <deployed_tag>` and vice versa) — assume
+it doesn't.
+
+Use an isolated worktree instead of switching the user's actual checked-out
+branch:
+
+```bash
+git worktree add <scratch_path> <deployed_tag>
+cd <scratch_path> && uv sync --all-extras  # lockfile may differ from HEAD
+uv run python -m <the.tools.script> --project-id <project_id> ...
+```
+
+Clean up with `git worktree remove <scratch_path>` when done. This is a
+general technique, not specific to any one failure type — apply it any time
+the plan is to *run* code rather than just read it.
+
 ## Step 7: Check recent history scoped to the deployed tag
 
 Scope all "what changed" queries to the deployed version — not `origin/main`:
@@ -240,6 +277,15 @@ Structure your output in this order:
 - **State codes US_ID / US_IX**: if the failing task touches Idaho data,
   confirm with the user which state code applies.
 - **Never query ME or CA data** during investigation (CLAUDE.md rule).
+- **The Composer GKE cluster is generally unreachable from a dev laptop**:
+  it's a private cluster with `masterAuthorizedNetworksConfig` enabled and no
+  public CIDR access. `kubectl` from an unauthorized machine just hangs on
+  connect — it doesn't error, so don't mistake the hang for something else.
+  Don't sink time into `kubectl`/pod-log approaches unless you've confirmed
+  cluster access first (Cloud Shell or VPN); prefer local reproduction (Step
+  6.5) when available. `RecidivizKubernetesPodOperator` is configured with
+  `on_finish_action="keep_pod"`, so failed pods aren't auto-deleted — worth
+  knowing if cluster access does turn out to be available.
 
 ## Related Documentation
 
