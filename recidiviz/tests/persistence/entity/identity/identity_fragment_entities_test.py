@@ -311,7 +311,6 @@ class TestIdentityAttributes(unittest.TestCase):
         self.assertEqual(
             IdentityAttributes(
                 tenant=_TENANT,
-                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -327,7 +326,6 @@ class TestIdentityAttributes(unittest.TestCase):
             ),
             IdentityAttributes(
                 tenant=_TENANT,
-                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -347,12 +345,10 @@ class TestIdentityAttributes(unittest.TestCase):
         self.assertNotEqual(
             IdentityAttributes(
                 tenant=_TENANT,
-                person_type=PersonType.JII,
                 birthdate=datetime.date(1990, 1, 1),
             ),
             IdentityAttributes(
                 tenant=_TENANT,
-                person_type=PersonType.JII,
                 birthdate=datetime.date(1991, 1, 1),
             ),
         )
@@ -360,7 +356,6 @@ class TestIdentityAttributes(unittest.TestCase):
     def test_defaults(self) -> None:
         attrs = IdentityAttributes(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
         self.assertIsNone(attrs.name)
@@ -375,7 +370,7 @@ class TestIdentityAttributes(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, "must have at least one attribute set beyond"
         ):
-            IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
+            IdentityAttributes(tenant=_TENANT)
 
     def test_construction_succeeds_for_each_scalar(self) -> None:
         cases: list[tuple[str, dict]] = [
@@ -387,9 +382,7 @@ class TestIdentityAttributes(unittest.TestCase):
         ]
         for field_name, kwargs in cases:
             with self.subTest(field=field_name):
-                attrs = IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, **kwargs
-                )
+                attrs = IdentityAttributes(tenant=_TENANT, **kwargs)
                 self.assertEqual(getattr(attrs, field_name), kwargs[field_name])
 
     def test_construction_succeeds_for_each_list(self) -> None:
@@ -400,15 +393,12 @@ class TestIdentityAttributes(unittest.TestCase):
         ]
         for field_name, kwargs in cases:
             with self.subTest(field=field_name):
-                attrs = IdentityAttributes(
-                    tenant=_TENANT, person_type=PersonType.JII, **kwargs
-                )
+                attrs = IdentityAttributes(tenant=_TENANT, **kwargs)
                 self.assertEqual(getattr(attrs, field_name), kwargs[field_name])
 
     def test_pickle_roundtrip(self) -> None:
         attrs = IdentityAttributes(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             name=_NAME,
             birthdate=datetime.date(1990, 1, 1),
             gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -435,9 +425,9 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
-                    person_type=PersonType.JII,
                     name=_NAME,
                     birthdate=datetime.date(1990, 1, 1),
                     gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -463,9 +453,9 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
-                    person_type=PersonType.JII,
                     name=_NAME,
                     birthdate=datetime.date(1990, 1, 1),
                     gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -495,6 +485,7 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
+                person_type=PersonType.JII,
             ),
             IdentityFragment(
                 tenant=_TENANT,
@@ -505,6 +496,21 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_XX_ID_TYPE",
                     )
                 ],
+                person_type=PersonType.JII,
+            ),
+        )
+
+    def test_inequality_different_person_type(self) -> None:
+        self.assertNotEqual(
+            IdentityFragment(
+                tenant=_TENANT,
+                external_ids=[_EXTERNAL_ID],
+                person_type=PersonType.JII,
+            ),
+            IdentityFragment(
+                tenant=_TENANT,
+                external_ids=[_EXTERNAL_ID],
+                person_type=PersonType.STAFF,
             ),
         )
 
@@ -513,18 +519,18 @@ class TestIdentityFragment(unittest.TestCase):
             IdentityFragment(
                 tenant=_TENANT,
                 external_ids=[_EXTERNAL_ID],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
-                    person_type=PersonType.JII,
                     name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
                 ),
             ),
             IdentityFragment(
                 tenant=_TENANT,
                 external_ids=[_EXTERNAL_ID],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
-                    person_type=PersonType.JII,
                     name=IdentityName(tenant=_TENANT, given_name="Jane", surname="Doe"),
                 ),
             ),
@@ -534,6 +540,7 @@ class TestIdentityFragment(unittest.TestCase):
         fragment = IdentityFragment(
             tenant=_TENANT,
             external_ids=[_EXTERNAL_ID],
+            person_type=PersonType.JII,
         )
         self.assertEqual(fragment.tenant, _TENANT)
         self.assertIsNone(fragment.attributes)
@@ -546,9 +553,9 @@ class TestIdentityFragment(unittest.TestCase):
                     tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
                 )
             ],
+            person_type=PersonType.JII,
             attributes=IdentityAttributes(
                 tenant=_TENANT,
-                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),

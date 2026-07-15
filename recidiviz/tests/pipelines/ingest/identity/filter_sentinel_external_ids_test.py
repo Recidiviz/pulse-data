@@ -71,7 +71,6 @@ _CONFIG_WITH_BOOKING_OVERRIDE = IdentityIngestPipelineConfig(
 def _make_attrs(given_name: str) -> IdentityAttributes:
     return IdentityAttributes(
         tenant=_TENANT,
-        person_type=PersonType.JII,
         name=IdentityName(tenant=_TENANT, given_name=given_name),
     )
 
@@ -79,6 +78,7 @@ def _make_attrs(given_name: str) -> IdentityAttributes:
 def _make_fragment(
     external_ids: list[tuple[str, str]],
     attrs: IdentityAttributes | None,
+    person_type: PersonType = PersonType.JII,
 ) -> IdentityFragment:
     return IdentityFragment(
         tenant=_TENANT,
@@ -86,6 +86,7 @@ def _make_fragment(
             IdentityExternalId(tenant=_TENANT, external_id=eid, id_type=etype)
             for eid, etype in external_ids
         ],
+        person_type=person_type,
         attributes=attrs,
     )
 

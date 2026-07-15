@@ -61,7 +61,6 @@ def _fragment(
     if name_given or name_surname:
         attributes = IdentityAttributes(
             tenant=_TENANT,
-            person_type=person_type,
             name=IdentityName(
                 tenant=_TENANT, given_name=name_given, surname=name_surname
             ),
@@ -69,6 +68,7 @@ def _fragment(
     return IdentityFragment(
         tenant=_TENANT,
         external_ids=[_eid_entity(eid, id_type) for eid, id_type in eids],
+        person_type=person_type,
         attributes=attributes,
     )
 
@@ -200,8 +200,29 @@ class TestBuildCluster(unittest.TestCase):
 
         self.assertEqual(len(result.external_ids), 1)
         self.assertEqual(result.external_ids[0].external_id, "A")
+        self.assertEqual(result.person_type, PersonType.JII)
         assert result.name is not None
         self.assertEqual(result.name.given_name, "John")
+
+    def test_person_type_derived_from_agreeing_fragments(self) -> None:
+        eid_a: ExternalIdKey = ("A", "T1")
+        eid_b: ExternalIdKey = ("B", "T2")
+        fragment_a = _fragment(
+            [("A", "T1")], name_given="Bob", person_type=PersonType.STAFF
+        )
+        fragment_b = _fragment([("B", "T2")], person_type=PersonType.STAFF)
+        cluster_key = tuple(sorted([eid_a, eid_b]))
+        element = (
+            cluster_key,
+            [
+                (100.0, "view_a", fragment_a),
+                (200.0, "view_a", fragment_b),
+            ],
+        )
+
+        result = self.transform.build_cluster(element)
+
+        self.assertEqual(result.person_type, PersonType.STAFF)
 
     def test_multi_eid_merges_attributes(self) -> None:
         eid_a: ExternalIdKey = ("A", "T1")
@@ -281,8 +302,7 @@ class TestBuildCluster(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Failed to build cluster .* Conflicting non-None values for "
-            r"'attributes.person_type'",
+            r"has fragments with conflicting person types \[JII, STAFF\]",
         ):
             self.transform.build_cluster(element)
 
@@ -309,8 +329,7 @@ class TestBuildCluster(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Failed to build cluster .* Conflicting non-None values for "
-            r"'attributes.person_type'",
+            r"has fragments with conflicting person types \[JII, STAFF\]",
         ):
             self.transform.build_cluster(element)
 

@@ -17,7 +17,6 @@
 """Helpers for reading static properties out of identity ingest view manifests."""
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
-    EntityTreeManifest,
     EnumLiteralFieldManifest,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
@@ -25,7 +24,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 )
 from recidiviz.utils.types import assert_type
 
-_ATTRIBUTES_FIELD_NAME = "attributes"
 _PERSON_TYPE_FIELD_NAME = "person_type"
 
 
@@ -34,34 +32,11 @@ def get_view_person_type(manifest: IngestViewManifest) -> PersonType:
     identity view carries, read from the view's compiled manifest.
 
     Identity views must author `person_type` as a literal enum (e.g.
-    `$literal_enum(PersonType.JII)`) so that a view produces fragments of a
-    single, statically known person type. Raises if a view maps `person_type`
-    as anything else (e.g. a data-driven `$enum_mapping`), or maps no
-    `attributes` at all.
-
-    TODO(OBT-39169): `person_type` currently lives inside the `attributes`
-    (`IdentityAttributes`) subtree, so a view that hydrates only external_ids
-    (no attributes) has nowhere to declare it, even though it is still
-    conceptually a JII or STAFF view. Move `person_type` to the top level of the
-    identity mapping so every view, including any that merely hydrate
-    external IDs, declares its person type explicitly, then drop the
-    no-attributes error below."""
-    attributes_manifest = manifest.output.field_manifests.get(_ATTRIBUTES_FIELD_NAME)
-    if attributes_manifest is None:
-        raise ValueError(
-            f"Identity view [{manifest.ingest_view_name}] maps no "
-            f"[{_ATTRIBUTES_FIELD_NAME}], so its person type cannot be determined. "
-            f"Every identity view must declare a single person type."
-        )
-    if not isinstance(attributes_manifest, EntityTreeManifest):
-        raise ValueError(
-            f"Expected [{_ATTRIBUTES_FIELD_NAME}] of identity view "
-            f"[{manifest.ingest_view_name}] to compile to an EntityTreeManifest, "
-            f"but found [{type(attributes_manifest)}]."
-        )
-    person_type_manifest = attributes_manifest.field_manifests.get(
-        _PERSON_TYPE_FIELD_NAME
-    )
+    `$literal_enum(PersonType.JII)`) at the top level of the mapping so that a
+    view produces fragments of a single, statically known person type. Raises if
+    a view maps `person_type` as anything else (e.g. a data-driven
+    `$enum_mapping`) or omits it entirely."""
+    person_type_manifest = manifest.output.field_manifests.get(_PERSON_TYPE_FIELD_NAME)
     if not isinstance(person_type_manifest, EnumLiteralFieldManifest):
         raise ValueError(
             f"Identity view [{manifest.ingest_view_name}] must author "

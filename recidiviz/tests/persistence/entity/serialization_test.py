@@ -490,7 +490,6 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
     def test_recursive_tree(self) -> None:
         attrs = IdentityAttributes(
             tenant=Tenant.US_XX,
-            person_type=PersonType.JII,
             name=IdentityName(tenant=Tenant.US_XX, given_name="John", surname="Doe"),
         )
 
@@ -499,7 +498,7 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
         )
 
         self.assertEqual(result["tenant"], "US_XX")
-        self.assertEqual(result["person_type"], "JII")
+        self.assertNotIn("person_type", result)
         self.assertEqual(
             result["name"],
             {
@@ -515,7 +514,6 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
     def test_none_optional_forward_edge_children(self) -> None:
         attrs = IdentityAttributes(
             tenant=Tenant.US_XX,
-            person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
 
@@ -531,7 +529,6 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
     def test_forward_edge_list_children_sorted(self) -> None:
         attrs = IdentityAttributes(
             tenant=Tenant.US_XX,
-            person_type=PersonType.JII,
             races=[
                 IdentityRace(tenant=Tenant.US_XX, race=Race.WHITE, race_raw_text="W"),
                 IdentityRace(tenant=Tenant.US_XX, race=Race.BLACK, race_raw_text="B"),
@@ -548,7 +545,6 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
     def test_back_edges_excluded(self) -> None:
         attrs = IdentityAttributes(
             tenant=Tenant.US_XX,
-            person_type=PersonType.JII,
             name=IdentityName(tenant=Tenant.US_XX, given_name="John", surname="Doe"),
             gender=IdentityGender(
                 tenant=Tenant.US_XX, gender=Gender.MALE, gender_raw_text="M"
@@ -620,7 +616,6 @@ class TestSerializeEntityIntoJsonWithFragmentEntities(unittest.TestCase):
         )
         self.attrs = IdentityAttributes(
             tenant=Tenant.US_XX,
-            person_type=PersonType.JII,
             races=[self.race],
         )
         self.external_id = IdentityExternalId(
@@ -629,6 +624,7 @@ class TestSerializeEntityIntoJsonWithFragmentEntities(unittest.TestCase):
         self.fragment = IdentityFragment(
             tenant=Tenant.US_XX,
             external_ids=[self.external_id],
+            person_type=PersonType.JII,
             attributes=self.attrs,
             identity_fragment_id="fragment_id_001",
         )
@@ -665,7 +661,12 @@ class TestSerializeEntityIntoJsonWithFragmentEntities(unittest.TestCase):
 
     def test_root_row(self) -> None:
         self.assertEqual(
-            {"tenant": "US_XX", "identity_fragment_id": "fragment_id_001"},
+            {
+                "tenant": "US_XX",
+                "person_type": "JII",
+                "person_type_raw_text": None,
+                "identity_fragment_id": "fragment_id_001",
+            },
             serialize_entity_into_json(self.fragment, self.context),
         )
 

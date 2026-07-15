@@ -51,7 +51,6 @@ def generate_full_graph_identity_fragment(
     """
     attributes = identity_fragment_entities.IdentityAttributes(
         tenant=_TENANT,
-        person_type=PersonType.JII,
         birthdate=datetime.date(1990, 1, 1),
         name=identity_fragment_entities.IdentityName(
             tenant=_TENANT,
@@ -112,6 +111,7 @@ def generate_full_graph_identity_fragment(
                 id_type=f"{_TENANT.value}_ID_TYPE",
             ),
         ],
+        person_type=PersonType.JII,
         attributes=attributes,
     )
 

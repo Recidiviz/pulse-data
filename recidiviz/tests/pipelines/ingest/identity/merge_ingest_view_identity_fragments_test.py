@@ -54,7 +54,6 @@ def _make_attrs(
 ) -> IdentityAttributes:
     return IdentityAttributes(
         tenant=_TENANT,
-        person_type=PersonType.JII,
         name=name,
         birthdate=birthdate,
         gender=gender,
@@ -66,6 +65,7 @@ def _make_attrs(
 def _make_fragment(
     external_ids: list[tuple[str, str]],
     attrs: IdentityAttributes,
+    person_type: PersonType = PersonType.JII,
 ) -> IdentityFragment:
     return IdentityFragment(
         tenant=_TENANT,
@@ -73,6 +73,7 @@ def _make_fragment(
             IdentityExternalId(tenant=_TENANT, external_id=eid, id_type=etype)
             for eid, etype in external_ids
         ],
+        person_type=person_type,
         attributes=attrs,
     )
 
@@ -128,6 +129,7 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
                     tenant=_TENANT, external_id="B1", id_type="US_XX_BOOKING"
                 ),
             ],
+            person_type=PersonType.JII,
             attributes=_make_attrs(
                 name=name,
                 birthdate=datetime.date(1990, 1, 1),

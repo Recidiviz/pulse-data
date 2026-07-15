@@ -16,9 +16,9 @@ output:
       - IdentityExternalId:
           external_id: ID
           id_type: $literal("US_DD_IDENTITY_PERSON_ID")
+    person_type: $literal_enum(PersonType.JII)
     attributes:
       IdentityAttributes:
-        person_type: $literal_enum(PersonType.JII)
         name:
           IdentityName:
             given_name: FirstName

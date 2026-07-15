@@ -577,6 +577,10 @@ _FRAGMENT_ONLY_CLASSES = {
 # Cluster-only flat fields that have no fragment counterpart.
 _CLUSTER_ONLY_FIELDS = {"identity_cluster_id", "cluster_hash"}
 
+# Flat fields on IdentityFragment that stay on the fragment and do not flatten
+# onto IdentityCluster (unlike person_type, which does).
+_FRAGMENT_ONLY_FLAT_FIELDS = {"identity_fragment_id"}
+
 
 def _fragment_counterpart_of(cluster_cls: Type[Entity]) -> Type[Entity]:
     fragment_name = cluster_cls.__name__.replace("IdentityCluster", "Identity", 1)
@@ -651,12 +655,41 @@ class TestClusterEntitiesParity(unittest.TestCase):
             fragment_cls = _fragment_counterpart_of(cluster_cls)
             self._assert_flat_fields_match(fragment_cls, cluster_cls)
 
-    def test_identity_cluster_carries_attributes_flat_fields(self) -> None:
-        self._assert_flat_fields_match(
-            identity_fragment_entities.IdentityAttributes,
-            identity_cluster_entities.IdentityCluster,
-            extra_cluster_fields=_CLUSTER_ONLY_FIELDS,
+    def test_identity_cluster_carries_fragment_and_attributes_flat_fields(
+        self,
+    ) -> None:
+        """The flattened cluster root carries the flat fields of both
+        IdentityFragment (except fragment-only bookkeeping like
+        identity_fragment_id) and IdentityAttributes, plus its own cluster-only
+        fields, each with a matching type and validator."""
+        fragment_shared_flat = {
+            name: field
+            for name, field in _flat_fields(
+                identity_fragment_entities.IdentityFragment
+            ).items()
+            if name not in _FRAGMENT_ONLY_FLAT_FIELDS
+        }
+        attributes_flat = _flat_fields(identity_fragment_entities.IdentityAttributes)
+        cluster_flat = _flat_fields(identity_cluster_entities.IdentityCluster)
+
+        expected_field_names = (
+            set(fragment_shared_flat) | set(attributes_flat) | _CLUSTER_ONLY_FIELDS
         )
+        self.assertEqual(expected_field_names, set(cluster_flat))
+
+        for name, source_field in {**fragment_shared_flat, **attributes_flat}.items():
+            cluster_field = cluster_flat[name]
+            self.assertEqual(
+                source_field.type,
+                cluster_field.type,
+                f"Type mismatch for flattened field [{name}] on IdentityCluster.",
+            )
+            self.assertEqual(
+                _validator_repr(source_field.validator),
+                _validator_repr(cluster_field.validator),
+                f"Validator mismatch for flattened field [{name}] on "
+                f"IdentityCluster.",
+            )
 
     def test_identity_cluster_has_cluster_only_fields(self) -> None:
         cluster_fields = attr.fields_dict(identity_cluster_entities.IdentityCluster)

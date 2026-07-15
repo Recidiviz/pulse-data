@@ -18,7 +18,6 @@
 import datetime
 import unittest
 
-from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
@@ -59,6 +58,7 @@ class TestConvertAttributesToClusterKwargs(unittest.TestCase):
                 )
                 for eid in fragment.external_ids
             ),
+            person_type=fragment.person_type,
             **kwargs,
         )
 
@@ -71,7 +71,6 @@ class TestConvertAttributesToClusterKwargs(unittest.TestCase):
         fields are empty tuples."""
         attributes = IdentityAttributes(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
 
@@ -80,8 +79,6 @@ class TestConvertAttributesToClusterKwargs(unittest.TestCase):
         self.assertEqual(
             kwargs,
             {
-                "person_type": PersonType.JII,
-                "person_type_raw_text": None,
                 "birthdate": datetime.date(1990, 1, 1),
                 "name": None,
                 "gender": None,

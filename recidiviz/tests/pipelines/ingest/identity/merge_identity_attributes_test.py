@@ -76,7 +76,6 @@ def _fragment(
     ):
         attributes = IdentityAttributes(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             name=name,
             birthdate=birthdate,
             gender=gender,
@@ -89,6 +88,7 @@ def _fragment(
     return IdentityFragment(
         tenant=_TENANT,
         external_ids=[IdentityExternalId(tenant=_TENANT, external_id="X", id_type="T")],
+        person_type=PersonType.JII,
         attributes=attributes,
     )
 

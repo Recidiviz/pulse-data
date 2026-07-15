@@ -200,13 +200,11 @@ class TestEntityFactories(unittest.TestCase):
     def test_deserialize_IdentityAttributes(self) -> None:
         result = entity_factories.IdentityAttributesFactory.deserialize(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
 
         expected = entities.IdentityAttributes(
             tenant=_TENANT,
-            person_type=PersonType.JII,
             birthdate=datetime.date(1990, 1, 1),
         )
         self.assertEqual(expected, result)
@@ -214,10 +212,12 @@ class TestEntityFactories(unittest.TestCase):
     def test_deserialize_IdentityFragment(self) -> None:
         result = entity_factories.IdentityFragmentFactory.deserialize(
             tenant=_TENANT,
+            person_type=PersonType.JII,
         )
 
         expected = entities.IdentityFragment(
             tenant=_TENANT,
             external_ids=[],
+            person_type=PersonType.JII,
         )
         self.assertEqual(expected, result)

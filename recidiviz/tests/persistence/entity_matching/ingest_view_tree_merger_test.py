@@ -417,9 +417,9 @@ Entities with conflicts:
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     phone_numbers=[
                         IdentityPhoneNumber(tenant=Tenant.US_XX, number="5550100001"),
                     ],
@@ -432,9 +432,9 @@ Entities with conflicts:
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     phone_numbers=[
                         IdentityPhoneNumber(tenant=Tenant.US_XX, number="5550100002"),
                     ],
@@ -729,9 +729,9 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     name=IdentityName(
                         tenant=Tenant.US_XX, given_name="JOHN", surname="DOE"
                     ),
@@ -744,9 +744,9 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     name=IdentityName(
                         tenant=Tenant.US_XX, given_name="JANE", surname="DOE"
                     ),
@@ -769,9 +769,9 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     name=IdentityName(
                         tenant=Tenant.US_XX, given_name="JOHN", surname="DOE"
                     ),
@@ -784,9 +784,9 @@ class TestSingularForwardEdgeConflicts(unittest.TestCase):
                         tenant=Tenant.US_XX, external_id="P1", id_type="US_XX_EG"
                     )
                 ],
+                person_type=PersonType.JII,
                 attributes=IdentityAttributes(
                     tenant=Tenant.US_XX,
-                    person_type=PersonType.JII,
                     name=IdentityName(
                         tenant=Tenant.US_XX, given_name="JANE", surname="DOE"
                     ),

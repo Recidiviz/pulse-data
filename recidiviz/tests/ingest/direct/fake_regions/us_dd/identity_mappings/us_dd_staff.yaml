@@ -19,9 +19,9 @@ output:
               IdentityExternalId:
                 external_id: BadgeId
                 id_type: $literal("US_DD_IDENTITY_BADGE_ID")
+    person_type: $literal_enum(PersonType.STAFF)
     attributes:
       IdentityAttributes:
-        person_type: $literal_enum(PersonType.STAFF)
         name:
           IdentityName:
             given_name: FirstName

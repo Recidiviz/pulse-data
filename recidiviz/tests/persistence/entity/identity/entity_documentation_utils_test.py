@@ -148,15 +148,16 @@ def test_cluster_entity_reuses_fragment_yaml() -> None:
     ) == description_for_field(identity_fragment_entities.IdentityRace, "race_raw_text")
 
 
-def test_cluster_root_reuses_attributes_yaml_for_shared_fields() -> None:
-    """`IdentityCluster` shares `person_type`/`birthdate` descriptions with
-    `identity_attributes` via a YAML merge key (since the cluster tree flattens
+def test_cluster_root_reuses_fragment_and_attributes_yaml_for_shared_fields() -> None:
+    """`IdentityCluster` shares its `person_type` description with
+    `identity_fragment` and its `birthdate` description with
+    `identity_attributes` via YAML merge keys (since the cluster tree flattens
     `IdentityFragment` + `IdentityAttributes` into a single root).
     """
     assert description_for_field(
         identity_cluster_entities.IdentityCluster, "person_type"
     ) == description_for_field(
-        identity_fragment_entities.IdentityAttributes, "person_type"
+        identity_fragment_entities.IdentityFragment, "person_type"
     )
     assert description_for_field(
         identity_cluster_entities.IdentityCluster, "birthdate"

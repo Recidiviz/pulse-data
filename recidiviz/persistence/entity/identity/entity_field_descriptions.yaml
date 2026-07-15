@@ -2,11 +2,11 @@
 #
 # Cluster tables share their fragment equivalents' descriptions via YAML
 # anchors (&) and aliases (*). The cluster root (identity_cluster) merges (<<)
-# the identity_attributes fields, since the cluster tree flattens
-# IdentityFragment + IdentityAttributes into a single root. A cluster table
-# that needs to diverge from its fragment equivalent can switch from the alias
-# form (`fields: *anchor`) to the merge form (`fields: { <<: *anchor, ... }`)
-# and add or override fields locally.
+# both the identity_fragment person_type fields and the identity_attributes
+# fields, since the cluster tree flattens IdentityFragment + IdentityAttributes
+# into a single root. A cluster table that needs to diverge from its fragment
+# equivalent can switch from the alias form (`fields: *anchor`) to the merge
+# form (`fields: { <<: *anchor, ... }`) and add or override fields locally.
 
 identity_external_id:
   fields: &identity_external_id_fields
@@ -66,17 +66,18 @@ identity_email:
 
 identity_attributes:
   fields: &identity_attributes_fields
-    person_type: >-
-      Whether this set of attributes describes a justice-involved individual
-      (JII) or a staff member, normalized to the Recidiviz `PersonType` enum.
-    person_type_raw_text: >-
-      Companion raw-text field for `person_type`. Always null at runtime;
-      present because the ingest manifest compiler pairs every enum field
-      with a `_raw_text` companion.
     birthdate: The person's date of birth.
 
 identity_fragment:
   fields:
+    <<: &identity_person_type_fields
+      person_type: >-
+        Whether this fragment describes a justice-involved individual (JII) or a
+        staff member, normalized to the Recidiviz `PersonType` enum.
+      person_type_raw_text: >-
+        Companion raw-text field for `person_type`. Always null at runtime;
+        present because the ingest manifest compiler pairs every enum field
+        with a `_raw_text` companion.
     identity_fragment_id: >-
       SHA-256 of the fragment's serialized content, assigned by the identity
       ingest pipeline before the fragment tree is written to BQ. Relates a
@@ -110,7 +111,7 @@ identity_cluster_email:
 
 identity_cluster:
   fields:
-    <<: *identity_attributes_fields
+    <<: [*identity_person_type_fields, *identity_attributes_fields]
     identity_cluster_id: >-
       SHA-256 of the cluster's sorted external IDs. Used by the Identity
       Service as the upsert/deduplication key when ingesting clusters across

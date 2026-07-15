@@ -118,16 +118,6 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     (as the attributes field on IdentityFragment) or with a cluster's chosen
     best-known attributes (as the attributes field on IdentityCluster)."""
 
-    person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
-
-    # Always None at runtime (enforced by is_none). Present because the manifest
-    # compiler pairs every enum field with a _raw_text companion (see
-    # EnumLiteralFieldManifest.additional_field_manifests). person_type comes
-    # from $literal_enum in the YAML, which auto-injects None for the raw_text
-    # counterpart. The type annotation stays `str | None` so the serialization
-    # framework's attribute-type introspection keeps working.
-    person_type_raw_text: str | None = attr.ib(default=None, validator=is_none)
-
     name: "IdentityName | None" = attr.ib(default=None, validator=is_opt(IdentityName))
 
     birthdate: datetime.date | None = attr.ib(
@@ -159,9 +149,9 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     fragment: "IdentityFragment | None" = attr.ib(default=None)
 
     # Fields that don't count as "an attribute" for the at-least-one-attribute
-    # check below. tenant and person_type are always set by the caller;
-    # back-edges are excluded by the field index's FORWARD_EDGE filter.
-    _FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK = frozenset({"tenant", "person_type"})
+    # check below. tenant is always set by the caller; back-edges are excluded
+    # by the field index's FORWARD_EDGE filter.
+    _FIELDS_EXCLUDED_FROM_ATTRIBUTE_CHECK = frozenset({"tenant"})
 
     def __attrs_post_init__(self) -> None:
         field_index = (
@@ -192,6 +182,16 @@ class IdentityFragment(
     external_ids: list["IdentityExternalId"] = attr.ib(
         validator=is_list_of(IdentityExternalId)
     )
+
+    person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
+
+    # Always None at runtime (enforced by is_none). Present because the manifest
+    # compiler pairs every enum field with a _raw_text companion (see
+    # EnumLiteralFieldManifest.additional_field_manifests). person_type comes
+    # from $literal_enum in the YAML, which auto-injects None for the raw_text
+    # counterpart. The type annotation stays `str | None` so the serialization
+    # framework's attribute-type introspection keeps working.
+    person_type_raw_text: str | None = attr.ib(default=None, validator=is_none)
 
     # attributes must be optional because ingest views could produce fragments
     # whose only purpose is to carry external ids

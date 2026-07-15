@@ -173,7 +173,22 @@ class BuildIdentityClusters(beam.PTransform):
 
         all_fragments = [fragment for _, _, fragment in fragments_iterable]
         if not all_fragments:
-            raise ValueError(f"Cluster {cluster_key} has no fragments.")
+            raise ValueError(f"Cluster [{cluster_key}] has no fragments.")
+
+        # person_type lives on the fragment, not in its attributes, so it is set
+        # explicitly on the cluster here rather than carried through the merged
+        # attributes. Every fragment in a cluster describes the same logical
+        # person, so they must all agree on a single person type.
+        person_types = {fragment.person_type for fragment in all_fragments}
+        try:
+            person_type = one(person_types)
+        except ValueError as e:
+            raise ValueError(
+                f"Cluster [{cluster_key}] with external ids "
+                f"[{cluster_external_ids}] has fragments with conflicting person "
+                f"types [{', '.join(sorted(pt.value for pt in person_types))}]; "
+                f"every fragment in a cluster must share a single person type."
+            ) from e
 
         field_index = entities_module_context_for_entity_class(
             IdentityAttributes
@@ -183,12 +198,13 @@ class BuildIdentityClusters(beam.PTransform):
             cluster_attributes = merge_identity_attributes(all_fragments, field_index)
         except ValueError as e:
             raise ValueError(
-                f"Failed to build cluster {cluster_key} with external ids "
-                f"{cluster_external_ids}: {e}"
+                f"Failed to build cluster [{cluster_key}] with external ids "
+                f"[{cluster_external_ids}]: {e}"
             ) from e
 
         return IdentityCluster(
             tenant=self.tenant,
             external_ids=cluster_external_ids,
+            person_type=person_type,
             **convert_attributes_to_cluster_kwargs(cluster_attributes),
         )

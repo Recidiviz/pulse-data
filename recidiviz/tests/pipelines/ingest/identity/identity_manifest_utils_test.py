@@ -24,9 +24,6 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
     IdentityIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
-    EntityTreeManifest,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
     IngestViewManifestCompiler,
@@ -34,7 +31,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.pipelines.ingest.identity.identity_manifest_utils import (
     get_view_person_type,
 )
-from recidiviz.utils.types import assert_type
 
 
 def _compile_us_oz_manifest(view_name: str) -> IngestViewManifest:
@@ -58,46 +54,41 @@ class GetViewPersonTypeTest(unittest.TestCase):
             get_view_person_type(_compile_us_oz_manifest("staff")), PersonType.STAFF
         )
 
-    def test_view_without_attributes_raises(self) -> None:
+    def test_view_without_person_type_raises(self) -> None:
         manifest = _compile_us_oz_manifest("person")
-        output_without_attributes = attr.evolve(
+        output_without_person_type = attr.evolve(
             manifest.output,
             field_manifests={
                 name: field_manifest
                 for name, field_manifest in manifest.output.field_manifests.items()
-                if name != "attributes"
+                if name != "person_type"
             },
         )
         with self.assertRaisesRegex(
-            ValueError, r"maps no \[attributes\], so its person type cannot"
+            ValueError,
+            r"must author \[person_type\] as a literal enum .* found "
+            r"\[<class 'NoneType'>\]",
         ):
             get_view_person_type(
-                attr.evolve(manifest, output=output_without_attributes)
+                attr.evolve(manifest, output=output_without_person_type)
             )
 
     def test_non_literal_person_type_raises(self) -> None:
         manifest = _compile_us_oz_manifest("person")
-        attributes = assert_type(
-            manifest.output.field_manifests["attributes"], EntityTreeManifest
-        )
-        # Swap the literal person_type node for a non-literal one (the `name`
-        # subtree) to simulate a view that maps person_type dynamically.
-        non_literal_node = attributes.field_manifests["name"]
-        attributes_with_bad_person_type = attr.evolve(
-            attributes,
-            field_manifests={
-                **attributes.field_manifests,
-                "person_type": non_literal_node,
-            },
-        )
+        # Swap the literal person_type node for a non-literal one (the
+        # `attributes` subtree) to simulate a view that maps person_type
+        # dynamically.
+        non_literal_node = manifest.output.field_manifests["attributes"]
         output = attr.evolve(
             manifest.output,
             field_manifests={
                 **manifest.output.field_manifests,
-                "attributes": attributes_with_bad_person_type,
+                "person_type": non_literal_node,
             },
         )
         with self.assertRaisesRegex(
-            ValueError, r"must author \[person_type\] as a literal enum"
+            ValueError,
+            r"must author \[person_type\] as a literal enum .* found "
+            r"\[.*EntityTreeManifest.*\]",
         ):
             get_view_person_type(attr.evolve(manifest, output=output))
