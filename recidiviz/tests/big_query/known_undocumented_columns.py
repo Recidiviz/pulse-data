@@ -263,18 +263,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.jii_tablet_app_provisioned_user_registration_sessions"
-    ): [
-        "end_date_exclusive",
-        "is_registered",
-        "jii_tablet_app_provisioned_user_registration_session_id",
-        "location_id",
-        "person_id",
-        "start_date",
-        "state_code",
-        "system_type",
-    ],
-    BigQueryAddress.from_str(
         "analyst_data.number_months_between_custody_downgrade_and_assessment_due"
     ): [
         "assessment_due_date",
