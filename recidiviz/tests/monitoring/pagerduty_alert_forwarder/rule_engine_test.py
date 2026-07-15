@@ -721,7 +721,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
                 },
                 "metric": {
                     "labels": {
-                        "region": "US_CA",
+                        "export_scope": "US_CA",
                     }
                 },
                 "summary": "No metric exports in 24 hours",

@@ -641,11 +641,15 @@ resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uplo
             )
         )
         | filter not(and(metric.metric_view_export_name = 'OVERDUE_DISCHARGE', metric.region = 'US_IX'))
+        # Non-state-specific exports have a null region label (or_else handles null,
+        # if() handles empty string); fall back to the export name so their
+        # incidents are still identifiable
+        | map add [export_scope: or_else(if(metric.region != '', metric.region, metric.metric_view_export_name), metric.metric_view_export_name)]
         | align next_older(1h)
         # File age is a timestamp of seconds since epoch, so min() gives us the oldest file
-        | group_by [resource.project_id, metric.region],
+        | group_by [resource.project_id, export_scope],
             [value_export_file_age_max: min(value.export_file_age)]
-        | map [resource.project_id, metric.region],
+        | map [resource.project_id, export_scope],
             [value_export_file_age_max:
                cast_units(div(end(), 1s), 's') - cast_units(value_export_file_age_max, 's')]
         | condition gt(value_export_file_age_max, cast_units(60 * 60 * 28, 's'))
