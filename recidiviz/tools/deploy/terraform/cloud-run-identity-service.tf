@@ -18,6 +18,12 @@
 
 locals {
   identity_service_load_balancer_name = "identity-service-load-balancer"
+
+  # Single source of truth for the Identity Service domain per project, shared
+  # with the batch identity clustering DAG (see
+  # recidiviz/services/identity/service_domains.yaml and constants.py).
+  identity_service_domain_by_project = yamldecode(file("${local.recidiviz_root}/services/identity/service_domains.yaml"))
+  identity_service_domain            = local.identity_service_domain_by_project[var.project_id]
 }
 
 # Contains YAML list of IAM policy members that should have access to the Identity Service
@@ -129,7 +135,7 @@ module "identity_service_load_balancer" {
 
   ssl                             = true
   ssl_policy                      = google_compute_ssl_policy.restricted-ssl-policy.name
-  managed_ssl_certificate_domains = local.is_production ? ["identity-service.recidiviz.org"] : ["identity-service-staging.recidiviz.org"]
+  managed_ssl_certificate_domains = [local.identity_service_domain]
   https_redirect                  = true
 
   backends = {

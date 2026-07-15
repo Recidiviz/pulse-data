@@ -352,6 +352,6 @@ class IdentityByQueryParametersRequestSchema(marshmallow.Schema):
 
 
 class ImportRequestSchema(marshmallow.Schema):
-    """Validates the body of POST /import."""
+    """Validates the body of POST /trigger_import."""
 
     tenant = fields.Enum(Tenant, by_value=True, required=True)

@@ -126,7 +126,7 @@ class Identity(IdentityBase):
     """
 
     skip_demographic_guard = Column(Boolean, nullable=False, server_default=sql.false())
-    """When TRUE, POST /import skips the demographic guard for this identity
+    """When TRUE, POST /trigger_import skips the demographic guard for this identity
     during the per-cluster update pass. Set on the original identity after an
     auto-split so the update pass can correct its canonical EXTERNAL_DATA_SYSTEM
     attributes without the guard blocking. Cleared back to FALSE immediately
@@ -569,7 +569,7 @@ class CreateCandidate(IdentityBase):
 
 
 class UpdateAttributeCandidate(IdentityBase):
-    """Existing identity whose POST /import attribute update was held for
+    """Existing identity whose POST /trigger_import attribute update was held for
     review."""
 
     __tablename__ = "update_attribute_candidates"

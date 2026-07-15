@@ -153,7 +153,7 @@ class MergeTrigger(enum.Enum):
     """What initiated a merge event."""
 
     IMPORT = "IMPORT"
-    """Merge triggered automatically by the POST /import endpoint while reconciling clustering results."""
+    """Merge triggered automatically by the POST /trigger_import endpoint while reconciling clustering results."""
 
     MERGE_ENDPOINT = "MERGE_ENDPOINT"
     """Merge triggered by an explicit call to the merge API."""
@@ -163,7 +163,7 @@ class SplitTrigger(enum.Enum):
     """What initiated a split event."""
 
     IMPORT = "IMPORT"
-    """Split triggered automatically by the POST /import endpoint while reconciling clustering results."""
+    """Split triggered automatically by the POST /trigger_import endpoint while reconciling clustering results."""
 
     SPLIT_ENDPOINT = "SPLIT_ENDPOINT"
     """Split triggered by an explicit call to the split API."""

@@ -30,6 +30,7 @@ from recidiviz.services.identity.api_schemas import (
     IdentitySchema,
     ImportRequestSchema,
 )
+from recidiviz.services.identity.constants import TRIGGER_IMPORT_ROUTE
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 
 identity_blueprint = Blueprint("identity", "identity")
@@ -107,8 +108,8 @@ class IdentityAPI(MethodView):
         return jsonify(IdentitySchema().dump(identity_record))
 
 
-@identity_blueprint.route("/import")
-class ImportAPI(MethodView):
+@identity_blueprint.route(TRIGGER_IMPORT_ROUTE)
+class TriggerImportAPI(MethodView):
     """Endpoint the Batch Identity Clustering DAG calls after writing a tenant's
     clustering results to BigQuery, to trigger reconciliation of those results
     into the Identity Service's Postgres state."""
@@ -118,13 +119,13 @@ class ImportAPI(MethodView):
     )
     @identity_blueprint.response(HTTPStatus.ACCEPTED)
     def post(self, params: dict) -> Response:
-        """Accepts an import request for the given tenant and returns 202.
+        """Accepts a trigger_import request for the given tenant and returns 202.
 
         TODO(OBT-37693) Replace the real implementation.
         """
         tenant = params["tenant"]
         logging.info(
-            "Received /import request for tenant [%s]; import not yet implemented.",
+            "Received /trigger_import request for tenant [%s]; import not yet implemented.",
             tenant.value,
         )
         response = jsonify({})

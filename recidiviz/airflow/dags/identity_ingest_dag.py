@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""DAG that runs the identity ingest Dataflow pipeline, branched per tenant.
+"""DAG that runs the identity ingest Dataflow pipeline, branched per tenant,
+then notifies the Identity Service that each tenant's clustering results are
+ready to import.
 
 By default all tenant branches run. To target a single tenant, pass
 `tenant_filter` in the DAG run conf.
@@ -24,6 +26,9 @@ from airflow.utils.task_group import TaskGroup
 
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
     create_single_ingest_pipeline_group,
+)
+from recidiviz.airflow.dags.identity_ingest.call_identity_service_trigger_import import (
+    call_identity_service_trigger_import_task,
 )
 from recidiviz.airflow.dags.identity_ingest.identity_ingest_dataflow_pipeline_task_group_delegate import (
     IdentityIngestDataflowPipelineTaskGroupDelegate,
@@ -41,6 +46,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
+# Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need
+# expressions to be assigned
+# pylint: disable=W0106 expression-not-assigned
+
 
 @dag(
     dag_id=get_identity_ingest_dag_id(get_project_id()),
@@ -56,11 +65,12 @@ def create_identity_ingest_dag() -> None:
         for state_code in get_direct_ingest_states_launched_in_env():
             tenant = Tenant.from_state_code(state_code).value
             with TaskGroup(tenant) as tenant_group:
-                create_single_ingest_pipeline_group(
+                ingest_group = create_single_ingest_pipeline_group(
                     state_code=state_code,
                     pipeline_type=IngestPipelineType.IDENTITY,
                     delegate_class=IdentityIngestDataflowPipelineTaskGroupDelegate,
                 )
+                ingest_group >> call_identity_service_trigger_import_task(tenant=tenant)
             branches_by_tenant[tenant] = tenant_group
         create_branching_by_key(
             branches_by_tenant,

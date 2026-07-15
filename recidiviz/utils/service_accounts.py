@@ -15,29 +15,42 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for getting information about Google Compute Engine service accounts."""
-from googleapiclient import discovery
+import os
 
-from recidiviz.utils import metadata
-from recidiviz.utils.types import assert_type
+import yaml
 
-_compute_engine_service_accounts_cache: dict[str, str] = {}
+from recidiviz.utils import config, metadata
+
+_GCP_PROJECT_NUMBERS_YAML_PATH = os.path.join(
+    os.path.dirname(config.__file__), "gcp_project_numbers.yaml"
+)
+
+_project_numbers_by_project_id: dict[str, str] | None = None
+
+
+def _get_project_numbers_by_project_id() -> dict[str, str]:
+    """Returns the project id -> project number mapping loaded from
+    gcp_project_numbers.yaml, reading (and caching) it on first access.
+    """
+    global _project_numbers_by_project_id
+    if _project_numbers_by_project_id is None:
+        with open(_GCP_PROJECT_NUMBERS_YAML_PATH, encoding="utf-8") as f:
+            _project_numbers_by_project_id = yaml.safe_load(f)
+    return _project_numbers_by_project_id
 
 
 def get_default_compute_engine_service_account_email(
     project_id: str | None = None,
 ) -> str:
-    """Returns the email of the default Compute Engine service account email for the
-    current project.
+    """Returns the email of the default Compute Engine service account for the
+    given project (or the current project if none is provided).
     """
     project_id = project_id or metadata.project_id()
 
-    if project_id not in _compute_engine_service_accounts_cache:
-        # Fetch compute engine information for this project
-        request = discovery.build("compute", "v1").projects().get(project=project_id)
-        response = request.execute()
-
-        _compute_engine_service_accounts_cache[project_id] = assert_type(
-            response["defaultServiceAccount"], str
+    project_numbers = _get_project_numbers_by_project_id()
+    if project_id not in project_numbers:
+        raise ValueError(
+            f"No project number configured for project [{project_id}] in "
+            f"[{_GCP_PROJECT_NUMBERS_YAML_PATH}]"
         )
-
-    return _compute_engine_service_accounts_cache[project_id]
+    return f"{project_numbers[project_id]}-compute@developer.gserviceaccount.com"

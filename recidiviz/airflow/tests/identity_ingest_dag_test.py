@@ -19,6 +19,9 @@ from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 
+from recidiviz.airflow.dags.identity_ingest.call_identity_service_trigger_import import (
+    CALL_IDENTITY_SERVICE_TRIGGER_IMPORT_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.branching_by_key import select_tenant_parameter_branch
 from recidiviz.airflow.dags.utils.config_utils import TENANT_FILTER
 from recidiviz.airflow.dags.utils.constants import DATAFLOW_OPERATOR_TASK_ID
@@ -181,6 +184,35 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
         unfiltered_dag_run = MagicMock()
         unfiltered_dag_run.conf = {}
         self.assertIsNone(select_tenant_parameter_branch(unfiltered_dag_run))
+
+    def test_each_branch_triggers_identity_service_import_after_bq_write(self) -> None:
+        """Each per-tenant branch ends by notifying the Identity Service via
+        POST /trigger_import, and that notification only runs after every task in the
+        ingest group has completed, including the Dataflow pipeline that writes the
+        clustering results to BigQuery."""
+        dag = self._build_dag()
+        for tenant in _TENANTS:
+            task_id = (
+                f"identity_ingest_pipelines.{tenant}."
+                f"{CALL_IDENTITY_SERVICE_TRIGGER_IMPORT_TASK_ID}"
+            )
+            self.assertIn(task_id, dag.task_ids)
+            trigger_task = dag.get_task(task_id)
+            self.assertIn(
+                f"identity_ingest_pipelines.{tenant}.ingest.write_upper_bounds",
+                trigger_task.upstream_task_ids,
+            )
+            flat_upstream_ids = trigger_task.get_flat_relative_ids(upstream=True)
+            dataflow_upstream_ids = [
+                upstream_id
+                for upstream_id in flat_upstream_ids
+                if upstream_id.endswith(f".{DATAFLOW_OPERATOR_TASK_ID}")
+            ]
+            self.assertTrue(
+                dataflow_upstream_ids,
+                f"Expected the Dataflow run_pipeline task to be upstream of "
+                f"[{task_id}].",
+            )
 
     def test_each_branch_launches_dataflow_pipeline(self) -> None:
         """Each per-tenant branch contains the Dataflow operator that runs the

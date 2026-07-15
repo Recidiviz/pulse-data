@@ -15,12 +15,42 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants for the Identity Service."""
+import os
+
+import yaml
 
 from recidiviz.common.constants.identity import ProductApp
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.service_accounts import (
+    get_default_compute_engine_service_account_email,
+)
 
 IAP_BACKEND_SERVICE_ID_SECRET_NAME = (
     "iap_identity_service_load_balancer_service_id"  # nosec
 )
+
+# Single source of truth for the domain the Identity Service is served at in
+# each GCP project, read both here and by cloud-run-identity-service.tf.
+SERVICE_DOMAINS_YAML_PATH = os.path.join(
+    os.path.dirname(__file__), "service_domains.yaml"
+)
+
+
+def get_identity_service_domain(project_id: str) -> str:
+    """Returns the domain the Identity Service is served at in the given project."""
+    with open(SERVICE_DOMAINS_YAML_PATH, encoding="utf-8") as f:
+        domain_by_project = yaml.safe_load(f)
+    if project_id not in domain_by_project:
+        raise ValueError(
+            f"No Identity Service domain configured for project [{project_id}] "
+            f"in [{SERVICE_DOMAINS_YAML_PATH}]"
+        )
+    return domain_by_project[project_id]
+
+
+# Route of the trigger_import endpoint, shared between the service's blueprint
+# and the batch identity clustering DAG task that calls it.
+TRIGGER_IMPORT_ROUTE = "/trigger_import"
 
 DEV_CALLER_SERVICE_ACCOUNT = "fake-acct@fake-project.iam.gserviceaccount.com"
 
@@ -32,4 +62,8 @@ DEV_CALLER_SERVICE_ACCOUNT = "fake-acct@fake-project.iam.gserviceaccount.com"
 # records). Callers whose email is not in this mapping are rejected with 403.
 PRODUCT_APP_BY_SERVICE_ACCOUNT: dict[str, ProductApp | None] = {
     DEV_CALLER_SERVICE_ACCOUNT: ProductApp.ADMIN_PANEL,
+    # The staging Cloud Composer environment (and thus the batch identity
+    # clustering DAG) runs as the project's default Compute Engine service
+    # account.
+    get_default_compute_engine_service_account_email(GCP_PROJECT_STAGING): None,
 }

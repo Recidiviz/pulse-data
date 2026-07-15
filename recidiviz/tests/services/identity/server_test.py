@@ -414,7 +414,7 @@ class GetIdentityByEmailHashEndpointTest(TestCase):
 
 
 class PostImportEndpointTest(TestCase):
-    """Tests for POST /import."""
+    """Tests for POST /trigger_import."""
 
     def setUp(self) -> None:
         self.client = app.test_client()
@@ -424,7 +424,7 @@ class PostImportEndpointTest(TestCase):
             mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
         ):
             response = self.client.post(
-                "/import", json={"tenant": "US_OZ"}, headers=IAP_HEADERS
+                "/trigger_import", json={"tenant": "US_OZ"}, headers=IAP_HEADERS
             )
 
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
@@ -433,7 +433,7 @@ class PostImportEndpointTest(TestCase):
         with mock_iap_environment(
             mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
         ):
-            response = self.client.post("/import", json={}, headers=IAP_HEADERS)
+            response = self.client.post("/trigger_import", json={}, headers=IAP_HEADERS)
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
@@ -442,21 +442,23 @@ class PostImportEndpointTest(TestCase):
             mapping=DEFAULT_MAPPING, authenticated_as=MAPPED_SERVICE_ACCOUNT
         ):
             response = self.client.post(
-                "/import", json={"tenant": "NOT_A_REAL_TENANT"}, headers=IAP_HEADERS
+                "/trigger_import",
+                json={"tenant": "NOT_A_REAL_TENANT"},
+                headers=IAP_HEADERS,
             )
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     def test_returns_401_without_iap_header(self) -> None:
         with mock_iap_environment():
-            response = self.client.post("/import", json={"tenant": "US_OZ"})
+            response = self.client.post("/trigger_import", json={"tenant": "US_OZ"})
 
         self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
     def test_returns_403_for_unmapped_caller(self) -> None:
         with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
             response = self.client.post(
-                "/import", json={"tenant": "US_OZ"}, headers=IAP_HEADERS
+                "/trigger_import", json={"tenant": "US_OZ"}, headers=IAP_HEADERS
             )
 
         self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)

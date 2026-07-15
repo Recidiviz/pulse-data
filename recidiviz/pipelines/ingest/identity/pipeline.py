@@ -18,7 +18,7 @@
 
 This pipeline reads raw data from us_xx_raw_data, clusters external IDs using
 graph traversal, and writes results to the {tenant}_identity_cluster.* BigQuery
-dataset for the Identity Service to consume via POST /import.
+dataset for the Identity Service to consume via POST /trigger_import.
 
 See recidiviz/tools/calculator/run_sandbox_dataflow_pipeline_utils.py for details
 on how to launch a local run.

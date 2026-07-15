@@ -1,0 +1,7 @@
+# Domain the Identity Service is served at in each GCP project. This file is the
+# single source of truth for those domains: it is read both by
+# cloud-run-identity-service.tf (to provision the load balancer's managed SSL
+# certificate) and by the batch identity clustering DAG (to build the URL it
+# POSTs import requests to).
+recidiviz-staging: identity-service-staging.recidiviz.org
+recidiviz-123: identity-service.recidiviz.org

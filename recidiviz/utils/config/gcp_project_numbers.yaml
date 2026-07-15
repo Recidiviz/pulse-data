@@ -1,0 +1,6 @@
+# Maps each GCP project id to its numeric project number. Used to derive
+# project-scoped resource identifiers (e.g. the default Compute Engine service
+# account email) without an API call. Add an entry here when onboarding a new
+# project.
+recidiviz-staging: "984160736970"
+recidiviz-123: "688733534196"
