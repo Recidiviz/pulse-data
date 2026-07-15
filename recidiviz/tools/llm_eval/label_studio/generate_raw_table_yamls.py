@@ -197,7 +197,7 @@ def build_raw_table_yaml_dict(config: LabelStudioTaskConfig) -> dict:
         "schema": [*_INFRASTRUCTURE_FIELDS, task_field, _RESULT_FIELD],
         "external_data_configuration": {
             "sourceUris": [
-                f"gs://{{project_id}}-label-studio/{config.gcs_export_prefix}/*.json"
+                f"gs://{{project_id}}-label-studio/{config.gcs_export_prefix}/*"
             ],
             "sourceFormat": "NEWLINE_DELIMITED_JSON",
             "ignoreUnknownValues": True,

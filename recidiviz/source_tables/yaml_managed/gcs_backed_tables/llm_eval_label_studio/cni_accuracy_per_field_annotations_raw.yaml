@@ -106,7 +106,7 @@ schema:
             description: Text value for textarea-type fields.
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-label-studio/cni-labeling/accuracy_per_field/*.json
+    - gs://{project_id}-label-studio/cni-labeling/accuracy_per_field/*
   sourceFormat: NEWLINE_DELIMITED_JSON
   ignoreUnknownValues: true
   compression: NONE
