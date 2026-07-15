@@ -42,9 +42,15 @@ def identity_config_path_for_state_code(
     )
 
 
-# Default maximum number of external IDs of a given type a person can have before
-# that ID value is assumed to be a sentinel (e.g. InmateNum='000000'). States can
-# override this per-id-type in their identity_config.yaml.
+# Default maximum number of distinct fragments (source rows) that may carry a
+# single external ID value of a given type, within one ingest view and snapshot
+# date, before that value is treated as a sentinel (a placeholder like
+# InmateNum='000000' shared across many unrelated people). This is a count of
+# fragments sharing one value, NOT the number of IDs a single person may have.
+# It is 1 because identity ingest views are authored one-row-per-person, so a
+# real ID value lands on exactly one fragment while a sentinel lands on many.
+# Tenants can override specific id types via `max_ids_per_type_overrides` in their
+# identity_config.yaml.
 _DEFAULT_MAX_IDS_PER_TYPE = 1
 
 
@@ -52,17 +58,14 @@ _DEFAULT_MAX_IDS_PER_TYPE = 1
 class IdentityIngestPipelineTenantConfig:
     """Per-tenant, per-person-type configuration for the identity ingest pipeline."""
 
-    # Overrides for the maximum number of external IDs of a given type a person can
-    # have before that ID value is assumed to be a sentinel with no real ID meaning.
-    # For example, a booking number might legitimately appear 50+ times for someone
-    # who has been incarcerated many times, while a state ID should only appear once.
-    # ID types not listed here fall back to _DEFAULT_MAX_IDS_PER_TYPE.
+    # Per-id-type overrides of the sentinel threshold. ID types not listed here
+    # fall back to _DEFAULT_MAX_IDS_PER_TYPE (see there for what the threshold
+    # means).
     max_ids_per_type_overrides: dict[str, int] = attr.Factory(dict)
 
     def get_max_ids_for_type(self, id_type: str) -> int:
-        """Returns the maximum number of IDs of the given type a person can have
-        before the ID value is assumed to be a sentinel. Defaults to
-        _DEFAULT_MAX_IDS_PER_TYPE (currently 1)."""
+        """Returns the sentinel threshold for the given id_type: its override
+        from `max_ids_per_type_overrides` if set, else _DEFAULT_MAX_IDS_PER_TYPE."""
         return self.max_ids_per_type_overrides.get(id_type, _DEFAULT_MAX_IDS_PER_TYPE)
 
 
@@ -105,11 +108,23 @@ class IdentityIngestPipelineConfig:
                         if overrides_dict
                         else {}
                     )
+                    if person_type_dict:
+                        raise ValueError(
+                            f"Found unexpected config values for identity config "
+                            f"[{state_code.value}] [{person_type.value}]: "
+                            f"{repr(person_type_dict.get())}"
+                        )
                     tenant_configs[
                         (tenant, person_type)
                     ] = IdentityIngestPipelineTenantConfig(
-                        max_ids_per_type_overrides=overrides
+                        max_ids_per_type_overrides=overrides,
                     )
+
+            if tenant_dict:
+                raise ValueError(
+                    f"Found unexpected top-level config values for identity "
+                    f"config [{state_code.value}]: {repr(tenant_dict.get())}"
+                )
 
         return cls(default_config=default_config, tenant_configs=tenant_configs)
 

@@ -96,6 +96,51 @@ class IdentityIngestPipelineConfigTest(unittest.TestCase):
         )
         self.assertEqual(staff_config, config.default_config)
 
+    def test_load_clustering_config_unexpected_person_type_key_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as regions_dir, patch(
+            "recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config."
+            "get_direct_ingest_states_existing_in_env",
+            return_value=[StateCode.US_XX],
+        ):
+            state_dir = os.path.join(regions_dir, "us_xx")
+            os.makedirs(state_dir)
+            with open(
+                os.path.join(state_dir, "identity_config.yaml"), "w", encoding="utf-8"
+            ) as f:
+                # An unexpected key must fail loudly rather than being silently
+                # ignored.
+                f.write("jii:\n  not_a_real_key: 5\n")
+            with self.assertRaisesRegex(
+                ValueError,
+                r"Found unexpected config values for identity config \[US_XX\] \[JII\]",
+            ):
+                IdentityIngestPipelineConfig.load_clustering_config(
+                    regions_dir=regions_dir
+                )
+
+    def test_load_clustering_config_unexpected_top_level_key_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as regions_dir, patch(
+            "recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config."
+            "get_direct_ingest_states_existing_in_env",
+            return_value=[StateCode.US_XX],
+        ):
+            state_dir = os.path.join(regions_dir, "us_xx")
+            os.makedirs(state_dir)
+            with open(
+                os.path.join(state_dir, "identity_config.yaml"), "w", encoding="utf-8"
+            ) as f:
+                f.write(
+                    "jii:\n  max_ids_per_type_overrides: {}\nnot_a_person_type: {}\n"
+                )
+            with self.assertRaisesRegex(
+                ValueError,
+                r"Found unexpected top-level config values for identity config "
+                r"\[US_XX\]",
+            ):
+                IdentityIngestPipelineConfig.load_clustering_config(
+                    regions_dir=regions_dir
+                )
+
     def test_get_tenant_clustering_config_us_oz_jii(self) -> None:
         config = self.config.get_tenant_clustering_config(Tenant.US_OZ, PersonType.JII)
         self.assertEqual(config.max_ids_per_type_overrides, {})
