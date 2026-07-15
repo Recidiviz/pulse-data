@@ -46,6 +46,25 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 FOUR_SPACES_INDENT = "    "
 
 
+def _combine_only_include_completed_contacts(
+    sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
+) -> bool:
+    """Combines the `only_include_completed_contacts` flags of the sub-criteria that
+    declare contact types (the ones that determine which contact events close out the
+    group). Returns False if any such sub-criterion counts non-completed contacts;
+    returns True (the default) when every contributing sub-criterion requires completed
+    contacts or when no sub-criterion declares contact types."""
+    # TODO(OBT-37490): This collapses the policy to a single group-level boolean, which
+    #  is imprecise when the group accepts multiple contact types with differing
+    #  policies. Make this per-contact-type (e.g. a ContactType -> bool mapping) so each
+    #  contact type carries its own completed-contact policy.
+    return all(
+        sub_criteria.only_include_completed_contacts
+        for sub_criteria in sub_criteria_list
+        if sub_criteria.contact_types
+    )
+
+
 def _deduplicated_reasons_fields(
     *,
     criteria_group_name: str,
@@ -574,6 +593,9 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
             },
             key=lambda contact_type: contact_type.value,
         )
+        self.only_include_completed_contacts = _combine_only_include_completed_contacts(
+            sub_criteria_list
+        )
 
     def get_descendant_criteria(
         self,
@@ -701,6 +723,9 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
                 for contact_type in sub_criteria.contact_types
             },
             key=lambda contact_type: contact_type.value,
+        )
+        self.only_include_completed_contacts = _combine_only_include_completed_contacts(
+            sub_criteria_list
         )
 
     def drop_false_periods(self) -> "StateSpecificTaskCriteriaGroupBigQueryViewBuilder":

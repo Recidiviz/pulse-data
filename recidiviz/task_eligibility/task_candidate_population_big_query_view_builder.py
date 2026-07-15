@@ -221,8 +221,9 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
             ],
             meets_criteria_default=False,
             # A population-derived criterion is not tied to any contact types; pass
-            # explicitly so the **query_format_kwargs splat can't bind to it.
+            # these explicitly so the **query_format_kwargs splat can't bind to them.
             contact_types=None,
+            only_include_completed_contacts=True,
             **query_format_kwargs,
         )
 
@@ -320,8 +321,9 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             ],
             meets_criteria_default=False,
             # A population-derived criterion is not tied to any contact types; pass
-            # explicitly so the **query_format_kwargs splat can't bind to it.
+            # these explicitly so the **query_format_kwargs splat can't bind to them.
             contact_types=None,
+            only_include_completed_contacts=True,
             **query_format_kwargs,
         )
 

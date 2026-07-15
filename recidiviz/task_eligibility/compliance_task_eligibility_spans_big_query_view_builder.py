@@ -237,6 +237,20 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             contact_types.update(criteria_builder.contact_types)
         return sorted(contact_types, key=lambda contact_type: contact_type.value)
 
+    @property
+    def only_include_completed_contacts(self) -> bool:
+        """Returns whether only COMPLETED contacts close out this compliance task,
+        collected from the criteria builders that declare contact types (the ones that
+        determine which contact events fulfill the task's due dates). Returns False if
+        any of them count non-completed contacts (so a non-completed contact could
+        fulfill the task); returns True (the default) otherwise. Consumers use this to
+        decide whether to restrict fulfilling contacts to COMPLETED ones."""
+        return all(
+            criteria_builder.only_include_completed_contacts
+            for criteria_builder in self.criteria_spans_view_builders
+            if criteria_builder.contact_types
+        )
+
     @classmethod
     def _address_for_task_name(
         cls, state_code: StateCode, task_name: str

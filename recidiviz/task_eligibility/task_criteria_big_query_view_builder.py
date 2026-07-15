@@ -201,6 +201,10 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # satisfy / close out this criterion. Empty for criteria not tied to
         # specific contact types.
         contact_types: Sequence[ContactType] | None = None,
+        # Whether only COMPLETED contacts close out this criterion. Defaults to True;
+        # set to False for criteria whose triggers count non-completed contacts (e.g.
+        # an attempted contact that nonetheless verified employment).
+        only_include_completed_contacts: bool = True,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -238,6 +242,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
         self.contact_types = _validated_contact_types(contact_types)
+        self.only_include_completed_contacts = only_include_completed_contacts
 
     def get_descendant_criteria(self) -> set["TaskCriteriaBigQueryViewBuilder"]:
         """Returns all the criteria that are descendants (sub-criteria) of this
@@ -291,6 +296,10 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # satisfy / close out this criterion. Empty for criteria not tied to
         # specific contact types.
         contact_types: Sequence[ContactType] | None = None,
+        # Whether only COMPLETED contacts close out this criterion. Defaults to True;
+        # set to False for criteria whose triggers count non-completed contacts (e.g.
+        # an attempted contact that nonetheless verified employment).
+        only_include_completed_contacts: bool = True,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:
@@ -324,6 +333,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
         self.contact_types = _validated_contact_types(contact_types)
+        self.only_include_completed_contacts = only_include_completed_contacts
 
     def get_descendant_criteria(
         self,
