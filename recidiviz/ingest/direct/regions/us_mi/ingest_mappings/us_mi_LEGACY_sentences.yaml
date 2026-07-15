@@ -359,6 +359,7 @@ output:
                               - "7624" # Suspended Sentence
                             StateSentenceStatus.REVOKED:
                               - "8000" # HYTA Probation Revoked
+                              - "8001" # 7411 Probation Revoked
                               - "7137" # New Commitment While Under Sentence
                               - "5246" # Parole Violator New Sentence
                               - "5244" # Probation Violator New Sentence
