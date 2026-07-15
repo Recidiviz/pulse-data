@@ -4890,3 +4890,76 @@ CONTACTS_AFTER_ROUTE_PLANNER_ROUTE_OPTIMIZATION_ATTEMPT = EventCountMetric(
         },
     ),
 )
+
+DISTINCT_PROVISIONED_SENTENCING_ASSESSMENT_REPORT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_sentencing_assessment_report_users",
+    display_name="Distinct Provisioned Sentencing Assessment Report Users",
+    description="Number of distinct Sentencing Assessment Report users who are provisioned to have tool access (regardless of role type)",
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_REGISTERED_PROVISIONED_SENTENCING_ASSESSMENT_REPORT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_provisioned_sentencing_assessment_report_users",
+    display_name="Distinct Registered Provisioned Sentencing Assessment Report Users",
+    description=(
+        "Number of distinct Sentencing Assessment Report users who are provisioned to have tool access (regardless of role type) "
+        "who have signed up/logged into the Sentencing Assessment Report tool at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+
+DISTINCT_PROVISIONED_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_sentencing_assessment_report_users",
+    display_name="Distinct Provisioned Primary Sentencing Assessment Report Users",
+    description="Number of distinct primary Sentencing Assessment Report users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_sentencing_assessment_report_users",
+    display_name="Distinct Total Registered Primary Sentencing Assessment Report Users",
+    description="Number of distinct primary Sentencing Assessment Report users who have signed up/logged into the Sentencing Assessment Report tool at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCING_ASSESSMENT_REPORT_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_sentencing_assessment_report_users",
+    display_name="Distinct Logged In Primary Sentencing Assessment Report Users",
+    description="Number of distinct primary Sentencing Assessment Report users who logged into the Sentencing Assessment Report tool",
+    event_selector=EventSelector(
+        event_type=EventType.SENTENCING_ASSESSMENT_REPORT_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+LOGINS_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = EventCountMetric(
+    name="logins_primary_sentencing_assessment_report_user",
+    display_name="Logins, Primary Sentencing Assessment Report Users",
+    description="Number of logins performed by primary Sentencing Assessment Report users",
+    event_selector=EventSelector(
+        event_type=EventType.SENTENCING_ASSESSMENT_REPORT_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_ACTIVE_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_sentencing_assessment_report_users",
+    display_name="Distinct Active Primary Sentencing Assessment Report Users",
+    description="Number of distinct primary Sentencing Assessment Report users having at least one active usage event",
+    event_selector=EventSelector(
+        event_type=EventType.SENTENCING_ASSESSMENT_REPORT_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)

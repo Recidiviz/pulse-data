@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,6 +75,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     build_assignments_lookml_view,
     build_custom_metrics_lookml_view,
     build_time_periods_lookml_view,
+)
+from recidiviz.tools.looker.aggregated_metrics.custom_sentencing_assessment_report_metrics_configurations import (
+    SENTENCING_ASSESSMENT_REPORT_ASSIGNMENT_NAMES_TO_TYPES,
+    SENTENCING_ASSESSMENT_REPORT_IMPACT_LOOKER_METRICS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_supervision_system_health_metrics_configurations import (
     SUPERVISION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
@@ -214,6 +218,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             metrics=TASKS_IMPACT_LOOKER_METRICS,
             assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions=TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+        )
+
+        # Sentencing Assessment Reports (SARs)
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="sentencing_assessment_report_impact_metrics",
+            output_directory=output_subdir,
+            metrics=SENTENCING_ASSESSMENT_REPORT_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=SENTENCING_ASSESSMENT_REPORT_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
         )
 
         # Global usage
