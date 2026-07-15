@@ -45,6 +45,9 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
+from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
+    IdentityIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -80,6 +83,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.pipelines.ingest.identity.identity_manifest_utils import (
+    get_view_person_type,
+)
 from recidiviz.tests.common.constants.state.external_id_types_test import (
     get_external_id_types,
 )
@@ -285,6 +291,25 @@ class DirectIngestRegionDirStructureBase:
             lambda region_code: "identity_config.yaml",
             validate_identity_config_contents,
         )
+
+    def test_identity_views_declare_literal_person_type(self) -> None:
+        """Every identity ingest view must author `person_type` as a literal
+        enum so that a view produces fragments of a single, statically known
+        person type. The identity pipeline reads this via `get_view_person_type`,
+        which raises if the invariant is violated; assert it holds for every
+        identity view in every region."""
+        for region_code in self.region_dir_names:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            for manifest in manifest_collector.ingest_view_to_manifest.values():
+                # Raises if the view's person_type is not a literal enum.
+                get_view_person_type(manifest)
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:

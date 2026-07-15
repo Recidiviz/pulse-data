@@ -41,6 +41,15 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 from recidiviz.pipelines.ingest.enum_mapping_heartbeats import (
     attach_enum_mapping_heartbeats,
 )
+from recidiviz.pipelines.ingest.identity.filter_sentinel_external_ids import (
+    FilterSentinelExternalIds,
+)
+from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
+    IdentityIngestPipelineConfig,
+)
+from recidiviz.pipelines.ingest.identity.identity_manifest_utils import (
+    get_view_person_type,
+)
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
@@ -64,9 +73,10 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
     ) -> beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]]:
         """Discovers launchable identity views for the pipeline's tenant,
         materializes each view against raw data, parses rows into
-        `IdentityFragment` trees, merges fragments sharing an external ID key
-        and date within the same view, and flattens the per-view results into
-        a single PCollection.
+        `IdentityFragment` trees, strips sentinel external IDs (see
+        `FilterSentinelExternalIds`), merges fragments sharing an external ID
+        key and date within the same view, and flattens the per-view results
+        into a single PCollection.
 
         Example output element::
 
@@ -125,6 +135,8 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
             raw_data_upper_bound_dates=raw_data_upper_bound_dates,
         )
 
+        pipeline_config = IdentityIngestPipelineConfig.load_clustering_config()
+
         merged_fragments_per_view: dict[
             IngestViewName,
             beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
@@ -137,6 +149,7 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 file_tag: raw_data_upper_bound_dates[file_tag]
                 for file_tag in view_query_builder.raw_data_table_dependency_file_tags
             }
+            manifest = ingest_manifest_collector.ingest_view_to_manifest[view_name]
             merged_fragments_per_view[
                 view_name
             ] = input_or_inputs | view_name >> ProcessIngestView(
@@ -145,9 +158,7 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 ingest_view_query_builder=view_query_builder,
                 raw_data_upper_bound_dates=raw_data_tables_to_upperbound_dates,
                 raw_data_source_instance=raw_data_source_instance,
-                ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
-                    view_name
-                ],
+                ingest_view_manifest=manifest,
                 ingest_view_context=ingest_view_context,
                 expected_root_entity_types=(IdentityFragment,),
                 entities_module=identity_fragment_entities,
@@ -155,6 +166,12 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 ingest_view_results_only=False,
                 should_throw_on_conflicts=True,
                 resource_labels=self.pipeline_parameters.resource_labels,
+                pre_merge_transform=FilterSentinelExternalIds(
+                    ingest_view_name=view_name,
+                    tenant=tenant,
+                    person_type=get_view_person_type(manifest),
+                    pipeline_config=pipeline_config,
+                ),
             )
 
         merged_fragments: beam.PCollection[

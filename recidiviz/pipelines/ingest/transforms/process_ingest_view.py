@@ -66,6 +66,12 @@ class ProcessIngestView(beam.PTransform):
         ingest_view_results_only: bool,
         should_throw_on_conflicts: bool,
         resource_labels: dict[str, str],
+        # Optional transform applied to the generated
+        # (upper_bound_date, root_entity) tuples after entity generation but
+        # before the per-view merge (e.g. the identity pipeline's sentinel
+        # external ID filtering). When None, generated entities flow directly
+        # into the merge.
+        pre_merge_transform: beam.PTransform | None = None,
     ):
         super().__init__()
         if ingest_view_results_only and output_dataset is None:
@@ -86,6 +92,7 @@ class ProcessIngestView(beam.PTransform):
         self.ingest_view_results_only = ingest_view_results_only
         self.should_throw_on_conflicts = should_throw_on_conflicts
         self.resource_labels = resource_labels
+        self.pre_merge_transform = pre_merge_transform
 
     def expand(
         self, input_or_inputs: PBegin
@@ -94,7 +101,8 @@ class ProcessIngestView(beam.PTransform):
     ]:
         """Materializes the view's query against raw data, optionally persists
         the raw query rows to ``output_dataset``, parses rows into root entity
-        trees, and merges trees that share an external ID key within the same
+        trees, applies ``pre_merge_transform`` (if any) to the generated trees,
+        and merges trees that share an external ID key within the same
         ``update_datetime``.
 
         When ``output_dataset is None`` the intermediate landing-table write is
@@ -137,7 +145,7 @@ class ProcessIngestView(beam.PTransform):
         if self.ingest_view_results_only:
             return input_or_inputs | "Skip entity generation" >> beam.Create([])
 
-        return (
+        entities_with_dates = (
             ingest_view_results
             | f"Generate {self.ingest_view_name} entities"
             >> GenerateEntities(
@@ -145,8 +153,17 @@ class ProcessIngestView(beam.PTransform):
                 ingest_view_context=self.ingest_view_context,
                 expected_root_entity_types=self.expected_root_entity_types,
             )
-            | f"Merge {self.ingest_view_name} entities"
-            >> MergeIngestViewRootEntityTrees(
+        )
+
+        if self.pre_merge_transform is not None:
+            entities_with_dates = (
+                entities_with_dates
+                | f"Apply pre-merge transform to {self.ingest_view_name} entities"
+                >> self.pre_merge_transform
+            )
+
+        return entities_with_dates | f"Merge {self.ingest_view_name} entities" >> (
+            MergeIngestViewRootEntityTrees(
                 ingest_view_name=self.ingest_view_name,
                 entities_module=self.entities_module,
                 should_throw_on_conflicts=self.should_throw_on_conflicts,
