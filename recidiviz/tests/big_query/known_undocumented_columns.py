@@ -8059,6 +8059,16 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     BigQueryAddress.from_str(
         "state_views.state_charge_v2_state_sentence_association_view"
     ): ["charge_v2_id", "sentence_id", "state_code"],
+    BigQueryAddress.from_str("tasks_views.case_type_supervision_level_general"): [
+        "case_type",
+        "date_gap_id",
+        "end_date",
+        "person_id",
+        "session_id",
+        "start_date",
+        "state_code",
+        "supervision_level",
+    ],
     BigQueryAddress.from_str("tasks_views.case_type_supervision_level_spans"): [
         "case_type",
         "date_gap_id",

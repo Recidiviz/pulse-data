@@ -57,7 +57,7 @@ sex_offender_case_type AS (
         ctsl.start_date,
         ctsl.end_date,
         ctsl.case_type,
-    FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized` ctsl
+    FROM `{{project_id}}.tasks_views.case_type_supervision_level_general_materialized` ctsl
     WHERE ctsl.state_code = 'US_NE'
         AND ctsl.case_type = 'SEX_OFFENSE'
 ),

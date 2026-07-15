@@ -2128,7 +2128,7 @@ def denial_reasons_criteria_builder(
 
 
 # States that maintain their own case_type/supervision_level override view
-# (not included in the state-agnostic case_type_supervision_level_spans view).
+# (not included in the state-agnostic case_type_supervision_level_general view).
 _STATES_WITH_CASE_TYPE_SUPERVISION_LEVEL_OVERRIDE_VIEW = {
     StateCode.US_MO,
     StateCode.US_TX,
@@ -2167,7 +2167,7 @@ def supervision_case_type_is_criteria_builder(
             f"{state_code.value.lower()}_case_type_supervision_level_spans_materialized"
         )
     else:
-        source_view = "case_type_supervision_level_spans_materialized"
+        source_view = "case_type_supervision_level_general_materialized"
 
     query = f"""
     SELECT

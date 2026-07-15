@@ -51,7 +51,7 @@ def us_ne_so_supervision_start_spans_query() -> str:
             person_id,
             start_date,
             end_date,
-        FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized`
+        FROM `{{project_id}}.tasks_views.case_type_supervision_level_general_materialized`
         WHERE state_code = 'US_NE'
             AND case_type = 'SEX_OFFENSE'
     )

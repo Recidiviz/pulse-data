@@ -58,6 +58,8 @@ TASKS_ASSIGNMENT_NAMES_TO_TYPES = {
 TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
     "task_name": [config.view_builder.view_id for config in COMPLIANCE_TASK_CONFIGS],
     "tasks_contact_type": [],
+    "supervision_level": [],
+    "case_type": [],
 }
 
 
