@@ -515,6 +515,10 @@ class SupervisionOfficerEntity:
     # the same pattern as include_in_outcomes.
     # TODO(#72216): Make this required once the metric has deployed and backfilled.
     has_consistent_login_activity: Optional[bool] = attr.ib(default=None)
+    # Whether the officer has had an eligible or almost-eligible caseload for any
+    # opportunity type within the past 12 months. Sourced from the
+    # supervision_officer_metrics view via the same pattern as include_in_outcomes.
+    has_eligible_caseload_in_past_year: Optional[bool] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
         result = cattrs.unstructure(self)

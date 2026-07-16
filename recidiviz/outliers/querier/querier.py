@@ -959,6 +959,27 @@ class OutliersQuerier:
             .subquery()
         )
 
+    def _eligible_caseload_subquery(self, session: Session) -> Any:
+        """
+        Returns a subquery for pulling the current has_eligible_caseload_in_past_year
+        values for all supervision officers.
+        """
+        return (
+            session.query(
+                SupervisionOfficerMetric.officer_id,
+                SupervisionOfficerMetric.metric_value.label(
+                    "has_eligible_caseload_in_past_year"
+                ),
+            )
+            .filter(
+                SupervisionOfficerMetric.end_date
+                == self._get_latest_period_end_date(session),
+                SupervisionOfficerMetric.metric_id
+                == "has_eligible_caseload_in_past_year",
+            )
+            .subquery()
+        )
+
     def get_all_supervision_officers_required_info_only(
         self,
     ) -> List[SupervisionOfficerEntity]:
@@ -972,6 +993,7 @@ class OutliersQuerier:
         with self.insights_database_session() as session:
             include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
             login_consistency_subquery = self._login_consistency_subquery(session)
+            eligible_caseload_subquery = self._eligible_caseload_subquery(session)
             officers = (
                 session.query(SupervisionOfficer)
                 .join(
@@ -984,6 +1006,11 @@ class OutliersQuerier:
                     login_consistency_subquery.c.officer_id
                     == SupervisionOfficer.external_id,
                 )
+                .outerjoin(
+                    eligible_caseload_subquery,
+                    eligible_caseload_subquery.c.officer_id
+                    == SupervisionOfficer.external_id,
+                )
                 .with_entities(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
@@ -993,6 +1020,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervision_district,
                     include_in_outcomes_subquery.c.include_in_outcomes,
                     login_consistency_subquery.c.has_consistent_login_activity,
+                    eligible_caseload_subquery.c.has_eligible_caseload_in_past_year,
                     SupervisionOfficer.email,
                     SupervisionOfficer.latest_login_date,
                 )
@@ -1010,6 +1038,11 @@ class OutliersQuerier:
                     has_consistent_login_activity=(
                         bool(officer.has_consistent_login_activity)
                         if officer.has_consistent_login_activity is not None
+                        else None
+                    ),
+                    has_eligible_caseload_in_past_year=(
+                        bool(officer.has_eligible_caseload_in_past_year)
+                        if officer.has_eligible_caseload_in_past_year is not None
                         else None
                     ),
                     email=officer.email,
@@ -1465,6 +1498,7 @@ class OutliersQuerier:
 
         include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
         login_consistency_subquery = self._login_consistency_subquery(session)
+        eligible_caseload_subquery = self._eligible_caseload_subquery(session)
 
         # The entities we'll be selecting from our query
         query_entities = [
@@ -1480,6 +1514,7 @@ class OutliersQuerier:
             avgs_subquery.c.avg_daily_population,
             include_in_outcomes_subquery.c.include_in_outcomes,
             login_consistency_subquery.c.has_consistent_login_activity,
+            eligible_caseload_subquery.c.has_eligible_caseload_in_past_year,
         ]
 
         officer_status_query = (
@@ -1498,6 +1533,11 @@ class OutliersQuerier:
                 login_consistency_subquery.c.officer_id
                 == SupervisionOfficer.external_id,
             )
+            .outerjoin(
+                eligible_caseload_subquery,
+                eligible_caseload_subquery.c.officer_id
+                == SupervisionOfficer.external_id,
+            )
             .filter(
                 SupervisionOfficer.full_name.is_not(None),
             )
@@ -1514,6 +1554,7 @@ class OutliersQuerier:
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
                 login_consistency_subquery.c.has_consistent_login_activity,
+                eligible_caseload_subquery.c.has_eligible_caseload_in_past_year,
             )
             .with_entities(*query_entities)
         )
@@ -1624,6 +1665,11 @@ class OutliersQuerier:
                 has_consistent_login_activity=(
                     bool(record.has_consistent_login_activity)
                     if record.has_consistent_login_activity is not None
+                    else None
+                ),
+                has_eligible_caseload_in_past_year=(
+                    bool(record.has_eligible_caseload_in_past_year)
+                    if record.has_eligible_caseload_in_past_year is not None
                     else None
                 ),
                 latest_login_date=record.latest_login_date,
