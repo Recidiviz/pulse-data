@@ -95,13 +95,13 @@ class IntercomOutboundDataExport(EntrypointInterface):
             "--start-datetime-inclusive",
             help="UTC datetime for start of date range, inclusive",
             type=datetime.fromisoformat,
-            required=True,
+            required=False,
         )
         parser.add_argument(
             "--end-datetime-inclusive",
             help="UTC datetime for end of date range, inclusive",
             type=datetime.fromisoformat,
-            required=True,
+            required=False,
         )
 
         return parser

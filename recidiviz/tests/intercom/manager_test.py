@@ -21,7 +21,7 @@ import os
 import tempfile
 import unittest
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -66,6 +66,21 @@ class TestIntercomAPIManager(unittest.TestCase):
             download_expires_at="1674917488",
         )
 
+    def test_export_intercom_data_value_error(self) -> None:
+        """
+        Test that IntercomAPIManager.export_intercom_data() properly raises ValueError
+        """
+        start_datetime_inclusive = datetime.now(tz=timezone.utc)
+        end_datetime_inclusive = datetime.now(tz=timezone.utc) - timedelta(days=1)
+
+        self.mock_client.create_data_export.side_effect = ValueError
+
+        with self.assertRaises(ValueError):
+            self.intercom_api_manager.export_intercom_data(
+                start_datetime_inclusive=start_datetime_inclusive,
+                end_datetime_inclusive=end_datetime_inclusive,
+            )
+
     def test_poll_export_status(self) -> None:
         """
         Test that IntercomAPIManager.poll_export_status() properly returns an export job.
@@ -98,7 +113,6 @@ class TestIntercomAPIManager(unittest.TestCase):
         """
         Test that IntercomAPIManager.poll_export_status() properly raises TimeoutError.
         """
-
         with self.assertRaises(TimeoutError) as context:
             self.intercom_api_manager.poll_export_status(
                 job_identifier=self.job_identifier, max_attempts=5
@@ -153,7 +167,6 @@ class TestIntercomAPIManager(unittest.TestCase):
         Test IntercomAPIManager.download_and_process_export() error handling to ensure
         that it properly raises HTTP status errors from IntercomAPIClient.download_export_data()
         """
-
         self.mock_client.download_export_data.side_effect = (
             requests.exceptions.HTTPError("Simulated 500 Server Error")
         )

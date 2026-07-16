@@ -21,7 +21,7 @@ import os
 import re
 import time
 import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import attr
 import pandas as pd
@@ -63,12 +63,13 @@ class IntercomAPIManager:
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
 
-    def export_intercom_data(self) -> IntercomExportJobResponse:
-        """Create Intercom export job for the previous day."""
+    def export_intercom_data(
+        self, start_datetime_inclusive: datetime, end_datetime_inclusive: datetime
+    ) -> IntercomExportJobResponse:
+        """Create Intercom export job for the window within the given datetimes."""
 
-        # Calculate date range for previous day
-        created_at_after = self.execution_datetime - timedelta(days=1)
-        created_at_before = self.execution_datetime
+        created_at_after = start_datetime_inclusive
+        created_at_before = end_datetime_inclusive
 
         export_job = self.client.create_data_export(created_at_after, created_at_before)
 

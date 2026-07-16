@@ -16,12 +16,18 @@
 # =============================================================================
 """Write to and read from the intercom_export.export_table BQ table"""
 
+from datetime import datetime
+
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
-from recidiviz.intercom.types import IntercomCloudRunJobInfo
+from recidiviz.intercom.intercom_exports_columns import (
+    EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME,
+    STATUS_COLUMN_NAME,
+)
+from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
 from recidiviz.source_tables.intercom_exports_source_table import (
     INTERCOM_EXPORT_TRACKER_TABLE_ID,
 )
@@ -37,20 +43,46 @@ class IntercomExportBigQueryTableManager:
         validator=attr.validators.instance_of(BigQueryClientImpl)
     )
 
+    @property
+    def intercom_export_tracker_address(self) -> BigQueryAddress:
+        return BigQueryAddress(
+            dataset_id=INTERCOM_EXPORT_DATASET,
+            table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
+        )
+
     def write_to_table(
         self,
         cloud_run_job_info: IntercomCloudRunJobInfo,
     ) -> None:
         """Write to the intercom_export.export_table BQ table."""
 
-        big_query_address = BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_DATASET,
-            table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
-        )
         tracker_table_row = [cloud_run_job_info.to_json()]
 
         tracker_job = self.client.load_into_table_async(
-            address=big_query_address,
+            address=self.intercom_export_tracker_address,
             rows=tracker_table_row,
         )
         tracker_job.result(timeout=DEFAULT_TIMEOUT)
+
+    def get_latest_export_window_end(self) -> datetime:
+        """
+        Returns the export_window_end_inclusive timestamp for the most recent
+        successful export job on the intercom_export.export_table BQ table.
+        """
+
+        query = f"""
+            SELECT MAX({EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME}) AS {EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME}
+            FROM {self.intercom_export_tracker_address.to_str()}
+            WHERE {STATUS_COLUMN_NAME} = '{IntercomCloudRunJobStatus.SUCCESS.value}'
+        """
+
+        query_job = self.client.run_query_async(query_str=query, use_query_cache=False)
+        results = query_job.result(timeout=DEFAULT_TIMEOUT)
+        most_recent_end_datetime = next(results).export_window_end_inclusive
+
+        if not most_recent_end_datetime:
+            raise ValueError(
+                f"No successful Intercom export job runs found for query: [{query}]."
+            )
+
+        return most_recent_end_datetime
