@@ -23,7 +23,6 @@ model/cap overrides. `LLMExtractorConfig.from_yaml` parses that file and binds i
 with its already-parsed collection config, its resolved input document
 collection, and its resolved model config into one fully-resolved object.
 """
-import hashlib
 import json
 from functools import cache
 from pathlib import Path
@@ -71,7 +70,7 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     collect_document_collection_configs,
 )
-from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.string import StrictStringFormatter, sha256_hexdigest
 from recidiviz.utils.string_formatting import collapse_blank_lines
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -278,6 +277,11 @@ class LLMExtractorConfig:
         return f"{self.state_code.value}_{self.extractor_collection.name}"
 
     @property
+    def instructions_prompt_hash(self) -> str:
+        """Returns the hash of the fully-compiled instructions prompt."""
+        return sha256_hexdigest(self.instructions_prompt)
+
+    @property
     def extractor_version_id(self) -> str:
         """Returns the version ID of this extractor. This is a hash of every input fed
         to the LLM. Any change yields a new ID.
@@ -287,11 +291,11 @@ class LLMExtractorConfig:
             # We also hash the human-readable extractor_id because versions should be
             # unique to extractors configs with a particular human-readable name.
             self.extractor_id,
-            self.instructions_prompt,
+            self.instructions_prompt_hash,
             self.model_config.model_config_version_id,
             self.extractor_collection.collection_version_id,
         ]
-        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
+        return sha256_hexdigest(json.dumps(components))
 
     @property
     def document_filter_id(self) -> str:
@@ -306,7 +310,7 @@ class LLMExtractorConfig:
             self.extractor_id,
             self.document_metadata_filter_query_template,
         ]
-        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
+        return sha256_hexdigest(json.dumps(components))
 
     @staticmethod
     def state_code_for_yaml_path(yaml_path: str | Path) -> StateCode:

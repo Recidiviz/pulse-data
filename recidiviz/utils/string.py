@@ -15,12 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """General utilities for dealing with strings"""
+
+import hashlib
 import operator
 import string
 from typing import Any, FrozenSet, Iterable, Mapping, Sequence, Set, Union
 
 import attr
 import Levenshtein as lev
+
+from recidiviz.common.constants.encoding import UTF_8
+
+
+def sha256_hexdigest(value: str) -> str:
+    """Returns the hex-encoded SHA256 hash of |value| (UTF-8 encoded)."""
+    return hashlib.sha256(value.encode(UTF_8)).hexdigest()
 
 
 @attr.s(kw_only=True)

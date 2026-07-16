@@ -23,7 +23,6 @@ entity groups.
 The `golden_eval` block is still consumed off the YAML and discarded so the unused-key
 check passes — see the deferral note in `from_yaml`.
 """
-import hashlib
 import json
 from functools import cache
 from pathlib import Path
@@ -59,6 +58,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
 from recidiviz.documents.extraction.models.reference_data.llm_extractor_collection_reference_data_config import (
     LLMExtractorCollectionReferenceDataConfig,
 )
+from recidiviz.utils.string import sha256_hexdigest
 from recidiviz.utils.yaml_dict import YAMLDict
 
 EXTRACTOR_COLLECTIONS_DIR_NAME = "extractor_collections"
@@ -296,6 +296,13 @@ class LLMExtractorCollectionConfig:
         return json.dumps(self.generate_json_schema())
 
     @property
+    def output_schema_version(self) -> str:
+        """Returns the version ID of this collection's output schema — the hash of
+        the generated JSON schema string.
+        """
+        return sha256_hexdigest(self.generate_json_schema_str())
+
+    @property
     def collection_version_id(self) -> str:
         """Returns the version ID of this collection. This is a hash of all the info
         from this collection fed directly to the LLM. The collection description is not
@@ -310,9 +317,10 @@ class LLMExtractorCollectionConfig:
             # the version (prompt_vars and reference data are state-specific and
             # flow into the extractor version ID instead).
             self.prompt_template,
-            self.generate_json_schema_str(),
+            self.output_schema_version,
+            self.minimum_confidence_level.value,
         ]
-        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
+        return sha256_hexdigest(json.dumps(components))
 
     @classmethod
     def from_yaml(

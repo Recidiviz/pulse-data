@@ -64,6 +64,7 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
     ReferenceDataType,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.utils.string import sha256_hexdigest
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
@@ -415,6 +416,7 @@ class CollectionVersionIdTest(TestCase):
         *,
         name: str = "TEST_COLLECTION",
         output_schema: LLMRequestOutputSchema | None = None,
+        minimum_confidence_level: ConfidenceLevel = ConfidenceLevel.INFERRED,
     ) -> LLMExtractorCollectionConfig:
         return LLMExtractorCollectionConfig(
             name=name,
@@ -422,7 +424,7 @@ class CollectionVersionIdTest(TestCase):
             relevance_criteria=_RELEVANCE_CRITERIA,
             prompt_template=_PROMPT_TEMPLATE,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
-            minimum_confidence_level=ConfidenceLevel.INFERRED,
+            minimum_confidence_level=minimum_confidence_level,
             output_schema=output_schema
             if output_schema is not None
             else _output_schema(),
@@ -439,7 +441,7 @@ class CollectionVersionIdTest(TestCase):
             _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "ded9ba750354c5d8e4cf5d10e97ea5f50e551ac2e4ea2c322ce8e2cacfe06306",
+            "2394114df0b2089a92aa4f7890d86fd063e79e77efa36482df8a85b22de3a517",
             collection.collection_version_id,
         )
 
@@ -464,6 +466,16 @@ class CollectionVersionIdTest(TestCase):
         self.assertNotEqual(
             self._collection(name="TEST_COLLECTION").collection_version_id,
             self._collection(name="OTHER_COLLECTION").collection_version_id,
+        )
+
+    def test_collection_version_id_changes_with_minimum_confidence_level(self) -> None:
+        self.assertNotEqual(
+            self._collection(
+                minimum_confidence_level=ConfidenceLevel.INFERRED
+            ).collection_version_id,
+            self._collection(
+                minimum_confidence_level=ConfidenceLevel.VERBATIM
+            ).collection_version_id,
         )
 
     def test_collection_version_id_changes_with_relevance_criteria(self) -> None:
@@ -725,3 +737,9 @@ class GenerateJsonSchemaTest(TestCase):
         # confidence_level precedes citations (alphabetically citations sorts
         # first).
         self.assertLess(key_index("confidence_level"), key_index("citations"))
+
+    def test_output_schema_version_is_hash_of_schema_str(self) -> None:
+        self.assertEqual(
+            sha256_hexdigest(self.collection.generate_json_schema_str()),
+            self.collection.output_schema_version,
+        )

@@ -68,7 +68,7 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.string import StrictStringFormatter, sha256_hexdigest
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
 _FILTER_QUERY = "SELECT document_contents_id FROM `{project_id}.x.y`"
@@ -585,6 +585,13 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             _EXPECTED_FAKE_INSTRUCTIONS_PROMPT, self._config().instructions_prompt
         )
 
+    def test_instructions_prompt_hash_is_hash_of_prompt(self) -> None:
+        config = self._config()
+        self.assertEqual(
+            sha256_hexdigest(config.instructions_prompt),
+            config.instructions_prompt_hash,
+        )
+
     def test_extractor_version_id_golden(self) -> None:
         # Pinned hash for the fake extractor. A change here is a real version bump
         # and must be consciously updated, not silently accepted.
@@ -592,7 +599,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "f05e68e6fb1b0acb096812f51d744a5a61f4a24378126a100058068fd97a616e",
+            "0813609efa507db3bd1fab26b14bd44a8f2bb8bb8f9fdb3fecfbcbcd5722a15d",
             config.extractor_version_id,
         )
 

@@ -22,7 +22,6 @@ name instead of repeating model settings.
 """
 
 import abc
-import hashlib
 import json
 from enum import Enum
 from pathlib import Path
@@ -33,6 +32,7 @@ import attr
 
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.documents import config as default_config_module
+from recidiviz.utils.string import sha256_hexdigest
 from recidiviz.utils.yaml_dict import YAMLDict
 
 MODEL_REGISTRY_FILENAME = "model_registry.yaml"
@@ -503,7 +503,7 @@ class LLMModelConfig:
                 sort_keys=True,
             ),
         ]
-        return hashlib.sha256(json.dumps(components).encode("utf-8")).hexdigest()
+        return sha256_hexdigest(json.dumps(components))
 
     @classmethod
     def from_yaml_dict(
