@@ -383,6 +383,9 @@ from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_mi
 from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_valid_primary_key import (
     PSEUDONYMIZED_ID_TO_PERSON_ID_VALID_PRIMARY_KEY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.us_az_resident_metadata_columns_never_populated import (
+    US_AZ_RESIDENT_METADATA_COLUMNS_NEVER_POPULATED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.us_ix_overdue_f2f_contact_missing_from_supervision_tasks import (
     US_IX_OVERDUE_F2F_CONTACT_MISSING_FROM_SUPERVISION_TASKS_VIEW_BUILDER,
 )
@@ -633,6 +636,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=ELIGIBLE_PERSONS_MISSING_FROM_PERSON_RECORD_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AZ_RESIDENT_METADATA_COLUMNS_NEVER_POPULATED_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_IX_OVERDUE_F2F_CONTACT_MISSING_FROM_SUPERVISION_TASKS_VIEW_BUILDER,
