@@ -19,6 +19,7 @@
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_utils import typed_null_expression_for_field
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     list_to_query_string,
@@ -34,7 +35,6 @@ from recidiviz.documents.store.document_metadata_table_query_builder import (
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
-    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -56,20 +56,25 @@ class DocumentCollectionDiffQueryBuilder:
         config: DocumentCollectionConfig,
     ) -> str:
         """Wraps the config's document_generation_query_template to produce
-        all columns needed for downstream processing: the original query output
-        columns plus a computed document_contents_id.
+        all columns needed for downstream processing: the temp-updates table
+        columns, with document_contents_id computed from document_text (every
+        other column is passed through from the inner query by name).
         """
         inner_query = StrictStringFormatter().format(
             config.document_generation_query_template,
             project_id=self.project_id,
         )
 
+        passthrough_columns = [
+            col.name
+            for col in config.build_bq_temp_document_metadata_updates_schema()
+            if col.name != DOCUMENT_CONTENTS_ID_COLUMN_NAME
+        ]
+
         return f"""
 SELECT
     {self._document_contents_id_sql_clause(config.state_code)} AS {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
-    {DOCUMENT_TEXT_COLUMN_NAME},
-    {DOCUMENT_UPDATE_DATETIME_COLUMN_NAME},
-    {list_to_query_string(config.primary_key_column_names + config.other_metadata_column_names)}
+    {list_to_query_string(passthrough_columns)}
 FROM ({inner_query})
 WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 
@@ -103,7 +108,8 @@ WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
         def _deleted_col_expr(col: bigquery.SchemaField) -> str:
             if col.name in config.primary_key_column_names:
                 return f"current_docs.{col.name}"
-            return f"CAST(NULL AS {col.field_type}) AS {col.name}"
+            # A deleted document has no value for any non-PK column.
+            return f"{typed_null_expression_for_field(col)} AS {col.name}"
 
         deleted_doc_select_columns = list_to_query_string(
             [_deleted_col_expr(col) for col in temp_table_schema]

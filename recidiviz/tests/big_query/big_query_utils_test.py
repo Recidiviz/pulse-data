@@ -19,6 +19,7 @@
 import unittest
 
 import attr
+import sqlglot
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import (
@@ -32,11 +33,16 @@ from recidiviz.big_query.big_query_utils import (
     make_bq_compatible_identifier,
     normalize_column_name_for_bq,
     schema_field_for_attribute,
+    sql_type_name_for_schema_field,
     to_big_query_valid_encoding,
     to_validated_schema_field,
+    typed_null_expression_for_field,
     validate_unquoted_bq_identifier,
 )
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
 class BigQueryUtilsTest(unittest.TestCase):
@@ -327,3 +333,177 @@ class SchemaFieldForAttributeTest(unittest.TestCase):
             "STRING",
             schema_field_for_attribute("tuple_field", fields["tuple_field"]).field_type,
         )
+
+
+def _repeated_record_field(mode: str = "REPEATED") -> bigquery.SchemaField:
+    """A RECORD field with a couple of scalar sub-fields, for exercising struct
+    and array-of-struct type rendering."""
+    return bigquery.SchemaField(
+        "my_record",
+        "RECORD",
+        mode=mode,
+        fields=[
+            bigquery.SchemaField("a", "INT64", mode="REQUIRED"),
+            bigquery.SchemaField("b", "STRING"),
+        ],
+    )
+
+
+class SqlTypeNameForSchemaFieldTest(unittest.TestCase):
+    """Tests for sql_type_name_for_schema_field."""
+
+    def test_scalar_types_echo_field_type(self) -> None:
+        self.assertEqual(
+            "STRING",
+            sql_type_name_for_schema_field(bigquery.SchemaField("x", "STRING")),
+        )
+        self.assertEqual(
+            "INT64",
+            sql_type_name_for_schema_field(
+                bigquery.SchemaField("x", "INT64", mode="REQUIRED")
+            ),
+        )
+        self.assertEqual(
+            "TIMESTAMP",
+            sql_type_name_for_schema_field(bigquery.SchemaField("x", "TIMESTAMP")),
+        )
+
+    def test_repeated_scalar_wraps_in_array(self) -> None:
+        self.assertEqual(
+            "ARRAY<STRING>",
+            sql_type_name_for_schema_field(
+                bigquery.SchemaField("x", "STRING", mode="REPEATED")
+            ),
+        )
+
+    def test_record_renders_struct(self) -> None:
+        field = bigquery.SchemaField(
+            "m",
+            "RECORD",
+            fields=[
+                bigquery.SchemaField("n", "INT64", mode="REQUIRED"),
+                bigquery.SchemaField("s", "STRING"),
+            ],
+        )
+        self.assertEqual(
+            "STRUCT<n INT64, s STRING>", sql_type_name_for_schema_field(field)
+        )
+
+    def test_repeated_record_renders_array_of_struct(self) -> None:
+        self.assertEqual(
+            "ARRAY<STRUCT<a INT64, b STRING>>",
+            sql_type_name_for_schema_field(_repeated_record_field()),
+        )
+
+    def test_struct_with_repeated_sub_field_recurses(self) -> None:
+        field = bigquery.SchemaField(
+            "m",
+            "RECORD",
+            fields=[bigquery.SchemaField("x", "INT64", mode="REPEATED")],
+        )
+        self.assertEqual(
+            "STRUCT<x ARRAY<INT64>>", sql_type_name_for_schema_field(field)
+        )
+
+    def test_nested_struct_recurses(self) -> None:
+        field = bigquery.SchemaField(
+            "m",
+            "RECORD",
+            fields=[
+                bigquery.SchemaField(
+                    "a", "RECORD", fields=[bigquery.SchemaField("b", "STRING")]
+                )
+            ],
+        )
+        self.assertEqual(
+            "STRUCT<a STRUCT<b STRING>>", sql_type_name_for_schema_field(field)
+        )
+
+    def test_struct_spelling_matches_record_spelling(self) -> None:
+        sub_fields = [bigquery.SchemaField("n", "INT64", mode="REQUIRED")]
+        self.assertEqual(
+            sql_type_name_for_schema_field(
+                bigquery.SchemaField("m", "RECORD", fields=sub_fields)
+            ),
+            sql_type_name_for_schema_field(
+                bigquery.SchemaField("m", "STRUCT", fields=sub_fields)
+            ),
+        )
+
+
+class TypedNullExpressionForFieldTest(unittest.TestCase):
+    """Tests for typed_null_expression_for_field."""
+
+    def test_scalar_casts_null(self) -> None:
+        self.assertEqual(
+            "CAST(NULL AS STRING)",
+            typed_null_expression_for_field(bigquery.SchemaField("x", "STRING")),
+        )
+        self.assertEqual(
+            "CAST(NULL AS INT64)",
+            typed_null_expression_for_field(
+                bigquery.SchemaField("x", "INT64", mode="REQUIRED")
+            ),
+        )
+
+    def test_record_casts_null_to_struct(self) -> None:
+        self.assertEqual(
+            "CAST(NULL AS STRUCT<a INT64, b STRING>)",
+            typed_null_expression_for_field(_repeated_record_field(mode="NULLABLE")),
+        )
+
+    def test_repeated_scalar_is_empty_typed_array(self) -> None:
+        self.assertEqual(
+            "ARRAY<STRING>[]",
+            typed_null_expression_for_field(
+                bigquery.SchemaField("x", "STRING", mode="REPEATED")
+            ),
+        )
+
+    def test_repeated_record_is_empty_typed_array(self) -> None:
+        self.assertEqual(
+            "ARRAY<STRUCT<a INT64, b STRING>>[]",
+            typed_null_expression_for_field(_repeated_record_field()),
+        )
+
+    def test_expressions_parse_as_valid_bigquery(self) -> None:
+        for field in [
+            bigquery.SchemaField("x", "STRING"),
+            bigquery.SchemaField("x", "INT64", mode="REPEATED"),
+            _repeated_record_field(mode="NULLABLE"),
+            _repeated_record_field(),
+        ]:
+            with self.subTest(field=field.name, mode=field.mode):
+                # Raises if the expression is not parseable BigQuery SQL.
+                sqlglot.parse_one(
+                    f"SELECT {typed_null_expression_for_field(field)} AS x",
+                    dialect="bigquery",
+                )
+
+
+class TypedNullExpressionForFieldEmulatorTest(BigQueryEmulatorTestCase):
+    """Validates that the expressions produced by typed_null_expression_for_field
+    are accepted and evaluated by BigQuery — in particular the empty typed-array
+    literal for REPEATED fields, which a plain CAST(NULL AS ...) cannot express."""
+
+    def test_repeated_record_selects_empty_array(self) -> None:
+        expression = typed_null_expression_for_field(_repeated_record_field())
+        result = self.query(f"SELECT {expression} AS value")
+        self.assertEqual(1, len(result))
+        self.assertEqual(0, len(result.iloc[0]["value"]))
+
+    def test_repeated_scalar_selects_empty_array(self) -> None:
+        expression = typed_null_expression_for_field(
+            bigquery.SchemaField("x", "STRING", mode="REPEATED")
+        )
+        result = self.query(f"SELECT {expression} AS value")
+        self.assertEqual(1, len(result))
+        self.assertEqual(0, len(result.iloc[0]["value"]))
+
+    def test_scalar_selects_null(self) -> None:
+        expression = typed_null_expression_for_field(
+            bigquery.SchemaField("x", "STRING")
+        )
+        result = self.query(f"SELECT {expression} AS value")
+        self.assertEqual(1, len(result))
+        self.assertTrue(bool(result["value"].isna().all()))

@@ -86,6 +86,38 @@ class BigQueryDateInterval(enum.Enum):
     YEAR = "YEAR"
 
 
+def sql_type_name_for_schema_field(field: bigquery.SchemaField) -> str:
+    """Returns the GoogleSQL type name of |field| — e.g. STRING, INT64,
+    STRUCT<a INT64, b STRING>, ARRAY<STRUCT<...>> — as accepted by CAST and DDL.
+    Renders nested struct sub-fields recursively and wraps REPEATED fields in
+    ARRAY<...>.
+    """
+    if field.field_type in ("RECORD", "STRUCT"):
+        rendered_sub_fields = ", ".join(
+            f"{sub_field.name} {sql_type_name_for_schema_field(sub_field)}"
+            for sub_field in field.fields
+        )
+        base_type = f"STRUCT<{rendered_sub_fields}>"
+    else:
+        base_type = field.field_type
+
+    if field.mode == BigQueryFieldMode.REPEATED.value:
+        return f"ARRAY<{base_type}>"
+    return base_type
+
+
+def typed_null_expression_for_field(field: bigquery.SchemaField) -> str:
+    """Returns a SQL expression for the typed absence of a value for |field|:
+    CAST(NULL AS <type>) for scalar and struct fields, and a typed empty array
+    (ARRAY<...>[]) for REPEATED fields, since BigQuery arrays cannot be NULL. The
+    expression carries no column alias — callers add `AS <name>` as needed.
+    """
+    type_name = sql_type_name_for_schema_field(field)
+    if field.mode == BigQueryFieldMode.REPEATED.value:
+        return f"{type_name}[]"
+    return f"CAST(NULL AS {type_name})"
+
+
 def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
     """Returns the schema column type that should be used to store the value of the
     provided |attribute| in a BigQuery table."""
