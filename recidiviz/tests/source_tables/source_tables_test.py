@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for source table registry."""
+
 import os
 import unittest
 from typing import Iterable
@@ -129,6 +130,15 @@ COMMON_VESTIGES = [
     "jii_texting_dashboards_db_us_tx.Person",
     "jii_texting_dashboards_db_us_tx.WorkflowExecution",
     "jii_texting_dashboards_db_us_tx._GroupToPerson",
+    # Meetings postgres export tables not currently referenced in the view graph
+    "meetings_dashboards_db_us_ne.Client",
+    "meetings_dashboards_db_us_ne.Meeting",
+    "meetings_dashboards_db_us_ne.NotetakingAgentExecution",
+    "meetings_dashboards_db_us_ne.OutputVote",
+    "meetings_dashboards_db_us_ne.Resident",
+    "meetings_dashboards_db_us_ne.Staff",
+    "meetings_dashboards_db_us_ne.Transcription",
+    "meetings_dashboards_db_us_ne.Utterance",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph
