@@ -26,6 +26,7 @@ import pytz
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMDocumentExtractionErrorType,
     LLMExtractionJobDocumentResultType,
     LLMExtractionJobResultType,
 )
@@ -671,6 +672,7 @@ class LLMExtractionSchemaTest(unittest.TestCase):
                     result_datetime_utc=_LATER,
                     result_type=LLMExtractionJobDocumentResultType.SUCCESS.value,
                     is_relevant=True,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR.value,
                     error_message="boom",
                     input_token_count=1,
                     output_token_count=1,
@@ -680,6 +682,65 @@ class LLMExtractionSchemaTest(unittest.TestCase):
             )
             with self._assert_check_violation(
                 session, "llm_extraction_job_document_error_message_only_for_failure"
+            ):
+                session.commit()
+
+    def test_job_documents_error_type_and_message_consistent(self) -> None:
+        # error_type set but error_message null -> violation.
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self._seed_for_job_doc_check(session)
+            session.add(
+                schema.LLMExtractionJobDocument(
+                    state_code=_STATE,
+                    job_id="job1",
+                    document_contents_id="doc1",
+                    batch_index=0,
+                    job_index=0,
+                    result_datetime_utc=_LATER,
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT.value,
+                    is_relevant=None,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR.value,
+                    error_message=None,
+                    input_token_count=1,
+                    output_token_count=1,
+                    cached_input_token_count=0,
+                    thinking_token_count=0,
+                )
+            )
+            with self._assert_check_violation(
+                session,
+                "llm_extraction_job_document_error_type_and_message_consistent",
+            ):
+                session.commit()
+
+        # error_message set but error_type null -> violation.
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self._seed_for_job_doc_check(session)
+            session.add(
+                schema.LLMExtractionJobDocument(
+                    state_code=_STATE,
+                    job_id="job1",
+                    document_contents_id="doc1",
+                    batch_index=0,
+                    job_index=0,
+                    result_datetime_utc=_LATER,
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT.value,
+                    is_relevant=None,
+                    error_type=None,
+                    error_message="boom",
+                    input_token_count=1,
+                    output_token_count=1,
+                    cached_input_token_count=0,
+                    thinking_token_count=0,
+                )
+            )
+            with self._assert_check_violation(
+                session,
+                "llm_extraction_job_document_error_type_and_message_consistent",
             ):
                 session.commit()
 
@@ -725,6 +786,7 @@ class LLMExtractionSchemaTest(unittest.TestCase):
                     result_datetime_utc=_LATER,
                     result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT.value,
                     is_relevant=True,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR.value,
                     error_message="boom",
                     input_token_count=1,
                     output_token_count=1,

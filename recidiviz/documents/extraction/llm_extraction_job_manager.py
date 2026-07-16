@@ -392,8 +392,6 @@ class LLMExtractionJobManager:
         result here permanently removes the document from job selection, so
         marking before the BQ write turns a crash between the two writes into
         silent data loss.
-
-        TODO(OBT-32095) also persist `result.error_type`
         """
         token_counts = result.raw_result.token_counts
         with SessionFactory.using_database(self.database_key) as session:
@@ -412,6 +410,11 @@ class LLMExtractionJobManager:
                         ),
                         schema.LLMExtractionJobDocument.result_type: result.result_type.value,
                         schema.LLMExtractionJobDocument.is_relevant: result.is_relevant,
+                        schema.LLMExtractionJobDocument.error_type: (
+                            result.error_type.value
+                            if result.error_type is not None
+                            else None
+                        ),
                         schema.LLMExtractionJobDocument.error_message: result.error_message,
                         schema.LLMExtractionJobDocument.input_token_count: token_counts.input_token_count,
                         schema.LLMExtractionJobDocument.output_token_count: token_counts.output_token_count,

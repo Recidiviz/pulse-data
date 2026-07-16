@@ -35,6 +35,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
     DirectIngestRawFileImportStatus,
 )
 from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMDocumentExtractionErrorType,
     LLMExtractionJobDocumentResultType,
     LLMExtractionJobResultType,
 )
@@ -565,6 +566,12 @@ class LLMExtractionJobDocument(Entity, BuildableAttr, DefaultableAttr):
     )
     # Model's is_relevant determination. Non-null iff result_type = SUCCESS.
     is_relevant: Optional[bool] = attr.ib(validator=attr_validators.is_opt_bool)
+    # Per-document error category. Nonnull only for FAILURE result types.
+    error_type: Optional[LLMDocumentExtractionErrorType] = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.in_(LLMDocumentExtractionErrorType)
+        )
+    )
     # Error details. Nonnull only for FAILURE result types.
     error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
     # Total input tokens for this API call. Nonnull iff result_datetime_utc is set.

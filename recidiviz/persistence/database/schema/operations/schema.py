@@ -99,6 +99,16 @@ llm_extraction_job_document_result_type = Enum(
     name="llm_extraction_job_document_result_type",
 )
 
+llm_document_extraction_error_type = Enum(
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_malformed_response,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_empty_response,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_content_filtered,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_timeout,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_rate_limited,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_unknown_error,
+    name="llm_document_extraction_error_type",
+)
+
 
 # Defines the base class for all table classes in the shared operations schema.
 OperationsBase: DeclarativeMeta = declarative_base(
@@ -1025,6 +1035,10 @@ class LLMExtractionJobDocument(OperationsBase):
             name="llm_extraction_job_document_error_message_only_for_failure",
         ),
         CheckConstraint(
+            "(error_type IS NULL) = (error_message IS NULL)",
+            name="llm_extraction_job_document_error_type_and_message_consistent",
+        ),
+        CheckConstraint(
             "(is_relevant IS NOT NULL) = (result_type IS NOT DISTINCT FROM 'SUCCESS')",
             name="llm_extraction_job_document_is_relevant_iff_success",
         ),
@@ -1068,6 +1082,9 @@ class LLMExtractionJobDocument(OperationsBase):
     # Model's is_relevant determination. Non-null iff result_type = SUCCESS.
     # Denormalized for the REPROCESS_ALL_RELEVANT reprocessing directive.
     is_relevant = Column(Boolean, nullable=True)
+
+    # Per-document error category. Nonnull only for FAILURE result types.
+    error_type = Column(llm_document_extraction_error_type, nullable=True)
 
     # Error details. Nonnull only for FAILURE result types.
     error_message = Column(String, nullable=True)

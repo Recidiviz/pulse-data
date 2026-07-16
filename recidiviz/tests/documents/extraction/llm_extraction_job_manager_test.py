@@ -352,6 +352,7 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
         self.assertEqual(5, document.output_token_count)
         self.assertEqual(2, document.cached_input_token_count)
         self.assertEqual(1, document.thinking_token_count)
+        self.assertIsNone(document.error_type)
         self.assertIsNone(document.error_message)
 
         # A processed document is no longer pending.
@@ -517,6 +518,12 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             LLMExtractionJobResultType.PARTIAL_FAILURE,
             self._get_job_row(partial_job.job_id).result_type,
         )
+        failed_document = self._get_job_document_row(partial_job.job_id, "doc4")
+        self.assertEqual(
+            LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE,
+            failed_document.error_type,
+        )
+        self.assertEqual("something failed", failed_document.error_message)
 
     def test_mark_job_failed(self) -> None:
         self._record_eligible(["doc1"])
