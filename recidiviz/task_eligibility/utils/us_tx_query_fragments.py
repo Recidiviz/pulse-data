@@ -496,7 +496,17 @@ def contact_compliance_builder_type_agnostic(
             person_id,
             contact_types_accepted,
             critical_date as period_start,
-            LEAD (critical_date) OVER(PARTITION BY contact_period_start,person_id ORDER BY critical_date) AS period_end,
+            -- Tiebreak on attributes so duplicate critical_dates order deterministically.
+            LEAD (critical_date) OVER(
+                PARTITION BY contact_period_start, person_id
+                ORDER BY
+                    critical_date,
+                    contact_types_accepted,
+                    case_type,
+                    supervision_level,
+                    frequency,
+                    frequency_date_part
+            ) AS period_end,
             case_type,
             supervision_level,
             frequency,
@@ -650,7 +660,11 @@ def contact_compliance_builder_type_agnostic(
           ON cc.person_id = ci.person_id
             AND ci.contact_type IN UNNEST(SPLIT(contact_types_accepted, ','))
             AND ci.contact_date <= start_date
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, contact_types_accepted, start_date ORDER BY contact_date DESC) = 1
+        -- Keep most recent contact; tiebreak so the surviving row is deterministic.
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id, contact_types_accepted, start_date
+            ORDER BY contact_date DESC, end_date, contact_due_date, meets_criteria
+        ) = 1
     ),
     join_scheduled_contacts AS (
         SELECT 
@@ -668,8 +682,9 @@ def contact_compliance_builder_type_agnostic(
                 scheduled_contacts.scheduled_contact_date,
                 scheduled_contacts.contact_type
             )
-            IGNORE NULLS 
-            ORDER BY scheduled_contacts.scheduled_contact_date ASC
+            IGNORE NULLS
+            -- Tiebreak on contact_type so same-date contacts order deterministically.
+            ORDER BY scheduled_contacts.scheduled_contact_date ASC, scheduled_contacts.contact_type ASC
             )) AS scheduled_contacts_info
         FROM finalized_periods as periods
         LEFT JOIN `{{project_id}}.tasks_views.us_tx_scheduled_contacts_preprocessed_materialized` as scheduled_contacts
