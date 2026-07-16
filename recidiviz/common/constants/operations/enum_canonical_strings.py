@@ -62,3 +62,19 @@ llm_extraction_job_document_result_type_document_level_failure_permanent = (
 llm_extraction_job_document_result_type_document_level_failure_retries_exhausted = (
     "DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED"
 )
+
+# LLMDocumentExtractionErrorType
+llm_document_extraction_error_type_llm_request_malformed_response = (
+    "LLM_REQUEST_MALFORMED_RESPONSE"
+)
+llm_document_extraction_error_type_llm_request_empty_response = (
+    "LLM_REQUEST_EMPTY_RESPONSE"
+)
+llm_document_extraction_error_type_llm_request_content_filtered = (
+    "LLM_REQUEST_CONTENT_FILTERED"
+)
+llm_document_extraction_error_type_llm_request_timeout = "LLM_REQUEST_TIMEOUT"
+llm_document_extraction_error_type_llm_request_rate_limited = "LLM_REQUEST_RATE_LIMITED"
+llm_document_extraction_error_type_llm_request_unknown_error = (
+    "LLM_REQUEST_UNKNOWN_ERROR"
+)

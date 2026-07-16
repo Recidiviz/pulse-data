@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants related to the LLM extraction job operations tables."""
+
 from enum import unique
 
 import recidiviz.common.constants.operations.enum_canonical_strings as operations_enum_strings
@@ -81,6 +82,50 @@ class LLMExtractionJobDocumentResultType(OperationsEnum):
     def get_value_descriptions(cls) -> dict["OperationsEnum", str]:
         return _LLM_EXTRACTION_JOB_DOCUMENT_RESULT_TYPE_VALUE_DESCRIPTIONS
 
+    @classmethod
+    def is_success_result_type(
+        cls, result_type: "LLMExtractionJobDocumentResultType"
+    ) -> bool:
+        """Returns whether |result_type| represents a successful extraction.
+
+        Enumerates every member so adding a new one without classifying it here
+        fails loudly.
+        """
+        if result_type is cls.SUCCESS:
+            return True
+        if result_type is cls.JOB_LEVEL_FAILURE:
+            return False
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_TRANSIENT:
+            return False
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_PERMANENT:
+            return False
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED:
+            return False
+        raise ValueError(f"Unexpected result_type: [{result_type}]")
+
+    @classmethod
+    def is_terminal_result_type(
+        cls, result_type: "LLMExtractionJobDocumentResultType"
+    ) -> bool:
+        """Returns whether |result_type| permanently removes a document from job
+        selection for an extractor version — a document with a terminal result
+        is "done" and is not re-selected.
+
+        Enumerates every member so adding a new one without classifying it here
+        fails loudly.
+        """
+        if result_type is cls.SUCCESS:
+            return True
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_PERMANENT:
+            return True
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED:
+            return True
+        if result_type is cls.JOB_LEVEL_FAILURE:
+            return False
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_TRANSIENT:
+            return False
+        raise ValueError(f"Unexpected result_type: [{result_type}]")
+
 
 _LLM_EXTRACTION_JOB_DOCUMENT_RESULT_TYPE_VALUE_DESCRIPTIONS: dict[
     OperationsEnum, str
@@ -107,3 +152,61 @@ _LLM_EXTRACTION_JOB_DOCUMENT_RESULT_TYPE_VALUE_DESCRIPTIONS: dict[
         "and will not be retried."
     ),
 }
+
+
+@unique
+class LLMDocumentExtractionErrorType(OperationsEnum):
+    """The per-document error category persisted with a job-document result.
+
+    Holds a superset of the LLMRequestErrorType values (the errors surfaced by
+    the LLM client while executing a single request); enum values for errors
+    encountered later, during validation, are added when validation lands.
+    """
+
+    LLM_REQUEST_MALFORMED_RESPONSE = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_malformed_response
+    )
+    LLM_REQUEST_EMPTY_RESPONSE = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_empty_response
+    )
+    LLM_REQUEST_CONTENT_FILTERED = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_content_filtered
+    )
+    LLM_REQUEST_TIMEOUT = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_timeout
+    )
+    LLM_REQUEST_RATE_LIMITED = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_rate_limited
+    )
+    LLM_REQUEST_UNKNOWN_ERROR = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_unknown_error
+    )
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The per-document error category persisted with a job-document result."
+
+    @classmethod
+    def get_value_descriptions(cls) -> dict["OperationsEnum", str]:
+        return {
+            LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE: (
+                "The LLM returned a response that could not be parsed into the expected "
+                "structured output."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_EMPTY_RESPONSE: (
+                "The LLM returned no content."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED: (
+                "The LLM blocked the request or response with a safety filter."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_TIMEOUT: (
+                "The LLM request timed out before a response was received."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED: (
+                "The LLM request was rejected because the provider rate limit was exceeded."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR: (
+                "The LLM request failed for a reason that did not fall into any other "
+                "category."
+            ),
+        }
