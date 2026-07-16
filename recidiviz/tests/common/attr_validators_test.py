@@ -532,6 +532,60 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_required_int=0, my_optional_int=0)
         _ = _TestClass(my_required_int=1000, my_optional_int=None)
 
+    def test_is_positive_float_validator(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_float: float = attr.ib(validator=attr_validators.is_positive_float)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_float\] on \[_TestClass\] must be an int or float. "
+            r"Found value \[True\] of type \[<class 'bool'>\].",
+        ):
+            _ = _TestClass(my_float=True)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_float\] on \[_TestClass\] must be a positive number. "
+            r"Found value \[-1.5\]",
+        ):
+            _ = _TestClass(my_float=-1.5)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_float\] on \[_TestClass\] must be a positive number. "
+            r"Found value \[0.0\]",
+        ):
+            _ = _TestClass(my_float=0.0)
+
+        # ints and positive floats are allowed
+        _ = _TestClass(my_float=0.5)
+        _ = _TestClass(my_float=5)
+
+    def test_is_non_negative_float_validator(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_float: float = attr.ib(validator=attr_validators.is_non_negative_float)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_float\] on \[_TestClass\] must be an int or float. "
+            r"Found value \[True\] of type \[<class 'bool'>\].",
+        ):
+            _ = _TestClass(my_float=True)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_float\] on \[_TestClass\] must be a non-negative number. "
+            r"Found value \[-0.5\]",
+        ):
+            _ = _TestClass(my_float=-0.5)
+
+        # 0 and positive values are allowed
+        _ = _TestClass(my_float=0.0)
+        _ = _TestClass(my_float=2.5)
+        _ = _TestClass(my_float=3)
+
     def test_is_subclass_of(self) -> None:
         class _Base:
             pass

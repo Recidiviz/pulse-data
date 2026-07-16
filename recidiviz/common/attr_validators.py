@@ -639,6 +639,32 @@ def is_numerical_strict(instance: Any, attribute: attr.Attribute, value: float) 
         )
 
 
+def is_positive_float(instance: Any, attribute: attr.Attribute, value: float) -> None:
+    """Validator that ensures the field value is a positive number."""
+    is_numerical_strict(instance, attribute, value)
+
+    if value <= 0:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"positive number. Found value [{value}]"
+        )
+
+
+def is_non_negative_float(
+    instance: Any, attribute: attr.Attribute, value: float
+) -> None:
+    """Validator that ensures the field value is a non-negative number (zero
+    allowed).
+    """
+    is_numerical_strict(instance, attribute, value)
+
+    if value < 0:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"non-negative number. Found value [{value}]"
+        )
+
+
 # Date field validators
 def is_date(instance: Any, attribute: attr.Attribute, value: Any) -> None:
     """Validates that a field is a `date`, but NOT a `datetime` object."""
