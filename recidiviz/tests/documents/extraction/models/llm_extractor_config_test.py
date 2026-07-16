@@ -61,6 +61,7 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    DocumentRootEntityIdType,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -92,12 +93,13 @@ def _input_document_collection(
         state_code=state_code,
         name=name,
         description=_DESCRIPTION,
-        primary_key_columns=[
-            bigquery.SchemaField("person_external_id", "STRING"),
+        root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+        document_primary_key_columns=[
             bigquery.SchemaField("note_id", "STRING"),
         ],
         other_metadata_columns=[],
         document_generation_query_template="SELECT 1",
+        other_document_generation_output_columns=[],
     )
 
 

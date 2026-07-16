@@ -134,16 +134,23 @@ class DocumentCollectionConfig:
         validator=recidiviz_attr_validators.is_meaningful_description
     )
 
-    # Columns that uniquely identify a document within this collection. Includes root
-    # entity columns (derived from root_entity_id_type) followed by document-specific
-    # primary key columns. The combination of all primary key columns should remain
-    # stable over time (i.e. if a document is updated in place, its primary key should
-    # not change).
-    primary_key_columns: list[bigquery.SchemaField] = attr.ib(
-        validator=[
-            attr_validators.is_non_empty_list,
-            attr_validators.is_list_of(bigquery.SchemaField),
-        ]
+    # The type of root entity (StatePerson or StateStaff, internal or external ID)
+    # that documents in this collection are associated with. Determines the leading
+    # root entity primary key columns (see the primary_key_columns property).
+    root_entity_id_type: DocumentRootEntityIdType = attr.ib(
+        validator=attr.validators.in_(DocumentRootEntityIdType)
+    )
+
+    # The document-specific primary key columns — those that uniquely identify a
+    # document within a single root entity, excluding the root entity columns
+    # (which are derived from root_entity_id_type). May be empty when a root entity
+    # has at most one document in the collection (e.g. an entity-resolution
+    # composite document). Combined with the root entity columns via the
+    # primary_key_columns property. The full primary key should remain stable over
+    # time (i.e. if a document is updated in place, its primary key should not
+    # change).
+    document_primary_key_columns: list[bigquery.SchemaField] = attr.ib(
+        validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
     # Additional metadata columns outputted by the document_generation_query that are
@@ -155,9 +162,20 @@ class DocumentCollectionConfig:
     # The SQL query template used to generate documents in this collection.
     document_generation_query_template: str = attr.ib(validator=attr_validators.is_str)
 
+    # Columns the generation query outputs that are never exported to the metadata
+    # table — carried through the temp-updates table and consumed by
+    # collection-specific post-processing, exactly like the document_text
+    # column.
+    other_document_generation_output_columns: list[bigquery.SchemaField] = attr.ib(
+        validator=attr_validators.is_list_of(bigquery.SchemaField)
+    )
+
     def __attrs_post_init__(self) -> None:
         col_names = [
-            col.name for col in self.primary_key_columns + self.other_metadata_columns
+            col.name
+            for col in self.primary_key_columns
+            + self.other_metadata_columns
+            + self.other_document_generation_output_columns
         ]
         duplicate_names = {n for n in col_names if col_names.count(n) > 1}
         if duplicate_names:
@@ -180,6 +198,17 @@ class DocumentCollectionConfig:
         )
 
     @property
+    def primary_key_columns(self) -> list[bigquery.SchemaField]:
+        """Returns the columns that uniquely identify a document within this
+        collection: the root entity columns (derived from root_entity_id_type)
+        followed by the document-specific primary key columns.
+        """
+        return [
+            *_root_entity_schema_fields(self.root_entity_id_type),
+            *self.document_primary_key_columns,
+        ]
+
+    @property
     def primary_key_column_names(self) -> list[str]:
         """Returns the list of primary key column names for this document collection."""
         return [col.name for col in self.primary_key_columns]
@@ -188,6 +217,13 @@ class DocumentCollectionConfig:
     def other_metadata_column_names(self) -> list[str]:
         """Returns the list of other metadata column names for this document collection."""
         return [col.name for col in self.other_metadata_columns]
+
+    @property
+    def other_document_generation_output_column_names(self) -> list[str]:
+        """Returns the list of generation-output-only column names for this
+        document collection (empty for ordinary collections).
+        """
+        return [col.name for col in self.other_document_generation_output_columns]
 
     def build_bq_metadata_schema(self) -> list[bigquery.SchemaField]:
         """Returns the full BigQuery schema for this collection's metadata table."""
@@ -205,7 +241,8 @@ class DocumentCollectionConfig:
         """Returns the BigQuery schema for the temp document metadata updates
         table that contains rows where there were any changes to
         document_contents_id or another metadata column for each primary key in
-        this collection. Includes document_text (not persisted to the final
+        this collection. Includes document_text and any
+        other_document_generation_output_columns (neither persisted to the final
         metadata table) and excludes row_create_datetime (set at final write
         time).
         """
@@ -215,6 +252,7 @@ class DocumentCollectionConfig:
             get_document_store_column_schema(DOCUMENT_CONTENTS_ID_COLUMN_NAME),
             get_document_store_column_schema(DOCUMENT_TEXT_COLUMN_NAME),
             get_document_store_column_schema(DOCUMENT_UPDATE_DATETIME_COLUMN_NAME),
+            *self.other_document_generation_output_columns,
         ]
 
     def temp_document_metadata_updates_table_address(
@@ -283,7 +321,6 @@ class DocumentCollectionConfig:
         root_entity_id_type = DocumentRootEntityIdType(
             yaml_dict.pop("root_entity_id_type", str)
         )
-        root_entity_columns = _root_entity_schema_fields(root_entity_id_type)
 
         document_pk_columns = []
         other_metadata_columns = []
@@ -311,11 +348,15 @@ class DocumentCollectionConfig:
             state_code=cls.file_path_to_state_code(yaml_path),
             name=cls.file_path_to_config_name(yaml_path),
             description=yaml_dict.pop("description", str),
-            primary_key_columns=root_entity_columns + document_pk_columns,
+            root_entity_id_type=root_entity_id_type,
+            document_primary_key_columns=document_pk_columns,
             other_metadata_columns=other_metadata_columns,
             document_generation_query_template=yaml_dict.pop(
                 "document_generation_query", str
             ),
+            # Not authorable from YAML — only generated (e.g. entity-resolution)
+            # collections declare generation-output-only columns.
+            other_document_generation_output_columns=[],
         )
 
     @staticmethod

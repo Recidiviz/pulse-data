@@ -19,18 +19,68 @@ import unittest
 from pathlib import Path
 
 from google.cloud import bigquery
+from google.cloud.bigquery.enums import SqlTypeNames
 
+from recidiviz.big_query.big_query_utils import (
+    BigQueryFieldMode,
+    to_validated_schema_field,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store import yaml_schema
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    DocumentRootEntityIdType,
     collect_document_collection_config_yaml_paths,
     collect_document_collection_configs,
     get_document_collection_config,
 )
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_TEXT_COLUMN_NAME,
+    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    ROW_CREATE_DATETIME_COLUMN_NAME,
+)
 from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
+
+# A REPEATED RECORD generation-output-only column, for exercising the
+# other_document_generation_output_columns handling (the class of column the ER
+# composite-document collection uses for its entry_source_map).
+_GENERATION_OUTPUT_COLUMN = bigquery.SchemaField(
+    "extra_generation_output",
+    "RECORD",
+    mode="REPEATED",
+    fields=[bigquery.SchemaField("value", "STRING")],
+)
+
+
+def _make_config(
+    *,
+    root_entity_id_type: DocumentRootEntityIdType = DocumentRootEntityIdType.PERSON_ID,
+    document_primary_key_columns: list[bigquery.SchemaField] | None = None,
+    other_metadata_columns: list[bigquery.SchemaField] | None = None,
+    other_document_generation_output_columns: list[bigquery.SchemaField] | None = None,
+) -> DocumentCollectionConfig:
+    """Builds a minimal valid DocumentCollectionConfig, with the fields relevant to
+    these tests overridable. document_primary_key_columns defaults to a single
+    note_id column; pass [] explicitly to test the no-document-column case."""
+    return DocumentCollectionConfig(
+        state_code=StateCode.US_XX,
+        name="TEST_COLLECTION",
+        description="test document collection",
+        root_entity_id_type=root_entity_id_type,
+        document_primary_key_columns=(
+            [bigquery.SchemaField("note_id", "STRING")]
+            if document_primary_key_columns is None
+            else document_primary_key_columns
+        ),
+        other_metadata_columns=other_metadata_columns or [],
+        document_generation_query_template="SELECT 1",
+        other_document_generation_output_columns=(
+            other_document_generation_output_columns or []
+        ),
+    )
 
 
 class TestDocumentCollectionConfig(unittest.TestCase):
@@ -51,18 +101,46 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
 
-        self.assertEqual(config.state_code, StateCode.US_XX)
-        self.assertEqual(config.name, "FAKE_CASE_NOTES")
-
-        pk_col_names = [col.name for col in config.primary_key_columns]
-        self.assertEqual(
-            pk_col_names,
-            ["person_external_id", "person_external_id_type", "note_id"],
+        expected_query_template = (
+            "SELECT\n"
+            "  person_id AS person_external_id,\n"
+            "  'US_XX_DOC' AS person_external_id_type,\n"
+            "  note_id,\n"
+            "  note_type,\n"
+            "  note_body AS document_text,\n"
+            "  CAST(created_at AS TIMESTAMP) AS document_update_datetime\n"
+            "FROM `{project_id}.us_xx_raw_data.fake_notes`\n"
         )
-
-        self.assertEqual(len(config.other_metadata_columns), 1)
-        self.assertEqual(config.other_metadata_columns[0].name, "note_type")
-        self.assertEqual(config.other_metadata_columns[0].field_type, "STRING")
+        self.assertEqual(
+            DocumentCollectionConfig(
+                state_code=StateCode.US_XX,
+                name="FAKE_CASE_NOTES",
+                description=(
+                    "Fake case notes for testing document collection config parsing."
+                ),
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                document_primary_key_columns=[
+                    to_validated_schema_field(
+                        field_name="note_id",
+                        field_type=SqlTypeNames.STRING,
+                        description="The unique identifier for the case note",
+                        mode=BigQueryFieldMode.REQUIRED,
+                    ),
+                ],
+                other_metadata_columns=[
+                    to_validated_schema_field(
+                        field_name="note_type",
+                        field_type=SqlTypeNames.STRING,
+                        description="The type of note",
+                        mode=BigQueryFieldMode.NULLABLE,
+                    ),
+                ],
+                document_generation_query_template=expected_query_template,
+                # Never authored in YAML — always empty for a first-order collection.
+                other_document_generation_output_columns=[],
+            ),
+            config,
+        )
 
     def test_collect_configs(self) -> None:
         configs = collect_document_collection_configs(
@@ -114,13 +192,15 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 name="TEST_COLLECTION",
                 description="test collection for validation",
-                primary_key_columns=[
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                document_primary_key_columns=[
                     bigquery.SchemaField("duplicate_column", "STRING"),
                 ],
                 other_metadata_columns=[
                     bigquery.SchemaField("duplicate_column", "INTEGER"),
                 ],
                 document_generation_query_template="SELECT 1",
+                other_document_generation_output_columns=[],
             )
 
     def test_invalid_collection_name(self) -> None:
@@ -129,11 +209,120 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 name="bad-name",
                 description="test collection with bad name",
-                primary_key_columns=[
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                document_primary_key_columns=[
                     bigquery.SchemaField("pk_col", "STRING"),
                 ],
                 other_metadata_columns=[],
                 document_generation_query_template="SELECT 1",
+                other_document_generation_output_columns=[],
+            )
+
+    def test_primary_key_columns_derives_root_then_document_columns(self) -> None:
+        config = _make_config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+            document_primary_key_columns=[bigquery.SchemaField("note_id", "STRING")],
+        )
+        self.assertEqual(
+            config.primary_key_column_names,
+            ["person_external_id", "person_external_id_type", "note_id"],
+        )
+
+    def test_primary_key_columns_with_no_document_columns(self) -> None:
+        # An ER composite-document collection has one document per root entity, so
+        # its primary key is just the root entity column(s).
+        config = _make_config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+            document_primary_key_columns=[],
+        )
+        self.assertEqual(config.primary_key_column_names, ["person_id"])
+
+    def test_temp_updates_schema_includes_generation_output_columns(self) -> None:
+        config = _make_config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+            document_primary_key_columns=[bigquery.SchemaField("note_id", "STRING")],
+            other_metadata_columns=[bigquery.SchemaField("note_type", "STRING")],
+            other_document_generation_output_columns=[_GENERATION_OUTPUT_COLUMN],
+        )
+        temp_schema = config.build_bq_temp_document_metadata_updates_schema()
+        self.assertEqual(
+            [field.name for field in temp_schema],
+            [
+                "person_id",
+                "note_id",
+                "note_type",
+                DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+                DOCUMENT_TEXT_COLUMN_NAME,
+                DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+                "extra_generation_output",
+            ],
+        )
+        # The generation-output column is carried through unchanged (REPEATED RECORD).
+        self.assertIn(_GENERATION_OUTPUT_COLUMN, temp_schema)
+
+    def test_metadata_schema_excludes_generation_output_columns(self) -> None:
+        config = _make_config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+            document_primary_key_columns=[bigquery.SchemaField("note_id", "STRING")],
+            other_metadata_columns=[bigquery.SchemaField("note_type", "STRING")],
+            other_document_generation_output_columns=[_GENERATION_OUTPUT_COLUMN],
+        )
+        metadata_schema_names = [
+            field.name for field in config.build_bq_metadata_schema()
+        ]
+        self.assertEqual(
+            metadata_schema_names,
+            [
+                "person_id",
+                "note_id",
+                "note_type",
+                DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+                DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+                ROW_CREATE_DATETIME_COLUMN_NAME,
+            ],
+        )
+        self.assertNotIn("extra_generation_output", metadata_schema_names)
+
+    def test_other_document_generation_output_column_names(self) -> None:
+        config = _make_config(
+            other_document_generation_output_columns=[_GENERATION_OUTPUT_COLUMN],
+        )
+        self.assertEqual(
+            config.other_document_generation_output_column_names,
+            ["extra_generation_output"],
+        )
+
+    def test_ordinary_config_has_no_generation_output_columns(self) -> None:
+        config = _make_config()
+        self.assertEqual(config.other_document_generation_output_column_names, [])
+        temp_schema_names = [
+            field.name
+            for field in config.build_bq_temp_document_metadata_updates_schema()
+        ]
+        metadata_schema_names = [
+            field.name for field in config.build_bq_metadata_schema()
+        ]
+        self.assertNotIn("extra_generation_output", temp_schema_names)
+        self.assertNotIn("extra_generation_output", metadata_schema_names)
+
+    def test_validation_duplicate_generation_output_column(self) -> None:
+        with self.assertRaisesRegex(ValueError, "has duplicate column names"):
+            _make_config(
+                other_metadata_columns=[bigquery.SchemaField("shared_name", "STRING")],
+                other_document_generation_output_columns=[
+                    bigquery.SchemaField("shared_name", "STRING", mode="REPEATED"),
+                ],
+            )
+
+    def test_validation_document_pk_collides_with_root_entity_column(self) -> None:
+        # A document PK column named like the derived root-entity column would make
+        # the derived primary_key_columns contain it twice.
+        with self.assertRaisesRegex(ValueError, "has duplicate column names"):
+            _make_config(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+                document_primary_key_columns=[
+                    bigquery.SchemaField("person_id", "INTEGER"),
+                ],
             )
 
     def test_all_yaml_configs_conform_to_schema(self) -> None:
