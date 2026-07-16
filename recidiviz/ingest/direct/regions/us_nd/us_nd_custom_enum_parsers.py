@@ -149,6 +149,7 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
     StateCustodialAuthority.EXTERNAL_UNKNOWN: [
         # TODO(#32122): Move this to STATE_PRISON once #32123 is complete.
         "NTAD",  # Resident Not Admitted
+        "NTAP",  # Not admitted pre-sentence (NTAD for female residents)
     ],
     StateCustodialAuthority.STATE_PRISON: [
         "BTC",
@@ -193,6 +194,7 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
     StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY: [
         "DEFP",
         "NTAD",
+        "NTAP",
         # There are only a few of these, and they seem to represent judicial
         # districts in ND
         "NW",
