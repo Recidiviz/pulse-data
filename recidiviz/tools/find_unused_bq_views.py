@@ -303,6 +303,22 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Consolidated archive view for supervision task records across states. "
         "Will be used for cross-state task analysis (Sophie Pepin, 2026-04-22)"
     ),
+    **{
+        BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
+            "Label Studio annotation eval views. Not yet consumed by a downstream "
+            "product; tracked in TODO(#90005). (Mayuka Sarukkai, 2026-07-06)"
+        )
+        for table_id in [
+            "cni_accuracy_per_field_annotations_parsed",
+            "cni_accuracy_per_field_annotation_pairs",
+            "cni_accuracy_per_field_irr_summary",
+            "cni_accuracy_per_field_irr_trend",
+            "meetings_module_quality_annotations_parsed",
+            "meetings_module_quality_annotation_pairs",
+            "meetings_module_quality_irr_summary",
+            "meetings_module_quality_irr_trend",
+        ]
+    },
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"

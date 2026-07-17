@@ -43,7 +43,12 @@ from recidiviz.ingest.direct.views.view_config import (
 from recidiviz.ingest.views.view_config import (
     get_view_builders_for_views_to_update as get_ingest_infra_view_builders,
 )
-from recidiviz.llm_eval.llmaj.views.eval_views import get_llmaj_view_builders
+from recidiviz.llm_eval.label_studio.views.view_config import (
+    get_view_builders_for_views_to_update as get_label_studio_view_builders,
+)
+from recidiviz.llm_eval.llmaj.views.view_config import (
+    get_view_builders_for_views_to_update as get_llmaj_view_builders,
+)
 from recidiviz.monitoring.platform_kpis.view_config import (
     get_platform_kpi_views_to_update,
 )
@@ -87,6 +92,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             get_platform_kpi_views_to_update(),
             get_transitions_view_builders(),
             get_static_data_view_builders(),
+            get_label_studio_view_builders(),
             get_llmaj_view_builders(),
         )
     )
@@ -146,6 +152,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "justice_counts_jails",
     "lantern_revocations_matrix",
     "linestaff_data_validation",
+    "llm_eval__label_studio",
     "llm_eval__llmaj",
     "meetings",
     "normalized_state",

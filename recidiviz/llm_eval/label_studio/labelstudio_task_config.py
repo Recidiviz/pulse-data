@@ -262,6 +262,11 @@ class LabelStudioTaskConfig:
         return self.labelstudio_project_ids[gcp_project]
 
     @property
+    def irr_annotation_fields(self) -> list[LabelStudioAnnotationField]:
+        """Returns the annotation fields that participate in IRR computation."""
+        return [f for f in self.annotation_fields if f.irr_included]
+
+    @property
     def raw_table_id(self) -> str:
         """Returns the BQ table ID for the raw annotations table."""
         return f"{self.task_name}_annotations_raw"

@@ -146,9 +146,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
     GCP_PROJECT_STAGING: {
         BigQueryAddress.from_str(address_str=address_str)
         for address_str in [
-            # TODO(#90005): remove once annotation eval views are built in the standard DAG
-            "label_studio.cni_accuracy_per_field_annotations_raw",
-            "label_studio.meetings_module_quality_annotations_raw",
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
             # Daily archives of the case_insights_record export for sentencing
@@ -169,9 +166,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
     GCP_PROJECT_PRODUCTION: {
         BigQueryAddress.from_str(address_str=address_str)
         for address_str in [
-            # TODO(#90005): remove once annotation eval views are built in the standard DAG
-            "label_studio.cni_accuracy_per_field_annotations_raw",
-            "label_studio.meetings_module_quality_annotations_raw",
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
             # Daily archives of the case_insights_record export for sentencing
