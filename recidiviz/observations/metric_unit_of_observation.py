@@ -127,6 +127,26 @@ class MetricUnitOfObservation:
                     ),
                     _STATE_CODE_COLUMN,
                 ]
+            case MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER:
+                return [
+                    String(
+                        name="email_address",
+                        description="The email address for the Supervisor Homepage "
+                        "Operations Module primary user being observed.",
+                        mode="NULLABLE",
+                    ),
+                    _STATE_CODE_COLUMN,
+                ]
+            case MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER:
+                return [
+                    String(
+                        name="email_address",
+                        description="The email address for the Supervisor Homepage "
+                        "Operations Module provisioned user being observed.",
+                        mode="NULLABLE",
+                    ),
+                    _STATE_CODE_COLUMN,
+                ]
             case MetricUnitOfObservationType.TASKS_PRIMARY_USER:
                 return [
                     String(

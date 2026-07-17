@@ -939,6 +939,15 @@ for detailed usage examples.
    - Any important caveats or limitations
    - How it should be used
 
+   **Document every column, too.** When a view declares a `schema` /
+   `attribute_cols`, give each `BigQueryViewColumn` a real, specific
+   `description`. Do **not** use `COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT` in new
+   code — it is a legacy placeholder for columns that predate this rule and it
+   renders as undocumented in the Calc Catalog docs. Describe what the column
+   holds, including units or possible enum values (e.g. `"System type (e.g.
+   SUPERVISION) derived from the user's product-roster role type."`), rather
+   than restating the column name.
+
 4. **Use `.table_for_query` when referencing other views** - This ensures you
    query the materialized table when available
 

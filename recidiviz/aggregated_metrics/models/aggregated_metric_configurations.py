@@ -3599,6 +3599,54 @@ DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS = EventDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_PROVISIONED_PRIMARY_SHP_OPERATIONS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_shp_operations_users",
+    display_name="Distinct Provisioned Primary Supervisor Homepage Operations Module Users",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users provisioned "
+    "for the operations module. Top of the operations drilldown funnel: the denominator against "
+    "which operations drilldown engagement is measured.",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_SHP_OPERATIONS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_shp_operations_users",
+    display_name="Distinct Registered Primary Supervisor Homepage Operations Module Users",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users provisioned "
+    "for the operations module who have registered (signed up / logged into Supervisor Homepage) "
+    "at least once. Second stage of the operations drilldown funnel, below provisioned.",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_SHP_OPERATIONS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_shp_operations_users",
+    display_name="Distinct Logged In Primary Supervisor Homepage Operations Module Users",
+    description="Number of distinct registered primary (supervisor) Supervisor Homepage users "
+    "provisioned for the operations module who logged in at least once during the time period.",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_PRIMARY_SHP_OPERATIONS_USERS_VIEWED_DRILLDOWN = EventDistinctUnitCountMetric(
+    name="distinct_primary_shp_operations_users_viewed_drilldown",
+    display_name="Distinct Primary Supervisor Homepage Operations Module Users Who Viewed the Operations Drilldown",
+    description="Number of distinct primary (supervisor) Supervisor Homepage operations module "
+    "users who viewed the operations module drilldown at least once during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": ["frontend_outliers_operations_drilldown_viewed"]
+        },
+    ),
+)
+
 DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL = EventDistinctUnitCountMetric(
     name="distinct_active_primary_insights_users_with_outliers_visible_in_tool",
     display_name="Distinct Active Primary Supervisor Homepage Users with Outliers Visible in Tool",

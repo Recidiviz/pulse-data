@@ -31,3 +31,52 @@ class ProductTypeTest(unittest.TestCase):
                     context_page_url_col_name="context_page_path"
                 )
             )
+
+    def test_product_roster_filter_checks_feature_variant_presence(self) -> None:
+        """Feature variants are stored as presence-keyed JSON objects, not the string
+        'true', so the product roster filter must check key presence (and not an
+        explicit `false` value) rather than `JSON_EXTRACT_SCALAR(...) = 'true'`, which
+        never matches and silently zeroes out provisioning for these products."""
+        feature_variant_gated = [
+            product_type
+            for product_type in ProductType
+            if product_type.product_roster_feature_variants
+        ]
+        # Pin the exact set of feature-variant-gated products. This both keeps
+        # the loop below from passing vacuously and forces any change to a
+        # product's gating to be deliberate (see the failure message below).
+        expected_feature_variant_gated = {
+            ProductType.CASE_NOTE_SEARCH,
+            ProductType.ROUTE_PLANNER,
+            ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE,
+            ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+            ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE,
+        }
+        self.assertEqual(
+            expected_feature_variant_gated,
+            set(feature_variant_gated),
+            "The set of feature-variant-gated products changed. This set defines "
+            "the provisioned-user population that downstream aggregated metrics "
+            "(the provisioning funnels in `insights_impact_metrics`, etc.) are "
+            "computed from, so adding or removing a product here shifts those "
+            "metrics. If the change is intentional, update this set AND confirm "
+            "the affected provisioning / aggregated_metrics views are re-derived; "
+            "if it is not, a product likely lost (or gained) its gating by "
+            "accident.",
+        )
+
+        for product_type in feature_variant_gated:
+            fragment = product_type.get_product_roster_filter_query_fragment()
+            for fv in product_type.product_roster_feature_variants:
+                self.assertIn(
+                    f"JSON_QUERY(default_feature_variants, '$.{fv}') IS NOT NULL",
+                    fragment,
+                )
+                self.assertIn(
+                    f"JSON_QUERY(default_feature_variants, '$.{fv}') != 'false'",
+                    fragment,
+                )
+                self.assertNotIn(
+                    f"JSON_EXTRACT_SCALAR(default_feature_variants, '$.{fv}') = 'true'",
+                    fragment,
+                )

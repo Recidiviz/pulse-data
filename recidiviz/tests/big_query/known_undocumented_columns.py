@@ -2104,6 +2104,26 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "variant_id",
     ],
     BigQueryAddress.from_str(
+        "experiments_metadata.experiment_assignments_supervisor_homepage_operations_module_primary_user"
+    ): [
+        "end_date_exclusive",
+        "experiment_id",
+        "is_treated",
+        "start_date",
+        "variant_date",
+        "variant_id",
+    ],
+    BigQueryAddress.from_str(
+        "experiments_metadata.experiment_assignments_supervisor_homepage_operations_module_provisioned_user"
+    ): [
+        "end_date_exclusive",
+        "experiment_id",
+        "is_treated",
+        "start_date",
+        "variant_date",
+        "variant_id",
+    ],
+    BigQueryAddress.from_str(
         "experiments_metadata.experiment_assignments_tasks_primary_user"
     ): [
         "end_date_exclusive",

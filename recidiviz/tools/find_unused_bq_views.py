@@ -601,12 +601,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "(Mayuka Sarukkai, 2025-12-29)"
     ),
     BigQueryAddress.from_str(
-        "segment_events.all_supervisor_homepage_operations_module_segment_events"
-    ): (
-        "Union view for supervisor homepage operations module segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str(
         "segment_events.all_supervisor_homepage_opportunities_module_segment_events"
     ): (
         "Union view for supervisor homepage opportunities module segment events. Kept for potential future use. "

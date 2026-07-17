@@ -180,6 +180,9 @@ schema:
   - name: feature_variants_supervisor_homepage
     type: BOOLEAN
     mode: NULLABLE
+  - name: feature_variants_supervisor_homepage_vitals
+    type: BOOLEAN
+    mode: NULLABLE
   - name: feature_variants_supervisor_homepage_workflows
     type: BOOLEAN
     mode: NULLABLE

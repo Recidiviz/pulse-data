@@ -299,7 +299,11 @@ class ProductType(Enum):
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
             return ["supervisor_homepage_workflows"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
-            return ["supervisor_homepage"]
+            # The operations (vitals) module within Supervisor Homepage is gated on the
+            # `supervisorHomepageVitals` feature variant (the module-level analog of
+            # `supervisorHomepageWorkflows` for the opportunities module). The nominal
+            # `supervisorHomepage` variant is defunct (0 provisioned users).
+            return ["supervisor_homepage_vitals"]
         # Note: Supervisor homepage outcomes module has an associated feature variant
         # (`outcomesModule`) but this variant is not granted via admin panel, so it is
         # not observable in auth0 tables. We just assume that users who are provisioned
@@ -400,7 +404,8 @@ class ProductType(Enum):
             conditions.append(
                 " OR ".join(
                     [
-                        f"JSON_EXTRACT_SCALAR({table_prefix_str}default_feature_variants, '$.{fv}') = 'true'"
+                        f"(JSON_QUERY({table_prefix_str}default_feature_variants, '$.{fv}') IS NOT NULL "
+                        f"AND JSON_QUERY({table_prefix_str}default_feature_variants, '$.{fv}') != 'false')"
                         for fv in self.product_roster_feature_variants
                     ]
                 )

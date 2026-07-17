@@ -371,6 +371,58 @@ def _get_sentencing_assessment_report_primary_user_population_selector(
             )
 
 
+def _get_supervisor_homepage_operations_module_primary_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER
+    population of the given population type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return None
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER_REGISTRATION_SESSION,
+                span_conditions_dict={},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER_REGISTRATION_SESSION,
+                span_conditions_dict={},
+            )
+
+
+def _get_supervisor_homepage_operations_module_provisioned_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER
+    population of the given population type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return None
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+
+
 def _get_tasks_provisioned_user_population_selector(
     population_type: MetricPopulationType,
 ) -> SpanSelector | None:
@@ -511,6 +563,14 @@ def get_standard_population_selector_for_unit_of_observation(
                 _get_sentencing_assessment_report_provisioned_user_population_selector(
                     population_type
                 )
+            )
+        case MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PRIMARY_USER:
+            return _get_supervisor_homepage_operations_module_primary_user_population_selector(
+                population_type
+            )
+        case MetricUnitOfObservationType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE_PROVISIONED_USER:
+            return _get_supervisor_homepage_operations_module_provisioned_user_population_selector(
+                population_type
             )
         case MetricUnitOfObservationType.TASKS_PRIMARY_USER:
             return _get_tasks_primary_user_population_selector(population_type)
