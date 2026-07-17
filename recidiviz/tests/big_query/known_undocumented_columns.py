@@ -338,7 +338,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_nca_points",
     ],
-    BigQueryAddress.from_str("analyst_data.recommended_custody_level_spans"): [
+    BigQueryAddress.from_str("classification_views.recommended_custody_level_spans"): [
         "end_date_exclusive",
         "person_id",
         "recommended_custody_level",
@@ -645,7 +645,9 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_recommended_custody_level_spans"): [
+    BigQueryAddress.from_str(
+        "classification_views.us_ix_recommended_custody_level_spans"
+    ): [
         "date_gap_id",
         "end_date",
         "person_id",
@@ -655,42 +657,42 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q1"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q1"): [
         "end_date",
         "person_id",
         "q1_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q2"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q2"): [
         "end_date",
         "person_id",
         "q2_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q3"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q3"): [
         "end_date",
         "person_id",
         "q3_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q4"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q4"): [
         "end_date",
         "person_id",
         "q4_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q5"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q5"): [
         "end_date",
         "person_id",
         "q5_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_ix_sls_q6"): [
+    BigQueryAddress.from_str("classification_views.us_ix_sls_q6"): [
         "end_date",
         "person_id",
         "q6_score",
@@ -1167,21 +1169,21 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_caf_q1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_caf_q1"): [
         "end_date_exclusive",
         "person_id",
         "q1_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_caf_q2"): [
+    BigQueryAddress.from_str("classification_views.us_tn_caf_q2"): [
         "end_date_exclusive",
         "person_id",
         "q2_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_caf_q6"): [
+    BigQueryAddress.from_str("classification_views.us_tn_caf_q6"): [
         "date_gap_id",
         "end_date_exclusive",
         "person_id",
@@ -1190,14 +1192,14 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_caf_q7"): [
+    BigQueryAddress.from_str("classification_views.us_tn_caf_q7"): [
         "end_date_exclusive",
         "person_id",
         "q7_score",
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_caf_q8"): [
+    BigQueryAddress.from_str("classification_views.us_tn_caf_q8"): [
         "end_date_exclusive",
         "person_id",
         "q8_score",
@@ -1221,7 +1223,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "person_id",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_q1_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q1_v1"): [
         "current_offense_date",
         "current_offenses_list",
         "end_date_exclusive",
@@ -1232,7 +1234,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_q3_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q3_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1241,7 +1243,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_q4_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q4_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1250,7 +1252,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_q5_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q5_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1259,7 +1261,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_q6_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q6_v1"): [
         "age",
         "end_date_exclusive",
         "person_id",
@@ -1267,7 +1269,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_dcaf_rcaf_q7_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_dcaf_rcaf_q7_v1"): [
         "end_date_exclusive",
         "other_program_completions",
         "person_id",
@@ -1437,7 +1439,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "sentence_effective_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q1_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q1_v1"): [
         "current_offense_date",
         "current_offenses_list",
         "end_date_exclusive",
@@ -1448,7 +1450,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q3_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q3_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1457,7 +1459,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q3_v2"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q3_v2"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1466,7 +1468,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q4_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q4_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1475,7 +1477,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q4_v2"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q4_v2"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1484,7 +1486,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q5_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q5_v1"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1493,7 +1495,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q5_v2"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q5_v2"): [
         "end_date_exclusive",
         "incidents_list",
         "latest_incident_date",
@@ -1502,7 +1504,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_score",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q6_v1"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q6_v1"): [
         "age",
         "end_date_exclusive",
         "no_class_a_or_b_disciplinary_reports_in_last_12_months",
@@ -1511,7 +1513,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_rcaf_q6_v2"): [
+    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q6_v2"): [
         "age",
         "end_date_exclusive",
         "no_class_a_or_b_disciplinary_reports_in_last_12_months",
@@ -1520,18 +1522,8 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.us_tn_recommended_custody_level_spans"): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
-        "analyst_data.us_tn_recommended_custody_level_spans_diagnostic_2026_policy"
+        "classification_views.us_tn_recommended_custody_level_spans"
     ): [
         "date_gap_id",
         "end_date_exclusive",
@@ -1543,7 +1535,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.us_tn_recommended_custody_level_spans_reclassification_2026_policy"
+        "classification_views.us_tn_recommended_custody_level_spans_diagnostic_2026_policy"
     ): [
         "date_gap_id",
         "end_date_exclusive",
@@ -1555,7 +1547,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.us_tn_recommended_custody_level_spans_reclassification_2026_policy_no_aging_disciplinaries"
+        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy"
     ): [
         "date_gap_id",
         "end_date_exclusive",
@@ -1567,7 +1559,19 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "analyst_data.us_tn_recommended_custody_level_spans_reclassification_2026_policy_v2"
+        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy_no_aging_disciplinaries"
+    ): [
+        "date_gap_id",
+        "end_date_exclusive",
+        "person_id",
+        "recommended_custody_level",
+        "score_metadata",
+        "session_id",
+        "start_date",
+        "state_code",
+    ],
+    BigQueryAddress.from_str(
+        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy_v2"
     ): [
         "date_gap_id",
         "end_date_exclusive",

@@ -694,7 +694,7 @@ def custody_level_compared_to_recommended(
         end_date_exclusive,
         CAST(NULL AS STRING) AS custody_level,
         recommended_custody_level,
-      FROM `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
+      FROM `{{project_id}}.{{classification_dataset}}.recommended_custody_level_spans_materialized`
       {score_type_filter}
 
     ),

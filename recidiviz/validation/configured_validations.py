@@ -210,6 +210,9 @@ from recidiviz.validation.views.state.recidivism_person_level_external_compariso
 from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import (
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.recommended_custody_level_future_score_increase import (
+    RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.revocation_matrix_caseload_admission_history import (
     REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
 )
@@ -519,6 +522,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

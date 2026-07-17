@@ -60,24 +60,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inv
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_age import (
-    US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_prev_level_5_release import (
-    US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_high import (
-    US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_programs_moderate import (
-    US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_recent_ad_seg import (
-    US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_vfo_level import (
-    US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
 )
@@ -92,6 +74,24 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_age import (
+    US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prev_level_5_release import (
+    US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_programs_high import (
+    US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_programs_moderate import (
+    US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_recent_ad_seg import (
+    US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_vfo_level import (
+    US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,

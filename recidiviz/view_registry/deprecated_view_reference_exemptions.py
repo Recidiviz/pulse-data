@@ -22,14 +22,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_discharge_sessions_preprocessing import (
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q1 import (
-    US_IX_SLS_Q1_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q3 import (
-    US_IX_SLS_Q3_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q1 import (
+    US_IX_SLS_Q1_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q3 import (
+    US_IX_SLS_Q3_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,

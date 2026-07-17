@@ -950,7 +950,7 @@ def incident_based_caf_score_query_template(
         SELECT
             * EXCEPT (incident_date),
             incident_date AS event_date,
-        FROM `{{project_id}}.analyst_data.incarceration_incidents_classification_preprocessed_materialized`
+        FROM `{{project_id}}.classification_views.incarceration_incidents_classification_preprocessed_materialized`
         WHERE state_code = 'US_TN'
             AND {incident_filter_condition}
     )

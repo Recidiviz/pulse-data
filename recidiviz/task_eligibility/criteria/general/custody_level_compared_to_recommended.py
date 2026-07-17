@@ -18,7 +18,7 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
+    CLASSIFICATION_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -46,7 +46,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
+        classification_dataset=CLASSIFICATION_VIEWS_DATASET,
         meets_criteria_default=False,
         reasons_fields=[
             ReasonsField(
