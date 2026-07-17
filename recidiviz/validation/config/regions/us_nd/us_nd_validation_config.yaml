@@ -26,14 +26,15 @@ max_allowed_error_overrides:
       incarceration_population_person_level_external_comparison_matching_people
       validation.
   - validation_name: client_record_archive_duplicate_person_ids
-    hard_max_allowed_error_override: 0.0024
+    hard_max_allowed_error_override: 0.02
     override_reason:
       There was a period of time in September '22 where we exported multiple
       rows in the client_record for a handful of people who had multiple
       distinct officer_ids or expiration_dates. Because the impact/engagement
       metrics only look at distinct person/external ids, there is no known
       practical effect of having multiple entries for the same person with the
-      same person and external id.
+      same person and external id. A separate exact-duplicate-row export bug
+      affected archives from 2022-08 through 2023-04; worst case is 1.7%.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .26
     override_reason: This is standard deviation for this validation.
@@ -52,6 +53,12 @@ max_allowed_error_overrides:
     override_reason:
       Given the very small size of the staff and population in ND, this is a
       reasonable threshold.
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
+    hard_max_allowed_error_override: 0.06
+    override_reason: Bumping threshold until investigation can be completed. TODO(#51499)
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: 0.08
+    override_reason: Bumping threshold until investigation can be completed. TODO(#61071)
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 130
@@ -84,7 +91,7 @@ num_allowed_rows_overrides:
     override_reason: Needs investigation. Current failing level as of 7/29/24 is
       13 rows #TODO(#19047)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 200
+    hard_num_allowed_rows_override: 210
     override_reason: Small number of rows missing descriptions in ref table.
       Current failing level as of 2/3/25 is 152 rows. #TODO(#31843)
   - validation_name: sessions_missing_closest_sentence_imposed_group

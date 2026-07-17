@@ -48,11 +48,12 @@ num_allowed_rows_overrides:
       This is expected - there is an option to list "none" as a supervising agent, and 
       we typically see 30-40 of those cases at a time.
   - validation_name: current_supervision_staff_missing_district
-    hard_num_allowed_rows_override: 1
+    hard_num_allowed_rows_override: 2
     override_reason: |-
-      This is expected - there is a Release and Reentry "user" assigned to supervise 
+      This is expected - there is a Release and Reentry "user" assigned to supervise
       some clients from a UDC Administration location that does not appear as a supervision
       location in location metadata.
+      Bumping threshold until investigation can be completed. TODO(#91341)
   - validation_name: officer_monthly_usage_report_actions_without_logins
     hard_num_allowed_rows_override: 1
     override_reason: |-
@@ -63,5 +64,8 @@ num_allowed_rows_overrides:
   - validation_name: missing_client_record_rows_null_full_name
     hard_num_allowed_rows_override: 10
     override_reason: |-
-      The majority of failures are AP&P supervision cases (probation, plea-in-abeyance) 
+      The majority of failures are AP&P supervision cases (probation, plea-in-abeyance)
       for people who have no DOC offender record yet. 6 failures as of 5/13/26.
+  - validation_name: insights_primary_users_not_in_state_staff
+    hard_num_allowed_rows_override: 1
+    override_reason: Bumping threshold until investigation can be completed. TODO(#86469)

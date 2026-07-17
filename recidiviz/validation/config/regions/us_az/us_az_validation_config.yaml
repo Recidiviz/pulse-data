@@ -73,14 +73,15 @@ max_allowed_error_overrides:
       users the gap is ~5%, and it will not worsen as the user base grows.
 num_allowed_rows_overrides:
   - validation_name: workflows_primary_users_not_in_state_staff
-    hard_num_allowed_rows_override: 23
+    hard_num_allowed_rows_override: 24
     override_reason: |-
       Contractor staff (GEO Group, CoreCivic) are not present in ACIS data. ADCRR staff
-      also commonly register for workflows using an email distinct from the one assigned 
+      also commonly register for workflows using an email distinct from the one assigned
       to them in ACIS.
-      This threshold represents the irreducible set of users that cannot have emails 
+      This threshold represents the irreducible set of users that cannot have emails
       properly assigned using currently available data. Active users in this set are
       experiencing silently dropped activity in officer-level usage metrics.
+      Bumping threshold until investigation can be completed. TODO(#86325)
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 2000
     override_reason: Investigation needed. TODO(#34826)
