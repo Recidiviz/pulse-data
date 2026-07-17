@@ -1,0 +1,5 @@
+document_contents_id,document_text,document_length_bytes,row_create_datetime
+CID_HELLO,hello,5,2026-01-02 12:00:00
+CID_SHARED,shared note text,16,2026-02-02 12:00:00
+CID_NEW,brand new text!,15,2026-04-02 12:00:00
+CID_OLD,old superseded,14,2025-06-02 12:00:00

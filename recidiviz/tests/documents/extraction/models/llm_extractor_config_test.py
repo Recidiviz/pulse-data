@@ -21,6 +21,7 @@ Covers the resolution of a state's `extractor.yaml` into a fully-bound
 (via `from_yaml`), the model-binding and cap invariants (via direct
 construction), and the happy path against the fake config module.
 """
+
 import re
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,7 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+    LLMExtractorDocumentFilterConfig,
     get_llm_extractor_config,
     get_states_with_extractor_configs,
     load_llm_extractor_configs,
@@ -134,6 +136,22 @@ def _model_config(
     )
 
 
+def _document_filter(
+    *,
+    template: str = _FILTER_QUERY,
+    is_sandbox_config: bool = False,
+    document_limit: int | None = None,
+    root_entity_ids: list[str] | None = None,
+) -> LLMExtractorDocumentFilterConfig:
+    """Builds an un-narrowed (production-shaped) document filter by default."""
+    return LLMExtractorDocumentFilterConfig(
+        document_metadata_filter_query_template=template,
+        is_sandbox_config=is_sandbox_config,
+        document_limit=document_limit,
+        root_entity_ids=root_entity_ids,
+    )
+
+
 class ParseAllExtractorConfigsTest(TestCase):
     """Guards real configs, and exercises the fake config's happy path."""
 
@@ -157,7 +175,7 @@ class ParseAllExtractorConfigsTest(TestCase):
                     state=config.state_code.value,
                 ):
                     rendered_query = StrictStringFormatter().format(
-                        config.document_metadata_filter_query_template,
+                        config.document_filter.document_metadata_filter_query_template,
                         project_id="test-project",
                     )
                     check_query_selects_output_columns(
@@ -556,7 +574,9 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             input_document_collection=_input_document_collection(
                 state_code=state_code, name=_INPUT_DOCUMENT_COLLECTION_NAME
             ),
-            document_metadata_filter_query_template=document_metadata_filter_query_template,
+            document_filter=_document_filter(
+                template=document_metadata_filter_query_template
+            ),
             prompt_vars={"agency_name": "the Department of Fictional Affairs"},
             max_transient_retry_count=DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
             total_pending_document_count_hard_cap=(
@@ -642,7 +662,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "b094fc297f5403639b66ae3b2394d3fa61f724844fe041c5fe2985c360bea80a",
+            "56ab28ae678cefd96cc5568debea692e908b9118c78bb7cd230b70abfd6c81be",
             config.document_filter_id,
         )
 
@@ -686,6 +706,71 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             ).document_filter_id,
         )
 
+    def test_with_sandbox_narrowing_sets_knobs_but_preserves_filter_id(self) -> None:
+        config = self._config()
+        narrowed = config.with_sandbox_narrowing(
+            document_limit=50, root_entity_ids=["P1", "P2"]
+        )
+
+        # The narrowing knobs (and the sandbox flag) are set on the copy; the
+        # original is untouched (frozen).
+        self.assertTrue(narrowed.document_filter.is_sandbox_config)
+        self.assertEqual(50, narrowed.document_filter.document_limit)
+        self.assertEqual(["P1", "P2"], narrowed.document_filter.root_entity_ids)
+        self.assertFalse(config.document_filter.is_sandbox_config)
+        self.assertIsNone(config.document_filter.document_limit)
+        self.assertIsNone(config.document_filter.root_entity_ids)
+
+        # The authored template is unchanged, so the filter ID is byte-identical
+        # despite the narrowing.
+        self.assertEqual(
+            config.document_filter.document_metadata_filter_query_template,
+            narrowed.document_filter.document_metadata_filter_query_template,
+        )
+        self.assertEqual(config.document_filter_id, narrowed.document_filter_id)
+
+
+class LLMExtractorDocumentFilterConfigTest(TestCase):
+    """Tests for LLMExtractorDocumentFilterConfig's own invariants and version_id."""
+
+    def test_narrowing_requires_sandbox_config(self) -> None:
+        # A non-sandbox config may not carry either narrowing knob.
+        for document_limit, root_entity_ids in [(50, None), (None, ["P1"])]:
+            with self.subTest(
+                document_limit=document_limit, root_entity_ids=root_entity_ids
+            ):
+                with self.assertRaisesRegex(
+                    ValueError, "may only be set on a sandbox config"
+                ):
+                    _document_filter(
+                        is_sandbox_config=False,
+                        document_limit=document_limit,
+                        root_entity_ids=root_entity_ids,
+                    )
+
+    def test_sandbox_config_without_narrowing_is_allowed(self) -> None:
+        # A sandbox config need not carry any narrowing (e.g. a sandbox run over
+        # the full authored filter).
+        document_filter = _document_filter(is_sandbox_config=True)
+        self.assertTrue(document_filter.is_sandbox_config)
+
+    def test_version_id_excludes_narrowing(self) -> None:
+        # version_id folds in only the authored template, so a narrowed sandbox
+        # filter hashes identically to its un-narrowed production counterpart.
+        production = _document_filter()
+        narrowed = _document_filter(
+            is_sandbox_config=True, document_limit=1, root_entity_ids=["P1"]
+        )
+        self.assertEqual(production.version_id, narrowed.version_id)
+
+    def test_version_id_changes_with_template(self) -> None:
+        self.assertNotEqual(
+            _document_filter(template=_FILTER_QUERY).version_id,
+            _document_filter(
+                template="SELECT document_contents_id FROM `{project_id}.other.t`"
+            ).version_id,
+        )
+
 
 class LLMExtractorConfigConstructionTest(TestCase):
     """Model-binding and cap invariants, exercised via direct construction."""
@@ -723,7 +808,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
         return LLMExtractorConfig(
             state_code=state_code,
             input_document_collection=self.input_document_collection,
-            document_metadata_filter_query_template=_FILTER_QUERY,
+            document_filter=_document_filter(),
             prompt_vars=(
                 prompt_vars
                 if prompt_vars is not None

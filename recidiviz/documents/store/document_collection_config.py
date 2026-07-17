@@ -83,33 +83,58 @@ class DocumentRootEntityIdType(Enum):
     STAFF_ID = "staff_id"
     STAFF_EXTERNAL_ID = "staff_external_id"
 
+    @property
+    def id_column_name(self) -> str:
+        """Returns the metadata column that holds the root-entity ID itself. The
+        external-id types carry an additional id_type column, but this is only
+        the id-bearing column.
+        """
+        if self is DocumentRootEntityIdType.PERSON_ID:
+            return PERSON_ID_COLUMN_NAME
+        if self is DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
+            return PERSON_EXTERNAL_ID_COLUMN_NAME
+        if self is DocumentRootEntityIdType.STAFF_ID:
+            return STAFF_ID_COLUMN_NAME
+        if self is DocumentRootEntityIdType.STAFF_EXTERNAL_ID:
+            return STAFF_EXTERNAL_ID_COLUMN_NAME
+        raise ValueError(f"Unexpected root_entity_id_type: [{self}]")
+
+    @property
+    def id_type_column_name(self) -> str | None:
+        """Returns the column holding the id_type that qualifies id_column_name
+        for the external-id types, or None for the internal-id types.
+        """
+        if self is DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
+            return PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME
+        if self is DocumentRootEntityIdType.STAFF_EXTERNAL_ID:
+            return STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME
+        if self in (
+            DocumentRootEntityIdType.PERSON_ID,
+            DocumentRootEntityIdType.STAFF_ID,
+        ):
+            return None
+        raise ValueError(f"Unexpected root_entity_id_type: [{self}]")
+
+    @property
+    def id_column_type(self) -> bigquery.enums.SqlTypeNames:
+        """Returns the BigQuery type of id_column_name, read from
+        the column's canonical schema.
+        """
+        return bigquery.enums.SqlTypeNames(
+            get_document_store_column_schema(self.id_column_name).field_type
+        )
+
 
 def _root_entity_schema_fields(
     root_entity_id_type: DocumentRootEntityIdType,
 ) -> list[bigquery.SchemaField]:
-    """Returns the BQ SchemaFields for the given root entity ID type."""
-
-    match root_entity_id_type:
-        case DocumentRootEntityIdType.PERSON_ID:
-            return [
-                get_document_store_column_schema(PERSON_ID_COLUMN_NAME),
-            ]
-        case DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
-            return [
-                get_document_store_column_schema(PERSON_EXTERNAL_ID_COLUMN_NAME),
-                get_document_store_column_schema(PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME),
-            ]
-        case DocumentRootEntityIdType.STAFF_ID:
-            return [
-                get_document_store_column_schema(STAFF_ID_COLUMN_NAME),
-            ]
-        case DocumentRootEntityIdType.STAFF_EXTERNAL_ID:
-            return [
-                get_document_store_column_schema(STAFF_EXTERNAL_ID_COLUMN_NAME),
-                get_document_store_column_schema(STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME),
-            ]
-        case _:
-            raise ValueError(f"Unexpected root_entity_id_type: {root_entity_id_type}")
+    """Returns the BQ SchemaFields for the given root entity ID type: the id
+    column, plus the id_type column for the external-id types.
+    """
+    column_names = [root_entity_id_type.id_column_name]
+    if (id_type_column := root_entity_id_type.id_type_column_name) is not None:
+        column_names.append(id_type_column)
+    return [get_document_store_column_schema(name) for name in column_names]
 
 
 @attr.define
@@ -183,6 +208,13 @@ class DocumentCollectionConfig:
                 f"Document collection [{self.name}] for [{self.state_code.value}] "
                 f"has duplicate column names: {duplicate_names}."
             )
+
+    @property
+    def root_entity_id_column_name(self) -> str:
+        """Returns the name of the column that holds this collection's root-entity
+        ID (person or staff).
+        """
+        return self.root_entity_id_type.id_column_name
 
     @property
     def metadata_table_id(self) -> str:

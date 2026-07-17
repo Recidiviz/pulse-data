@@ -87,7 +87,7 @@ class LLMExtractorMetadataManager:
                     state_code=config.state_code.value,
                     extractor_id=config.extractor_id,
                     document_filter_id=config.document_filter_id,
-                    document_metadata_filter_query_template=config.document_metadata_filter_query_template,
+                    document_metadata_filter_query_template=config.document_filter.document_metadata_filter_query_template,
                     row_creation_datetime_utc=now,
                 )
                 .on_conflict_do_nothing(constraint="llm_extractor_document_filter_pkey")

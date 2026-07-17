@@ -192,7 +192,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 name="TEST_COLLECTION",
                 description="test collection for validation",
-                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
                 document_primary_key_columns=[
                     bigquery.SchemaField("duplicate_column", "STRING"),
                 ],
@@ -209,7 +209,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 name="bad-name",
                 description="test collection with bad name",
-                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
                 document_primary_key_columns=[
                     bigquery.SchemaField("pk_col", "STRING"),
                 ],

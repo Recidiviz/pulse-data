@@ -80,6 +80,10 @@ class LLMExtractionEligibleDocumentRecord:
     document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Content-addressed (SHA256) identifier of the document."""
 
+    # TODO(OBT-39477): The eligible-document query builder now emits
+    # document_length_bytes rather than a char count; reconcile this field (and
+    # the persisted char_count column) with that output when the query is wired
+    # into record_eligible_documents.
     char_count: int = attr.ib(validator=attr_validators.is_non_negative_int)
     """Character count of the document text; write-once because the id is a hash
     of the text."""

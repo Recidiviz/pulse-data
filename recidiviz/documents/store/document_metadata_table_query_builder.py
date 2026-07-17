@@ -25,6 +25,7 @@ from recidiviz.documents.store.document_collection_config import (
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
     ROW_CREATE_DATETIME_COLUMN_NAME,
 )
 
@@ -42,7 +43,8 @@ class DocumentCollectionMetadataTableQueryBuilder:
         """Builds a query to select the latest version of each document in the
         collection, based on document primary keys and the
         row_create_datetime column. Returns the primary key columns,
-        other metadata columns, and document_contents_id for each document.
+        other metadata columns, document_contents_id, and
+        document_update_datetime for each document.
 
         Only documents with a non-null document_contents_id are returned, since a
         null document_contents_id indicates that the document has been deleted in
@@ -54,6 +56,7 @@ class DocumentCollectionMetadataTableQueryBuilder:
             *config.primary_key_column_names,
             *config.other_metadata_column_names,
             DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+            DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
         ]
 
         return f"""

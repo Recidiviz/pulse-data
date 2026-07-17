@@ -23,6 +23,7 @@ model/cap overrides. `LLMExtractorConfig.from_yaml` parses that file and binds i
 with its already-parsed collection config, its resolved input document
 collection, and its resolved model config into one fully-resolved object.
 """
+
 import json
 from functools import cache
 from pathlib import Path
@@ -30,6 +31,7 @@ from types import ModuleType
 
 import attr
 
+from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents import config as default_config_module
@@ -100,6 +102,78 @@ def _prompt_vars_do_not_shadow_reserved(
 
 
 @attr.define(frozen=True, kw_only=True)
+class LLMExtractorDocumentFilterConfig:
+    """The document-selection config for a run: the authored filter template,
+    plus sandbox-only narrowing (never authored — set only via
+    LLMExtractorConfig.with_sandbox_narrowing; always None in production)."""
+
+    document_metadata_filter_query_template: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+    """SQL template for a query that returns a single document_contents_id
+    column, holding the document_contents_ids this extractor should process.
+    The only template variable should be {project_id}."""
+
+    is_sandbox_config: bool = attr.ib(validator=attr_validators.is_bool)
+    """Whether this is a sandbox config. Only a sandbox config may carry the
+    narrowing knobs below; a production config never does."""
+
+    document_limit: int | None = attr.ib(validator=attr_validators.is_opt_positive_int)
+    """Sandbox-only: cap the number of selected documents."""
+
+    root_entity_ids: list[str] | None = attr.ib(
+        validator=attr.validators.optional(
+            [
+                attr_validators.is_non_empty_list,
+                attr_validators.is_list_of_non_empty_str,
+            ]
+        )
+    )
+    """Sandbox-only: restrict selection to these root entities, matched against
+    the input collection's root-entity ID column (person or staff, per its
+    root_entity_id_type). For an external-id collection these are external IDs;
+    the id_type is constant per collection, so it is not part of the narrowing."""
+
+    def __attrs_post_init__(self) -> None:
+        if not self.is_sandbox_config and (
+            self.document_limit is not None or self.root_entity_ids is not None
+        ):
+            raise ValueError(
+                "Sandbox-only narrowing (document_limit / root_entity_ids) may only "
+                "be set on a sandbox config. Set narrowing via "
+                "LLMExtractorConfig.with_sandbox_narrowing, which marks the config as "
+                "a sandbox config."
+            )
+
+    @property
+    def version_id(self) -> str:
+        """Returns the version id for this filter config. Sandbox-only fields are
+        explicitly excluded from this version because the id must identify the
+        authored filter logic (what documents this extractor is *defined* to
+        process) not how much of it a given run happens to process. Sandbox-only
+        fields only narrow a run to a cheap subset but don't change what the
+        filter is. Excluding them means a narrowed sandbox run computes the exact
+        document filter version_id production would, so its results are keyed
+        identically to (and directly comparable with) production's.
+        """
+        components = [self.document_metadata_filter_query_template]
+        return sha256_hexdigest(json.dumps(components))
+
+    def build_document_metadata_filter_query(self, *, project_id: str) -> str:
+        """Returns the authored metadata filter query template built with the given |project_id|."""
+        # TODO(OBT-32105): Make this and all other query-building / BQ-writing
+        # code sandbox-aware so we don't accidentally read from / write to prod
+        # datasets when running in a sandbox that reads from sandbox datasets.
+        return BigQueryQueryBuilder(
+            parent_address_overrides=None, parent_address_formatter_provider=None
+        ).build_query(
+            project_id=project_id,
+            query_template=self.document_metadata_filter_query_template,
+            query_format_kwargs={},
+        )
+
+
+@attr.define(frozen=True, kw_only=True)
 class LLMExtractorConfig:
     """The fully-resolved configuration for one extractor: a state's parsed
     `extractor.yaml` bound to its collection config, its input document
@@ -116,13 +190,11 @@ class LLMExtractorConfig:
     `input_document_collection_name` declared in the `extractor.yaml`.
     """
 
-    document_metadata_filter_query_template: str = attr.ib(
-        validator=attr_validators.is_non_empty_str
+    document_filter: LLMExtractorDocumentFilterConfig = attr.ib(
+        validator=attr.validators.instance_of(LLMExtractorDocumentFilterConfig)
     )
-    """SQL template for a query that returns a single `document_contents_id` column,
-    holding the document_content_ids with this extractor should process. Used to narrow
-    the scope of documents relevant to this extractor. The only template variable should
-    be {project_id}.
+    """The document-selection config for this run: the authored filter template
+    plus any sandbox-only narrowing (always un-narrowed in production).
     """
 
     prompt_vars: dict[str, str] = attr.ib(
@@ -300,17 +372,35 @@ class LLMExtractorConfig:
     @property
     def document_filter_id(self) -> str:
         """Returns the version ID of this extractor's document selection: a hash
-        of the `document_metadata_filter_query_template`. Tracked separately from
+        of the authored filter template. Tracked separately from
         `extractor_version_id` because the filter narrows which documents are
-        processed but is not itself fed to the LLM.
+        processed but is not itself fed to the LLM. Sandbox narrowing is
+        deliberately excluded, so a narrowed config keeps the real filter ID.
         """
         components = [
             # We also hash the human-readable extractor_id because versions should be
             # unique to extractors configs with a particular human-readable name.
             self.extractor_id,
-            self.document_metadata_filter_query_template,
+            self.document_filter.version_id,
         ]
         return sha256_hexdigest(json.dumps(components))
+
+    def with_sandbox_narrowing(
+        self, *, document_limit: int | None, root_entity_ids: list[str] | None
+    ) -> "LLMExtractorConfig":
+        """Returns a copy of this config with sandbox-only narrowing applied to
+        its document filter. This is the only way narrowing is ever set;
+        production configs are never narrowed.
+        """
+        return attr.evolve(
+            self,
+            document_filter=attr.evolve(
+                self.document_filter,
+                is_sandbox_config=True,
+                document_limit=document_limit,
+                root_entity_ids=root_entity_ids,
+            ),
+        )
 
     @staticmethod
     def state_code_for_yaml_path(yaml_path: str | Path) -> StateCode:
@@ -394,8 +484,15 @@ class LLMExtractorConfig:
         config = cls(
             state_code=cls.state_code_for_yaml_path(yaml_path),
             input_document_collection=input_document_collection,
-            document_metadata_filter_query_template=config_dict.pop(
-                "document_metadata_filter_query_template", str
+            # Authored files carry only the flat filter template; the sandbox-only
+            # narrowing knobs are never authored and default to None here.
+            document_filter=LLMExtractorDocumentFilterConfig(
+                document_metadata_filter_query_template=config_dict.pop(
+                    "document_metadata_filter_query_template", str
+                ),
+                is_sandbox_config=False,
+                document_limit=None,
+                root_entity_ids=None,
             ),
             prompt_vars=prompt_vars,
             max_transient_retry_count=(
