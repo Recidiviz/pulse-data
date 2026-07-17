@@ -18,7 +18,7 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.tools.eomis.parsing import (
+from recidiviz.eomis.parsing import (
     clean_bool,
     clean_date,
     clean_optional,

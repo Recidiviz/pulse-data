@@ -37,15 +37,10 @@ from typing import Sequence
 
 from rich.console import Console
 
-from recidiviz.tools.eomis.client import EomisClient
-from recidiviz.tools.eomis.flow import Candidate, ResultStatus
-from recidiviz.tools.eomis.runner import (
-    CsvAuditRecorder,
-    render_plan,
-    render_results,
-    run_writeback,
-)
-from recidiviz.tools.eomis.us_ar.program_referral_flow import (
+from recidiviz.eomis.client import EomisClient
+from recidiviz.eomis.flow import Candidate, ResultStatus
+from recidiviz.eomis.runner import CsvAuditRecorder, run_writeback
+from recidiviz.eomis.us_ar.program_referral_flow import (
     DEFAULT_PROJECT_ID,
     DEFAULT_VIEW,
     PROD_BASE_URL,
@@ -55,6 +50,7 @@ from recidiviz.tools.eomis.us_ar.program_referral_flow import (
     build_id_candidates,
     load_csv_candidates,
 )
+from recidiviz.tools.eomis.render import render_plan, render_results
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:

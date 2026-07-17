@@ -859,6 +859,7 @@ def main() -> int:
                 "recidiviz.datasets",
                 "recidiviz.documents",
                 "recidiviz.entrypoints",
+                "recidiviz.eomis",
                 "recidiviz.ingest",
                 "recidiviz.intercom",
                 "recidiviz.llm_eval",

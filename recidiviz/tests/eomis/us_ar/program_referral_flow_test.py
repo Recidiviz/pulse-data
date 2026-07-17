@@ -25,8 +25,8 @@ import unittest
 from typing import Any
 from unittest.mock import Mock
 
-from recidiviz.tools.eomis.flow import SKIP_ACTION
-from recidiviz.tools.eomis.us_ar.program_referral_flow import (
+from recidiviz.eomis.flow import SKIP_ACTION
+from recidiviz.eomis.us_ar.program_referral_flow import (
     CREATE_ACTION,
     PRIORITY_HIGH,
     RELEASE_AND_CREATE_ACTION,

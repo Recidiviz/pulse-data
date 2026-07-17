@@ -33,8 +33,8 @@ import requests
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.tools.eomis.client import EomisClient
-from recidiviz.tools.eomis.flow import (
+from recidiviz.eomis.client import EomisClient
+from recidiviz.eomis.flow import (
     READ_ACTION,
     SKIP_ACTION,
     Candidate,
@@ -42,7 +42,7 @@ from recidiviz.tools.eomis.flow import (
     ResultStatus,
     WriteResult,
 )
-from recidiviz.tools.eomis.parsing import (
+from recidiviz.eomis.parsing import (
     clean_bool,
     clean_date,
     clean_optional,
@@ -558,7 +558,7 @@ def success_detail(response: requests.Response) -> str:
 def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
     """Applies the V1 write criteria to one reconciliation-view row. This is
     the business logic of the writeback; the rules are mirrored one-to-one by
-    the tests in recidiviz/tests/tools/eomis/us_ar."""
+    the tests in recidiviz/tests/eomis/us_ar."""
     offender_id = str(row["OFFENDERID"] or "").strip()
     referral_status = clean_optional(row.get("referral_status"))
     completed_prior = clean_bool(row.get("completed_in_prior_incarceration_flag"))

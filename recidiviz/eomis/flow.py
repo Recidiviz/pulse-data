@@ -30,7 +30,7 @@ from enum import Enum
 from typing import Generic, TypeVar
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.tools.eomis.client import EomisClient
+from recidiviz.eomis.client import EomisClient
 
 # Shared action labels with runner-visible meaning. All other action labels
 # are flow-defined.

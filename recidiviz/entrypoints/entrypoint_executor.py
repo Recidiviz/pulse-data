@@ -60,6 +60,7 @@ from recidiviz.entrypoints.document_store.document_upload import (
     DocumentUploadEntrypoint,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.eomis_writeback import EomisWritebackEntrypoint
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
     IngestCheckRawDataFlashingEntrypoint,
 )
@@ -105,6 +106,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     DataflowMetricPruningEntrypoint,
     DatasetCleanupAndValidationEntrypoint,
     DocumentUploadEntrypoint,
+    EomisWritebackEntrypoint,
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,

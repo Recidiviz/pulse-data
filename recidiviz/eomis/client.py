@@ -31,7 +31,7 @@ from typing import Any, Sequence
 
 import requests
 
-from recidiviz.tools.eomis.parsing import (
+from recidiviz.eomis.parsing import (
     extract_selected_offender_id,
     listing_total,
     parse_listing_page_rows,
