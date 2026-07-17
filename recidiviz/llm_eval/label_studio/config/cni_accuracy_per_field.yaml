@@ -8,6 +8,9 @@ labelstudio_project_ids:
 gcs_export_prefix: "cni-labeling/accuracy_per_field"
 
 task_data_fields:
+  - column_name: "state_code"
+    description: "State this annotation belongs to."
+    bq_type: "STRING"
   - column_name: "document_id"
     description: "Unique identifier for the extracted document."
     bq_type: "STRING"

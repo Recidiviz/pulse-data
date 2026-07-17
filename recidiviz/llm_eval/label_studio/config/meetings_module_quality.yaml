@@ -11,6 +11,9 @@ primary_key_fields:
   - "meeting_id"
 
 task_data_fields:
+  - column_name: "state_code"
+    description: "State this annotation belongs to."
+    bq_type: "STRING"
   - column_name: "meta"
     description: "Raw metadata JSON object attached to the task."
     bq_type: "STRING"
