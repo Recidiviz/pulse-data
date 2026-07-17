@@ -103,7 +103,7 @@ def set_headers(response: Response) -> Response:
 
 
 # Routes & Blueprints
-public_pathways_api_blueprint = create_public_pathways_api_blueprint()
+public_pathways_api_blueprint = create_public_pathways_api_blueprint(limiter)
 
 csrf = CSRFProtect(app)
 # Disable CSRF protection for public pathways routes because we use a JWT

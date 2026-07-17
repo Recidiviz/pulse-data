@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This class implements tests for Pathways api routes."""
+import csv
+import io
 import os
 from datetime import date
 from http import HTTPStatus
@@ -27,11 +29,10 @@ import pytest
 from fakeredis import FakeRedis
 from flask import Flask
 from flask.testing import FlaskClient
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.pathways.pathways_authorization import (
-    on_successful_authorization,
-)
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata,
@@ -40,6 +41,9 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.public_pathways.public_pathways_authorization import (
+    on_successful_authorization,
+)
 from recidiviz.public_pathways.public_pathways_routes import (
     create_public_pathways_api_blueprint,
 )
@@ -61,11 +65,18 @@ class PublicPathwaysBlueprintTestCase(TestCase):
     def setUp(self) -> None:
         self.mock_authorization_handler = MagicMock()
 
+        self.fake_redis = FakeRedis()
         self.redis_patcher = mock.patch(
             "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
-            return_value=FakeRedis(),
+            return_value=self.fake_redis,
         )
         self.redis_patcher.start()
+
+        self.individual_level_export_redis_patcher = mock.patch(
+            "recidiviz.public_pathways.individual_level_export.get_public_pathways_metric_redis",
+            return_value=self.fake_redis,
+        )
+        self.individual_level_export_redis_patcher.start()
 
         self.auth_patcher = mock.patch(
             "recidiviz.case_triage.shared_pathways.shared_pathways_blueprint.build_authorization_handler",
@@ -76,14 +87,17 @@ class PublicPathwaysBlueprintTestCase(TestCase):
 
         self.test_app = Flask(__name__)
         register_error_handlers(self.test_app)
+        limiter = Limiter(key_func=get_remote_address, app=self.test_app)
         self.test_app.register_blueprint(
-            create_public_pathways_api_blueprint(), url_prefix="/public_pathways"
+            create_public_pathways_api_blueprint(limiter),
+            url_prefix="/public_pathways",
         )
         self.test_client = self.test_app.test_client()
 
     def tearDown(self) -> None:
         self.auth_patcher.stop()
         self.redis_patcher.stop()
+        self.individual_level_export_redis_patcher.stop()
 
     @staticmethod
     def auth_side_effect(
@@ -141,6 +155,10 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
 
         self.person_level_metric_path = (
             "/public_pathways/US_NY/PrisonPopulationPersonLevel"
+        )
+
+        self.individual_level_export_path = (
+            "/public_pathways/US_NY/PrisonPopulationIndividualLevel"
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -320,6 +338,131 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
             | {"description": "PrisonPopulationPersonLevel is not enabled for US_NY"},
         )
 
+    def test_individual_level_export(self) -> None:
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_data())
+        self.assertEqual("text/csv; charset=utf-8", response.content_type)
+        self.assertEqual(
+            'attachment; filename="us_ny_individual_level_data_2022-08-03.csv"',
+            response.headers["Content-Disposition"],
+        )
+
+        rows = list(csv.DictReader(io.StringIO(response.get_data(as_text=True))))
+
+        self.assertNotIn("gender", rows[0])
+        self.assertNotIn("sex", rows[0])
+        self.assertNotIn("person_id", rows[0])
+
+        # Only the most recent date_in_population (2022-01-01) is included, even
+        # though the fixture has rows for 2021-11-01 and 2021-12-01 too.
+        self.assertEqual(
+            [
+                {
+                    "state_code": "US_XX",
+                    "date_in_population": "2022-01-01",
+                    "time_period": "months_0_6",
+                    "age_group": "25-29",
+                    "facility": "F1",
+                    "race": "WHITE",
+                    "ethnicity": "NOT_HISPANIC",
+                    "sentence_length_min": "48-71 MONTHS",
+                    "sentence_length_max": "72-95 MONTHS",
+                    "charge_county_code": "COUNTY_1",
+                    "offense_type": "DRUG OFFENSES",
+                    "charge_description": "ALL OTHER FELONIES",
+                    "admission_reason": "NEW_COURT_COMMITMENT",
+                },
+                {
+                    "state_code": "US_XX",
+                    "date_in_population": "2022-01-01",
+                    "time_period": "months_0_6",
+                    "age_group": "60+",
+                    "facility": "F1",
+                    "race": "BLACK",
+                    "ethnicity": "NOT_HISPANIC",
+                    "sentence_length_min": "48-71 MONTHS",
+                    "sentence_length_max": "72-95 MONTHS",
+                    "charge_county_code": "COUNTY_1",
+                    "offense_type": "DRUG OFFENSES",
+                    "charge_description": "ALL OTHER FELONIES",
+                    "admission_reason": "NEW_COURT_COMMITMENT",
+                },
+            ],
+            rows,
+        )
+
+    def test_individual_level_export_uses_cache(self) -> None:
+        first_response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.OK, first_response.status_code)
+
+        cache_key = "US_NY individual_level_export 2022-08-03"
+        self.assertIsNotNone(self.fake_redis.get(cache_key))
+
+        # Deleting the underlying rows proves the second request is served from
+        # the cache rather than re-querying: a fresh query would now return no
+        # rows, but MetricMetadata (and therefore the cache key) is untouched.
+        with SessionFactory.using_database(self.database_key) as session:
+            session.query(PublicPrisonPopulationOverTime).delete()
+
+        second_response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.OK, second_response.status_code)
+        self.assertEqual(first_response.get_data(), second_response.get_data())
+
+    def test_individual_level_export_invalid_state(self) -> None:
+        response = self.test_client.get(
+            "/public_pathways/NOTASTATE/PrisonPopulationIndividualLevel",
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_individual_level_export_state_partner_user_authorized(self) -> None:
+        # Regression test: a real (non-Recidiviz) state partner user must be able to
+        # reach this route, since it has no <metric_name> path segment for
+        # on_successful_authorization to key off of like the metrics routes do.
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="US_NY"
+        )
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_data())
+
+    def test_individual_level_export_wrong_state_user_unauthorized(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="US_ID"
+        )
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(
+            HTTPStatus.UNAUTHORIZED, response.status_code, response.get_json()
+        )
+
+    def test_individual_level_export_rate_limit(self) -> None:
+        for _ in range(10):
+            response = self.test_client.get(
+                self.individual_level_export_path,
+                headers={"Origin": "http://localhost:3050"},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.TOO_MANY_REQUESTS, response.status_code)
+
     @patch(
         "recidiviz.case_triage.shared_pathways.query_builders.over_time_metric_query_builder.func.current_date",
         return_value=date(2022, 3, 3),
@@ -461,6 +604,7 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3050",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Expose-Headers": "Content-Disposition",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
         },

@@ -63,3 +63,20 @@ def get_or_set_json(cache: redis.Redis, cache_key: str, fetch_value: Callable) -
     cache.set(cache_key, json.dumps(cached_value))
 
     return cached_value
+
+
+def get_or_set_str(
+    cache: redis.Redis, cache_key: str, fetch_value: Callable[[], str], *, ex: int
+) -> str:
+    """Returns the cached string value for cache_key, computing and caching it via
+    fetch_value on a cache miss. The cached entry expires after ex seconds.
+    """
+    cached_value = cache.get(cache_key)
+
+    if cached_value:
+        return cached_value.decode("utf-8")
+
+    value = fetch_value()
+    cache.set(cache_key, value, ex=ex)
+
+    return value

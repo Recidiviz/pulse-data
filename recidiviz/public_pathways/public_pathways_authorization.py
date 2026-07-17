@@ -30,6 +30,12 @@ from recidiviz.case_triage.authorization_utils import (
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
+# Injected into view_args via the individual_level_export route's `defaults` (see
+# public_pathways_routes.py) since that route has no <metric_name> path segment for
+# on_successful_authorization to key off of. The route's parameter name must match
+# this value exactly, since Flask calls the view function with `**view_args`.
+INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG = "individual_level_export"
+
 
 def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
@@ -48,14 +54,15 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     if user_state_code == "RECIDIVIZ":
         return
 
-    if not request.view_args or "metric_name" not in request.view_args:
-        raise FlaskException(
-            code="metric_name",
-            description="A metric name was expected in the route",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
+    view_args = request.view_args or {}
 
-    if user_state_code == "US_NY":
-        return
+    if "metric_name" in view_args or INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG in view_args:
+        if user_state_code == "US_NY":
+            return
+        raise AuthorizationError(code="not_authorized", description="Access denied")
 
-    raise AuthorizationError(code="not_authorized", description="Access denied")
+    raise FlaskException(
+        code="unrecognized_route",
+        description="Neither a metric name nor a known non-metric route was found",
+        status_code=HTTPStatus.BAD_REQUEST,
+    )

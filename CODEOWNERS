@@ -15,6 +15,7 @@ recidiviz/persistence/**/pathways/** @Recidiviz/polaris-core
 recidiviz/persistence/**/workflows/** @Recidiviz/polaris-core
 # Public Pathways views should be reviewed by Jen or George to ensure non-pii columns
 recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_columns.py @jovergaag @georgemandis
+recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
 
 # Doppler
 #  For Doppler-owned files, files with a high volume of edits are assigned to the @Recidiviz/doppler-codeowners group,

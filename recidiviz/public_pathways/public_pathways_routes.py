@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes for the Public Pathways Flask blueprint. """
-from flask import Blueprint
+from flask import Blueprint, Response
+from flask_limiter import Limiter
+from werkzeug.exceptions import BadRequest
+from werkzeug.http import parse_set_header
 
 from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enabled_states import (
     get_public_pathways_enabled_states_for_cloud_sql,
@@ -23,12 +26,17 @@ from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enab
 from recidiviz.case_triage.shared_pathways.shared_pathways_blueprint import (
     SharedPathwaysBlueprint,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.public_pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.public_pathways.individual_level_export import (
+    build_individual_level_export_response,
+)
 from recidiviz.public_pathways.metrics.metric_query_builders import (
     ALL_PUBLIC_PATHWAYS_METRICS,
 )
 from recidiviz.public_pathways.public_pathways_authorization import (
+    INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG,
     on_successful_authorization,
 )
 
@@ -41,16 +49,53 @@ PUBLIC_PATHWAYS_ALLOWED_ORIGINS = [
 ]
 
 
-def create_public_pathways_api_blueprint() -> Blueprint:
+def create_public_pathways_api_blueprint(limiter: Limiter) -> Blueprint:
     """Creates the API blueprint for Public Pathways"""
-    return SharedPathwaysBlueprint(
+    enabled_states = get_public_pathways_enabled_states_for_cloud_sql()
+    blueprint = SharedPathwaysBlueprint(
         blueprint_name="public_pathways",
         auth_handler_name="public_pathways_auth0",
         on_successful_authorization=on_successful_authorization,
         allowed_origins=PUBLIC_PATHWAYS_ALLOWED_ORIGINS,
         schema_type=SchemaType.PUBLIC_PATHWAYS,
-        enabled_states=get_public_pathways_enabled_states_for_cloud_sql(),
+        enabled_states=enabled_states,
         enabled_metrics=ALL_PUBLIC_PATHWAYS_METRICS,
         metric_metadata=MetricMetadata,
         skip_authentication_in_production=True,
     ).api
+
+    @blueprint.after_request
+    def expose_file_download_headers(response: Response) -> Response:
+        # Lets the frontend read the filename off of file download responses,
+        # e.g. the individual-level data export below. Scoped to this
+        # blueprint only, since no other Pathways product returns files.
+        response.access_control_expose_headers = parse_set_header("Content-Disposition")
+        return response
+
+    @blueprint.get(
+        "/<state>/PrisonPopulationIndividualLevel",
+        defaults={INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG: True},
+    )
+    @limiter.limit("10 per minute")  # type: ignore[attr-defined]
+    def individual_level_export(
+        state: str,
+        # Name must match INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG: Flask calls this
+        # function with **view_args, so the defaults key above is passed as a
+        # keyword argument matched by name.
+        individual_level_export: bool,  # pylint: disable=unused-argument
+    ) -> Response:
+        try:
+            state_code = StateCode(state)
+        except ValueError as e:
+            raise BadRequest(f"Invalid state code: [{state}]") from e
+
+        if state_code.value not in enabled_states:
+            raise BadRequest(
+                f"Public Pathways is not enabled for state: [{state_code.value}]"
+            )
+
+        return build_individual_level_export_response(
+            state_code=state_code, enabled_states=enabled_states
+        )
+
+    return blueprint
