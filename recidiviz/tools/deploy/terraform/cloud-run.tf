@@ -291,8 +291,17 @@ resource "google_cloud_run_service" "case-triage" {
 # application-data-import service reads it via its project-level secretAccessor role.
 resource "google_secret_manager_secret" "typesense_backfill_function_url" {
   secret_id = "TYPESENSE_BACKFILL_FUNCTION_URL"
+  # Auto (global) replication is blocked by the gcp.resourceLocations org policy, so
+  # pin replicas to the same regions used by our other user-managed secrets.
   replication {
-    auto {}
+    user_managed {
+      replicas {
+        location = "us-central1"
+      }
+      replicas {
+        location = "us-east1"
+      }
+    }
   }
 }
 
