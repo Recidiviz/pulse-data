@@ -32,6 +32,7 @@ from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECT
 from recidiviz.tools.archive import archive_etl_file
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
+from recidiviz.workflows.etl.typesense_backfill_client import TypesenseBackfillClient
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
@@ -57,6 +58,17 @@ from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
+# Delegates whose completion should trigger a Typesense backfill in the separate
+# search-indexing project. The opportunity and tasks delegates are intentionally
+# excluded — their collections are not indexed in Typesense.
+DELEGATES_TRIGGERING_TYPESENSE_BACKFILL = (
+    WorkflowsSupervisionStaffETLDelegate,
+    WorkflowsIncarcerationStaffETLDelegate,
+    WorkflowsClientETLDelegate,
+    WorkflowsResidentETLDelegate,
+    WorkflowsLocationETLDelegate,
+)
+
 
 def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]:
     return [
@@ -68,6 +80,28 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
         WorkflowsTasksETLDelegate(state_code),
         WorkflowsLocationETLDelegate(state_code),
     ]
+
+
+def _maybe_trigger_typesense_backfill(
+    delegate: WorkflowsETLDelegate, filename: str
+) -> None:
+    """Triggers a Typesense backfill for the delegate's collection when the delegate is
+    one whose completion should refresh the search index. Failures are logged and do
+    not fail the ETL, since the Firestore write has already succeeded."""
+    if not isinstance(delegate, DELEGATES_TRIGGERING_TYPESENSE_BACKFILL):
+        return
+
+    collection = delegate.COLLECTION_BY_FILENAME[filename]
+    try:
+        TypesenseBackfillClient().trigger_backfill(
+            state_code=delegate.state_code, collection=collection
+        )
+    except Exception:
+        logging.exception(
+            "Failed to trigger Typesense backfill for state_code=[%s] collection=[%s]",
+            delegate.state_code.value,
+            collection,
+        )
 
 
 def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Blueprint:
@@ -131,6 +165,7 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
             try:
                 if delegate.supports_file(filename):
                     await delegate.run_etl(filename)
+                    _maybe_trigger_typesense_backfill(delegate, filename)
             except ValueError as e:
                 logging.error(str(e))
                 logging.info(

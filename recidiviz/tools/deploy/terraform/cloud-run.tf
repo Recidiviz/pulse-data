@@ -283,6 +283,19 @@ resource "google_cloud_run_service" "case-triage" {
   autogenerate_revision_name = false
 }
 
+# Secret holding the HTTPS trigger URL of the Typesense backfill Cloud Function (lives
+# in a separate repo/project). Terraform manages the secret container only; the value
+# (the deployed function URL, which differs per environment) is added manually as a new
+# secret version after apply. Until a version exists, get_secret returns null and the
+# Workflows ETL backfill trigger no-ops (see TypesenseBackfillClient). The
+# application-data-import service reads it via its project-level secretAccessor role.
+resource "google_secret_manager_secret" "typesense_backfill_function_url" {
+  secret_id = "TYPESENSE_BACKFILL_FUNCTION_URL"
+  replication {
+    auto {}
+  }
+}
+
 # Initializes Application Data Import Cloud Run service
 resource "google_cloud_run_service" "application-data-import" {
   name     = "application-data-import"

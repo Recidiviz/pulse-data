@@ -24,10 +24,17 @@ from flask import Flask
 from freezegun import freeze_time
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
+from recidiviz.workflows.etl.workflows_client_etl_delegate import (
+    WorkflowsClientETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
+from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
+    WorkflowsOpportunityETLDelegate,
+)
 
 
 class TestWorkflowsETLRoutes(unittest.TestCase):
@@ -174,6 +181,65 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             mock_delegate.run_etl.assert_called_with(filename)
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    def test_run_firestore_etl_triggers_typesense_backfill(
+        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    ) -> None:
+        filename = "client_record.json"
+        mock_delegate = MagicMock(WorkflowsClientETLDelegate)
+        mock_delegate.state_code = StateCode.US_XX
+        mock_delegate.supports_file.return_value = True
+        mock_delegate.COLLECTION_BY_FILENAME = {filename: "clientCollection"}
+        mock_get_delegates.return_value = [mock_delegate]
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_run_firestore_etl",
+                json={"state_code": "US_XX", "filename": filename},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX, collection="clientCollection"
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    def test_run_firestore_etl_skips_backfill_for_untracked_delegate(
+        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    ) -> None:
+        filename = "client_opportunity.json"
+        mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
+        mock_delegate.state_code = StateCode.US_XX
+        mock_delegate.supports_file.return_value = True
+        mock_get_delegates.return_value = [mock_delegate]
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_run_firestore_etl",
+                json={"state_code": "US_XX", "filename": filename},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_not_called()
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    def test_run_firestore_etl_backfill_failure_does_not_fail_etl(
+        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    ) -> None:
+        filename = "client_record.json"
+        mock_delegate = MagicMock(WorkflowsClientETLDelegate)
+        mock_delegate.state_code = StateCode.US_XX
+        mock_delegate.supports_file.return_value = True
+        mock_delegate.COLLECTION_BY_FILENAME = {filename: "clientCollection"}
+        mock_get_delegates.return_value = [mock_delegate]
+        mock_client.return_value.trigger_backfill.side_effect = RuntimeError("boom")
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_run_firestore_etl",
+                json={"state_code": "US_XX", "filename": filename},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_called_once()
 
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
     def test_run_firestore_etl_unsupported_file(
