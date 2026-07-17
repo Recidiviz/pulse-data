@@ -54,4 +54,5 @@ output:
                 StateStaffRoleSubtype.INTERNAL_UNKNOWN:
                   - "ADMIN OFFICER II"
                   - "JUVENILE COURT COUNSELOR"
+                  - "JUDICIAL SERVICES COORDINATOR"
                   - "CORR SERGEANT III"
