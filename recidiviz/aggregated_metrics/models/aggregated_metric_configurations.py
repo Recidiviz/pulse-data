@@ -5011,3 +5011,106 @@ DISTINCT_ACTIVE_PRIMARY_SENTENCING_ASSESSMENT_REPORT_USERS = EventDistinctUnitCo
         event_conditions_dict={},
     ),
 )
+
+CONTACTS_ELIGIBLE_FOR_TEXT_REMINDERS = EventCountMetric(
+    name="contacts_eligible_for_text_reminders",
+    display_name="Contacts Eligible for Text Reminders",
+    description=(
+        "Count of supervision contacts where the contact type is eligible for JII text reminders "
+        "(i.e., tasks_contact_type has a 'SCHEDULED' prefix)."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={"contact_eligible_for_text_reminder": ["true"]},
+    ),
+)
+
+CONTACTS_ELIGIBLE_FOR_TEXT_REMINDERS_RECORDED_ON_SCHEDULED_DATE = EventCountMetric(
+    name="contacts_eligible_for_text_reminders_recorded_on_scheduled_date",
+    display_name="Contacts Eligible for Text Reminders Recorded on Scheduled Date",
+    description=(
+        "Count of supervision contacts where the contact occurred on its originally scheduled "
+        "date and the contact type is eligible for JII text reminders."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "contact_eligible_for_text_reminder": ["true"],
+            "on_scheduled_date": ["true"],
+        },
+    ),
+)
+
+JII_TEXT_MESSAGES_ATTEMPTED_WITH_CONTACT_COMPLETED_ON_SCHEDULED_DATE = EventCountMetric(
+    name="jii_text_messages_attempted_with_contact_completed_on_scheduled_date",
+    display_name="JII Text Messages: Attempted With Contact Completed On Scheduled Date",
+    description=(
+        "Count of completed supervision contacts that occurred on their originally scheduled date "
+        "where a JII contact reminder text was attempted for the contact's scheduled date."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["COMPLETED"],
+            "contact_eligible_for_text_reminder": ["true"],
+            "text_attempted": ["true"],
+            "on_scheduled_date": ["true"],
+        },
+    ),
+)
+
+JII_TEXT_MESSAGES_SUCCESSFUL_WITH_CONTACT_COMPLETED_ON_SCHEDULED_DATE = EventCountMetric(
+    name="jii_text_messages_successful_with_contact_completed_on_scheduled_date",
+    display_name="JII Text Messages: Successful With Contact Completed On Scheduled Date",
+    description=(
+        "Count of completed supervision contacts that occurred on their originally scheduled date "
+        "where a JII contact reminder text was successfully delivered for the "
+        "contact's scheduled date."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["COMPLETED"],
+            "contact_eligible_for_text_reminder": ["true"],
+            "text_successful": ["true"],
+            "on_scheduled_date": ["true"],
+        },
+    ),
+)
+
+JII_TEXT_MESSAGES_ATTEMPTED_WITH_CONTACT_ATTEMPTED_ON_SCHEDULED_DATE = EventCountMetric(
+    name="jii_text_messages_attempted_with_contact_attempted_on_scheduled_date",
+    display_name="JII Text Messages: Attempted With Contact Attempted On Scheduled Date",
+    description=(
+        "Count of attempted supervision contacts that occurred on their originally scheduled date "
+        "where a JII contact reminder text was attempted for the contact's scheduled date."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["ATTEMPTED"],
+            "contact_eligible_for_text_reminder": ["true"],
+            "text_attempted": ["true"],
+            "on_scheduled_date": ["true"],
+        },
+    ),
+)
+
+JII_TEXT_MESSAGES_SUCCESSFUL_WITH_CONTACT_ATTEMPTED_ON_SCHEDULED_DATE = EventCountMetric(
+    name="jii_text_messages_successful_with_contact_attempted_on_scheduled_date",
+    display_name="JII Text Messages: Successful With Contact Attempted On Scheduled Date",
+    description=(
+        "Count of attempted supervision contacts that occurred on their originally scheduled date "
+        "where a JII contact reminder text was successfully delivered for the "
+        "contact's scheduled date."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["ATTEMPTED"],
+            "contact_eligible_for_text_reminder": ["true"],
+            "text_successful": ["true"],
+            "on_scheduled_date": ["true"],
+        },
+    ),
+)
