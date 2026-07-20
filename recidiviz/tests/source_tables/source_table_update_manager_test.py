@@ -49,6 +49,7 @@ from recidiviz.source_tables.source_table_update_manager import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.utils.future_executor import ThreadPoolExecutorResult
 
 _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"
@@ -1587,3 +1588,68 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
             {SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS},
         )
         self.assertEqual(result.existing_field_update_types, {})
+
+
+class GetChangesExceptionLoggingTest(unittest.TestCase):
+    """Tests that get_changes_to_apply_to_source_tables reports per-table failures
+    concisely (by address, with tracebacks) and summarizes the distinct errors, rather
+    than dumping the full work-item repr (including entire SourceTableCollections) once
+    per failed table."""
+
+    @staticmethod
+    def _make_exception(message: str) -> Exception:
+        """Returns an exception with a populated traceback, as it would be after being
+        caught in a worker thread."""
+        try:
+            raise ValueError(message)
+        except ValueError as e:
+            return e
+
+    def test_exceptions_logged_by_address_and_summarized(self) -> None:
+        collection = SourceTableCollection(
+            dataset_id="test_dataset",
+            description="Description for dataset test_dataset",
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+        )
+        collection.add_source_table("t1", schema_fields=[SchemaField("id", "INTEGER")])
+        collection.add_source_table("t2", schema_fields=[SchemaField("id", "INTEGER")])
+
+        address_1 = BigQueryAddress(dataset_id="test_dataset", table_id="t1")
+        address_2 = BigQueryAddress(dataset_id="test_dataset", table_id="t2")
+
+        # Both tables fail with the same error, as in the reauthentication incident.
+        fetch_result: ThreadPoolExecutorResult[Any, Any] = ThreadPoolExecutorResult(
+            successes=[],
+            exceptions=[
+                ((collection, address_1), self._make_exception("Auth expired.")),
+                ((collection, address_2), self._make_exception("Auth expired.")),
+            ],
+        )
+
+        update_manager = SourceTableUpdateManager(client=MagicMock())
+
+        with tempfile.NamedTemporaryFile(mode="r") as log_file:
+            with patch(
+                "recidiviz.source_tables.source_table_update_manager."
+                "map_fn_with_progress_bar_results",
+                return_value=fetch_result,
+            ):
+                with self.assertRaises(ValueError) as ctx:
+                    update_manager.get_changes_to_apply_to_source_tables(
+                        source_table_collections=[collection],
+                        log_file=log_file.name,
+                    )
+            log_contents = log_file.read()
+
+        # The raised error summarizes the distinct errors so the common case is legible
+        # without opening the log.
+        raised_message = str(ctx.exception)
+        self.assertIn("Found [2] exception(s)", raised_message)
+        self.assertIn("[2x] ValueError: Auth expired.", raised_message)
+
+        # The log identifies each failing table by address and includes the traceback...
+        self.assertIn("test_dataset.t1", log_contents)
+        self.assertIn("test_dataset.t2", log_contents)
+        self.assertIn("Traceback (most recent call last)", log_contents)
+        # ...but does NOT dump the full SourceTableCollection repr.
+        self.assertNotIn("SourceTableCollection(", log_contents)

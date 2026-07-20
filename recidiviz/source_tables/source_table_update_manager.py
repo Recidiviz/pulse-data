@@ -17,6 +17,7 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
+from collections import Counter
 from typing import Any
 
 import attr
@@ -741,11 +742,28 @@ class SourceTableUpdateManager:
             )
 
             if get_changes_result.exceptions:
-                for exception in get_changes_result.exceptions:
-                    logging.exception(exception)
+                for (_collection, address), exc in get_changes_result.exceptions:
+                    logging.error(
+                        "Failed to fetch source table changes for [%s]",
+                        address.to_str(),
+                        exc_info=exc,
+                    )
+
+                # Summarize the distinct errors (most common first) so the common case
+                # of many tables failing for the same reason is legible without having
+                # to open the (per-table) log file.
+                error_counts = Counter(
+                    f"{type(exc).__name__}: {exc}"
+                    for _work_item, exc in get_changes_result.exceptions
+                )
+                distinct_errors_str = "\n".join(
+                    f"  [{count}x] {message}"
+                    for message, count in error_counts.most_common()
+                )
                 raise ValueError(
-                    f"Found exceptions while fetching source table changes - check "
-                    f"logs: {log_file}"
+                    f"Found [{len(get_changes_result.exceptions)}] exception(s) while "
+                    f"fetching source table changes - check logs: {log_file}\n"
+                    f"Distinct errors:\n{distinct_errors_str}"
                 )
 
             for _, result in get_changes_result.successes:
