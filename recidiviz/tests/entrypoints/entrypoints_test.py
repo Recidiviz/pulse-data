@@ -25,19 +25,13 @@ import recidiviz
 from recidiviz.airflow.dags import operators as operators_module
 from recidiviz.entrypoints.entrypoint_executor import (
     ENTRYPOINTS_BY_NAME,
-    get_entrypoint_name,
     parse_arguments,
 )
-from recidiviz.entrypoints.eomis_writeback import EomisWritebackEntrypoint
 
 _RESOURCES_YAML_PATH = os.path.join(
     os.path.dirname(operators_module.__file__),
     "recidiviz_kubernetes_resources.yaml",
 )
-
-# Entrypoints invoked outside Airflow (e.g. as Cloud Run jobs), which need no
-# Kubernetes resource allocation.
-_NON_AIRFLOW_ENTRYPOINTS = {get_entrypoint_name(EomisWritebackEntrypoint)}
 
 
 class EntrypointsTest(unittest.TestCase):
@@ -71,6 +65,4 @@ class EntrypointsTest(unittest.TestCase):
             resources_config_entrypoints = set(resources_config.keys())
             entrypoints = set(ENTRYPOINTS_BY_NAME.keys())
 
-            self.assertSetEqual(
-                resources_config_entrypoints, entrypoints - _NON_AIRFLOW_ENTRYPOINTS
-            )
+            self.assertSetEqual(resources_config_entrypoints, entrypoints)

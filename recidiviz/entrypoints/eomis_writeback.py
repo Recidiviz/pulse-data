@@ -21,6 +21,13 @@ no confirmation prompts and plain logging, with the same flow, runner, and
 safety guardrails. Dry-run is the default; --commit performs real writes, and
 committing against the production eOMIS instance additionally requires
 --allow-prod-write, mirroring the CLI's guard.
+
+Run as a module (this is how the Cloud Run job invokes it):
+python -m recidiviz.entrypoints.eomis_writeback --flow ar_ged
+
+Running locally:
+IS_DEV=true GOOGLE_CLOUD_PROJECT=recidiviz-staging python \
+    -m recidiviz.entrypoints.eomis_writeback --flow ar_ged
 """
 import argparse
 import logging
@@ -37,7 +44,12 @@ from recidiviz.eomis.us_ar.program_referral_flow import (
     ArProgramReferralFlow,
 )
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    in_development,
+)
+from recidiviz.utils.metadata import set_development_project_id_override
 
 AR_GED_FLOW_NAME = "ar_ged"
 
@@ -152,3 +164,14 @@ class EomisWritebackEntrypoint(EntrypointInterface):
                 f"{flow.flow_name}: [{len(errored)}] of [{len(results)}] candidates "
                 "errored; see the audit log above for details."
             )
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
+    if in_development():
+        set_development_project_id_override(GCP_PROJECT_STAGING)
+
+    EomisWritebackEntrypoint.run_entrypoint(
+        args=EomisWritebackEntrypoint.get_parser().parse_args()
+    )

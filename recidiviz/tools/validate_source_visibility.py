@@ -859,7 +859,6 @@ def main() -> int:
                 "recidiviz.datasets",
                 "recidiviz.documents",
                 "recidiviz.entrypoints",
-                "recidiviz.eomis",
                 "recidiviz.ingest",
                 "recidiviz.intercom",
                 "recidiviz.llm_eval",
@@ -881,6 +880,20 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.workflows",
+            },
+        ),
+        explicitly_invalid_package_dependencies=["apache_beam"],
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.entrypoints.eomis_writeback",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.common",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.eomis_writeback",
+                "recidiviz.eomis",
+                "recidiviz.utils",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],
