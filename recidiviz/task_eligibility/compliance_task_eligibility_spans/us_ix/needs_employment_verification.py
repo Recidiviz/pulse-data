@@ -16,8 +16,12 @@
 # =============================================================================
 """Defines a criteria view that shows spans of time for which supervision clients
 need an employment verification task completed. This happens in the following cases:
-- The client needs an initial verification (within 30 days of starting supervision)
-- The client needs a re-verification (every 30 or 60 days after the last verification)
+- The client needs their initial verification (within 30 days of starting supervision)
+- The client changed employment and needs a re-verification (due the day after the change
+  for XCRC clients, within 30 days for everyone else)
+- The client is an XCRC (community reentry) client due for their recurring monthly
+  employment verification. Per ID policy, XCRC is the only case type with a recurring
+  employment verification cadence.
 
 Note: The candidate population already filters to clients who are able to work.
 """
@@ -34,6 +38,7 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    meets_employment_changes_triggers,
     meets_employment_reverification_trigger,
     meets_initial_employment_verification_trigger,
 )
@@ -51,12 +56,16 @@ employment_verification_trigger_view_builder = (
         sub_criteria_list=[
             meets_initial_employment_verification_trigger.VIEW_BUILDER,
             meets_employment_reverification_trigger.VIEW_BUILDER,
+            meets_employment_changes_triggers.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[
             "contact_cadence",
             "contact_count",
             "contact_due_date",
             "last_contact_date",
+            "overdue_flag",
+            "contact_period_start_date",
+            "criteria_name",
         ],
         reasons_aggregate_function_override={
             "contact_due_date": "MIN",
