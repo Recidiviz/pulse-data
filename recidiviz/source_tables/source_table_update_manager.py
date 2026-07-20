@@ -17,14 +17,13 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any
 
 import attr
 import google
 from google.cloud import bigquery
 from google.cloud.bigquery import ExternalConfig
-from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -304,18 +303,247 @@ def _validate_partitioning_fields_match(
     )
 
 
-def get_table_field_level_required_updates(
+class FieldChangeKind(enum.StrEnum):
+    """The kind of change needed on a single (possibly nested) schema field."""
+
+    ADDED = "added"
+    REMOVED = "removed"
+    TYPE_CHANGE = "type_change"
+    MODE_CHANGE = "mode_change"
+    DOCUMENTATION_ADDITION = "documentation_addition"
+    DOCUMENTATION_CHANGE = "documentation_change"
+
+
+@attr.define(frozen=True, kw_only=True)
+class FieldSchemaChange:
+    """A single change needed to make a deployed schema field match its desired config.
+
+    Captures the full path to the (possibly nested) field, so a change deep inside a
+    RECORD can be described precisely rather than collapsed into a change on the
+    top-level field.
+    """
+
+    field_path: tuple[str, ...] = attr.ib(
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(str),
+            iterable_validator=attr.validators.instance_of(tuple),
+        )
+    )
+    """Path to the field from the table root, e.g. ("task", "data", "state_code")."""
+
+    change_kind: FieldChangeKind = attr.ib(
+        validator=attr.validators.in_(FieldChangeKind)
+    )
+    """The kind of change this represents."""
+
+    deployed_field: bigquery.SchemaField | None = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.instance_of(bigquery.SchemaField)
+        )
+    )
+    """The field as currently deployed, or None if the field is being added."""
+
+    desired_field: bigquery.SchemaField | None = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.instance_of(bigquery.SchemaField)
+        )
+    )
+    """The field as desired in code, or None if the field is being removed."""
+
+    def __attrs_post_init__(self) -> None:
+        if not self.field_path:
+            raise ValueError("FieldSchemaChange requires a non-empty field_path.")
+        if self.change_kind is FieldChangeKind.ADDED:
+            if self.deployed_field is not None or self.desired_field is None:
+                raise ValueError(
+                    f"ADDED change for [{self.field_path_str}] must have no deployed "
+                    f"field and a desired field."
+                )
+            return
+        if self.change_kind is FieldChangeKind.REMOVED:
+            if self.deployed_field is None or self.desired_field is not None:
+                raise ValueError(
+                    f"REMOVED change for [{self.field_path_str}] must have a deployed "
+                    f"field and no desired field."
+                )
+            return
+        if self.deployed_field is None or self.desired_field is None:
+            raise ValueError(
+                f"Change [{self.change_kind}] for [{self.field_path_str}] must have "
+                f"both a deployed and desired field."
+            )
+
+    @property
+    def field_path_str(self) -> str:
+        return ".".join(self.field_path)
+
+    @property
+    def top_level_field_name(self) -> str:
+        return self.field_path[0]
+
+    @property
+    def update_type(self) -> SourceTableUpdateType:
+        """Returns the (coarser) SourceTableUpdateType this change maps to for deciding
+        whether it is safe to apply. Structural changes to a RECORD's subfields
+        (additions, removals, nested type changes) map to a type change on the
+        containing field.
+        """
+        if self.change_kind in (
+            FieldChangeKind.ADDED,
+            FieldChangeKind.REMOVED,
+            FieldChangeKind.TYPE_CHANGE,
+        ):
+            return SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES
+        if self.change_kind is FieldChangeKind.MODE_CHANGE:
+            return SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES
+        if self.change_kind is FieldChangeKind.DOCUMENTATION_ADDITION:
+            return SourceTableUpdateType.DOCUMENTATION_ADDITION
+        if self.change_kind is FieldChangeKind.DOCUMENTATION_CHANGE:
+            return SourceTableUpdateType.DOCUMENTATION_CHANGE
+        raise ValueError(f"Unexpected change_kind [{self.change_kind}]")
+
+    def describe(self) -> str:
+        """Returns a human-readable, one-line description of this change."""
+        path = self.field_path_str
+        if self.change_kind is FieldChangeKind.ADDED:
+            field = assert_type(self.desired_field, bigquery.SchemaField)
+            return f"added '{path}' ({field.field_type}, {field.mode})"
+        if self.change_kind is FieldChangeKind.REMOVED:
+            return f"removed '{path}'"
+
+        deployed = assert_type(self.deployed_field, bigquery.SchemaField)
+        desired = assert_type(self.desired_field, bigquery.SchemaField)
+        if self.change_kind is FieldChangeKind.TYPE_CHANGE:
+            return (
+                f"'{path}' changed TYPE from {deployed.field_type} --> "
+                f"{desired.field_type}"
+            )
+        if self.change_kind is FieldChangeKind.MODE_CHANGE:
+            return f"'{path}' changed MODE from {deployed.mode} --> {desired.mode}"
+        if self.change_kind is FieldChangeKind.DOCUMENTATION_ADDITION:
+            return f"'{path}' added DESCRIPTION: {desired.description}"
+        if self.change_kind is FieldChangeKind.DOCUMENTATION_CHANGE:
+            return f"'{path}' updated its DESCRIPTION to {desired.description}"
+        raise ValueError(f"Unexpected change_kind [{self.change_kind}]")
+
+
+def _get_subfield_schema_changes(
+    *,
+    parent_path: tuple[str, ...],
+    deployed_subfields: tuple[bigquery.SchemaField, ...],
+    desired_subfields: tuple[bigquery.SchemaField, ...],
+) -> list[FieldSchemaChange]:
+    """Returns the changes needed to make the subfields of a RECORD field match,
+    recursing into subfields that are themselves RECORDs. |parent_path| is the path to
+    the containing RECORD field.
+    """
+    deployed_by_name = {field.name: field for field in deployed_subfields}
+    desired_by_name = {field.name: field for field in desired_subfields}
+
+    changes: list[FieldSchemaChange] = []
+    for name in desired_by_name.keys() - deployed_by_name.keys():
+        changes.append(
+            FieldSchemaChange(
+                field_path=parent_path + (name,),
+                change_kind=FieldChangeKind.ADDED,
+                deployed_field=None,
+                desired_field=desired_by_name[name],
+            )
+        )
+    for name in deployed_by_name.keys() - desired_by_name.keys():
+        changes.append(
+            FieldSchemaChange(
+                field_path=parent_path + (name,),
+                change_kind=FieldChangeKind.REMOVED,
+                deployed_field=deployed_by_name[name],
+                desired_field=None,
+            )
+        )
+    for name in deployed_by_name.keys() & desired_by_name.keys():
+        changes.extend(
+            _get_field_schema_changes(
+                field_path=parent_path + (name,),
+                deployed_field=deployed_by_name[name],
+                desired_field=desired_by_name[name],
+            )
+        )
+    return changes
+
+
+def _get_field_schema_changes(
+    *,
+    field_path: tuple[str, ...],
+    deployed_field: bigquery.SchemaField,
+    desired_field: bigquery.SchemaField,
+) -> list[FieldSchemaChange]:
+    """Returns the changes needed to make |deployed_field| match |desired_field|,
+    recursing into the subfields of RECORD fields so that a nested change is described
+    at its full path rather than collapsed into the top-level field. |field_path| is
+    the path to this field from the table root.
+    """
+    changes: list[FieldSchemaChange] = []
+
+    if deployed_field.field_type != desired_field.field_type:
+        changes.append(
+            FieldSchemaChange(
+                field_path=field_path,
+                change_kind=FieldChangeKind.TYPE_CHANGE,
+                deployed_field=deployed_field,
+                desired_field=desired_field,
+            )
+        )
+
+    if deployed_field.mode != desired_field.mode:
+        changes.append(
+            FieldSchemaChange(
+                field_path=field_path,
+                change_kind=FieldChangeKind.MODE_CHANGE,
+                deployed_field=deployed_field,
+                desired_field=desired_field,
+            )
+        )
+
+    if deployed_field.description != desired_field.description:
+        change_kind = (
+            FieldChangeKind.DOCUMENTATION_ADDITION
+            if not deployed_field.description and desired_field.description
+            else FieldChangeKind.DOCUMENTATION_CHANGE
+        )
+        changes.append(
+            FieldSchemaChange(
+                field_path=field_path,
+                change_kind=change_kind,
+                deployed_field=deployed_field,
+                desired_field=desired_field,
+            )
+        )
+
+    changes.extend(
+        _get_subfield_schema_changes(
+            parent_path=field_path,
+            deployed_subfields=deployed_field.fields,
+            desired_subfields=desired_field.fields,
+        )
+    )
+
+    if not changes and deployed_field != desired_field:
+        raise ValueError(
+            f"Field [{'.'.join(field_path)}] has changes of an unknown type. "
+            f"Old field: {deployed_field}. Desired field: {desired_field}"
+        )
+    return changes
+
+
+def get_table_field_level_schema_changes(
     *,
     existing_table_schema_fields: dict[str, bigquery.SchemaField],
     desired_table_schema_fields: dict[str, bigquery.SchemaField],
     field_names_to_compare: set[str],
-) -> dict[str, set[SourceTableUpdateType]]:
-    """Given an existing table schema and desired table schema, returns a map of field
-    name to a set of all the updates we would need to make to the table schema match the
-    desired schema. The |field_names_to_compare| must be a subset of both provided
-    schemas.
+) -> list[FieldSchemaChange]:
+    """Given an existing table schema and desired table schema, returns the list of
+    changes needed to make the schemas of the |field_names_to_compare| fields match.
+    The |field_names_to_compare| must be a subset of both provided schemas.
     """
-
     if missing_in_existing := field_names_to_compare - set(
         existing_table_schema_fields
     ):
@@ -329,32 +557,15 @@ def get_table_field_level_required_updates(
             f"desired_table_schema_fields. Missing fields: {missing_in_desired}"
         )
 
-    changes = {}
+    changes: list[FieldSchemaChange] = []
     for field_name in field_names_to_compare:
-        old_schema_field = existing_table_schema_fields[field_name]
-        new_schema_field = desired_table_schema_fields[field_name]
-
-        field_changes = set()
-
-        if old_schema_field.field_type != new_schema_field.field_type:
-            field_changes.add(SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES)
-
-        if old_schema_field.mode != new_schema_field.mode:
-            field_changes.add(SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES)
-
-        if old_schema_field.description != new_schema_field.description:
-            if not old_schema_field.description and new_schema_field.description:
-                field_changes.add(SourceTableUpdateType.DOCUMENTATION_ADDITION)
-            else:
-                field_changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
-
-        if not field_changes:
-            if old_schema_field != new_schema_field:
-                raise ValueError(
-                    f"Field [{field_name}] has changes of an unknown type. "
-                    f"Old field: {old_schema_field}. Desired field: {new_schema_field}"
-                )
-        changes[field_name] = field_changes
+        changes.extend(
+            _get_field_schema_changes(
+                field_path=(field_name,),
+                deployed_field=existing_table_schema_fields[field_name],
+                desired_field=desired_table_schema_fields[field_name],
+            )
+        )
     return changes
 
 
@@ -368,36 +579,36 @@ class SourceTableWithRequiredUpdateTypes:
     source_table_config: SourceTableConfig
 
     table_level_update_types: set[SourceTableUpdateType]
-    existing_field_update_types: dict[str, set[SourceTableUpdateType]]
+    field_schema_changes: list[FieldSchemaChange]
 
     def __attrs_post_init__(self) -> None:
         for update_type in self.table_level_update_types:
             if update_type.is_single_existing_field_update_type:
                 raise ValueError(
                     f"Found single field update type [{update_type}] in "
-                    f"table_level_update_types. Updates of this type should be added "
-                    f"to existing_field_update_types."
+                    f"table_level_update_types. Updates of this type should be captured "
+                    f"as field_schema_changes."
                 )
 
-        for update_types in self.existing_field_update_types.values():
-            for update_type in update_types:
-                if not update_type.is_single_existing_field_update_type:
-                    raise ValueError(
-                        f"Found [{update_type}] in existing_field_update_types that is "
-                        f"not a single field update type. Updates of this type should "
-                        f"be added to table_level_update_types."
-                    )
+    @property
+    def existing_field_update_types(self) -> dict[str, set[SourceTableUpdateType]]:
+        """Returns the field-level update types keyed by top-level field name, derived
+        from field_schema_changes. A change to a nested subfield is attributed to the
+        top-level field that contains it.
+        """
+        update_types_by_field: dict[str, set[SourceTableUpdateType]] = defaultdict(set)
+        for change in self.field_schema_changes:
+            update_types_by_field[change.top_level_field_name].add(change.update_type)
+        return dict(update_types_by_field)
 
     @property
     def has_updates_to_make(self) -> bool:
-        return bool(self.table_level_update_types) or bool(
-            self.existing_field_update_types
-        )
+        return bool(self.table_level_update_types) or bool(self.field_schema_changes)
 
     @property
     def all_update_types(self) -> set[SourceTableUpdateType]:
         return self.table_level_update_types | {
-            t for types in self.existing_field_update_types.values() for t in types
+            change.update_type for change in self.field_schema_changes
         }
 
     @property
@@ -418,20 +629,16 @@ class SourceTableWithRequiredUpdateTypes:
             for update_type in self.table_level_update_types
             if not update_type.is_expected_discrepancy_for_config(update_config)
         }
-        filtered_field_update_types = {}
-        for field_name, update_types in self.existing_field_update_types.items():
-            filtered = {
-                update_type
-                for update_type in update_types
-                if not update_type.is_expected_discrepancy_for_config(update_config)
-            }
-            if filtered:
-                filtered_field_update_types[field_name] = filtered
+        filtered_field_schema_changes = [
+            change
+            for change in self.field_schema_changes
+            if not change.update_type.is_expected_discrepancy_for_config(update_config)
+        ]
         return SourceTableWithRequiredUpdateTypes(
             deployed_table=self.deployed_table,
             source_table_config=self.source_table_config,
             table_level_update_types=filtered_table_level_update_types,
-            existing_field_update_types=filtered_field_update_types,
+            field_schema_changes=filtered_field_schema_changes,
         )
 
     def are_changes_safe_to_apply_to_collection(
@@ -533,63 +740,14 @@ class SourceTableWithRequiredUpdateTypes:
             else:
                 raise ValueError(f"Unexpected source table update type [{update_type}]")
 
-        changes = []
-        for field_name in sorted(self.existing_field_update_types):
-            update_types = self.existing_field_update_types[field_name]
-            deployed_field = one(f for f in deployed_schema if f.name == field_name)
-            new_field = one(f for f in new_schema if f.name == field_name)
-
-            for update_type in sorted(update_types, key=lambda t: t.name):
-                if update_type is SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES:
-                    if deployed_field.field_type == new_field.field_type:
-                        raise ValueError(
-                            f"Expected field_type change for field [{field_name}] in "
-                            f"table [{self.address.to_str()}] but found both with "
-                            f"field_type [{deployed_field.field_type}]."
-                        )
-                    changes.append(
-                        f"\n    - '{deployed_field.name}' changed TYPE from "
-                        f"{deployed_field.field_type} --> {new_field.field_type}"
-                    )
-
-                elif update_type is SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES:
-                    if deployed_field.mode == new_field.mode:
-                        raise ValueError(
-                            f"Expected mode change for field [{field_name}] in "
-                            f"table [{self.address.to_str()}] but found both with "
-                            f"mode [{deployed_field.mode}]."
-                        )
-                    changes.append(
-                        f"\n    - '{deployed_field.name}' changed MODE from "
-                        f"{deployed_field.mode} --> {new_field.mode}"
-                    )
-
-                elif update_type is SourceTableUpdateType.DOCUMENTATION_CHANGE:
-                    if deployed_field.description == new_field.description:
-                        raise ValueError(
-                            f"Expected description change for field [{field_name}] in "
-                            f"table [{self.address.to_str()}] but found both with "
-                            f"description [{deployed_field.description}]."
-                        )
-                    changes.append(
-                        f"\n    - '{deployed_field.name}' updated its DESCRIPTION to {new_field.description}"
-                    )
-                elif update_type is SourceTableUpdateType.DOCUMENTATION_ADDITION:
-                    if deployed_field.description == new_field.description:
-                        raise ValueError(
-                            f"Expected description addition for field [{field_name}] in "
-                            f"table [{self.address.to_str()}] but found both with "
-                            f"description [{deployed_field.description}]."
-                        )
-                    changes.append(
-                        f"\n    - '{deployed_field.name}' added DESCRIPTION: {new_field.description}"
-                    )
-                else:
-                    raise ValueError(f"Unexpected update_type [{update_type}]")
-
-        if changes:
+        sorted_field_changes = sorted(
+            self.field_schema_changes,
+            key=lambda c: (c.field_path, c.change_kind.value),
+        )
+        if sorted_field_changes:
             table_str += "\n  Changed fields:"
-            table_str += "".join(changes)
+            for change in sorted_field_changes:
+                table_str += f"\n    - {change.describe()}"
 
         return table_str
 
@@ -636,7 +794,7 @@ def get_required_update_types_for_existing_table(
     field_names_to_compare = desired_table_schema_field_names.intersection(
         existing_table_schema_field_names
     )
-    field_update_types = get_table_field_level_required_updates(
+    field_schema_changes = get_table_field_level_schema_changes(
         existing_table_schema_fields=existing_table_schema_fields,
         desired_table_schema_fields=desired_table_schema_fields,
         field_names_to_compare=field_names_to_compare,
@@ -645,11 +803,7 @@ def get_required_update_types_for_existing_table(
     return SourceTableWithRequiredUpdateTypes(
         source_table_config=source_table_config,
         table_level_update_types=table_level_update_types,
-        existing_field_update_types={
-            field_name: update_types
-            for field_name, update_types in field_update_types.items()
-            if update_types
-        },
+        field_schema_changes=field_schema_changes,
         deployed_table=deployed_table,
     )
 
@@ -690,7 +844,7 @@ class SourceTableUpdateManager:
             return SourceTableWithRequiredUpdateTypes(
                 source_table_config=source_table_config,
                 table_level_update_types={SourceTableUpdateType.CREATE_TABLE},
-                existing_field_update_types={},
+                field_schema_changes=[],
                 deployed_table=None,
             )
 

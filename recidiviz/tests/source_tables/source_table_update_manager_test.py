@@ -40,6 +40,8 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
 )
 from recidiviz.source_tables.source_table_update_manager import (
+    FieldChangeKind,
+    FieldSchemaChange,
     SourceTableFailedToUpdateError,
     SourceTableUpdateManager,
     SourceTableUpdateType,
@@ -162,6 +164,208 @@ class TestGetRequiredUpdateTypesPartitioning(unittest.TestCase):
         )
 
 
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456"))
+class TestGetRequiredUpdateTypesNestedRecords(unittest.TestCase):
+    """Tests that get_required_update_types_for_existing_table recurses into RECORD
+    subfields, so that a nested schema change is classified as a normal field change
+    rather than raising a change-of-an-unknown-type error."""
+
+    ADDRESS = BigQueryAddress(dataset_id="dataset", table_id="table")
+
+    def _make_table(self, schema: list[bigquery.SchemaField]) -> bigquery.Table:
+        table = bigquery.Table(
+            self.ADDRESS.to_project_specific_address(
+                project_id="recidiviz-456"
+            ).to_str()
+        )
+        table.schema = schema
+        return table
+
+    def _make_config(self, schema: list[bigquery.SchemaField]) -> SourceTableConfig:
+        return SourceTableConfig(
+            address=self.ADDRESS,
+            description="test",
+            schema_fields=schema,
+            clustering_fields=None,
+        )
+
+    @staticmethod
+    def _task_field(
+        data_subfields: list[bigquery.SchemaField],
+    ) -> bigquery.SchemaField:
+        """Builds a `task` RECORD field with a nested `data` RECORD holding the given
+        subfields, mirroring the Label Studio annotations_raw schema shape."""
+        return bigquery.SchemaField(
+            "task",
+            "RECORD",
+            mode="NULLABLE",
+            fields=[
+                bigquery.SchemaField(
+                    "data", "RECORD", mode="NULLABLE", fields=data_subfields
+                )
+            ],
+        )
+
+    def test_nested_field_addition_classified_as_type_change(self) -> None:
+        """A field added inside a nested RECORD (the bug from #92115) is classified as a
+        type change on the top-level RECORD field, not an unknown change."""
+        deployed_schema = [
+            self._task_field([bigquery.SchemaField("annotation", "STRING")])
+        ]
+        new_schema = [
+            self._task_field(
+                [
+                    bigquery.SchemaField("annotation", "STRING"),
+                    bigquery.SchemaField("state_code", "STRING"),
+                ]
+            )
+        ]
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=self._make_table(deployed_schema),
+            source_table_config=self._make_config(new_schema),
+            only_check_required_columns=False,
+        )
+
+        self.assertEqual(
+            {"task": {SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES}},
+            result.existing_field_update_types,
+        )
+        self.assertEqual(set(), result.table_level_update_types)
+        # Regenerable tables (e.g. the GCS-backed Label Studio tables) can apply any
+        # change, so this is safe to apply automatically rather than crashing the
+        # update_big_query_table_schemata task.
+        self.assertTrue(
+            result.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        # The dry-run reporting path (check_source_table_schemas) describes the nested
+        # change by its full field path instead of crashing or inferring.
+        self.assertEqual(
+            "* dataset.table (UPDATE_SCHEMA_TYPE_CHANGES)\n"
+            "  Changed fields:\n"
+            "    - added 'task.data.state_code' (STRING, NULLABLE)",
+            result.build_updates_message(),
+        )
+
+    def test_nested_documentation_only_change_stays_documentation(self) -> None:
+        """A documentation-only change on a nested subfield is classified as a
+        documentation change, not a type change."""
+        deployed_schema = [
+            self._task_field([bigquery.SchemaField("annotation", "STRING")])
+        ]
+        new_schema = [
+            self._task_field(
+                [
+                    bigquery.SchemaField(
+                        "annotation", "STRING", description="The annotation value."
+                    )
+                ]
+            )
+        ]
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=self._make_table(deployed_schema),
+            source_table_config=self._make_config(new_schema),
+            only_check_required_columns=False,
+        )
+
+        self.assertEqual(
+            {"task": {SourceTableUpdateType.DOCUMENTATION_ADDITION}},
+            result.existing_field_update_types,
+        )
+
+    def test_nested_field_removal_described_by_path(self) -> None:
+        """A subfield removed from a nested RECORD is described by its full path and
+        classified as a type change on the top-level field."""
+        deployed_schema = [
+            self._task_field(
+                [
+                    bigquery.SchemaField("annotation", "STRING"),
+                    bigquery.SchemaField("deprecated_field", "STRING"),
+                ]
+            )
+        ]
+        new_schema = [self._task_field([bigquery.SchemaField("annotation", "STRING")])]
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=self._make_table(deployed_schema),
+            source_table_config=self._make_config(new_schema),
+            only_check_required_columns=False,
+        )
+
+        self.assertEqual(
+            {"task": {SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES}},
+            result.existing_field_update_types,
+        )
+        self.assertEqual(
+            "* dataset.table (UPDATE_SCHEMA_TYPE_CHANGES)\n"
+            "  Changed fields:\n"
+            "    - removed 'task.data.deprecated_field'",
+            result.build_updates_message(),
+        )
+
+    def test_nested_leaf_mode_change_stays_mode(self) -> None:
+        """A mode change on a nested subfield is classified as a mode change (not a
+        type change) and described at its full path."""
+        deployed_schema = [
+            self._task_field(
+                [bigquery.SchemaField("annotation", "STRING", mode="NULLABLE")]
+            )
+        ]
+        new_schema = [
+            self._task_field(
+                [bigquery.SchemaField("annotation", "STRING", mode="REQUIRED")]
+            )
+        ]
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=self._make_table(deployed_schema),
+            source_table_config=self._make_config(new_schema),
+            only_check_required_columns=False,
+        )
+
+        self.assertEqual(
+            {"task": {SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES}},
+            result.existing_field_update_types,
+        )
+        self.assertEqual(
+            "* dataset.table (UPDATE_SCHEMA_MODE_CHANGES)\n"
+            "  Changed fields:\n"
+            "    - 'task.data.annotation' changed MODE from NULLABLE --> REQUIRED",
+            result.build_updates_message(),
+        )
+
+    def test_identical_nested_records_no_updates(self) -> None:
+        schema = [self._task_field([bigquery.SchemaField("annotation", "STRING")])]
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=self._make_table(schema),
+            source_table_config=self._make_config(schema),
+            only_check_required_columns=False,
+        )
+
+        self.assertFalse(result.has_updates_to_make)
+
+    def test_unknown_field_change_still_raises(self) -> None:
+        """A field difference that matches none of the known change types (here a
+        NUMERIC precision change) still surfaces as an unknown-type error."""
+        deployed_schema = [
+            bigquery.SchemaField("amount", "NUMERIC", precision=10, scale=2)
+        ]
+        new_schema = [bigquery.SchemaField("amount", "NUMERIC", precision=20, scale=2)]
+
+        with self.assertRaisesRegex(
+            ValueError, r"^Field \[amount\] has changes of an unknown type\."
+        ):
+            get_required_update_types_for_existing_table(
+                deployed_table=self._make_table(deployed_schema),
+                source_table_config=self._make_config(new_schema),
+                only_check_required_columns=False,
+            )
+
+
 class TestSourceTableUpdateType(unittest.TestCase):
     """Tests for SourceTableUpdateType"""
 
@@ -232,7 +436,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=BigQueryAddress.from_str("dataset.table"),
                 description="",
@@ -279,7 +483,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=deployed_table,
             table_level_update_types={SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS},
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=BigQueryAddress.from_str("dataset.table"),
                 description="",
@@ -318,7 +522,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=None,
             table_level_update_types={SourceTableUpdateType.CREATE_TABLE},
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=BigQueryAddress.from_str("dataset.new_table"),
                 description="A new table",
@@ -363,7 +567,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -414,7 +618,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -463,12 +667,20 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {
-                    SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
-                    SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
-                }
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.TYPE_CHANGE,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.MODE_CHANGE,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -517,9 +729,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.DOCUMENTATION_CHANGE}
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_CHANGE,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -571,9 +788,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
             },
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES}
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.TYPE_CHANGE,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -636,7 +858,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -704,7 +926,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -775,7 +997,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
                 SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -844,7 +1066,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             table_level_update_types={
                 SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
             },
-            existing_field_update_types={},
+            field_schema_changes=[],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -900,9 +1122,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION}
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_ADDITION,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -954,10 +1181,20 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
-                "name": {SourceTableUpdateType.DOCUMENTATION_CHANGE},
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_ADDITION,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+                FieldSchemaChange(
+                    field_path=("name",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_CHANGE,
+                    deployed_field=deployed_schema[1],
+                    desired_field=new_schema[1],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -983,9 +1220,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_ADDITION,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -1009,9 +1251,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema),
             table_level_update_types=set(),
-            existing_field_update_types={
-                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
-            },
+            field_schema_changes=[
+                FieldSchemaChange(
+                    field_path=("id",),
+                    change_kind=FieldChangeKind.DOCUMENTATION_ADDITION,
+                    deployed_field=deployed_schema[0],
+                    desired_field=new_schema[0],
+                ),
+            ],
             source_table_config=SourceTableConfig(
                 address=address,
                 description="",
@@ -1429,7 +1676,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                     table_level_update_types={
                         SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
                     },
-                    existing_field_update_types={},
+                    field_schema_changes=[],
                     deployed_table=bigquery.Table(
                         table_ref=bigquery.TableReference(
                             bigquery.DatasetReference(
@@ -1499,7 +1746,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                         table_level_update_types={
                             SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
                         },
-                        existing_field_update_types={},
+                        field_schema_changes=[],
                         deployed_table=bigquery.Table(
                             bigquery.TableReference(
                                 bigquery.DatasetReference(
