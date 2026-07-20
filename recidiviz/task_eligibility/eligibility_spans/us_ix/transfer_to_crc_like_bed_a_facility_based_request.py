@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_like_bed_time_based_criteria,
     in_crc_like_bed_facility_or_relevant_release_notes,
     not_denied_for_crc,
+    not_in_reception_or_mental_health_unit,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
@@ -63,6 +64,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         crc_like_bed_time_based_criteria.VIEW_BUILDER,
         # Must be a resident of SICI, ICIO, or PWCC, or expected to be released in a relevant district
         in_crc_like_bed_facility_or_relevant_release_notes.VIEW_BUILDER,
+        # Exclude reception/diagnostic (unit 15) and mental-health (unit 16) unit
+        # residents at ISCI, who are not considered stable/ready for CRC
+        not_in_reception_or_mental_health_unit.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
