@@ -245,7 +245,7 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         label: "Dropdown Text to Submit Grant for Approval",
       },
       reviewerFeatureVariant: {
-        label: "Feature Variant to Gate Access to Reviewing Grants",
+        label: "Feature Variant to Gate Reviewer Access",
       },
     },
   },
