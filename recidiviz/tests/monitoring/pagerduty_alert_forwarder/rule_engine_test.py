@@ -798,16 +798,15 @@ class TestRuleEngineIntegration(unittest.TestCase):
             "[STAGING] Dataflow Job High vCPU Use: dashboard-metrics-staging",
         )
 
-    def test_production_data_platform_airflow_idle_environment(self) -> None:
+    def test_staging_data_platform_airflow_idle_environment(self) -> None:
         """Test production data platform alert with idle Airflow environment."""
         alert = {
             "incident": {
                 "incident_id": "test-202",
                 "policy_name": "[Airflow] Potentially idle experiment environment",
-                "resource": {
+                "metric": {
                     "labels": {
-                        "project_id": "recidiviz-123",
-                        "airflow_environment_name": "projects/recidiviz-123/locations/us-central1/environments/experiment-alice",
+                        "airflow_environment_name": "projects/recidiviz-staging/locations/us-central1/environments/experiment-alice",
                     }
                 },
                 "summary": "Environment idle for 3 days",
@@ -819,13 +818,11 @@ class TestRuleEngineIntegration(unittest.TestCase):
         # Should match both "Production Alerts" and "Airflow Idle Experiment Instance" rules
         # Airflow rule sets severity to warning, overriding production error
         self.assertEqual(result["severity"], "warning")
-        self.assertEqual(
-            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
-        )
+        self.assertEqual(result["pagerduty_service"], "GCP Infrastructure")
         # Title should have production prefix and extracted environment name using gcp_resource_name helper
         self.assertEqual(
             result["title"],
-            "🚨 [PRODUCTION] Potentially Idle Airflow Development Environment: experiment-alice",
+            "Potentially Idle Airflow Development Environment: experiment-alice",
         )
 
     def test_production_data_platform_failed_scheduled_query(self) -> None:

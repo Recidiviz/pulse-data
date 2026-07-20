@@ -89,7 +89,7 @@ rules:
       incident.policy_name: "[Airflow] Potentially idle experiment environment"
     actions:
       severity: warning
-      title_transform: "Potentially Idle Airflow Development Environment: {incident.resource.labels.airflow_environment_name|gcp_resource_name}"
+      title_transform: "Potentially Idle Airflow Development Environment: {incident.metric.labels.airflow_environment_name|gcp_resource_name}"
 
   - name: "Failed Scheduled Query"
     match:
