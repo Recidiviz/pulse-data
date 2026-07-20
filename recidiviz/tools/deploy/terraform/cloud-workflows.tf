@@ -23,7 +23,7 @@ locals {
     "roles/logging.logWriter",      # for writing to logs while in a workflow
     "roles/workflows.invoker",      # for running workflows
     "roles/run.admin",              # for executing cloud run jobs from a workflows
-    "roles/cloudsql.viewer",        # for triggering cloudsql exports
+    "roles/cloudsql.editor",        # for triggering cloudsql exports
   ]
 }
 
