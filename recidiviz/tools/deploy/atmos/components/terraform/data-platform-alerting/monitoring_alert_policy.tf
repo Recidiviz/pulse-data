@@ -1288,7 +1288,7 @@ resource "google_monitoring_alert_policy" "potentially_idle_experiment_environme
                 # Subtracted from the creation date of the environment
                 max by (airflow_environment_name) (
                     last_over_time(
-                    custom_googleapis_com:opencensus_airflow_environment_age{monitored_resource="generic_node", airflow_environment_name!~".+orchestration-v2"}[1h]
+                    custom_googleapis_com:opencensus_airflow_environment_age{monitored_resource="k8s_cluster", airflow_environment_name!~".+orchestration-v2"}[1h]
                     )
                 )
             )
