@@ -23,6 +23,7 @@ import {
   DIRECTOR_DASHBOARD_PERMISSIONS_LABELS,
   INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
+  LOOKER_EMBED_PERMISSIONS_LABELS,
   MEETINGS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
@@ -241,7 +242,7 @@ export const CustomPermissionsPanel = ({
 
     <h4>Embedded Looker Dashboards:</h4>
     <RoutePermissionList
-      labels={DIRECTOR_DASHBOARD_PERMISSIONS_LABELS}
+      labels={LOOKER_EMBED_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
