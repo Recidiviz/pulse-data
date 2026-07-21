@@ -180,6 +180,7 @@ output:
                   - Absolute Discharge
                   - NEW CODE - Earned Release
                   - OLD/NEW CODE - Expiration
+                  - Correctional Release Center Release
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - CLASSIFICATION
                   - Received from Overcrowding
