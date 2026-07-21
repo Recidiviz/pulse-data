@@ -23,8 +23,8 @@ from datetime import datetime
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
 )
 
 
@@ -38,22 +38,19 @@ def verify_headers(
         file_paths: temp filepaths for Intercom outbound export data CSVs
     """
 
-    repo = build_source_table_repository_for_externally_managed_tables(project_id=None)
+    repo = build_source_table_repository_for_yaml_managed_tables(project_id=None)
 
     for base_name, source_path in file_paths.items():
-        # TODO(OBT-18103): Change to table_id=base_name after yamls are redefined
-        table_id = f"intercom_{base_name}"
+
         big_query_address = BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_DATASET, table_id=table_id
+            dataset_id=INTERCOM_EXPORT_DATASET, table_id=base_name
         )
 
         if big_query_address not in repo.source_tables:
-            # TODO(OBT-18103): Change this error message after the yamls are redefined as GCS backed tables to
-            # f"Check that a YAML for this table exists under {os.path.dirname(intercom_export.__file__)}"
             raise KeyError(
                 f"No source table config found for [{big_query_address.to_str()}]. "
                 f"Check that a YAML for this table exists under "
-                f"recidiviz/source_tables/externally_managed/intercom_export/."
+                f"recidiviz/source_tables/yaml_managed/gcs_backed_tables/intercom_export"
             )
         source_table_config = repo.source_tables[big_query_address]
         schema_fields_by_name = [f.name for f in source_table_config.schema_fields]

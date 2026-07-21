@@ -1,0 +1,32 @@
+address:
+  dataset_id: intercom_export
+  table_id: click
+description: Intercom link click events - tracks when users click links in messages
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: clicked_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: link_type
+    type: STRING
+    mode: NULLABLE
+  - name: url
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-intercom-export/outbound-content/*/click.csv
+  sourceFormat: CSV
+  compression: NONE
+  ignoreUnknownValues: false
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8

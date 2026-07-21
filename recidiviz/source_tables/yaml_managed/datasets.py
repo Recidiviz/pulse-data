@@ -20,6 +20,7 @@ in this directory.
 """
 from recidiviz.calculator.query.state.dataset_config import (
     EXPORT_ARCHIVES_DATASET,
+    INTERCOM_EXPORT_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SPARK_OUTPUT_DATASET,
 )
@@ -55,6 +56,7 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores tables that are backed by Google Sheets."
     ),
     HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
+    INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data from Intercom",
     LABEL_STUDIO_DATASET: "Stores raw Label Studio annotation exports as GCS-backed external tables.",
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."

@@ -1,0 +1,26 @@
+address:
+  dataset_id: intercom_export
+  table_id: goal_success
+description: Intercom goal success - tracks when a user hits a Series goal
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: goal_hit_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-intercom-export/outbound-content/*/goal_success.csv
+  sourceFormat: CSV
+  compression: NONE
+  ignoreUnknownValues: false
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8

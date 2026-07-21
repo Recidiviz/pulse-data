@@ -139,6 +139,26 @@ COMMON_VESTIGES = [
     "meetings_dashboards_db_us_ne.Staff",
     "meetings_dashboards_db_us_ne.Transcription",
     "meetings_dashboards_db_us_ne.Utterance",
+    # As of 07/21/26 these intercom tables are unused, but may be referenced for ad hoc analysis
+    "intercom_export.answer",
+    "intercom_export.checkpoint",
+    "intercom_export.click",
+    "intercom_export.completion",
+    "intercom_export.dismissal",
+    "intercom_export.fin_step_reached",
+    "intercom_export.goal_success",
+    "intercom_export.hard_bounce",
+    "intercom_export.open",
+    "intercom_export.overview",
+    "intercom_export.reaction",
+    "intercom_export.receipt",
+    "intercom_export.reply",
+    "intercom_export.series_completion",
+    "intercom_export.series_disengagement",
+    "intercom_export.soft_bounce",
+    "intercom_export.tour_step_failure",
+    "intercom_export.tour_step_view",
+    "intercom_export.unsubscribe",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph
