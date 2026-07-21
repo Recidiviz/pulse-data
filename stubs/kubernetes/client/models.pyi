@@ -25,8 +25,15 @@ class V1PodStatus:
 
 class V1ObjectMeta:
     name: str
+    labels: Optional[Dict[str, str]]
+    annotations: Optional[Dict[str, str]]
 
-    def __init__(self, name: str) -> None: ...
+    def __init__(
+        self,
+        name: str,
+        labels: Optional[dict[str, str]] = None,
+        annotations: Optional[Dict[str, str]] = None,
+    ) -> None: ...
 
 class V1EmptyDirVolumeSource: ...
 

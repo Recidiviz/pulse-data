@@ -18,12 +18,15 @@
 import os
 import unittest
 from typing import Any
+from unittest.mock import patch
 
 import yaml
+from kubernetes.client import models as k8s
 
 import recidiviz
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     RECIDIVIZ_LABEL_PREFIX,
+    RecidivizKubernetesPodOperator,
     labels_from_arguments,
 )
 
@@ -138,3 +141,71 @@ class TestLabelsFromArguments(unittest.TestCase):
             with self.subTest(entrypoint_usage=name):
                 labels = labels_from_arguments(argv)
                 self.assertIn(f"{RECIDIVIZ_LABEL_PREFIX}entrypoint", labels)
+
+
+@patch(
+    "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.get_project_id",
+    return_value=None,
+)
+class TestBuildPodRequestObjLabels(unittest.TestCase):
+    """Tests that identity labels are applied to the built pod object.
+
+    These guard the regression where labels assigned to self.labels in execute()
+    did not land on dynamically-mapped pods. Applying them in
+    build_pod_request_obj (where KubernetesPodOperator applies its own
+    dag_id/task_id/map_index labels) fixes that, so we assert against the pod the
+    operator actually builds — not just labels_from_arguments in isolation.
+    """
+
+    def _build_pod_labels(self, arguments: list[str]) -> dict[str, str]:
+        operator = RecidivizKubernetesPodOperator(
+            task_id="raw_data_chunk_normalization",
+            arguments=arguments,
+        )
+        # Stand in for the pod KubernetesPodOperator builds, including the
+        # task-identifying labels it always stamps on (which we have confirmed do
+        # reach mapped pods); our override must merge the entrypoint labels on top.
+        base_pod = k8s.V1Pod(
+            metadata=k8s.V1ObjectMeta(
+                name="recidiviz-kubernetes-pod",
+                labels={"dag_id": "raw_data_import_dag", "map_index": "3"},
+            ),
+            status=k8s.V1PodStatus(
+                phase="RUNNING",
+                start_time=None,
+            ),
+        )
+        with patch.object(
+            RecidivizKubernetesPodOperator.__bases__[0],
+            "build_pod_request_obj",
+            return_value=base_pod,
+        ):
+            pod = operator.build_pod_request_obj()
+        labels = pod.metadata.labels
+        assert labels is not None
+        return labels
+
+    def test_entrypoint_and_state_labels_applied_to_pod(self, _: Any) -> None:
+        labels = self._build_pod_labels(
+            [
+                "run",
+                "--entrypoint=RawDataChunkNormalizationEntrypoint",
+                "--state_code=US_MI",
+                "--file_chunks=path/one.csv###path/two.csv",
+            ]
+        )
+        self.assertEqual(
+            "RawDataChunkNormalizationEntrypoint",
+            labels["recidiviz.org/entrypoint"],
+        )
+        self.assertEqual("US_MI", labels["recidiviz.org/state_code"])
+
+    def test_pod_identifying_labels_preserved(self, _: Any) -> None:
+        # Merging the entrypoint labels must not clobber the labels
+        # KubernetesPodOperator already applied to the pod.
+        labels = self._build_pod_labels(
+            ["--entrypoint=RawDataChunkNormalizationEntrypoint"]
+        )
+        self.assertEqual("raw_data_import_dag", labels["dag_id"])
+        self.assertEqual("3", labels["map_index"])
+        self.assertIn("recidiviz.org/entrypoint", labels)

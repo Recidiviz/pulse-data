@@ -275,21 +275,31 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         self.container_resources = (
             KubernetesEntrypointResourceAllocator().get_resources(self.arguments)
         )
-        # Surface the entrypoint identity as pod labels so the container's
-        # CPU/memory metrics can be filtered by entrypoint, state, etc. in
-        # Cloud Monitoring. Merged on top of the labels KubernetesPodOperator
-        # adds automatically (dag_id, task_id, run_id, ...).
-        self.labels = {
-            **(self.labels or {}),
-            **labels_from_arguments(self.arguments),
-        }
         # Make task instance metadata accessible from the pod
         self.env_vars.extend(self._get_ti_metadata(context))
 
         return super().execute(context)
 
     def build_pod_request_obj(self, context: Optional[Context] = None) -> k8s.V1Pod:
+        """Surface the entrypoint identity as pod labels so the container's
+        CPU/memory metrics can be filtered by entrypoint, state, etc. in Cloud
+        Monitoring (e.g. metadata.user_labels."recidiviz.org/entrypoint").
+
+        These are applied to the built pod here rather than to self.labels in
+        execute() because for dynamically-mapped tasks (e.g. the raw-data
+        file-chunking and chunk-normalization pods) labels assigned to
+        self.labels in execute() do not end up on the pod, whereas labels
+        applied inside build_pod_request_obj — like KubernetesPodOperator's own
+        dag_id/task_id/map_index labels — reliably do. Mutating the built pod's
+        metadata directly guarantees the labels are present for both mapped and
+        non-mapped tasks.
+        """
         pod = super().build_pod_request_obj(context)
+
+        pod.metadata.labels = {
+            **(pod.metadata.labels or {}),
+            **labels_from_arguments(self.arguments),
+        }
 
         if self.cloud_sql_connections:
             connection_strings = []
