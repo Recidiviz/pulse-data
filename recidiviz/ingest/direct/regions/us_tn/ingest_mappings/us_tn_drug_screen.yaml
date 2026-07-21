@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screen` to the
+# corresponding ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  TestDate: DATE
+  TestType: STRING
+  FinalResult: STRING
+  positive_drug_classes: STRING
+  valid_rx_drug_classes: STRING
+  adulterated_tests: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    drug_screens:
+      - StateDrugScreen:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - TestDate
+                - TestType
+          drug_screen_date: TestDate
+          drug_screen_result:
+            $enum_mapping:
+              $raw_text: FinalResult
+              $mappings:
+                StateDrugScreenResult.NEGATIVE: "N"
+                StateDrugScreenResult.POSITIVE: "P"
+                # Person refused the test, so no result was recorded.
+                StateDrugScreenResult.NO_RESULT: "R"
+                # Sample was adulterated/tampered, so there is no usable result.
+                StateDrugScreenResult.INTERNAL_UNKNOWN: "A"
+          drug_screen_metadata:
+            $normalized_values_json_dict:
+              test_type: TestType
+              positive_drug_classes: positive_drug_classes
+              valid_rx_drug_classes: valid_rx_drug_classes
+              adulterated_tests: adulterated_tests

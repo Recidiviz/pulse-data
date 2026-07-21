@@ -1054,7 +1054,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     },
     StateCode.US_TN: {
         "ContactNoteComment": ["ContactNoteDateTime"],
-        "DrugTestDrugClass": ["LastUpdateDate", "TestDate"],
         "HealthExam": ["ExamDateTime", "LastUpdateDate"],
         "Hearing": [
             "AlternateReleaseDate",
@@ -1695,7 +1694,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "StartDate",
         ],
         "DisciplinaryAppeal": ["AppealDate", "DispositionDate", "LastUpdateDate"],
-        "DrugTestAdulterant": ["LastUpdateDate", "TestDate"],
         "FeePriceSheet": ["EndDate", "StartDate"],
         "IncidentPersonInvolved": ["LastUpdateDate"],
         "InterestedPartyComment": ["VictimLetterCreateDate"],

@@ -149,3 +149,21 @@ runs the full ingest pipeline with all fixtures. Key considerations:
 4. **Multiple file_ids per update_datetime**: Each `update_datetime` value must
    have exactly one `file_id`. All rows from the same "file import" should share
    the same `file_id`.
+
+5. **Emulator vs. real BigQuery `CAST` leniency (date-handling bugs)**: Tests run
+   against a BigQuery emulator that is more lenient than production BigQuery about
+   type coercion, so a view can pass every test and still return zero rows (or
+   wrong values) in real BQ. The most common trap involves `datetime` raw columns:
+   a `field_type: datetime` column arrives in the ingest view already normalized to
+   a **full datetime string** (e.g. `'2020-11-18T00:00:00'`). `SAFE_CAST(col AS DATE)`
+   on that string returns `NULL` in real BigQuery (the emulator returns the date),
+   so any `WHERE`/filter on it silently drops every row. Extract the date with
+   `DATE(SAFE_CAST(col AS DATETIME))` (or `SAFE_CAST(LEFT(col, 10) AS DATE)`) instead
+   of casting the string straight to `DATE`.
+
+   Because the emulator hides this class of bug, when a view casts or filters on a
+   `datetime` column, run the expanded query against **real** BigQuery once (scoped
+   to a single `external_id` to keep the scan small) and confirm it returns rows —
+   don't rely on the emulator tests alone. Get the expanded query by running the
+   view module directly, e.g.
+   `uv run python -m recidiviz.ingest.direct.regions.us_xx.ingest_views.view_<name>`.

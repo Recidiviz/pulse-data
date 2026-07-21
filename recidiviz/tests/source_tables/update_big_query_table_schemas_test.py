@@ -2309,6 +2309,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.ViolationsAndSanctions",
     "us_tn_ingest_view_results.diversion_sentence",
     "us_tn_ingest_view_results.diversion_sentence_length",
+    "us_tn_ingest_view_results.drug_screen",
     "us_tn_ingest_view_results.isc_sentence",
     "us_tn_ingest_view_results.isc_sentence_length",
     "us_tn_ingest_view_results.sentence_and_charge",
