@@ -313,7 +313,16 @@ ROOT = os.path.dirname(recidiviz.__file__)
 
 def _get_paths_list_from_file_pattern(file_pattern: tuple[str, str]) -> list[str]:
     path, pattern = file_pattern
-    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True)
+    # Only return files (mirroring Terraform's `fileset` semantics). A glob like
+    # `*/ingest_mappings/*` can otherwise match directories such as `__pycache__`,
+    # which downstream consumers try (and fail) to copy as if they were files.
+    return [
+        match
+        for match in glob(
+            f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True
+        )
+        if os.path.isfile(match)
+    ]
 
 
 def get_entrypoint_source_files(

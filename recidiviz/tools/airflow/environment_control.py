@@ -293,4 +293,7 @@ if __name__ == "__main__":
     parsed_args = parser.parse_args()
     kwargs = vars(parsed_args).copy()
     kwargs.pop("command")
-    actions[parsed_args.command](**kwargs)  # type: ignore
+    if not parsed_args.command:
+        parser.print_help()
+    else:
+        actions[parsed_args.command](**kwargs)  # type: ignore

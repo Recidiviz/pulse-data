@@ -54,7 +54,7 @@ def copy_source_files_to_experiment(
         get_airflow_source_files(dry_run=False, output_path=directory)
         subprocess.run(
             gcloud_storage_rsync_airflow_command(
-                directory, gcs_uri, dry_run=dry_run, use_gsutil=True
+                directory, gcs_uri, dry_run=dry_run, use_gsutil=False
             ),
             stdout=subprocess.PIPE,
             check=True,
