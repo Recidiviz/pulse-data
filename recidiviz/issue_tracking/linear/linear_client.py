@@ -89,8 +89,8 @@ class LinearAttachment:
 
     id: str = attr.ib()
     issue_identifier: str = attr.ib()
-    # None for attachments not created by Linear's GitHub integration, which
-    # carry no linkKind in their metadata.
+    # None for attachments whose metadata carries no linkKind (those not created
+    # by Linear's GitHub integration) or a linkKind we don't recognize.
     link_kind: LinkKind | None = attr.ib()
     source: str | None = attr.ib()
 
@@ -103,13 +103,13 @@ class LinearAttachment:
         """Builds a LinearAttachment from a single attachmentsForURL response
         node. metadata is always present (Linear returns it as a non-null JSON
         object, deserialized into a dict), but its linkKind is absent for
-        attachments not created by Linear's GitHub integration."""
+        attachments not created by Linear's GitHub integration and may be a value
+        we don't recognize; both map to a None link_kind."""
         metadata = assert_type(response["metadata"], dict)
-        raw_link_kind = metadata.get("linkKind")
         return cls(
             id=response["id"],
             issue_identifier=response["issue"]["identifier"],
-            link_kind=LinkKind(raw_link_kind) if raw_link_kind is not None else None,
+            link_kind=LinkKind.from_raw_value(metadata.get("linkKind")),
             source=metadata.get("source"),
         )
 

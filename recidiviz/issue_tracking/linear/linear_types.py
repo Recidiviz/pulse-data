@@ -34,6 +34,24 @@ class LinkKind(enum.Enum):
     CLOSES = "closes"
     CONTRIBUTES = "contributes"
 
+    @classmethod
+    def from_raw_value(cls, raw_value: str | None) -> "LinkKind | None":
+        """Returns the LinkKind for a raw Linear linkKind string, or None if the
+        value is absent or is not one of the recognized kinds.
+
+        Because Linear stores linkKind as a free-form string (see class docstring),
+        an attachment can carry a value outside the two kinds set by their GitHub
+        integration: attachments linked by hand carry no linkKind at all, and
+        Linear has been observed to return other values (e.g. "links"). Callers
+        only care about "closes"/"contributes", so any unrecognized value maps to
+        None rather than raising."""
+        if raw_value is None:
+            return None
+        try:
+            return cls(raw_value)
+        except ValueError:
+            return None
+
 
 class LinearStateType(enum.Enum):
     """The type of a Linear workflow state.
