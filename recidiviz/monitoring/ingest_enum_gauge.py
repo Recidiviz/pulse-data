@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Emits an opentelemetry counter metric when an ingest enum field encounters an unmapped
-raw text value. The metric flows through Cloud Monitoring to a PagerDuty alert
-via the pagerduty_alert_forwarder service.
+"""Emits an opentelemetry gauge metric describing whether an ingest enum field
+currently has an unmapped raw text value (1) or is clean (0). The metric flows
+through Cloud Monitoring to a PagerDuty alert via the pagerduty_alert_forwarder
+service.
 """
 import logging
 
 from recidiviz.monitoring.instruments import get_monitoring_instrument
-from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
+from recidiviz.monitoring.keys import AttributeKey, GaugeInstrumentKey
 
 
 def log_unmapped_enum(
@@ -32,7 +33,8 @@ def log_unmapped_enum(
     ingest_view_name: str,
     raw_text: str,
 ) -> None:
-    """Records that an enum field had no mapping for a raw text value.
+    """Records that an enum field had no mapping for a raw text value by setting
+    the gauge for that field to 1.
 
     The raw_text is logged but not included as a metric attribute to avoid
     unbounded cardinality in the number of metrics we produce. We will generate
@@ -49,9 +51,9 @@ def log_unmapped_enum(
 
     # raw_text is intentionally excluded from metric attributes to avoid unbounded
     # cardinality. Find the specific value in Cloud Logging via the warning above.
-    counter = get_monitoring_instrument(CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
-    counter.add(
-        1,
+    gauge = get_monitoring_instrument(GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
+    gauge.set(
+        amount=1,
         attributes={
             AttributeKey.REGION: state_code,
             AttributeKey.ENUM_TYPE: enum_cls.__name__,
@@ -68,34 +70,33 @@ def emit_enum_mapping_heartbeat(
     field_name: str,
     ingest_view_name: str,
 ) -> None:
-    """Tells Cloud Monitoring "we ran the ingest pipeline for this enum
-    field and saw no unmapped values", by writing a 0 to the same cumulative
-    counter that `log_unmapped_enum` increments.
+    """Tells Cloud Monitoring "we ran the ingest pipeline for this enum field and
+    saw no unmapped values", by setting the field's gauge to 0.
 
-    Why this is needed: if a pipeline run doesn't hit any unmapped values
-    for a given field, `log_unmapped_enum` never fires, and the counter
-    doesn't move, meaning there is no metric data for that field from that
-    run. The `unmapped_enum_values_in_ingest_pipeline` alert policy can't
-    tell "the pipeline ran and the field was fine" apart from "we just
-    haven't heard from any worker yet", so any prior incident on the field
-    would stay open even though the field is now fine. Writing a 0 sends a
-    present "no unmapped values this run" data point that the policy aligns
-    to 0 and uses to resolve.
+    Why this is needed: if a pipeline run doesn't hit any unmapped values for a
+    given field, `log_unmapped_enum` never fires, so that field emits no data
+    point for the run. The `unmapped_enum_values_in_ingest_pipeline` alert policy
+    can't tell "the pipeline ran and the field was fine" apart from "we just
+    haven't heard from any worker yet", so any prior incident on the field would
+    stay open even though the field is now fine. Setting a 0 sends a present "no
+    unmapped values this run" data point that the policy resolves on.
 
-    Adding 0 to a cumulative counter is a no-op for the cumulative value,
-    so this is safe to call for every known enum field at the end of every
-    run, even fields that already incremented earlier in the same run. For
-    a field that did see an unmapped value this run, the counter stays at
-    its incremented value and the heartbeat just emits another data point
-    at that same value.
+    This is safe to call for every known enum field at the end of every run. The
+    heartbeat runs as a single `beam.Map` after a `Count.Globally()` barrier, so
+    it can share a worker (and thus a series) with a parsing `set(1)`, which
+    `set(0)` would then read back as 0. What prevents masking is timing, not
+    per-worker series separation: the 60s periodic export ships the parsing `1`
+    during the multi-minute barrier wait, before the heartbeat `set(0)`, so
+    `ALIGN_MAX` over the window still sees it. Masking would require a full run to
+    complete within one 60s export interval, which our ingest runs do not.
 
     See the `unmapped_enum_values_in_ingest_pipeline` alert policy in the
-    `data-platform-alerting` atmos component for how the alignment,
-    aggregation, and missing-data settings consume this signal.
+    `data-platform-alerting` atmos component for how the alignment, aggregation,
+    and missing-data settings consume this signal.
     """
-    counter = get_monitoring_instrument(CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
-    counter.add(
-        0,
+    gauge = get_monitoring_instrument(GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
+    gauge.set(
+        amount=0,
         attributes={
             AttributeKey.REGION: state_code,
             AttributeKey.ENUM_TYPE: enum_cls.__name__,

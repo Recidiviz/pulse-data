@@ -59,7 +59,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegate,
 )
-from recidiviz.monitoring.ingest_enum_counter import log_unmapped_enum
+from recidiviz.monitoring.ingest_enum_gauge import log_unmapped_enum
 from recidiviz.persistence.entity.base_entity import Entity, EntityT, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,

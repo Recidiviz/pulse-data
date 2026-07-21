@@ -39,6 +39,12 @@ class GaugeInstrumentKey(InstrumentEnum):
 
     SFTP_INGEST_READY_FILE_AGE = "sftp.ingest_ready_files_hours_stale"
 
+    # 1 while an ingest enum field currently has an unmapped raw text value, 0
+    # once a run sees the field is clean. A gauge (not a counter) so the alert
+    # policy can align on current state with ALIGN_MAX; see ingest_enum_gauge.py
+    # and the unmapped_enum_values_in_ingest_pipeline alert policy.
+    INGEST_UNMAPPED_ENUM_VALUE = "ingest.has_unmapped_enum_value"
+
 
 class HistogramInstrumentKey(InstrumentEnum):
     """Instruments registered here will be created as a opentelemetry.sdk.metrics.Histogram and
@@ -64,8 +70,6 @@ class CounterInstrumentKey(InstrumentEnum):
     ENGINE_INITIALIZATION_FAILURE = (
         "persistence.database.sqlalchemy_engine_initialization_failure"
     )
-
-    INGEST_UNMAPPED_ENUM_VALUE = "ingest.unmapped_enum_value"
 
 
 class AttributeKey:

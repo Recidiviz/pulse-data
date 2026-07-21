@@ -30,7 +30,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
 )
-from recidiviz.monitoring.ingest_enum_counter import emit_enum_mapping_heartbeat
+from recidiviz.monitoring.ingest_enum_gauge import emit_enum_mapping_heartbeat
 from recidiviz.monitoring.providers import get_global_meter_provider
 
 _T = TypeVar("_T")
@@ -44,11 +44,11 @@ def attach_enum_mapping_heartbeats(
     ingest_manifest_collector: IngestViewManifestCollector,
     view_names: list[str],
 ) -> None:
-    """Attaches a terminal Beam branch that emits `counter.add(0)` heartbeats for
+    """Attaches a terminal Beam branch that sets the unmapped-enum gauge to 0 for
     every enum field once all ingest view parsing has completed.
 
-    Lets the alert policy see rate=0 for fields with no unmapped values (rather than
-    absent data, which would leave existing alerts open).
+    Lets the alert policy see a current state of 0 for fields with no unmapped
+    values (rather than absent data, which would leave existing alerts open).
 
     Chained after `merged_results` with a `beam.combiners.Count.Globally` so it runs
     only once `merged_results` is completely hydrated. Otherwise a zero-count flush
@@ -79,7 +79,7 @@ def _emit_heartbeats_and_flush(
     state_code: str,
     manifests_for_views_to_run: dict[str, IngestViewManifest],
 ) -> None:
-    """Emits `counter.add(0)` heartbeats for all enum fields, then flushes the
+    """Sets the unmapped-enum gauge to 0 for all enum fields, then flushes the
     meter provider to ensure metrics are exported before the worker shuts down."""
     for ingest_view_name, manifest in manifests_for_views_to_run.items():
         for entity_node in manifest.output.all_nodes_referenced_with_type(

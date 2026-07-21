@@ -1526,6 +1526,148 @@ resource "google_monitoring_alert_policy" "data_validation_failures_to_run" {
   project               = var.project_id
 }
 
+
+# We want the has_unmapped_enum_values_in_ingest_pipeline alert below to fire
+# when any prod ingest run sees an unmapped enum value, stay firing across
+# subsequent runs that keep hitting the same value, and resolve only when a
+# later run runs clean for the field in question. To achieve that we:
+#
+#   1. Emit a present data point for every enum field on every run,
+#      regardless of whether the field saw any unmapped values.
+#
+#      log_unmapped_enum() sets a GAUGE to 1 whenever an ingest pipeline
+#      hits a raw text value with no enum mapping, and
+#      emit_enum_mapping_heartbeat() sets the same gauge to 0 at the end of
+#      every run for every known enum field. Each Dataflow worker process
+#      exports its own time series (distinguished by an opentelemetry_id
+#      label).
+#
+#   2. Align and aggregate so that any worker hitting an unmapped value
+#      anywhere surfaces as a positive number.
+#
+#      ALIGN_MAX reads, for each per-worker series, the highest value the
+#      gauge held inside the most recent hour: 0 if no unmapped values were
+#      seen, 1 if any were. REDUCE_SUM adds those numbers across every
+#      worker and ingest view in the same (region, enum field name, enum
+#      type) group. Any group whose sum is > 0 means at least one worker
+#      somewhere saw an unmapped value in the window, which trips the
+#      COMPARISON_GT threshold of 0 and fires the alert. A heartbeat 0 does
+#      not mask a parsing 1. The heartbeat can share a worker (and series)
+#      with a parsing set(1), since it runs as a single Map after a
+#      Count.Globally() barrier. What prevents masking is timing, not
+#      per-worker series separation: the 60s periodic export ships the
+#      parsing 1 during the multi-minute barrier wait, before the heartbeat
+#      set(0), so ALIGN_MAX still sees it. This would only fail if a full run
+#      completed within one 60s export interval, which our ingest runs do not.
+#
+#  3. Hold open incidents across the gap between runs.
+#
+#      EVALUATION_MISSING_DATA_NO_OP tells Cloud Monitoring not to
+#      re-evaluate the alert while data is missing, so when a run's workers
+#      shut down and stop reporting, any open incident stays open until the
+#      next run's workers start. If that next run finds no unmapped values
+#      for the field, the heartbeats drive the sum back to 0 and the
+#      incident resolves. If it still hits an unmapped value, the sum stays
+#      > 0 and the incident stays open.
+resource "google_monitoring_metric_descriptor" "ingest_has_unmapped_enum_value" {
+  project      = var.project_id
+  description  = "1 while an ingest enum field has an unmapped raw text value, 0 once a run sees the field is clean."
+  display_name = "Ingest Has Unmapped Enum Value"
+  # GAUGE so the alert policy can align on current state with ALIGN_MAX.
+  type        = "custom.googleapis.com/opencensus/ingest.has_unmapped_enum_value"
+  metric_kind = "GAUGE"
+  value_type  = "INT64"
+
+  labels {
+    key         = "region"
+    value_type  = "STRING"
+    description = "State code region"
+  }
+
+  labels {
+    key         = "enum_type"
+    value_type  = "STRING"
+    description = "Enum class name"
+  }
+
+  labels {
+    key         = "enum_field_name"
+    value_type  = "STRING"
+    description = "Field name in the ingest view"
+  }
+
+  labels {
+    key         = "ingest_view_name"
+    value_type  = "STRING"
+    description = "Name of the ingest view"
+  }
+
+  labels {
+    key         = "opentelemetry_id"
+    value_type  = "STRING"
+    description = "Unique identifier added by CloudMonitoringMetricsExporter to avoid write rate limits"
+  }
+}
+
+
+resource "google_monitoring_alert_policy" "has_unmapped_enum_values_in_ingest_pipeline" {
+  depends_on = [google_monitoring_metric_descriptor.ingest_has_unmapped_enum_value]
+  alert_strategy {
+    # Auto-close after 7 days if we have not seen any data
+    auto_close = "604800s"
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period     = "3600s"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.label.project_id", "metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
+        per_series_aligner   = "ALIGN_MAX"
+      }
+
+      comparison      = "COMPARISON_GT"
+      # How long the threshold must be continuously violated before firing.
+      # Must be non-zero when evaluation_missing_data is set (GCP API requirement).
+      duration        = "60s"
+      # This alert fires within Dataflow workers which use resource.type = "gce_instance"
+      filter          = <<-EOT
+        resource.type = "gce_instance" AND metric.type = "custom.googleapis.com/opencensus/ingest.has_unmapped_enum_value"
+      EOT
+      threshold_value = "0"
+
+      # Dataflow workers are ephemeral — metric data stops when a pipeline ends.
+      # This setting keeps open incidents open when data is missing for a time window.
+      # Resolution comes from heartbeat data points emitted by clean pipeline runs.
+      # https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies#evaluationmissingdata
+      evaluation_missing_data = "EVALUATION_MISSING_DATA_NO_OP"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "OpenCensus/ingest.has_unmapped_enum_value"
+  }
+
+  display_name = "Unmapped Enum Values in Ingest Pipeline"
+
+  documentation {
+    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND textPayload=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
+    mime_type = "text/markdown"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
+  project               = var.project_id
+}
+
 resource "google_monitoring_metric_descriptor" "ingest_unmapped_enum_value" {
   project      = var.project_id
   description  = "Count of ingest enum fields that encountered an unmapped raw text value."
@@ -1565,6 +1707,7 @@ resource "google_monitoring_metric_descriptor" "ingest_unmapped_enum_value" {
   }
 }
 
+# TKTK: Remove once #91870 makes it to production
 # We want the unmapped_enum_values_in_ingest_pipeline alert below to fire
 # when any prod ingest run sees an unmapped enum value, stay firing across
 # subsequent runs that keep hitting the same value, and resolve only when a
@@ -1615,7 +1758,7 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
         alignment_period     = "3600s"
         cross_series_reducer = "REDUCE_SUM"
         group_by_fields      = ["resource.label.project_id", "metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
-        per_series_aligner   = "ALIGN_MAX"
+        per_series_aligner   = "ALIGN_RATE"
       }
 
       comparison      = "COMPARISON_GT"
@@ -1643,7 +1786,7 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
     display_name = "OpenCensus/ingest.unmapped_enum_value"
   }
 
-  display_name = "Unmapped Enum Values in Ingest Pipeline"
+  display_name = "Unmapped Enum Values in Ingest Pipeline  (deprecated cumulative counter)"
 
   documentation {
     content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND textPayload=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."

@@ -86,8 +86,8 @@ instruments:
       - attributes:
           - REGION
 
-  - instrument_key: ingest.unmapped_enum_value
-    description: Counted when an enum field encounters a raw text value with no mapping and falls back to INTERNAL_UNKNOWN
+  - instrument_key: ingest.has_unmapped_enum_value
+    description: 1 while an enum field has a raw text value with no mapping (falling back to INTERNAL_UNKNOWN), 0 once a run sees the field is clean
     views:
       - attributes:
           - REGION

@@ -14,19 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for ingest_enum_counter.py"""
+"""Tests for ingest_enum_gauge.py"""
 import enum
 import unittest
 from typing import cast
 
 from more_itertools import one
-from opentelemetry.sdk.metrics.export import NumberDataPoint, Sum
+from opentelemetry.sdk.metrics.export import Gauge, NumberDataPoint
 
-from recidiviz.monitoring.ingest_enum_counter import (
+from recidiviz.monitoring.ingest_enum_gauge import (
     emit_enum_mapping_heartbeat,
     log_unmapped_enum,
 )
-from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
+from recidiviz.monitoring.keys import AttributeKey, GaugeInstrumentKey
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 
 
@@ -45,7 +45,7 @@ class LogUnmappedEnumTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.otl_mock.tear_down()
 
-    def test_increments_counter_with_correct_attributes(self) -> None:
+    def test_sets_gauge_to_one_with_correct_attributes(self) -> None:
         log_unmapped_enum(
             state_code="US_XX",
             enum_cls=_FakeEnum,
@@ -55,9 +55,9 @@ class LogUnmappedEnumTest(unittest.TestCase):
         )
 
         metric_data = cast(
-            Sum,
+            Gauge,
             self.otl_mock.get_metric_data(
-                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+                metric_name=GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
             ),
         )
         data_point: NumberDataPoint = one(metric_data.data_points)
@@ -73,7 +73,9 @@ class LogUnmappedEnumTest(unittest.TestCase):
             },
         )
 
-    def test_multiple_calls_same_attributes_accumulate(self) -> None:
+    def test_multiple_calls_same_attributes_report_last_value(self) -> None:
+        # As a gauge (LastValueAggregation), repeated set(1) calls report 1, not
+        # a running total.
         for _ in range(3):
             log_unmapped_enum(
                 state_code="US_XX",
@@ -84,13 +86,13 @@ class LogUnmappedEnumTest(unittest.TestCase):
             )
 
         metric_data = cast(
-            Sum,
+            Gauge,
             self.otl_mock.get_metric_data(
-                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+                metric_name=GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
             ),
         )
         data_point: NumberDataPoint = one(metric_data.data_points)
-        self.assertEqual(data_point.value, 3)
+        self.assertEqual(data_point.value, 1)
 
     def test_different_attributes_create_separate_data_points(self) -> None:
         log_unmapped_enum(
@@ -109,9 +111,9 @@ class LogUnmappedEnumTest(unittest.TestCase):
         )
 
         metric_data = cast(
-            Sum,
+            Gauge,
             self.otl_mock.get_metric_data(
-                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+                metric_name=GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
             ),
         )
         self.assertEqual(len(metric_data.data_points), 2)
@@ -154,9 +156,9 @@ class EmitEnumMappingHeartbeatTest(unittest.TestCase):
         )
 
         metric_data = cast(
-            Sum,
+            Gauge,
             self.otl_mock.get_metric_data(
-                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+                metric_name=GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
             ),
         )
         data_point: NumberDataPoint = one(metric_data.data_points)
@@ -172,7 +174,13 @@ class EmitEnumMappingHeartbeatTest(unittest.TestCase):
             },
         )
 
-    def test_heartbeat_does_not_overwrite_real_counter(self) -> None:
+    def test_last_set_value_wins_within_a_series(self) -> None:
+        # LastValueAggregation: the most recent set() on a series wins, so a
+        # heartbeat 0 after a 1 reads back as 0. In production a heartbeat can
+        # share a worker/series with a parsing 1 (single Map after a
+        # Count.Globally() barrier), but it doesn't mask the value: the 60s
+        # periodic export ships the 1 during the multi-minute barrier wait,
+        # before the heartbeat 0. See emit_enum_mapping_heartbeat.
         log_unmapped_enum(
             state_code="US_XX",
             enum_cls=_FakeEnum,
@@ -189,10 +197,10 @@ class EmitEnumMappingHeartbeatTest(unittest.TestCase):
         )
 
         metric_data = cast(
-            Sum,
+            Gauge,
             self.otl_mock.get_metric_data(
-                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+                metric_name=GaugeInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
             ),
         )
         data_point: NumberDataPoint = one(metric_data.data_points)
-        self.assertEqual(data_point.value, 1)
+        self.assertEqual(data_point.value, 0)
