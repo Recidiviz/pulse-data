@@ -81,7 +81,6 @@ resource "google_compute_address" "external_system_outbound_requests" {
   region       = var.us_central_region
 }
 
-# TODO(#37766) rollback once we confirm w/ texas this was an ip-based issue
 resource "google_compute_address" "us_tx_sftp_outbound_requests" {
   name         = "us-tx-sftp-temp-outbound-requests"
   address_type = "EXTERNAL"
@@ -107,7 +106,6 @@ module "nat_us_central1" {
   region      = "us-central1"
   nat_ips     = [google_compute_address.external_system_outbound_requests.self_link]
 
-  # TODO(#37766) rollback once we confirm w/ texas this was an ip-based issue
   # TODO(#57660) rollback once we confirm w/ pennsylvania this was an ip-based issue
 
   # Determines whether existing port mappings can be used for the multiple connections
