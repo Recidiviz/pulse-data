@@ -36,14 +36,24 @@ The parser script detects API errors (e.g. expired auth tokens) and exits with a
 clear error message. If it reports an auth error, ask the user to run
 `gcloud auth login` and retry.
 
+PII entries are keyed by either the GitHub issue number or the **Linear
+identifier** (e.g. `OBT-36184`), depending on when the ticket was filed. Tickets
+now originate in Linear; the Linear ID is in the `linear-code` linkback comment
+fetched in Step 1 (the `<!-- linear-linkback -->` comment, whose `linear.app/...`
+URL ends in the identifier). Pass **both** the issue number and the Linear ID
+(if present) so the lookup matches regardless of how the entry is keyed:
+
 ```bash
 ACCESS_TOKEN=$(gcloud auth print-access-token) && \
 curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
   "https://docs.googleapis.com/v1/documents/1hYq--Xw6D5Lu96pSFVGeNu9AuxMNtB5F4ltI2VE9FZs" \
-  | python3 .claude/skills/investigate-pg-ticket/parse_github_pii_doc.py <ISSUE_NUMBER>
+  | python3 .claude/skills/investigate-pg-ticket/parse_github_pii_doc.py <GITHUB_ISSUE_NUMBER> <LINEAR_ISSUE_ID>
 ```
 
-Replace `<ISSUE_NUMBER>` with the actual issue number (e.g., `12097`).
+Replace `<GITHUB_ISSUE_NUMBER>` with the actual GitHub issue number (e.g.,
+`12097`) and `<LINEAR_ISSUE_ID>` with the Linear identifier (e.g., `OBT-36184`).
+The Linear ID is optional — omit it for legacy tickets that have no
+`linear-code` comment.
 
 ### Step 3: Extract key details
 

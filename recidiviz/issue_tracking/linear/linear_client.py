@@ -38,6 +38,7 @@ from recidiviz.issue_tracking.linear.linear_types import (
     LinearTeamKey,
     LinkKind,
 )
+from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,12 @@ LINEAR_API_URL = "https://api.linear.app/graphql"
 
 # Number of times to attempt a single Linear API request before giving up.
 LINEAR_API_MAX_ATTEMPTS = 4
+
+# Secret Manager secret holding a read-capable Linear API key, used by
+# server-side jobs (e.g. the PG ticket diagnosis Cloud Build job) to build a
+# LinearClient without the OAuth client-credentials flow the GitHub Actions use.
+# Mirrors github_helperbot_client's use of github_deploy_script_pat.
+LINEAR_API_KEY_SECRET_NAME = "linear_deploy_script_api_key"  # nosec
 
 
 class LinearApiError(Exception):
@@ -537,3 +544,19 @@ class LinearClient:
             mutation,
             {"input": {"issueId": issue_info.uuid, "body": comment_body}},
         )
+
+
+def linear_client_from_secret() -> LinearClient:
+    """Build a LinearClient authenticated with the Linear API key stored in
+    Secret Manager (LINEAR_API_KEY_SECRET_NAME). Requires Google secrets access.
+
+    Mirrors github_helperbot_client for the Linear API. The stored value must be
+    a raw Linear API key (passed through as the Authorization header as-is), not
+    an OAuth access token — the latter would need a "Bearer " prefix.
+    """
+    api_key = get_secret(LINEAR_API_KEY_SECRET_NAME)  # nosec
+    if api_key is None:
+        raise KeyError(
+            f"Couldn't locate Linear API key secret [{LINEAR_API_KEY_SECRET_NAME}]"
+        )
+    return LinearClient(api_key)

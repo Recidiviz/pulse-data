@@ -97,8 +97,12 @@ from pii_doc_parser_utils import (  # type: ignore[import-not-found]  # noqa: E4
 from recidiviz.github.github_client import (  # noqa: E402
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
-    github_helperbot_client,
-    upsert_issue_comment,
+    helperbot_issue_has_comment_with_prefix,
+    upsert_helperbot_comment,
+)
+from recidiviz.github.github_issue import GithubIssue  # noqa: E402
+from recidiviz.issue_tracking.linear.linear_client import (  # noqa: E402
+    linear_client_from_secret,
 )
 from recidiviz.utils.string_formatting import truncate_string_if_necessary  # noqa: E402
 
@@ -229,25 +233,50 @@ DIAGNOSIS_MARKER = "<!-- pg-diagnosis-agent -->"
 FOLLOW_UP_MARKER = "<!-- pg-diagnosis-followup -->"
 
 
-def issue_has_marker(repo: str, issue_number: int, marker: str) -> bool:
-    """Return True iff any existing comment on the issue starts with the marker."""
-    issue = github_helperbot_client().get_repo(repo).get_issue(issue_number)
-    return any(c.body.startswith(marker) for c in issue.get_comments())
+def issue_has_marker(issue: GithubIssue, marker: str) -> bool:
+    """Return True iff a Helperbot comment on the issue starts with the marker."""
+    return helperbot_issue_has_comment_with_prefix(
+        issue_number=issue.number, prefix=marker, repo=issue.repo
+    )
+
+
+def resolve_linear_id_for_issue(issue: GithubIssue) -> str | None:
+    """Return the Linear identifier synced to the GitHub issue, or None.
+
+    Tickets now originate in Linear and sync to GitHub; PII in go/github-pii is
+    keyed by the Linear identifier for those tickets, so we resolve it via
+    Linear's native sync-attachment API to look up the right section. The
+    LinearClient is built from the Linear API key in Secret Manager (shared
+    linear_client_from_secret factory).
+
+    Best-effort: any failure — missing/invalid Linear credentials or a Linear
+    API error — degrades to None (logged) rather than aborting the diagnosis.
+    The go/github-pii lookup still succeeds by GitHub number for pre-Linear
+    tickets, so a Linear outage must not block those.
+    """
+    try:
+        linear_issue = linear_client_from_secret().resolve_github_to_linear(issue)
+        return linear_issue.issue_identifier if linear_issue else None
+    except Exception:
+        logger.warning(
+            "Linear lookup failed for %s; proceeding with GitHub number only",
+            issue,
+            exc_info=True,
+        )
+        return None
 
 
 def _post_marked_comment(
-    repo: str,
-    issue_number: int,
+    issue: GithubIssue,
     body: str,
     marker: str = DIAGNOSIS_MARKER,
 ) -> None:
     """Upsert a comment whose body is prefixed with the given marker."""
-    upsert_issue_comment(
-        github_client=github_helperbot_client(),
-        repo=repo,
-        issue_number=issue_number,
+    upsert_helperbot_comment(
+        issue_number=issue.number,
         body=f"{marker}\n{body}",
         prefix=marker,
+        repo=issue.repo,
     )
 
 
@@ -317,8 +346,13 @@ class PersonIDLookupError(DiagnosisFailure):
     )
 
 
-def fetch_pii_for_issue(issue_number: str, sa_email: str) -> str:
-    """Fetch the PII section for the given issue from the go/github-pii doc."""
+def fetch_pii_for_issue(issue_number: str, linear_id: str | None, sa_email: str) -> str:
+    """Fetch the PII section for the given issue from the go/github-pii doc.
+
+    Looks up the section by the GitHub issue number and, when available, the
+    Linear identifier — entries are keyed by either, depending on when the
+    ticket was filed. Raises PIINotFoundError only if neither matches.
+    """
     try:
         scopes = ["https://www.googleapis.com/auth/documents.readonly"]
         credentials, _ = google.auth.default()
@@ -341,11 +375,13 @@ def fetch_pii_for_issue(issue_number: str, sa_email: str) -> str:
                 f"Google Docs API error: {doc['error'].get('message', 'unknown')}"
             )
         lines = parse_doc(doc)
-        section = find_issue_section(lines, issue_number)
+        identifiers = [issue_number] + ([linear_id] if linear_id else [])
+        section = find_issue_section(lines, identifiers)
         if section:
             return "\n".join(section)
+        linear_detail = f" (Linear {linear_id})" if linear_id else ""
         raise PIINotFoundError(
-            f"Could not find issue {issue_number} in the PII document."
+            f"Could not find issue {issue_number}{linear_detail} in the PII document."
         )
     except (PIIFetchError, PIINotFoundError):  # pylint: disable=try-except-raise
         # Re-raise so the specific failure type isn't swallowed and re-wrapped
@@ -527,6 +563,7 @@ def look_up_person_ids(
 def _build_tool_handlers(
     config: RuntimeConfig,
     ctx: DiagnosisContext,
+    linear_id: str | None,
 ) -> dict[str, Callable[[dict[str, Any]], str]]:
     """Build the tool-name → handler dict, closing over runtime config and context."""
     return {
@@ -535,7 +572,7 @@ def _build_tool_handlers(
             args["dataset"], args["table"], ctx
         ),
         "fetch_pii": lambda args: fetch_pii_for_issue(
-            args["issue_number"], config.sa_email
+            args["issue_number"], linear_id, config.sa_email
         ),
         "look_up_person_ids": lambda args: look_up_person_ids(
             args["external_ids"], args["state_code"], config.bq_project, ctx
@@ -770,25 +807,26 @@ recommends that a human investigate manually.
 
 
 def run_agent(
+    issue: GithubIssue,
     issue_title: str,
     issue_body: str,
-    issue_number: int,
     product_areas: list[str],
     config: RuntimeConfig,
     anthropic_api_key: str,
     ctx: DiagnosisContext,
+    linear_id: str | None,
 ) -> str:
     """Run the diagnosis agentic loop and return the final diagnosis text."""
     result = run_agent_loop(
         api_key=anthropic_api_key,
         system_prompt=_build_system_prompt(config, product_areas),
         user_message=(
-            f"**Issue #{issue_number}**\n\n"
+            f"**Issue #{issue.number}**\n\n"
             f"**Issue title:** {issue_title}\n\n"
             f"**Issue body:**\n{issue_body}"
         ),
         tools=TOOLS,
-        tool_handlers=_build_tool_handlers(config, ctx),
+        tool_handlers=_build_tool_handlers(config, ctx, linear_id),
         config=AgentConfig(model=MODEL, max_iterations=MAX_AGENT_ITERATIONS),
         summary_instruction=(
             "You've reached the maximum number of investigation steps. "
@@ -868,8 +906,10 @@ def main() -> None:
     """Entry point: read config from env, run the agent, and post the diagnosis."""
     config = _load_runtime_config()
 
-    issue_number = int(get_env("ISSUE_NUMBER"))
-    issue_repo = os.environ.get("ISSUE_REPO", RECIDIVIZ_DATA_REPO)
+    issue = GithubIssue(
+        repo=os.environ.get("ISSUE_REPO", RECIDIVIZ_DATA_REPO),
+        number=int(get_env("ISSUE_NUMBER")),
+    )
 
     # Title and body are base64-encoded in Cloud Build substitutions to avoid
     # breakage from commas, equals signs, or other special characters.
@@ -882,11 +922,10 @@ def main() -> None:
     force_rerun = os.environ.get("FORCE_RERUN", "").lower() in ("1", "true", "yes")
     logs_footer = _build_logs_footer(config.gcp_project, config.build_id)
 
-    if not force_rerun and issue_has_marker(issue_repo, issue_number, DIAGNOSIS_MARKER):
+    if not force_rerun and issue_has_marker(issue, DIAGNOSIS_MARKER):
         logger.info(
-            "Diagnosis already exists for %s#%d, skipping (set FORCE_RERUN=1 to override)",
-            issue_repo,
-            issue_number,
+            "Diagnosis already exists for %s, skipping (set FORCE_RERUN=1 to override)",
+            issue,
         )
         # upsert is idempotent (edits in place; no duplicate notification),
         # so we don't need a separate "is the follow-up already there?" check.
@@ -894,32 +933,33 @@ def main() -> None:
             "A diagnosis comment already exists on this ticket, so the automated "
             "agent won't re-run.\n\n"
             "If you'd like to continue the investigation, run "
-            f"`/investigate-pg-ticket {issue_number}` in your local Claude Code "
+            f"`/investigate-pg-ticket {issue.number}` in your local Claude Code "
             "terminal to pick up from where the agent left off."
         )
         _post_marked_comment(
-            issue_repo,
-            issue_number,
+            issue,
             follow_up + logs_footer,
             marker=FOLLOW_UP_MARKER,
         )
-        logger.info(
-            "Posted/updated follow-up notice for %s#%d", issue_repo, issue_number
-        )
+        logger.info("Posted/updated follow-up notice for %s", issue)
         return
+
+    linear_id = resolve_linear_id_for_issue(issue)
+    logger.info("Linear ID for %s: %s", issue, linear_id)
 
     anthropic_api_key = get_secret("pg_diagnosis_claude_api_key", config.gcp_project)
     ctx = DiagnosisContext()
     try:
-        logger.info("Starting diagnosis for %s#%d", issue_repo, issue_number)
+        logger.info("Starting diagnosis for %s", issue)
         comment = run_agent(
+            issue,
             issue_title,
             issue_body,
-            issue_number,
             product_areas,
             config,
             anthropic_api_key,
             ctx,
+            linear_id,
         )
         logger.info("Scrubbing PII from comment before posting...")
         scrubbed = scrub_pii_from_comment(comment, anthropic_api_key)
@@ -934,24 +974,21 @@ def main() -> None:
             - 200  # safety margin for any decoration we add later
         )
         scrubbed = truncate_string_if_necessary(scrubbed, max_length=diagnosis_budget)
-        _post_marked_comment(issue_repo, issue_number, scrubbed + logs_footer)
-        logger.info("Posted diagnosis for %s#%d", issue_repo, issue_number)
+        _post_marked_comment(issue, scrubbed + logs_footer)
+        logger.info("Posted diagnosis for %s", issue)
     except Exception as e:
-        logger.exception("Failed to process %s#%d", issue_repo, issue_number)
+        logger.exception("Failed to process %s", issue)
         # Surface the error type and message so a failure isn't a contentless
         # "it failed." Scrub any external IDs seen this run; person_ids are not
         # PII. Most failures here are infra (model/API/auth errors) with no PII.
         detail = ctx.scrub_known_external_ids(f"{type(e).__name__}: {e}")
         try:
             _post_marked_comment(
-                issue_repo,
-                issue_number,
+                issue,
                 f"⚠️ Automated diagnosis failed.\n\n**Detail:** {detail}" + logs_footer,
             )
         except Exception:
-            logger.exception(
-                "Failed to post failure comment for %s#%d", issue_repo, issue_number
-            )
+            logger.exception("Failed to post failure comment for %s", issue)
         sys.exit(1)
 
 

@@ -17,17 +17,51 @@
 """Utilities for parsing the go/github-pii Google Doc.
 
 The go/github-pii doc is a shared Google Doc where PG team members log PII
-(client names, state-issued external IDs) associated with GitHub issue tickets.
-Each issue's section is delimited by a bare "#<number>" header line. These
-utilities parse the Docs API JSON response and extract the section for a given
-issue number.
+(client names, state-issued external IDs) associated with bug tickets. Each
+ticket's section is delimited by a header line that begins with a ticket
+identifier: a GitHub issue number ("#12345", hash required) or a Linear ID
+("OBT-36184", hash optional). A header may list more than one — e.g.
+"#OBT-36212 and #88494". These utilities parse the Docs API JSON response and
+extract the section for a given GitHub issue number and/or Linear ID.
 """
 import re
 
-# Matches a line that is a bare ticket header like "#12345" (optionally surrounded
-# by whitespace). Used to locate a section start and to detect its boundary without
-# matching inline references like "see #12345" or external IDs like "#02636448".
-_TICKET_HEADER_RE = re.compile(r"^\s*#(\d+)\s*$")
+# A section header line, keyed by a GitHub issue number or a Linear ID:
+#   "#12345" / "# 12345"          -> GitHub issue number. The leading "#" is
+#                                    REQUIRED: bare numbers on their own line in
+#                                    a section body (external IDs, dates, counts)
+#                                    are not headers, and matching them would
+#                                    silently truncate the section.
+#   "OBT-36184" / "#OBT-36184"    -> Linear ID. The "#" is optional and a space
+#     / "# OBT-36184"                may follow it (the doc uses all three).
+# The trailing "(?=\s|$)" requires the identifier to be a whole token, and
+# anchoring to the start lets a header carry trailing identifiers/text — e.g.
+# "#OBT-36212 and #88494" (only the leading key is used) — while rejecting
+# inline references like "see #12345". These shapes were validated against the
+# real go/github-pii doc.
+#
+# The Linear-ID grammar ("[A-Z]+-\d+") is the source-of-truth grammar
+# LinearIssue.issue_regex() (recidiviz/issue_tracking/linear/linear_issue.py).
+# It is duplicated (not imported) because this module ships standalone in the
+# Cloud Build container and is mirrored by the dependency-free skill script, so
+# it must not import recidiviz. A test asserts the two stay in agreement.
+_TICKET_HEADER_RE = re.compile(
+    r"^\s*(?:"
+    r"#\s*(?P<linear_hash>[A-Z]+-\d+)"  # "#OBT-…" or "# OBT-…"
+    r"|(?P<linear_bare>[A-Z]+-\d+)"  # bare "OBT-…" (unambiguous)
+    r"|#\s*(?P<github>\d+)"  # "#<digits>" or "# <digits>"
+    r")(?=\s|$)"
+)
+
+
+def _ticket_header_key(line: str) -> str | None:
+    """Return the normalized ticket key (GitHub issue number or Linear ID) if
+    `line` is a section header, otherwise None."""
+    match = _TICKET_HEADER_RE.match(line)
+    if match is None:
+        return None
+    # Exactly one alternative matches, so exactly one group is non-None.
+    return next(group for group in match.groups() if group is not None)
 
 
 def parse_doc(doc: dict) -> list[str]:
@@ -51,19 +85,21 @@ def parse_doc(doc: dict) -> list[str]:
     return lines
 
 
-def find_issue_section(lines: list[str], issue_number: str) -> list[str]:
-    """Return the go/github-pii section for the given issue number.
+def find_issue_section(lines: list[str], identifiers: list[str]) -> list[str]:
+    """Return the go/github-pii section for any of the given ticket identifiers.
 
-    In the doc, each issue's PII entry starts with a bare "#<number>" header
-    and runs until the next such header.
+    `identifiers` may contain a GitHub issue number (e.g. "12345") and/or a
+    Linear identifier (e.g. "OBT-36184"). In the doc, each ticket's PII entry
+    starts with a header line (either flavor) and runs until the next such
+    header. Returns the first matching section, or an empty list if none match.
     """
+    wanted = {i for i in identifiers if i and i.strip()}
     output: list[str] = []
     for i, line in enumerate(lines):
-        match = _TICKET_HEADER_RE.match(line)
-        if match and match.group(1) == issue_number:
+        if _ticket_header_key(line) in wanted:
             output.append(line)
             for j in range(i + 1, len(lines)):
-                if _TICKET_HEADER_RE.match(lines[j]):
+                if _ticket_header_key(lines[j]) is not None:
                     break
                 output.append(lines[j])
             break

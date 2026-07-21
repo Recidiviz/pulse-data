@@ -158,9 +158,19 @@ else
   fi
 fi
 
-# 8. Grant secret-level access (required for Cloud Build availableSecrets)
+# 8. Grant secret-level access.
+# github_deploy_script_pat (helperbot comments) and linear_deploy_script_api_key
+# (Linear ID resolution) are both read directly from Secret Manager by the run
+# step via get_secret, so the SA needs secretAccessor on them. The Linear key
+# must be a read-capable Linear API key — create a staging copy of the prod
+# linear_deploy_script_api_key secret first:
+#   gcloud secrets versions access latest --secret=linear_deploy_script_api_key \
+#     --project=recidiviz-123 \
+#     | gcloud secrets create linear_deploy_script_api_key --data-file=- \
+#       --project="$PROJECT_ID" --replication-policy=user-managed --locations=us-west1
+# The grant below fails harmlessly if a secret doesn't exist yet.
 echo "==> Granting secret-level access..."
-for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat; do
+for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat linear_deploy_script_api_key; do
   echo "    Granting access to $SECRET..."
   if gcloud secrets add-iam-policy-binding "$SECRET" \
     --project="$PROJECT_ID" \

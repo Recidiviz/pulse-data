@@ -24,12 +24,14 @@ from mock import MagicMock, patch
 
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_client import (
+    LINEAR_API_KEY_SECRET_NAME,
     LINEAR_API_MAX_ATTEMPTS,
     LinearApiError,
     LinearAttachment,
     LinearClient,
     LinearIssueInfo,
     RetryableLinearApiError,
+    linear_client_from_secret,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.issue_tracking.linear.linear_types import LinkKind
@@ -1002,3 +1004,24 @@ class CreateCommentTest(unittest.TestCase):
         client = LinearClient(FAKE_API_KEY)
         with self.assertRaises(LinearApiError):
             client.create_comment(FAKE_COMMENT_ISSUE_INFO, "Hello world")
+
+
+class LinearClientFromSecretTest(unittest.TestCase):
+    """Tests for linear_client_from_secret()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.get_secret")
+    def test_builds_client_from_raw_api_key(self, mock_get_secret: MagicMock) -> None:
+        mock_get_secret.return_value = FAKE_API_KEY
+
+        client = linear_client_from_secret()
+
+        mock_get_secret.assert_called_once_with(LINEAR_API_KEY_SECRET_NAME)
+        # The key is passed through raw (no "Bearer " prefix) — Linear API keys
+        # go in the Authorization header as-is.
+        self.assertEqual(client.api_key, FAKE_API_KEY)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.get_secret")
+    def test_raises_when_secret_missing(self, mock_get_secret: MagicMock) -> None:
+        mock_get_secret.return_value = None
+        with self.assertRaises(KeyError):
+            linear_client_from_secret()

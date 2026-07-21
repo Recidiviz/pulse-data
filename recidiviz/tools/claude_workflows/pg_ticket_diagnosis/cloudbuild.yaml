@@ -42,6 +42,10 @@ steps:
     secretEnv: [ANTHROPIC_API_KEY]
     id: run
 
+# The Linear API key (linear_deploy_script_api_key) is NOT injected here: the
+# run step reads it directly from Secret Manager via get_secret using the build
+# SA, the same way it reads github_deploy_script_pat for helperbot comments. It
+# only needs the SA's secretAccessor grant (setup_gcp.sh), not env injection.
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/pg_diagnosis_claude_api_key/versions/latest

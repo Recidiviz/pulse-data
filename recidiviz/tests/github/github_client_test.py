@@ -20,7 +20,12 @@ from unittest import mock
 
 from github import GithubException
 
-from recidiviz.github.github_client import get_closing_github_issues, poll_for_pr_merge
+from recidiviz.github.github_client import (
+    HELPERBOT_USER_NAME,
+    get_closing_github_issues,
+    helperbot_comment_with_prefix_exists,
+    poll_for_pr_merge,
+)
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.github.github_pull_request import GithubPullRequest
 
@@ -120,6 +125,50 @@ class TestGetClosingGithubIssues(unittest.TestCase):
 
         with self.assertRaises(GithubException):
             get_closing_github_issues(self.PR, mock_client)
+
+
+def _mock_comment(login: str, body: str) -> mock.MagicMock:
+    """Build a mock PyGithub IssueComment with the given author login and body."""
+    comment = mock.MagicMock()
+    comment.user.login = login
+    comment.body = body
+    return comment
+
+
+class TestHelperbotCommentWithPrefixExists(unittest.TestCase):
+    """Tests for helperbot_comment_with_prefix_exists."""
+
+    PREFIX = "<!-- pg-diagnosis-agent -->"
+
+    def _client_with_comments(self, comments: list[mock.MagicMock]) -> mock.MagicMock:
+        mock_client = mock.MagicMock()
+        mock_client.get_repo.return_value.get_issue.return_value.get_comments.return_value = (
+            comments
+        )
+        return mock_client
+
+    def test_present(self) -> None:
+        client = self._client_with_comments(
+            [_mock_comment(HELPERBOT_USER_NAME, f"{self.PREFIX}\ndiagnosis")]
+        )
+        self.assertTrue(helperbot_comment_with_prefix_exists(client, 123, self.PREFIX))
+
+    def test_absent(self) -> None:
+        client = self._client_with_comments(
+            [_mock_comment(HELPERBOT_USER_NAME, "an unrelated helperbot comment")]
+        )
+        self.assertFalse(helperbot_comment_with_prefix_exists(client, 123, self.PREFIX))
+
+    def test_wrong_author(self) -> None:
+        # Same prefix, but posted by a human — must not count as a match.
+        client = self._client_with_comments(
+            [_mock_comment("some-human", f"{self.PREFIX}\ndiagnosis")]
+        )
+        self.assertFalse(helperbot_comment_with_prefix_exists(client, 123, self.PREFIX))
+
+    def test_no_comments(self) -> None:
+        client = self._client_with_comments([])
+        self.assertFalse(helperbot_comment_with_prefix_exists(client, 123, self.PREFIX))
 
 
 class TestPollForPrMerge(unittest.TestCase):

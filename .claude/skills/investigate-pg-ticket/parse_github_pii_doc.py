@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parses the go/github-pii Google Doc JSON (from the Docs API) and extracts
-the PII section for a given GitHub issue number.
+the PII section for one or more ticket identifiers.
+
+Pass the GitHub issue number and/or the Linear identifier (e.g. "OBT-36184");
+the section is keyed by either, depending on when the ticket was filed.
 
 Usage:
     curl -s -H "Authorization: Bearer $TOKEN" <docs_api_url> | \
-        python3 parse_github_pii_doc.py <ISSUE_NUMBER>
+        python3 parse_github_pii_doc.py <GITHUB_ISSUE_NUMBER> [<LINEAR_ISSUE_ID>]
 """
 import json
 import sys
@@ -32,10 +35,13 @@ from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils i
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: parse_github_pii_doc.py <ISSUE_NUMBER>", file=sys.stderr)
+        print(
+            "Usage: parse_github_pii_doc.py <GITHUB_ISSUE_NUMBER> [<LINEAR_ISSUE_ID>]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    issue_number = sys.argv[1]
+    identifiers = sys.argv[1:]
     doc = json.load(sys.stdin)
 
     if "error" in doc:
@@ -49,12 +55,12 @@ def main() -> None:
         sys.exit(1)
 
     lines = parse_doc(doc)
-    output = find_issue_section(lines, issue_number)
+    output = find_issue_section(lines, identifiers)
 
     if output:
         print("\n".join(output))
     else:
-        print(f"Could not find {issue_number} in the document")
+        print(f"Could not find any of {identifiers} in the document")
 
 
 if __name__ == "__main__":

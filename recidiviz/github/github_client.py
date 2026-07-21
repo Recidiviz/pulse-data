@@ -21,6 +21,7 @@ import time
 
 from github import Github
 from github.Auth import Token
+from github.IssueComment import IssueComment
 from more_itertools import one
 
 from recidiviz.github.github_issue import GithubIssue
@@ -111,6 +112,39 @@ def open_pr_if_not_exists(
     return pr.html_url
 
 
+def _is_helperbot_comment_with_prefix(comment: IssueComment, prefix: str) -> bool:
+    """Returns True iff `comment` was posted by Helperbot and starts with `prefix`."""
+    return comment.user.login == HELPERBOT_USER_NAME and comment.body.startswith(prefix)
+
+
+def helperbot_comment_with_prefix_exists(
+    github_client: Github,
+    issue_number: int,
+    prefix: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> bool:
+    """Returns True iff a helperbot comment starting with `prefix` exists on the issue/PR."""
+    issue = github_client.get_repo(repo).get_issue(issue_number)
+    return any(
+        _is_helperbot_comment_with_prefix(comment, prefix)
+        for comment in issue.get_comments()
+    )
+
+
+def helperbot_issue_has_comment_with_prefix(
+    issue_number: int,
+    prefix: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> bool:
+    """Client-fetching wrapper around helperbot_comment_with_prefix_exists."""
+    return helperbot_comment_with_prefix_exists(
+        github_client=github_helperbot_client(),
+        issue_number=issue_number,
+        prefix=prefix,
+        repo=repo,
+    )
+
+
 def upsert_issue_comment(
     github_client: Github,
     issue_number: int,
@@ -128,7 +162,7 @@ def upsert_issue_comment(
     comments = [
         comment
         for comment in issue.get_comments()
-        if comment.user.login == HELPERBOT_USER_NAME and comment.body.startswith(prefix)
+        if _is_helperbot_comment_with_prefix(comment, prefix)
     ]
 
     body_length_safe = truncate_string_if_necessary(
