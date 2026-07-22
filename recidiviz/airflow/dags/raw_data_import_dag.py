@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """DAG configuration to run raw data imports"""
+import datetime
 from typing import List
 
 from airflow.decorators import dag
@@ -136,6 +137,10 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups import (
     kubernetes_pod_operator_mapped_task_with_output,
 )
+from recidiviz.airflow.dags.utils.warm_pool import (
+    WarmPoolSpec,
+    build_warm_pool_setup_and_teardown,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
@@ -148,6 +153,26 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 # Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
+
+# Warm-pool config: pre-warm capacity for the heavy normalization pods, which
+# drive the burst that hits the pipeline ceiling. Pod CPU/memory are derived from
+# the entrypoint's resource config, so only the entrypoint and parallelism are
+# specified here.
+RAW_DATA_WARM_POOL_NAME = "raw-data-import"
+RAW_DATA_CHUNK_NORMALIZATION_ENTRYPOINT = "RawDataChunkNormalizationEntrypoint"
+# Peak concurrent normalization pods, bounded by the per-DAG task ceiling (48).
+RAW_DATA_WARM_POOL_PARALLELISM = 48
+# Block scale-up until the placeholders are ready (nodes provisioned) so the
+# branches are guaranteed warm capacity; best-effort, proceeds after the timeout.
+RAW_DATA_WARM_POOL_READY_TIMEOUT_SECONDS = 5 * 60
+# Placeholder pods self-terminate after this long, so the pool can't hold capacity
+# forever if the teardown never runs. Comfortably above a normal run.
+RAW_DATA_WARM_POOL_POD_DEADLINE_SECONDS = 2 * 60 * 60
+# Cap on a chunking/normalization pod task. KubernetesPodOperator only times out
+# pod *scheduling*; once Running there is no timeout, so a pod whose node is
+# drained mid-run would otherwise hang until the 1-day env default. This fails it
+# promptly so retries=1 can re-run it. (OBT-2245)
+RAW_DATA_POD_EXECUTION_TIMEOUT = datetime.timedelta(minutes=30)
 
 
 def create_single_state_code_ingest_instance_raw_data_import_branch(
@@ -355,6 +380,12 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                     max_chunks_per_airflow_task=MAX_CHUNKS_PER_CHUNKING_TASK,
                 ),
                 max_active_tis_per_dag=CHUNKING_MAX_CONCURRENT_TASKS,
+                # Retry once so a residual pod preemption self-heals instead of
+                # failing the run, and bound the run so a drained-node hang fails
+                # promptly instead of stalling for the env's 1-day default.
+                # (OBT-2245)
+                retries=1,
+                execution_timeout=RAW_DATA_POD_EXECUTION_TIMEOUT,
             )
 
             filtered_chunks = filter_chunking_results_by_errors(chunking_output)
@@ -370,6 +401,12 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                     max_file_chunks_per_airflow_task=MAX_FILE_CHUNKS_PER_NORMALIZATION_TASK,
                 ),
                 max_active_tis_per_dag=NORMALIZATION_MAX_CONCURRENT_TASKS,
+                # Retry once so a residual pod preemption self-heals instead of
+                # failing the run, and bound the run so a drained-node hang fails
+                # promptly instead of stalling for the env's 1-day default.
+                # (OBT-2245)
+                retries=1,
+                execution_timeout=RAW_DATA_POD_EXECUTION_TIMEOUT,
             )
 
             pre_import_normalization_result = regroup_and_verify_file_chunks(
@@ -582,7 +619,33 @@ def create_raw_data_import_dag() -> None:
             get_raw_data_branch_filter,
         )
 
-    initialize_raw_data_dag_group() >> raw_data_branching
+    # Pre-warm node capacity before the branches run, then release it once the
+    # run is done, to avoid pod-preemption. (OBT-2245)
+    warm_pool_setup, warm_pool_teardown = build_warm_pool_setup_and_teardown(
+        pool_name="raw-data-import",
+        specs=[
+            WarmPoolSpec(
+                name="pre-import-normalization",
+                entrypoint_class_names=[
+                    "RawDataFileChunkingEntrypoint",
+                    "RawDataChunkNormalizationEntrypoint",
+                ],
+                # This is effectively capped by the `core.max_active_tasks_per_dag` conf
+                parallelism=max(
+                    CHUNKING_MAX_CONCURRENT_TASKS,
+                    NORMALIZATION_MAX_CONCURRENT_TASKS,
+                ),
+            )
+        ],
+        pod_active_deadline_seconds=RAW_DATA_WARM_POOL_POD_DEADLINE_SECONDS,
+        ready_timeout_seconds=RAW_DATA_WARM_POOL_READY_TIMEOUT_SECONDS,
+    )
+    (
+        initialize_raw_data_dag_group()
+        >> warm_pool_setup
+        >> raw_data_branching
+        >> warm_pool_teardown
+    )
 
     # ---------------------------------------------------------------------------------
 

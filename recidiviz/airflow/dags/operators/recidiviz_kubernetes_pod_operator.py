@@ -19,8 +19,9 @@ A factory function for building KubernetesPodOperators that run our appengine im
 """
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
+import datetime
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 
 import jinja2
 import yaml
@@ -122,6 +123,29 @@ def labels_from_arguments(argv: List[str]) -> Dict[str, str]:
     return labels
 
 
+class WorkloadSeparationSpec(TypedDict):
+    """V1PodSpec fields that pin a pod to the recidiviz-only node pool."""
+
+    tolerations: List[k8s.V1Toleration]
+    node_selector: Dict[str, str]
+
+
+USER_WORKLOAD_SEPARATION_SPEC: WorkloadSeparationSpec = {
+    # In order to prevent preemption of Cloud Composer's internal pods, configure our tasks to run on
+    # separate node(s) that will only schedule pods with the `recidiviz-pod-node: true` annotation
+    # https://cloud.google.com/kubernetes-engine/docs/how-to/workload-separation#separate-workloads-autopilot
+    "tolerations": [
+        k8s.V1Toleration(
+            key=RECIDIVIZ_POD_ANNOTATION,
+            operator="Equal",
+            value="true",
+            effect="NoSchedule",
+        )
+    ],
+    "node_selector": {RECIDIVIZ_POD_ANNOTATION: "true"},
+}
+
+
 class KubernetesEntrypointResourceAllocator:
     """Class for allocating resources to our entrypoint tasks"""
 
@@ -131,12 +155,29 @@ class KubernetesEntrypointResourceAllocator:
         with open(RESOURCES_YAML_PATH, "r", encoding="utf-8") as f:
             self.resources_config = yaml.safe_load(f)
 
-    def get_resources(self, argv: List[str]) -> k8s.V1ResourceRequirements:
-        """Returns the resources specified in the config
-        Prioritization is based on list order; the last config is returned for args that match multiple configs
+    def get_resources(self, entrypoint_class_name: str) -> k8s.V1ResourceRequirements:
+        """Returns the default resources configured for |entrypoint_class_name|,
+        ignoring any arg-specific overrides. Use this when only the entrypoint is
+        known (e.g. pre-provisioning capacity); use get_resources_for_args when the
+        full argument list is available so overrides can be applied.
         """
+        if entrypoint_class_name not in self.resources_config:
+            raise ValueError(
+                f"Entrypoint [{entrypoint_class_name}] must have a "
+                f"recidiviz_kubernetes_resources.yaml entry"
+            )
 
-        entrypoint_arg = one(
+        return k8s.V1ResourceRequirements(
+            **self.resources_config[entrypoint_class_name]["default_resources"]
+        )
+
+    def get_resources_for_args(self, argv: List[str]) -> k8s.V1ResourceRequirements:
+        """Returns the resources for the entrypoint named in |argv|, applying any
+        arg-specific overrides on top of the entrypoint's default resources.
+        Prioritization is based on list order; the last config is returned for args
+        that match multiple overrides.
+        """
+        entrypoint_class_name = one(
             [
                 arg[len("--entrypoint=") :]
                 for arg in argv
@@ -144,22 +185,16 @@ class KubernetesEntrypointResourceAllocator:
             ]
         )
 
-        if not entrypoint_arg:
+        if not entrypoint_class_name:
             raise ValueError("Must specify an entrypoint arg to allocate resources")
 
-        if entrypoint_arg not in self.resources_config:
-            raise ValueError(
-                f"Entrypoint {entrypoint_arg} must have a recidiviz_kubernetes_resources.yaml entry"
-            )
-
-        config = self.resources_config[entrypoint_arg]
-        resources = config["default_resources"]
-
+        resources = self.get_resources(entrypoint_class_name)
+        config = self.resources_config[entrypoint_class_name]
         for overrides in config.get("overrides", []):
             if all(arg in argv for arg in overrides.get("args", [])):
-                resources = overrides["resources"]
+                resources = k8s.V1ResourceRequirements(**overrides["resources"])
 
-        return k8s.V1ResourceRequirements(**resources)
+        return resources
 
 
 class RecidivizKubernetesPodOperator(KubernetesPodOperator):
@@ -191,18 +226,6 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             # requirements. In this case, a new compute engine VM is started and the pod will not run until the node
             # fully starts. Anecdotally this happens in about 10 minutes.
             startup_timeout_seconds=12 * 60,
-            # In order to prevent preemption from Cloud Composer's internal pods, configure our tasks to run on a
-            # separate node that will only schedule pods with the `recidiviz-pod-node: true` annotation
-            # https://cloud.google.com/kubernetes-engine/docs/how-to/workload-separation#separate-workloads-autopilot
-            tolerations=[
-                k8s.V1Toleration(
-                    key=RECIDIVIZ_POD_ANNOTATION,
-                    operator="Equal",
-                    value="true",
-                    effect="NoSchedule",
-                )
-            ],
-            node_selector={RECIDIVIZ_POD_ANNOTATION: "true"},
             env_vars=[
                 k8s.V1EnvVar(name="NAMESPACE", value="composer-user-workloads"),
                 # TODO(census-instrumentation/opencensus-python#796)
@@ -215,6 +238,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
                 ),
                 *env_vars,
             ],
+            **USER_WORKLOAD_SEPARATION_SPEC,
             **kwargs,
         )
 
@@ -273,7 +297,9 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
 
         # Assign resources based on the entrypoint that we are running
         self.container_resources = (
-            KubernetesEntrypointResourceAllocator().get_resources(self.arguments)
+            KubernetesEntrypointResourceAllocator().get_resources_for_args(
+                self.arguments
+            )
         )
         # Make task instance metadata accessible from the pod
         self.env_vars.extend(self._get_ti_metadata(context))
@@ -377,6 +403,7 @@ def build_mapped_kubernetes_pod_task(
     retries: int = 0,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
     max_active_tis_per_dag: int | None = None,
+    execution_timeout: Optional[datetime.timedelta] = None,
 ) -> MappedOperator:
     """Builds a MappedOperator that launches len(expand_arguments) RecidivizKubernetesPodOperator pods.
     This is useful for running a dynamic number of tasks in parallel.
@@ -399,6 +426,7 @@ def build_mapped_kubernetes_pod_task(
             retries=retries,
             cloud_sql_connections=cloud_sql_connections,
             max_active_tis_per_dag=max_active_tis_per_dag,
+            execution_timeout=execution_timeout,
         )
     ).expand(arguments=expand_arguments)
 
@@ -410,6 +438,7 @@ def get_kubernetes_pod_kwargs(
     retries: int = 0,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
     max_active_tis_per_dag: int | None = None,
+    execution_timeout: Optional[datetime.timedelta] = None,
 ) -> Dict[str, Any]:
     container_name = container_name or task_id
     return {
@@ -424,4 +453,5 @@ def get_kubernetes_pod_kwargs(
         "retries": retries,
         "cloud_sql_connections": cloud_sql_connections,
         "max_active_tis_per_dag": max_active_tis_per_dag,
+        "execution_timeout": execution_timeout,
     }

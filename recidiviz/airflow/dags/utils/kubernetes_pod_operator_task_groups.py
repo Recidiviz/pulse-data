@@ -18,6 +18,7 @@
 We use these task groups because natively pushing output to XCom from a KubernetesPodOperator task requires the use of
 a separate airflow-xcom-sidecar container that is resource-starved and non-configurable, causing a significant bottleneck
 in our DAGs."""
+import datetime
 from typing import List, Optional
 
 from airflow.decorators import task, task_group
@@ -74,6 +75,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
     retries: int = 0,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
     max_active_tis_per_dag: int | None = None,
+    execution_timeout: Optional[datetime.timedelta] = None,
 ) -> List[str]:
     """Task group that wraps a mapped KubernetesPodOperator task, where the KPO task output is pushed to GCS, then
     read from GCS and pushed to XCom by an Airflow native task so downstream tasks can access the output as normal.
@@ -90,6 +92,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
         retries: int = 0,
         cloud_sql_connections: Optional[List[SchemaType]] = None,
         max_active_tis_per_dag: int | None = None,
+        execution_timeout: Optional[datetime.timedelta] = None,
     ) -> List[str]:
         kpo_task = build_mapped_kubernetes_pod_task(
             task_id=task_id,
@@ -99,6 +102,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
             retries=retries,
             cloud_sql_connections=cloud_sql_connections,
             max_active_tis_per_dag=max_active_tis_per_dag,
+            execution_timeout=execution_timeout,
         )
         task_output = push_kpo_mapped_task_output_from_gcs_to_xcom(
             task_id=kpo_task.task_id
@@ -115,6 +119,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
         retries=retries,
         cloud_sql_connections=cloud_sql_connections,
         max_active_tis_per_dag=max_active_tis_per_dag,
+        execution_timeout=execution_timeout,
     )
 
 

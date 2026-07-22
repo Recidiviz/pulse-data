@@ -49,19 +49,21 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
         allocator = KubernetesEntrypointResourceAllocator()
 
         for argv in self.entrypoint_args_fixture.values():
-            self.assertIsNotNone(allocator.get_resources(argv))
+            self.assertIsNotNone(allocator.get_resources_for_args(argv))
 
-    def test_resources(self) -> None:
+    def test_resources_for_args(self) -> None:
         allocator = KubernetesEntrypointResourceAllocator()
         self.assertEqual(
-            allocator.get_resources(argv=["--entrypoint=ValidationEntrypoint"]),
+            allocator.get_resources_for_args(
+                argv=["--entrypoint=ValidationEntrypoint"]
+            ),
             k8s.V1ResourceRequirements(
                 limits={"cpu": "500m", "memory": "1.5Gi"}, requests=None
             ),
         )
 
         self.assertEqual(
-            allocator.get_resources(
+            allocator.get_resources_for_args(
                 argv=[
                     "--entrypoint=MetricViewExportEntrypoint",
                     "--export_job_name=LANTERN",
@@ -72,3 +74,21 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
                 limits={"cpu": "500m", "memory": "3Gi"}, requests=None
             ),
         )
+
+    def test_get_resources_returns_defaults_ignoring_overrides(self) -> None:
+        allocator = KubernetesEntrypointResourceAllocator()
+        # MetricViewExportEntrypoint has arg-specific overrides, but get_resources
+        # only knows the entrypoint class name, so it returns the defaults.
+        self.assertEqual(
+            allocator.get_resources("MetricViewExportEntrypoint"),
+            k8s.V1ResourceRequirements(
+                limits={"cpu": "500m", "memory": "1Gi"}, requests=None
+            ),
+        )
+
+    def test_get_resources_unknown_entrypoint_raises(self) -> None:
+        allocator = KubernetesEntrypointResourceAllocator()
+        with self.assertRaisesRegex(
+            ValueError, r"must have a recidiviz_kubernetes_resources.yaml entry"
+        ):
+            allocator.get_resources("NotARealEntrypoint")

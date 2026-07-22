@@ -19,6 +19,7 @@
 import datetime
 import json
 import os
+import unittest
 from typing import Any, Callable, Dict, List, Tuple
 from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 
@@ -122,6 +123,20 @@ from recidiviz.utils.types import assert_type
 _PROJECT_ID = "recidiviz-testing"
 
 
+def _patch_warm_pool_k8s(test_case: unittest.TestCase) -> None:
+    """No-ops the warm-pool Kubernetes calls so DAG runs in tests don't require a
+    live cluster. Registers cleanup so the patch is undone after the test."""
+    patcher = patch.multiple(
+        "recidiviz.airflow.dags.utils.warm_pool",
+        _create_priority_class_if_not_exists=MagicMock(),
+        _create_warm_pool_pods=MagicMock(),
+        _delete_warm_pool_pods=MagicMock(),
+        _wait_until_warm=MagicMock(),
+    )
+    patcher.start()
+    test_case.addCleanup(patcher.stop)
+
+
 def _comparable(files: List[ImportReadyFile]) -> List[Dict]:
     comparable_files = []
     for file in files:
@@ -187,6 +202,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         )
 
         for root_task in state_specific_tasks_dag.roots:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in root_task.task_id:
+                continue
             assert "acquire_raw_data_resource_locks" in root_task.task_id
 
     def test_lock_after_everything_else(self) -> None:
@@ -201,6 +220,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         )
 
         for leaf in branch_end_and_one_before.leaves:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in leaf.task_id:
+                continue
             assert "maybe_trigger_dag_rerun" in leaf.task_id
             assert len(leaf.upstream_task_ids) == 3
             assert any(
@@ -251,6 +274,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         ]
 
         for root in step_2_root.roots:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in root.task_id:
+                continue
             assert "list_normalized_unprocessed_gcs_file_paths" in root.task_id
             curr_task = root
             for step_2_task_id in step_2_task_ids:
@@ -295,6 +322,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             ],
         ]
         for root in step_3_root.roots:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in root.task_id:
+                continue
             assert "split_by_pre_import_normalization_type" in root.task_id
             curr_task = root
             for step_3_task_id in ordered_step_3_task_ids:
@@ -341,6 +372,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         ]
 
         for root in step_4_root.roots:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in root.task_id:
+                continue
             assert "raise_chunk_normalization_errors" in root.task_id
             curr_task = root
             for step_4_task_id in ordered_step_4_task_ids:
@@ -390,6 +425,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         ]
 
         for root in step_5_root.roots:
+            # Warm-pool setup/teardown travel with the subset; not part of the
+            # import-pipeline structure under test.
+            if "warm_pool" in root.task_id:
+                continue
             assert "coalesce_results_and_errors" in root.task_id
             for step_5_path in ordered_step_5_task_ids_paths:
                 curr_task = root
@@ -428,6 +467,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
     def setUp(self) -> None:
         super().setUp()
+        _patch_warm_pool_k8s(self)
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
 
         self.ingest_states_patcher = patch(
@@ -1013,6 +1053,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
 
     def setUp(self) -> None:
         super().setUp()
+        _patch_warm_pool_k8s(self)
 
         # env mocks ---
 
@@ -2630,6 +2671,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         )
         self.dag_kick_off_mock = self.dag_kick_off_patcher.start()
 
+        _patch_warm_pool_k8s(self)
+
         # task interaction mocks ---
 
         self.fs = FakeGCSFileSystem()
@@ -2811,6 +2854,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
                     "raw_data_branching.branch_start",
+                    "scale_up_warm_pool",
+                    "scale_down_warm_pool",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -2844,6 +2889,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
                     "raw_data_branching.branch_start",
+                    "scale_up_warm_pool",
+                    "scale_down_warm_pool",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)

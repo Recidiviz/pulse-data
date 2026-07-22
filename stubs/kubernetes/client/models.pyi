@@ -25,12 +25,16 @@ class V1PodStatus:
 
 class V1ObjectMeta:
     name: str
+    generate_name: Optional[str]
+    namespace: Optional[str]
     labels: Optional[Dict[str, str]]
     annotations: Optional[Dict[str, str]]
 
     def __init__(
         self,
-        name: str,
+        name: Optional[str] = None,
+        generate_name: Optional[str] = None,
+        namespace: Optional[str] = None,
         labels: Optional[dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
     ) -> None: ...
@@ -55,6 +59,28 @@ class V1PodSpec:
     volumes: Optional[List[V1Volume]]
     volume_mounts: Optional[List[V1VolumeMount]]
     env: Optional[List[V1EnvVar]]
+    priority_class_name: Optional[str]
+    node_selector: Optional[Dict[str, str]]
+    tolerations: Optional[List["V1Toleration"]]
+    termination_grace_period_seconds: Optional[int]
+    restart_policy: Optional[str]
+    active_deadline_seconds: Optional[int]
+
+    def __init__(
+        self,
+        *,
+        containers: Optional[List[V1Container]] = None,
+        init_containers: Optional[List[V1Container]] = None,
+        volumes: Optional[List[V1Volume]] = None,
+        volume_mounts: Optional[List[V1VolumeMount]] = None,
+        env: Optional[List[V1EnvVar]] = None,
+        priority_class_name: Optional[str] = None,
+        node_selector: Optional[Dict[str, str]] = None,
+        tolerations: Optional[List["V1Toleration"]] = None,
+        termination_grace_period_seconds: Optional[int] = None,
+        restart_policy: Optional[str] = None,
+        active_deadline_seconds: Optional[int] = None,
+    ) -> None: ...
 
 class V1SecurityContext:
     run_as_non_root: bool
@@ -136,7 +162,12 @@ class V1Pod:
     status: V1PodStatus
     spec: V1PodSpec
 
-    def __init__(self, metadata: V1ObjectMeta, status: V1PodStatus) -> None: ...
+    def __init__(
+        self,
+        metadata: Optional[V1ObjectMeta] = None,
+        status: Optional[V1PodStatus] = None,
+        spec: Optional[V1PodSpec] = None,
+    ) -> None: ...
 
 class V1PodList:
     items: List[V1Pod]
@@ -144,6 +175,9 @@ class V1PodList:
     def __init__(self, items: List[V1Pod]) -> None: ...
 
 class V1ResourceRequirements:
+    limits: Optional[Dict[str, str]]
+    requests: Optional[Dict[str, str]]
+
     def __init__(
         self,
         limits: Optional[Dict[str, str]] = None,
@@ -166,4 +200,64 @@ class V1Toleration(object):
         operator: str | None = None,
         toleration_seconds: int | None = None,
         value: str | None = None,
+    ) -> None: ...
+
+class V1PriorityClass:
+    metadata: V1ObjectMeta
+    value: int
+    preemption_policy: Optional[str]
+
+    def __init__(
+        self,
+        *,
+        metadata: V1ObjectMeta,
+        value: int,
+        global_default: bool = False,
+        preemption_policy: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> None: ...
+
+class V1LabelSelector:
+    match_labels: Optional[Dict[str, str]]
+
+    def __init__(self, *, match_labels: Optional[Dict[str, str]] = None) -> None: ...
+
+class V1PodTemplateSpec:
+    metadata: Optional[V1ObjectMeta]
+    spec: Optional[V1PodSpec]
+
+    def __init__(
+        self,
+        *,
+        metadata: Optional[V1ObjectMeta] = None,
+        spec: Optional[V1PodSpec] = None,
+    ) -> None: ...
+
+class V1DeploymentSpec:
+    replicas: Optional[int]
+    selector: V1LabelSelector
+    template: V1PodTemplateSpec
+
+    def __init__(
+        self,
+        *,
+        selector: V1LabelSelector,
+        template: V1PodTemplateSpec,
+        replicas: Optional[int] = None,
+    ) -> None: ...
+
+class V1DeploymentStatus:
+    ready_replicas: Optional[int]
+    available_replicas: Optional[int]
+
+class V1Deployment:
+    metadata: Optional[V1ObjectMeta]
+    spec: Optional[V1DeploymentSpec]
+    status: Optional[V1DeploymentStatus]
+
+    def __init__(
+        self,
+        *,
+        metadata: Optional[V1ObjectMeta] = None,
+        spec: Optional[V1DeploymentSpec] = None,
     ) -> None: ...

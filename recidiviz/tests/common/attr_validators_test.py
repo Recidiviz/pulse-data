@@ -497,7 +497,7 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_required_int=1, my_optional_int=None)
         _ = _TestClass(my_required_int=1000, my_optional_int=3000)
 
-    def test_is_non_negative_integer_validators(self) -> None:
+    def test_is_non_negative_integer_validator(self) -> None:
         @attr.s
         class _TestClass:
             my_required_int: int = attr.ib(
