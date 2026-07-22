@@ -87,7 +87,7 @@ schema:
             mode: NULLABLE
             description: LLM-generated case note.
           - name: action_items
-            type: STRING
+            type: JSON
             mode: NULLABLE
             description: LLM-extracted action items.
           - name: critical_updates

@@ -42,6 +42,7 @@ task_data_fields:
   - column_name: "action_items"
     description: "LLM-extracted action items."
     bq_type: "STRING"
+    extract_as_json: true
   - column_name: "critical_updates"
     description: "LLM-extracted critical updates."
     bq_type: "STRING"
