@@ -30,15 +30,26 @@ from recidiviz.services.identity.api_schemas import (
     IdentitySchema,
     ImportRequestSchema,
 )
-from recidiviz.services.identity.constants import TRIGGER_IMPORT_ROUTE
+from recidiviz.services.identity.authorization import CallerRole
+from recidiviz.services.identity.constants import (
+    IDENTITIES_BLUEPRINT_ROUTE,
+    TRIGGER_IMPORT_BLUEPRINT_ROUTE,
+)
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 
 identity_blueprint = Blueprint("identity", "identity")
 
+# Roles permitted to read identities via the /identities endpoints.
+IDENTITY_READ_ROLES = frozenset({CallerRole.READER, CallerRole.EDITOR})
 
-@identity_blueprint.route("/identity/<uuid:recidiviz_id>")
+
+@identity_blueprint.route(f"{IDENTITIES_BLUEPRINT_ROUTE}/<uuid:recidiviz_id>")
 class IdentityByRecidivizIdAPI(MethodView):
-    """CRUD endpoints for /identity/<recidiviz_id>."""
+    """Item-level endpoints for a single identity, addressed by Recidiviz ID."""
+
+    ALLOWED_ROLES_BY_METHOD: dict[str, frozenset[CallerRole]] = {
+        "GET": IDENTITY_READ_ROLES,
+    }
 
     @identity_blueprint.arguments(
         IdentityByUuidRequestSchema,
@@ -66,9 +77,13 @@ class IdentityByRecidivizIdAPI(MethodView):
         return jsonify(IdentitySchema().dump(identity_record))
 
 
-@identity_blueprint.route("/identity")
+@identity_blueprint.route(IDENTITIES_BLUEPRINT_ROUTE)
 class IdentityAPI(MethodView):
-    """CRUD endpoints for /identity."""
+    """Collection-level endpoints for identities, looked up by alternate key."""
+
+    ALLOWED_ROLES_BY_METHOD: dict[str, frozenset[CallerRole]] = {
+        "GET": IDENTITY_READ_ROLES,
+    }
 
     @identity_blueprint.arguments(
         IdentityByQueryParametersRequestSchema,
@@ -108,11 +123,15 @@ class IdentityAPI(MethodView):
         return jsonify(IdentitySchema().dump(identity_record))
 
 
-@identity_blueprint.route(TRIGGER_IMPORT_ROUTE)
+@identity_blueprint.route(TRIGGER_IMPORT_BLUEPRINT_ROUTE)
 class TriggerImportAPI(MethodView):
     """Endpoint the Batch Identity Clustering DAG calls after writing a tenant's
     clustering results to BigQuery, to trigger reconciliation of those results
     into the Identity Service's Postgres state."""
+
+    ALLOWED_ROLES_BY_METHOD: dict[str, frozenset[CallerRole]] = {
+        "POST": frozenset({CallerRole.IMPORTER}),
+    }
 
     @identity_blueprint.arguments(
         ImportRequestSchema, error_status_code=HTTPStatus.BAD_REQUEST
@@ -121,7 +140,7 @@ class TriggerImportAPI(MethodView):
     def post(self, params: dict) -> Response:
         """Accepts a trigger_import request for the given tenant and returns 202.
 
-        TODO(OBT-37693) Replace the real implementation.
+        TODO(OBT-37693): Replace with the real implementation.
         """
         tenant = params["tenant"]
         logging.info(

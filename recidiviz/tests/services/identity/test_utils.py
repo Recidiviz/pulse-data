@@ -41,33 +41,56 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity import types
-from recidiviz.services.identity.constants import DEV_CALLER_SERVICE_ACCOUNT
+from recidiviz.services.identity.authorization import CallerRole, IdentityServiceCaller
+from recidiviz.services.identity.constants import (
+    DEV_EDITOR_SERVICE_ACCOUNT,
+    DEV_IMPORTER_SERVICE_ACCOUNT,
+    DEV_READER_SERVICE_ACCOUNT,
+)
 
-TEST_PRODUCT_APP_BY_SERVICE_ACCOUNT: dict[str, ProductApp | None] = {
-    DEV_CALLER_SERVICE_ACCOUNT: ProductApp.ADMIN_PANEL,
+TEST_CALLER_BY_SERVICE_ACCOUNT: dict[str, IdentityServiceCaller] = {
+    DEV_READER_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.READER, source_product_app=None
+    ),
+    DEV_EDITOR_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.EDITOR, source_product_app=ProductApp.ADMIN_PANEL
+    ),
+    DEV_IMPORTER_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.IMPORTER, source_product_app=None
+    ),
 }
 
 STRANGER_SERVICE_ACCOUNT = "stranger_service_account"
-NO_APP_SERVICE_ACCOUNT = "no-app-caller_service_account"
-ADMIN_PANEL_SERVICE_ACCOUNT = "admin-panel-caller_service_account"
-MAPPED_SERVICE_ACCOUNT = "mapped_service_account"
-DEFAULT_MAPPING = {MAPPED_SERVICE_ACCOUNT: ProductApp.ADMIN_PANEL}
+READER_SERVICE_ACCOUNT = "reader_service_account"
+EDITOR_SERVICE_ACCOUNT = "editor_service_account"
+IMPORTER_SERVICE_ACCOUNT = "importer_service_account"
+DEFAULT_MAPPING = {
+    READER_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.READER, source_product_app=None
+    ),
+    EDITOR_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.EDITOR, source_product_app=ProductApp.ADMIN_PANEL
+    ),
+    IMPORTER_SERVICE_ACCOUNT: IdentityServiceCaller(
+        role=CallerRole.IMPORTER, source_product_app=None
+    ),
+}
 
 
 @contextmanager
 def mock_iap_environment(
-    mapping: Mapping[str, ProductApp | None] | None = None,
+    mapping: Mapping[str, IdentityServiceCaller] | None = None,
     authenticated_as: str | None = None,
     invalid_jwt: bool = False,
     in_development: bool = False,
 ) -> Iterator[None]:
     """Patch the Identity Service IAP auth dependencies for the duration of the block.
 
-    `mapping` replaces the static caller-to-source_product_app mapping.
+    `mapping` replaces the static caller-to-authorization-config mapping.
     `authenticated_as` makes the JWT validator report that email as the
     authenticated caller. `invalid_jwt` makes the validator reject any header.
-    `in_development` activates the decorator's dev bypass (no JWT validation)
-    and the server's dev caller-email default.
+    `in_development` activates the decorator's dev bypass (no JWT validation),
+    letting each request select a dev caller via the dev caller header.
     """
     if authenticated_as is not None and invalid_jwt:
         raise ValueError("authenticated_as and invalid_jwt are mutually exclusive")
@@ -97,8 +120,8 @@ def mock_iap_environment(
         "recidiviz.utils.validate_jwt.validate_iap_jwt_from_compute_engine",
         return_value=jwt_return,
     ), patch.dict(
-        "recidiviz.services.identity.helpers.PRODUCT_APP_BY_SERVICE_ACCOUNT",
-        mapping or TEST_PRODUCT_APP_BY_SERVICE_ACCOUNT,
+        "recidiviz.services.identity.authorization.CALLER_BY_SERVICE_ACCOUNT",
+        mapping or TEST_CALLER_BY_SERVICE_ACCOUNT,
         clear=True,
     ):
         yield

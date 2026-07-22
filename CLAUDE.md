@@ -7,7 +7,7 @@ These apply to **every task** without exception:
 - **License headers**: Use the current year (e.g., `Copyright (C) 2026 Recidiviz, Inc.`) in new Python file headers. Look at recently created files for the correct format.
 - **No test imports in production**: Never import from `recidiviz/tests/` outside of `recidiviz/tests/`. Test utilities and constants must stay in test code.
 - **No obvious comments**: Don't add inline comments that explain things obvious from reading the code, or that are only meaningful in the current conversation context.
-- **TODO format**: Reference GitHub issues as `TODO(#12345)`. Use `TODO(XXXX)` as a placeholder before filing — this fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
+- **TODO format**: Reference GitHub issues as `TODO(#12345)` and Linear issues as `TODO(OBT-12345)`. The org has moved to Linear for issue tracking so use Linear ticket number if you have it. Use `TODO(XXXX)` as a placeholder before filing. This fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
 - **Data privacy**: Never access data from Maine (`US_ME`) or California (`US_CA`). If a query might touch this data, flag it to the user and confirm before running.
 - **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
 - **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.

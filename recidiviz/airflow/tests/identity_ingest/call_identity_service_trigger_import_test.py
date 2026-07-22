@@ -67,7 +67,7 @@ class TestCallIdentityServiceTriggerImport(unittest.TestCase):
         call_identity_service_trigger_import(tenant=_TENANT)
 
         self.mock_post.assert_called_once_with(
-            "https://identity-service-staging.recidiviz.org/trigger_import",
+            "https://identity-service-staging.recidiviz.org/v1/trigger_import",
             json={"tenant": _TENANT},
             headers={"Authorization": f"Bearer {_FAKE_ID_TOKEN}"},
             timeout=60,

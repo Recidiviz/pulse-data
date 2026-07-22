@@ -19,12 +19,6 @@ import os
 
 import yaml
 
-from recidiviz.common.constants.identity import ProductApp
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.service_accounts import (
-    get_default_compute_engine_service_account_email,
-)
-
 IAP_BACKEND_SERVICE_ID_SECRET_NAME = (
     "iap_identity_service_load_balancer_service_id"  # nosec
 )
@@ -48,22 +42,29 @@ def get_identity_service_domain(project_id: str) -> str:
     return domain_by_project[project_id]
 
 
-# Route of the trigger_import endpoint, shared between the service's blueprint
-# and the batch identity clustering DAG task that calls it.
-TRIGGER_IMPORT_ROUTE = "/trigger_import"
+IDENTITY_SERVICE_API_VERSION = "v1"
 
-DEV_CALLER_SERVICE_ACCOUNT = "fake-acct@fake-project.iam.gserviceaccount.com"
+# Blueprint-relative routes, kept version-free: the API version is applied as a
+# url_prefix when a blueprint is registered on the app, so each version is its
+# own registration and versions can coexist, rather than every route naming its
+# version and a version bump renaming them all.
+IDENTITIES_BLUEPRINT_ROUTE = "/identities"
+TRIGGER_IMPORT_BLUEPRINT_ROUTE = "/trigger_import"
 
-# Maps a caller's authenticated service account email (extracted from the
-# `email` claim of the IAP JWT) to the `source_product_app` value it is
-# allowed to write under. A `None` value means the caller is permitted to
-# call the service but does not write PRODUCT_APP-sourced attributes (e.g.
-# the batch identity clustering DAG, which writes EXTERNAL_DATA_SYSTEM
-# records). Callers whose email is not in this mapping are rejected with 403.
-PRODUCT_APP_BY_SERVICE_ACCOUNT: dict[str, ProductApp | None] = {
-    DEV_CALLER_SERVICE_ACCOUNT: ProductApp.ADMIN_PANEL,
-    # The staging Cloud Composer environment (and thus the batch identity
-    # clustering DAG) runs as the project's default Compute Engine service
-    # account.
-    get_default_compute_engine_service_account_email(GCP_PROJECT_STAGING): None,
-}
+# Full client-facing paths, for callers outside the service (e.g. the batch
+# identity clustering DAG task that POSTs to trigger_import).
+IDENTITIES_ROUTE = f"/{IDENTITY_SERVICE_API_VERSION}{IDENTITIES_BLUEPRINT_ROUTE}"
+TRIGGER_IMPORT_ROUTE = (
+    f"/{IDENTITY_SERVICE_API_VERSION}{TRIGGER_IMPORT_BLUEPRINT_ROUTE}"
+)
+
+# Dev-only callers, one per role, for exercising each role locally (e.g. with
+# curl). A local request selects one via DEV_CALLER_EMAIL_HEADER.
+DEV_READER_SERVICE_ACCOUNT = "fake-reader@fake-project.iam.gserviceaccount.com"
+DEV_EDITOR_SERVICE_ACCOUNT = "fake-editor@fake-project.iam.gserviceaccount.com"
+DEV_IMPORTER_SERVICE_ACCOUNT = "fake-importer@fake-project.iam.gserviceaccount.com"
+
+# Header a local request may set to be treated as a specific caller. Honored
+# only in development, where the IAP JWT check is bypassed; in GCP the caller
+# email always comes from the validated JWT and this header is ignored.
+DEV_CALLER_EMAIL_HEADER = "X-Dev-Caller-Email"
