@@ -185,3 +185,55 @@ resource "google_cloud_run_v2_job" "jii_jobs" {
     }
   }
 }
+
+# Daily pull of Workflows opportunity configurations into the internal
+# "Workflows Configuration" reference spreadsheet
+# (recidiviz.tools.utils.workflows_configuration_data_pull). Production-only:
+# the target spreadsheet ID is hardcoded in the script, so only one
+# environment should write to it.
+resource "google_cloud_run_v2_job" "workflows_configuration_data_pull" {
+  count    = var.project_id == "recidiviz-123" ? 1 : 0
+  name     = "workflows-configuration-data-pull"
+  location = var.us_central_region
+  provider = google-beta
+
+  template {
+    template {
+      containers {
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["uv"]
+        args    = ["run", "python", "-m", "recidiviz.tools.utils.workflows_configuration_data_pull", "--project-id=${var.project_id}"]
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+        volume_mounts {
+          name       = "cloudsql"
+          mount_path = "/cloudsql"
+        }
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+      }
+      volumes {
+        name = "cloudsql"
+        cloud_sql_instance {
+          instances = [
+            module.workflows_database_cmek.connection_name,
+          ]
+        }
+      }
+      service_account = google_service_account.cloud_run.email
+      max_retries     = 3
+      timeout         = "600s"
+    }
+  }
+  lifecycle {
+    ignore_changes = [
+      launch_stage,
+    ]
+  }
+}

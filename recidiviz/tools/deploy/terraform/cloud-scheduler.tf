@@ -116,3 +116,27 @@ locals {
   # Found at https://console.cloud.google.com/apis/credentials (IAP-admin-panel-load-balancer-backend-default)
   cloud_run_iap_client = local.is_production ? "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com" : "984160736970-4vg3gpqmskvpkhqim39b8kp8e4ommu94.apps.googleusercontent.com"
 }
+
+# Triggers the daily Workflows-configuration spreadsheet pull. Production-only,
+# matching the google_cloud_run_v2_job.workflows_configuration_data_pull gate.
+resource "google_cloud_scheduler_job" "workflows_configuration_data_pull_trigger" {
+  count            = var.project_id == "recidiviz-123" ? 1 : 0
+  name             = "workflows-configuration-data-pull-scheduler-trigger"
+  description      = "[Workflows] Daily configuration data pull to the reference spreadsheet"
+  schedule         = "0 8 * * *"
+  time_zone        = "Etc/UTC"
+  attempt_deadline = "180s"
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.us_central_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.workflows_configuration_data_pull[0].name}:run"
+
+    headers = {
+      "Content-Type" = "application/json"
+    }
+
+    oauth_token {
+      service_account_email = google_service_account.cloud_run.email
+    }
+  }
+}
