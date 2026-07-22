@@ -29,8 +29,6 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterName,
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
-    IdentityAttributes,
-    IdentityExternalId,
     IdentityFragment,
     IdentityName,
 )
@@ -40,13 +38,13 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     BuildIdentityClusters,
 )
 from recidiviz.pipelines.ingest.types import ExternalIdKey
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    identity_fragment_for_test,
+)
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 _TENANT = Tenant.US_XX
-
-
-def _eid_entity(external_id: str, id_type: str) -> IdentityExternalId:
-    return IdentityExternalId(tenant=_TENANT, external_id=external_id, id_type=id_type)
+_VALID_ID_TYPES = frozenset({"T1", "T2"})
 
 
 def _fragment(
@@ -56,20 +54,14 @@ def _fragment(
     person_type: PersonType = PersonType.JII,
 ) -> IdentityFragment:
     """If no name is provided, the fragment is constructed as an
-    external-id-only carrier (`attributes=None`)."""
-    attributes: IdentityAttributes | None = None
-    if name_given or name_surname:
-        attributes = IdentityAttributes(
-            tenant=_TENANT,
-            name=IdentityName(
-                tenant=_TENANT, given_name=name_given, surname=name_surname
-            ),
-        )
-    return IdentityFragment(
-        tenant=_TENANT,
-        external_ids=[_eid_entity(eid, id_type) for eid, id_type in eids],
-        person_type=person_type,
-        attributes=attributes,
+    external-id-only carrier (attributes=None)."""
+    name = (
+        IdentityName(tenant=_TENANT, given_name=name_given, surname=name_surname)
+        if name_given or name_surname
+        else None
+    )
+    return identity_fragment_for_test(
+        external_ids=eids, tenant=_TENANT, person_type=person_type, name=name
     )
 
 
@@ -87,7 +79,9 @@ class TestRekeyFragmentsByCluster(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.transform = BuildIdentityClusters(tenant=_TENANT)
+        self.transform = BuildIdentityClusters(
+            tenant=_TENANT, valid_id_types=_VALID_ID_TYPES
+        )
 
     def test_eid_with_cluster_and_fragments(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
@@ -188,7 +182,9 @@ class TestBuildCluster(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.transform = BuildIdentityClusters(tenant=_TENANT)
+        self.transform = BuildIdentityClusters(
+            tenant=_TENANT, valid_id_types=_VALID_ID_TYPES
+        )
 
     def test_single_eid_single_fragment(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
@@ -244,23 +240,76 @@ class TestBuildCluster(unittest.TestCase):
         assert result.name is not None
         self.assertEqual(result.name.given_name, "John")
 
-    def test_eid_with_no_fragments_still_in_external_ids(self) -> None:
-        """An EID that's in the cluster but has no fragments still appears in
-        the resulting cluster's external_ids, because external_ids are derived
-        from the cluster_key (the upstream-determined cluster membership), not
-        from the fragments themselves."""
+    def test_phantom_external_id_raises(self) -> None:
+        """An external ID in the cluster that no contributing fragment carries
+        is a phantom ID and fails the build."""
         eid_a: ExternalIdKey = ("A", "T1")
         eid_b: ExternalIdKey = ("B", "T2")
         fragment = _fragment([("A", "T1")], name_given="John", name_surname="Doe")
         cluster_key = tuple(sorted([eid_a, eid_b]))
         element = (cluster_key, [(100.0, "view_a", fragment)])
 
-        result = self.transform.build_cluster(element)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found external ids \[\('B', 'T2'\)\] on the cluster that do not "
+            r"appear in any contributing fragment\.",
+        ):
+            self.transform.build_cluster(element)
 
-        eid_pairs = {(e.external_id, e.id_type) for e in result.external_ids}
-        self.assertEqual(eid_pairs, {("A", "T1"), ("B", "T2")})
-        assert result.name is not None
-        self.assertEqual(result.name.given_name, "John")
+    def test_leaked_fragment_external_id_raises(self) -> None:
+        """A contributing fragment carrying an external ID not in the cluster
+        indicates upstream leakage and fails the build."""
+        eid_key: ExternalIdKey = ("A", "T1")
+        fragment = _fragment([("A", "T1"), ("Z", "T2")], name_given="John")
+        cluster_key = (eid_key,)
+        element = (cluster_key, [(100.0, "view_a", fragment)])
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found contributing fragments with external ids \[\('Z', 'T2'\)\] "
+            r"that are not on the cluster\.",
+        ):
+            self.transform.build_cluster(element)
+
+    def test_invalid_id_type_raises(self) -> None:
+        eid_a: ExternalIdKey = ("A", "T1")
+        eid_b: ExternalIdKey = ("B", "T9")
+        fragment_a = _fragment([("A", "T1")], name_given="John")
+        fragment_b = _fragment([("B", "T9")])
+        cluster_key = tuple(sorted([eid_a, eid_b]))
+        element = (
+            cluster_key,
+            [
+                (100.0, "view_a", fragment_a),
+                (200.0, "view_a", fragment_b),
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found external id types \[T9\] that are not produced by any "
+            r"launchable identity ingest view for tenant \[US_XX\]\. "
+            r"Valid types: \[T1, T2\]\.",
+        ):
+            self.transform.build_cluster(element)
+
+    def test_multiple_structural_errors_aggregated(self) -> None:
+        """A cluster tripping more than one structural check reports all of
+        them under a single header."""
+        eid_a: ExternalIdKey = ("A", "T1")
+        eid_b: ExternalIdKey = ("B", "T9")
+        fragment = _fragment([("A", "T1")], name_given="John")
+        cluster_key = tuple(sorted([eid_a, eid_b]))
+        element = (cluster_key, [(100.0, "view_a", fragment)])
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found errors for cluster with external ids "
+            r"\[\('A', 'T1'\), \('B', 'T9'\)\]:\n"
+            r"  \* Found external id types \[T9\](.|\n)*"
+            r"  \* Found external ids \[\('B', 'T9'\)\] on the cluster",
+        ):
+            self.transform.build_cluster(element)
 
     def test_no_fragments_raises(self) -> None:
         eid_key: ExternalIdKey = ("A", "T1")
@@ -372,7 +421,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT)
+        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
 
         expected_cluster = IdentityCluster(
             tenant=_TENANT,
@@ -423,7 +472,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT)
+        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
 
         summaries = output | "Summarize" >> beam.Map(_cluster_summary)
 
@@ -475,7 +524,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         _ = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT)
+        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
 
         with self.assertRaisesRegex(
             Exception,
@@ -507,7 +556,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT)
+        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
 
         count = output | "Count" >> beam.combiners.Count.Globally()
         assert_that(count, equal_to([2]))

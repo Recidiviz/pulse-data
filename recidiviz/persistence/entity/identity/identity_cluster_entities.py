@@ -32,6 +32,7 @@ from collections.abc import Sequence
 import attr
 
 from recidiviz.common.attr_validators import (
+    is_non_empty_tuple,
     is_none,
     is_opt,
     is_opt_str,
@@ -150,7 +151,7 @@ class IdentityCluster(
     """The post-clustering view of one logical person."""
 
     external_ids: tuple["IdentityClusterExternalId", ...] = attr.ib(
-        validator=is_tuple_of(IdentityClusterExternalId),
+        validator=[is_non_empty_tuple, is_tuple_of(IdentityClusterExternalId)],
     )
 
     person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))

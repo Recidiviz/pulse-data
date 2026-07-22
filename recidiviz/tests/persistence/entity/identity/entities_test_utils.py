@@ -34,6 +34,54 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities_module_con
 _TENANT = Tenant.US_XX
 
 
+def identity_fragment_for_test(
+    *,
+    external_ids: list[tuple[str, str]],
+    tenant: Tenant = Tenant.US_XX,
+    person_type: PersonType = PersonType.JII,
+    name: identity_fragment_entities.IdentityName | None = None,
+    birthdate: datetime.date | None = None,
+    gender: identity_fragment_entities.IdentityGender | None = None,
+    sex: identity_fragment_entities.IdentitySex | None = None,
+    ethnicity: identity_fragment_entities.IdentityEthnicity | None = None,
+    races: list[identity_fragment_entities.IdentityRace] | None = None,
+    phone_numbers: list[identity_fragment_entities.IdentityPhoneNumber] | None = None,
+    emails: list[identity_fragment_entities.IdentityEmail] | None = None,
+) -> identity_fragment_entities.IdentityFragment:
+    """Returns a test `IdentityFragment` with `IdentityExternalId` children built
+    from the given (`external_id`, `id_type`) pairs.
+
+    If no attribute argument is provided, the fragment is constructed as an
+    external-id-only carrier (`attributes=None`, since `IdentityAttributes`
+    requires at least one attribute beyond `tenant`); otherwise the attribute
+    arguments are wrapped in an `IdentityAttributes` child.
+    """
+    attributes: identity_fragment_entities.IdentityAttributes | None = None
+    if any((name, birthdate, gender, sex, ethnicity, races, phone_numbers, emails)):
+        attributes = identity_fragment_entities.IdentityAttributes(
+            tenant=tenant,
+            name=name,
+            birthdate=birthdate,
+            gender=gender,
+            sex=sex,
+            ethnicity=ethnicity,
+            races=races or [],
+            phone_numbers=phone_numbers or [],
+            emails=emails or [],
+        )
+    return identity_fragment_entities.IdentityFragment(
+        tenant=tenant,
+        external_ids=[
+            identity_fragment_entities.IdentityExternalId(
+                tenant=tenant, external_id=external_id, id_type=id_type
+            )
+            for external_id, id_type in external_ids
+        ],
+        person_type=person_type,
+        attributes=attributes,
+    )
+
+
 def generate_full_graph_identity_fragment(
     set_back_edges: bool,
 ) -> identity_fragment_entities.IdentityFragment:

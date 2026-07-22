@@ -871,6 +871,16 @@ def is_tuple_of(tuple_item_expected_type: Type) -> IsTupleOfValidator:
     return IsTupleOfValidator(tuple_item_expected_type)
 
 
+def is_non_empty_tuple(instance: Any, attribute: attr.Attribute, value: tuple) -> None:
+    is_tuple(instance, attribute, value)
+
+    if not value:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"non-empty tuple. Found value [{value}]"
+        )
+
+
 # Set field validators
 is_set = attr.validators.instance_of(set)
 is_opt_set = is_opt(set)

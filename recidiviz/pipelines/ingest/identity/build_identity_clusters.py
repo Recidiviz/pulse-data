@@ -45,14 +45,24 @@ from recidiviz.pipelines.ingest.types import ExternalIdKey
 CLUSTER_MEMBERSHIPS = "cluster_memberships"
 FRAGMENTS_WITH_DATES = "fragments_with_dates"
 
+# The candidate form of an identity cluster: the external-ID membership that
+# clustering produced, paired with the sourced fragments carrying those IDs,
+# before they are validated and merged into an IdentityCluster.
+IdentityClusterCandidate = tuple[ClusterKey, Iterable[SourcedIdentityFragment]]
+
 
 class BuildIdentityClusters(beam.PTransform):
-    """Joins cluster memberships with per-external-ID fragments, merges
-    attributes, and produces one IdentityCluster per cluster."""
+    """Builds one IdentityCluster from each cluster of external IDs that
+    clustering produced.
+    """
 
-    def __init__(self, tenant: Tenant) -> None:
+    def __init__(self, *, tenant: Tenant, valid_id_types: frozenset[str]) -> None:
         super().__init__()
+        # Tenant the pipeline is running for; every cluster belongs to it.
         self.tenant = tenant
+        # External ID types the tenant's launchable identity ingest views can
+        # produce; every external ID on a cluster must have one of these types.
+        self.valid_id_types = valid_id_types
 
     def expand(
         self,
@@ -98,8 +108,9 @@ class BuildIdentityClusters(beam.PTransform):
           2. rekey_fragments_by_cluster re-keys each fragment by its cluster
              (a sorted tuple of all ExternalIdKeys in the cluster).
           3. GroupByKey groups all fragments sharing the same cluster key.
-          4. build_cluster merges the cluster's fragment timeline and
-             constructs an IdentityCluster.
+          4. build_cluster constructs an IdentityCluster from an
+             IdentityClusterCandidate, first checking that the candidate
+             satisfies certain structural invariants.
         """
         return (
             input_or_inputs
@@ -153,39 +164,29 @@ class BuildIdentityClusters(beam.PTransform):
         for fragment_with_date in collections[FRAGMENTS_WITH_DATES]:
             yield cluster_key, fragment_with_date
 
-    def build_cluster(
-        self,
-        cluster_key_and_fragments: tuple[
-            ClusterKey,
-            Iterable[SourcedIdentityFragment],
-        ],
-    ) -> IdentityCluster:
-        """Folds the cluster's full timeline of fragments into one
-        IdentityCluster."""
-        cluster_key, fragments_iterable = cluster_key_and_fragments
+    def build_cluster(self, candidate: IdentityClusterCandidate) -> IdentityCluster:
+        """Constructs an IdentityCluster from an IdentityClusterCandidate, first
+        checking that the candidate satisfies certain structural invariants.
+        """
+        cluster_key, sourced_fragments_iterable = candidate
+        sourced_fragments = tuple(sourced_fragments_iterable)
+        fragments = [fragment for _, _, fragment in sourced_fragments]
 
-        cluster_external_ids = tuple(
-            IdentityClusterExternalId(
-                tenant=self.tenant, external_id=eid, id_type=id_type
-            )
-            for eid, id_type in cluster_key
-        )
-
-        all_fragments = [fragment for _, _, fragment in fragments_iterable]
-        if not all_fragments:
+        if not fragments:
             raise ValueError(f"Cluster [{cluster_key}] has no fragments.")
+
+        self._raise_on_structural_errors(cluster_key, sourced_fragments)
 
         # person_type lives on the fragment, not in its attributes, so it is set
         # explicitly on the cluster here rather than carried through the merged
         # attributes. Every fragment in a cluster describes the same logical
         # person, so they must all agree on a single person type.
-        person_types = {fragment.person_type for fragment in all_fragments}
+        person_types = {fragment.person_type for fragment in fragments}
         try:
             person_type = one(person_types)
         except ValueError as e:
             raise ValueError(
-                f"Cluster [{cluster_key}] with external ids "
-                f"[{cluster_external_ids}] has fragments with conflicting person "
+                f"Cluster [{cluster_key}] has fragments with conflicting person "
                 f"types [{', '.join(sorted(pt.value for pt in person_types))}]; "
                 f"every fragment in a cluster must share a single person type."
             ) from e
@@ -195,16 +196,92 @@ class BuildIdentityClusters(beam.PTransform):
         ).field_index()
 
         try:
-            cluster_attributes = merge_identity_attributes(all_fragments, field_index)
+            cluster_attributes = merge_identity_attributes(fragments, field_index)
         except ValueError as e:
-            raise ValueError(
-                f"Failed to build cluster [{cluster_key}] with external ids "
-                f"[{cluster_external_ids}]: {e}"
-            ) from e
+            raise ValueError(f"Failed to build cluster [{cluster_key}]: {e}") from e
 
         return IdentityCluster(
             tenant=self.tenant,
-            external_ids=cluster_external_ids,
+            external_ids=tuple(
+                IdentityClusterExternalId(
+                    tenant=self.tenant, external_id=eid, id_type=id_type
+                )
+                for eid, id_type in cluster_key
+            ),
             person_type=person_type,
             **convert_attributes_to_cluster_kwargs(cluster_attributes),
         )
+
+    def _raise_on_structural_errors(
+        self,
+        cluster_key: ClusterKey,
+        sourced_fragments: tuple[SourcedIdentityFragment, ...],
+    ) -> None:
+        """Raises a ValueError aggregating every per-cluster structural
+        violation, or returns cleanly if there are none."""
+        errors = [
+            *self._check_id_types_are_valid(cluster_key),
+            *self._check_external_ids_match_fragments(cluster_key, sourced_fragments),
+        ]
+        if errors:
+            errors_str = "\n  * ".join(errors)
+            raise ValueError(
+                f"Found errors for cluster with external ids "
+                f"{self._format_values(cluster_key)}:\n  * {errors_str}"
+            )
+
+    def _check_id_types_are_valid(self, cluster_key: ClusterKey) -> list[str]:
+        """Returns an error if any of the cluster's external IDs has an id_type
+        that no launchable identity ingest view for the tenant can produce."""
+        invalid_id_types = sorted(
+            {
+                id_type
+                for _, id_type in cluster_key
+                if id_type not in self.valid_id_types
+            }
+        )
+        if invalid_id_types:
+            return [
+                f"Found external id types {self._format_values(invalid_id_types)} "
+                f"that are not produced by any launchable identity ingest view "
+                f"for tenant [{self.tenant.value}]. Valid types: "
+                f"{self._format_values(sorted(self.valid_id_types))}."
+            ]
+        return []
+
+    @staticmethod
+    def _check_external_ids_match_fragments(
+        cluster_key: ClusterKey,
+        sourced_fragments: tuple[SourcedIdentityFragment, ...],
+    ) -> list[str]:
+        """Returns errors if the cluster's external IDs and the contributing
+        fragments' external IDs are not the same set: an external ID on the
+        cluster that appears in no fragment is a phantom ID, and a fragment
+        external ID missing from the cluster indicates CoGroupByKey leakage
+        upstream (the fragment belongs to a different cluster)."""
+        cluster_eids = set(cluster_key)
+        fragment_eids = {
+            (e.external_id, e.id_type)
+            for _, _, fragment in sourced_fragments
+            for e in fragment.external_ids
+        }
+        errors = []
+        if phantom_eids := sorted(cluster_eids - fragment_eids):
+            errors.append(
+                f"Found external ids "
+                f"{BuildIdentityClusters._format_values(phantom_eids)} on "
+                f"the cluster that do not appear in any contributing fragment."
+            )
+        if leaked_eids := sorted(fragment_eids - cluster_eids):
+            errors.append(
+                f"Found contributing fragments with external ids "
+                f"{BuildIdentityClusters._format_values(leaked_eids)} that "
+                f"are not on the cluster."
+            )
+        return errors
+
+    @staticmethod
+    def _format_values(values: Iterable[object]) -> str:
+        """Formats the given values for an error message as a bracketed,
+        comma-separated list, e.g. [T1, T2]."""
+        return f"[{', '.join(str(v) for v in values)}]"

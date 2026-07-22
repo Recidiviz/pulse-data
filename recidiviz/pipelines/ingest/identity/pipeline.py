@@ -63,11 +63,17 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     FRAGMENTS_WITH_DATES,
     BuildIdentityClusters,
 )
+from recidiviz.pipelines.ingest.identity.expected_output_helpers import (
+    get_valid_external_id_types,
+)
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
 from recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views import (
     ProcessAllIdentityIngestViews,
+)
+from recidiviz.pipelines.ingest.identity.validate_identity_cluster_collection import (
+    ValidateIdentityClusterCollection,
 )
 from recidiviz.pipelines.ingest.transforms.cluster_root_external_ids import (
     ClusterRootExternalIds,
@@ -103,7 +109,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
     def run_pipeline(self, p: Pipeline) -> None:
         tenant = Tenant(self.pipeline_parameters.tenant)
         # v1 only supports tenants that are state codes;
-        # `IdentityIngestPipelineParameters.raw_data_input_dataset` rejects
+        # IdentityIngestPipelineParameters.raw_data_input_dataset rejects
         # non-state tenants.
         state_code = tenant.to_state_code()
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -137,7 +143,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         # The pre-clustering fragments feed two branches: clustering (below) and
         # the debug {tenant}_identity_fragment output. MergeIngestViewRootEntityTrees
         # emits each fragment once per external ID it carries.
-        # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
+        # Silence No value for argument 'pcoll' in function call (no-value-for-parameter)
         # pylint: disable=E1120
         fragments: beam.PCollection[IdentityFragment] = (
             merged_identity_fragments
@@ -158,10 +164,21 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             >> beam.MapTuple(lambda eid, cluster: (eid, tuple(sorted(cluster))))
         )
 
-        identity_clusters: beam.PCollection[IdentityCluster] = {
-            CLUSTER_MEMBERSHIPS: cluster_memberships,
-            FRAGMENTS_WITH_DATES: merged_identity_fragments,
-        } | "Build IdentityClusters" >> BuildIdentityClusters(tenant=tenant)
+        valid_id_types = get_valid_external_id_types(
+            ingest_manifest_collector=ingest_manifest_collector,
+            ingest_view_names=identity_view_names,
+        )
+
+        identity_clusters: beam.PCollection[IdentityCluster] = (
+            {
+                CLUSTER_MEMBERSHIPS: cluster_memberships,
+                FRAGMENTS_WITH_DATES: merged_identity_fragments,
+            }
+            | "Build IdentityClusters"
+            >> BuildIdentityClusters(tenant=tenant, valid_id_types=valid_id_types)
+            | "Validate IdentityClusterCollection"
+            >> ValidateIdentityClusterCollection()
+        )
 
         # Write each IdentityCluster's serialized rows to the per-tenant
         # {tenant}_identity_cluster.* tables.

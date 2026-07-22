@@ -23,7 +23,6 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
     attribute_field_type_reference_for_class,
 )
-from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entities_module_context_factory import (
@@ -40,7 +39,6 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,
-    IdentityExternalId,
     IdentityFragment,
     IdentityGender,
     IdentityName,
@@ -50,6 +48,9 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 )
 from recidiviz.pipelines.ingest.identity.merge_identity_attributes import (
     merge_identity_attributes,
+)
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    identity_fragment_for_test,
 )
 from recidiviz.utils.types import assert_type
 
@@ -69,27 +70,17 @@ def _fragment(
 ) -> IdentityFragment:
     """If no attribute is provided, the fragment is constructed as an
     external-id-only carrier (`attributes=None`)."""
-    attributes: IdentityAttributes | None = None
-    if any(
-        v is not None and v != []
-        for v in (name, birthdate, gender, sex, ethnicity, races, phone_numbers, emails)
-    ):
-        attributes = IdentityAttributes(
-            tenant=_TENANT,
-            name=name,
-            birthdate=birthdate,
-            gender=gender,
-            sex=sex,
-            ethnicity=ethnicity,
-            races=races or [],
-            phone_numbers=phone_numbers or [],
-            emails=emails or [],
-        )
-    return IdentityFragment(
+    return identity_fragment_for_test(
+        external_ids=[("X", "T")],
         tenant=_TENANT,
-        external_ids=[IdentityExternalId(tenant=_TENANT, external_id="X", id_type="T")],
-        person_type=PersonType.JII,
-        attributes=attributes,
+        name=name,
+        birthdate=birthdate,
+        gender=gender,
+        sex=sex,
+        ethnicity=ethnicity,
+        races=races,
+        phone_numbers=phone_numbers,
+        emails=emails,
     )
 
 

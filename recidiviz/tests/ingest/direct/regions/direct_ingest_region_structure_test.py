@@ -311,6 +311,34 @@ class DirectIngestRegionDirStructureBase:
                 # Raises if the view's person_type is not a literal enum.
                 get_view_person_type(manifest)
 
+    def test_identity_manifests_support_external_id_type_collection(self) -> None:
+        """The identity ingest pipeline derives each tenant's valid external ID
+        types by calling root_entity_external_id_types on every launchable
+        identity manifest at pipeline-construction time (see
+        recidiviz.pipelines.ingest.identity.expected_output_helpers). That
+        property raises for any manifest that does not hydrate external_ids
+        with $literal id_type values; enforce the precondition here so a
+        nonconforming identity mapping fails in CI rather than at Dataflow
+        launch."""
+        for region_code in self.region_dir_names:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            for ingest_view_name, manifest in collector.ingest_view_to_manifest.items():
+                with self.test.subTest(
+                    region_code=region_code, ingest_view_name=ingest_view_name
+                ):
+                    self.test.assertTrue(
+                        manifest.root_entity_external_id_types,
+                        f"Identity ingest view [{ingest_view_name}] for region "
+                        f"[{region_code}] hydrates no external ID types.",
+                    )
+
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
             region = direct_ingest_regions.get_direct_ingest_region(

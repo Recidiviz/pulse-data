@@ -21,16 +21,12 @@ import unittest
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
-from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Gender, Race
 from recidiviz.persistence.entity.identity import (
     identity_fragment_entities as identity_entities,
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
-    IdentityAttributes,
-    IdentityExternalId,
-    IdentityFragment,
     IdentityGender,
     IdentityName,
     IdentityPhoneNumber,
@@ -39,44 +35,12 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    identity_fragment_for_test,
+)
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 _TENANT = Tenant.US_XX
-
-
-def _make_attrs(
-    *,
-    name: IdentityName | None = None,
-    birthdate: datetime.date | None = None,
-    gender: IdentityGender | None = None,
-    races: list[IdentityRace] | None = None,
-    phone_numbers: list[IdentityPhoneNumber] | None = None,
-) -> IdentityAttributes:
-    return IdentityAttributes(
-        tenant=_TENANT,
-        name=name,
-        birthdate=birthdate,
-        gender=gender,
-        races=races or [],
-        phone_numbers=phone_numbers or [],
-    )
-
-
-def _make_fragment(
-    external_ids: list[tuple[str, str]],
-    attrs: IdentityAttributes,
-    person_type: PersonType = PersonType.JII,
-) -> IdentityFragment:
-    return IdentityFragment(
-        tenant=_TENANT,
-        external_ids=[
-            IdentityExternalId(tenant=_TENANT, external_id=eid, id_type=etype)
-            for eid, etype in external_ids
-        ],
-        person_type=person_type,
-        attributes=attrs,
-    )
-
 
 _UPPER_BOUND_TS = datetime.datetime(2024, 1, 15).timestamp()
 _VIEW_NAME = "eg_person"
@@ -101,42 +65,30 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
         race = IdentityRace(tenant=_TENANT, race=Race.WHITE)
         phone = IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
 
-        frag1 = _make_fragment(
-            [("P1", "US_XX_EG")],
-            _make_attrs(
-                name=name,
-                birthdate=datetime.date(1990, 1, 1),
-                races=[race],
-            ),
+        frag1 = identity_fragment_for_test(
+            external_ids=[("P1", "US_XX_EG")],
+            tenant=_TENANT,
+            name=name,
+            birthdate=datetime.date(1990, 1, 1),
+            races=[race],
         )
-        frag2 = _make_fragment(
-            [("P1", "US_XX_EG"), ("B1", "US_XX_BOOKING")],
-            _make_attrs(
-                birthdate=datetime.date(1990, 1, 1),
-                gender=gender,
-                phone_numbers=[phone],
-            ),
+        frag2 = identity_fragment_for_test(
+            external_ids=[("P1", "US_XX_EG"), ("B1", "US_XX_BOOKING")],
+            tenant=_TENANT,
+            birthdate=datetime.date(1990, 1, 1),
+            gender=gender,
+            phone_numbers=[phone],
         )
 
         # P1 group: frag1 + frag2 → merged (both ext IDs, merged attrs)
-        expected_p1_merged = IdentityFragment(
+        expected_p1_merged = identity_fragment_for_test(
+            external_ids=[("P1", "US_XX_EG"), ("B1", "US_XX_BOOKING")],
             tenant=_TENANT,
-            external_ids=[
-                IdentityExternalId(
-                    tenant=_TENANT, external_id="P1", id_type="US_XX_EG"
-                ),
-                IdentityExternalId(
-                    tenant=_TENANT, external_id="B1", id_type="US_XX_BOOKING"
-                ),
-            ],
-            person_type=PersonType.JII,
-            attributes=_make_attrs(
-                name=name,
-                birthdate=datetime.date(1990, 1, 1),
-                gender=gender,
-                races=[race],
-                phone_numbers=[phone],
-            ),
+            name=name,
+            birthdate=datetime.date(1990, 1, 1),
+            gender=gender,
+            races=[race],
+            phone_numbers=[phone],
         )
 
         with create_test_pipeline() as p:

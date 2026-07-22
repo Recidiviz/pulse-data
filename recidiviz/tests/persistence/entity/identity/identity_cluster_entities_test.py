@@ -447,6 +447,16 @@ class TestIdentityCluster(unittest.TestCase):
         cluster_b = self._make_cluster(races=(race_white, race_black))
         self.assertEqual(cluster_a.cluster_hash, cluster_b.cluster_hash)
 
+    def test_empty_external_ids_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"Field \[external_ids\].*must be a non-empty tuple"
+        ):
+            IdentityCluster(
+                tenant=_TENANT,
+                person_type=PersonType.JII,
+                external_ids=(),
+            )
+
     def test_tenant_mismatch_in_external_id_raises(self) -> None:
         eid_other = IdentityClusterExternalId(
             tenant=Tenant.US_YY, external_id="EXT_001", id_type="US_YY_ID_TYPE"

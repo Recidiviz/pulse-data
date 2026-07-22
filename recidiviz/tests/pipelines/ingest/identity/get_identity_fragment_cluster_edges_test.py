@@ -20,14 +20,15 @@ import unittest
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
-from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
-    IdentityExternalId,
     IdentityFragment,
 )
 from recidiviz.pipelines.ingest.transforms.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
+)
+from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
+    identity_fragment_for_test,
 )
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
@@ -37,18 +38,7 @@ _TENANT = Tenant.US_XX
 def _make_fragment(*id_pairs: tuple[str, str]) -> IdentityFragment:
     """Creates an external-id-only `IdentityFragment` with the given
     (`external_id`, `id_type`) pairs."""
-    return IdentityFragment(
-        tenant=_TENANT,
-        external_ids=[
-            IdentityExternalId(
-                tenant=_TENANT,
-                external_id=ext_id,
-                id_type=id_type,
-            )
-            for ext_id, id_type in id_pairs
-        ],
-        person_type=PersonType.JII,
-    )
+    return identity_fragment_for_test(external_ids=list(id_pairs), tenant=_TENANT)
 
 
 class TestGetIdentityFragmentClusterEdges(unittest.TestCase):

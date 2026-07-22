@@ -1927,6 +1927,28 @@ class TestIsNonEmptyList(unittest.TestCase):
             _ = self._TestClass(items="not a list")  # type: ignore[arg-type]
 
 
+class TestIsNonEmptyTuple(unittest.TestCase):
+    """Tests for the is_non_empty_tuple() validator."""
+
+    @attr.define
+    class _TestClass:
+        items: tuple = attr.ib(validator=attr_validators.is_non_empty_tuple)
+
+    def test_non_empty_tuple(self) -> None:
+        _ = self._TestClass(items=("a", "b"))
+
+    def test_single_element_tuple(self) -> None:
+        _ = self._TestClass(items=(1,))
+
+    def test_empty_tuple(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be a non-empty tuple"):
+            _ = self._TestClass(items=())
+
+    def test_not_a_tuple(self) -> None:
+        with self.assertRaises((TypeError, ValueError)):
+            _ = self._TestClass(items=["not", "a", "tuple"])  # type: ignore[arg-type]
+
+
 class TestIsNone(unittest.TestCase):
     """Tests for the is_none() validator."""
 
