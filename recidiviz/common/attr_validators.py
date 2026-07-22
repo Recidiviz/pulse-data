@@ -554,6 +554,7 @@ def is_valid_name_suffix(instance: Any, attribute: attr.Attribute, value: str) -
 # String field validators
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)
+is_opt_non_empty_str = attr.validators.optional(is_non_empty_str)
 
 
 # Int field validators

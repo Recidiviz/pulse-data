@@ -42,6 +42,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
 )
+from recidiviz.documents.extraction.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+)
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
@@ -106,6 +109,11 @@ class LLMJobDocumentExtractionResult:
     document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The document this result is for."""
 
+    result_datetime_utc: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    """When this document's result was produced."""
+
     raw_result: LLMClientDocumentExtractionResult = attr.ib(
         validator=attr.validators.instance_of(LLMClientDocumentExtractionResult)
     )
@@ -119,7 +127,9 @@ class LLMJobDocumentExtractionResult:
     SUCCESS before it is stamped here."""
 
     is_relevant: bool | None = attr.ib(validator=attr_validators.is_opt_bool)
-    """The model's relevance determination. None on non-SUCCESS result types."""
+    """The model's relevance determination. None unless validation produced usable
+    content: a raw call can return JSON that is incomplete or missing the
+    is_relevant field, so relevance is only known once validated_content exists."""
 
     error_type: LLMDocumentExtractionErrorType | None = attr.ib(
         validator=attr_validators.is_opt(LLMDocumentExtractionErrorType)
@@ -129,15 +139,40 @@ class LLMJobDocumentExtractionResult:
     error_message: str | None = attr.ib(validator=attr_validators.is_opt_str)
     """A human-readable description of the failure, or None on success."""
 
+    validation_results: LLMDocumentValidationResult | None = attr.ib(
+        validator=attr_validators.is_opt(LLMDocumentValidationResult)
+    )
+    """The validation outcome. Set whenever the raw call produced JSON to
+    validate, None when the raw call failed."""
+
+    @property
+    def is_validated_result(self) -> bool:
+        """Returns whether validation produced usable content for this document.
+        A raw call can return JSON that is incomplete or malformed, which
+        validation rejects (leaving no validated_content); only a populated
+        validated_content means the result is usable."""
+        return (
+            self.validation_results is not None
+            and self.validation_results.validated_content is not None
+        )
+
     def __attrs_post_init__(self) -> None:
-        is_success = self.result_type is LLMExtractionJobDocumentResultType.SUCCESS
-        if is_success != (self.is_relevant is not None):
+        raw_call_succeeded = self.raw_result.result_json is not None
+        if (self.validation_results is not None) != raw_call_succeeded:
             raise ValueError(
-                f"is_relevant must be set iff result_type is SUCCESS for document "
-                f"[{self.document_contents_id}] in job [{self.job_id}]: got "
-                f"result_type=[{self.result_type}], is_relevant=[{self.is_relevant}]."
+                f"validation_results must be set iff the raw call produced JSON for "
+                f"document [{self.document_contents_id}] in job [{self.job_id}]: got "
+                f"validation_results=[{self.validation_results}], "
+                f"raw_call_succeeded=[{raw_call_succeeded}]."
             )
-        if is_success and (
+        if (self.is_relevant is not None) != self.is_validated_result:
+            raise ValueError(
+                f"is_relevant must be set iff validation produced usable content for "
+                f"document [{self.document_contents_id}] in job [{self.job_id}]: got "
+                f"is_relevant=[{self.is_relevant}], "
+                f"is_validated_result=[{self.is_validated_result}]."
+            )
+        if self.result_type is LLMExtractionJobDocumentResultType.SUCCESS and (
             self.error_type is not None or self.error_message is not None
         ):
             raise ValueError(
@@ -409,9 +444,7 @@ class LLMExtractionJobManager:
                 )
                 .update(
                     {
-                        schema.LLMExtractionJobDocument.result_datetime_utc: datetime.datetime.now(
-                            tz=datetime.UTC
-                        ),
+                        schema.LLMExtractionJobDocument.result_datetime_utc: result.result_datetime_utc,
                         schema.LLMExtractionJobDocument.result_type: result.result_type.value,
                         schema.LLMExtractionJobDocument.is_relevant: result.is_relevant,
                         schema.LLMExtractionJobDocument.error_type: (

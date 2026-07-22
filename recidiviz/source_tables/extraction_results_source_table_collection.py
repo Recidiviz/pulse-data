@@ -25,10 +25,10 @@ from recidiviz.documents.dataset_config import (
     document_extraction_validated_results_dataset_for_region,
     document_extraction_validation_audit_dataset_for_region,
 )
-from recidiviz.documents.extraction.extraction_results_columns import (
-    build_raw_results_schema,
-    build_validated_results_schema,
-    build_validation_audit_schema,
+from recidiviz.documents.extraction.llm_extraction_results_tables import (
+    ExtractionRawResultsBQTable,
+    ExtractionValidatedResultsBQTable,
+    ExtractionValidationAuditBQTable,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
@@ -101,37 +101,27 @@ def collect_extraction_results_source_table_collections(
         )
 
         for config in configs_by_collection_name.values():
-            result_table_id = config.extractor_collection.name.lower()
+            collection_name = config.extractor_collection.name
             raw_collection.add_source_table(
-                table_id=result_table_id,
-                description=(
-                    f"Raw model output for the [{config.extractor_collection.name}] "
-                    f"collection in {StateCode.get_state(state_code)}. One row per "
-                    "successful model call, holding the raw JSON before any "
-                    "validation or quality filtering."
+                table_id=ExtractionRawResultsBQTable.table_id(collection_name),
+                description=ExtractionRawResultsBQTable.description(
+                    collection_name=collection_name, state_code=state_code
                 ),
-                schema_fields=build_raw_results_schema(),
+                schema_fields=ExtractionRawResultsBQTable.schema(),
             )
             validated_collection.add_source_table(
-                table_id=result_table_id,
-                description=(
-                    f"Validated model output for the "
-                    f"[{config.extractor_collection.name}] collection in "
-                    f"{StateCode.get_state(state_code)}. One row per (document, "
-                    "extractor version) that passed all extraction-error checks, "
-                    "with quality-filter corrections applied."
+                table_id=ExtractionValidatedResultsBQTable.table_id(collection_name),
+                description=ExtractionValidatedResultsBQTable.description(
+                    collection_name=collection_name, state_code=state_code
                 ),
-                schema_fields=build_validated_results_schema(),
+                schema_fields=ExtractionValidatedResultsBQTable.schema(),
             )
             audit_collection.add_source_table(
-                table_id=result_table_id,
-                description=(
-                    f"Validation audit for the [{config.extractor_collection.name}] "
-                    f"collection in {StateCode.get_state(state_code)}. One row per "
-                    "document per validation run recording the outcome and any "
-                    "issues found."
+                table_id=ExtractionValidationAuditBQTable.table_id(collection_name),
+                description=ExtractionValidationAuditBQTable.description(
+                    collection_name=collection_name, state_code=state_code
                 ),
-                schema_fields=build_validation_audit_schema(),
+                schema_fields=ExtractionValidationAuditBQTable.schema(),
             )
 
         collections.append(raw_collection)

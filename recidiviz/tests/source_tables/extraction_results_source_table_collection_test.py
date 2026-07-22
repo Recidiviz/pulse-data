@@ -26,10 +26,10 @@ from recidiviz.documents.dataset_config import (
     document_extraction_validated_results_dataset_for_region,
     document_extraction_validation_audit_dataset_for_region,
 )
-from recidiviz.documents.extraction.extraction_results_columns import (
-    build_raw_results_schema,
-    build_validated_results_schema,
-    build_validation_audit_schema,
+from recidiviz.documents.extraction.llm_extraction_results_tables import (
+    ExtractionRawResultsBQTable,
+    ExtractionValidatedResultsBQTable,
+    ExtractionValidationAuditBQTable,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     load_llm_extractor_configs,
@@ -67,13 +67,13 @@ class CollectExtractionResultsSourceTableCollectionsTest(unittest.TestCase):
         datasets_to_schemas = {
             document_extraction_raw_results_dataset_for_region(
                 StateCode.US_XX
-            ): build_raw_results_schema(),
+            ): ExtractionRawResultsBQTable.schema(),
             document_extraction_validated_results_dataset_for_region(
                 StateCode.US_XX
-            ): build_validated_results_schema(),
+            ): ExtractionValidatedResultsBQTable.schema(),
             document_extraction_validation_audit_dataset_for_region(
                 StateCode.US_XX
-            ): build_validation_audit_schema(),
+            ): ExtractionValidationAuditBQTable.schema(),
         }
         self.assertEqual(
             set(datasets_to_schemas),

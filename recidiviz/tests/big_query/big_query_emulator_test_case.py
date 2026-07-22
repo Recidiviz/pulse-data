@@ -21,6 +21,7 @@ import datetime
 import os
 import tempfile
 import unittest
+from collections import Counter
 from concurrent import futures
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
@@ -292,6 +293,23 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         for future in futures.as_completed(to_delete):
             future.result()
 
+    def _assert_rows_equal(
+        self,
+        expected: Iterable[Dict[str, Any]],
+        actual: Iterable[Dict[str, Any]],
+        *,
+        enforce_order: bool,
+    ) -> None:
+        if enforce_order:
+            self.assertEqual(list(expected), list(actual))
+            return
+        # Multiset, not set: identical rows must not collapse (e.g. at-least-once
+        # writes produce intentional duplicates).
+        self.assertEqual(
+            Counter(frozenset(row.items()) for row in expected),
+            Counter(frozenset(row.items()) for row in actual),
+        )
+
     def run_query_test(
         self,
         query_str: str,
@@ -304,13 +322,32 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
             query_job
         ).get_contents_iterator()
-        if enforce_order:
-            self.assertEqual(expected_result, list(contents_iterator))
-        else:
-            self.assertSetEqual(
-                {frozenset(expected.items()) for expected in expected_result},
-                {frozenset(actual.items()) for actual in contents_iterator},
-            )
+        self._assert_rows_equal(
+            expected_result, contents_iterator, enforce_order=enforce_order
+        )
+
+    def compare_table_to_results(
+        self,
+        address: BigQueryAddress,
+        expected_result: Iterable[Dict[str, Any]],
+        *,
+        enforce_order: bool = False,
+        columns_to_ignore: list[str] | None = None,
+    ) -> None:
+        """Asserts the full contents of |address| equal |expected_result|."""
+        project_specific_address = address.to_project_specific_address(
+            metadata.project_id()
+        )
+        select_statement = (
+            f"SELECT * EXCEPT({', '.join(columns_to_ignore)})"
+            if columns_to_ignore
+            else "SELECT *"
+        )
+        self.run_query_test(
+            project_specific_address.select_query(select_statement=select_statement),
+            expected_result,
+            enforce_order=enforce_order,
+        )
 
     def create_mock_table(
         self,

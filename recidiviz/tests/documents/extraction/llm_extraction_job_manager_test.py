@@ -34,6 +34,9 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionTokenCounts,
     LLMRequestErrorType,
 )
+from recidiviz.documents.extraction.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+)
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionEligibleDocumentRecord,
     LLMExtractionJobManager,
@@ -97,11 +100,19 @@ def _success_result(
     return LLMJobDocumentExtractionResult(
         job_id=job_id,
         document_contents_id=document_contents_id,
+        result_datetime_utc=_NOW,
         raw_result=_client_result(document_contents_id),
         result_type=LLMExtractionJobDocumentResultType.SUCCESS,
         is_relevant=is_relevant,
         error_type=None,
         error_message=None,
+        validation_results=LLMDocumentValidationResult(
+            validated_content={"is_relevant": is_relevant},
+            audit_issues=[],
+            result_type_override=None,
+            validation_config_version_id="vc1",
+            validation_datetime_utc=_NOW,
+        ),
     )
 
 
@@ -115,6 +126,7 @@ def _failure_result(
     return LLMJobDocumentExtractionResult(
         job_id=job_id,
         document_contents_id=document_contents_id,
+        result_datetime_utc=_NOW,
         raw_result=_client_result(
             document_contents_id, error_type=LLMRequestErrorType.RATE_LIMITED
         ),
@@ -122,6 +134,7 @@ def _failure_result(
         is_relevant=None,
         error_type=error_type,
         error_message="something failed",
+        validation_results=None,
     )
 
 
@@ -347,7 +360,7 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             LLMExtractionJobDocumentResultType.SUCCESS, document.result_type
         )
         self.assertTrue(document.is_relevant)
-        self.assertIsNotNone(document.result_datetime_utc)
+        self.assertEqual(_NOW, document.result_datetime_utc)
         self.assertEqual(10, document.input_token_count)
         self.assertEqual(5, document.output_token_count)
         self.assertEqual(2, document.cached_input_token_count)
