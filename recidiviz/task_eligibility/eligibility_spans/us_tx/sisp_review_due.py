@@ -54,7 +54,6 @@ ANY_SISP_REVIEW_DUE = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         "contact_cadence",
         "contact_count",
         "contact_due_date",
-        "overdue_flag",
         # Shared across the two recurring sub-criteria.
         "contact_period_end",
         "contact_period_start",

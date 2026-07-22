@@ -58,13 +58,11 @@ US_TX_NEEDS_EDGE_CASE_HOME_CONTACT_CRITERIA_GROUP = StateSpecificTaskCriteriaGro
         "contact_count",
         "contact_due_date",
         "last_contact_date",
-        "overdue_flag",
         "causal_date",
         "criteria_name",
     ],
     reasons_aggregate_function_override={
         "contact_cadence": "STRING_AGG",
-        "overdue_flag": "LOGICAL_OR",
     },
     reasons_aggregate_function_use_ordering_clause={
         "contact_cadence",

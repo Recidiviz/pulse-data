@@ -131,8 +131,6 @@ def alternative_contact_cadence_reason(
     END AS alternative_contact_cadence_reason"""
 
 
-# TODO(#62741): Deprecate overdue_flag from reasons blobs in favor of
-# compliance TES is_overdue column.
 def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
     description: str,
     base_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -647,11 +645,6 @@ def contact_compliance_builder_type_agnostic(
             RTRIM(contact_types_accepted,",") as contact_types_accepted,
             period_type,
             ci.contact_date AS last_contact_date,
-            CASE WHEN
-                meets_criteria IS TRUE AND CURRENT_DATE > end_date
-                THEN TRUE
-                ELSE FALSE
-            END AS overdue_flag,
             contact_cadence,
             supervision_level,
             case_type
@@ -705,7 +698,6 @@ def contact_compliance_builder_type_agnostic(
         types_and_amounts_due,
         types_and_amounts_done,
         period_type,
-        overdue_flag,
         contact_cadence,
         contact_types_accepted,
         supervision_level,
@@ -756,11 +748,6 @@ def contact_compliance_builder_type_agnostic(
                 name="period_type",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="The type of period.",
-            ),
-            ReasonsField(
-                name="overdue_flag",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Flag that indicates whether contact was missed.",
             ),
             ReasonsField(
                 name="contact_types_accepted",

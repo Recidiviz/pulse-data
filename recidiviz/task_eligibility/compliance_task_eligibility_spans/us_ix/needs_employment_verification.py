@@ -63,7 +63,6 @@ employment_verification_trigger_view_builder = (
             "contact_count",
             "contact_due_date",
             "last_contact_date",
-            "overdue_flag",
             "contact_period_start_date",
             "criteria_name",
         ],
