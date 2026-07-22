@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,11 +16,16 @@
 # =============================================================================
 """Tests the pulse-data/recidiviz/pipelines/dataflow_flex_setup.py file that specifies required packages
 for the Dataflow VM workers. """
+import ast
 import os
 import tomllib
 import unittest
 
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
 import recidiviz
+from recidiviz.utils.types import assert_type
 
 UV_LOCK_PATH = os.path.join(
     os.path.dirname(
@@ -36,77 +41,85 @@ SETUP_PATH = os.path.join(
 
 
 class TestSetupFilePinnedDependencies(unittest.TestCase):
-    """Tests that dependencies pinned at certain versions are pinned at the version in the uv.lock file."""
+    """Tests that every dependency in dataflow_flex_setup.py is pinned to an exact
+    version, and that any dependency also present in uv.lock is pinned to the same
+    version uv resolves for the main project.
 
-    def test_setup_file_pinned_dependencies(self) -> None:
-        pinned_dependencies = [
-            "protobuf",
-            "dill",
-            "sqlalchemy",
-            "google-cloud-tasks",
-            "cloudpickle",
+    Dataflow workers install this setup file's dependencies fresh (via the Beam SDK
+    harness setup_file mechanism) into a separate venv at worker boot time. An
+    unpinned dependency is re-resolved against PyPI at that point, so a new upstream
+    release can break every pipeline without any change to this repo.
+    """
+
+    def test_all_dependencies_pinned_to_exact_version(self) -> None:
+        for requirement in _required_packages():
+            specifiers = list(requirement.specifier)
+            if len(specifiers) != 1 or specifiers[0].operator != "==":
+                raise AssertionError(
+                    f"Dependency [{requirement}] in dataflow_flex_setup.py is not "
+                    f"pinned to a single exact version (e.g. 'foo==1.2.3')."
+                )
+
+    def test_pinned_versions_match_uv_lock(self) -> None:
+        uv_lock_versions = _uv_lock_versions()
+        for requirement in _required_packages():
+            specifiers = list(requirement.specifier)
+            if len(specifiers) != 1 or specifiers[0].operator != "==":
+                # Covered by test_all_dependencies_pinned_to_exact_version.
+                continue
+
+            uv_version = uv_lock_versions.get(canonicalize_name(requirement.name))
+            if uv_version is None:
+                # Not every dataflow_flex_setup.py dependency is part of the main
+                # project's dependency graph in pyproject.toml/uv.lock.
+                continue
+
+            pinned_version = specifiers[0].version
+            self.assertEqual(
+                uv_version,
+                pinned_version,
+                f"Dependency [{requirement.name}] is pinned to [{pinned_version}] in "
+                f"dataflow_flex_setup.py but uv.lock resolves it to [{uv_version}]. "
+                "Update the pin in dataflow_flex_setup.py to match uv.lock.",
+            )
+
+
+def _required_packages() -> list[Requirement]:
+    """Parses dataflow_flex_setup.py's REQUIRED_PACKAGES list via ast, without
+    importing the module (importing it would invoke setuptools.setup()).
+
+    Returns: The list of dependencies as parsed Requirement objects.
+    """
+    with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
+        tree = ast.parse(setup_file.read(), filename=SETUP_PATH)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "REQUIRED_PACKAGES"
+            for target in node.targets
+        ):
+            continue
+
+        required_packages = assert_type(node.value, ast.List)
+        return [
+            Requirement(assert_type(assert_type(element, ast.Constant).value, str))
+            for element in required_packages.elts
         ]
 
-        for dependency in pinned_dependencies:
-            uv_dependency = uv_lock_version_for_dependency(dependency)
-            dependency_found = False
-
-            with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
-                for line in setup_file:
-                    line = line.lower().strip()
-                    if line.startswith(f'"{dependency}'):
-                        dependency_found = True
-                        # Remove whitespace, quotation marks, and commas
-                        dependency_with_version = (
-                            line.replace('"', "").replace("'", "").replace(",", "")
-                        )
-
-                        if dependency_with_version.startswith("#"):
-                            # Skip comments that mention the dependency
-                            continue
-
-                        self.assertEqual(
-                            uv_dependency,
-                            dependency_with_version,
-                            "Try verifying the package's version in dataflow_flex_setup.py or running uv sync "
-                            "--all-extras before running this test again.",
-                        )
-
-            if not dependency_found:
-                raise ValueError(f"Dependency {dependency} not found.")
-
-    def test_setup_file_non_pinned_dependency(self) -> None:
-        dependency = "cattrs"
-
-        uv_dependency = uv_lock_version_for_dependency(dependency)
-
-        with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
-            for line in setup_file:
-                if dependency in line:
-                    # Remove whitespace, quotation marks, and commas
-                    dependency_with_version = (
-                        line.strip().replace('"', "").replace("'", "").replace(",", "")
-                    )
-
-                    # This dependency is not pinned at a particular version, so these should not be equal
-                    self.assertNotEqual(uv_dependency, dependency_with_version)
+    raise ValueError(
+        f"Could not find a REQUIRED_PACKAGES list assignment in [{SETUP_PATH}]."
+    )
 
 
-def uv_lock_version_for_dependency(dependency: str) -> str:
-    """Looks in the uv.lock file for the current version of the given dependency. Returns a string in the format
-    'dependency==v.X.X.X'.
-    """
+def _uv_lock_versions() -> dict[str, str]:
+    """Returns: A map of canonicalized package name to resolved version, from uv.lock."""
     with open(UV_LOCK_PATH, "rb") as uv_lock_file:
         uv_data = tomllib.load(uv_lock_file)
 
-    # uv.lock uses TOML format with [[package]] entries
-    packages = uv_data.get("package", [])
-    for package in packages:
-        if package.get("name") == dependency:
-            version = package.get("version")
-            if version:
-                return f"{dependency}=={version}"
-
-    raise ValueError(
-        f"Dataflow pipeline dependent on a package ({dependency}) not in the uv.lock."
-    )
+    return {
+        canonicalize_name(package["name"]): package["version"]
+        for package in uv_data.get("package", [])
+        if package.get("version")
+    }
