@@ -363,7 +363,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                 {
                     "state_code": "US_XX",
                     "date_in_population": "2022-01-01",
-                    "time_period": "months_0_6",
+                    "time_period": "6 months",
                     "age_group": "25-29",
                     "facility": "F1",
                     "race": "WHITE",
@@ -378,7 +378,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                 {
                     "state_code": "US_XX",
                     "date_in_population": "2022-01-01",
-                    "time_period": "months_0_6",
+                    "time_period": "6 months",
                     "age_group": "60+",
                     "facility": "F1",
                     "race": "BLACK",
