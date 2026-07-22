@@ -18,10 +18,10 @@
 
 Endpoint: POST /edovo/course-completions
 
-Auth: HMAC-SHA256 per recidiviz.case_triage.edovo.hmac_verifier.  No Auth0 JWT
-is required; the request is authenticated entirely by the shared secret.  HMAC is
-the launch mechanism; the spec's preferred Workload Identity Federation (WIF) is
-expected to replace it later (TODO(OBT-27565)).
+Auth: Workload Identity Federation per recidiviz.case_triage.edovo.wif_verifier.
+Edovo federates their AWS workload to the ``edovo-wif@`` GCP service account and
+calls the endpoint with the GCP access token that federation mints, in the
+``Authorization: Bearer`` header; no Auth0 JWT is involved.
 
 Idempotency: Edovo supplies a client-generated UUID in the ``Idempotency-Key``
 header (required).  A repeat of the same key returns the original response with
@@ -53,7 +53,6 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     CourseCompletionValidationErrorResponse,
     ValidationErrorDetails,
 )
-from recidiviz.case_triage.edovo.hmac_verifier import load_secret_and_verify
 from recidiviz.case_triage.edovo.persistence import (
     AlreadyCompletedError,
     persist_completion,
@@ -62,9 +61,10 @@ from recidiviz.case_triage.edovo.person_existence import (
     PersonNotFoundError,
     assert_person_exists,
 )
+from recidiviz.case_triage.edovo.wif_verifier import verify_bearer_token
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
-from recidiviz.utils.auth.auth0 import AuthorizationError
+from recidiviz.utils.flask_exception import FlaskException
 
 _IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
 
@@ -163,12 +163,8 @@ def create_edovo_api_blueprint() -> Blueprint:
         idempotency_key_header = request.headers.get(_IDEMPOTENCY_KEY_HEADER, "")
 
         try:
-            load_secret_and_verify(
-                body, request.headers.get("Authorization", ""), request.path
-            )
-        except AuthorizationError as error:
-            # The body of an unauthenticated request is untrusted, so it is
-            # deliberately omitted from this audit record.
+            verify_bearer_token(request.headers.get("Authorization", ""))
+        except FlaskException as error:
             _log_audit(
                 received_at=received_at,
                 idempotency_key=idempotency_key_header or None,

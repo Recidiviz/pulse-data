@@ -16,7 +16,7 @@
 # =============================================================================
 """Integration tests for the Edovo course-completion Flask blueprint.
 
-External dependencies (HMAC verification, BigQuery person existence check) are
+External dependencies (WIF token verification, BigQuery person existence check) are
 mocked. The database layer uses a real local Postgres instance.
 """
 import json
@@ -37,6 +37,7 @@ from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_s
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.auth.auth0 import AuthorizationError
+from recidiviz.utils.flask_exception import FlaskException
 
 MODULE = "recidiviz.case_triage.edovo.edovo_routes"
 
@@ -51,7 +52,7 @@ _VALID_BODY: dict[str, object] = {
     "completed_at": "2026-04-23T17:42:00Z",
 }
 
-_AUTH_HEADER = "HMAC-SHA256 KeyId=k1, Signature=sig, Timestamp=1745000000"
+_AUTH_HEADER = "Bearer some.jwt.token"
 
 _IDEMPOTENCY_KEY = "11111111-1111-4111-8111-111111111111"
 _OTHER_IDEMPOTENCY_KEY = "22222222-2222-4222-8222-222222222222"
@@ -92,8 +93,8 @@ class TestEdovoRoutes(TestCase):
         )
         self.client: FlaskClient = self.test_app.test_client()
 
-        self.hmac_patcher = patch(f"{MODULE}.load_secret_and_verify")
-        self.mock_hmac = self.hmac_patcher.start()
+        self.wif_patcher = patch(f"{MODULE}.verify_bearer_token")
+        self.mock_wif = self.wif_patcher.start()
 
         self.bq_patcher = patch(f"{MODULE}.BigQueryClientImpl")
         mock_bq_cls = self.bq_patcher.start()
@@ -105,7 +106,7 @@ class TestEdovoRoutes(TestCase):
         self.mock_resolve.return_value = None
 
     def tearDown(self) -> None:
-        self.hmac_patcher.stop()
+        self.wif_patcher.stop()
         self.bq_patcher.stop()
         self.resolve_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -135,6 +136,19 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["status"], "accepted")
         self.assertIsNotNone(data["completion_id"])
+
+    def test_wif_forbidden_returns_403(self) -> None:
+        # A valid token for the wrong identity/audience is a 403, and is audited.
+        self.mock_wif.side_effect = FlaskException(
+            code="wrong_identity",
+            description="wrong service account",
+            status_code=HTTPStatus.FORBIDDEN,
+        )
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            response = self._post()
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        mock_audit.assert_called_once()
+        self.assertEqual(mock_audit.call_args.kwargs["reason"], "auth:wrong_identity")
 
     def test_retry_with_same_idempotency_key_returns_200(self) -> None:
         self._post()
@@ -166,9 +180,9 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(data["details"]["field"], "Idempotency-Key")
         self.assertEqual(data["details"]["constraint"], "invalid")
 
-    def test_invalid_signature_returns_401(self) -> None:
-        self.mock_hmac.side_effect = AuthorizationError(
-            code="invalid_signature", description="HMAC signature does not match"
+    def test_invalid_token_returns_401(self) -> None:
+        self.mock_wif.side_effect = AuthorizationError(
+            code="invalid_bearer_token", description="Bearer token failed verification"
         )
         response = self._post()
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)

@@ -17,11 +17,13 @@
 """Local smoke test for the Edovo course-completion endpoint.
 
 Hits the real Docker Postgres (case_triage_db on host port 5433) and mocks
-BigQuery person resolution and Secret Manager.  Requires the case_triage_db
-container to be running and the Alembic migrations to be at head.
+BigQuery person resolution. Requires the case_triage_db container to be running
+and the Alembic migrations to be at head.
 
-The HMAC secret is generated fresh in-process each run; no GCP credentials
-or GOOGLE_CLOUD_PROJECT are required.
+The real WIF verifier runs; only its external dependency — Google's ``tokeninfo``
+call — is mocked (minting a real token needs GCP credentials this test avoids),
+so the header parse, unique-ID config, identity check, and cache are all
+exercised, not stubbed out. No GCP credentials are required.
 
 Usage:
     uv run python -m recidiviz.tools.case_triage.edovo.smoke_test
@@ -32,16 +34,11 @@ Environment variables (all have defaults for the standard local Docker setup):
     CASE_TRIAGE_DB_USER      default: case_triage_user
     CASE_TRIAGE_DB_PASSWORD  default: example
     CASE_TRIAGE_DB_NAME      default: postgres
-    EDOVO_HMAC_KEY_ID        default: local-test
 """
-import base64
-import hashlib
-import hmac
 import json
 import os
 import secrets
 import sys
-import time
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -55,7 +52,26 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 
 _MODULE = "recidiviz.case_triage.edovo.edovo_routes"
-_HMAC_MODULE = "recidiviz.case_triage.edovo.hmac_verifier"
+_WIF_MODULE = "recidiviz.case_triage.edovo.wif_verifier"
+
+_AUTH_HEADER = "Bearer smoke-test-token"
+
+# Fake SA unique ID: set both as the env var the verifier expects and as the
+# aud/azp the mocked tokeninfo returns, so the real identity check passes.
+_FAKE_SA_UNIQUE_ID = "000000000000000000000"
+
+
+def _mock_tokeninfo() -> MagicMock:
+    """A tokeninfo response for a valid, default-scoped edovo-wif@ token
+    (aud/azp = the expected unique ID, no email)."""
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = {
+        "aud": _FAKE_SA_UNIQUE_ID,
+        "azp": _FAKE_SA_UNIQUE_ID,
+        "expires_in": "3600",
+    }
+    return response
 
 
 def _build_payload() -> dict[str, object]:
@@ -69,17 +85,6 @@ def _build_payload() -> dict[str, object]:
         "content_hours": 3.5,
         "completed_at": "2026-06-08T12:00:00Z",
     }
-
-
-def _build_auth_header(body: bytes, key_id: str, secret_b64: str) -> str:
-    timestamp = int(time.time())
-    body_hash = hashlib.sha256(body).hexdigest()
-    string_to_sign = f"POST\n/edovo/course-completions\n{timestamp}\n{body_hash}"
-    secret = base64.b64decode(secret_b64)
-    signature = base64.b64encode(
-        hmac.new(secret, string_to_sign.encode(), hashlib.sha256).digest()
-    ).decode()
-    return f"HMAC-SHA256 KeyId={key_id}, Signature={signature}, Timestamp={timestamp}"
 
 
 def _db_url() -> str:
@@ -105,11 +110,6 @@ def _check(label: str, condition: bool, detail: str = "") -> None:
 
 def main() -> None:
     """Run the end-to-end smoke test against a local Flask app + Postgres."""
-    key_id = os.getenv("EDOVO_HMAC_KEY_ID", "local-test")
-    # Generate an ephemeral 256-bit HMAC secret in-process so the smoke test
-    # has no dependency on real Secret Manager / GOOGLE_CLOUD_PROJECT.
-    secret_b64 = base64.b64encode(secrets.token_bytes(32)).decode()
-
     app = Flask(__name__)
     register_error_handlers(app)
     db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
@@ -119,10 +119,13 @@ def main() -> None:
     client = app.test_client()
 
     body = json.dumps(_build_payload()).encode()
+    headers = {"Authorization": _AUTH_HEADER}
 
     with patch(f"{_MODULE}.BigQueryClientImpl") as mock_bq_cls, patch(
         f"{_MODULE}.assert_person_exists", return_value=None
-    ), patch(f"{_HMAC_MODULE}.get_secret", return_value=secret_b64):
+    ), patch(f"{_WIF_MODULE}.requests.get", return_value=_mock_tokeninfo()), patch.dict(
+        os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": _FAKE_SA_UNIQUE_ID}
+    ):
         mock_bq_cls.return_value = MagicMock()
 
         print("\n--- Edovo smoke test ---")
@@ -133,12 +136,11 @@ def main() -> None:
         idempotency_key = str(uuid.uuid4())
 
         # First POST → should be 201 CREATED
-        auth = _build_auth_header(body, key_id, secret_b64)
         r1 = client.post(
             "/edovo/course-completions",
             data=body,
             content_type="application/json",
-            headers={"Authorization": auth, "Idempotency-Key": idempotency_key},
+            headers={**headers, "Idempotency-Key": idempotency_key},
         )
         data1 = r1.get_json()
         print("\n  POST /edovo/course-completions  (first)")
@@ -149,12 +151,11 @@ def main() -> None:
         print(f"       completion_id: {completion_id}")
 
         # Second POST with same payload and idempotency key → should be 200 DUPLICATE
-        auth = _build_auth_header(body, key_id, secret_b64)
         r2 = client.post(
             "/edovo/course-completions",
             data=body,
             content_type="application/json",
-            headers={"Authorization": auth, "Idempotency-Key": idempotency_key},
+            headers={**headers, "Idempotency-Key": idempotency_key},
         )
         data2 = r2.get_json()
         print("\n  POST /edovo/course-completions  (retry / duplicate)")
@@ -170,12 +171,11 @@ def main() -> None:
         bad_body = json.dumps(
             {k: v for k, v in _build_payload().items() if k != "course_id"}
         ).encode()
-        auth = _build_auth_header(bad_body, key_id, secret_b64)
         r3 = client.post(
             "/edovo/course-completions",
             data=bad_body,
             content_type="application/json",
-            headers={"Authorization": auth, "Idempotency-Key": str(uuid.uuid4())},
+            headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
         )
         data3 = r3.get_json()
         print("\n  POST /edovo/course-completions  (missing course_id)")

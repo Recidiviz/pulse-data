@@ -221,6 +221,15 @@ resource "google_cloud_run_service" "case-triage" {
           value = "https://dashboard.recidiviz.org"
         }
 
+        # Numeric unique ID of the edovo-wif@ service account, used by the Edovo
+        # course-completion endpoint to authenticate Edovo's federated access
+        # token via tokeninfo (OBT-27565). Sourced from Terraform so it tracks
+        # the SA (including recreation) and differs per environment.
+        env {
+          name  = "EDOVO_WIF_SA_UNIQUE_ID"
+          value = google_service_account.edovo.unique_id
+        }
+
         resources {
           limits = {
             cpu    = "1000m"
