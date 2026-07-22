@@ -60,15 +60,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inv
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_fight_threaten_pow_incidents import (
-    US_MI_CLASSIFICATION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_other_class_i_or_ii_incidents import (
-    US_MI_CLASSIFICATION_OTHER_CLASS_I_OR_II_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_classification_violent_incidents import (
-    US_MI_CLASSIFICATION_VIOLENT_INCIDENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
 )
@@ -87,8 +78,23 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_age import (
     US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_fight_threaten_pow_incidents import (
+    US_MI_CLASSIFICATION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_incident_free_periods import (
+    US_MI_CLASSIFICATION_INCIDENT_FREE_PERIODS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_other_class_i_or_ii_incidents import (
+    US_MI_CLASSIFICATION_OTHER_CLASS_I_OR_II_INCIDENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prev_level_5_release import (
     US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prior_session_fight_threaten_pow_incidents import (
+    US_MI_CLASSIFICATION_PRIOR_SESSION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prior_session_violent_incidents import (
+    US_MI_CLASSIFICATION_PRIOR_SESSION_VIOLENT_INCIDENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_programs_high import (
     US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
@@ -101,6 +107,9 @@ from recidiviz.calculator.query.state.views.classification.classification_questi
 )
 from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_vfo_level import (
     US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_violent_incidents import (
+    US_MI_CLASSIFICATION_VIOLENT_INCIDENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
@@ -348,6 +357,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             US_MI_CLASSIFICATION_VIOLENT_INCIDENTS_VIEW_BUILDER,
             US_MI_CLASSIFICATION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
             US_MI_CLASSIFICATION_OTHER_CLASS_I_OR_II_INCIDENTS_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_INCIDENT_FREE_PERIODS_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_PRIOR_SESSION_VIOLENT_INCIDENTS_VIEW_BUILDER,
+            US_MI_CLASSIFICATION_PRIOR_SESSION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
         ]
     },
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (

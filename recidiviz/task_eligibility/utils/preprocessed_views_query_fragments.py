@@ -22,6 +22,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import CLASSIFICATION_VIEWS_DATASET
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     num_events_within_time_interval_spans,
 )
@@ -175,10 +176,170 @@ def has_unpaid_fines_fees_balance(
     """
 
 
+def _create_case_when_clause(
+    score_mapping: dict[int, int],
+    num_incidents_column: str,
+    output_column_name: str,
+) -> str:
+    """Creates a CASE WHEN clause to map incident counts to a score column."""
+    # The last key in score_mapping is treated as an open-ended ">=" threshold
+    # (see classification_incident_score_query_template's docstring), not an
+    # exact match — this is what makes max_key special below.
+    max_key = max(score_mapping.keys())
+    case_when_cases = [
+        f"WHEN {num_incidents_column} = {k} THEN {v}"
+        for k, v in score_mapping.items()
+        if k != max_key
+    ]
+    case_when_cases.append(
+        f"WHEN {num_incidents_column} >= {max_key} THEN {score_mapping[max_key]}"
+    )
+    case_when_cases_clause = "\n".join(case_when_cases)
+    return f"CASE\n{case_when_cases_clause}\nELSE NULL END AS {output_column_name}"
+
+
+def _validate_score_definition_mode(
+    *,
+    score_definitions: dict | None,
+    initial_score_definitions: dict | None,
+    reclass_score_definitions: dict | None,
+) -> bool:
+    """Validates that exactly one of the two supported score-definition modes is
+    set: single-score mode via |score_definitions|, or dual initial/reclass mode
+    via |initial_score_definitions| and |reclass_score_definitions| (both must be
+    set together). Returns True if dual mode is in use, False otherwise.
+    """
+    is_dual_mode = (
+        initial_score_definitions is not None or reclass_score_definitions is not None
+    )
+    if is_dual_mode:
+        if initial_score_definitions is None or reclass_score_definitions is None:
+            raise ValueError(
+                "Dual-score mode requires both initial_score_definitions and "
+                "reclass_score_definitions to be set."
+            )
+        if score_definitions is not None:
+            raise ValueError(
+                "score_definitions must not be set when initial_score_definitions/"
+                "reclass_score_definitions are set (dual-score mode)."
+            )
+    elif score_definitions is None:
+        raise ValueError(
+            "Must set either score_definitions (single-score mode) or both "
+            "initial_score_definitions and reclass_score_definitions (dual-score mode)."
+        )
+    return is_dual_mode
+
+
+def _state_prison_spans_and_relevant_incidents_ctes(
+    *, state_code: StateCode, incident_filter_condition: str
+) -> str:
+    """Returns the `state_prison_spans` and `relevant_incidents` CTEs shared by
+    classification_incident_score_query_template and
+    classification_prior_session_incident_score_query_template."""
+    return f"""
+    state_prison_spans AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.sessions.custodial_authority_sessions_materialized`
+        WHERE
+            state_code = '{state_code.value}'
+            AND custodial_authority = 'STATE_PRISON'
+    )
+    ,
+    relevant_incidents AS (
+        SELECT
+            * EXCEPT (incident_date),
+            incident_date AS event_date,
+        FROM `{{project_id}}.{CLASSIFICATION_VIEWS_DATASET}.incarceration_incidents_classification_preprocessed_materialized`
+        WHERE state_code = '{state_code.value}'
+            AND {incident_filter_condition}
+    )
+    """
+
+
+def _incident_details_ctes(incident_ids_with_time_period_body: str) -> str:
+    """Returns the `incident_ids_with_time_period`, `incident_details_unnested`, and
+    `incident_details_aggregated` CTEs shared by
+    classification_incident_score_query_template and
+    classification_prior_session_incident_score_query_template, given the SQL body
+    for `incident_ids_with_time_period` (which the two callers build differently)."""
+    return f"""
+    incident_ids_with_time_period AS (
+        {incident_ids_with_time_period_body}
+    )
+    ,
+    incident_details_unnested AS (
+        SELECT
+            incident_periods.person_id,
+            incident_periods.state_code,
+            incident_periods.custodial_authority_session_id,
+            incident_periods.start_date,
+            incident_periods.end_date,
+            incident_periods.incident_time_period,
+            relevant_incidents.incarceration_incident_id,
+            relevant_incidents.event_date AS incident_date,
+            relevant_incidents.infraction_type_raw_text,
+            relevant_incidents.incident_class
+        FROM incident_ids_with_time_period incident_periods
+        INNER JOIN relevant_incidents
+            ON incident_periods.incarceration_incident_id = relevant_incidents.incarceration_incident_id
+    )
+    ,
+    incident_details_aggregated AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(
+                        incarceration_incident_id,
+                        incident_date,
+                        infraction_type_raw_text,
+                        incident_class,
+                        incident_time_period
+                    )
+                    ORDER BY incident_date
+                )
+            ) AS incidents_list,
+            MAX(incident_date) AS latest_incident_date
+        FROM incident_details_unnested
+        GROUP BY 1, 2, 3, 4, 5
+    )
+    """
+
+
+def _final_score_select_clause(score_columns_sql: str) -> str:
+    """Returns the final SELECT shared by classification_incident_score_query_template
+    and classification_prior_session_incident_score_query_template, given the SQL for
+    the score column(s) to interpolate."""
+    return f"""
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date AS end_date_exclusive,
+        {score_columns_sql}
+        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list,
+        incident_details_aggregated.latest_incident_date
+    FROM calculated_scores_separate incident_counts
+    LEFT JOIN incident_details_aggregated
+        USING (person_id, state_code, custodial_authority_session_id, start_date, end_date)
+    WHERE end_date > start_date
+    """
+
+
 def classification_incident_score_query_template(
     *,
     incident_filter_condition: str,
-    state_code: str,
+    state_code: StateCode,
     score_definitions: dict[tuple[int, int], dict[int, int]] | None = None,
     max_total_score: int | None = None,
     initial_score_definitions: dict[tuple[int, int], dict[int, int]] | None = None,
@@ -226,55 +387,22 @@ def classification_incident_score_query_template(
         max_reclass_score: If set, caps reclass_total_score using LEAST(). Only valid
             in dual-score mode.
     """
-    is_dual_mode = (
-        initial_score_definitions is not None or reclass_score_definitions is not None
+    is_dual_mode = _validate_score_definition_mode(
+        score_definitions=score_definitions,
+        initial_score_definitions=initial_score_definitions,
+        reclass_score_definitions=reclass_score_definitions,
     )
     if is_dual_mode:
-        if initial_score_definitions is None or reclass_score_definitions is None:
-            raise ValueError(
-                "Dual-score mode requires both initial_score_definitions and "
-                "reclass_score_definitions to be set."
-            )
-        if score_definitions is not None:
-            raise ValueError(
-                "score_definitions must not be set when initial_score_definitions/"
-                "reclass_score_definitions are set (dual-score mode)."
-            )
         if max_total_score is not None:
             raise ValueError(
                 "max_total_score is only valid in single-score mode (score_definitions "
                 "set). Use max_initial_score/max_reclass_score in dual-score mode."
             )
-    elif score_definitions is None:
-        raise ValueError(
-            "Must set either score_definitions (single-score mode) or both "
-            "initial_score_definitions and reclass_score_definitions (dual-score mode)."
-        )
     elif max_initial_score is not None or max_reclass_score is not None:
         raise ValueError(
             "max_initial_score and max_reclass_score are only valid in dual-score mode "
             "(initial_score_definitions/reclass_score_definitions must be set)."
         )
-
-    def create_case_when_clause(
-        score_mapping: dict[int, int],
-        num_incidents_column: str,
-        output_column_name: str,
-    ) -> str:
-        """Creates a CASE WHEN clause to map incident counts to a score column."""
-        # The last key in score_mapping is treated as an open-ended ">=" threshold
-        # (see docstring), not an exact match — this is what makes max_key special below.
-        max_key = max(score_mapping.keys())
-        case_when_cases = [
-            f"WHEN {num_incidents_column} = {k} THEN {v}"
-            for k, v in score_mapping.items()
-            if k != max_key
-        ]
-        case_when_cases.append(
-            f"WHEN {num_incidents_column} >= {max_key} THEN {score_mapping[max_key]}"
-        )
-        case_when_cases_clause = "\n".join(case_when_cases)
-        return f"CASE\n{case_when_cases_clause}\nELSE NULL END AS {output_column_name}"
 
     if is_dual_mode:
         initial_score_defs = assert_type(initial_score_definitions, dict)
@@ -287,14 +415,14 @@ def classification_incident_score_query_template(
             )
         )
         case_when_clauses = [
-            create_case_when_clause(
+            _create_case_when_clause(
                 score_mapping,
                 f"num_incidents_past_{start}_to_{end}_months",
                 f"score_reclass_past_{start}_to_{end}_months",
             )
             for (start, end), score_mapping in reclass_score_defs.items()
         ] + [
-            create_case_when_clause(
+            _create_case_when_clause(
                 score_mapping,
                 f"num_incidents_past_{start}_to_{end}_months",
                 f"score_initial_past_{start}_to_{end}_months",
@@ -305,7 +433,7 @@ def classification_incident_score_query_template(
         single_score_defs = assert_type(score_definitions, dict)
         windows = list(single_score_defs.keys())
         case_when_clauses = [
-            create_case_when_clause(
+            _create_case_when_clause(
                 score_mapping,
                 f"num_incidents_past_{start}_to_{end}_months",
                 f"score_past_{start}_to_{end}_months",
@@ -447,27 +575,10 @@ def classification_incident_score_query_template(
         score_select_sql = f"{aggregate_score_clause} AS total_score,"
 
     return f"""
-    WITH state_prison_spans AS (
-        SELECT
-            person_id,
-            state_code,
-            custodial_authority_session_id,
-            start_date,
-            end_date_exclusive,
-        FROM `{{project_id}}.sessions.custodial_authority_sessions_materialized`
-        WHERE
-            state_code = '{state_code}'
-            AND custodial_authority = 'STATE_PRISON'
-    )
-    ,
-    relevant_incidents AS (
-        SELECT
-            * EXCEPT (incident_date),
-            incident_date AS event_date,
-        FROM `{{project_id}}.{CLASSIFICATION_VIEWS_DATASET}.incarceration_incidents_classification_preprocessed_materialized`
-        WHERE state_code = '{state_code}'
-            AND {incident_filter_condition}
-    )
+    WITH
+    {_state_prison_spans_and_relevant_incidents_ctes(
+        state_code=state_code, incident_filter_condition=incident_filter_condition
+    )}
     ,
     {incident_count_ctes}
     ,
@@ -504,60 +615,179 @@ def classification_incident_score_query_template(
         WHERE incident_counts.start_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
     )
     ,
-    incident_ids_with_time_period AS (
-        {incident_ids_unnest_union}
+    {_incident_details_ctes(incident_ids_unnest_union)}
+    {_final_score_select_clause(score_select_sql)}
+    """
+
+
+def classification_prior_session_incident_score_query_template(
+    *,
+    incident_filter_condition: str,
+    state_code: StateCode,
+    lookback_months: int,
+    score_definitions: dict[int, int] | None = None,
+    initial_score_definitions: dict[int, int] | None = None,
+    reclass_score_definitions: dict[int, int] | None = None,
+) -> str:
+    """
+    Generates a SQL query for calculating classification-form scores based on
+    incarceration incidents that occurred during a PRIOR incarceration stay —
+    any earlier STATE_PRISON custodial_authority_session for the same person,
+    not the current one — within a trailing lookback_months window, reading
+    from incarceration_incidents_classification_preprocessed. Incidents from
+    the current session are excluded by construction: a prior session must
+    have already ended before the current session's start_date.
+
+    Supports both single-score output (one `total_score` column) via
+    `score_definitions`, and dual initial/reclassification score output via
+    `initial_score_definitions`/`reclass_score_definitions`. Exactly one of
+    `score_definitions` or the (`initial_score_definitions`,
+    `reclass_score_definitions`) pair must be set.
+
+    The resulting query produces spans with:
+    - Score column(s) representing the count of qualifying prior-session
+      incidents within the trailing lookback_months window
+    - An incidents_list JSON array containing details of each contributing incident
+
+    Args:
+        incident_filter_condition: A WHERE clause condition to filter which incidents
+            are included in the scoring. Should reference columns available in
+            incarceration_incidents_classification_preprocessed based on the state (e.g.,
+            "incident_category = 'violent'").
+        state_code: The state code to filter incidents and prison spans.
+        lookback_months: Number of months prior to a given point in time during
+            which a prior-session incident still counts toward the score.
+        score_definitions: Single-score mode. Maps incident counts to scores. The
+            last key is treated as an open-ended >= threshold.
+        initial_score_definitions: Dual-score mode. Maps incident counts to the
+            initial-assessment score.
+        reclass_score_definitions: Dual-score mode. Maps incident counts to the
+            reclassification-assessment score.
+    """
+    is_dual_mode = _validate_score_definition_mode(
+        score_definitions=score_definitions,
+        initial_score_definitions=initial_score_definitions,
+        reclass_score_definitions=reclass_score_definitions,
     )
-    ,
-    incident_details_unnested AS (
-        SELECT
-            incident_periods.person_id,
-            incident_periods.state_code,
-            incident_periods.custodial_authority_session_id,
-            incident_periods.start_date,
-            incident_periods.end_date,
-            incident_periods.incident_time_period,
-            relevant_incidents.incarceration_incident_id,
-            relevant_incidents.event_date AS incident_date,
-            relevant_incidents.infraction_type_raw_text,
-            relevant_incidents.incident_class
-        FROM incident_ids_with_time_period incident_periods
-        INNER JOIN relevant_incidents
-            ON incident_periods.incarceration_incident_id = relevant_incidents.incarceration_incident_id
-    )
-    ,
-    incident_details_aggregated AS (
+
+    if is_dual_mode:
+        initial_score_defs = assert_type(initial_score_definitions, dict)
+        reclass_score_defs = assert_type(reclass_score_definitions, dict)
+        score_case_when_clauses = ",\n        ".join(
+            [
+                _create_case_when_clause(
+                    initial_score_defs,
+                    "num_incidents_past_prior_sessions",
+                    "initial_total_score",
+                ),
+                _create_case_when_clause(
+                    reclass_score_defs,
+                    "num_incidents_past_prior_sessions",
+                    "reclass_total_score",
+                ),
+            ]
+        )
+        score_column_names = "initial_total_score,\n        reclass_total_score,"
+    else:
+        single_score_defs = assert_type(score_definitions, dict)
+        score_case_when_clauses = _create_case_when_clause(
+            single_score_defs, "num_incidents_past_prior_sessions", "total_score"
+        )
+        score_column_names = "total_score,"
+
+    incident_ids_with_time_period_body = f"""
         SELECT
             person_id,
             state_code,
             custodial_authority_session_id,
             start_date,
             end_date,
-            TO_JSON(
-                ARRAY_AGG(
-                    STRUCT(
-                        incarceration_incident_id,
-                        incident_date,
-                        infraction_type_raw_text,
-                        incident_class,
-                        incident_time_period
-                    )
-                    ORDER BY incident_date
-                )
-            ) AS incidents_list,
-            MAX(incident_date) AS latest_incident_date
-        FROM incident_details_unnested
+            incarceration_incident_id,
+            '0-{lookback_months} months' AS incident_time_period
+        FROM calculated_scores_separate,
+        UNNEST(incident_ids_past_prior_sessions) AS incarceration_incident_id
+    """
+
+    return f"""
+    WITH
+    {_state_prison_spans_and_relevant_incidents_ctes(
+        state_code=state_code, incident_filter_condition=incident_filter_condition
+    )}
+    ,
+    prior_session_incidents AS (
+        SELECT
+            current_session.person_id,
+            current_session.state_code,
+            current_session.custodial_authority_session_id,
+            incident.incarceration_incident_id,
+            incident.event_date,
+        FROM state_prison_spans current_session
+        INNER JOIN state_prison_spans prior_session
+            ON current_session.person_id = prior_session.person_id
+            AND current_session.state_code = prior_session.state_code
+            AND prior_session.end_date_exclusive <= current_session.start_date
+        INNER JOIN relevant_incidents incident
+            ON incident.person_id = current_session.person_id
+            AND incident.state_code = current_session.state_code
+            AND incident.custodial_authority_session_id = prior_session.custodial_authority_session_id
+    )
+    ,
+    incidents_past_prior_sessions AS (
+        WITH {num_events_within_time_interval_spans(
+            events_cte="prior_session_incidents",
+            date_interval=lookback_months,
+            date_interval_start=0,
+            date_part="MONTH",
+            index_columns=["person_id", "state_code", "custodial_authority_session_id"],
+            event_list_field="incarceration_incident_id",
+            truncate_to_month=True,
+        )}
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            event_count AS num_incidents_past_prior_sessions,
+            event_list AS incident_ids_past_prior_sessions,
+        FROM event_count_spans
+    )
+    ,
+    {create_sub_sessions_with_attributes('incidents_past_prior_sessions', index_columns=['person_id', 'state_code', 'custodial_authority_session_id'])}
+    ,
+    sub_sessions_deduped AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            MAX(num_incidents_past_prior_sessions) AS num_incidents_past_prior_sessions,
+            ARRAY_CONCAT_AGG(incident_ids_past_prior_sessions) AS incident_ids_past_prior_sessions,
+        FROM sub_sessions_with_attributes
         GROUP BY 1, 2, 3, 4, 5
     )
-    SELECT
-        person_id,
-        state_code,
-        start_date,
-        end_date AS end_date_exclusive,
-        {score_select_sql}
-        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list,
-        incident_details_aggregated.latest_incident_date
-    FROM calculated_scores_separate incident_counts
-    LEFT JOIN incident_details_aggregated
-        USING (person_id, state_code, custodial_authority_session_id, start_date, end_date)
-    WHERE end_date > start_date
+    ,
+    calculated_scores_separate AS (
+        SELECT
+            incident_counts.person_id,
+            incident_counts.state_code,
+            incident_counts.custodial_authority_session_id,
+            -- Unlike classification_incident_score_query_template, the incident-derived
+            -- window here can start well before the current session itself (it's
+            -- anchored to a PRIOR session's incident date), so start_date must be
+            -- clipped up to the current session's own start, not just end-clipped.
+            GREATEST(incident_counts.start_date, state_prison_spans.start_date) AS start_date,
+            LEAST(incident_counts.end_date, {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}) AS end_date,
+            {score_case_when_clauses},
+            incident_ids_past_prior_sessions,
+        FROM sub_sessions_deduped incident_counts
+        LEFT JOIN state_prison_spans
+        USING (person_id, state_code, custodial_authority_session_id)
+        WHERE incident_counts.start_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
+            AND incident_counts.end_date > state_prison_spans.start_date
+    )
+    ,
+    {_incident_details_ctes(incident_ids_with_time_period_body)}
+    {_final_score_select_clause(score_column_names)}
     """
