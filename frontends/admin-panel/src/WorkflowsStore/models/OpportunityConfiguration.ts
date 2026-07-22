@@ -63,6 +63,7 @@ const enabledColumnsSchema = z
       columnId: z.string(),
       columnHeader: nullishAsUndefined(z.string()),
       cellValue: nullishAsUndefined(z.string()),
+      sortingFn: nullishAsUndefined(z.string()),
     })
   )
   .default([]);

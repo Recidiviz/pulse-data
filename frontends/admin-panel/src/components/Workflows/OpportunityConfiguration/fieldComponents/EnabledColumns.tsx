@@ -15,16 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Form, Input } from "antd";
+import { Alert, Form, Input, Select } from "antd";
 import TextArea from "antd/lib/input/TextArea";
 
 import { MultiEntryChild } from "../../formUtils/MultiEntry";
 import { handlebarsValidator } from "./CriteriaCopy";
 
+// Mirrors the sorting function names supported by @tanstack/react-table, which the frontend uses to render columns.
+const SORTING_FN_OPTIONS = [
+  "alphanumeric",
+  "alphanumericCaseSensitive",
+  "text",
+  "textCaseSensitive",
+  "datetime",
+  "basic",
+] as const;
+
 export const EnabledColumnsView: MultiEntryChild = ({ name }) => (
   <Form.Item noStyle shouldUpdate>
     {({ getFieldValue }) => {
-      const { columnId, columnHeader, cellValue } =
+      const { columnId, columnHeader, cellValue, sortingFn } =
         getFieldValue(["enabledColumns", name]) ?? {};
       return (
         <div className="ant-form-text">
@@ -39,6 +49,15 @@ export const EnabledColumnsView: MultiEntryChild = ({ name }) => (
           <div>
             <b>Cell Value: </b>
             {cellValue || <i>Default</i>}
+          </div>
+          <div>
+            <b>Sorting Function: </b>
+            {sortingFn || (
+              <i>
+                Default (FE will use FE-defined column sortingFn or assume
+                alphanumeric)
+              </i>
+            )}
           </div>
         </div>
       );
@@ -74,6 +93,33 @@ export const EnabledColumnsEdit: MultiEntryChild = ({ name }) => (
         rules={[{ validator: handlebarsValidator }]}
       >
         <TextArea placeholder="Cell value (accepts handlebars templates)" />
+      </Form.Item>
+    </div>
+    <div
+      style={{
+        marginTop: "0.25em",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.25em",
+      }}
+    >
+      <Form.Item noStyle name={[name, "sortingFn"]}>
+        <Select
+          allowClear
+          options={SORTING_FN_OPTIONS.map((value) => ({ label: value, value }))}
+        />
+      </Form.Item>
+      <Form.Item noStyle shouldUpdate>
+        {({ getFieldValue }) =>
+          getFieldValue(["enabledColumns", name, "sortingFn"]) ===
+            "datetime" && (
+            <Alert
+              type="info"
+              showIcon
+              message="For 'datetime' sorting to apply, you must set 'Cell value' and confirm the opportunity's FE schema output for this field is a Date."
+            />
+          )
+        }
       </Form.Item>
     </div>
   </div>

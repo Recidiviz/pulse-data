@@ -215,8 +215,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
                     "columnId": "PERSON_NAME",
                     "columnHeader": "Name",
                     "cellValue": "{{record.personName}}",
+                    "sortingFn": "basic",
                 },
-                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+                {
+                    "columnId": "STATUS",
+                    "columnHeader": None,
+                    "cellValue": None,
+                    "sortingFn": None,
+                },
             ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
@@ -247,8 +253,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
                     "columnId": "PERSON_NAME",
                     "columnHeader": "Name",
                     "cellValue": "{{record.personName}}",
+                    "sortingFn": "basic",
                 },
-                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+                {
+                    "columnId": "STATUS",
+                    "columnHeader": None,
+                    "cellValue": None,
+                    "sortingFn": None,
+                },
             ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
@@ -281,8 +293,14 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
                     "columnId": "PERSON_NAME",
                     "columnHeader": "Name",
                     "cellValue": "{{record.personName}}",
+                    "sortingFn": "basic",
                 },
-                {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+                {
+                    "columnId": "STATUS",
+                    "columnHeader": None,
+                    "cellValue": None,
+                    "sortingFn": None,
+                },
             ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,
@@ -378,6 +396,78 @@ class WorkflowsConfigSchemaTest(SchemaTestCase):
             "enabledColumns": [
                 {"columnId": "STATUS", "columnHeader": "Status", "cellValue": None},
                 {"columnId": "STATUS", "columnHeader": "State", "cellValue": None},
+            ],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
+        }
+    )
+
+    test_sorting_fn_null = valid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [{"columnId": "STATUS", "sortingFn": None}],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
+        }
+    )
+
+    test_sorting_fn_empty_string = valid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [{"columnId": "STATUS", "sortingFn": ""}],
+            "supportsSupervisorReviewOnGrants": False,
+            "supportsSupervisorReviewOnSnooze": False,
+            "reasonsRequiringApproval": [],
+        }
+    )
+
+    # Otherwise-valid config whose only problem is an unrecognized sortingFn value.
+    test_invalid_sorting_fn = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "denialReasons": [
+                {"key": "CODE", "text": "reason"},
+                {"key": "CODE2", "text": "other reason"},
+            ],
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": [{"key": "criterion", "text": "ok very good"}],
+            "ineligibleCriteriaCopy": [],
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+            "enabledColumns": [
+                {"columnId": "STATUS", "sortingFn": "not_a_real_sorting_fn"},
             ],
             "supportsSupervisorReviewOnGrants": False,
             "supportsSupervisorReviewOnSnooze": False,

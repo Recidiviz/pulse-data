@@ -54,11 +54,17 @@ snapshots[
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
         "enabledColumns": [
             {
-                "columnId": "PERSON_NAME",
-                "columnHeader": "Name",
                 "cellValue": "{{record.personName}}",
+                "columnHeader": "Name",
+                "columnId": "PERSON_NAME",
+                "sortingFn": "basic",
             },
-            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            {
+                "cellValue": None,
+                "columnHeader": None,
+                "columnId": "STATUS",
+                "sortingFn": None,
+            },
         ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",
@@ -144,11 +150,17 @@ snapshots[
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
         "enabledColumns": [
             {
-                "columnId": "PERSON_NAME",
-                "columnHeader": "Name",
                 "cellValue": "{{record.personName}}",
+                "columnHeader": "Name",
+                "columnId": "PERSON_NAME",
+                "sortingFn": "basic",
             },
-            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            {
+                "cellValue": None,
+                "columnHeader": None,
+                "columnId": "STATUS",
+                "sortingFn": None,
+            },
         ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",
@@ -234,11 +246,17 @@ snapshots[
         "emptyTabCopy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
         "enabledColumns": [
             {
-                "columnId": "PERSON_NAME",
-                "columnHeader": "Name",
                 "cellValue": "{{record.personName}}",
+                "columnHeader": "Name",
+                "columnId": "PERSON_NAME",
+                "sortingFn": "basic",
             },
-            {"columnId": "STATUS", "columnHeader": None, "cellValue": None},
+            {
+                "cellValue": None,
+                "columnHeader": None,
+                "columnId": "STATUS",
+                "sortingFn": None,
+            },
         ],
         "featureVariant": "feature_variant",
         "grantApprovedStatusMessage": "Approved by Supervisor",

@@ -125,9 +125,23 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         tooltip = fields.Str(required=False)
 
     class EnabledColumnSchema(CamelCaseSchema):
+        """Schema for a single column in enabledColumns used for table configuration."""
+
+        # Mirrors the sorting function names supported by @tanstack/react-table, which
+        # the frontend uses to render columns.
+        SORTING_FN_OPTIONS = (
+            "alphanumeric",
+            "alphanumericCaseSensitive",
+            "text",
+            "textCaseSensitive",
+            "datetime",
+            "basic",
+        )
+
         column_id = fields.Str(required=True)
         column_header = fields.Str(required=False, allow_none=True, load_default=None)
         cell_value = fields.Str(required=False, allow_none=True, load_default=None)
+        sorting_fn = fields.Str(required=False, allow_none=True, load_default=None)
 
         @post_load
         # pylint: disable=unused-argument
@@ -149,10 +163,18 @@ class WorkflowsConfigSchema(CamelCaseSchema):
             self, data: Dict[str, Any], **kwargs: Dict[str, Any]
         ) -> Dict[str, Any]:
             """Coerce empty-string optional values to None."""
-            for field_name in ("column_header", "cell_value"):
+            for field_name in ("column_header", "cell_value", "sorting_fn"):
                 if data.get(field_name) == "":
                     data[field_name] = None
             return data
+
+        @validates_schema
+        def validate_sorting_fn(self, data: Dict, **_kwargs: Any) -> None:
+            sorting_fn = data.get("sorting_fn")
+            if sorting_fn and sorting_fn not in self.SORTING_FN_OPTIONS:
+                raise ValidationError(
+                    f"'sortingFn' must be one of {self.SORTING_FN_OPTIONS}, got '{sorting_fn}'"
+                )
 
     class DenialReasonsSchema(CamelCaseSchema):
         key = fields.Str()
