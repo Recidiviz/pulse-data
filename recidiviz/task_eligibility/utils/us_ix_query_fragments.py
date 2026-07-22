@@ -25,6 +25,7 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
+    nonnull_start_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -52,6 +53,12 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
+
+# Days before a supervision session start within which an assessment still counts
+# toward that session. Shared by each initial-assessment trigger and its annual
+# reassessment criteria so both recognize the same pre-session assessments.
+US_IX_LSIR_ASSESSMENT_LOOKBACK_DAYS = 90
+US_IX_STABLE_ASSESSMENT_LOOKBACK_DAYS = 60
 
 # Community Reentry Centers (CRCs) - work release facilities where residents
 # can transition back into the community
@@ -1039,6 +1046,7 @@ def us_ix_annual_assessment_criteria_view_builder(
     description: str,
     assessment_type: str,
     assessment_class: str,
+    assessment_lookback_days: int,
     include_supervision_contact_reasons: Optional[List[str]] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
@@ -1053,6 +1061,9 @@ def us_ix_annual_assessment_criteria_view_builder(
         description: The description/docstring for the criteria
         assessment_type: The assessment type to filter (e.g., 'LSIR', 'STABLE')
         assessment_class: The assessment class to filter (e.g., 'RISK', 'SEX_OFFENSE')
+        assessment_lookback_days: Days before a session start within which an assessment
+            still anchors that session's reassessment clock. Mirrors the initial
+            trigger's `contact_date_lookback_days`.
         include_supervision_contact_reasons: Optional list of supervision contact reasons to also
             consider as valid assessments (e.g., ['LSI_R_REVIEW', 'INITIAL,LSI_R_REVIEW']).
             When provided, supervision contacts with these contact_reasons and status='COMPLETED'
@@ -1065,10 +1076,10 @@ def us_ix_annual_assessment_criteria_view_builder(
             include_supervision_contact_reasons, quoted=True, single_quote=True
         )
         supervision_contact_union = f"""
-    UNION ALL
+    UNION DISTINCT
 
     -- Include supervision contacts with the specified contact_reasons as valid assessments
-    SELECT DISTINCT
+    SELECT
         state_code,
         person_id,
         contact_date AS assessment_date,
@@ -1084,11 +1095,19 @@ WITH supervision_sessions AS (
         person_id,
         start_date,
         end_date_exclusive AS end_date,
+        -- Previous session's end, so the lookback below can't reach into a prior
+        -- session and attach one assessment to two sessions.
+        LAG(end_date_exclusive) OVER (
+            PARTITION BY state_code, person_id ORDER BY start_date
+        ) AS prev_session_end_date,
     FROM `{{project_id}}.sessions.supervision_super_sessions_materialized` css
     WHERE css.state_code = 'US_IX'
 ),
 
 assessments AS (
+    -- DISTINCT (and UNION DISTINCT, when contacts are included) dedupes dates
+    -- across sources so a same-day assessment and LSI-R-review contact don't
+    -- break the LEAD-based sequencing below.
     SELECT DISTINCT
         state_code,
         person_id,
@@ -1101,34 +1120,51 @@ assessments AS (
 ),
 
 critical_date_spans AS (
-    SELECT
-        ss.state_code,
-        ss.person_id,
-        IFNULL(a.assessment_date, ss.start_date) AS start_datetime,
-        -- The end_datetime is either the next assessment date (if it exists) or the end of the
-        -- supervision session.
-        IF(
-            a.assessment_date IS NOT NULL,
-            -- next_assessment date OR end_date, whichever is earlier
-            LEAST(
-                IFNULL(
-                    LEAD(a.assessment_date) OVER (
-                        PARTITION BY ss.state_code, ss.person_id
-                        ORDER BY a.assessment_date
+    SELECT *
+    FROM (
+        SELECT
+            ss.state_code,
+            ss.person_id,
+            -- Clamp to session start so a pre-session assessment doesn't start the span
+            -- before supervision begins (critical date still uses the true assessment date).
+            GREATEST(
+                IFNULL(a.assessment_date, ss.start_date),
+                ss.start_date
+            ) AS start_datetime,
+            -- The end_datetime is either the next assessment date (if it exists) or the end of the
+            -- supervision session.
+            IF(
+                a.assessment_date IS NOT NULL,
+                -- next_assessment date OR end_date, whichever is earlier
+                LEAST(
+                    IFNULL(
+                        LEAD(a.assessment_date) OVER (
+                            PARTITION BY ss.state_code, ss.person_id
+                            ORDER BY a.assessment_date
+                        ),
+                        '9999-12-31'
                     ),
-                    '9999-12-31'
+                    {nonnull_end_date_clause('ss.end_date')}
                 ),
-                {nonnull_end_date_clause('ss.end_date')}
-            ),
-            ss.end_date
-        ) AS end_datetime,
-        DATE_ADD(a.assessment_date, INTERVAL 365 DAY) AS critical_date,
-        a.assessment_date AS last_assessment_date,
-    FROM supervision_sessions ss
-    LEFT JOIN assessments a
-        ON ss.person_id = a.person_id
-            AND ss.state_code = a.state_code
-            AND a.assessment_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date')}
+                ss.end_date
+            ) AS end_datetime,
+            DATE_ADD(a.assessment_date, INTERVAL 365 DAY) AS critical_date,
+            a.assessment_date AS last_assessment_date,
+        FROM supervision_sessions ss
+        LEFT JOIN assessments a
+            ON ss.person_id = a.person_id
+                AND ss.state_code = a.state_code
+                -- Reach back up to {assessment_lookback_days} days before session start,
+                -- but not past the previous session's end.
+                AND a.assessment_date BETWEEN GREATEST(
+                        DATE_SUB(ss.start_date, INTERVAL {assessment_lookback_days} DAY),
+                        {nonnull_start_date_clause('ss.prev_session_end_date')}
+                    )
+                    AND {nonnull_end_date_exclusive_clause('ss.end_date')}
+    )
+    -- Drop spans collapsed to zero/negative length by the start clamp (a pre-session
+    -- assessment superseded by an in-session one); its period is already covered.
+    WHERE start_datetime < {nonnull_end_date_exclusive_clause('end_datetime')}
 ),
 
 {critical_date_has_passed_spans_cte(
