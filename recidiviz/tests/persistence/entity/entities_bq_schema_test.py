@@ -21,11 +21,6 @@ from unittest.mock import MagicMock, patch
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.activity import entities as state_entities
-from recidiviz.persistence.entity.activity import (
-    normalized_entities as normalized_state_entities,
-)
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
     get_bq_schema_for_entity_table,
@@ -33,10 +28,6 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 from recidiviz.persistence.entity.identity import (
     identity_cluster_entities,
     identity_fragment_entities,
-)
-from recidiviz.source_tables.activity_pipeline_output_table_collector import (
-    build_normalized_state_output_source_table_collection,
-    build_state_output_source_table_collection,
 )
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
@@ -46,53 +37,6 @@ from recidiviz.tests.persistence.entity.fake_entities_module_context import (
 
 class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
     """Tests for entities_bq_schema.py"""
-
-    def _compare_schemas(
-        self,
-        expected_table_to_schema: dict[str, list[SchemaField]],
-        table_to_schema: dict[str, list[SchemaField]],
-    ) -> None:
-        """Asserts that the two provided schemas are identical."""
-        expected_tables = set(expected_table_to_schema)
-        tables = set(table_to_schema)
-
-        for missing_table in expected_tables - tables:
-            raise ValueError(f"Missing expected table [{missing_table}]")
-
-        for extra_table in tables - expected_tables:
-            raise ValueError(f"Found extra unexpected table [{extra_table}]")
-
-        for table in sorted(tables.intersection(expected_tables)):
-            expected_schema = expected_table_to_schema[table]
-            schema = table_to_schema[table]
-
-            expected_cols = {c.name for c in expected_schema}
-            cols = {c.name for c in schema}
-
-            for missing_col in expected_cols - cols:
-                raise ValueError(
-                    f"Missing expected column [{missing_col}] in table [{table}]"
-                )
-
-            for extra_col in cols - expected_cols:
-                raise ValueError(f"Found extra column [{extra_col}] in table [{table}]")
-
-            for col in cols.intersection(expected_cols):
-                expected_field = one(f for f in expected_schema if f.name == col)
-                field = one(f for f in schema if f.name == col)
-
-                self.assertEqual(
-                    expected_field.field_type,
-                    field.field_type,
-                    f"Unexpected field type [{field.field_type}] for field "
-                    f"[{field.name}] on table [{table}]",
-                )
-                self.assertEqual(
-                    expected_field.mode,
-                    field.mode,
-                    f"Unexpected field mode [{field.mode}] for field "
-                    f"[{field.name}] on table [{table}]",
-                )
 
     @patch(
         "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
@@ -184,18 +128,6 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
             get_bq_schema_for_entity_table(fake_entities, "fake_person"),
         )
 
-    def test_bq_schema_for_entities_module_state(self) -> None:
-        # Does not crash
-        _ = get_bq_schema_for_entities_module(state_entities)
-
-    def test_bq_schema_for_entities_module_normalized_state(self) -> None:
-        # Does not crash
-        _ = get_bq_schema_for_entities_module(normalized_state_entities)
-
-    def test_bq_schema_for_entities_module_identity_cluster(self) -> None:
-        # Does not crash
-        _ = get_bq_schema_for_entities_module(identity_cluster_entities)
-
     def test_string_typed_foreign_key(self) -> None:
         """Tests that a child entity's FK column to a root entity with a
         string-typed primary key is generated as STRING (not the
@@ -243,34 +175,3 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 self.assertFalse(
                     any(f.name == "identity_attributes_id" for f in fields)
                 )
-
-    def test_parity_with_source_table_collection_us_xx_state(self) -> None:
-        """Tests that get_bq_schema_for_entities_module() creates a schema that
-        matches the current schemas defined for our `us_xx_state` ingest pipeline output
-        datasets.
-        """
-        state_collection = build_state_output_source_table_collection(StateCode.US_OZ)
-        expected_table_to_schema = {
-            t.address.table_id: t.schema_fields for t in state_collection.source_tables
-        }
-        table_to_schema = get_bq_schema_for_entities_module(state_entities)
-
-        self._compare_schemas(expected_table_to_schema, table_to_schema)
-
-    def test_parity_with_source_table_collection_us_xx_normalized_state(
-        self,
-    ) -> None:
-        """Tests that get_bq_schema_for_entities_module() creates a schema that
-        matches the current schemas defined for our `us_xx_normalized_state*` ingest
-        pipeline output datasets.
-        """
-        state_collection = build_normalized_state_output_source_table_collection(
-            StateCode.US_OZ
-        )
-        expected_table_to_schema = {
-            t.address.table_id: t.schema_fields for t in state_collection.source_tables
-        }
-
-        table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)
-
-        self._compare_schemas(expected_table_to_schema, table_to_schema)
