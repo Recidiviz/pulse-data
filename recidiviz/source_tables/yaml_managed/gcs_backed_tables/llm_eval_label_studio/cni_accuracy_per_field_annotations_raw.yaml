@@ -3,10 +3,9 @@ address:
   table_id: cni_accuracy_per_field_annotations_raw
 description:
   Raw Label Studio annotation exports for the cni_accuracy_per_field task.
-  GCS-backed external table reading directly from the label-studio export
-  bucket. Auto-generated from
-  recidiviz/llm_eval/label_studio/config/cni_accuracy_per_field.yaml — do not
-  edit manually.
+  GCS-backed external table reading directly from the label-studio export bucket.
+  Auto-generated from recidiviz/llm_eval/label_studio/config/cni_accuracy_per_field.yaml
+  — do not edit manually.
 schema:
   - name: id
     type: INTEGER

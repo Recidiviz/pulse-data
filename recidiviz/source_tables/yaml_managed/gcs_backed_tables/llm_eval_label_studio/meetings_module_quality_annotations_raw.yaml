@@ -3,10 +3,9 @@ address:
   table_id: meetings_module_quality_annotations_raw
 description:
   Raw Label Studio annotation exports for the meetings_module_quality task.
-  GCS-backed external table reading directly from the label-studio export
-  bucket. Auto-generated from
-  recidiviz/llm_eval/label_studio/config/meetings_module_quality.yaml — do not
-  edit manually.
+  GCS-backed external table reading directly from the label-studio export bucket.
+  Auto-generated from recidiviz/llm_eval/label_studio/config/meetings_module_quality.yaml
+  — do not edit manually.
 schema:
   - name: id
     type: INTEGER
@@ -56,7 +55,7 @@ schema:
             mode: NULLABLE
             description: State this annotation belongs to.
           - name: meta
-            type: STRING
+            type: JSON
             mode: NULLABLE
             description: Raw metadata JSON object attached to the task.
           - name: meeting_id

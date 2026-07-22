@@ -138,6 +138,18 @@ _RESULT_FIELD: dict = {
 }
 
 
+def _raw_table_bq_type(field: LabelStudioTaskDataField) -> str:
+    """Returns the BQ type name to use in the raw external table schema for |field|.
+
+    Fields with extract_as_json=True contain JSON objects in the GCS export files,
+    so the raw table must declare them as JSON regardless of the parsed view output
+    type (which converts them to STRING via TO_JSON_STRING).
+    """
+    if field.extract_as_json:
+        return "JSON"
+    return _bq_type_name(field.bq_type.value)
+
+
 def _data_fields_for_config(
     task_data_fields: list[LabelStudioTaskDataField],
 ) -> list[dict]:
@@ -145,7 +157,7 @@ def _data_fields_for_config(
     return [
         {
             "name": field.column_name,
-            "type": _bq_type_name(field.bq_type.value),
+            "type": _raw_table_bq_type(field),
             "mode": "NULLABLE",
             "description": field.description,
         }
