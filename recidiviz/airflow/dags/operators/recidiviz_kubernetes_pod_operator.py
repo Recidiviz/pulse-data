@@ -441,7 +441,7 @@ def get_kubernetes_pod_kwargs(
     execution_timeout: Optional[datetime.timedelta] = None,
 ) -> Dict[str, Any]:
     container_name = container_name or task_id
-    return {
+    kwargs: Dict[str, Any] = {
         "task_id": task_id,
         "name": task_id,
         "cmds": ["uv"],
@@ -453,5 +453,11 @@ def get_kubernetes_pod_kwargs(
         "retries": retries,
         "cloud_sql_connections": cloud_sql_connections,
         "max_active_tis_per_dag": max_active_tis_per_dag,
-        "execution_timeout": execution_timeout,
     }
+    # Only include execution_timeout when set: these kwargs are passed to
+    # MappedOperator.partial(), which serializes partial_kwargs verbatim, and an
+    # explicit null execution_timeout crashes Airflow's DAG deserialization
+    # (_deserialize_timedelta(None)) for every DAG containing the operator.
+    if execution_timeout is not None:
+        kwargs["execution_timeout"] = execution_timeout
+    return kwargs

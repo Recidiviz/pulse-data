@@ -15,20 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for RecidivizKubernetesPodOperator label helpers."""
+import datetime
 import os
 import unittest
 from typing import Any
 from unittest.mock import patch
 
 import yaml
+from airflow.models.dag import DAG
+from airflow.models.mappedoperator import MappedOperator
+from airflow.serialization.serialized_objects import SerializedDAG
 from kubernetes.client import models as k8s
 
 import recidiviz
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     RECIDIVIZ_LABEL_PREFIX,
     RecidivizKubernetesPodOperator,
+    build_kubernetes_pod_task,
+    build_mapped_kubernetes_pod_task,
+    get_kubernetes_pod_kwargs,
     labels_from_arguments,
 )
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from recidiviz.utils.types import assert_type
 
 
 class TestLabelsFromArguments(unittest.TestCase):
@@ -209,3 +218,59 @@ class TestBuildPodRequestObjLabels(unittest.TestCase):
         self.assertEqual("raw_data_import_dag", labels["dag_id"])
         self.assertEqual("3", labels["map_index"])
         self.assertIn("recidiviz.org/entrypoint", labels)
+
+
+class TestPodTaskExecutionTimeoutSerialization(AirflowIntegrationTest):
+    """Regression tests: get_kubernetes_pod_kwargs must OMIT execution_timeout
+    when unset, never pass an explicit None.
+
+    An explicit None is serialized as null whenever the environment sets
+    core.default_task_execution_timeout (Composer sets 86400), because None then
+    differs from the operator's import-time default. Airflow's
+    _deserialize_timedelta(None) raises TypeError on that null, which makes
+    every DAG containing a pod task fail to load from its serialized form and
+    breaks `airflow dags trigger` (staging outage of 2026-07-22).
+
+    That crash can't be simulated in-process (the config default binds at
+    airflow import time, and unit-test config leaves it unset, so None equals
+    the default and is dropped) — the deterministic guard is asserting the
+    kwarg is omitted at the source.
+    """
+
+    def test_execution_timeout_omitted_from_kwargs_when_unset(self) -> None:
+        self.assertNotIn("execution_timeout", get_kubernetes_pod_kwargs(task_id="t"))
+
+    def test_execution_timeout_present_in_kwargs_when_set(self) -> None:
+        kwargs = get_kubernetes_pod_kwargs(
+            task_id="t", execution_timeout=datetime.timedelta(minutes=30)
+        )
+        self.assertEqual(datetime.timedelta(minutes=30), kwargs["execution_timeout"])
+
+    def _round_trip_dag(self, **task_kwargs: Any) -> DAG:
+        with DAG(
+            dag_id="serialization_test_dag",
+            start_date=datetime.datetime(2026, 1, 1),
+            schedule=None,
+        ) as dag:
+            build_mapped_kubernetes_pod_task(
+                task_id="mapped_task",
+                expand_arguments=[["run", "--entrypoint=Foo"]],
+                **task_kwargs,
+            )
+            build_kubernetes_pod_task(
+                task_id="plain_task",
+                arguments=["run", "--entrypoint=Foo"],
+            )
+        return SerializedDAG.from_dict(SerializedDAG.to_dict(dag))
+
+    def test_round_trip_without_execution_timeout(self) -> None:
+        dag = self._round_trip_dag()
+        mapped_task = assert_type(dag.get_task("mapped_task"), MappedOperator)
+        self.assertNotIn("execution_timeout", mapped_task.partial_kwargs)
+
+    def test_round_trip_with_execution_timeout(self) -> None:
+        dag = self._round_trip_dag(execution_timeout=datetime.timedelta(minutes=30))
+        task = assert_type(dag.get_task("mapped_task"), MappedOperator)
+        self.assertEqual(
+            datetime.timedelta(minutes=30), task.partial_kwargs["execution_timeout"]
+        )
