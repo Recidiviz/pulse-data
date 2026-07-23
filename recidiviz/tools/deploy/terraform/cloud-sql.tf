@@ -129,11 +129,12 @@ module "persistence_database_cmek" {
 module "public_pathways_database_cmek" {
   source = "./modules/cloud-sql-instance"
 
-  project_id     = var.project_id
-  instance_key   = "public_pathways"
-  region         = var.us_central_region
-  zone           = var.zone
-  secondary_zone = "us-central1-c"
+  project_id                  = var.project_id
+  instance_key                = "public_pathways"
+  deletion_protection_enabled = true
+  region                      = var.us_central_region
+  zone                        = var.zone
+  secondary_zone              = "us-central1-c"
 
 
   tier = coalesce(
