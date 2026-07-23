@@ -112,7 +112,7 @@ def build_global_provisioned_user_sessions_lookml_view() -> LookMLView:
 
     # Product type flag dimensions
     product_type_dimensions = []
-    for product_type in ProductType:
+    for product_type in ProductType.staff_facing_product_types():
         for prefix in ["is_provisioned_", "is_primary_user_", "is_registered_"]:
             product_type_dimensions.append(
                 DimensionLookMLViewField(

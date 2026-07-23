@@ -17,7 +17,7 @@
 """Tests for product_type.py"""
 import unittest
 
-from recidiviz.segment.product_type import ProductType
+from recidiviz.segment.product_type import REENTRY_ASSESSMENT_PATH, ProductType
 
 
 class ProductTypeTest(unittest.TestCase):
@@ -80,3 +80,61 @@ class ProductTypeTest(unittest.TestCase):
                     f"JSON_EXTRACT_SCALAR(default_feature_variants, '$.{fv}') = 'true'",
                     fragment,
                 )
+
+    def test_url_bases_defined_for_every_product_type(self) -> None:
+        """Every product type must resolve to at least one base URL."""
+        for product_type in ProductType:
+            self.assertTrue(product_type.url_bases)
+
+    def test_context_page_filter_matches_all_jii_hosts(self) -> None:
+        """The JII product filter must match every JII host, not just the web app."""
+        fragment = (
+            ProductType.JII_OPPORTUNITIES_APP.context_page_filter_query_fragment()
+        )
+        for url_base in ProductType.JII_OPPORTUNITIES_APP.url_bases:
+            self.assertIn(f"{url_base}/%", fragment)
+
+    def test_url_base_filter_matches_all_hosts(self) -> None:
+        """url_base_filter matches every host a product is served from."""
+        jii_host_filter = ProductType.JII_OPPORTUNITIES_APP.url_base_filter()
+        for url_base in ProductType.JII_OPPORTUNITIES_APP.url_bases:
+            self.assertIn(f"{url_base}/%", jii_host_filter)
+
+    def test_url_base_filter_omits_path_filter_that_product_filter_applies(
+        self,
+    ) -> None:
+        """url_base_filter applies no path narrowing: for a product whose attribution
+        needs a path filter, the host filter omits it while
+        context_page_filter_query_fragment includes it."""
+        self.assertNotIn("/workflows", ProductType.WORKFLOWS.url_base_filter())
+        self.assertIn(
+            "/workflows",
+            ProductType.WORKFLOWS.context_page_filter_query_fragment(),
+        )
+
+    def test_url_base_filter_uses_provided_column_name(self) -> None:
+        """The column name argument is threaded into the generated predicate."""
+        self.assertIn(
+            "context_page_path",
+            ProductType.WORKFLOWS.url_base_filter("context_page_path"),
+        )
+
+    def test_reentry_assessment_belongs_to_cpa_not_jii_opportunities_app(self) -> None:
+        """The reentry-assessment surface embedded in the opportunities app is claimed by
+        CPA and explicitly excluded from the JII opportunities app product."""
+        cpa_fragment = (
+            ProductType.CASE_PLANNING_ASSISTANT.context_page_filter_query_fragment()
+        )
+        jii_fragment = (
+            ProductType.JII_OPPORTUNITIES_APP.context_page_filter_query_fragment()
+        )
+        # CPA claims the reentry-assessment surface...
+        self.assertIn(
+            f"REGEXP_CONTAINS(context_page_url, r'{REENTRY_ASSESSMENT_PATH}')",
+            cpa_fragment,
+        )
+        # ...and the JII opportunities app excludes it.
+        self.assertIn(
+            f"NOT REGEXP_CONTAINS(context_page_url, r'{REENTRY_ASSESSMENT_PATH}')",
+            jii_fragment,
+        )

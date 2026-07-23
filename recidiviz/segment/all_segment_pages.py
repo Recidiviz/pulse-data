@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import String
 from recidiviz.calculator.query.state.dataset_config import (
     CASE_PLANNING_PRODUCTION_DATASET,
+    JII_FRONTEND_PROD_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.segment.product_type import ProductType
@@ -42,11 +43,14 @@ _NULL_UTM_COLS_SNIPPET = ", ".join(
 
 _DATASETS_WITH_UTM_COLS = [PULSE_DASHBOARD_SEGMENT_DATASET]
 
-# TODO(OBT-22475): Include JII tablet page views here once we have proper handling for them in segment_event_big_query_view_builder.py
 # TODO(OBT-39139): Include public pathways dashboard views here once we have proper handling for them in segment_event_big_query_view_builder.py
 _STAFF_PAGES_DATASETS = [
     PULSE_DASHBOARD_SEGMENT_DATASET,
     CASE_PLANNING_PRODUCTION_DATASET,
+]
+
+_JII_PAGES_DATASETS = [
+    JII_FRONTEND_PROD_SEGMENT_DATASET,
 ]
 
 event_schema = {col.name: col for col in segment_event_schema()}
@@ -55,6 +59,7 @@ _SCHEMA = [
     event_schema["user_id"],
     event_schema["email_address"],
     event_schema["event_ts"],
+    event_schema["person_id"],
     event_schema["context_page_path"],
     event_schema["context_page_url"],
     event_schema["product_type"],
@@ -82,12 +87,33 @@ _SCHEMA = [
 ]
 
 
-def _get_pages_query_template(dataset: str, additional_cols: list[str]) -> str:
+def _get_pages_query_template(
+    dataset: str, additional_cols: list[str], user_is_jii: bool = False
+) -> str:
     return build_segment_event_view_query_template(
         segment_table_sql_source=BigQueryAddress(dataset_id=dataset, table_id="pages"),
         segment_table_jii_pseudonymized_id_columns=[],
         additional_attribute_cols=additional_cols,
         relevant_product_types=list(ProductType),
+        user_is_jii=user_is_jii,
+    )
+
+
+def _get_staff_pages_query(dataset: str) -> str:
+    # Only pulse_dashboard_segment_metrics.pages has UTM parameter columns,
+    # not case_planning_production.pages
+    if dataset in _DATASETS_WITH_UTM_COLS:
+        return _get_pages_query_template(dataset, _UTM_COLS)
+    return f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(dataset, [])})"
+
+
+def _get_jii_pages_query(dataset: str) -> str:
+    # Scope to the JII opportunities app *hosts* (across all vendor domains):
+    # CPA reentry-assessment surface embedded in the opportunities app is retained here
+    return (
+        f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM "
+        f"({_get_pages_query_template(dataset, [], user_is_jii=True)}) "
+        f"WHERE {ProductType.JII_OPPORTUNITIES_APP.url_base_filter()}"
     )
 
 
@@ -95,15 +121,9 @@ def _get_pages_query_template(dataset: str, additional_cols: list[str]) -> str:
 # Segment event infra once views are no longer configured by event X product builders
 ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id="segment_events",
-    # Only pulse_dashboard_segment_metrics.pages has UTM parameter columns,
-    # not case_planning_production.pages
     view_query_template="\nUNION ALL\n".join(
-        (
-            _get_pages_query_template(dataset, _UTM_COLS)
-            if dataset in _DATASETS_WITH_UTM_COLS
-            else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(dataset, [])})"
-        )
-        for dataset in _STAFF_PAGES_DATASETS
+        [_get_staff_pages_query(dataset) for dataset in _STAFF_PAGES_DATASETS]
+        + [_get_jii_pages_query(dataset) for dataset in _JII_PAGES_DATASETS]
     ),
     view_id=_VIEW_ID,
     description=__doc__,

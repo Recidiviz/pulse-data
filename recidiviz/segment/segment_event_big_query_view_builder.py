@@ -49,6 +49,10 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         has_session_id: bool = True,
         # Whether the source table has a user_id column (for staff users)
         has_user_id: bool = True,
+        # Whether the user triggering these events is a justice-involved person
+        # rather than a staff member. When True,the event's user_id is the
+        # resident's pseudonymized ID and staff re-identification is skipped.
+        user_is_jii: bool = False,
     ) -> None:
         self.segment_table_sql_source = segment_events_source_table_address
         self.segment_table_jii_pseudonymized_id_columns = (
@@ -59,8 +63,11 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.relevant_product_types = relevant_product_types
         self.has_session_id = has_session_id
         self.has_user_id = has_user_id
+        self.user_is_jii = user_is_jii
 
-        address = self.view_address(segment_events_source_table_address)
+        address = self.view_address(
+            segment_events_source_table_address, user_is_jii=user_is_jii
+        )
         super().__init__(
             dataset_id=address.dataset_id,
             view_id=address.table_id,
@@ -72,6 +79,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 relevant_product_types=relevant_product_types,
                 has_session_id=has_session_id,
                 has_user_id=has_user_id,
+                user_is_jii=user_is_jii,
             ),
             schema=segment_event_schema(
                 segment_events_source_table_address=segment_events_source_table_address,
@@ -82,13 +90,23 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
 
     @classmethod
-    def view_address(cls, segment_table_sql_source: BigQueryAddress) -> BigQueryAddress:
-        """Returns the BigQueryAddress for the view based on the product type and
-        segment table SQL source.
+    def view_address(
+        cls,
+        segment_table_sql_source: BigQueryAddress,
+        user_is_jii: bool = False,
+    ) -> BigQueryAddress:
+        """Returns the BigQueryAddress for the view based on the segment table SQL
+        source.
+
+        JII-triggered event views are suffixed with `_jii` so they do not collide
+        with the staff-triggered view of the same Segment event
         """
+        table_id = segment_table_sql_source.table_id
+        if user_is_jii:
+            table_id = f"{table_id}_jii"
         return BigQueryAddress(
             dataset_id="segment_events",
-            table_id=segment_table_sql_source.table_id,
+            table_id=table_id,
         )
 
     @classmethod
@@ -100,6 +118,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         relevant_product_types: list[ProductType],
         has_session_id: bool = True,
         has_user_id: bool = True,
+        user_is_jii: bool = False,
     ) -> str:
         """Builds the SQL query template for the Segment event view for a set of relevant product types
         by transforming hashed user and client id's into internal id's and pulling any additional
@@ -112,4 +131,5 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             relevant_product_types=relevant_product_types,
             has_session_id=has_session_id,
             has_user_id=has_user_id,
+            user_is_jii=user_is_jii,
         )

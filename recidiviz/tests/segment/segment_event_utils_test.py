@@ -20,7 +20,13 @@ import unittest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.segment.segment_event_utils import segment_event_schema
+from recidiviz.segment.product_type import ProductType
+from recidiviz.segment.segment_event_utils import (
+    FIRST_IX_EXPORT_DATE,
+    _get_url_filter_for_all_products,
+    build_segment_event_view_query_template,
+    segment_event_schema,
+)
 
 
 class TestSegmentEventSchema(unittest.TestCase):
@@ -80,3 +86,139 @@ class TestSegmentEventSchema(unittest.TestCase):
                 segment_events_source_table_address=address,
                 additional_attribute_cols=["nonexistent_column"],
             )
+
+
+class TestBuildSegmentEventViewQueryTemplate(unittest.TestCase):
+    """Tests for build_segment_event_view_query_template()."""
+
+    def test_staff_query_reidentifies_via_dashboard_users(self) -> None:
+        # Staff events re-identify the user via the dashboard users table (surfacing
+        # their email address) and never touch the resident record salt.
+        query = build_segment_event_view_query_template(
+            segment_table_sql_source=BigQueryAddress(
+                dataset_id="pulse_dashboard_segment_metrics",
+                table_id="frontend_opportunity_previewed",
+            ),
+            segment_table_jii_pseudonymized_id_columns=["client_id"],
+            additional_attribute_cols=[],
+            relevant_product_types=[ProductType.WORKFLOWS],
+        )
+        url_filter = _get_url_filter_for_all_products()
+        expected_query = f"""
+SELECT
+    COALESCE(person.state_code, rdu.state_code) AS state_code,
+    events.user_id,
+    LOWER(rdu.email) AS email_address,
+    DATETIME(events.timestamp, "US/Eastern") AS event_ts,
+    person_id,
+    session_id,
+    context_page_path,
+    context_page_url,
+    CASE WHEN ((context_page_url LIKE 'https://dashboard.recidiviz.org/%')) AND (REGEXP_CONTAINS(context_page_url, r'/workflows') AND NOT REGEXP_CONTAINS(context_page_url, r'/workflows/(clients|residents|milestones|tasks)'))
+  THEN 'WORKFLOWS'
+ELSE "UNKNOWN_PRODUCT_TYPE" END AS product_type,
+    
+FROM (
+    SELECT
+        -- default columns for all views
+        COALESCE(client_id) AS pseudonymized_id,
+        timestamp,
+    session_id,
+        user_id,
+        context_page_path,
+        context_page_url,
+        "frontend_opportunity_previewed" AS event,
+        
+    FROM
+        `{{project_id}}.pulse_dashboard_segment_metrics.frontend_opportunity_previewed`
+    -- events from prod deployment only
+    WHERE
+        {url_filter}
+    -- dedupes events loaded more than once
+    QUALIFY
+        ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
+) events
+-- join to filter out recidiviz users and others unidentified (if any)
+INNER JOIN
+    `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
+ON
+    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
+    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
+    -- because they may match between both states. Instead, use the timestamp of the event to
+    -- determine whether it is a US_ID event or a US_IX event.
+    events.user_id = rdu.user_id
+    AND (
+        rdu.state_code != "US_ID"
+        OR events.timestamp < "{FIRST_IX_EXPORT_DATE}"
+    )
+INNER JOIN
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
+ON
+    events.pseudonymized_id = person.pseudonymized_id
+    -- This condition ensures that we only keep events where the state_code of the person_id
+    -- matches the state_code of the user_id.
+    -- TODO(#60453): Investigate cases where rdu state_code doesn't match person state_code
+    AND rdu.state_code = person.state_code
+
+"""
+        self.assertEqual(expected_query, query)
+
+    def test_jii_query_skips_staff_join_and_uses_resident_salt(self) -> None:
+        # JII events carry no staff identity: skip the dashboard users join, null out
+        # the email, resolve state_code/person_id via the resident record salt where the
+        # event's user_id is the resident's pseudonymized ID, and always inner join to
+        # the person table to keep only residents with a resolvable person_id.
+        query = build_segment_event_view_query_template(
+            segment_table_sql_source=BigQueryAddress(
+                dataset_id="jii_frontend_prod_segment_metrics",
+                table_id="frontend_cpa_intake_chat_client_address_submitted",
+            ),
+            segment_table_jii_pseudonymized_id_columns=[],
+            additional_attribute_cols=[],
+            relevant_product_types=[ProductType.JII_OPPORTUNITIES_APP],
+            user_is_jii=True,
+        )
+        url_filter = _get_url_filter_for_all_products()
+        expected_query = f"""
+SELECT
+    person.state_code AS state_code,
+    events.user_id,
+    CAST(NULL AS STRING) AS email_address,
+    DATETIME(events.timestamp, "US/Eastern") AS event_ts,
+    person_id,
+    session_id,
+    context_page_path,
+    context_page_url,
+    CASE WHEN (context_page_url LIKE 'https://opportunities.app/%' OR context_page_url LIKE 'https://opportunities.edovo.com/%') AND NOT REGEXP_CONTAINS(context_page_url, r'/reentry-assessment')
+  THEN 'JII_OPPORTUNITIES_APP'
+ELSE "UNKNOWN_PRODUCT_TYPE" END AS product_type,
+    
+FROM (
+    SELECT
+        -- default columns for all views
+        user_id AS pseudonymized_id,
+        timestamp,
+    session_id,
+        user_id,
+        context_page_path,
+        context_page_url,
+        "frontend_cpa_intake_chat_client_address_submitted" AS event,
+        
+    FROM
+        `{{project_id}}.jii_frontend_prod_segment_metrics.frontend_cpa_intake_chat_client_address_submitted`
+    -- events from prod deployment only
+    WHERE
+        {url_filter}
+    -- dedupes events loaded more than once
+    QUALIFY
+        ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
+) events
+
+INNER JOIN
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
+ON
+    events.pseudonymized_id = person.pseudonymized_id
+    AND person.pseudonymized_id_type = "PERSON_EXTERNAL_ID_WITH_RESIDENT_RECORD_SALT"
+
+"""
+        self.assertEqual(expected_query, query)

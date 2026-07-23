@@ -540,7 +540,7 @@ class MetricUnitOfAnalysis:
                                 description=f"Whether the user is provisioned for {product_type.display_name}.",
                                 mode="REQUIRED",
                             )
-                            for product_type in ProductType
+                            for product_type in ProductType.staff_facing_product_types()
                         ],
                         *[
                             Bool(
@@ -548,7 +548,7 @@ class MetricUnitOfAnalysis:
                                 description=f"Whether the user is a primary user of {product_type.display_name}.",
                                 mode="REQUIRED",
                             )
-                            for product_type in ProductType
+                            for product_type in ProductType.staff_facing_product_types()
                         ],
                     ],
                     static_attribute_columns=[],

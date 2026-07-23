@@ -203,7 +203,13 @@ def segment_event_schema(
 def _get_url_filter_for_all_products() -> str:
     """Returns a SQL WHERE clause that filters for URLs from all product types."""
     # Get unique URL bases from all product types
-    unique_url_bases = sorted({product_type.url_base for product_type in ProductType})
+    unique_url_bases = sorted(
+        {
+            url_base
+            for product_type in ProductType
+            for url_base in product_type.url_bases
+        }
+    )
     url_conditions = [
         f"context_page_url LIKE '{url_base}/%'" for url_base in unique_url_bases
     ]
@@ -254,18 +260,27 @@ def build_segment_event_view_query_template(
     relevant_product_types: list[ProductType],
     has_session_id: bool = True,
     has_user_id: bool = True,
+    user_is_jii: bool = False,
 ) -> str:
     """Builds the SQL query template for a Segment event view by transforming
     hashed user and client id's into internal id's and pulling any additional
-    attribute columns from the sql source table."""
+    attribute columns from the sql source table.
+
+    When `user_is_jii` is True, the event's `user_id` is itself the resident's
+    pseudonymized ID, so we skip the staff re-identification join, leave `email_address`
+    null, and resolve `state_code`/`person_id` via the resident record salt.
+    """
 
     if not additional_attribute_cols:
         additional_attribute_cols = []
 
-    person_id_join_type = "LEFT"
-    if segment_table_jii_pseudonymized_id_columns:
-        # If JII ID columns are specified, only include events with non-null ID's
+    if user_is_jii:
         person_id_join_type = "INNER"
+    else:
+        person_id_join_type = "LEFT"
+        if segment_table_jii_pseudonymized_id_columns:
+            # If JII ID columns are specified, only include events with non-null ID's
+            person_id_join_type = "INNER"
 
     # If the event has a user_id, inner join to filter out unidentified users;
     # otherwise, left join so events without a user_id are not dropped.
@@ -283,9 +298,9 @@ def build_segment_event_view_query_template(
     session_id_select = ""
     if not is_pages_event:
         if has_session_id:
-            session_id_select = "person_id, session_id,"
+            session_id_select = "session_id,"
         else:
-            session_id_select = "person_id, CAST(NULL AS STRING) AS session_id,"
+            session_id_select = "CAST(NULL AS STRING) AS session_id,"
 
     session_id_inner_select = ""
     if not is_pages_event:
@@ -299,12 +314,56 @@ def build_segment_event_view_query_template(
         "user_id," if has_user_id else "CAST(NULL AS STRING) AS user_id,"
     )
 
+    if user_is_jii:
+        # JII events carry no staff identity: the event's `user_id` IS the resident's
+        # pseudonymized ID, there is no email, and state_code comes from the person
+        # table. We skip the staff re-identification join entirely.
+        state_code_select = "person.state_code AS state_code"
+        email_select = "CAST(NULL AS STRING) AS email_address"
+        pseudonymized_id_select = "user_id AS pseudonymized_id"
+        reidentified_dashboard_users_join = ""
+        person_join_condition = (
+            "events.pseudonymized_id = person.pseudonymized_id\n"
+            "    AND person.pseudonymized_id_type = "
+            '"PERSON_EXTERNAL_ID_WITH_RESIDENT_RECORD_SALT"'
+        )
+    else:
+        state_code_select = "COALESCE(person.state_code, rdu.state_code) AS state_code"
+        email_select = "LOWER(rdu.email) AS email_address"
+        pseudonymized_id_select = (
+            # this field was renamed, fall back to previous name for older records
+            f"COALESCE({list_to_query_string(segment_table_jii_pseudonymized_id_columns)})"
+            if segment_table_jii_pseudonymized_id_columns
+            else "CAST(NULL AS STRING)"
+        ) + " AS pseudonymized_id"
+        reidentified_dashboard_users_join = f"""-- join to filter out recidiviz users and others unidentified (if any)
+{user_id_join_type} JOIN
+    `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
+ON
+    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
+    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
+    -- because they may match between both states. Instead, use the timestamp of the event to
+    -- determine whether it is a US_ID event or a US_IX event.
+    events.user_id = rdu.user_id
+    AND (
+        rdu.state_code != "US_ID"
+        OR events.timestamp < "{FIRST_IX_EXPORT_DATE}"
+    )"""
+        person_join_condition = (
+            "events.pseudonymized_id = person.pseudonymized_id\n"
+            "    -- This condition ensures that we only keep events where the state_code of the person_id\n"
+            "    -- matches the state_code of the user_id.\n"
+            "    -- TODO(#60453): Investigate cases where rdu state_code doesn't match person state_code\n"
+            f"    {'AND rdu.state_code = person.state_code' if has_user_id else ''}"
+        )
+
     template = f"""
 SELECT
-    COALESCE(person.state_code, rdu.state_code) AS state_code,
+    {state_code_select},
     events.user_id,
-    LOWER(rdu.email) AS email_address,
+    {email_select},
     DATETIME(events.timestamp, "US/Eastern") AS event_ts,
+    person_id,
     {session_id_select}
     context_page_path,
     context_page_url,
@@ -313,11 +372,7 @@ SELECT
 FROM (
     SELECT
         -- default columns for all views
-        -- this field was renamed, fall back to previous name for older records
-        {f"COALESCE({list_to_query_string(segment_table_jii_pseudonymized_id_columns)})"
-            if segment_table_jii_pseudonymized_id_columns
-            else "CAST(NULL AS STRING)"
-        } AS pseudonymized_id,
+        {pseudonymized_id_select},
         timestamp,
     {session_id_inner_select}
         {user_id_inner_select}
@@ -334,27 +389,11 @@ FROM (
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
 ) events
--- join to filter out recidiviz users and others unidentified (if any)
-{user_id_join_type} JOIN 
-    `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
-ON
-    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
-    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
-    -- because they may match between both states. Instead, use the timestamp of the event to
-    -- determine whether it is a US_ID event or a US_IX event.
-    events.user_id = rdu.user_id
-    AND (
-        rdu.state_code != "US_ID"
-        OR events.timestamp < "{FIRST_IX_EXPORT_DATE}"
-    )
+{reidentified_dashboard_users_join}
 {person_id_join_type} JOIN
     `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
 ON
-    events.pseudonymized_id = person.pseudonymized_id
-    -- This condition ensures that we only keep events where the state_code of the person_id
-    -- matches the state_code of the user_id.
-    -- TODO(#60453): Investigate cases where rdu state_code doesn't match person state_code
-    {"AND rdu.state_code = person.state_code" if has_user_id else ""}
+    {person_join_condition}
 
 """
     return template

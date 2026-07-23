@@ -1207,8 +1207,8 @@ FROM
     email_address,
     start_date,
     end_date_exclusive,
-    {list_to_query_string([f"is_provisioned_{product_type.pretty_name}" for product_type in ProductType])},
-    {list_to_query_string([f"is_primary_user_{product_type.pretty_name}" for product_type in ProductType])},
+    {list_to_query_string([f"is_provisioned_{product_type.pretty_name}" for product_type in ProductType.staff_facing_product_types()])},
+    {list_to_query_string([f"is_primary_user_{product_type.pretty_name}" for product_type in ProductType.staff_facing_product_types()])},
 FROM
     `{{project_id}}.analyst_data.global_provisioned_user_sessions_materialized`
 """,

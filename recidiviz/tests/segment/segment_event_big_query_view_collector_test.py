@@ -17,7 +17,6 @@
 """Tests for segment_event_big_query_view_collector.py"""
 import unittest
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
 )
@@ -108,12 +107,6 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
             address
             for address in segment_event_source_table_addresses
             if address.table_id not in excluded_table_ids
-            # TODO(#67586): Add view for this segment event
-            and address
-            != BigQueryAddress(
-                dataset_id="jii_frontend_prod_segment_metrics",
-                table_id="frontend_cpa_intake_chat_client_address_submitted",
-            )
         }
 
         # Check for YAMLs without view builders

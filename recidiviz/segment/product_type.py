@@ -24,6 +24,12 @@ from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, snake_to_title
 
+# Path segment identifying the Case Planning Assistant "reentry assessment" surface
+# embedded in the JII opportunities app. US_NE residents currently use CPA here (the
+# only state so far), while the rest of the opportunities app is the JII opportunities
+# app product.
+REENTRY_ASSESSMENT_PATH = "/reentry-assessment"
+
 
 class ProductType(Enum):
     """
@@ -43,6 +49,7 @@ class ProductType(Enum):
     CASE_PLANNING_ASSISTANT = "CASE_PLANNING_ASSISTANT"
     CLIENT_PAGE = "CLIENT_PAGE"
     DISTRICT_DIRECTOR_DASHBOARD = "DISTRICT_DIRECTOR_DASHBOARD"
+    JII_OPPORTUNITIES_APP = "JII_OPPORTUNITIES_APP"
     LANTERN = "LANTERN"
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
@@ -62,15 +69,22 @@ class ProductType(Enum):
     WORKFLOWS = "WORKFLOWS"
 
     @property
-    def url_base(self) -> str:
-        """Returns the base URL for this product type."""
-        if self == ProductType.CASE_PLANNING_ASSISTANT:
-            return "https://plan.recidiviz.org"
-        if self == ProductType.MEETINGS:
-            return "https://meet.recidiviz.org"
-        if self == ProductType.PUBLIC_PATHWAYS:
-            return "https://pathways.recidiviz.org"
-        return "https://dashboard.recidiviz.org"
+    def url_bases(self) -> list[str]:
+        """Returns the base URLs this product type is served from. Most products
+        have a single host; the JII opportunities app is served from multiple
+        vendor-hosted tablet domains in addition to its web app."""
+        if self is ProductType.CASE_PLANNING_ASSISTANT:
+            return ["https://plan.recidiviz.org"]
+        if self is ProductType.JII_OPPORTUNITIES_APP:
+            return [
+                "https://opportunities.app",
+                "https://opportunities.edovo.com",
+            ]
+        if self is ProductType.MEETINGS:
+            return ["https://meet.recidiviz.org"]
+        if self is ProductType.PUBLIC_PATHWAYS:
+            return ["https://pathways.recidiviz.org"]
+        return ["https://dashboard.recidiviz.org"]
 
     @property
     def pretty_name(self) -> str:
@@ -92,6 +106,7 @@ class ProductType(Enum):
             ProductType.CASE_PLANNING_ASSISTANT,
             ProductType.CLIENT_PAGE,
             ProductType.DISTRICT_DIRECTOR_DASHBOARD,
+            ProductType.JII_OPPORTUNITIES_APP,
             ProductType.LANTERN,
             ProductType.MEETINGS,
             ProductType.MILESTONES,
@@ -117,6 +132,20 @@ class ProductType(Enum):
             f"No configuration for `is_primary_pages_product_type` for product type: {self}"
         )
 
+    def url_base_filter(
+        self, context_page_url_col_name: str = "context_page_url"
+    ) -> str:
+        """Returns a SQL predicate matching URLs served on any of this product's hosts,
+        with no path-based narrowing."""
+        return (
+            "("
+            + " OR ".join(
+                f"{context_page_url_col_name} LIKE '{url_base}/%'"
+                for url_base in self.url_bases
+            )
+            + ")"
+        )
+
     def context_page_filter_query_fragment(
         self, context_page_url_col_name: str = "context_page_url"
     ) -> str:
@@ -125,8 +154,8 @@ class ProductType(Enum):
         multiple product surfaces, we use the url and context page keyword to further filter
         Segment events by product type based on where they were triggered in the UI."""
 
-        # Ensure URL starts with the product's url_base
-        url_base_check = f"STARTS_WITH({context_page_url_col_name}, '{self.url_base}')"
+        # Ensure the URL is served on one of this product's hosts.
+        url_base_check = self.url_base_filter(context_page_url_col_name)
 
         # Path-based filtering for each product type
         if self == ProductType.CASE_NOTE_SEARCH:
@@ -134,8 +163,20 @@ class ProductType(Enum):
         elif self == ProductType.DISTRICT_DIRECTOR_DASHBOARD:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/directorDashboard/supervision')"
         elif self == ProductType.CASE_PLANNING_ASSISTANT:
-            # No additional path filtering needed - just the url_base check
-            return url_base_check
+            # Staff use CPA across all of plan.recidiviz.org; residents use CPA via the
+            # reentry assessment surface embedded in the JII opportunities app.
+            reentry_assessment_on_jii_app = (
+                f"{ProductType.JII_OPPORTUNITIES_APP.url_base_filter(context_page_url_col_name)} "
+                f"AND REGEXP_CONTAINS({context_page_url_col_name}, r'{REENTRY_ASSESSMENT_PATH}')"
+            )
+            return f"({url_base_check}) OR ({reentry_assessment_on_jii_app})"
+        elif self == ProductType.JII_OPPORTUNITIES_APP:
+            # The reentry assessment surface is the Case Planning Assistant embedded in
+            # the opportunities app; it is attributed to CPA, not the opportunities app.
+            return (
+                f"{url_base_check} "
+                f"AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'{REENTRY_ASSESSMENT_PATH}')"
+            )
         elif self == ProductType.MEETINGS:
             # No additional path filtering needed - just the url_base check
             return url_base_check
@@ -364,6 +405,19 @@ class ProductType(Enum):
         """Returns True if this product type is accessible without authentication
         (i.e., no auth0 routes or feature variants are required to access it)."""
         return self == ProductType.PUBLIC_PATHWAYS
+
+    @property
+    def is_jii_product(self) -> bool:
+        """Returns True if this product type is a justice-involved-person-facing app
+        (e.g. the JII tablet app)."""
+        return self == ProductType.JII_OPPORTUNITIES_APP
+
+    @classmethod
+    def staff_facing_product_types(cls) -> list["ProductType"]:
+        """Returns the product types that are staff facing and whose provisioning is
+        driven by auth0 routes / product roster. Excludes justice-involved-person-facing
+        products (e.g. the JII tablet app), whose provisioning is not roster/route-driven."""
+        return [product for product in cls if not product.is_jii_product]
 
     @property
     def product_roster_feature_variants(self) -> list[str]:

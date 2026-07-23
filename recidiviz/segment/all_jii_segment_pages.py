@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_view_column import (
     Integer,
     String,
 )
+from recidiviz.segment.product_type import ProductType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -68,9 +69,15 @@ _SCHEMA = [
         description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
         mode="NULLABLE",
     ),
+    String(
+        name="product_type",
+        description="The product associated with this event. Possible values defined "
+        "in the ProductType enum.",
+        mode="NULLABLE",
+    ),
 ]
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 WITH deduped_pages AS (
     SELECT
         id,
@@ -80,24 +87,27 @@ WITH deduped_pages AS (
         DATETIME(timestamp, "US/Eastern") AS event_ts,
         context_page_path,
         context_page_url,
-    FROM `{project_id}.jii_frontend_prod_segment_metrics.pages`
+    FROM `{{project_id}}.jii_frontend_prod_segment_metrics.pages`
+    -- Scope to the JII opportunities app (across all of its vendor hosts)
+    WHERE {ProductType.JII_OPPORTUNITIES_APP.context_page_filter_query_fragment()}
     -- Deduplicate events loaded more than once
     QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
 )
 SELECT
     deduped_pages.*,
     p.person_id,
+    "{ProductType.JII_OPPORTUNITIES_APP.value}" AS product_type,
 FROM deduped_pages
 -- Will drop page views where user_id = anonres001 or user_id = anonres002 or is_recidiviz_user = TRUE
 INNER JOIN
-    `{project_id}.workflows_views.pseudonymized_id_to_person_id_materialized` p
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` p
 ON
     deduped_pages.state_code = p.state_code
     AND deduped_pages.user_id = p.pseudonymized_id
     AND p.pseudonymized_id_type = "PERSON_EXTERNAL_ID_WITH_RESIDENT_RECORD_SALT"
 """
 
-# TODO(#43316): Use standardized SegmentEventBigQueryViewBuilder instead once it supports pages and identifies from JII tablet app
+# TODO(OBT-39504): Deprecate this view and migrate consumers to all_segment_pages, which uses the standardized SegmentEventBigQueryViewBuilder infra and supports pages/identities from the JII tablet app
 ALL_JII_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id="segment_events",
     view_id=_VIEW_ID,
