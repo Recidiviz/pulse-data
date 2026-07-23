@@ -30,6 +30,14 @@ RUN pip install --no-cache-dir ${WORKDIR}/.
 
 COPY . ${WORKDIR}
 
+# setuptools treats a co-located pyproject.toml's [project] table as authoritative
+# over setup.py's own setuptools.setup() arguments (name, version, install_requires),
+# so once the full repo lands in ${WORKDIR} above, the root pyproject.toml would
+# silently override every pin curated in dataflow_flex_setup.py when Beam later runs
+# `python setup.py sdist` here to build the artifact staged to Dataflow workers.
+# Removing it restores setup.py as the authoritative source for this image.
+RUN rm ${WORKDIR}/pyproject.toml
+
 ENV FLEX_TEMPLATE_PYTHON_SETUP_FILE="${WORKDIR}/setup.py"
 ENV FLEX_TEMPLATE_PYTHON_PY_FILE="${WORKDIR}/pipeline_runner.py"
 
