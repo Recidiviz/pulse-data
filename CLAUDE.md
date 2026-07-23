@@ -111,6 +111,7 @@ and should be used when testing generic functionality.
 - [Document Extraction](./recidiviz/NOT_FOR_PRODUCTION_USE/documents/CLAUDE.md)
 - [Task Eligibility Spans](./recidiviz/task_eligibility/CLAUDE.md)
 - [Deploy Tooling and Versioning](./recidiviz/tools/deploy/CLAUDE.md)
+- [Research Notebooks](./recidiviz/research/notebooks/CLAUDE.md)
 
 ## Skills
 
