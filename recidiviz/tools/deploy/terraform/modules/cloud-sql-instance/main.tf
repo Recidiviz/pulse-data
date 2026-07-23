@@ -105,6 +105,23 @@ variable "insights_config" {
   }
 }
 
+# Enables Cloud SQL deletion protection at the API level (settings.deletionProtectionEnabled):
+# GCP rejects instance delete calls from the console, gcloud, or the Admin API until this is
+# set back to false. Being rolled out per-instance:
+# https://github.com/Recidiviz/zenhub-tasks/issues/2798
+#
+# To intentionally delete or replace a protected instance, do it in TWO separate applies:
+#   1. Set this to false and `terraform apply` (an in-place update, no data impact).
+#   2. Then make the delete/replace change and `terraform apply` again.
+# Do NOT combine both into a single apply. Terraform's delete step does not pre-check this
+# flag, so it tears down the instance's child resources (google_sql_user, google_sql_database)
+# first and only then fails on the protected instance itself, leaving orphaned state. This is
+# documented provider behavior (hashicorp/terraform-provider-google#15204, closed as intended).
+variable "deletion_protection_enabled" {
+  type    = bool
+  default = false
+}
+
 # Default username
 data "google_secret_manager_secret_version" "db_user" { secret = "${local.effective_base_secret_name}_db_user" }
 
@@ -164,10 +181,11 @@ resource "google_sql_database_instance" "data" {
   depends_on = [google_kms_crypto_key_iam_member.cloudsql_sa_cmek_user]
 
   settings {
-    edition           = var.edition
-    disk_autoresize   = true
-    tier              = var.tier
-    availability_type = "REGIONAL"
+    edition                     = var.edition
+    disk_autoresize             = true
+    tier                        = var.tier
+    availability_type           = "REGIONAL"
+    deletion_protection_enabled = var.deletion_protection_enabled
 
     backup_configuration {
       enabled                        = true

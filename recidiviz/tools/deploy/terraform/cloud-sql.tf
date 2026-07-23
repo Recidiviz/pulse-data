@@ -30,12 +30,13 @@ module "case_triage_database_cmek" {
 module "justice_counts_database_cmek" {
   source = "./modules/cloud-sql-instance"
 
-  project_id     = var.project_id
-  instance_key   = "justice_counts"
-  region         = var.us_east_region
-  zone           = "us-east1-c"
-  secondary_zone = var.project_id == "recidiviz-staging" ? "us-east1-b" : "us-east1-d"
-  tier           = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  project_id                  = var.project_id
+  instance_key                = "justice_counts"
+  deletion_protection_enabled = true
+  region                      = var.us_east_region
+  zone                        = "us-east1-c"
+  secondary_zone              = var.project_id == "recidiviz-staging" ? "us-east1-b" : "us-east1-d"
+  tier                        = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 
 }
 
