@@ -94,12 +94,13 @@ module "insights_database_cmek" {
 module "workflows_database_cmek" {
   source = "./modules/cloud-sql-instance"
 
-  project_id     = var.project_id
-  instance_key   = "workflows"
-  region         = var.us_central_region
-  zone           = var.zone
-  secondary_zone = "us-central1-b"
-  tier           = coalesce(var.default_sql_tier, "db-custom-2-8192") # 2 vCPUs, 8GB Memory
+  project_id                  = var.project_id
+  instance_key                = "workflows"
+  deletion_protection_enabled = true
+  region                      = var.us_central_region
+  zone                        = var.zone
+  secondary_zone              = "us-central1-b"
+  tier                        = coalesce(var.default_sql_tier, "db-custom-2-8192") # 2 vCPUs, 8GB Memory
 
 
   additional_databases = [
