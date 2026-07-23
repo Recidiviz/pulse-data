@@ -112,11 +112,12 @@ module "workflows_database_cmek" {
 module "persistence_database_cmek" {
   source = "./modules/cloud-sql-instance"
 
-  project_id     = var.project_id
-  instance_key   = "persistence"
-  region         = var.us_central_region
-  zone           = var.zone
-  secondary_zone = "us-central1-b"
+  project_id                  = var.project_id
+  instance_key                = "persistence"
+  deletion_protection_enabled = true
+  region                      = var.us_central_region
+  zone                        = var.zone
+  secondary_zone              = "us-central1-b"
 
 
   tier = coalesce(
