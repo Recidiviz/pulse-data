@@ -18,12 +18,13 @@
 module "case_triage_database_cmek" {
   source = "./modules/cloud-sql-instance"
 
-  project_id     = var.project_id
-  instance_key   = "case_triage"
-  region         = var.us_central_region
-  zone           = var.zone
-  secondary_zone = var.project_id == "recidiviz-staging" ? "us-central1-f" : "us-central1-b"
-  tier           = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  project_id                  = var.project_id
+  instance_key                = "case_triage"
+  deletion_protection_enabled = true
+  region                      = var.us_central_region
+  zone                        = var.zone
+  secondary_zone              = var.project_id == "recidiviz-staging" ? "us-central1-f" : "us-central1-b"
+  tier                        = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 
 }
 
