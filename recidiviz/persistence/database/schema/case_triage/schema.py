@@ -104,13 +104,10 @@ class EdovoCourseCompletion(CaseTriageBase):
 
     __tablename__ = "edovo_course_completions"
 
-    # Best-effort, capture-time no-double-credit guard. This dedups on the
-    # external id, which is NOT a stable 1:1 handle for a person (a person can
-    # acquire new external ids over time, or hold several of the same type), so
-    # it cannot fully guarantee one credit per person per course. The
-    # authoritative no-double-credit check happens downstream once the external
-    # id is resolved to an internal person_id.
-    # TODO(OBT-23210): Enforce authoritative per-person no-double-credit downstream.
+    # Best-effort capture-time guard: dedups on external id, which is not a stable
+    # 1:1 handle for a person, so it can't guarantee one credit per person per
+    # course. The authoritative per-person, per-course dedup happens downstream in
+    # credit_calculator once the external id is resolved to a person_id (OBT-23210).
     __table_args__ = (
         UniqueConstraint(
             "state_code",
