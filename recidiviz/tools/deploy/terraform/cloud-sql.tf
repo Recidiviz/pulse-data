@@ -152,11 +152,12 @@ module "public_pathways_database_cmek" {
 module "identity_service_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id   = var.project_id
-  instance_key = "identity_service"
-  region       = var.us_central_region
-  zone         = var.zone
-  tier         = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  project_id                  = var.project_id
+  instance_key                = "identity_service"
+  deletion_protection_enabled = true
+  region                      = var.us_central_region
+  zone                        = var.zone
+  tier                        = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 }
 
 # Grant Cloud SQL per-instance service accounts cryptoKeyEncrypterDecrypter on
