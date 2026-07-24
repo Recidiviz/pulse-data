@@ -141,6 +141,9 @@ class PrisonPopulationOverTime(PathwaysBase):
             "admission_reason",
             "race",
             "ethnicity",
+            "religion",
+            "marital_status",
+            "months_at_facility",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -160,6 +163,9 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "admission_reason",
                 "race",
                 "ethnicity",
+                "religion",
+                "marital_status",
+                "months_at_facility",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -196,6 +202,12 @@ class PrisonPopulationOverTime(PathwaysBase):
     race = Column(String, primary_key=True, nullable=True)
     # ethnicity of the person
     ethnicity = Column(String, primary_key=True, nullable=True)
+    # Religion of the person
+    religion = Column(String, primary_key=True, nullable=True)
+    # Marital status of the person
+    marital_status = Column(String, primary_key=True, nullable=True)
+    # Binned months at facility for the person
+    months_at_facility = Column(String, primary_key=True, nullable=True)
     # Min sentence length
     sentence_length_min = Column(String, nullable=True)
     # Max sentence length
@@ -227,6 +239,9 @@ class PrisonPopulationByDimension(PathwaysBase):
             "age_group",
             "race",
             "ethnicity",
+            "religion",
+            "marital_status",
+            "months_at_facility",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -244,6 +259,9 @@ class PrisonPopulationByDimension(PathwaysBase):
                 "admission_reason",
                 "race",
                 "ethnicity",
+                "religion",
+                "marital_status",
+                "months_at_facility",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -272,18 +290,24 @@ class PrisonPopulationByDimension(PathwaysBase):
     race = Column(String, primary_key=True, nullable=False)
     # Ethnicity of the person
     ethnicity = Column(String, primary_key=True, nullable=False)
+    # Religion of the person
+    religion = Column(String, primary_key=True, nullable=False)
+    # Marital status of the person
+    marital_status = Column(String, primary_key=True, nullable=False)
+    # Binned months at facility for the person
+    months_at_facility = Column(String, primary_key=True, nullable=False)
     # Binned length of incarceration in months
-    length_of_stay = Column(String, nullable=True)
+    length_of_stay = Column(String, nullable=False)
     # Min sentence length
-    sentence_length_min = Column(String, nullable=True)
+    sentence_length_min = Column(String, nullable=False)
     # Max sentence length
-    sentence_length_max = Column(String, nullable=True)
+    sentence_length_max = Column(String, nullable=False)
     # Charge county code where the person was sentenced
-    charge_county_code = Column(String, nullable=True)
+    charge_county_code = Column(String, nullable=False)
     # Offense type of the person
-    offense_type = Column(String, nullable=True)
+    offense_type = Column(String, nullable=False)
     # Charge description of the person
-    charge_description = Column(String, nullable=True)
+    charge_description = Column(String, nullable=False)
 
 
 class PrisonPopulationProjection(PathwaysBase):

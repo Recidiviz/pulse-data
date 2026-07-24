@@ -34,6 +34,9 @@ PrisonPopulationOverTime:
     sex: FILTER
     race: FILTER
     ethnicity: FILTER
+    religion: FILTER
+    marital_status: FILTER
+    months_at_facility: FILTER
     time_period: FILTER
     sentence_length_min: FILTER
     sentence_length_max: FILTER
@@ -55,6 +58,9 @@ PrisonPopulationByDimensionCount:
     sex: ALL
     race: ALL
     ethnicity: ALL
+    religion: ALL
+    marital_status: ALL
+    months_at_facility: ALL
     sentence_length_min: ALL
     sentence_length_max: ALL
     charge_county_code: ALL
