@@ -42,12 +42,12 @@ from recidiviz.eomis.flow import Candidate, ResultStatus
 from recidiviz.eomis.runner import CsvAuditRecorder, run_writeback
 from recidiviz.eomis.us_ar.program_referral_flow import (
     DEFAULT_PROJECT_ID,
-    DEFAULT_VIEW,
     PROD_BASE_URL,
     TEST_BASE_URL,
     ArProgramReferralCandidate,
     ArProgramReferralFlow,
     build_id_candidates,
+    default_view,
     load_csv_candidates,
 )
 from recidiviz.tools.eomis.render import render_plan, render_results
@@ -61,7 +61,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--domain", choices=["test", "prod", "custom"], default="test")
     parser.add_argument("--base-url", help="Used only with --domain custom")
     parser.add_argument("--source", choices=["bq", "csv", "ids"], default="bq")
-    parser.add_argument("--bq-view", default=DEFAULT_VIEW)
+    parser.add_argument(
+        "--bq-view", help="Defaults to the flow's candidate view in --project-id"
+    )
     parser.add_argument("--project-id", default=DEFAULT_PROJECT_ID)
     parser.add_argument("--csv")
     parser.add_argument("--offender-id", action="append", default=[])
@@ -140,7 +142,7 @@ def main(argv: list[str]) -> int:
         raise ValueError("production writes require --allow-prod-write")
 
     flow = ArProgramReferralFlow(
-        bq_view=args.bq_view,
+        bq_view=args.bq_view or default_view(args.project_id),
         project_id=args.project_id,
         limit=args.limit,
         comment=args.comment,

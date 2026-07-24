@@ -24,7 +24,9 @@ read-back verification. The shared client and runner know none of this.
 from __future__ import annotations
 
 import csv
+import logging
 import re
+from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any
 from urllib.parse import urlencode
@@ -54,8 +56,26 @@ from recidiviz.eomis.parsing import (
 
 TEST_BASE_URL = "https://eomistest.doc.arkansas.gov"
 PROD_BASE_URL = "https://eomis.adc.arkansas.gov"
-DEFAULT_VIEW = "recidiviz-staging.earned_time.us_ar_ged_course_completions_materialized"
+DEFAULT_VIEW_PATH = "earned_time.us_ar_ged_course_completions_materialized"
 DEFAULT_PROJECT_ID = "recidiviz-staging"
+
+# Source view columns the flow reads, mapped to the row keys the classifier
+# expects. The keys are pinned against the view builder's declared schema by
+# the tests in recidiviz/tests/eomis/us_ar.
+VIEW_COLUMNS_TO_ROW_KEYS = {
+    "OFFENDERID": "OFFENDERID",
+    "certificate_award_date": "certificate_award_date",
+    "referral_application_date": "referral_application_date",
+    "referral_status": "referral_status",
+    "is_completed_in_prior_incarceration_flag": "completed_in_prior_incarceration_flag",
+    "is_referral_last_updated_in_prior_incarceration_flag": "entered_in_prior_incarceration_flag",
+}
+
+
+def default_view(project_id: str) -> str:
+    """Returns the default candidate source view in the given project."""
+    return f"{project_id}.{DEFAULT_VIEW_PATH}"
+
 
 GED_PROGRAM_LABEL = "School (GED)"
 REFERRAL_LISTING_HEADERS = ("Date Referred", "Status")
@@ -573,11 +593,23 @@ def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
             referral_status=referral_status,
         )
     if not referral_status:
+        certificate_date = clean_date(row.get("certificate_award_date"))
+        if certificate_date is None:
+            return ArProgramReferralCandidate(
+                offender_id=offender_id,
+                action=SKIP_ACTION,
+                reason=(
+                    "no GED referral and no certificate award date to anchor "
+                    "one; needs manual review"
+                ),
+                referral_date=None,
+                referral_status=referral_status,
+            )
         return ArProgramReferralCandidate(
             offender_id=offender_id,
             action=CREATE_ACTION,
             reason="missing GED referral",
-            referral_date=to_eomis_date(row.get("certificate_award_date")),
+            referral_date=certificate_date,
             referral_status=referral_status,
         )
     if entered_prior:
@@ -592,8 +624,19 @@ def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
                 referral_date=clean_date(row.get("referral_application_date")),
                 referral_status=referral_status,
             )
-        certificate_date = to_eomis_date(row.get("certificate_award_date"))
+        certificate_date = clean_date(row.get("certificate_award_date"))
         prior_referral_date = clean_date(row.get("referral_application_date"))
+        if certificate_date is None:
+            return ArProgramReferralCandidate(
+                offender_id=offender_id,
+                action=SKIP_ACTION,
+                reason=(
+                    "prior-incarceration referral but no certificate award "
+                    "date to anchor a new one; needs manual review"
+                ),
+                referral_date=prior_referral_date,
+                referral_status=referral_status,
+            )
         if certificate_date == prior_referral_date:
             return ArProgramReferralCandidate(
                 offender_id=offender_id,
@@ -685,17 +728,40 @@ def skip_offenders_already_completed_this_incarceration(
     ]
 
 
+def classify_view_rows(rows: list[dict[str, Any]]) -> list[ArProgramReferralCandidate]:
+    """Classifies every view row, quarantining any row that cannot be
+    classified as a skip so one malformed row cannot kill the whole run."""
+    candidates = []
+    for row in rows:
+        try:
+            candidates.append(classify_view_row(row))
+        except Exception as error:  # pylint: disable=broad-except
+            offender_id = str(row.get("OFFENDERID") or "").strip()
+            logging.error(
+                "Could not classify row for offender [%s]: %s", offender_id, error
+            )
+            candidates.append(
+                ArProgramReferralCandidate(
+                    offender_id=offender_id,
+                    action=SKIP_ACTION,
+                    reason=f"unclassifiable row: {error}",
+                    referral_date=None,
+                    referral_status=None,
+                )
+            )
+    return skip_offenders_already_completed_this_incarceration(rows, candidates)
+
+
 def load_bq_candidates(
     view: str, project_id: str, limit: int | None
 ) -> list[ArProgramReferralCandidate]:
+    select_columns = ",\n            ".join(
+        source if source == row_key else f"{source} AS {row_key}"
+        for source, row_key in VIEW_COLUMNS_TO_ROW_KEYS.items()
+    )
     query = f"""
         SELECT
-            OFFENDERID,
-            certificate_award_date,
-            referral_application_date,
-            referral_status,
-            is_completed_in_prior_incarceration_flag AS completed_in_prior_incarceration_flag,
-            is_referral_last_updated_in_prior_incarceration_flag AS entered_in_prior_incarceration_flag
+            {select_columns}
         FROM `{view}`
         WHERE OFFENDERID IS NOT NULL
         ORDER BY certificate_award_date, OFFENDERID
@@ -704,8 +770,13 @@ def load_bq_candidates(
         query += f"\nLIMIT {limit}"
     client = bigquery.Client(project=project_id)
     rows = [dict(row.items()) for row in client.query(query)]
-    candidates = [classify_view_row(row) for row in rows]
-    return skip_offenders_already_completed_this_incarceration(rows, candidates)
+    candidates = classify_view_rows(rows)
+    logging.info("Classified [%d] rows from [%s]:", len(rows), view)
+    for (action, reason), count in sorted(
+        Counter((c.action, c.reason) for c in candidates).items()
+    ):
+        logging.info("  [%d] x [%s]: %s", count, action, reason)
+    return candidates
 
 
 def load_csv_candidates(

@@ -26,10 +26,10 @@ from recidiviz.entrypoints.eomis_writeback import (
 )
 from recidiviz.eomis.flow import ResultStatus, WriteResult
 from recidiviz.eomis.us_ar.program_referral_flow import (
-    DEFAULT_VIEW,
     PROD_BASE_URL,
     TEST_BASE_URL,
     ArProgramReferralCandidate,
+    default_view,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
@@ -96,7 +96,7 @@ class TestFlowConstruction(unittest.TestCase):
         ):
             build_flow("ar_ged", bq_view=None)
         mock_flow_cls.assert_called_once_with(
-            bq_view=DEFAULT_VIEW,
+            bq_view=default_view(GCP_PROJECT_STAGING),
             project_id=GCP_PROJECT_STAGING,
             limit=None,
             comment="",

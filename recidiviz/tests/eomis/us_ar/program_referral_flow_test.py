@@ -25,20 +25,26 @@ import unittest
 from typing import Any
 from unittest.mock import Mock
 
+from recidiviz.calculator.query.state.views.earned_time.us_ar_ged_course_completions import (
+    VIEW_BUILDER as GED_COURSE_COMPLETIONS_VIEW_BUILDER,
+)
 from recidiviz.eomis.flow import SKIP_ACTION
 from recidiviz.eomis.us_ar.program_referral_flow import (
     CREATE_ACTION,
+    DEFAULT_VIEW_PATH,
     PRIORITY_HIGH,
     RELEASE_AND_CREATE_ACTION,
     STATUS_COMPLETED,
     STATUS_REFERRED_NOT_SCREENED,
     UPDATE_ACTION,
+    VIEW_COLUMNS_TO_ROW_KEYS,
     ExistingReferral,
     build_add_payload,
     build_id_candidates,
     build_update_payload,
     classify_csv_row,
     classify_view_row,
+    classify_view_rows,
     is_completed_status,
     is_flippable_status,
     load_csv_candidates,
@@ -75,6 +81,23 @@ class TestClassifyViewRow(unittest.TestCase):
         candidate = classify_view_row(_view_row())
         self.assertEqual(candidate.action, CREATE_ACTION)
         self.assertEqual(candidate.referral_date, "01/02/2024")
+
+    def test_missing_referral_without_certificate_is_skipped(self) -> None:
+        candidate = classify_view_row(_view_row(certificate_award_date=None))
+        self.assertEqual(candidate.action, SKIP_ACTION)
+        self.assertIn("no certificate award date", candidate.reason)
+
+    def test_prior_incarceration_referral_without_certificate_is_skipped(self) -> None:
+        candidate = classify_view_row(
+            _view_row(
+                certificate_award_date=None,
+                referral_status="Referred, not Screened",
+                referral_application_date="2019-05-01",
+                entered_in_prior_incarceration_flag=True,
+            )
+        )
+        self.assertEqual(candidate.action, SKIP_ACTION)
+        self.assertIn("no certificate award date", candidate.reason)
 
     def test_open_referral_is_marked_complete(self) -> None:
         candidate = classify_view_row(
@@ -139,6 +162,38 @@ class TestClassifyViewRow(unittest.TestCase):
         )
         self.assertEqual(candidate.action, SKIP_ACTION)
         self.assertIn("shares certificate date", candidate.reason)
+
+
+class TestClassifyViewRows(unittest.TestCase):
+    """Tests the row-loop protections around per-row classification."""
+
+    def test_unclassifiable_row_is_quarantined_as_a_skip(self) -> None:
+        candidates = classify_view_rows(
+            [_view_row(certificate_award_date="not-a-date"), _view_row()]
+        )
+        self.assertEqual(candidates[0].action, SKIP_ACTION)
+        self.assertIn("unclassifiable row", candidates[0].reason)
+        self.assertEqual(candidates[1].action, CREATE_ACTION)
+
+
+class TestViewContract(unittest.TestCase):
+    """Pins the flow's assumptions about the source view against the view
+    builder's declared schema, so view changes break here instead of in a
+    hosted run."""
+
+    def test_flow_reads_only_columns_the_view_declares(self) -> None:
+        declared = {
+            column.name for column in GED_COURSE_COMPLETIONS_VIEW_BUILDER.schema
+        }
+        missing = set(VIEW_COLUMNS_TO_ROW_KEYS) - declared
+        self.assertFalse(
+            missing,
+            f"Flow reads columns the view no longer declares: {sorted(missing)}",
+        )
+
+    def test_default_view_path_matches_the_view_builder(self) -> None:
+        address = GED_COURSE_COMPLETIONS_VIEW_BUILDER.table_for_query
+        self.assertEqual(DEFAULT_VIEW_PATH, f"{address.dataset_id}.{address.table_id}")
 
 
 class TestStatusHelpers(unittest.TestCase):

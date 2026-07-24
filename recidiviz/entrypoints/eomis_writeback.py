@@ -38,10 +38,10 @@ from recidiviz.eomis.credentials import resolve_eomis_credentials
 from recidiviz.eomis.flow import EomisWritebackFlow, ResultStatus
 from recidiviz.eomis.runner import LoggingAuditRecorder, run_writeback
 from recidiviz.eomis.us_ar.program_referral_flow import (
-    DEFAULT_VIEW,
     PROD_BASE_URL,
     TEST_BASE_URL,
     ArProgramReferralFlow,
+    default_view,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -63,7 +63,7 @@ def build_flow(flow_name: str, *, bq_view: str | None) -> EomisWritebackFlow:
     CLI configures it for an unattended (bq-sourced, unlimited) run."""
     if flow_name == AR_GED_FLOW_NAME:
         return ArProgramReferralFlow(
-            bq_view=bq_view or DEFAULT_VIEW,
+            bq_view=bq_view or default_view(metadata.project_id()),
             project_id=metadata.project_id(),
             limit=None,
             comment="",
