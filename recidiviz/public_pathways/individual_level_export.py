@@ -50,6 +50,7 @@ INCLUDED_INDIVIDUAL_LEVEL_COLUMNS = frozenset(
         "time_period",
         "age_group",
         "facility",
+        "sex",
         "race",
         "ethnicity",
         "sentence_length_min",
@@ -190,7 +191,7 @@ def _translate_row(
     label_maps: dict[str, dict[str, str]],
 ) -> list[str | None]:
     """Returns row with each column translated per label_maps, leaving columns with
-    no entry in label_maps (state_code, date_in_population, age_group) unchanged.
+    no entry in label_maps (state_code, date_in_population, age_group, sex) unchanged.
     """
     return [
         _translate_value(value, label_maps[column_name])

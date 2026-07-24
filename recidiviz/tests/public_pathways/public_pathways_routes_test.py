@@ -354,7 +354,6 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         rows = list(csv.DictReader(io.StringIO(response.get_data(as_text=True))))
 
         self.assertNotIn("gender", rows[0])
-        self.assertNotIn("sex", rows[0])
         self.assertNotIn("person_id", rows[0])
 
         # Only the most recent date_in_population (2022-01-01) is included, even
@@ -367,6 +366,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "time_period": "6 months",
                     "age_group": "25-29",
                     "facility": "F1",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "ethnicity": "NOT_HISPANIC",
                     "sentence_length_min": "48-71 MONTHS",
@@ -382,6 +382,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "time_period": "6 months",
                     "age_group": "60+",
                     "facility": "F1",
+                    "sex": "MALE",
                     "race": "BLACK",
                     "ethnicity": "NOT_HISPANIC",
                     "sentence_length_min": "48-71 MONTHS",
