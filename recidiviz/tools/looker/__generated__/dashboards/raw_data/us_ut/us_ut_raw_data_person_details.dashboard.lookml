@@ -388,6 +388,9 @@
       us_ut_ofndr_name.updt_usr_id,
       us_ut_ofndr_name.updt_dt__raw,
       us_ut_ofndr_name.temp_name_id,
+      us_ut_ofndr_name.LUB,
+      us_ut_ofndr_name.LUDT,
+      us_ut_ofndr_name.LUP,
       us_ut_ofndr_name.file_id,
       us_ut_ofndr_name.is_deleted]
     sorts: [us_ut_ofndr_name.updt_dt__raw]
