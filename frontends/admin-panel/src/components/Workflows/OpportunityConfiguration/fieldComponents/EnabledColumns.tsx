@@ -106,6 +106,7 @@ export const EnabledColumnsEdit: MultiEntryChild = ({ name }) => (
       <Form.Item noStyle name={[name, "sortingFn"]}>
         <Select
           allowClear
+          placeholder="Sorting function (specify for cell value)"
           options={SORTING_FN_OPTIONS.map((value) => ({ label: value, value }))}
         />
       </Form.Item>
