@@ -20,12 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_discharge_sessions_preprocessing import (
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q1 import (
-    US_IX_SLS_Q1_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q3 import (
-    US_IX_SLS_Q3_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
@@ -122,9 +116,6 @@ from recidiviz.persistence.entity.activity.entities import StateCharge
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_crime import (
-    VIEW_BUILDER as HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix.supervision_past_full_term_completion_date import (
     VIEW_BUILDER as US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
@@ -165,11 +156,8 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
@@ -200,11 +188,8 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
@@ -235,11 +220,8 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
     },
@@ -362,49 +344,18 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
         },
-        US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
-            },
-        },
-        US_IX_TRANSFER_TO_CRC_LIKE_BED_REQUEST_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-            },
-        },
+        US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: {},
+        US_IX_TRANSFER_TO_CRC_LIKE_BED_REQUEST_VIEW_BUILDER.address: {},
         US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: {},
     },
     "VITALS": {
         VITALS_SUMMARIES_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
-            },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
             },
         },
         VITALS_TIME_SERIES_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
-            },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
@@ -416,26 +367,10 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
-            },
         },
         INCARCERATION_FACILITY_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
     },
@@ -472,14 +407,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-                US_IX_SLS_Q1_VIEW_BUILDER.address,
-                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
     },

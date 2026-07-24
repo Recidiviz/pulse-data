@@ -25,12 +25,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q1 import (
-    US_IX_SLS_Q1_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_ix.us_ix_sls_q3 import (
-    US_IX_SLS_Q3_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
@@ -240,9 +234,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_inelig
 from recidiviz.task_eligibility.criteria.state_specific.us_az.only_drug_offense_convictions import (
     VIEW_BUILDER as US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_crime import (
-    VIEW_BUILDER as US_IX_HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix.supervision_past_full_term_completion_date import (
     VIEW_BUILDER as US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
@@ -306,23 +297,11 @@ _ALL_SCHEMA_TABLE_VIEWS = [
 # that reference the us_ix_normalized_state.state_charge table directly.
 _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     (StateCode.US_IX, StateCharge): {
-        US_IX_SLS_Q1_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_SLS_Q3_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
