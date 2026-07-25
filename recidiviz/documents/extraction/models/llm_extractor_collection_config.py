@@ -53,7 +53,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
-    LLMRequestOutputSchemaField,
+    ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.reference_data.llm_extractor_collection_reference_data_config import (
     LLMExtractorCollectionReferenceDataConfig,
@@ -97,16 +97,18 @@ class EntityGroupConfig:
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The entity group's name (e.g. `employer`, `residence`)."""
 
-    entity_fields: list[LLMRequestOutputSchemaField] = attr.ib(
+    entity_fields: list[ScalarValuedLLMRequestOutputSchemaField] = attr.ib(
         validator=[
             attr_validators.is_non_empty_list,
-            attr_validators.is_list_of(LLMRequestOutputSchemaField),
+            attr_validators.is_list_of(ScalarValuedLLMRequestOutputSchemaField),
         ]
     )
     """The resolved output-schema fields that define the entity and get
-    normalized to one canonical value per entity. Must be stable across all of a
-    person's mentions. When `source_array_field` is set these are sub-fields of
-    that ARRAY_OF_STRUCT; otherwise they are top-level fields.
+    normalized to one canonical value per entity. Must be scalar-valued (a
+    primitive or an ENUM) — an entity field has exactly one value per mention —
+    and stable across all of a person's mentions. When `source_array_field` is
+    set these are sub-fields of that ARRAY_OF_STRUCT; otherwise they are
+    top-level fields.
     """
 
     source_array_field: ArrayOfStructLLMRequestOutputSchemaField | None = attr.ib(
@@ -187,12 +189,24 @@ class EntityGroupConfig:
                 f"{level_description}: {sorted(candidate_fields_by_name)}."
             )
 
+        entity_fields = []
+        for field_name in entity_field_names:
+            resolved_entity_field = candidate_fields_by_name[field_name]
+            if not isinstance(
+                resolved_entity_field, ScalarValuedLLMRequestOutputSchemaField
+            ):
+                raise ValueError(
+                    f"Entity group [{name}] declares entity_field [{field_name}] of "
+                    f"type [{resolved_entity_field.field_type.value}] — entity fields "
+                    f"must be scalar-valued (a primitive or an ENUM). To resolve an "
+                    f"ARRAY_OF_STRUCT field's mentions, set source_array_field to "
+                    f"[{field_name}] and list its sub-fields as the entity_fields."
+                )
+            entity_fields.append(resolved_entity_field)
+
         return cls(
             name=name,
-            entity_fields=[
-                candidate_fields_by_name[field_name]
-                for field_name in entity_field_names
-            ],
+            entity_fields=entity_fields,
             source_array_field=source_array_field,
         )
 

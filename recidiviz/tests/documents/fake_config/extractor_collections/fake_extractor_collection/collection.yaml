@@ -97,4 +97,4 @@ entity_groups:
   # Array entity group whose entity_fields are sub-fields of `assignments`.
   - name: assignment
     source_array_field: assignments
-    entity_fields: [assignment_name]
+    entity_fields: [assignment_name, assignment_type]

@@ -83,3 +83,18 @@ def document_extraction_results_unvalidated_dataset_for_region(
     return (
         f"{prefix}{state_code.value.lower()}_document_extraction_results__unvalidated"
     )
+
+
+def document_extraction_pre_resolution_results_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the dataset containing the per-state, un-normalized (pre-entity-
+    resolution) parsed LLM document-extraction result views for this region. This
+    is the layer an entity-resolution extractor's composite-document generation
+    reads from.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return (
+        f"{prefix}{state_code.value.lower()}"
+        f"_document_extraction_results__pre_resolution"
+    )

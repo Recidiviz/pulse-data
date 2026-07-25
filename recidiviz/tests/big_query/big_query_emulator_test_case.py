@@ -35,6 +35,7 @@ import pytest
 import requests
 from google.api_core.exceptions import GoogleAPICallError, from_http_response
 from google.cloud import bigquery
+from google.cloud.bigquery import _helpers as bq_client_helpers
 from google.cloud.bigquery_storage_v1 import BigQueryReadClient
 from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
     BigQueryReadGrpcTransport,
@@ -179,6 +180,35 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         )
         self.bqstorage_patcher.start()
 
+        # The BQ python client always requests REST results with
+        # formatOptions.useInt64Timestamp=true and parses TIMESTAMP cells
+        # strictly as int64 micros. The emulator honors that format option for
+        # top-level columns only — a TIMESTAMP nested inside a STRUCT or
+        # repeated RECORD is still serialized as float seconds (e.g.
+        # '1768003200.0'), which the client's int() parsing rejects. Widen the
+        # parser to accept the emulator's float-seconds form; correctly
+        # formatted int64 values parse exactly as before. Guarded by
+        # TestBigQueryEmulator.test_timestamp_nested_in_struct*.
+        # TODO(OBT-40415): Remove this patch once the emulator applies
+        #  formatOptions.useInt64Timestamp to nested TIMESTAMPs.
+        original_timestamp_to_py = bq_client_helpers.CellDataParser.timestamp_to_py
+
+        def _timestamp_to_py_tolerating_float_seconds(
+            parser_self: bq_client_helpers.CellDataParser,
+            value: Any,
+            field: bigquery.SchemaField,
+        ) -> Any:
+            if isinstance(value, str) and "." in value:
+                value = str(round(float(value) * 1_000_000))
+            return original_timestamp_to_py(parser_self, value, field)
+
+        self.timestamp_parsing_patcher = patch.object(
+            bq_client_helpers.CellDataParser,
+            "timestamp_to_py",
+            _timestamp_to_py_tolerating_float_seconds,
+        )
+        self.timestamp_parsing_patcher.start()
+
         # Patch get_table to remove pseudocolumns added by big_query_emulator_input_schema_json.py.
         original_get_table = BigQueryClientImpl.get_table
 
@@ -204,6 +234,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self.read_gbq_patcher.stop()
         self.to_gbq_patcher.stop()
         self.bqstorage_patcher.stop()
+        self.timestamp_parsing_patcher.stop()
         self.get_table_patcher.stop()
 
     @classmethod

@@ -392,6 +392,20 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
             expected_result=[{"a": [1, 2, 3]}],
         )
 
+    def test_timestamp_nested_in_struct(self) -> None:
+        expected_dt = datetime.datetime(2026, 1, 10, tzinfo=datetime.timezone.utc)
+        self.run_query_test(
+            "SELECT STRUCT(TIMESTAMP '2026-01-10 00:00:00+00' AS ts) AS s;",
+            expected_result=[{"s": {"ts": expected_dt}}],
+        )
+
+    def test_timestamp_nested_in_repeated_record(self) -> None:
+        expected_dt = datetime.datetime(2026, 1, 10, tzinfo=datetime.timezone.utc)
+        self.run_query_test(
+            "SELECT [STRUCT(TIMESTAMP '2026-01-10 00:00:00+00' AS ts)] AS arr;",
+            expected_result=[{"arr": [{"ts": expected_dt}]}],
+        )
+
     def test_safe_parse_date_valid(self) -> None:
         self.run_query_test(
             """SELECT SAFE.PARSE_DATE("%m/%d/%Y", "12/25/2008") as a;""",

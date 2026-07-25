@@ -52,6 +52,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ConfidenceLevel,
     LLMOutputFieldMode,
     LLMOutputFieldType,
+    PrimitiveScalarLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.reference_data.acronym_reference_data_entry import (
     AcronymReferenceDataEntry,
@@ -65,6 +66,7 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.utils.string import sha256_hexdigest
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
@@ -244,7 +246,10 @@ class ParseAllCollectionConfigsTest(TestCase):
         assert isinstance(assignments, ArrayOfStructLLMRequestOutputSchemaField)
         self.assertIs(assignments, assignment_group.source_array_field)
         self.assertEqual(
-            [assignments.get_field("assignment_name")],
+            [
+                assignments.get_field("assignment_name"),
+                assignments.get_field("assignment_type"),
+            ],
             assignment_group.entity_fields,
         )
 
@@ -323,6 +328,19 @@ class EntityGroupConfigResolutionTest(TestCase):
         ):
             _entity_group(name="bad", source_array_field="ghost", entity_fields=["x"])
 
+    def test_top_level_entity_field_not_scalar_valued_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Entity group [employer] declares entity_field [employers] of type "
+                "[ARRAY_OF_STRUCT] — entity fields must be scalar-valued (a "
+                "primitive or an ENUM). To resolve an ARRAY_OF_STRUCT field's "
+                "mentions, set source_array_field to [employers] and list its "
+                "sub-fields as the entity_fields."
+            ),
+        ):
+            _entity_group(name="employer", entity_fields=["employers"])
+
     def test_duplicate_entity_fields_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -355,7 +373,12 @@ class EntityGroupConfigResolutionTest(TestCase):
         ):
             EntityGroupConfig(
                 name="employer",
-                entity_fields=[schema.get_field("address")],
+                entity_fields=[
+                    assert_type(
+                        schema.get_field("address"),
+                        PrimitiveScalarLLMRequestOutputSchemaField,
+                    )
+                ],
                 source_array_field=employers,
             )
 
@@ -395,7 +418,12 @@ class LLMExtractorCollectionConfigTest(TestCase):
         schema = _output_schema()
         group = EntityGroupConfig(
             name="employer",
-            entity_fields=[schema.get_field("address")],
+            entity_fields=[
+                assert_type(
+                    schema.get_field("address"),
+                    PrimitiveScalarLLMRequestOutputSchemaField,
+                )
+            ],
             source_array_field=None,
         )
         with self.assertRaisesRegex(
