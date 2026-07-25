@@ -71,6 +71,9 @@ class LLMRequestOutputSchemaTest(TestCase):
     """Tests for the output schema container."""
 
     def test_reserved_is_relevant_name_raises(self) -> None:
+        # is_relevant passes the field-level reserved-name validator (the
+        # framework constructs the injected is_relevant field), so the container
+        # must reject a user-defined one.
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
@@ -79,6 +82,24 @@ class LLMRequestOutputSchemaTest(TestCase):
             ),
         ):
             _build_schema(_field("is_relevant", field_type="BOOLEAN"))
+
+    def test_directly_constructed_is_relevant_field_raises(self) -> None:
+        # Constructing the schema without going through the YAML parse still
+        # rejects a user-defined is_relevant field, via __attrs_post_init__.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema may not define a [is_relevant] field — it is "
+                "auto-injected by the framework."
+            ),
+        ):
+            valid_schema = _build_schema(_field("a"))
+            LLMRequestOutputSchema(
+                full_batch_description=_DESCRIPTION,
+                result_level_description=_DESCRIPTION,
+                relevance_criteria=_RELEVANCE_CRITERIA,
+                user_defined_fields=[valid_schema.is_relevant_field],
+            )
 
     def test_is_relevant_field_shape(self) -> None:
         schema = _build_schema(
@@ -156,3 +177,26 @@ class LLMRequestOutputSchemaTest(TestCase):
             re.escape("Found unexpected config values in output_schema block:"),
         ):
             _build_schema(_field("a"), unexpected_key="value")
+
+
+class FieldTypeAccessorsTest(TestCase):
+    """Tests for the scalar_valued / array_of_struct user-field accessors."""
+
+    def test_partitions_fields_by_type_preserving_order(self) -> None:
+        schema = _build_schema(
+            _field("a"),
+            _field(
+                "jobs",
+                field_type="ARRAY_OF_STRUCT",
+                primary_keys=["employer"],
+                fields=[_field("employer")],
+            ),
+            _field("b", field_type="ENUM", values=_enum_values("x", "y")),
+        )
+        self.assertEqual(["a", "b"], [f.name for f in schema.scalar_valued_user_fields])
+        self.assertEqual(["jobs"], [f.name for f in schema.array_of_struct_user_fields])
+
+    def test_no_array_fields(self) -> None:
+        schema = _build_schema(_field("a"))
+        self.assertEqual(["a"], [f.name for f in schema.scalar_valued_user_fields])
+        self.assertEqual([], schema.array_of_struct_user_fields)

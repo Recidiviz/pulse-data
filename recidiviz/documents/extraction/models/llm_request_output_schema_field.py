@@ -21,9 +21,12 @@ A field varies along two orthogonal dimensions:
 
 - its **type** (`LLMOutputFieldType`) — scalar, enum, or array-of-struct —
   determines which type-specific attributes it carries. This dimension is
-  modeled by subclassing `LLMRequestOutputSchemaField`: `ScalarLLMRequestOutputSchemaField`,
+  modeled by subclassing `LLMRequestOutputSchemaField`: `PrimitiveScalarLLMRequestOutputSchemaField`,
   `EnumLLMRequestOutputSchemaField`, and `ArrayOfStructLLMRequestOutputSchemaField` each declare
-  exactly the attributes their type needs.
+  exactly the attributes their type needs. The first two — the fields whose value
+  is a single scalar (an enum's value is a STRING) — share the intermediate
+  `ScalarValuedLLMRequestOutputSchemaField` base, which hosts the behavior common
+  to any scalar-valued field.
 - its **mode** (`LLMOutputFieldMode`) — INFERRED (extracted from text, wrapped in
   companion metadata) or STRUCTURAL (a bare value the model assigns) — determines
   whether it carries a minimum confidence level and semantic-consistency
@@ -44,12 +47,74 @@ from enum import Enum
 from typing import Self
 
 import attr
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_attr_validators import (
     is_valid_unquoted_bq_identifier,
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
+from recidiviz.documents.extraction.extraction_results_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    EXTRACTOR_VERSION_ID_COLUMN_NAME,
+    RESULT_DATETIME_UTC_COLUMN_NAME,
+    SOURCE_ARRAY_INDEX_COLUMN_NAME,
+    STATE_CODE_COLUMN_NAME,
+    VALIDATION_DATETIME_UTC_COLUMN_NAME,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    COMPANION_METADATA_COLUMN_NAMES,
+    IS_RELEVANT_FIELD_NAME,
+    VALUE_FIELD_NAME,
+)
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    PERSON_ID_COLUMN_NAME,
+    STAFF_ID_COLUMN_NAME,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
+
+# Column names the parsed extraction-result views emit alongside the extracted
+# fields: the envelope (identity/provenance) columns, the array-element position
+# key, and the companion-metadata STRUCT columns. A user-defined output schema
+# field — at any nesting level — may not use one of these names, or the generated
+# views would declare duplicate column names and fail only when the views are
+# built. Enforced by a validator on every field's `name`, except `is_relevant`,
+# which the framework itself constructs (see `_is_not_reserved_view_column_name`).
+RESERVED_OUTPUT_SCHEMA_FIELD_NAMES = frozenset(
+    {
+        STATE_CODE_COLUMN_NAME,
+        PERSON_ID_COLUMN_NAME,
+        STAFF_ID_COLUMN_NAME,
+        DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+        DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+        RESULT_DATETIME_UTC_COLUMN_NAME,
+        VALIDATION_DATETIME_UTC_COLUMN_NAME,
+        EXTRACTOR_VERSION_ID_COLUMN_NAME,
+        SOURCE_ARRAY_INDEX_COLUMN_NAME,
+        IS_RELEVANT_FIELD_NAME,
+        *COMPANION_METADATA_COLUMN_NAMES,
+    }
+)
+
+
+def _is_not_reserved_view_column_name(
+    _instance: object, _attribute: "attr.Attribute", value: str
+) -> None:
+    """Rejects a field name that collides with a column the parsed
+    extraction-result views emit. `is_relevant` is exempt at this level because
+    the framework constructs the injected `is_relevant` field itself; user-defined
+    fields may not use it either, which is enforced where user fields are
+    aggregated (`LLMRequestOutputSchema` for top-level fields and
+    `ArrayOfStructLLMRequestOutputSchemaField` for sub-fields).
+    """
+    if value == IS_RELEVANT_FIELD_NAME:
+        return
+    if value in RESERVED_OUTPUT_SCHEMA_FIELD_NAMES:
+        raise ValueError(
+            f"Output schema declares field [{value}], which collides with a "
+            f"column the parsed extraction-result views emit. Reserved names: "
+            f"{sorted(RESERVED_OUTPUT_SCHEMA_FIELD_NAMES)}."
+        )
 
 
 class LLMOutputFieldType(Enum):
@@ -64,10 +129,11 @@ class LLMOutputFieldType(Enum):
     FLOAT = "FLOAT"
     ARRAY_OF_STRUCT = "ARRAY_OF_STRUCT"
 
-    def is_scalar_type(self) -> bool:
-        """Returns whether this is a single-value scalar type — i.e. not ENUM
-        (which carries allowed values) or ARRAY_OF_STRUCT (which carries
-        sub-fields).
+    def is_primitive_scalar_value_type(self) -> bool:
+        """Returns whether this schema type is itself a primitive scalar value
+        type (STRING, BOOLEAN, INTEGER, FLOAT). ENUM is a distinct schema type
+        whose value is a STRING, and ARRAY_OF_STRUCT has no scalar value, so both
+        return False.
         """
         if self in (
             LLMOutputFieldType.STRING,
@@ -80,6 +146,32 @@ class LLMOutputFieldType(Enum):
             return False
 
         raise ValueError(f"Unexpected LLMOutputFieldType {self}")
+
+    def primitive_scalar_value_type(self) -> "LLMOutputFieldType":
+        """Returns the scalar type of this field's output value: a primitive type
+        is its own value type, and an ENUM's value is a STRING. Raises for
+        ARRAY_OF_STRUCT, which has no scalar value.
+        """
+        if self.is_primitive_scalar_value_type():
+            return self
+        if self is LLMOutputFieldType.ENUM:
+            return LLMOutputFieldType.STRING
+        raise ValueError(f"[{self}] has no scalar value type.")
+
+    def primitive_scalar_value_big_query_type(self) -> bigquery.SqlTypeNames:
+        """Returns the BigQuery type this field's scalar output value is stored
+        as. Raises for ARRAY_OF_STRUCT, which has no scalar value.
+        """
+        value_type = self.primitive_scalar_value_type()
+        if value_type is LLMOutputFieldType.STRING:
+            return bigquery.SqlTypeNames.STRING
+        if value_type is LLMOutputFieldType.BOOLEAN:
+            return bigquery.SqlTypeNames.BOOLEAN
+        if value_type is LLMOutputFieldType.INTEGER:
+            return bigquery.SqlTypeNames.INTEGER
+        if value_type is LLMOutputFieldType.FLOAT:
+            return bigquery.SqlTypeNames.FLOAT
+        raise ValueError(f"No BigQuery type mapping for value type [{value_type}].")
 
 
 class LLMOutputFieldMode(Enum):
@@ -257,10 +349,15 @@ class LLMRequestOutputSchemaField(abc.ABC):
     """
 
     name: str = attr.ib(
-        validator=[is_valid_unquoted_bq_identifier, attr_validators.is_snake_case]
+        validator=[
+            is_valid_unquoted_bq_identifier,
+            attr_validators.is_snake_case,
+            _is_not_reserved_view_column_name,
+        ]
     )
     """Field identifier. Must be a valid unquoted BigQuery identifier (it becomes
-    a column and/or struct sub-field name in downstream views) and snake_case.
+    a column and/or struct sub-field name in downstream views), snake_case, and
+    not one of the RESERVED_OUTPUT_SCHEMA_FIELD_NAMES the views emit.
     """
 
     _description: str = attr.ib(
@@ -303,6 +400,14 @@ class LLMRequestOutputSchemaField(abc.ABC):
             if self.inferred_field_config is not None
             else LLMOutputFieldMode.STRUCTURAL
         )
+
+    @property
+    def is_inferred_field(self) -> bool:
+        """Returns whether this field is INFERRED — i.e. its value is extracted
+        from the document with companion metadata (confidence level, citations,
+        etc.). True iff it carries an `inferred_field_config`.
+        """
+        return self.inferred_field_config is not None
 
     @property
     def semantic_consistency_constraints(
@@ -480,8 +585,8 @@ class LLMRequestOutputSchemaField(abc.ABC):
         required = yaml_dict.pop_optional("required", bool) or False
 
         field: LLMRequestOutputSchemaField
-        if field_type.is_scalar_type():
-            field = ScalarLLMRequestOutputSchemaField(
+        if field_type.is_primitive_scalar_value_type():
+            field = PrimitiveScalarLLMRequestOutputSchemaField(
                 name=name,
                 description=description,
                 required=required,
@@ -591,23 +696,46 @@ class LLMRequestOutputSchemaField(abc.ABC):
         return constraints
 
 
-def _is_scalar_field_type(
+def _is_primitive_scalar_field_type(
     _instance: object, _attribute: "attr.Attribute", value: LLMOutputFieldType
 ) -> None:
-    if not isinstance(value, LLMOutputFieldType) or not value.is_scalar_type():
+    if (
+        not isinstance(value, LLMOutputFieldType)
+        or not value.is_primitive_scalar_value_type()
+    ):
         raise ValueError(
-            f"ScalarLLMRequestOutputSchemaField requires a scalar field type, received "
-            f"[{value}]."
+            f"PrimitiveScalarLLMRequestOutputSchemaField requires a primitive scalar "
+            f"field type, received [{value}]."
         )
 
 
 @attr.define(frozen=True, kw_only=True)
-class ScalarLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+class ScalarValuedLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+    """An output schema field whose value is a single scalar: a primitive
+    (`PrimitiveScalarLLMRequestOutputSchemaField`) or an ENUM
+    (`EnumLLMRequestOutputSchemaField`, whose value is a STRING), as opposed to
+    an `ArrayOfStructLLMRequestOutputSchemaField`.
+    """
+
+    def json_path_for_value(self) -> str:
+        """Returns the JSON path to this field's scalar value within a result
+        JSON object — `$.{name}.value` for an INFERRED field (whose value is
+        wrapped in companion metadata) or `$.{name}` for a STRUCTURAL one.
+        """
+        if self.field_mode is LLMOutputFieldMode.INFERRED:
+            return f"$.{self.name}.{VALUE_FIELD_NAME}"
+        return f"$.{self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
+class PrimitiveScalarLLMRequestOutputSchemaField(
+    ScalarValuedLLMRequestOutputSchemaField
+):
     """An output schema field whose value is a single scalar (STRING, BOOLEAN,
     INTEGER, or FLOAT).
     """
 
-    scalar_type: LLMOutputFieldType = attr.ib(validator=_is_scalar_field_type)
+    scalar_type: LLMOutputFieldType = attr.ib(validator=_is_primitive_scalar_field_type)
     """The scalar value type of this field."""
 
     @property
@@ -648,7 +776,7 @@ class EnumValueDefinition:
 
 
 @attr.define(frozen=True, kw_only=True)
-class EnumLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+class EnumLLMRequestOutputSchemaField(ScalarValuedLLMRequestOutputSchemaField):
     """An output schema field whose value is one of a fixed set of allowed enum
     values, each carrying its own description.
     """
@@ -721,14 +849,20 @@ class ArrayOfStructLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
         self, _attribute: "attr.Attribute", value: list[LLMRequestOutputSchemaField]
     ) -> None:
         """Validates the field set for this particular ARRAY_OF_STRUCT field: names are
-        unique and none is itself an ARRAY_OF_STRUCT (only one level of nesting is
-        supported).
+        unique, none is the framework-injected `is_relevant`, and none is itself an
+        ARRAY_OF_STRUCT (only one level of nesting is supported).
         """
         names = [field.name for field in value]
         if duplicate_names := {n for n in names if names.count(n) > 1}:
             raise ValueError(
                 f"ARRAY_OF_STRUCT field [{self.name}] declares duplicate "
                 f"sub-field names: {sorted(duplicate_names)}."
+            )
+        if IS_RELEVANT_FIELD_NAME in names:
+            raise ValueError(
+                f"ARRAY_OF_STRUCT field [{self.name}] declares a sub-field named "
+                f"[{IS_RELEVANT_FIELD_NAME}], which collides with a column the "
+                f"parsed extraction-result views emit."
             )
         for field in value:
             if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
@@ -776,6 +910,18 @@ class ArrayOfStructLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
                 f"ARRAY_OF_STRUCT field [{self.name}] declares primary_keys "
                 f"{sorted(unknown_keys)} that are not among its sub-fields: "
                 f"{sorted(self.fields_by_name)}."
+            )
+
+        # Ensure that self.is_inferred_field is true iff there are inferred subfields
+        has_inferred_sub_field = any(
+            sub_field.is_inferred_field for sub_field in self.fields
+        )
+        if has_inferred_sub_field != (self.inferred_field_config is not None):
+            raise ValueError(
+                f"ARRAY_OF_STRUCT field [{self.name}] "
+                f"{'carries' if self.inferred_field_config is not None else 'lacks'} "
+                f"an inferred_field_config but "
+                f"{'has' if has_inferred_sub_field else 'has no'} INFERRED sub-fields."
             )
 
 

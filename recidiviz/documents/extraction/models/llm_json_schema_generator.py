@@ -65,7 +65,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMOutputFieldType,
     LLMRequestOutputSchemaField,
     NullReason,
-    ScalarLLMRequestOutputSchemaField,
+    PrimitiveScalarLLMRequestOutputSchemaField,
     description_with_enum_value_guidance,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
@@ -275,10 +275,10 @@ class LLMJsonSchemaGenerator:
                 description=field.description,
                 values=field.value_names,
             )
-        if isinstance(field, ScalarLLMRequestOutputSchemaField):
+        if isinstance(field, PrimitiveScalarLLMRequestOutputSchemaField):
             return ScalarJSONSchema(
                 description=field.description,
-                json_type=cls._json_scalar_type(field.scalar_type),
+                json_type=cls._json_scalar_type(field.field_type),
             )
         raise ValueError(
             f"Cannot build a bare value schema for field [{field.name}] of type "

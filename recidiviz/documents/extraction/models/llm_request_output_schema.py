@@ -25,10 +25,12 @@ import attr
 
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     LLMOutputFieldType,
     LLMRequestOutputSchemaField,
-    ScalarLLMRequestOutputSchemaField,
+    PrimitiveScalarLLMRequestOutputSchemaField,
+    ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
@@ -98,12 +100,12 @@ class LLMRequestOutputSchema:
             )
 
     @property
-    def is_relevant_field(self) -> ScalarLLMRequestOutputSchemaField:
+    def is_relevant_field(self) -> PrimitiveScalarLLMRequestOutputSchemaField:
         """Returns the framework-injected `is_relevant` field: a bare
         (STRUCTURAL) boolean, always required, whose description is the
         collection's relevance criteria verbatim.
         """
-        return ScalarLLMRequestOutputSchemaField(
+        return PrimitiveScalarLLMRequestOutputSchemaField(
             name=IS_RELEVANT_FIELD_NAME,
             description=self.relevance_criteria,
             required=True,
@@ -128,6 +130,32 @@ class LLMRequestOutputSchema:
                 f"Declared fields: {sorted(self.fields_by_name)}."
             )
         return self.fields_by_name[field_name]
+
+    @property
+    def scalar_valued_user_fields(
+        self,
+    ) -> list[ScalarValuedLLMRequestOutputSchemaField]:
+        """Returns the user-defined top-level fields whose value is a single scalar
+        (primitive or enum) — the flat fields a doc-grain parsed view carries.
+        """
+        return [
+            field
+            for field in self.user_defined_fields
+            if isinstance(field, ScalarValuedLLMRequestOutputSchemaField)
+        ]
+
+    @property
+    def array_of_struct_user_fields(
+        self,
+    ) -> list[ArrayOfStructLLMRequestOutputSchemaField]:
+        """Returns the user-defined top-level ARRAY_OF_STRUCT fields — one
+        array-grain parsed view each.
+        """
+        return [
+            field
+            for field in self.user_defined_fields
+            if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField)
+        ]
 
     @classmethod
     def from_yaml_dict(

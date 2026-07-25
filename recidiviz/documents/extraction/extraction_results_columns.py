@@ -34,3 +34,7 @@ VALIDATION_ISSUES_JSON_COLUMN_NAME = "validation_issues_json"
 VALIDATION_ISSUE_CHECK_NAME_FIELD = "check_name"
 VALIDATION_ISSUE_FIELD_NAME_FIELD = "field_name"
 VALIDATION_ISSUE_DETAIL_FIELD = "detail"
+
+# Output column on the parsed array-level result views that records each array
+# element's 0-indexed position in the source array.
+SOURCE_ARRAY_INDEX_COLUMN_NAME = "source_array_index"

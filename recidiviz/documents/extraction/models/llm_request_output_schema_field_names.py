@@ -41,3 +41,34 @@ CITATIONS_FIELD_NAME = "citations"
 CITATION_TEXT_FIELD_NAME = "text"
 CITATION_START_FIELD_NAME = "start"
 CITATION_END_FIELD_NAME = "end"
+
+# The companion-metadata properties that surface as a STRUCT column (keyed by
+# field name) on every parsed extraction-result view — everything above except
+# `value`, whose contents surface as the field's own typed column.
+COMPANION_METADATA_FIELD_NAMES = (
+    CONFIDENCE_LEVEL_FIELD_NAME,
+    NULL_REASON_FIELD_NAME,
+    ADVERSARIAL_INTERPRETATION_FIELD_NAME,
+    CITATIONS_FIELD_NAME,
+)
+
+
+def companion_metadata_column_name(companion_json_key: str) -> str:
+    """Returns the parsed-view companion column name for one companion-metadata
+    JSON key — the pluralized key (e.g. `confidence_level` -> `confidence_levels`;
+    `citations` is unchanged).
+    """
+    return (
+        companion_json_key
+        if companion_json_key.endswith("s")
+        else f"{companion_json_key}s"
+    )
+
+
+COMPANION_METADATA_COLUMN_NAMES = frozenset(
+    companion_metadata_column_name(json_key)
+    for json_key in COMPANION_METADATA_FIELD_NAMES
+)
+"""The companion-metadata STRUCT column names every parsed extraction-result view
+emits alongside the extracted-field columns.
+"""

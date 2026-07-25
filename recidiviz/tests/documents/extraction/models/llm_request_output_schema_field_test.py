@@ -25,7 +25,10 @@ import re
 from typing import Any
 from unittest import TestCase
 
+from google.cloud import bigquery
+
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    RESERVED_OUTPUT_SCHEMA_FIELD_NAMES,
     ApplicableWhenNonnullConstraint,
     ApplicableWhenValueConstraint,
     ArrayOfStructLLMRequestOutputSchemaField,
@@ -37,10 +40,14 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
     NotApplicableWhenValueConstraint,
     NullReason,
+    PrimitiveScalarLLMRequestOutputSchemaField,
     RequiredWhenNonnullConstraint,
     RequiredWhenValueConstraint,
-    ScalarLLMRequestOutputSchemaField,
+    ScalarValuedLLMRequestOutputSchemaField,
     description_with_enum_value_guidance,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -128,6 +135,87 @@ class BuildOrderingTest(TestCase):
             re.escape("Output schema scope declares duplicate field name: [a]."),
         ):
             _build(_field("a"), _field("a"))
+
+
+class ReservedFieldNamesTest(TestCase):
+    """Field names that collide with parsed-view columns are rejected by the
+    field constructor itself. `is_relevant` is the one exemption at this level —
+    the framework constructs the injected is_relevant field — and is instead
+    rejected wherever user fields are aggregated (see the array sub-field test
+    here and the schema-container tests in llm_request_output_schema_test.py).
+    """
+
+    def test_every_reserved_name_raises_at_parse(self) -> None:
+        for reserved_name in sorted(
+            RESERVED_OUTPUT_SCHEMA_FIELD_NAMES - {IS_RELEVANT_FIELD_NAME}
+        ):
+            with self.subTest(reserved_name=reserved_name):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    re.escape(
+                        f"Output schema declares field [{reserved_name}], which "
+                        f"collides with a column the parsed extraction-result "
+                        f"views emit."
+                    ),
+                ):
+                    _build(_field(reserved_name))
+
+    def test_reserved_name_raises_on_direct_construction(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema declares field [person_id], which collides with a "
+                "column the parsed extraction-result views emit."
+            ),
+        ):
+            PrimitiveScalarLLMRequestOutputSchemaField(
+                name="person_id",
+                description=_DESCRIPTION,
+                required=False,
+                inferred_field_config=None,
+                scalar_type=LLMOutputFieldType.STRING,
+            )
+
+    def test_reserved_name_raises_as_array_sub_field(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema declares field [source_array_index], which collides "
+                "with a column the parsed extraction-result views emit."
+            ),
+        ):
+            _build(
+                _field(
+                    "jobs",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["employer"],
+                    fields=[_field("employer"), _field("source_array_index")],
+                )
+            )
+
+    def test_is_relevant_raises_as_array_sub_field(self) -> None:
+        # is_relevant passes the field-level validator (the framework constructs
+        # the injected is_relevant field), so the array's own sub-field check must
+        # reject it.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "ARRAY_OF_STRUCT field [jobs] declares a sub-field named "
+                "[is_relevant], which collides with a column the parsed "
+                "extraction-result views emit."
+            ),
+        ):
+            _build(
+                _field(
+                    "jobs",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["employer"],
+                    fields=[
+                        _field("employer"),
+                        _field("is_relevant", field_type="BOOLEAN"),
+                    ],
+                )
+            )
 
 
 class ConstraintResolutionTest(TestCase):
@@ -530,9 +618,9 @@ class TypeInvariantsTest(TestCase):
 
 
 class EnumHelpersTest(TestCase):
-    """LLMOutputFieldType.is_scalar_type and ConfidenceLevel ordering."""
+    """LLMOutputFieldType value-type helpers and ConfidenceLevel ordering."""
 
-    def test_is_scalar_type_for_every_member(self) -> None:
+    def test_is_primitive_scalar_value_type_for_every_member(self) -> None:
         # Never raises for any member, and classifies as expected.
         expected_scalar = {
             LLMOutputFieldType.STRING,
@@ -541,14 +629,42 @@ class EnumHelpersTest(TestCase):
             LLMOutputFieldType.FLOAT,
         }
         for field_type in LLMOutputFieldType:
-            self.assertEqual(field_type in expected_scalar, field_type.is_scalar_type())
+            self.assertEqual(
+                field_type in expected_scalar,
+                field_type.is_primitive_scalar_value_type(),
+            )
+
+    def test_primitive_scalar_value_type(self) -> None:
+        # A primitive is its own value type; an ENUM's value is a STRING.
+        self.assertEqual(
+            LLMOutputFieldType.INTEGER,
+            LLMOutputFieldType.INTEGER.primitive_scalar_value_type(),
+        )
+        self.assertEqual(
+            LLMOutputFieldType.STRING,
+            LLMOutputFieldType.ENUM.primitive_scalar_value_type(),
+        )
+        with self.assertRaisesRegex(ValueError, r"has no scalar value type"):
+            LLMOutputFieldType.ARRAY_OF_STRUCT.primitive_scalar_value_type()
+
+    def test_primitive_scalar_value_big_query_type(self) -> None:
+        self.assertEqual(
+            bigquery.SqlTypeNames.STRING,
+            LLMOutputFieldType.ENUM.primitive_scalar_value_big_query_type(),
+        )
+        self.assertEqual(
+            bigquery.SqlTypeNames.FLOAT,
+            LLMOutputFieldType.FLOAT.primitive_scalar_value_big_query_type(),
+        )
+        with self.assertRaisesRegex(ValueError, r"has no scalar value type"):
+            LLMOutputFieldType.ARRAY_OF_STRUCT.primitive_scalar_value_big_query_type()
 
     def test_scalar_field_type_dispatch(self) -> None:
         for field_type in LLMOutputFieldType:
-            if not field_type.is_scalar_type():
+            if not field_type.is_primitive_scalar_value_type():
                 continue
             (field,) = _build(_field("f", field_type=field_type.value))
-            self.assertIsInstance(field, ScalarLLMRequestOutputSchemaField)
+            self.assertIsInstance(field, PrimitiveScalarLLMRequestOutputSchemaField)
             self.assertEqual(field_type, field.field_type)
 
     def test_enum_and_array_dispatch(self) -> None:
@@ -585,6 +701,82 @@ class EnumHelpersTest(TestCase):
         self.assertFalse(
             ConfidenceLevel.SPECULATIVE.meets_minimum(ConfidenceLevel.INFERRED)
         )
+
+
+class ScalarValuedFieldTest(TestCase):
+    """The ScalarValued hierarchy and json_path_for_value."""
+
+    def test_scalar_and_enum_are_scalar_valued_array_is_not(self) -> None:
+        scalar, enum_field, array_field = _build(
+            _field("s"),
+            _field("e", field_type="ENUM", values=_enum_values("x")),
+            _field(
+                "a",
+                field_type="ARRAY_OF_STRUCT",
+                primary_keys=["s"],
+                fields=[_field("s")],
+            ),
+        )
+        self.assertIsInstance(scalar, ScalarValuedLLMRequestOutputSchemaField)
+        self.assertIsInstance(enum_field, ScalarValuedLLMRequestOutputSchemaField)
+        self.assertNotIsInstance(array_field, ScalarValuedLLMRequestOutputSchemaField)
+        # The json_path_for_value helper lives on the scalar-valued base only.
+        self.assertFalse(hasattr(array_field, "json_path_for_value"))
+
+    def test_json_path_for_value(self) -> None:
+        # An inferred field wraps its value under `.value`; a structural field
+        # holds the bare value at its key. Covers both a primitive scalar and an
+        # enum, since the helper lives on their shared base.
+        inferred_scalar, structural_scalar, inferred_enum = _build(
+            _field("employer"),
+            _field("note", field_mode="STRUCTURAL"),
+            _field("status", field_type="ENUM", values=_enum_values("open", "closed")),
+        )
+        for field, expected in [
+            (inferred_scalar, "$.employer.value"),
+            (structural_scalar, "$.note"),
+            (inferred_enum, "$.status.value"),
+        ]:
+            with self.subTest(field=field.name):
+                assert isinstance(field, ScalarValuedLLMRequestOutputSchemaField)
+                self.assertEqual(expected, field.json_path_for_value())
+
+
+class IsInferredFieldTest(TestCase):
+    """is_inferred_field on scalar fields and the ARRAY_OF_STRUCT override."""
+
+    def test_scalar_inferred_vs_structural(self) -> None:
+        inferred_scalar, structural_scalar = _build(
+            _field("employer"),
+            _field("note", field_mode="STRUCTURAL"),
+        )
+        self.assertTrue(inferred_scalar.is_inferred_field)
+        self.assertFalse(structural_scalar.is_inferred_field)
+
+    def test_array_is_inferred_iff_any_sub_field_is_inferred(self) -> None:
+        (array_with_inferred_sub,) = _build(
+            _field(
+                "jobs",
+                field_type="ARRAY_OF_STRUCT",
+                primary_keys=["employer"],
+                fields=[
+                    _field("employer", field_mode="STRUCTURAL"),
+                    _field("pay_rate", field_type="FLOAT"),
+                ],
+            ),
+        )
+        self.assertTrue(array_with_inferred_sub.is_inferred_field)
+
+        (array_all_structural,) = _build(
+            _field(
+                "jobs",
+                field_type="ARRAY_OF_STRUCT",
+                field_mode="STRUCTURAL",
+                primary_keys=["employer"],
+                fields=[_field("employer", field_mode="STRUCTURAL")],
+            ),
+        )
+        self.assertFalse(array_all_structural.is_inferred_field)
 
 
 class EnumFieldDescriptionTest(TestCase):
