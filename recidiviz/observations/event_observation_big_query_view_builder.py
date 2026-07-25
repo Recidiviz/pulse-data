@@ -27,9 +27,6 @@ from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObserv
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
-from recidiviz.observations.observation_attribute_cast import (
-    sql_cast_clause_for_attribute_column,
-)
 from recidiviz.observations.observation_schemas import event_observation_base_schema
 from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
@@ -150,7 +147,7 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         column_clauses = [
             *unit_of_observation.primary_key_column_names_ordered,
             f"DATE({event_date_col}) AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
-            *[sql_cast_clause_for_attribute_column(col) for col in attribute_cols],
+            *[col.sql_cast_clause() for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)
 

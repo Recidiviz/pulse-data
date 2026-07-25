@@ -19,7 +19,7 @@
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_utils import typed_null_expression_for_field
+from recidiviz.big_query.big_query_utils import null_sql_cast_clause_for_schema_field
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     list_to_query_string,
@@ -109,7 +109,7 @@ WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
             if col.name in config.primary_key_column_names:
                 return f"current_docs.{col.name}"
             # A deleted document has no value for any non-PK column.
-            return f"{typed_null_expression_for_field(col)} AS {col.name}"
+            return null_sql_cast_clause_for_schema_field(col)
 
         deleted_doc_select_columns = list_to_query_string(
             [_deleted_col_expr(col) for col in temp_table_schema]

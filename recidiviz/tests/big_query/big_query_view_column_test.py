@@ -20,7 +20,17 @@ import unittest
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view_column import Integer, Json, Record, String
+from recidiviz.big_query.big_query_view_column import (
+    Bool,
+    Date,
+    Float,
+    Integer,
+    Json,
+    Numeric,
+    Record,
+    String,
+    Timestamp,
+)
 
 
 class BigQueryViewColumnTest(unittest.TestCase):
@@ -41,6 +51,54 @@ class BigQueryViewColumnTest(unittest.TestCase):
         self.assertEqual(schema_field.description, "A test column")
         self.assertEqual(schema_field.field_type, "STRING")
         self.assertEqual(schema_field.mode, "REQUIRED")
+
+    def test_sql_cast_type(self) -> None:
+        """sql_cast_type() returns the standard-SQL type token accepted by CAST,
+        which for several types differs from the legacy schema field_type
+        (INT64 vs INTEGER, FLOAT64 vs FLOAT, BOOL vs BOOLEAN).
+        """
+        cases = [
+            (String, "STRING"),
+            (Integer, "INT64"),
+            (Float, "FLOAT64"),
+            (Bool, "BOOL"),
+            (Timestamp, "TIMESTAMP"),
+            (Date, "DATE"),
+            (Numeric, "NUMERIC"),
+            (Json, "JSON"),
+        ]
+        for column_cls, expected_cast_type in cases:
+            with self.subTest(column_cls=column_cls.__name__):
+                column = column_cls(name="c", description="d", mode="NULLABLE")
+                self.assertEqual(expected_cast_type, column.sql_cast_type())
+
+    def test_sql_cast_type_renders_repeated_and_record(self) -> None:
+        """sql_cast_type() renders parameterized ARRAY/STRUCT tokens for complex
+        columns (not a bare ARRAY / STRUCT)."""
+        self.assertEqual(
+            "ARRAY<STRING>",
+            String(name="c", description="d", mode="REPEATED").sql_cast_type(),
+        )
+        record = Record(
+            name="c",
+            description="d",
+            mode="NULLABLE",
+            fields=[String(name="street", description="d", mode="NULLABLE")],
+        )
+        self.assertEqual("STRUCT<street STRING>", record.sql_cast_type())
+
+    def test_sql_cast_clause_self_cast(self) -> None:
+        column = Float(name="wage", description="d", mode="NULLABLE")
+        self.assertEqual("CAST(wage AS FLOAT64) AS wage", column.sql_cast_clause())
+
+    def test_sql_cast_clause_with_value_expression(self) -> None:
+        """An explicit value expression is cast to the column's type, but the alias
+        stays the column name (the value_column_sql / JSON_VALUE path)."""
+        column = Float(name="wage", description="d", mode="NULLABLE")
+        self.assertEqual(
+            "CAST(JSON_VALUE(j, '$.wage') AS FLOAT64) AS wage",
+            column.sql_cast_clause("JSON_VALUE(j, '$.wage')"),
+        )
 
     def test_matches_bq_field_exact_match(self) -> None:
         column = String(

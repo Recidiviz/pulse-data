@@ -26,9 +26,6 @@ from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObserv
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
-from recidiviz.observations.observation_attribute_cast import (
-    sql_cast_clause_for_attribute_column,
-)
 from recidiviz.observations.observation_schemas import span_observation_base_schema
 from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.string_formatting import fix_indent
@@ -156,7 +153,7 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             *unit_of_observation.primary_key_column_names_ordered,
             f"DATE({span_start_date_col}) AS {cls.START_DATE_OUTPUT_COL_NAME}",
             f"DATE({span_end_date_col}) AS {cls.END_DATE_OUTPUT_COL_NAME}",
-            *[sql_cast_clause_for_attribute_column(col) for col in attribute_cols],
+            *[col.sql_cast_clause() for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)
 

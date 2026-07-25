@@ -22,6 +22,10 @@ from typing import Literal, get_args
 import attrs
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_utils import (
+    sql_cast_clause_for_schema_field,
+    sql_type_name_for_schema_field,
+)
 from recidiviz.big_query.constants import (
     BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
     BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT,
@@ -70,6 +74,24 @@ class BigQueryViewColumn(abc.ABC):
             description=self.bq_description,
             field_type=self.field_type.name,
             mode=self.mode,
+        )
+
+    def sql_cast_type(self) -> str:
+        """Returns the standard-SQL type token for this column, for use in a
+        CAST(expr AS <token>) expression — e.g. STRING, INT64, FLOAT64, BOOL,
+        STRUCT<...>, ARRAY<...>.
+        """
+        return sql_type_name_for_schema_field(self.as_schema_field())
+
+    def sql_cast_clause(self, value_expression: str | None = None) -> str:
+        """Returns a `CAST(<value_expression> AS <type>) AS <name>` clause casting
+        |value_expression| to this column's declared type, aliased to the column
+        name. |value_expression| defaults to this column's name (a plain self-cast);
+        pass an explicit expression to cast something else (e.g. a JSON-extraction
+        expression) to this column's type.
+        """
+        return sql_cast_clause_for_schema_field(
+            self.as_schema_field(), value_expression=value_expression
         )
 
     def matches_bq_field(self, schema_field: bigquery.SchemaField) -> bool:

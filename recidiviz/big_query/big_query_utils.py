@@ -86,36 +86,125 @@ class BigQueryDateInterval(enum.Enum):
     YEAR = "YEAR"
 
 
-def sql_type_name_for_schema_field(field: bigquery.SchemaField) -> str:
-    """Returns the GoogleSQL type name of |field| — e.g. STRING, INT64,
-    STRUCT<a INT64, b STRING>, ARRAY<STRUCT<...>> — as accepted by CAST and DDL.
-    Renders nested struct sub-fields recursively and wraps REPEATED fields in
-    ARRAY<...>.
+class JsonExtractionType(enum.Enum):
+    """A BigQuery JSON-extraction function, selected by the shape of the value
+    being pulled out of a JSON column.
+    """
+
+    # A scalar leaf value, returned as a STRING (e.g. `$.employer.value`).
+    SCALAR = "JSON_VALUE"
+    # A nested JSON value (object or array), returned as JSON.
+    JSON = "JSON_QUERY"
+    # A JSON array, returned as an array of JSON elements to UNNEST over.
+    ARRAY = "JSON_QUERY_ARRAY"
+
+
+def json_extraction_clause(
+    extraction_type: JsonExtractionType, source_json_expression: str, json_path: str
+) -> str:
+    """Returns a BigQuery JSON-extraction expression — e.g.
+    `JSON_VALUE(result_json, '$.employer.value')` — using the function named by
+    |extraction_type| to pull |json_path| out of the |source_json_expression|
+    column or expression.
+
+    Path segments with special characters must use JSONPath double-quote syntax
+    (e.g. `$."my field"`); a single quote in |json_path| would terminate the
+    single-quoted SQL string literal the path is rendered into, so it is rejected.
+    """
+    if "'" in json_path:
+        raise ValueError(
+            f"JSON path [{json_path}] contains a single quote, which would break "
+            f"the single-quoted SQL string literal it is rendered into. Use "
+            f'JSONPath double-quote syntax (e.g. $."my field") for path segments '
+            f"with special characters."
+        )
+    return f"{extraction_type.value}({source_json_expression}, '{json_path}')"
+
+
+# Maps a SchemaField's field_type (legacy or standard spelling) to the GoogleSQL
+# (standard-SQL) scalar type name. Only these names are legal CAST targets — the
+# legacy names FLOAT/INTEGER/BOOLEAN are not (e.g. CAST(x AS FLOAT) fails with
+# "Type not found: FLOAT"). STRUCT/RECORD are handled recursively, not via this map.
+_STANDARD_SQL_SCALAR_TYPE_BY_FIELD_TYPE: dict[str, str] = {
+    "STRING": "STRING",
+    "BYTES": "BYTES",
+    "INTEGER": "INT64",
+    "INT64": "INT64",
+    "FLOAT": "FLOAT64",
+    "FLOAT64": "FLOAT64",
+    "NUMERIC": "NUMERIC",
+    "BIGNUMERIC": "BIGNUMERIC",
+    "BOOLEAN": "BOOL",
+    "BOOL": "BOOL",
+    "TIMESTAMP": "TIMESTAMP",
+    "DATE": "DATE",
+    "TIME": "TIME",
+    "DATETIME": "DATETIME",
+    "GEOGRAPHY": "GEOGRAPHY",
+    "JSON": "JSON",
+    "INTERVAL": "INTERVAL",
+}
+
+
+def _base_sql_type_name_for_schema_field(field: bigquery.SchemaField) -> str:
+    """Returns the standard-SQL type name for |field| ignoring its mode (no
+    ARRAY<...> wrapping for REPEATED fields), rendering STRUCT sub-fields recursively.
     """
     if field.field_type in ("RECORD", "STRUCT"):
         rendered_sub_fields = ", ".join(
             f"{sub_field.name} {sql_type_name_for_schema_field(sub_field)}"
             for sub_field in field.fields
         )
-        base_type = f"STRUCT<{rendered_sub_fields}>"
-    else:
-        base_type = field.field_type
+        return f"STRUCT<{rendered_sub_fields}>"
 
+    if field.field_type in _STANDARD_SQL_SCALAR_TYPE_BY_FIELD_TYPE:
+        return _STANDARD_SQL_SCALAR_TYPE_BY_FIELD_TYPE[field.field_type]
+
+    raise ValueError(
+        f"No mapping in _STANDARD_SQL_SCALAR_TYPE_BY_FIELD_TYPE for field "
+        f"[{field.name}] with field type [{field.field_type}]."
+    )
+
+
+def sql_type_name_for_schema_field(field: bigquery.SchemaField) -> str:
+    """Returns the GoogleSQL (standard-SQL) type name of |field| — e.g. STRING,
+    INT64, FLOAT64, STRUCT<a INT64, b STRING>, ARRAY<STRUCT<...>> — which is legal
+    both as a CAST target (CAST(x AS <type>)) and in DDL. Renders nested struct
+    sub-fields recursively and wraps REPEATED fields in ARRAY<...>.
+
+    This is the standard-SQL name, which differs from the legacy schema type name
+    (field.field_type) for some scalars: FLOAT->FLOAT64, INTEGER->INT64,
+    BOOLEAN->BOOL. Only the standard names are legal CAST targets.
+    """
+    base_type = _base_sql_type_name_for_schema_field(field)
     if field.mode == BigQueryFieldMode.REPEATED.value:
         return f"ARRAY<{base_type}>"
     return base_type
 
 
-def typed_null_expression_for_field(field: bigquery.SchemaField) -> str:
-    """Returns a SQL expression for the typed absence of a value for |field|:
-    CAST(NULL AS <type>) for scalar and struct fields, and a typed empty array
-    (ARRAY<...>[]) for REPEATED fields, since BigQuery arrays cannot be NULL. The
-    expression carries no column alias — callers add `AS <name>` as needed.
+def sql_cast_clause_for_schema_field(
+    field: bigquery.SchemaField, value_expression: str | None = None
+) -> str:
+    """Returns a `CAST(<value_expression> AS <type>) AS <name>` clause that casts
+    |value_expression| to the standard-SQL type matching |field|'s declared type,
+    aliased to the field's name. |value_expression| defaults to the column named by
+    |field| (a plain self-cast); pass an explicit expression to cast something else
+    to the field's type.
     """
+    expr = value_expression if value_expression is not None else field.name
     type_name = sql_type_name_for_schema_field(field)
-    if field.mode == BigQueryFieldMode.REPEATED.value:
-        return f"{type_name}[]"
-    return f"CAST(NULL AS {type_name})"
+    return f"CAST({expr} AS {type_name}) AS {field.name}"
+
+
+def null_sql_cast_clause_for_schema_field(field: bigquery.SchemaField) -> str:
+    """Returns a `CAST(NULL AS <type>) AS <name>` clause producing the typed
+    absence of a value for |field|: NULL for scalar and struct fields, and an empty
+    typed array for REPEATED fields (a NULL array casts to an empty array in
+    BigQuery, since arrays cannot be NULL). Used to emit a placeholder column with
+    no source value — e.g. in a UNION branch that must stay type-compatible with
+    the other branches.
+    """
+    return sql_cast_clause_for_schema_field(field, value_expression="NULL")
 
 
 def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
