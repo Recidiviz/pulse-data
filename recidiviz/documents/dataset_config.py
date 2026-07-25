@@ -65,3 +65,21 @@ def document_extraction_validation_audit_dataset_for_region(
     """Returns the dataset containing LLM document-extraction validation audit tables for this region."""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
     return f"{prefix}{state_code.value.lower()}_document_extraction_validation_audit"
+
+
+def document_extraction_results_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the dataset containing the public (validated, parsed) document extraction results for this region."""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_document_extraction_results"
+
+
+def document_extraction_results_unvalidated_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the dataset containing unvalidated (raw-parsed) document extraction results for this region."""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return (
+        f"{prefix}{state_code.value.lower()}_document_extraction_results__unvalidated"
+    )
