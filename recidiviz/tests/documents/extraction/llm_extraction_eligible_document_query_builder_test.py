@@ -62,18 +62,14 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
         contents_fixture: str,
     ) -> None:
         self.load_fixture_into_table(
-            address=config.metadata_table_address(
-                self.project_id
-            ).to_project_agnostic_address(),
+            address=config.metadata_table_address,
             schema=config.build_bq_metadata_schema(),
             fixture_path=self._fixture_path(metadata_fixture),
             fixture_columns=None,
             allow_comments=False,
         )
         self.load_fixture_into_table(
-            address=config.document_contents_table_address(
-                self.project_id
-            ).to_project_agnostic_address(),
+            address=config.document_contents_table_address,
             schema=config.build_bq_document_contents_schema(),
             fixture_path=self._fixture_path(contents_fixture),
             fixture_columns=None,
@@ -90,9 +86,7 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
     ) -> str:
         # The production-shaped filter selects every live document in the
         # collection; individual tests override it to prove the filter narrows.
-        metadata_address = config.metadata_table_address(
-            self.project_id
-        ).to_project_agnostic_address()
+        metadata_address = config.metadata_table_address
         default_filter = (
             "SELECT document_contents_id FROM "
             f"`{{project_id}}.{metadata_address.dataset_id}.{metadata_address.table_id}` "
@@ -156,9 +150,7 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
 
     def test_filter_narrows_to_selected_contents_ids(self) -> None:
         # Only the document_contents_ids the authored filter returns are eligible.
-        metadata_address = self.case_notes_config.metadata_table_address(
-            self.project_id
-        ).to_project_agnostic_address()
+        metadata_address = self.case_notes_config.metadata_table_address
         self._assert_matches_fixture(
             self._run_case_notes_query(
                 filter_template=(

@@ -127,7 +127,11 @@ class DocumentUploadResultRecorder:
 
         self._insert_document_contents(collection_result, contents_query_builder)
 
-        metadata_addr = collection_result.config.metadata_table_address(self.project_id)
+        metadata_addr = (
+            collection_result.config.metadata_table_address.to_project_specific_address(
+                self.project_id
+            )
+        )
         query = query_builder.build_successful_uploads_metadata_insert_query(
             config=collection_result.config,
             metadata_table_address=metadata_addr,
@@ -180,8 +184,8 @@ class DocumentUploadResultRecorder:
             )
             return
 
-        document_contents_addr = (
-            collection_result.config.document_contents_table_address(self.project_id)
+        document_contents_addr = collection_result.config.document_contents_table_address.to_project_specific_address(
+            self.project_id
         )
         query = query_builder.build_document_contents_insert_query(
             document_contents_table_address=document_contents_addr,

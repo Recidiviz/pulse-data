@@ -75,12 +75,12 @@ def collect_document_store_source_tables() -> list[SourceTableCollection]:
 
         for config in configs.values():
             metadata_collection.add_source_table(
-                table_id=config.metadata_table_id,
+                table_id=config.metadata_table_address.table_id,
                 description=config.description,
                 schema_fields=config.build_bq_metadata_schema(),
             )
             contents_collection.add_source_table(
-                table_id=config.document_contents_table_id,
+                table_id=config.document_contents_table_address.table_id,
                 description=(
                     f"Document contents table for collection [{config.name}]. "
                     "One row per distinct document_contents_id successfully uploaded to GCS."

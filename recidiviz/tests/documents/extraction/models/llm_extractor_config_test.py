@@ -252,7 +252,8 @@ class ParseAllExtractorConfigsTest(TestCase):
         )
         self.assertEqual(StateCode.US_XX, config.input_document_collection.state_code)
         self.assertEqual(
-            "fake_input_notes", config.input_document_collection.metadata_table_id
+            "fake_input_notes",
+            config.input_document_collection.metadata_table_address.table_id,
         )
 
         # The state-level override resolved to the override config, not the

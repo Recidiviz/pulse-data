@@ -91,10 +91,14 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             state_code=config.state_code,
             collection_name=config.name,
             temp_document_metadata_updates_address=config.temp_document_metadata_updates_table_address(
-                self.project_id, self.run_id
+                self.run_id
+            ).to_project_specific_address(
+                self.project_id
             ),
             temp_new_document_contents_address=config.temp_new_document_contents_table_address(
-                self.project_id, self.run_id
+                self.run_id
+            ).to_project_specific_address(
+                self.project_id
             ),
             num_new_document_contents_rows=num_new_document_contents_rows,
             num_document_metadata_updates_rows=num_document_metadata_updates_rows,
@@ -136,7 +140,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         def _run_query_side_effect(query_str: str, **_kwargs: object) -> MagicMock:
             if (
-                self.config.document_contents_table_id in query_str
+                self.config.document_contents_table_address.table_id in query_str
                 and "INSERT INTO" in query_str
             ):
                 raise ValueError("doc_contents insert failed")
@@ -167,7 +171,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         # still run the metadata insert.
         self.assertEqual(self.bq_client.run_query_async.call_count, 1)
         self.assertNotIn(
-            self.config.document_contents_table_id,
+            self.config.document_contents_table_address.table_id,
             self.bq_client.run_query_async.call_args.kwargs["query_str"],
         )
 

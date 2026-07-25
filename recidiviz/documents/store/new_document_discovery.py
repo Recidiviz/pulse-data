@@ -96,8 +96,8 @@ class NewDocumentDiscoverer:
         """
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(
-                self.project_id, self.run_id
-            )
+                self.run_id
+            ).to_project_specific_address(self.project_id)
         )
         diff_query = self.diff_query_builder.build_document_diff_query(self.config)
 
@@ -122,13 +122,13 @@ class NewDocumentDiscoverer:
             return None
 
         temp_document_address = self.config.temp_new_document_contents_table_address(
-            self.project_id, self.run_id
-        )
+            self.run_id
+        ).to_project_specific_address(self.project_id)
         new_documents_query = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id, state_code=self.state_code
         ).build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,
-            document_contents_table_address=self.config.document_contents_table_address(
+            document_contents_table_address=self.config.document_contents_table_address.to_project_specific_address(
                 self.project_id
             ),
             target_batch_bytes=self.target_upload_batch_bytes,

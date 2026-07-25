@@ -21,6 +21,7 @@ from pathlib import Path
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import (
     BigQueryFieldMode,
     to_validated_schema_field,
@@ -38,7 +39,17 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    PERSON_EXTERNAL_ID_COLUMN_NAME,
+    PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME,
+    PERSON_ID_COLUMN_NAME,
     ROW_CREATE_DATETIME_COLUMN_NAME,
+    STAFF_EXTERNAL_ID_COLUMN_NAME,
+    STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
+    STAFF_ID_COLUMN_NAME,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePersonExternalId,
+    NormalizedStateStaffExternalId,
 )
 from recidiviz.tests.documents.store import config as fake_config_module
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -324,6 +335,121 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                     bigquery.SchemaField("person_id", "INTEGER"),
                 ],
             )
+
+    def test_internal_id_type(self) -> None:
+        self.assertEqual(
+            {t: t.internal_id_type for t in DocumentRootEntityIdType},
+            {
+                DocumentRootEntityIdType.PERSON_ID: DocumentRootEntityIdType.PERSON_ID,
+                DocumentRootEntityIdType.PERSON_EXTERNAL_ID: DocumentRootEntityIdType.PERSON_ID,
+                DocumentRootEntityIdType.STAFF_ID: DocumentRootEntityIdType.STAFF_ID,
+                DocumentRootEntityIdType.STAFF_EXTERNAL_ID: DocumentRootEntityIdType.STAFF_ID,
+            },
+        )
+
+    def test_id_column_name(self) -> None:
+        self.assertEqual(
+            {t: t.id_column_name for t in DocumentRootEntityIdType},
+            {
+                DocumentRootEntityIdType.PERSON_ID: PERSON_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.PERSON_EXTERNAL_ID: PERSON_EXTERNAL_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.STAFF_ID: STAFF_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.STAFF_EXTERNAL_ID: STAFF_EXTERNAL_ID_COLUMN_NAME,
+            },
+        )
+
+    def test_id_type_column_name(self) -> None:
+        # Only the external-id types carry a qualifying id_type column; the
+        # internal-id types have none.
+        self.assertEqual(
+            {t: t.id_type_column_name for t in DocumentRootEntityIdType},
+            {
+                DocumentRootEntityIdType.PERSON_ID: None,
+                DocumentRootEntityIdType.PERSON_EXTERNAL_ID: PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME,
+                DocumentRootEntityIdType.STAFF_ID: None,
+                DocumentRootEntityIdType.STAFF_EXTERNAL_ID: STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
+            },
+        )
+
+    def test_id_column_type(self) -> None:
+        # Internal ids are INTEGER; external ids are STRING.
+        self.assertEqual(
+            {t: t.id_column_type for t in DocumentRootEntityIdType},
+            {
+                DocumentRootEntityIdType.PERSON_ID: SqlTypeNames.INTEGER,
+                DocumentRootEntityIdType.PERSON_EXTERNAL_ID: SqlTypeNames.STRING,
+                DocumentRootEntityIdType.STAFF_ID: SqlTypeNames.INTEGER,
+                DocumentRootEntityIdType.STAFF_EXTERNAL_ID: SqlTypeNames.STRING,
+            },
+        )
+
+    def test_resolved_internal_id_column_name(self) -> None:
+        # External-id types collapse onto their internal id column.
+        self.assertEqual(
+            {t: t.resolved_internal_id_column_name for t in DocumentRootEntityIdType},
+            {
+                DocumentRootEntityIdType.PERSON_ID: PERSON_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.PERSON_EXTERNAL_ID: PERSON_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.STAFF_ID: STAFF_ID_COLUMN_NAME,
+                DocumentRootEntityIdType.STAFF_EXTERNAL_ID: STAFF_ID_COLUMN_NAME,
+            },
+        )
+
+    def test_external_id_entity_cls(self) -> None:
+        self.assertEqual(
+            NormalizedStatePersonExternalId,
+            DocumentRootEntityIdType.PERSON_EXTERNAL_ID.external_id_entity_cls,
+        )
+        self.assertEqual(
+            NormalizedStateStaffExternalId,
+            DocumentRootEntityIdType.STAFF_EXTERNAL_ID.external_id_entity_cls,
+        )
+        # The internal-id types have no external-id table to resolve through.
+        for internal_type in (
+            DocumentRootEntityIdType.PERSON_ID,
+            DocumentRootEntityIdType.STAFF_ID,
+        ):
+            with self.subTest(root_entity_id_type=internal_type):
+                with self.assertRaisesRegex(
+                    ValueError, r"has no external-id entity class"
+                ):
+                    _ = internal_type.external_id_entity_cls
+
+    def test_metadata_table_address(self) -> None:
+        config = _make_config()
+        self.assertEqual(
+            BigQueryAddress.from_str("us_xx_document_store_metadata.test_collection"),
+            config.metadata_table_address,
+        )
+
+    def test_document_contents_table_address(self) -> None:
+        config = _make_config()
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "us_xx_document_contents.test_collection_document_contents"
+            ),
+            config.document_contents_table_address,
+        )
+
+    def test_temp_document_metadata_updates_table_address(self) -> None:
+        config = _make_config()
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "us_xx_document_store_temp."
+                "temp_document_metadata_updates_test_collection_run_1"
+            ),
+            config.temp_document_metadata_updates_table_address("run-1"),
+        )
+
+    def test_temp_new_document_contents_table_address(self) -> None:
+        config = _make_config()
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "us_xx_document_store_temp."
+                "temp_new_document_contents_test_collection_run_1"
+            ),
+            config.temp_new_document_contents_table_address("run-1"),
+        )
 
     def test_all_yaml_configs_conform_to_schema(self) -> None:
         schema_path = Path(yaml_schema.__file__).parent / "schema.json"

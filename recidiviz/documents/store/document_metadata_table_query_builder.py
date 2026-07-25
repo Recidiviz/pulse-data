@@ -50,7 +50,9 @@ class DocumentCollectionMetadataTableQueryBuilder:
         null document_contents_id indicates that the document has been deleted in
         the source data.
         """
-        address = config.metadata_table_address(self.project_id)
+        address = config.metadata_table_address.to_project_specific_address(
+            self.project_id
+        )
 
         output_columns = [
             *config.primary_key_column_names,

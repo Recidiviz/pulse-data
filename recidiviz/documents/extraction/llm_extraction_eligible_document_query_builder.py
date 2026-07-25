@@ -70,8 +70,8 @@ class LLMExtractionEligibleDocumentQueryBuilder:
             project_id=project_id
         )
 
-        contents_address = (
-            self.input_document_collection.document_contents_table_address(project_id)
+        contents_address = self.input_document_collection.document_contents_table_address.to_project_specific_address(
+            project_id
         )
 
         latest_metadata_query = DocumentCollectionMetadataTableQueryBuilder(

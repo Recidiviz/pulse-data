@@ -24,7 +24,7 @@ from types import ModuleType
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_attr_validators import (
     is_valid_unquoted_bq_identifier,
 )
@@ -54,6 +54,11 @@ from recidiviz.documents.store.document_store_columns import (
     STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
     STAFF_ID_COLUMN_NAME,
     get_document_store_column_schema,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateEntity,
+    NormalizedStatePersonExternalId,
+    NormalizedStateStaffExternalId,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -123,6 +128,49 @@ class DocumentRootEntityIdType(Enum):
         return bigquery.enums.SqlTypeNames(
             get_document_store_column_schema(self.id_column_name).field_type
         )
+
+    @property
+    def external_id_entity_cls(self) -> type[NormalizedStateEntity]:
+        """Returns the normalized external-id entity class that documents with
+        this root entity ID type resolve their internal id through. Only defined
+        for the external-id types; the internal-id types carry their id directly
+        and have no external-id table to join against.
+        """
+        if self is DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
+            return NormalizedStatePersonExternalId
+        if self is DocumentRootEntityIdType.STAFF_EXTERNAL_ID:
+            return NormalizedStateStaffExternalId
+        raise ValueError(
+            f"root_entity_id_type [{self}] has no external-id entity class."
+        )
+
+    @property
+    def internal_id_type(self) -> "DocumentRootEntityIdType":
+        """Returns the internal (Recidiviz-assigned) counterpart of this root
+        entity ID type — PERSON_ID for any person type, STAFF_ID for any staff
+        type. This is the ID the extraction result views resolve every document
+        to, and the grain an entity-resolution composite document is built at.
+        """
+        if self in (
+            DocumentRootEntityIdType.PERSON_ID,
+            DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+        ):
+            return DocumentRootEntityIdType.PERSON_ID
+        if self in (
+            DocumentRootEntityIdType.STAFF_ID,
+            DocumentRootEntityIdType.STAFF_EXTERNAL_ID,
+        ):
+            return DocumentRootEntityIdType.STAFF_ID
+        raise ValueError(f"Unexpected root_entity_id_type: [{self}]")
+
+    @property
+    def resolved_internal_id_column_name(self) -> str:
+        """Returns the internal Recidiviz entity-id column (`person_id` or
+        `staff_id`) that a document with this root entity ID type resolves to,
+        collapsing the external-id types onto their internal id. Contrast with
+        `id_column_name`, which is the raw metadata column (e.g. `person_external_id`).
+        """
+        return self.internal_id_type.id_column_name
 
 
 def _root_entity_schema_fields(
@@ -217,16 +265,19 @@ class DocumentCollectionConfig:
         return self.root_entity_id_type.id_column_name
 
     @property
-    def metadata_table_id(self) -> str:
+    def _metadata_table_id(self) -> str:
         """Returns the BigQuery table ID for this document collection's metadata table."""
         return self.name.lower()
 
-    def metadata_table_address(self, project_id: str) -> ProjectSpecificBigQueryAddress:
-        """Returns the BigQuery address for this collection's metadata table."""
-        return ProjectSpecificBigQueryAddress(
-            project_id=project_id,
+    @property
+    def metadata_table_address(self) -> BigQueryAddress:
+        """Returns the project-agnostic BigQuery address for this collection's
+        metadata table. Convert with `.to_project_specific_address(project_id)` where
+        a concrete project is needed.
+        """
+        return BigQueryAddress(
             dataset_id=document_store_metadata_dataset_for_region(self.state_code),
-            table_id=self.metadata_table_id,
+            table_id=self._metadata_table_id,
         )
 
     @property
@@ -288,14 +339,13 @@ class DocumentCollectionConfig:
         ]
 
     def temp_document_metadata_updates_table_address(
-        self, project_id: str, run_id: str
-    ) -> ProjectSpecificBigQueryAddress:
-        """Returns the BigQuery address for the temp document metadata updates
-        table that contains rows where there were any changes to
+        self, run_id: str
+    ) -> BigQueryAddress:
+        """Returns the project-agnostic BigQuery address for the temp document
+        metadata updates table that contains rows where there were any changes to
         document_contents_id or another metadata column for each primary key in
         this collection."""
-        return ProjectSpecificBigQueryAddress(
-            project_id=project_id,
+        return BigQueryAddress(
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=(
                 f"{TEMP_METADATA_UPDATES_TABLE_ID_PREFIX}"
@@ -303,15 +353,12 @@ class DocumentCollectionConfig:
             ),
         )
 
-    def temp_new_document_contents_table_address(
-        self, project_id: str, run_id: str
-    ) -> ProjectSpecificBigQueryAddress:
-        """Returns the BigQuery address for the temp new document contents table
-        that tracks which document_contents_ids in this collection have not yet
-        been uploaded for the state. This is the table read from to perform the
-        actual document upload."""
-        return ProjectSpecificBigQueryAddress(
-            project_id=project_id,
+    def temp_new_document_contents_table_address(self, run_id: str) -> BigQueryAddress:
+        """Returns the project-agnostic BigQuery address for the temp new document
+        contents table that tracks which document_contents_ids in this collection
+        have not yet been uploaded for the state. This is the table read from to
+        perform the actual document upload."""
+        return BigQueryAddress(
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=(
                 f"{TEMP_NEW_DOCUMENT_CONTENTS_TABLE_ID_PREFIX}"
@@ -320,20 +367,21 @@ class DocumentCollectionConfig:
         )
 
     @property
-    def document_contents_table_id(self) -> str:
+    def _document_contents_table_id(self) -> str:
         """Returns the BigQuery table ID for this collection's document_contents table."""
         return f"{self.name.lower()}_document_contents"
 
-    def document_contents_table_address(
-        self, project_id: str
-    ) -> ProjectSpecificBigQueryAddress:
-        """Returns the BigQuery address for this collection's document_contents table.
-        The table holds one row per distinct document_contents_id that has been successfully
-        uploaded to GCS for this collection."""
-        return ProjectSpecificBigQueryAddress(
-            project_id=project_id,
+    @property
+    def document_contents_table_address(self) -> BigQueryAddress:
+        """Returns the project-agnostic BigQuery address for this collection's
+        document_contents table, which holds one row per distinct
+        document_contents_id successfully uploaded to GCS for this collection.
+        Convert with `.to_project_specific_address(project_id)` where a concrete
+        project is needed.
+        """
+        return BigQueryAddress(
             dataset_id=document_contents_dataset_for_region(self.state_code),
-            table_id=self.document_contents_table_id,
+            table_id=self._document_contents_table_id,
         )
 
     def build_bq_document_contents_schema(self) -> list[bigquery.SchemaField]:

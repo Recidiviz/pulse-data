@@ -74,8 +74,10 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
         self.config = get_document_collection_config(
             StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
-        self.metadata_address = self.config.metadata_table_address(
-            self.project_id,
+        self.metadata_address = (
+            self.config.metadata_table_address.to_project_specific_address(
+                self.project_id
+            )
         )
         self.raw_table_address = BigQueryAddress(
             dataset_id="us_xx_raw_data",

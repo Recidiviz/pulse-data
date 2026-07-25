@@ -55,11 +55,13 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
         )
         self.temp_new_document_contents_address = (
             self.config.temp_new_document_contents_table_address(
-                self.project_id, "test_run_id"
-            )
+                "test_run_id"
+            ).to_project_specific_address(self.project_id)
         )
         self.document_contents_table_address = (
-            self.config.document_contents_table_address(self.project_id)
+            self.config.document_contents_table_address.to_project_specific_address(
+                self.project_id
+            )
         )
         self.upload_status_address = DocumentUploadStatusTable.get_table_address(
             project_id=self.project_id, state_code=StateCode.US_XX
