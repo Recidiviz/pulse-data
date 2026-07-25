@@ -62,3 +62,13 @@ configs:
     max_output_tokens: 8192
     top_p: 1.0
     thinking_budget_tokens: 0
+
+  # Thinking-enabled default for auto-generated entity-resolution extractors,
+  # whose clustering benefits from extended inference. thinking_budget_tokens is
+  # omitted to use model-managed dynamic thinking; a fixed budget can be tuned
+  # with eval later. First-order extractors are barred from thinking configs.
+  GEMINI_2_5_FLASH_THINKING:
+    model: gemini-2.5-flash
+    temperature: 0.0
+    max_output_tokens: 8192
+    top_p: 1.0

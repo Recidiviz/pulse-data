@@ -121,6 +121,26 @@ def _output_schema() -> LLMRequestOutputSchema:
     )
 
 
+def _structural_only_schema() -> LLMRequestOutputSchema:
+    """Returns a schema with no relevance criteria and a single STRUCTURAL field —
+    the shape of a synthesized entity-resolution collection's schema.
+    """
+    return LLMRequestOutputSchema(
+        full_batch_description=_DESCRIPTION,
+        result_level_description=_DESCRIPTION,
+        relevance_criteria=None,
+        user_defined_fields=[
+            PrimitiveScalarLLMRequestOutputSchemaField(
+                name="entity_id",
+                description=_DESCRIPTION,
+                required=True,
+                inferred_field_config=None,
+                scalar_type=LLMOutputFieldType.INTEGER,
+            )
+        ],
+    )
+
+
 def _entity_group(**raw: Any) -> EntityGroupConfig:
     """Parses one entity group against the shared `_output_schema`."""
     return EntityGroupConfig.from_yaml_dict(
@@ -387,16 +407,24 @@ class LLMExtractorCollectionConfigTest(TestCase):
     """Collection-level invariants exercised via direct construction."""
 
     def _collection(
-        self, *, name: str = "TEST_COLLECTION", entity_groups: Any = None
+        self,
+        *,
+        name: str = "TEST_COLLECTION",
+        entity_groups: Any = None,
+        relevance_criteria: str | None = _RELEVANCE_CRITERIA,
+        minimum_confidence_level: ConfidenceLevel | None = ConfidenceLevel.INFERRED,
+        output_schema: LLMRequestOutputSchema | None = None,
     ) -> LLMExtractorCollectionConfig:
         return LLMExtractorCollectionConfig(
             name=name,
             description=_DESCRIPTION,
-            relevance_criteria=_RELEVANCE_CRITERIA,
+            relevance_criteria=relevance_criteria,
             prompt_template=_PROMPT_TEMPLATE,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
-            minimum_confidence_level=ConfidenceLevel.INFERRED,
-            output_schema=_output_schema(),
+            minimum_confidence_level=minimum_confidence_level,
+            output_schema=output_schema
+            if output_schema is not None
+            else _output_schema(),
             reference_data_config=LLMExtractorCollectionReferenceDataConfig(
                 per_type_configs={}
             ),
@@ -435,6 +463,53 @@ class LLMExtractorCollectionConfigTest(TestCase):
         ):
             self._collection(entity_groups=[group, group])
 
+    def test_none_relevance_and_confidence_allowed(self) -> None:
+        # A synthesized entity-resolution collection declares neither, alongside a
+        # no-relevance, all-STRUCTURAL schema.
+        collection = self._collection(
+            relevance_criteria=None,
+            minimum_confidence_level=None,
+            output_schema=_structural_only_schema(),
+        )
+        self.assertIsNone(collection.relevance_criteria)
+        self.assertIsNone(collection.minimum_confidence_level)
+
+    def test_none_confidence_with_inferred_fields_raises(self) -> None:
+        # The default schema carries INFERRED fields, so a null collection-level
+        # minimum confidence level is incoherent.
+        with self.assertRaisesRegex(
+            ValueError,
+            "null minimum confidence level is only allowed when every output",
+        ):
+            self._collection(minimum_confidence_level=None)
+
+    def test_relevance_criteria_set_but_schema_has_none_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not match its output schema's relevance_criteria",
+        ):
+            self._collection(
+                relevance_criteria=_RELEVANCE_CRITERIA,
+                output_schema=_structural_only_schema(),
+            )
+
+    def test_relevance_criteria_none_but_schema_has_some_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not match its output schema's relevance_criteria",
+        ):
+            self._collection(relevance_criteria=None, output_schema=_output_schema())
+
+    def test_relevance_criteria_differs_from_schema_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not match its output schema's relevance_criteria",
+        ):
+            self._collection(
+                relevance_criteria="Whether the document mentions something else",
+                output_schema=_simple_schema(relevance_criteria=_RELEVANCE_CRITERIA),
+            )
+
 
 class CollectionVersionIdTest(TestCase):
     """Tests for LLMExtractorCollectionConfig.collection_version_id."""
@@ -446,16 +521,17 @@ class CollectionVersionIdTest(TestCase):
         output_schema: LLMRequestOutputSchema | None = None,
         minimum_confidence_level: ConfidenceLevel = ConfidenceLevel.INFERRED,
     ) -> LLMExtractorCollectionConfig:
+        schema = output_schema if output_schema is not None else _output_schema()
         return LLMExtractorCollectionConfig(
             name=name,
             description=_DESCRIPTION,
-            relevance_criteria=_RELEVANCE_CRITERIA,
+            # The collection's relevance_criteria must match its schema's (they are
+            # two copies of one statement), so mirror whatever the schema declares.
+            relevance_criteria=schema.relevance_criteria,
             prompt_template=_PROMPT_TEMPLATE,
             default_model_config_name=_FAKE_MODEL_CONFIG_NAME,
             minimum_confidence_level=minimum_confidence_level,
-            output_schema=output_schema
-            if output_schema is not None
-            else _output_schema(),
+            output_schema=schema,
             reference_data_config=LLMExtractorCollectionReferenceDataConfig(
                 per_type_configs={}
             ),

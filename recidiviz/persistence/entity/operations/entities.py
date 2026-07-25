@@ -350,8 +350,9 @@ class LLMExtractorCollection(Entity, BuildableAttr, DefaultableAttr):
     description: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # Minimum ordinal confidence level for validated output (one of:
     # speculative, ambiguous, inferred, explicit, verbatim). Individual fields
-    # can override this default.
-    minimum_confidence_level: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # can override this default. None only for a collection with no INFERRED
+    # fields (e.g. a synthesized entity-resolution collection).
+    minimum_confidence_level: str | None = attr.ib(validator=attr_validators.is_opt_str)
     # When this collection version was recorded.
     row_creation_datetime_utc: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime

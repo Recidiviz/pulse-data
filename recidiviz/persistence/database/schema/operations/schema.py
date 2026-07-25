@@ -662,8 +662,10 @@ class LLMExtractorCollection(OperationsBase):
 
     # Minimum ordinal confidence level for validated output. One of:
     # speculative, ambiguous, inferred, explicit, verbatim. Individual fields
-    # can override this default.
-    minimum_confidence_level = Column(String(255), nullable=False)
+    # can override this default. NULL only for a collection with no INFERRED
+    # fields (e.g. a synthesized entity-resolution collection), which carries
+    # no confidence metadata.
+    minimum_confidence_level = Column(String(255), nullable=True)
 
     # When this collection version was recorded.
     row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)

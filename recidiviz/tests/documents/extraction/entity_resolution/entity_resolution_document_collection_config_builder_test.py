@@ -35,11 +35,8 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
-    LLMExtractorCollectionConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
-    LLMExtractorConfig,
-    get_llm_extractor_config,
     load_llm_extractor_configs,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
@@ -64,27 +61,16 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
     check_query_selects_output_columns,
 )
-from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_extractor_config,
+    get_entity_group_by_name,
+)
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
-
-_FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 
 # A fixed value for the required document_contents columns the composite-document
 # query never reads (document_length_bytes / row_create_datetime).
 _ROW_CREATE_DATETIME = datetime.datetime(2026, 7, 1, tzinfo=datetime.timezone.utc)
-
-
-def _first_order_config() -> LLMExtractorConfig:
-    return get_llm_extractor_config(
-        StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
-    )
-
-
-def _entity_group(
-    collection: LLMExtractorCollectionConfig, name: str
-) -> EntityGroupConfig:
-    return {group.name: group for group in collection.entity_groups}[name]
 
 
 class EntityResolutionDocumentCollectionConfigBuilderTest(unittest.TestCase):
@@ -175,7 +161,7 @@ SELECT
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id)"""
 
-        config = _first_order_config()
+        config = fake_first_order_extractor_config()
         self.assertEqual(
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
@@ -197,7 +183,9 @@ JOIN composite_entry_source_map USING (person_id)"""
             ),
             EntityResolutionDocumentCollectionConfigBuilder(
                 first_order_config=config,
-                entity_group=_entity_group(config.extractor_collection, "assignment"),
+                entity_group=get_entity_group_by_name(
+                    config.extractor_collection, "assignment"
+                ),
             ).build(),
         )
 
@@ -285,7 +273,7 @@ SELECT
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id)"""
 
-        config = _first_order_config()
+        config = fake_first_order_extractor_config()
         self.assertEqual(
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
@@ -307,12 +295,14 @@ JOIN composite_entry_source_map USING (person_id)"""
             ),
             EntityResolutionDocumentCollectionConfigBuilder(
                 first_order_config=config,
-                entity_group=_entity_group(config.extractor_collection, "location"),
+                entity_group=get_entity_group_by_name(
+                    config.extractor_collection, "location"
+                ),
             ).build(),
         )
 
     def test_generated_query_selects_exactly_the_expected_columns(self) -> None:
-        config = _first_order_config()
+        config = fake_first_order_extractor_config()
         for entity_group in config.extractor_collection.entity_groups:
             with self.subTest(group=entity_group.name):
                 built = EntityResolutionDocumentCollectionConfigBuilder(
@@ -331,7 +321,7 @@ JOIN composite_entry_source_map USING (person_id)"""
                 check_query_selects_output_columns(query, expected_columns)
 
     def test_generated_query_only_orders_within_windows_and_aggregations(self) -> None:
-        config = _first_order_config()
+        config = fake_first_order_extractor_config()
         for entity_group in config.extractor_collection.entity_groups:
             with self.subTest(group=entity_group.name):
                 query = StrictStringFormatter().format(
@@ -345,7 +335,7 @@ JOIN composite_entry_source_map USING (person_id)"""
                 check_query_is_not_ordered_outside_of_windows(query)
 
     def test_init_raises_for_group_not_declared_on_collection(self) -> None:
-        config = _first_order_config()
+        config = fake_first_order_extractor_config()
         undeclared_group = EntityGroupConfig(
             name="undeclared",
             entity_fields=[
@@ -475,7 +465,7 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
     entry->source maps)."""
 
     def _seed_contents(self, rows: list[dict[str, Any]]) -> None:
-        input_collection = _first_order_config().input_document_collection
+        input_collection = fake_first_order_extractor_config().input_document_collection
         address = input_collection.document_contents_table_address
         self.create_mock_table(
             address, schema=input_collection.build_bq_document_contents_schema()
@@ -507,8 +497,10 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
         return f"SELECT * FROM ({query}) ORDER BY {PERSON_ID_COLUMN_NAME}"
 
     def test_array_group_composite_documents(self) -> None:
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "assignment")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(
+            config.extractor_collection, "assignment"
+        )
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )
@@ -643,8 +635,8 @@ assignment_type: external"""
         )
 
     def test_top_level_group_composite_documents(self) -> None:
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "location")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(config.extractor_collection, "location")
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )
@@ -712,8 +704,10 @@ location: Building B"""
         )
 
     def test_sort_tiebreaker_orders_by_source_document_contents_id(self) -> None:
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "assignment")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(
+            config.extractor_collection, "assignment"
+        )
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )
@@ -785,8 +779,10 @@ assignment_type: internal"""
         timeline occurrences: each renders as its own dated block, in
         chronological order, and each map entry carries its occurrence's
         datetime."""
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "assignment")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(
+            config.extractor_collection, "assignment"
+        )
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )
@@ -878,8 +874,8 @@ assignment_type: internal"""
         writing this test, but it is technically possible to have null document_text
         because the schema allows it.
         """
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "location")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(config.extractor_collection, "location")
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )
@@ -950,8 +946,8 @@ location: Building B"""
         """A pre-resolution row with a null document_update_datetime (a deleted
         document leaking through the pre-resolution view) is excluded from BOTH
         the composite text and the entry_source_map."""
-        config = _first_order_config()
-        entity_group = _entity_group(config.extractor_collection, "location")
+        config = fake_first_order_extractor_config()
+        entity_group = get_entity_group_by_name(config.extractor_collection, "location")
         builder = EntityResolutionDocumentCollectionConfigBuilder(
             first_order_config=config, entity_group=entity_group
         )

@@ -231,10 +231,14 @@ class LLMExtractorCollectionConfig:
     )
     """Human-readable description of what the collection extracts."""
 
-    relevance_criteria: str = attr.ib(validator=_is_valid_relevance_criteria)
+    relevance_criteria: str | None = attr.ib(
+        validator=attr.validators.optional(_is_valid_relevance_criteria)
+    )
     """The full relevance statement for a document, phrased as a "Whether the
     document ..." clause (e.g. "Whether the document mentions jobs, work, pay,
-    employers, or job searching").
+    employers, or job searching"). `None` only for a synthesized
+    entity-resolution collection, which has no `is_relevant` field (every
+    composite document is relevant by construction).
     """
 
     prompt_template: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -251,11 +255,14 @@ class LLMExtractorCollectionConfig:
     to resolve in the registry.
     """
 
-    minimum_confidence_level: ConfidenceLevel = attr.ib(
-        validator=attr.validators.in_(ConfidenceLevel)
+    minimum_confidence_level: ConfidenceLevel | None = attr.ib(
+        validator=attr.validators.optional(attr.validators.in_(ConfidenceLevel))
     )
     """Minimum ordinal confidence level for validated output, applied to every
-    output-schema field that does not declare its own override.
+    output-schema field that does not declare its own override. `None` only for a
+    collection with no INFERRED fields (e.g. a synthesized entity-resolution
+    collection), whose fields carry no confidence metadata — enforced in
+    __attrs_post_init__.
     """
 
     output_schema: LLMRequestOutputSchema = attr.ib(
@@ -279,7 +286,45 @@ class LLMExtractorCollectionConfig:
     """
 
     def __attrs_post_init__(self) -> None:
+        self._validate_relevance_criteria_matches_schema()
+        self._validate_confidence_level_present_when_fields_inferred()
         self._validate_entity_groups()
+
+    def _validate_confidence_level_present_when_fields_inferred(self) -> None:
+        """Validates that a collection with no `minimum_confidence_level` has no
+        INFERRED fields. INFERRED fields carry confidence metadata that validation
+        thresholds against, so a null collection-level default is only coherent
+        when every field is STRUCTURAL (e.g. a synthesized entity-resolution
+        collection).
+        """
+        if self.minimum_confidence_level is not None:
+            return
+        if inferred_field_names := [
+            field.name
+            for field in self.output_schema.user_defined_fields
+            if field.is_inferred_field
+        ]:
+            raise ValueError(
+                f"Collection [{self.name}] declares no minimum_confidence_level "
+                f"but has INFERRED field(s) {inferred_field_names} — a null "
+                f"minimum confidence level is only allowed when every output "
+                f"schema field is STRUCTURAL."
+            )
+
+    def _validate_relevance_criteria_matches_schema(self) -> None:
+        """Validates that the collection's `relevance_criteria` is the same value
+        the output schema carries — they are two copies of one statement (the
+        schema uses it verbatim as the injected `is_relevant` field's
+        description), so a mismatch (including one being set while the other is
+        `None`) means an `is_relevant` field that disagrees with the collection.
+        """
+        if self.relevance_criteria != self.output_schema.relevance_criteria:
+            raise ValueError(
+                f"Collection [{self.name}] declares relevance_criteria "
+                f"[{self.relevance_criteria}], which does not match its output "
+                f"schema's relevance_criteria "
+                f"[{self.output_schema.relevance_criteria}]."
+            )
 
     def _validate_entity_groups(self) -> None:
         """Validates that entity group names are unique within the collection.
@@ -332,7 +377,11 @@ class LLMExtractorCollectionConfig:
             # flow into the extractor version ID instead).
             self.prompt_template,
             self.output_schema_version,
-            self.minimum_confidence_level.value,
+            (
+                self.minimum_confidence_level.value
+                if self.minimum_confidence_level is not None
+                else None
+            ),
         ]
         return sha256_hexdigest(json.dumps(components))
 

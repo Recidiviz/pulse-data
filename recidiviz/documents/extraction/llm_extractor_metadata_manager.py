@@ -65,7 +65,11 @@ class LLMExtractorMetadataManager:
                     output_schema_version=collection.output_schema_version,
                     output_schema_json=collection.generate_json_schema_str(),
                     description=collection.description,
-                    minimum_confidence_level=collection.minimum_confidence_level.value,
+                    minimum_confidence_level=(
+                        collection.minimum_confidence_level.value
+                        if collection.minimum_confidence_level is not None
+                        else None
+                    ),
                     row_creation_datetime_utc=now,
                 )
                 .on_conflict_do_nothing(constraint="llm_extractor_collection_pkey")

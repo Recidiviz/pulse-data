@@ -638,11 +638,15 @@ class LLMExtractorConfigVersionIdTest(TestCase):
 
     def test_extractor_version_id_changes_with_collection(self) -> None:
         # Same extractor_id (collection name unchanged), different output schema.
+        # The collection's relevance_criteria must match its schema's, so evolve
+        # both in lockstep.
+        other_relevance_criteria = "Whether the document mentions a different subject."
         other_collection = attr.evolve(
             self.collection,
+            relevance_criteria=other_relevance_criteria,
             output_schema=attr.evolve(
                 self.collection.output_schema,
-                relevance_criteria="Whether the document mentions a different subject.",
+                relevance_criteria=other_relevance_criteria,
             ),
         )
         self.assertNotEqual(
@@ -690,11 +694,15 @@ class LLMExtractorConfigVersionIdTest(TestCase):
     def test_document_filter_id_independent_of_prompt_and_model(self) -> None:
         # The filter ID folds in only the extractor_id and the filter template, so
         # changing the model config or the collection must not change it.
+        # The collection's relevance_criteria must match its schema's, so evolve
+        # both in lockstep.
+        other_relevance_criteria = "Whether the document mentions a different subject."
         other_collection = attr.evolve(
             self.collection,
+            relevance_criteria=other_relevance_criteria,
             output_schema=attr.evolve(
                 self.collection.output_schema,
-                relevance_criteria="Whether the document mentions a different subject.",
+                relevance_criteria=other_relevance_criteria,
             ),
         )
         self.assertEqual(

@@ -33,7 +33,6 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_s
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
-    get_llm_extractor_collection_config,
 )
 from recidiviz.documents.extraction.models.llm_json_schema_generator import (
     LLMJsonSchemaGenerator,
@@ -55,18 +54,17 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     ENTITY_ID_FIELD_NAME,
     ENTRY_NUMS_FIELD_NAME,
 )
-from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_collection,
+    get_entity_group_by_name,
+)
 from recidiviz.tests.ingest import fixtures
 
-_FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _FIXTURE_SUBDIR = "fixtures/entity_resolution_output_schema"
 
 
 def _entity_group(name: str) -> EntityGroupConfig:
-    collection = get_llm_extractor_collection_config(
-        _FAKE_COLLECTION_NAME, config_module=fake_config
-    )
-    return {group.name: group for group in collection.entity_groups}[name]
+    return get_entity_group_by_name(fake_first_order_collection(), name)
 
 
 def _entities_field(
