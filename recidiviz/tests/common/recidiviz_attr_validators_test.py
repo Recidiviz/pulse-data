@@ -47,3 +47,27 @@ class TestIsMeaningfulDescription(unittest.TestCase):
     def test_non_string_type(self) -> None:
         with self.assertRaises((TypeError, ValueError)):
             _ = self._TestClass(description=123)  # type: ignore[arg-type]
+
+
+class TestIsOptMeaningfulDescription(unittest.TestCase):
+    """Tests for the is_opt_meaningful_description() validator."""
+
+    @attr.define
+    class _TestClass:
+        description: str | None = attr.ib(
+            validator=attr_validators.is_opt_meaningful_description
+        )
+
+    def test_none(self) -> None:
+        _ = self._TestClass(description=None)
+
+    def test_valid_description(self) -> None:
+        _ = self._TestClass(description="A real description of the column")
+
+    def test_empty_string(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must have a meaningful description"):
+            _ = self._TestClass(description="")
+
+    def test_whitespace_only(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must have a meaningful description"):
+            _ = self._TestClass(description="   ")

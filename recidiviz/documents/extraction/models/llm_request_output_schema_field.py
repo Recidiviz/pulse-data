@@ -128,12 +128,13 @@ class LLMOutputFieldType(Enum):
     INTEGER = "INTEGER"
     FLOAT = "FLOAT"
     ARRAY_OF_STRUCT = "ARRAY_OF_STRUCT"
+    ARRAY_OF_INTEGER = "ARRAY_OF_INTEGER"
 
     def is_primitive_scalar_value_type(self) -> bool:
         """Returns whether this schema type is itself a primitive scalar value
         type (STRING, BOOLEAN, INTEGER, FLOAT). ENUM is a distinct schema type
-        whose value is a STRING, and ARRAY_OF_STRUCT has no scalar value, so both
-        return False.
+        whose value is a STRING, and the array types (ARRAY_OF_STRUCT,
+        ARRAY_OF_INTEGER) have no scalar value, so all return False.
         """
         if self in (
             LLMOutputFieldType.STRING,
@@ -142,15 +143,19 @@ class LLMOutputFieldType(Enum):
             LLMOutputFieldType.FLOAT,
         ):
             return True
-        if self in (LLMOutputFieldType.ENUM, LLMOutputFieldType.ARRAY_OF_STRUCT):
+        if self in (
+            LLMOutputFieldType.ENUM,
+            LLMOutputFieldType.ARRAY_OF_STRUCT,
+            LLMOutputFieldType.ARRAY_OF_INTEGER,
+        ):
             return False
 
         raise ValueError(f"Unexpected LLMOutputFieldType {self}")
 
     def primitive_scalar_value_type(self) -> "LLMOutputFieldType":
         """Returns the scalar type of this field's output value: a primitive type
-        is its own value type, and an ENUM's value is a STRING. Raises for
-        ARRAY_OF_STRUCT, which has no scalar value.
+        is its own value type, and an ENUM's value is a STRING. Raises for the
+        array types, which have no scalar value.
         """
         if self.is_primitive_scalar_value_type():
             return self
@@ -380,6 +385,15 @@ class LLMRequestOutputSchemaField(abc.ABC):
     metadata); `None` for a STRUCTURAL field.
     """
 
+    nullable: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    """Whether this field's bare value may be `null`. Only meaningful for a
+    STRUCTURAL scalar/enum field (an INFERRED field encodes absence via its
+    `null_reason` branch instead); the entity-resolution schema sets this on an
+    entity field that was optional in its first-order collection, so the model can
+    return an explicit `null` when no mention filled it. Defaults to `False`, so a
+    non-nullable field renders exactly as before.
+    """
+
     @property
     @abc.abstractmethod
     def field_type(self) -> LLMOutputFieldType:
@@ -439,6 +453,13 @@ class LLMRequestOutputSchemaField(abc.ABC):
                 f"Field [{self.name}] is required but also declares "
                 f"semantic-consistency constraint(s) — a field cannot be both "
                 f"unconditionally required and conditionally applicable."
+            )
+
+        if self.nullable and self.inferred_field_config is not None:
+            raise ValueError(
+                f"Field [{self.name}] is nullable but INFERRED — only a STRUCTURAL "
+                f"bare-value field may be nullable (an INFERRED field encodes "
+                f"absence via its null_reason branch)."
             )
 
     @staticmethod
@@ -879,6 +900,13 @@ class ArrayOfStructLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
     golden eval scoring.
     """
 
+    min_items: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_positive_int
+    )
+    """Minimum number of array elements the model must emit, or None for no
+    minimum.
+    """
+
     @property
     def field_type(self) -> LLMOutputFieldType:
         return LLMOutputFieldType.ARRAY_OF_STRUCT
@@ -923,6 +951,23 @@ class ArrayOfStructLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
                 f"an inferred_field_config but "
                 f"{'has' if has_inferred_sub_field else 'has no'} INFERRED sub-fields."
             )
+
+
+@attr.define(frozen=True, kw_only=True)
+class ArrayOfIntegerLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+    """An output schema field whose value is an array of integers. Synthesized by
+    the framework (the entity-resolution `entry_nums` field); not authorable from
+    YAML.
+    """
+
+    min_items: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_positive_int
+    )
+    """Minimum number of integers the model must emit, or None for no minimum."""
+
+    @property
+    def field_type(self) -> LLMOutputFieldType:
+        return LLMOutputFieldType.ARRAY_OF_INTEGER
 
 
 # Defined after the field subclasses so the value-condition constraints can

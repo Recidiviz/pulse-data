@@ -22,10 +22,13 @@ here. It composes the typed nodes in `json_schema_nodes` rather than nesting
 dict literals. The shape it builds encodes several provider-specific decisions,
 kept together here rather than spread across the model classes:
 
-  - The relevance `anyOf` is placed on a `result` property rather than the root,
-    because Vertex AI rejects `anyOf` alongside `type` on the same schema node.
-    Its first branch is the short irrelevant output (`is_relevant` only), its
-    second the full relevant output.
+  - For a relevance-bearing schema, the relevance `anyOf` is placed on a
+    `result` property rather than the root, because Vertex AI rejects `anyOf`
+    alongside `type` on the same schema node. Its first branch is the short
+    irrelevant output (`is_relevant` only), its second the full relevant output.
+    A relevance-free schema (e.g. the all-STRUCTURAL entity-resolution
+    clustering schema) has no `anyOf`: its output fields are the root object's
+    properties directly.
   - Each INFERRED scalar/enum field is itself an `anyOf` of a nonnull-value
     branch and a null branch, structurally enforcing that exactly one of `value`
     / `null_reason` is present.
@@ -57,6 +60,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfIntegerLLMRequestOutputSchemaField,
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     DescribedEnum,
@@ -75,11 +79,15 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     CITATION_TEXT_FIELD_NAME,
     CITATIONS_FIELD_NAME,
     CONFIDENCE_LEVEL_FIELD_NAME,
-    IS_RELEVANT_FIELD_NAME,
     NULL_REASON_FIELD_NAME,
     RESULT_KEY,
     VALUE_FIELD_NAME,
 )
+
+# Description emitted on the item schema of an ARRAY_OF_INTEGER field. The array
+# node itself carries the field's own description; each element is a single
+# integer.
+INTEGER_ARRAY_ITEM_DESCRIPTION = "A single integer element of the array."
 
 
 class LLMJsonSchemaGenerator:
@@ -89,16 +97,28 @@ class LLMJsonSchemaGenerator:
 
     @classmethod
     def generate(cls, output_schema: LLMRequestOutputSchema) -> JSONSchemaDict:
-        """Returns the JSON Schema dict for |output_schema| — an object with a
-        single `result` property holding the irrelevant/relevant `anyOf`.
+        """Returns the JSON Schema dict for |output_schema|. A relevance-bearing
+        schema is an object with a single `result` property holding the
+        irrelevant/relevant `anyOf`; a relevance-free schema (e.g. the
+        all-STRUCTURAL entity-resolution clustering schema) is a flat object whose
+        properties are the user-defined fields directly.
         """
+        is_relevant_field = output_schema.is_relevant_field
+        if is_relevant_field is None:
+            return cls._output_fields_object_schema(
+                output_schema, description=output_schema.result_level_description
+            ).to_json_schema()
+
         return ObjectJSONSchema(
             description=output_schema.result_level_description,
             properties={
                 RESULT_KEY: AnyOfJSONSchema(
                     branches=[
-                        cls._irrelevant_document_schema(output_schema),
-                        cls._relevant_branch_schema(output_schema),
+                        cls._irrelevant_document_schema(is_relevant_field),
+                        cls._output_fields_object_schema(
+                            output_schema,
+                            description="Use when the document IS relevant.",
+                        ),
                     ]
                 )
             },
@@ -107,7 +127,7 @@ class LLMJsonSchemaGenerator:
 
     @classmethod
     def _irrelevant_document_schema(
-        cls, output_schema: LLMRequestOutputSchema
+        cls, is_relevant_field: PrimitiveScalarLLMRequestOutputSchemaField
     ) -> ObjectJSONSchema:
         """Returns the schema the model should emit for a document where
         is_relevant=False.
@@ -115,29 +135,37 @@ class LLMJsonSchemaGenerator:
         return ObjectJSONSchema(
             description="Use when the document is NOT relevant.",
             properties={
-                IS_RELEVANT_FIELD_NAME: cls._is_relevant_schema(
-                    output_schema, is_relevant_value=False
+                is_relevant_field.name: cls._is_relevant_schema(
+                    is_relevant_field, is_relevant_value=False
                 )
             },
-            required=[IS_RELEVANT_FIELD_NAME],
+            required=[is_relevant_field.name],
         )
 
     @classmethod
-    def _relevant_branch_schema(
-        cls, output_schema: LLMRequestOutputSchema
+    def _output_fields_object_schema(
+        cls, output_schema: LLMRequestOutputSchema, *, description: str
     ) -> ObjectJSONSchema:
-        """Returns the schema the model should emit for a document with
-        is_relevant=True.
+        """Returns the object holding the schema's output fields: the
+        `is_relevant` field first (pinned to true via `const`) when the schema has
+        one, then each user-defined field. Used both as the relevant branch of a
+        relevance-bearing schema's `result` anyOf and as the root object of a
+        relevance-free schema — a relevance-free schema is just this object with
+        no `is_relevant` discriminator, promoted to root.
         """
-        properties: dict[str, JSONSchemaNode] = {
-            IS_RELEVANT_FIELD_NAME: cls._is_relevant_schema(
-                output_schema, is_relevant_value=True
+        properties: dict[str, JSONSchemaNode] = {}
+
+        is_relevant_field = output_schema.is_relevant_field
+        if is_relevant_field is not None:
+            properties[is_relevant_field.name] = cls._is_relevant_schema(
+                is_relevant_field, is_relevant_value=True
             )
-        }
+
         for field in output_schema.user_defined_fields:
             properties[field.name] = cls._field_schema(field)
+
         return ObjectJSONSchema(
-            description="Use when the document IS relevant.",
+            description=description,
             properties=properties,
             required=[
                 field.name for field in output_schema.all_fields if field.required
@@ -146,13 +174,16 @@ class LLMJsonSchemaGenerator:
 
     @classmethod
     def _is_relevant_schema(
-        cls, output_schema: LLMRequestOutputSchema, *, is_relevant_value: bool
+        cls,
+        is_relevant_field: PrimitiveScalarLLMRequestOutputSchemaField,
+        *,
+        is_relevant_value: bool,
     ) -> ConstBooleanJSONSchema:
         """Returns the `is_relevant` node, pinned to |is_relevant_value| via
         `const` so the relevance value is fixed per branch.
         """
         return ConstBooleanJSONSchema(
-            description=output_schema.is_relevant_field.description,
+            description=is_relevant_field.description,
             value=is_relevant_value,
         )
 
@@ -195,6 +226,7 @@ class LLMJsonSchemaGenerator:
                     sub_field.name for sub_field in field.fields if sub_field.required
                 ],
             ),
+            min_items=field.min_items,
         )
 
     @classmethod
@@ -274,11 +306,22 @@ class LLMJsonSchemaGenerator:
             return EnumJSONSchema(
                 description=field.description,
                 values=field.value_names,
+                nullable=field.nullable,
             )
         if isinstance(field, PrimitiveScalarLLMRequestOutputSchemaField):
             return ScalarJSONSchema(
                 description=field.description,
                 json_type=cls._json_scalar_type(field.field_type),
+                nullable=field.nullable,
+            )
+        if isinstance(field, ArrayOfIntegerLLMRequestOutputSchemaField):
+            return ArrayJSONSchema(
+                description=field.description,
+                items=ScalarJSONSchema(
+                    description=INTEGER_ARRAY_ITEM_DESCRIPTION,
+                    json_type=JSONScalarType.INTEGER,
+                ),
+                min_items=field.min_items,
             )
         raise ValueError(
             f"Cannot build a bare value schema for field [{field.name}] of type "

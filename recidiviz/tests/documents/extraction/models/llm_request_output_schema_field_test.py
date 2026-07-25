@@ -25,12 +25,14 @@ import re
 from typing import Any
 from unittest import TestCase
 
+import attr
 from google.cloud import bigquery
 
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     RESERVED_OUTPUT_SCHEMA_FIELD_NAMES,
     ApplicableWhenNonnullConstraint,
     ApplicableWhenValueConstraint,
+    ArrayOfIntegerLLMRequestOutputSchemaField,
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     DescribedEnum,
@@ -887,3 +889,119 @@ class DescribedEnumGuidanceTest(TestCase):
                 description_with_enum_value_guidance(
                     description="A description.", enum_cls=enum_cls
                 )
+
+
+class ArrayFieldTypeTest(TestCase):
+    """The array field types synthesized by the framework: ARRAY_OF_INTEGER and
+    the optional min_items on ARRAY_OF_STRUCT. Both are built directly (not from
+    YAML) — they are synthesized by the entity-resolution schema builder.
+    """
+
+    def test_array_of_integer_field_type_and_min_items(self) -> None:
+        field = ArrayOfIntegerLLMRequestOutputSchemaField(
+            name="entry_nums",
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+            min_items=1,
+        )
+        self.assertEqual(LLMOutputFieldType.ARRAY_OF_INTEGER, field.field_type)
+        self.assertFalse(field.field_type.is_primitive_scalar_value_type())
+        self.assertEqual(LLMOutputFieldMode.STRUCTURAL, field.field_mode)
+        self.assertEqual(1, field.min_items)
+
+    def test_array_of_integer_min_items_defaults_to_none(self) -> None:
+        field = ArrayOfIntegerLLMRequestOutputSchemaField(
+            name="entry_nums",
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+        )
+        self.assertIsNone(field.min_items)
+
+    def test_array_of_integer_non_positive_min_items_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [min_items] on [ArrayOfIntegerLLMRequestOutputSchemaField] "
+                "must be a positive integer. Found value [0]"
+            ),
+        ):
+            ArrayOfIntegerLLMRequestOutputSchemaField(
+                name="entry_nums",
+                description=_DESCRIPTION,
+                required=True,
+                inferred_field_config=None,
+                min_items=0,
+            )
+
+    def test_array_of_integer_has_no_primitive_scalar_value_type(self) -> None:
+        with self.assertRaisesRegex(ValueError, re.escape("has no scalar value type")):
+            LLMOutputFieldType.ARRAY_OF_INTEGER.primitive_scalar_value_type()
+
+    def test_array_of_struct_min_items_defaults_to_none(self) -> None:
+        field = ArrayOfStructLLMRequestOutputSchemaField(
+            name="entities",
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+            fields=[
+                PrimitiveScalarLLMRequestOutputSchemaField(
+                    name="a",
+                    description=_DESCRIPTION,
+                    required=True,
+                    inferred_field_config=None,
+                    scalar_type=LLMOutputFieldType.STRING,
+                )
+            ],
+            primary_keys=["a"],
+        )
+        self.assertIsNone(field.min_items)
+
+    def test_array_of_struct_non_positive_min_items_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [min_items] on [ArrayOfStructLLMRequestOutputSchemaField] "
+                "must be a positive integer. Found value [-1]"
+            ),
+        ):
+            ArrayOfStructLLMRequestOutputSchemaField(
+                name="entities",
+                description=_DESCRIPTION,
+                required=True,
+                inferred_field_config=None,
+                fields=[
+                    PrimitiveScalarLLMRequestOutputSchemaField(
+                        name="a",
+                        description=_DESCRIPTION,
+                        required=True,
+                        inferred_field_config=None,
+                        scalar_type=LLMOutputFieldType.STRING,
+                    )
+                ],
+                primary_keys=["a"],
+                min_items=-1,
+            )
+
+
+class NullableFieldTest(TestCase):
+    """The `nullable` flag: default, and the STRUCTURAL-only invariant."""
+
+    def test_nullable_defaults_to_false(self) -> None:
+        (field,) = _build(_field("f"))
+        self.assertFalse(field.nullable)
+
+    def test_nullable_allowed_on_structural_field(self) -> None:
+        (field,) = _build(_field("f", field_mode="STRUCTURAL"))
+        self.assertTrue(attr.evolve(field, nullable=True).nullable)
+
+    def test_nullable_on_inferred_field_raises(self) -> None:
+        # An INFERRED field encodes absence via its null_reason branch, so it may
+        # not also be nullable.
+        (field,) = _build(_field("f"))
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape("Field [f] is nullable but INFERRED"),
+        ):
+            attr.evolve(field, nullable=True)

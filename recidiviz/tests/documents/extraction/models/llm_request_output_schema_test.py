@@ -25,6 +25,8 @@ import re
 from typing import Any
 from unittest import TestCase
 
+import attr
+
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     IS_RELEVANT_FIELD_NAME,
     LLMRequestOutputSchema,
@@ -34,7 +36,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ConfidenceLevel,
     LLMOutputFieldMode,
     LLMOutputFieldType,
+    PrimitiveScalarLLMRequestOutputSchemaField,
 )
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
@@ -98,7 +102,12 @@ class LLMRequestOutputSchemaTest(TestCase):
                 full_batch_description=_DESCRIPTION,
                 result_level_description=_DESCRIPTION,
                 relevance_criteria=_RELEVANCE_CRITERIA,
-                user_defined_fields=[valid_schema.is_relevant_field],
+                user_defined_fields=[
+                    assert_type(
+                        valid_schema.is_relevant_field,
+                        PrimitiveScalarLLMRequestOutputSchemaField,
+                    )
+                ],
             )
 
     def test_is_relevant_field_shape(self) -> None:
@@ -106,6 +115,7 @@ class LLMRequestOutputSchemaTest(TestCase):
             _field("primary_status", field_type="ENUM", values=_enum_values("x"))
         )
         is_relevant = schema.is_relevant_field
+        assert is_relevant is not None
         self.assertEqual(IS_RELEVANT_FIELD_NAME, is_relevant.name)
         self.assertEqual(LLMOutputFieldType.BOOLEAN, is_relevant.field_type)
         self.assertEqual(LLMOutputFieldMode.STRUCTURAL, is_relevant.field_mode)
@@ -121,6 +131,45 @@ class LLMRequestOutputSchemaTest(TestCase):
         self.assertEqual(
             ["a", "b", "c"], [field.name for field in schema.user_defined_fields]
         )
+
+    def test_none_relevance_criteria_has_no_is_relevant_field(self) -> None:
+        # A None relevance_criteria declares a schema with no is_relevant field
+        # (the entity-resolution shape); the property returns None and all_fields
+        # collapses to just the user-defined fields.
+        schema = attr.evolve(
+            _build_schema(_field("a"), _field("b")), relevance_criteria=None
+        )
+        self.assertIsNone(schema.is_relevant_field)
+        self.assertEqual(["a", "b"], [field.name for field in schema.all_fields])
+        self.assertEqual(
+            [field.name for field in schema.user_defined_fields],
+            [field.name for field in schema.all_fields],
+        )
+
+    def test_reserved_is_relevant_name_raises_even_when_relevance_free(self) -> None:
+        # The reserved-name check is independent of relevance_criteria — a
+        # user-defined `is_relevant` is rejected even for a relevance-free schema.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema may not define a [is_relevant] field — it is "
+                "auto-injected by the framework."
+            ),
+        ):
+            LLMRequestOutputSchema(
+                full_batch_description=_DESCRIPTION,
+                result_level_description=_DESCRIPTION,
+                relevance_criteria=None,
+                user_defined_fields=[
+                    PrimitiveScalarLLMRequestOutputSchemaField(
+                        name=IS_RELEVANT_FIELD_NAME,
+                        description=_DESCRIPTION,
+                        required=False,
+                        inferred_field_config=None,
+                        scalar_type=LLMOutputFieldType.BOOLEAN,
+                    )
+                ],
+            )
 
     def test_duplicate_top_level_field_names_raise(self) -> None:
         # Raised by the scope builder before the container is constructed.

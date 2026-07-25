@@ -72,3 +72,16 @@ COMPANION_METADATA_COLUMN_NAMES = frozenset(
 """The companion-metadata STRUCT column names every parsed extraction-result view
 emits alongside the extracted-field columns.
 """
+
+# Field names of the framework-synthesized entity-resolution clustering output
+# schema (see `entity_resolution_output_schema_builder`). The model emits one
+# `entities` element per resolved entity; downstream ER validation and view
+# generation read the model output by these names.
+ENTITIES_FIELD_NAME = "entities"
+"""Top-level ARRAY_OF_STRUCT field holding one element per resolved entity."""
+
+ENTITY_ID_FIELD_NAME = "entity_id"
+"""Sequential integer identifying a resolved entity within its composite document."""
+
+ENTRY_NUMS_FIELD_NAME = "entry_nums"
+"""The composite-document entry numbers the model assigned to a resolved entity."""

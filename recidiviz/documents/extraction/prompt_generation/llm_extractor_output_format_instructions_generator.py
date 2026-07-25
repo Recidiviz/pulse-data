@@ -49,6 +49,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
     NotApplicableWhenValueConstraint,
     NullReason,
+    PrimitiveScalarLLMRequestOutputSchemaField,
     RequiredWhenNonnullConstraint,
     RequiredWhenValueConstraint,
 )
@@ -66,6 +67,7 @@ from recidiviz.utils.string_formatting import (
     fix_indent,
     render_list,
 )
+from recidiviz.utils.types import assert_type
 
 # Human-readable type labels shown for each field in the "Output fields:" listing.
 _FIELD_TYPE_LABELS = {
@@ -75,6 +77,7 @@ _FIELD_TYPE_LABELS = {
     LLMOutputFieldType.FLOAT: "number",
     LLMOutputFieldType.ENUM: "enum",
     LLMOutputFieldType.ARRAY_OF_STRUCT: "list",
+    LLMOutputFieldType.ARRAY_OF_INTEGER: "list of integers",
 }
 
 
@@ -160,8 +163,16 @@ class LLMExtractorOutputFormatInstructionsGenerator:
         """
         formatted = StrictStringFormatter().format(
             OUTPUT_FORMAT_INSTRUCTIONS_TEMPLATE,
+            # TODO(OBT-36778): Adapt this generator to render the relevance-free,
+            # all-STRUCTURAL entity-resolution schema (no `is_relevant`) when the
+            # real ER clustering prompt lands. Until then prompt generation
+            # supports only relevance-bearing (first-order) schemas, whose
+            # `is_relevant_field` is always present.
             relevance_criteria=collapse_whitespace(
-                output_schema.is_relevant_field.description
+                assert_type(
+                    output_schema.is_relevant_field,
+                    PrimitiveScalarLLMRequestOutputSchemaField,
+                ).description
             ),
             output_fields_description=cls.render_output_fields_description(
                 output_schema

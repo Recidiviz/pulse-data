@@ -111,18 +111,26 @@ class ConstBooleanJSONSchema(DescribedJSONSchemaNode):
 
 @attr.define(frozen=True, kw_only=True)
 class EnumJSONSchema(DescribedJSONSchemaNode):
-    """A string constrained to a fixed set of allowed values."""
+    """A string constrained to a fixed set of allowed values, optionally also
+    allowing null.
+    """
 
     values: list[str] = attr.ib(
         validator=[attr_validators.is_non_empty_list, attr_validators.is_list_of(str)]
     )
     """The allowed values."""
 
+    nullable: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    """Whether null is also an allowed value, emitted as a `["string", "null"]`
+    type union with `null` added to the `enum` (so a null value satisfies the
+    `enum` keyword too).
+    """
+
     def to_json_schema(self) -> JSONSchemaDict:
         return {
-            "type": "string",
+            "type": ["string", "null"] if self.nullable else "string",
             "description": self.description,
-            "enum": self.values,
+            "enum": [*self.values, None] if self.nullable else self.values,
         }
 
     @classmethod

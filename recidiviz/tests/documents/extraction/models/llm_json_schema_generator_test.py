@@ -35,14 +35,20 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
     load_llm_extractor_collection_configs,
 )
 from recidiviz.documents.extraction.models.llm_json_schema_generator import (
+    INTEGER_ARRAY_ITEM_DESCRIPTION,
     LLMJsonSchemaGenerator,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfIntegerLLMRequestOutputSchemaField,
+    ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
+    LLMOutputFieldType,
+    LLMRequestOutputSchemaField,
     NullReason,
+    PrimitiveScalarLLMRequestOutputSchemaField,
 )
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -122,13 +128,15 @@ class TopLevelStructureTest(TestCase):
 
     def test_irrelevant_branch_has_only_is_relevant(self) -> None:
         schema = _build_schema(_field("a"))
+        is_relevant_field = schema.is_relevant_field
+        assert is_relevant_field is not None
         branch = _irrelevant_branch(LLMJsonSchemaGenerator.generate(schema))
         self.assertEqual(["is_relevant"], branch["required"])
         self.assertEqual(
             {
                 "is_relevant": {
                     "type": "boolean",
-                    "description": schema.is_relevant_field.description,
+                    "description": is_relevant_field.description,
                     "const": False,
                 }
             },
@@ -317,13 +325,15 @@ class StructuralFieldSchemaTest(TestCase):
 
     def test_is_relevant_is_boolean_pinned_true_in_relevant_branch(self) -> None:
         schema = _build_schema(_field("a"))
+        is_relevant_field = schema.is_relevant_field
+        assert is_relevant_field is not None
         is_relevant = _relevant_branch(LLMJsonSchemaGenerator.generate(schema))[
             "properties"
         ]["is_relevant"]
         self.assertEqual(
             {
                 "type": "boolean",
-                "description": schema.is_relevant_field.description,
+                "description": is_relevant_field.description,
                 "const": True,
             },
             is_relevant,
@@ -396,6 +406,151 @@ class ArrayOfStructSchemaTest(TestCase):
                 "enum": ["a"],
             },
             items["kind"],
+        )
+
+
+def _structural_scalar(
+    name: str, *, required: bool = False, nullable: bool = False
+) -> PrimitiveScalarLLMRequestOutputSchemaField:
+    return PrimitiveScalarLLMRequestOutputSchemaField(
+        name=name,
+        description=_DESCRIPTION,
+        required=required,
+        inferred_field_config=None,
+        scalar_type=LLMOutputFieldType.STRING,
+        nullable=nullable,
+    )
+
+
+def _schema_with_fields(
+    *fields: LLMRequestOutputSchemaField, relevance_criteria: str | None
+) -> LLMRequestOutputSchema:
+    return LLMRequestOutputSchema(
+        full_batch_description=_DESCRIPTION,
+        result_level_description=_DESCRIPTION,
+        relevance_criteria=relevance_criteria,
+        user_defined_fields=list(fields),
+    )
+
+
+class RelevanceFreeSchemaTest(TestCase):
+    """Tests generation for a schema with no `is_relevant` (relevance_criteria
+    None) — the entity-resolution shape: a flat root object with no `result`
+    wrapper.
+    """
+
+    def test_root_is_flat_object_of_user_fields(self) -> None:
+        schema = _schema_with_fields(
+            _structural_scalar("a"),
+            _structural_scalar("b", required=True),
+            relevance_criteria=None,
+        )
+        result = LLMJsonSchemaGenerator.generate(schema)
+        self.assertEqual("object", result["type"])
+        # No `result` wrapper and no `is_relevant` — the user fields are the root
+        # properties directly.
+        self.assertEqual(["a", "b"], list(result["properties"]))
+        self.assertNotIn("is_relevant", result["properties"])
+        # Root description is the result-level description; required lists only
+        # the required user fields.
+        self.assertEqual(_DESCRIPTION, result["description"])
+        self.assertEqual(["b"], result["required"])
+
+    def test_relevance_free_and_relevant_branch_render_fields_identically(
+        self,
+    ) -> None:
+        # The relevance-free root is the relevant branch minus the is_relevant
+        # discriminator: the user field renders identically in both.
+        field = _structural_scalar("a")
+        relevance_free = LLMJsonSchemaGenerator.generate(
+            _schema_with_fields(field, relevance_criteria=None)
+        )
+        relevant_branch = _relevant_branch(
+            LLMJsonSchemaGenerator.generate(
+                _schema_with_fields(field, relevance_criteria=_RELEVANCE_CRITERIA)
+            )
+        )
+        self.assertEqual(
+            relevant_branch["properties"]["a"], relevance_free["properties"]["a"]
+        )
+
+
+class ArrayOfIntegerSchemaTest(TestCase):
+    """Tests rendering of a STRUCTURAL ARRAY_OF_INTEGER field."""
+
+    def _generate_field(self, *, min_items: int | None) -> dict[str, Any]:
+        field = ArrayOfIntegerLLMRequestOutputSchemaField(
+            name="entry_nums",
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+            min_items=min_items,
+        )
+        return _relevant_branch(
+            LLMJsonSchemaGenerator.generate(
+                _schema_with_fields(field, relevance_criteria=_RELEVANCE_CRITERIA)
+            )
+        )["properties"]["entry_nums"]
+
+    def test_array_of_integer_with_min_items(self) -> None:
+        self.assertEqual(
+            {
+                "type": "array",
+                "description": _DESCRIPTION,
+                "minItems": 1,
+                "items": {
+                    "type": "integer",
+                    "description": INTEGER_ARRAY_ITEM_DESCRIPTION,
+                },
+            },
+            self._generate_field(min_items=1),
+        )
+
+    def test_array_of_integer_without_min_items_omits_min_items(self) -> None:
+        self.assertNotIn("minItems", self._generate_field(min_items=None))
+
+
+class ArrayOfStructMinItemsTest(TestCase):
+    """Tests that an ARRAY_OF_STRUCT field's optional min_items flows through to
+    the generated array (unset by first-order fields, so their schemas are
+    unchanged).
+    """
+
+    def _array_field(self, *, min_items: int | None) -> dict[str, Any]:
+        field = ArrayOfStructLLMRequestOutputSchemaField(
+            name="entities",
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+            fields=[_structural_scalar("a")],
+            primary_keys=["a"],
+            min_items=min_items,
+        )
+        return _relevant_branch(
+            LLMJsonSchemaGenerator.generate(
+                _schema_with_fields(field, relevance_criteria=_RELEVANCE_CRITERIA)
+            )
+        )["properties"]["entities"]
+
+    def test_min_items_set_emits_min_items(self) -> None:
+        self.assertEqual(1, self._array_field(min_items=1)["minItems"])
+
+    def test_min_items_unset_omits_min_items(self) -> None:
+        self.assertNotIn("minItems", self._array_field(min_items=None))
+
+
+class StructuralNullableFieldTest(TestCase):
+    """A STRUCTURAL field marked nullable renders a null-allowing bare value."""
+
+    def test_nullable_structural_scalar(self) -> None:
+        field = _structural_scalar("summary", nullable=True)
+        field_schema = _relevant_branch(
+            LLMJsonSchemaGenerator.generate(
+                _schema_with_fields(field, relevance_criteria=_RELEVANCE_CRITERIA)
+            )
+        )["properties"]["summary"]
+        self.assertEqual(
+            {"type": ["string", "null"], "description": _DESCRIPTION}, field_schema
         )
 
 

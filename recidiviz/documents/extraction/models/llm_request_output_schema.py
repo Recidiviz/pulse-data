@@ -55,13 +55,15 @@ class LLMRequestOutputSchema:
     )
     """Description of a single extraction result."""
 
-    relevance_criteria: str = attr.ib(
-        validator=recidiviz_attr_validators.is_meaningful_description
+    relevance_criteria: str | None = attr.ib(
+        validator=recidiviz_attr_validators.is_opt_meaningful_description
     )
     """The owning collection's full relevance statement — a "Whether the document
     ..." clause (e.g. "Whether the document mentions jobs, work, pay, employers,
     or job searching"). Used verbatim as the description of the framework-injected
-    `is_relevant` field.
+    `is_relevant` field. `None` declares a schema with no `is_relevant` field (its
+    presence is the `is_relevant` signal). This is used for the entity resolution
+    extractor schemas, where every composite document is relevant by construction.
     """
 
     user_defined_fields: list[LLMRequestOutputSchemaField] = attr.ib(
@@ -100,11 +102,15 @@ class LLMRequestOutputSchema:
             )
 
     @property
-    def is_relevant_field(self) -> PrimitiveScalarLLMRequestOutputSchemaField:
+    def is_relevant_field(self) -> PrimitiveScalarLLMRequestOutputSchemaField | None:
         """Returns the framework-injected `is_relevant` field: a bare
         (STRUCTURAL) boolean, always required, whose description is the
-        collection's relevance criteria verbatim.
+        collection's relevance criteria verbatim. Returns `None` when the schema
+        declares no relevance criteria (no `is_relevant` field).
         """
+        if self.relevance_criteria is None:
+            return None
+
         return PrimitiveScalarLLMRequestOutputSchemaField(
             name=IS_RELEVANT_FIELD_NAME,
             description=self.relevance_criteria,
@@ -115,10 +121,13 @@ class LLMRequestOutputSchema:
 
     @property
     def all_fields(self) -> list[LLMRequestOutputSchemaField]:
-        """Returns every output field, including the framework-injected
-        `is_relevant` field first, followed by the user-defined fields.
+        """Returns every output field: the framework-injected `is_relevant` field
+        first (when the schema has one), followed by the user-defined fields.
         """
-        return [self.is_relevant_field, *self.user_defined_fields]
+        if (is_relevant_field := self.is_relevant_field) is None:
+            return list(self.user_defined_fields)
+
+        return [is_relevant_field, *self.user_defined_fields]
 
     def get_field(self, field_name: str) -> LLMRequestOutputSchemaField:
         """Returns the user-defined top-level field named |field_name|, raising

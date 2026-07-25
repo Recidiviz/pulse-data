@@ -86,6 +86,20 @@ class NodeSerializationTest(TestCase):
             ).to_json_schema(),
         )
 
+    def test_nullable_enum_serialization(self) -> None:
+        # A nullable enum widens the type to allow null and adds null to the enum
+        # so a null value satisfies the `enum` keyword too.
+        self.assertEqual(
+            {
+                "type": ["string", "null"],
+                "description": _DESCRIPTION,
+                "enum": ["a", "b", None],
+            },
+            EnumJSONSchema(
+                description=_DESCRIPTION, values=["a", "b"], nullable=True
+            ).to_json_schema(),
+        )
+
     def test_array_serialization_without_min_items(self) -> None:
         array_description = "Description of the array."
         item_description = "Description of an array item."

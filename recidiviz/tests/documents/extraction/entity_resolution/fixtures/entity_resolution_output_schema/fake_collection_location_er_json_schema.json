@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "description": "The set of distinct [location] entities resolved from a single composite document's numbered entries.",
+  "properties": {
+    "entities": {
+      "type": "array",
+      "description": "One element per resolved [location] entity in this composite document. Cluster the document's entries into distinct real-world entities, emitting one element per entity with its canonical field values and the entries that mention it. Two elements may not share all of their entity-field values.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "description": "A single element of the array.",
+        "properties": {
+          "entity_id": {
+            "type": "integer",
+            "description": "Sequential integer identifying this resolved entity within the composite document, starting at 1 and increasing by 1 with no gaps."
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The location associated with the record."
+          },
+          "entry_nums": {
+            "type": "array",
+            "description": "The entry numbers (the [Entry N] markers in the composite document) that refer to this entity. Every entry in the document must be assigned to exactly one entity: assign every entry, never invent an entry number that is not in the document, and never assign the same entry to more than one entity.",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "description": "A single integer element of the array."
+            }
+          }
+        },
+        "required": [
+          "entity_id",
+          "location",
+          "entry_nums"
+        ]
+      }
+    }
+  },
+  "required": [
+    "entities"
+  ]
+}

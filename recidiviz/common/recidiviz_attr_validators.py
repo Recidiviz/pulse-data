@@ -39,4 +39,15 @@ def is_meaningful_description(
         )
 
 
+def is_opt_meaningful_description(
+    instance: Any, attribute: attr.Attribute, value: str | None
+) -> None:
+    """Validator to ensure that a field description, if present, is meaningful
+    (i.e. not empty or just whitespace). Allows None.
+    """
+    if value is None:
+        return
+    is_meaningful_description(instance, attribute, value)
+
+
 is_state_code = attr.validators.instance_of(StateCode)
