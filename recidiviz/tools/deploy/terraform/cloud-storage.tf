@@ -669,3 +669,11 @@ module "us-tn-persistence-redirect" {
   name_suffix = "us-tn-persistence-archive"
   use_cmek    = true
 }
+
+module "intercom-export" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "intercom-export"
+  use_cmek    = true
+}

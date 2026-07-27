@@ -237,3 +237,30 @@ resource "google_cloud_run_v2_job" "workflows_configuration_data_pull" {
     ]
   }
 }
+
+resource "google_cloud_run_v2_job" "intercom_outbound_data_export" {
+  name     = "intercom-outbound-data-export"
+  location = var.us_central_region
+  provider = google-beta
+
+  template {
+    task_count = 1
+    template {
+      execution_environment = "EXECUTION_ENVIRONMENT_GEN2"
+      max_retries           = 3
+      service_account       = google_service_account.cloud_run.email
+      timeout               = "600s"
+      containers {
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["uv"]
+        args    = ["run", "python", "-m", "recidiviz.entrypoints.intercom_outbound_data_export"]
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+      }
+    }
+  }
+}
