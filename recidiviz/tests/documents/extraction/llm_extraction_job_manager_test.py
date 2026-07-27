@@ -66,7 +66,7 @@ def _eligible_record(
 ) -> LLMExtractionEligibleDocumentRecord:
     return LLMExtractionEligibleDocumentRecord(
         document_contents_id=document_contents_id,
-        char_count=overrides.pop("char_count", 100),
+        document_length_bytes=overrides.pop("document_length_bytes", 100),
         document_update_datetime=overrides.pop("document_update_datetime", _NOW),
     )
 

@@ -97,7 +97,7 @@ def _eligible_metadata(
     return schema.LLMExtractionEligibleDocumentMetadata(
         state_code=overrides.pop("state_code", _STATE),
         document_contents_id=overrides.pop("document_contents_id", "doc1"),
-        char_count=100,
+        document_length_bytes=100,
         document_update_datetime=_NOW,
         row_creation_datetime_utc=_NOW,
         **overrides,

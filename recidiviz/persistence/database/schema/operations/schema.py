@@ -808,8 +808,9 @@ class LLMExtractionEligibleDocumentMetadata(OperationsBase):
 
     Holds one row per (state_code, document_contents_id) ever seen as eligible
     under any extractor version or filter. Because `document_contents_id` is a
-    SHA256 of the document text, `char_count` and `document_update_datetime`
-    are fixed for all time and the row never needs updating.
+    SHA256 of the document text, `document_length_bytes` and
+    `document_update_datetime` are fixed for all time and the row never needs
+    updating.
     """
 
     __tablename__ = "llm_extraction_eligible_document_metadata"
@@ -821,9 +822,9 @@ class LLMExtractionEligibleDocumentMetadata(OperationsBase):
     # SHA256 hash identifying the document.
     document_contents_id = Column(String(255), nullable=False)
 
-    # Character count of the document text; used for the per-document size
-    # guardrail and for cost observability.
-    char_count = Column(Integer, nullable=False)
+    # Length of the document text in bytes; used for the per-document size
+    # guardrail and as a conservative input-token estimate for cost observability.
+    document_length_bytes = Column(Integer, nullable=False)
 
     # The document's date (from document collection metadata). Used to order
     # oldest-first when processing order matter (e.g. when we can't fit all

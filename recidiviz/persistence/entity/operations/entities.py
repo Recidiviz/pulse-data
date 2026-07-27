@@ -443,16 +443,16 @@ class LLMExtractorDocumentFilter(Entity, BuildableAttr, DefaultableAttr):
 @attr.s(eq=False)
 class LLMExtractionEligibleDocumentMetadata(Entity, BuildableAttr, DefaultableAttr):
     """Per-document sizing metadata for every document ever eligible for
-    extraction. Append-only and write-once: char_count and
+    extraction. Append-only and write-once: document_length_bytes and
     document_update_datetime are fixed for all time since document_contents_id
     is a SHA256 of the document text."""
 
     state_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # SHA256 hash identifying the document.
     document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    # Character count of the document text; used for the per-document size
-    # guardrail and for cost observability.
-    char_count: int = attr.ib(validator=attr_validators.is_non_negative_int)
+    # Length of the document text in bytes; used for the per-document size
+    # guardrail and as a conservative input-token estimate for cost observability.
+    document_length_bytes: int = attr.ib(validator=attr_validators.is_non_negative_int)
     # The document's date (from document collection metadata). Used to order
     # oldest-first when processing order matter (e.g. when we can't fit all
     # pending documents in a single batch job).

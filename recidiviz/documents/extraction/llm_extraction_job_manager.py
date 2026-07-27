@@ -83,19 +83,15 @@ class LLMExtractionEligibleDocumentRecord:
     document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Content-addressed (SHA256) identifier of the document."""
 
-    # TODO(OBT-39477): The eligible-document query builder now emits
-    # document_length_bytes rather than a char count; reconcile this field (and
-    # the persisted char_count column) with that output when the query is wired
-    # into record_eligible_documents.
-    char_count: int = attr.ib(validator=attr_validators.is_non_negative_int)
-    """Character count of the document text; write-once because the id is a hash
-    of the text."""
+    document_length_bytes: int = attr.ib(validator=attr_validators.is_non_negative_int)
+    """Length of the document text in bytes, used as a conservative input-token
+    estimate; write-once because the id is a hash of the text."""
 
     document_update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     """The document's date; used to order oldest-first. Write-once for the same
-    reason as `char_count`."""
+    reason as `document_length_bytes`."""
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -215,7 +211,7 @@ class LLMExtractionJobManager:
                 {
                     schema.LLMExtractionEligibleDocumentMetadata.state_code: state_code.value,
                     schema.LLMExtractionEligibleDocumentMetadata.document_contents_id: doc.document_contents_id,
-                    schema.LLMExtractionEligibleDocumentMetadata.char_count: doc.char_count,
+                    schema.LLMExtractionEligibleDocumentMetadata.document_length_bytes: doc.document_length_bytes,
                     schema.LLMExtractionEligibleDocumentMetadata.document_update_datetime: doc.document_update_datetime,
                     schema.LLMExtractionEligibleDocumentMetadata.row_creation_datetime_utc: now,
                 }
