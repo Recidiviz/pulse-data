@@ -18,7 +18,7 @@
 from unittest import TestCase
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.models.llm_extractor_config import (
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_states_with_extractor_configs,
 )
 from recidiviz.documents.extraction.models.reference_data.acronym_reference_data_entry import (

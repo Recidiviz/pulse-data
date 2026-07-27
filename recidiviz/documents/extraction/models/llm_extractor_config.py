@@ -25,16 +25,13 @@ collection, and its resolved model config into one fully-resolved object.
 """
 
 import json
-from functools import cache
 from pathlib import Path
-from types import ModuleType
 
 import attr
 
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents import config as default_config_module
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
@@ -43,13 +40,10 @@ from recidiviz.documents.extraction.config_defaults import (
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
     LLMExtractorCollectionConfig,
-    extractor_collections_dir,
-    load_llm_extractor_collection_configs,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
     LLMModelConfig,
     LLMModelRegistry,
-    load_llm_model_registry,
 )
 from recidiviz.documents.extraction.models.reference_data.llm_extractor_reference_data import (
     LLMExtractorReferenceData,
@@ -60,7 +54,6 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_entry i
 from recidiviz.documents.extraction.models.reference_data.reference_data_registry import (
     ReferenceDataType,
     StateSpecificReferenceDataRegistry,
-    load_full_reference_data_registry,
 )
 from recidiviz.documents.extraction.prompt_generation.llm_extractor_output_format_instructions_generator import (
     LLMExtractorOutputFormatInstructionsGenerator,
@@ -70,13 +63,10 @@ from recidiviz.documents.extraction.prompt_generation.llm_extractor_reference_da
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    collect_document_collection_configs,
 )
 from recidiviz.utils.string import StrictStringFormatter, sha256_hexdigest
 from recidiviz.utils.string_formatting import collapse_blank_lines
 from recidiviz.utils.yaml_dict import YAMLDict
-
-EXTRACTOR_CONFIG_FILENAME = "extractor.yaml"
 
 # Prompt-template variables the extractor fills in itself, rendered from the
 # collection's schema and reference data rather than supplied per-state. A
@@ -273,6 +263,17 @@ class LLMExtractorConfig:
 
     @instructions_prompt.default
     def _build_instructions_prompt(self) -> str:
+        """Returns the fully-compiled instructions prompt: the collection's
+        `prompt_template` with the output-format instructions, reference data, and
+        prompt vars rendered in.
+        """
+        # TODO(OBT-36778): Delete this branch once the real entity-resolution
+        # clustering prompt lands. Until then an ER collection's prompt_template
+        # is a stub that references none of the reserved template variables, so
+        # formatting logic below will crash.
+        if self.entity_group is not None:
+            return collapse_blank_lines(self.extractor_collection.prompt_template)
+
         template_variables = {
             **{key: value.strip() for key, value in self.prompt_vars.items()},
             OUTPUT_INSTRUCTIONS_TEMPLATE_VAR: LLMExtractorOutputFormatInstructionsGenerator.generate(
@@ -534,91 +535,3 @@ class LLMExtractorConfig:
                 f"[{yaml_path}]: {repr(config_dict.get())}"
             )
         return config
-
-
-def get_states_with_extractor_configs(
-    config_module: ModuleType | None = None,
-) -> set[StateCode]:
-    """Returns the set of states that define at least one extractor under
-    |config_module| (the production config package by default), derived from the
-    `extractor_collections/{collection}/{state}/extractor.yaml` files without
-    parsing them.
-    """
-    module = config_module or default_config_module
-    collections_dir = extractor_collections_dir(module)
-    if not collections_dir.is_dir():
-        raise ValueError(
-            f"Extractor collections directory does not exist: [{collections_dir}]."
-        )
-    return {
-        LLMExtractorConfig.state_code_for_yaml_path(extractor_yaml_path)
-        for extractor_yaml_path in collections_dir.glob(
-            f"*/*/{EXTRACTOR_CONFIG_FILENAME}"
-        )
-    }
-
-
-@cache
-def load_llm_extractor_configs(
-    config_module: ModuleType | None = None,
-) -> dict[StateCode, dict[str, LLMExtractorConfig]]:
-    """Returns the resolved extractor configs parsed from every
-    `extractor_collections/{collection}/{state}/extractor.yaml` within
-    |config_module| (the production config package by default), each bound to its
-    collection config, input document collection, and resolved model config, keyed
-    by state code and then by collection name.
-    """
-    module = config_module or default_config_module
-    collections_dir = extractor_collections_dir(module)
-    model_registry = load_llm_model_registry(module)
-    extractor_collections_by_name = load_llm_extractor_collection_configs(module)
-
-    configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]] = {}
-    for state_code in get_states_with_extractor_configs(module):
-        document_collections_by_name = collect_document_collection_configs(
-            state_code, config_module=module
-        )
-        reference_data_registries = load_full_reference_data_registry(
-            state_code, config_module=module
-        )
-        state_configs: dict[str, LLMExtractorConfig] = {}
-        for extractor_yaml_path in sorted(
-            collections_dir.glob(
-                f"*/{state_code.value.lower()}/{EXTRACTOR_CONFIG_FILENAME}"
-            )
-        ):
-            config = LLMExtractorConfig.from_yaml(
-                extractor_yaml_path,
-                extractor_collections_by_name=extractor_collections_by_name,
-                model_registry=model_registry,
-                document_collections_by_name=document_collections_by_name,
-                reference_data_registries_by_data_type=reference_data_registries,
-            )
-            collection_name = config.extractor_collection.name
-            if collection_name in state_configs:
-                raise ValueError(
-                    f"Found multiple extractor configs for collection "
-                    f"[{collection_name}] in state [{state_code.value}]."
-                )
-            state_configs[collection_name] = config
-        configs_by_state[state_code] = state_configs
-    return configs_by_state
-
-
-def get_llm_extractor_config(
-    state_code: StateCode,
-    collection_name: str,
-    config_module: ModuleType | None = None,
-) -> LLMExtractorConfig:
-    """Returns the resolved extractor config for |collection_name| in |state_code|
-    within |config_module| (the production config package by default), raising if
-    no such extractor exists.
-    """
-    state_configs = load_llm_extractor_configs(config_module).get(state_code, {})
-    if collection_name not in state_configs:
-        raise ValueError(
-            f"No extractor config for collection [{collection_name}] in state "
-            f"[{state_code.value}]. Known collections for this state: "
-            f"{sorted(state_configs)}."
-        )
-    return state_configs[collection_name]

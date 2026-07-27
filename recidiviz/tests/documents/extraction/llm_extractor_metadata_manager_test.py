@@ -23,12 +23,14 @@ import attr
 import pytest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
+)
 from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
     LLMExtractorMetadataManager,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
-    get_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
     load_llm_model_registry,
@@ -68,7 +70,7 @@ class LLMExtractorMetadataManagerTest(unittest.TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )
-        self.config = get_llm_extractor_config(
+        self.config = get_first_order_llm_extractor_config(
             _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
         )
 

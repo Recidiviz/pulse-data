@@ -33,11 +33,11 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
     EntityResolutionDocumentCollectionConfigBuilder,
     entry_source_map_schema_field,
 )
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    load_first_order_llm_extractor_configs,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
-)
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    load_llm_extractor_configs,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     PrimitiveScalarLLMRequestOutputSchemaField,
@@ -359,7 +359,7 @@ class BuildAllRealEntityResolutionDocumentCollectionsTest(unittest.TestCase):
     every entity group declared on a real first-order extractor."""
 
     def test_build_for_all_real_entity_groups(self) -> None:
-        configs_by_state = load_llm_extractor_configs()
+        configs_by_state = load_first_order_llm_extractor_configs()
         self.assertTrue(configs_by_state)
 
         for state_configs in configs_by_state.values():

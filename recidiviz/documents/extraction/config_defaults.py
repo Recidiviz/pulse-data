@@ -53,9 +53,6 @@ document text itself contributes only a few percent even with prompt caching.
 
 # TODO(OBT-34913): Adjust this threshold once we have batch processing support and
 #  better empirical data about cost/runtimes.
-# TODO(OBT-32173): Apply these entity-resolution defaults when auto-generating the
-# ER extractor config (ER extractors will not be authored as `extractor.yaml`s, so
-# `from_yaml` never reaches them).
 DEFAULT_ER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD = 10_000
 """The per-job document count at or above which an entity-resolution extractor's
 job routes to a batch job. Lower than the first-order default because ER's

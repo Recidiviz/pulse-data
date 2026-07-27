@@ -23,7 +23,6 @@ construction), and the happy path against the fake config module.
 """
 
 import re
-from pathlib import Path
 from typing import Any
 from unittest import TestCase
 
@@ -36,6 +35,9 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     LLMExtractorCollectionConfig,
     get_llm_extractor_collection_config,
@@ -43,9 +45,6 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
     LLMExtractorDocumentFilterConfig,
-    get_llm_extractor_config,
-    get_states_with_extractor_configs,
-    load_llm_extractor_configs,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
     BaseLLMModel,
@@ -65,13 +64,9 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     DocumentRootEntityIdType,
 )
-from recidiviz.documents.store.document_store_columns import (
-    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
-)
-from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.string import StrictStringFormatter, sha256_hexdigest
+from recidiviz.utils.string import sha256_hexdigest
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
 _FILTER_QUERY = "SELECT document_contents_id FROM `{project_id}.x.y`"
@@ -150,151 +145,6 @@ def _document_filter(
         document_limit=document_limit,
         root_entity_ids=root_entity_ids,
     )
-
-
-class ParseAllExtractorConfigsTest(TestCase):
-    """Guards real configs, and exercises the fake config's happy path."""
-
-    def test_get_states_with_extractor_configs_not_empty(self) -> None:
-        # Guards against the set being empty, which would make any test that
-        # iterates over it (e.g. the reference-data load guard) pass vacuously.
-        self.assertTrue(get_states_with_extractor_configs())
-
-    def test_load_all_real_configs(self) -> None:
-        # Raises if any real extractor.yaml fails to parse or resolve. Does not
-        # assert on any state's specifics — the fake config covers structure.
-        configs_by_state = load_llm_extractor_configs()
-        self.assertTrue(configs_by_state)
-
-        # Each extractor's document filter template must render with a project_id
-        # into a query that selects exactly the single document_contents_id column.
-        for state_configs in configs_by_state.values():
-            for config in state_configs.values():
-                with self.subTest(
-                    collection=config.extractor_collection.name,
-                    state=config.state_code.value,
-                ):
-                    rendered_query = StrictStringFormatter().format(
-                        config.document_filter.document_metadata_filter_query_template,
-                        project_id="test-project",
-                    )
-                    check_query_selects_output_columns(
-                        rendered_query, {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-                    )
-
-    def test_all_real_extractors_compute_version_ids(self) -> None:
-        # Every real extractor must compute all four version IDs as 64-char hex
-        # digests, and extractor_id (the llm_extractors primary key) must be
-        # unique across all of them.
-        configs_by_state = load_llm_extractor_configs()
-        self.assertTrue(configs_by_state)
-
-        seen_extractor_ids: set[str] = set()
-        for state_configs in configs_by_state.values():
-            for config in state_configs.values():
-                with self.subTest(
-                    collection=config.extractor_collection.name,
-                    state=config.state_code.value,
-                ):
-                    self.assertNotIn(config.extractor_id, seen_extractor_ids)
-                    seen_extractor_ids.add(config.extractor_id)
-                    for version_id in (
-                        config.model_config.model_config_version_id,
-                        config.extractor_collection.collection_version_id,
-                        config.extractor_version_id,
-                        config.document_filter_id,
-                    ):
-                        self.assertRegex(version_id, r"^[0-9a-f]{64}$")
-
-    def test_all_real_extractors_build_instructions_prompt(self) -> None:
-        # instructions_prompt is compiled at construction, so a template/prompt-var
-        # or generator failure would already surface above — this makes the guard
-        # explicit: every real extractor must produce a non-empty compiled prompt.
-        configs_by_state = load_llm_extractor_configs()
-        self.assertTrue(configs_by_state)
-        for state_configs in configs_by_state.values():
-            for config in state_configs.values():
-                with self.subTest(
-                    collection=config.extractor_collection.name,
-                    state=config.state_code.value,
-                ):
-                    self.assertTrue(config.instructions_prompt.strip())
-
-    def test_playground_employment_instructions_prompt_matches_golden(self) -> None:
-        # End-to-end golden for a real config: template + output instructions +
-        # reference data + prompt vars assembled into the final prompt. Exercises
-        # the stack's config features (required_when_*/type_notes) that the US_OZ
-        # employment collection declares. Regenerate the fixture from
-        # `.instructions_prompt` if the template or a generator intentionally changes.
-        config = get_llm_extractor_config(StateCode.US_OZ, "PLAYGROUND_EMPLOYMENT_INFO")
-        expected = Path(
-            fixtures.as_filepath(
-                "instructions_prompt/playground_employment_info_us_oz.txt"
-            )
-        ).read_text(encoding="utf-8")
-        self.assertEqual(expected, config.instructions_prompt)
-
-    def test_fake_extractor_resolves(self) -> None:
-        configs_by_state = load_llm_extractor_configs(config_module=fake_config)
-        self.assertEqual([StateCode.US_XX], list(configs_by_state))
-        self.assertEqual(
-            [_FAKE_COLLECTION_NAME], list(configs_by_state[StateCode.US_XX])
-        )
-        config = configs_by_state[StateCode.US_XX][_FAKE_COLLECTION_NAME]
-
-        self.assertEqual(_FAKE_COLLECTION_NAME, config.extractor_collection.name)
-        self.assertEqual(StateCode.US_XX, config.state_code)
-
-        # Input document collection resolved to the object (not just the name);
-        # its BQ table id is the lowercased name.
-        self.assertEqual(
-            _INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
-        )
-        self.assertEqual(StateCode.US_XX, config.input_document_collection.state_code)
-        self.assertEqual(
-            "fake_input_notes",
-            config.input_document_collection.metadata_table_address.table_id,
-        )
-
-        # The state-level override resolved to the override config, not the
-        # collection default.
-        self.assertEqual(_OVERRIDE_MODEL_CONFIG_NAME, config.model_config.name)
-        self.assertFalse(config.model_config.enables_thinking)
-
-        self.assertEqual(
-            {"agency_name": "the Department of Fictional Affairs"},
-            config.prompt_vars,
-        )
-
-        # Thresholds and retry omitted in the YAML -> code-level defaults.
-        self.assertEqual(
-            DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
-            config.single_job_document_count_batch_threshold,
-        )
-        self.assertEqual(
-            DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
-            config.total_pending_document_count_hard_cap,
-        )
-        self.assertEqual(
-            DEFAULT_MAX_TRANSIENT_RETRY_COUNT, config.max_transient_retry_count
-        )
-        self.assertIsNone(config.entity_group)
-
-    def test_get_extractor_config(self) -> None:
-        config = get_llm_extractor_config(
-            StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
-        )
-        self.assertEqual(_FAKE_COLLECTION_NAME, config.extractor_collection.name)
-        self.assertEqual(StateCode.US_XX, config.state_code)
-
-    def test_get_unknown_extractor_config_raises(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            re.escape("No extractor config for collection [NOT_A_COLLECTION]"),
-        ):
-            get_llm_extractor_config(
-                StateCode.US_XX, "NOT_A_COLLECTION", config_module=fake_config
-            )
 
 
 class LLMExtractorConfigFromYamlTest(TestCase):
@@ -618,7 +468,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
     def test_extractor_version_id_golden(self) -> None:
         # Pinned hash for the fake extractor. A change here is a real version bump
         # and must be consciously updated, not silently accepted.
-        config = get_llm_extractor_config(
+        config = get_first_order_llm_extractor_config(
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
@@ -663,7 +513,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
 
     def test_document_filter_id_golden(self) -> None:
         # Pinned hash for the fake extractor's document filter.
-        config = get_llm_extractor_config(
+        config = get_first_order_llm_extractor_config(
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(

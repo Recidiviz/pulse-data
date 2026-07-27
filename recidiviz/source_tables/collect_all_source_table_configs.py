@@ -21,8 +21,8 @@ from types import ModuleType
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    load_llm_extractor_configs,
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    collect_all_extractor_configs_by_state,
 )
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -234,7 +234,7 @@ def build_source_table_repository_for_collected_schemata(
             *collect_sentencing_source_tables(),
             *collect_document_store_source_tables(),
             *collect_extraction_results_source_table_collections(
-                configs=load_llm_extractor_configs()
+                configs=collect_all_extractor_configs_by_state()
             ),
             build_intercom_export_tracker_table(),
         ],

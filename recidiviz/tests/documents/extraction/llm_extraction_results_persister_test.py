@@ -45,8 +45,8 @@ from recidiviz.documents.extraction.llm_extraction_results_tables import (
     ExtractionValidatedResultsBQTable,
     ExtractionValidationAuditBQTable,
 )
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    get_llm_extractor_config,
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
@@ -127,7 +127,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
         return collect_extraction_results_source_table_collections(
             configs={
                 _STATE_CODE: {
-                    _COLLECTION_NAME: get_llm_extractor_config(
+                    _COLLECTION_NAME: get_first_order_llm_extractor_config(
                         _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
                     )
                 }
@@ -136,7 +136,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.config = get_llm_extractor_config(
+        self.config = get_first_order_llm_extractor_config(
             _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
         )
         self.persister = LLMExtractionResultsPersister()

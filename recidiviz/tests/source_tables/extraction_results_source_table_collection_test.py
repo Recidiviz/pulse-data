@@ -31,8 +31,8 @@ from recidiviz.documents.extraction.llm_extraction_results_tables import (
     ExtractionValidatedResultsBQTable,
     ExtractionValidationAuditBQTable,
 )
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    load_llm_extractor_configs,
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    load_first_order_llm_extractor_configs,
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
@@ -61,7 +61,7 @@ class CollectExtractionResultsSourceTableCollectionsTest(unittest.TestCase):
 
     def test_collections_per_state(self) -> None:
         collections = collect_extraction_results_source_table_collections(
-            configs=load_llm_extractor_configs(config_module=fake_config)
+            configs=load_first_order_llm_extractor_configs(config_module=fake_config)
         )
 
         datasets_to_schemas = {
