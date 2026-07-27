@@ -60,6 +60,10 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
+      - name: Check uv is locked
+        run: uv lock --check
+      - name: Check uv is synced
+        run: ./recidiviz/tools/diff_uv.sh
       - name: Run unit tests in parallel
         run: |
           uv run pytest recidiviz/tests \
@@ -121,26 +125,6 @@ jobs:
       - name: Remove the emulator docker container
         if: ${{ always() }}
         run: uv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
-
-  uv-validation:
-    name: UV Validation
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
-        with:
-          egress-policy: audit
-
-      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Check uv is locked
-        run: uv lock --check
-      - name: Check uv is synced
-        run: ./recidiviz/tools/diff_uv.sh
-      - name: Validate source visibility
-        run: uv run python -m recidiviz.tools.validate_source_visibility
 
   pylint:
     name: Pylint

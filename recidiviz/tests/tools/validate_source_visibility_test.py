@@ -20,9 +20,10 @@
 import unittest
 
 from recidiviz.tools.validate_source_visibility import (
-    check_dependencies_for_entrypoint,
+    InvalidSourceVisibilityError,
     is_valid_module_dependency,
     make_module_matcher,
+    validate_dependencies_for_entrypoint,
 )
 
 
@@ -30,48 +31,50 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
     """Tests for validate source visibility tool."""
 
     def test_validate_is_valid(self) -> None:
-        self.assertTrue(
-            check_dependencies_for_entrypoint(
-                "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
-                valid_module_prefixes=make_module_matcher(
-                    {"recidiviz.common", "recidiviz.tests.tools", "recidiviz.utils"}
-                ),
-            )
+        validate_dependencies_for_entrypoint(
+            "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
+            valid_module_prefixes=make_module_matcher(
+                {"recidiviz.common", "recidiviz.tests.tools", "recidiviz.utils"}
+            ),
         )
 
     def test_validate_is_valid_from_init(self) -> None:
-        self.assertTrue(
-            check_dependencies_for_entrypoint(
-                "recidiviz.tests.tools.fixtures.a.b.d",
-                valid_module_prefixes=make_module_matcher(
-                    {
-                        "recidiviz.tests.tools.fixtures.a.b.i",  # imported from __init__
-                    }
-                ),
-            )
+        validate_dependencies_for_entrypoint(
+            "recidiviz.tests.tools.fixtures.a.b.d",
+            valid_module_prefixes=make_module_matcher(
+                {
+                    "recidiviz.tests.tools.fixtures.a.b.i",  # imported from __init__
+                }
+            ),
         )
 
     def test_validate_is_invalid_only_from_entrypoint(self) -> None:
-        self.assertFalse(
-            check_dependencies_for_entrypoint(
+        with self.assertRaisesRegex(
+            InvalidSourceVisibilityError,
+            r"no allowed prefix covers[\s\S]*"
+            r"recidiviz\.tests\.tools\.fixtures\.no_imports",
+        ):
+            validate_dependencies_for_entrypoint(
                 "recidiviz.tests.tools.fixtures.single_import",
                 valid_module_prefixes=make_module_matcher(set()),
             )
-        )
 
     def test_validate_is_valid_only_from_entrypoint(self) -> None:
-        self.assertTrue(
-            check_dependencies_for_entrypoint(
-                "recidiviz.tests.tools.fixtures.single_import",
-                valid_module_prefixes=make_module_matcher(
-                    {"recidiviz.tests.tools.fixtures.no_imports"}
-                ),
-            )
+        validate_dependencies_for_entrypoint(
+            "recidiviz.tests.tools.fixtures.single_import",
+            valid_module_prefixes=make_module_matcher(
+                {"recidiviz.tests.tools.fixtures.no_imports"}
+            ),
         )
 
     def test_validate_is_invalid(self) -> None:
-        self.assertFalse(
-            check_dependencies_for_entrypoint(
+        with self.assertRaisesRegex(
+            InvalidSourceVisibilityError,
+            r"^Entrypoint \[recidiviz\.tests\.tools\.fixtures\."
+            r"example_dependency_entrypoint\] does not match the module prefixes it "
+            r"is allowed to depend on\.",
+        ):
+            validate_dependencies_for_entrypoint(
                 "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
                 valid_module_prefixes=make_module_matcher(
                     {
@@ -81,12 +84,28 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
                     }
                 ),
             )
-        )
+
+    def test_validate_unused_valid_module_prefix(self) -> None:
+        with self.assertRaisesRegex(
+            InvalidSourceVisibilityError,
+            r"prefixes allowed for \[recidiviz\.tests\.tools\.fixtures\."
+            r"single_import\] that nothing depends on[\s\S]*"
+            r"recidiviz\.tests\.tools\.fixtures\.example_dependency_entrypoint",
+        ):
+            validate_dependencies_for_entrypoint(
+                "recidiviz.tests.tools.fixtures.single_import",
+                valid_module_prefixes=make_module_matcher(
+                    {
+                        "recidiviz.tests.tools.fixtures.no_imports",
+                        "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
+                    }
+                ),
+            )
 
     def test_disallowed_module_prefixes(self) -> None:
         """Test that disallowed module prefixes raise a ValueError."""
         with self.assertRaises(ValueError) as context:
-            check_dependencies_for_entrypoint(
+            validate_dependencies_for_entrypoint(
                 "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
                 valid_module_prefixes=make_module_matcher(
                     {"recidiviz.common", "recidiviz.research"}

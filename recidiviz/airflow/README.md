@@ -85,7 +85,8 @@ source .venv/bin/activate  # activates the root venv
 ```
 
 If you are adding new pulse-data code dependencies within the Airflow package, you
-must update the `recidiviz/tools/validate_source_visibility.py` script to be able to
+must update the allowlists in
+`recidiviz/tests/tools/validate_source_visibility_integration_test.py` to be able to
 recognize those dependencies. You'll need to do this for both your test files and also
 the source code files for the DAG.
 
