@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.store.document_collection_config import (
+from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.documents.store.document_metadata_updates_query_builder import (

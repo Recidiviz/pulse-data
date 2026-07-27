@@ -62,6 +62,8 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_selects_output_columns,
 )
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    FAKE_LOCATION_ER_COLLECTION_NAME,
     fake_first_order_extractor_config,
     get_entity_group_by_name,
 )
@@ -165,7 +167,7 @@ JOIN composite_entry_source_map USING (person_id)"""
         self.assertEqual(
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
-                name="FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION",
+                name=FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
                 description=(
                     "Auto-generated entity-resolution composite documents for the "
                     "[assignment] entity group of the [FAKE_EXTRACTOR_COLLECTION] "
@@ -277,7 +279,7 @@ JOIN composite_entry_source_map USING (person_id)"""
         self.assertEqual(
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
-                name="FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION",
+                name=FAKE_LOCATION_ER_COLLECTION_NAME,
                 description=(
                     "Auto-generated entity-resolution composite documents for the "
                     "[location] entity group of the [FAKE_EXTRACTOR_COLLECTION] "

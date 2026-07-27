@@ -62,8 +62,8 @@ from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
-    collect_document_collection_configs,
     get_states_with_document_collections,
+    load_first_order_document_collection_configs,
 )
 
 # pylint: disable=W0104 pointless-statement
@@ -180,7 +180,7 @@ def create_single_state_llm_document_extraction_branch(
     with TaskGroup(get_llm_document_extraction_branch_key(state_code)) as branch:
         with TaskGroup(DOCUMENT_COLLECTIONS_BRANCHING):
             document_collection_names = sorted(
-                collect_document_collection_configs(state_code)
+                load_first_order_document_collection_configs(state_code)
             )
             document_collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
                 get_document_collection_branch_key(

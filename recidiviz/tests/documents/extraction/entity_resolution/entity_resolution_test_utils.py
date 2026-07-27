@@ -33,6 +33,19 @@ from recidiviz.tests.documents import fake_config
 
 FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 
+# The two ER composite-document collections generated from the fake first-order
+# collection's `location` and `assignment` entity groups.
+FAKE_LOCATION_ER_COLLECTION_NAME = (
+    "FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION"
+)
+FAKE_ASSIGNMENT_ER_COLLECTION_NAME = (
+    "FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION"
+)
+FAKE_ER_COLLECTION_NAMES = {
+    FAKE_LOCATION_ER_COLLECTION_NAME,
+    FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+}
+
 
 def fake_first_order_collection() -> LLMExtractorCollectionConfig:
     """Returns the fake first-order extractor collection config."""

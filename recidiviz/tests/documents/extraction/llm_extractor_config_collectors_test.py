@@ -46,11 +46,18 @@ from recidiviz.documents.store.document_store_columns import (
 )
 from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    FAKE_ER_COLLECTION_NAMES,
+    FAKE_LOCATION_ER_COLLECTION_NAME,
+)
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
+)
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.string import StrictStringFormatter
 
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
-_INPUT_DOCUMENT_COLLECTION_NAME = "FAKE_INPUT_NOTES"
 _OVERRIDE_MODEL_CONFIG_NAME = "ACME_LARGE_DETERMINISTIC"
 
 # The framework-fixed ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME only exists in
@@ -161,7 +168,7 @@ class ParseAllExtractorConfigsTest(TestCase):
         # Input document collection resolved to the object (not just the name);
         # its BQ table id is the lowercased name.
         self.assertEqual(
-            _INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
+            FAKE_INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
         )
         self.assertEqual(StateCode.US_XX, config.input_document_collection.state_code)
         self.assertEqual(
@@ -237,8 +244,8 @@ class CollectEntityResolutionExtractorConfigsTest(TestCase):
         # encodes the group.
         self.assertEqual(
             [
-                "FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION",
-                "FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION",
+                FAKE_LOCATION_ER_COLLECTION_NAME,
+                FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
             ],
             [
                 entity_resolution_config.extractor_collection.name
@@ -290,18 +297,12 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
 
         configs = configs_by_state[StateCode.US_XX]
         self.assertEqual(
-            {
-                _FAKE_COLLECTION_NAME,
-                "FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION",
-                "FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION",
-            },
+            {_FAKE_COLLECTION_NAME, *FAKE_ER_COLLECTION_NAMES},
             set(configs),
         )
         # The first-order config carries no entity_group; the ER configs do.
         self.assertIsNone(configs[_FAKE_COLLECTION_NAME].entity_group)
-        self.assertIsNotNone(
-            configs["FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION"].entity_group
-        )
+        self.assertIsNotNone(configs[FAKE_LOCATION_ER_COLLECTION_NAME].entity_group)
 
     def test_does_not_mutate_cached_first_order_configs(self) -> None:
         # load_first_order_llm_extractor_configs is @cache'd, so aliasing its result
@@ -325,7 +326,7 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
         }
         self.assertEqual(collection_names_before, collection_names_after)
         self.assertNotIn(
-            "FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION",
+            FAKE_LOCATION_ER_COLLECTION_NAME,
             first_order_configs[StateCode.US_XX],
         )
 

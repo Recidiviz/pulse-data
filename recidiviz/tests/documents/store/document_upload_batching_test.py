@@ -20,10 +20,8 @@ import unittest
 from unittest.mock import MagicMock
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
-from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    collect_document_collection_configs,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
@@ -33,7 +31,9 @@ from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
 )
 from recidiviz.documents.store.document_upload_batching import build_document_batches
-from recidiviz.tests.documents.store import config as fake_config_module
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    get_fake_first_order_document_collection_config,
+)
 
 
 class TestBuildDocumentBatches(unittest.TestCase):
@@ -77,13 +77,7 @@ class TestBuildDocumentBatches(unittest.TestCase):
         return bq_client
 
     def test_build_document_batches_round_robin(self) -> None:
-        config = next(
-            iter(
-                collect_document_collection_configs(
-                    StateCode.US_XX, config_module=fake_config_module
-                ).values()
-            )
-        )
+        config = get_fake_first_order_document_collection_config()
         collection_result = self._make_collection_doc_discovery_result(
             config=config,
             num_new_document_contents_rows=897587,
@@ -114,13 +108,7 @@ class TestBuildDocumentBatches(unittest.TestCase):
         )
 
     def test_zero_new_document_contents_returns_empty_batches(self) -> None:
-        config = next(
-            iter(
-                collect_document_collection_configs(
-                    StateCode.US_XX, config_module=fake_config_module
-                ).values()
-            )
-        )
+        config = get_fake_first_order_document_collection_config()
         collection_result = self._make_collection_doc_discovery_result(
             config=config,
             num_new_document_contents_rows=0,

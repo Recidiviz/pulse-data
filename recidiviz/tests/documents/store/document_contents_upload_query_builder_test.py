@@ -22,7 +22,7 @@ from pathlib import Path
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.store.document_collection_config import (
+from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.documents.store.document_contents_upload_query_builder import (

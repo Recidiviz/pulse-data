@@ -44,6 +44,8 @@ from recidiviz.documents.extraction.models.llm_model_registry import (
     load_llm_model_registry,
 )
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    FAKE_LOCATION_ER_COLLECTION_NAME,
     fake_first_order_collection,
     get_entity_group_by_name,
 )
@@ -57,7 +59,7 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         group = get_entity_group_by_name(parent, "location")
 
         expected = LLMExtractorCollectionConfig(
-            name="FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION",
+            name=FAKE_LOCATION_ER_COLLECTION_NAME,
             description=(
                 "Auto-generated entity-resolution extractor collection for the "
                 "[location] entity group of the [FAKE_EXTRACTOR_COLLECTION] "
@@ -84,7 +86,7 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         group = get_entity_group_by_name(parent, "assignment")
 
         expected = LLMExtractorCollectionConfig(
-            name="FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION",
+            name=FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
             description=(
                 "Auto-generated entity-resolution extractor collection for the "
                 "[assignment] entity group of the [FAKE_EXTRACTOR_COLLECTION] "

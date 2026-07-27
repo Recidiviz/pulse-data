@@ -22,7 +22,9 @@ from unittest.mock import MagicMock, patch
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
-    collect_document_collection_configs,
+    load_first_order_document_collection_configs,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
@@ -36,7 +38,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         self.bq_client = MagicMock()
         self.collection_name = next(
             iter(
-                collect_document_collection_configs(
+                load_first_order_document_collection_configs(
                     StateCode.US_XX, config_module=fake_config_module
                 )
             )

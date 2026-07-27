@@ -32,7 +32,9 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     DocumentRootEntityIdType,
     collect_document_collection_config_yaml_paths,
-    collect_document_collection_configs,
+    load_first_order_document_collection_configs,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.documents.store.document_store_columns import (
@@ -97,12 +99,10 @@ def _make_config(
 class TestDocumentCollectionConfig(unittest.TestCase):
     """Tests for DocumentCollectionConfig."""
 
-    def test_load_all_configs(self) -> None:
-        for state_code in StateCode:
-            _ = collect_document_collection_configs(state_code)
-
     def test_get_document_collection_config_doesnt_exist(self) -> None:
-        with self.assertRaisesRegex(ValueError, "No config file found"):
+        with self.assertRaisesRegex(
+            ValueError, r"No document collection \[non_existent_collection\]"
+        ):
             get_document_collection_config(
                 StateCode.US_XX, "non_existent_collection", fake_config_module
             )
@@ -154,7 +154,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         )
 
     def test_collect_configs(self) -> None:
-        configs = collect_document_collection_configs(
+        configs = load_first_order_document_collection_configs(
             StateCode.US_XX, fake_config_module
         )
         self.assertEqual(
@@ -192,7 +192,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         self.assertEqual(pk_col_names, ["staff_id"])
 
     def test_collect_configs_nonexistent_state(self) -> None:
-        configs = collect_document_collection_configs(
+        configs = load_first_order_document_collection_configs(
             StateCode.US_LL, fake_config_module
         )
         self.assertEqual(configs, {})

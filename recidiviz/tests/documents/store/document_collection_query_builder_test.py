@@ -26,7 +26,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    collect_document_collection_configs,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
+    collect_all_document_collection_configs,
     get_document_collection_config,
 )
 from recidiviz.documents.store.document_collection_query_builder import (
@@ -43,7 +45,7 @@ from recidiviz.tests.documents.store.fixtures import document_diff
 class TestBuildDocumentGenerationQuery(unittest.TestCase):
     def test_generation_query_output_matches_temp_table_schema(self) -> None:
         for state_code in StateCode:
-            configs = collect_document_collection_configs(state_code)
+            configs = collect_all_document_collection_configs(state_code)
             for config in configs.values():
                 expected_columns = {
                     field.name

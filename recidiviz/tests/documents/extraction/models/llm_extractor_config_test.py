@@ -65,6 +65,9 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentRootEntityIdType,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
+)
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.string import sha256_hexdigest
 
@@ -77,7 +80,6 @@ _FILTER_QUERY = "SELECT document_contents_id FROM `{project_id}.x.y`"
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _DEFAULT_MODEL_CONFIG_NAME = "ACME_LARGE_NO_THINKING"
 _OVERRIDE_MODEL_CONFIG_NAME = "ACME_LARGE_DETERMINISTIC"
-_INPUT_DOCUMENT_COLLECTION_NAME = "FAKE_INPUT_NOTES"
 
 
 def _input_document_collection(
@@ -157,7 +159,7 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         )
         document_collection = _input_document_collection(
             state_code=StateCode.US_XX,
-            name=_INPUT_DOCUMENT_COLLECTION_NAME,
+            name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
         )
         self.document_collection_configs = {
             document_collection.name: document_collection
@@ -189,7 +191,7 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         )
         self.assertEqual(_DEFAULT_MODEL_CONFIG_NAME, config.model_config.name)
         self.assertEqual(
-            _INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
+            FAKE_INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
         )
         self.assertEqual(
             {"agency_name": "the Department of Fictional Affairs"}, config.prompt_vars
@@ -423,7 +425,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
         return LLMExtractorConfig(
             state_code=state_code,
             input_document_collection=_input_document_collection(
-                state_code=state_code, name=_INPUT_DOCUMENT_COLLECTION_NAME
+                state_code=state_code, name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME
             ),
             document_filter=_document_filter(
                 template=document_metadata_filter_query_template
@@ -640,7 +642,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
         )
         self.input_document_collection = _input_document_collection(
             state_code=StateCode.US_XX,
-            name=_INPUT_DOCUMENT_COLLECTION_NAME,
+            name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
         )
         self.reference_data = LLMExtractorReferenceData.resolve(
             state_code=StateCode.US_XX,

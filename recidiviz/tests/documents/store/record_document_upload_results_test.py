@@ -25,7 +25,7 @@ from google.api_core.exceptions import NotFound
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    collect_document_collection_configs,
+    load_first_order_document_collection_configs,
 )
 from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
@@ -54,14 +54,18 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         )
 
         config_module_patcher = patch(
-            "recidiviz.documents.store.document_collection_config.default_config_module",
+            "recidiviz.documents.store.document_collection_config_collectors.default_config_module",
             fake_config_module,
         )
         config_module_patcher.start()
         self.addCleanup(config_module_patcher.stop)
 
         self.config = next(
-            iter(collect_document_collection_configs(self.state_code).values())
+            iter(
+                load_first_order_document_collection_configs(
+                    self.state_code, fake_config_module
+                ).values()
+            )
         )
         self.discovery_result = self._make_discovery_result(
             self.config,

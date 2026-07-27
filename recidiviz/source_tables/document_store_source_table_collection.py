@@ -16,6 +16,8 @@
 # =============================================================================
 """Contains source table definitions for document store metadata and contents tables."""
 
+from types import ModuleType
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.dataset_config import (
     document_contents_dataset_for_region,
@@ -23,16 +25,16 @@ from recidiviz.documents.dataset_config import (
     document_store_temp_dataset_for_region,
 )
 from recidiviz.documents.store.document_collection_config import (
-    collect_document_collection_configs,
+    get_states_with_document_collections,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
+    collect_all_document_collection_configs,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_upload_status_table import (
     DocumentUploadStatusTable,
-)
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.source_tables.source_table_config import (
     DocumentStoreSourceTableLabel,
@@ -44,13 +46,17 @@ from recidiviz.source_tables.source_table_config import (
 TWO_WEEK_MS = 14 * 24 * 60 * 60 * 1000
 
 
-def collect_document_store_source_tables() -> list[SourceTableCollection]:
-    """Collects source table definitions for all document store metadata and
-    contents tables."""
+def collect_document_store_source_tables(
+    config_module: ModuleType | None = None,
+) -> list[SourceTableCollection]:
+    """Collects source table definitions for the document store metadata and
+    contents tables of every document collection — first-order and generated
+    entity-resolution — in |config_module| (the production config package by
+    default)."""
     collections: list[SourceTableCollection] = []
 
-    for state_code in get_direct_ingest_states_existing_in_env():
-        configs = collect_document_collection_configs(state_code)
+    for state_code in get_states_with_document_collections(config_module):
+        configs = collect_all_document_collection_configs(state_code, config_module)
         if not configs:
             continue
 

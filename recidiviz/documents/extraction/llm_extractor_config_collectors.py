@@ -51,7 +51,7 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
     load_full_reference_data_registry,
 )
 from recidiviz.documents.store.document_collection_config import (
-    collect_document_collection_configs,
+    load_first_order_document_collection_configs,
 )
 
 EXTRACTOR_CONFIG_FILENAME = "extractor.yaml"
@@ -96,7 +96,7 @@ def load_first_order_llm_extractor_configs(
 
     configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]] = {}
     for state_code in get_states_with_extractor_configs(module):
-        document_collections_by_name = collect_document_collection_configs(
+        document_collections_by_name = load_first_order_document_collection_configs(
             state_code, config_module=module
         )
         reference_data_registries = load_full_reference_data_registry(

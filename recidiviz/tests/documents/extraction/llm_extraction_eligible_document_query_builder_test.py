@@ -28,6 +28,8 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (

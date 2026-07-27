@@ -42,7 +42,10 @@ from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
     fake_noop_kpo_partial,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.store import document_collection_config
+from recidiviz.documents.store import (
+    document_collection_config,
+    document_collection_config_collectors,
+)
 from recidiviz.documents.store.document_collection_config import (
     TEMP_METADATA_UPDATES_TABLE_ID_PREFIX,
 )
@@ -149,6 +152,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         )
         self.config_module_patcher.start()
 
+        self.collectors_config_module_patcher = patch.object(
+            document_collection_config_collectors,
+            "default_config_module",
+            fake_config_module,
+        )
+        self.collectors_config_module_patcher.start()
+
         self.mock_bq_client = MagicMock()
         self._mock_bq_client_no_updates()
         self.bq_client_patcher = patch(
@@ -167,6 +177,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.environment_patcher.stop()
         self.project_patcher.stop()
         self.config_module_patcher.stop()
+        self.collectors_config_module_patcher.stop()
         self.bq_client_patcher.stop()
         self.kpo_partial_patcher.stop()
         super().tearDown()
