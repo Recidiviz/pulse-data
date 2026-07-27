@@ -84,3 +84,5 @@ components:
     data-platform-alerting:
       metadata:
         component: data-platform-alerting
+
+    raw-data-import-monitoring: {}

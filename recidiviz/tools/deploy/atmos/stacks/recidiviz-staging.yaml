@@ -56,3 +56,5 @@ components:
               ingest_instance: PRIMARY
             schedule:
               daily-2am-pt: "0 2 * * *"
+
+    raw-data-import-monitoring: {}

@@ -1,0 +1,387 @@
+{
+  "displayName": "Raw Data Import — Pod Resources & Cluster Capacity (${project_id})",
+  "mosaicLayout": {
+    "columns": 48,
+    "tiles": [
+      {
+        "width": 48, "height": 6,
+        "widget": {
+          "text": {
+            "content": "### Row 1 — Pod resource usage\nCPU & memory for `raw-data-file-chunking` / `raw-data-chunk-normalization` pods, grouped by the `recidiviz.org/entrypoint` and `recidiviz.org/state_code` labels (OBT-35077).",
+            "format": "MARKDOWN",
+            "style": {}
+          }
+        }
+      },
+      {
+        "yPos": 6, "width": 24, "height": 16,
+        "widget": {
+          "title": "CPU request utilization by step (peak)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/cpu/request_utilization\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MAX",
+					  "groupByFields": ["metadata.user_labels.\"recidiviz.org/entrypoint\""],
+                      "crossSeriesReducer": "REDUCE_MAX"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "$${metadata.user_labels\\.recidiviz\\.org/entrypoint}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "thresholds": [{ "value": 1.0, "label": "request limit" }],
+            "yAxis": { "label": "fraction of request", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 24, "yPos": 6, "width": 24, "height": 16,
+        "widget": {
+          "title": "Memory used (non-evictable) by step (peak)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/memory/used_bytes\" resource.type=\"k8s_container\" metric.label.\"memory_type\"=\"non-evictable\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MAX",
+                      "crossSeriesReducer": "REDUCE_MAX",
+					  "groupByFields": ["metadata.user_labels.\"recidiviz.org/entrypoint\""]
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "$${metadata.user_labels\\.recidiviz\\.org/entrypoint}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "bytes", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "yPos": 22, "width": 12, "height": 16,
+        "widget": {
+          "title": "Peak CPU request utilization",
+          "scorecard": {
+            "timeSeriesQuery": {
+			  "outputFullDuration": true,
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"kubernetes.io/container/cpu/request_utilization\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                "aggregation": {
+                  "alignmentPeriod": "300s",
+                  "perSeriesAligner": "ALIGN_MAX",
+                  "crossSeriesReducer": "REDUCE_MAX"
+                }
+              }
+            },
+            "sparkChartView": { "sparkChartType": "SPARK_BAR" }
+          }
+        }
+      },
+      {
+        "xPos": 12, "yPos": 22, "width": 12, "height": 16,
+        "widget": {
+          "title": "Peak memory request utilization",
+          "scorecard": {
+            "timeSeriesQuery": {
+			  "outputFullDuration": true,
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"kubernetes.io/container/memory/request_utilization\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                "aggregation": {
+                  "alignmentPeriod": "300s",
+                  "perSeriesAligner": "ALIGN_MAX",
+                  "crossSeriesReducer": "REDUCE_MAX"
+                }
+              }
+            },
+            "sparkChartView": { "sparkChartType": "SPARK_BAR" }
+          }
+        }
+      },
+      {
+        "xPos": 24, "yPos": 22, "width": 24, "height": 16,
+        "widget": {
+          "title": "Running raw-data pod concurrency",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/uptime\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_COUNT"
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "running pods",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "pod count", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "yPos": 38, "width": 24, "height": 16,
+        "widget": {
+          "title": "CPU request utilization by state (peak)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/cpu/request_utilization\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MAX",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": ["metadata.user_labels.\"recidiviz.org/state_code\""]
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "$${metadata.user_labels\\.recidiviz\\.org/state_code}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "thresholds": [{ "value": 1.0, "label": "request limit" }],
+            "yAxis": { "label": "fraction of request", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 24, "yPos": 38, "width": 24, "height": 16,
+        "widget": {
+          "title": "Memory request utilization by state (peak)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/memory/request_utilization\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MAX",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": ["metadata.user_labels.\"recidiviz.org/state_code\""]
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "$${metadata.user_labels\\.recidiviz\\.org/state_code}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "thresholds": [{ "value": 1.0, "label": "request limit" }],
+            "yAxis": { "label": "fraction of request", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "yPos": 54, "width": 48, "height": 6,
+        "widget": {
+          "text": {
+            "content": "### Row 2 — Cluster capacity (`recidiviz-pod-node` / Autopilot NAP nodes)\nNode count and allocatable-vs-requested headroom for the `gk3-…-nap-…` node pool. The gap between allocatable and requested is the warm-pool headroom (OBT-35079).",
+            "format": "MARKDOWN",
+            "style": {}
+          }
+        }
+      },
+      {
+        "yPos": 60, "width": 16, "height": 16,
+        "widget": {
+          "title": "NAP node count",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/node/cpu/allocatable_cores\" resource.type=\"k8s_node\" resource.label.\"node_name\"=monitoring.regex.full_match(\"gk3-.*-nap-.*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_COUNT"
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "nodes",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "node count", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 16, "yPos": 60, "width": 16, "height": 16,
+        "widget": {
+          "title": "CPU: allocatable vs requested (cores)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/node/cpu/allocatable_cores\" resource.type=\"k8s_node\" resource.label.\"node_name\"=monitoring.regex.full_match(\"gk3-.*-nap-.*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "allocatable",
+                "targetAxis": "Y1"
+              },
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/cpu/request_cores\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "requested (raw-data pods)",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "cores", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 32, "yPos": 60, "width": 16, "height": 16,
+        "widget": {
+          "title": "Memory: allocatable vs requested (bytes)",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/node/memory/allocatable_bytes\" resource.type=\"k8s_node\" resource.label.\"node_name\"=monitoring.regex.full_match(\"gk3-.*-nap-.*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "allocatable",
+                "targetAxis": "Y1"
+              },
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"kubernetes.io/container/memory/request_bytes\" resource.type=\"k8s_container\" resource.label.\"pod_name\"=monitoring.regex.full_match(\"raw-data-(file-chunking|chunk-normalization).*\")",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "requested (raw-data pods)",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "bytes", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "yPos": 76, "width": 48, "height": 6,
+        "widget": {
+          "text": {
+            "content": "### Row 3 — Failures & preemptions\nLogs-based metrics over the `events` log, scoped to raw-data import pods and split by step. A spike in Preempted/FailedScheduling is the chunk-normalization flakiness in OBT-2245.",
+            "format": "MARKDOWN",
+            "style": {}
+          }
+        }
+      },
+      {
+        "yPos": 82, "width": 24, "height": 16,
+        "widget": {
+          "title": "Pod preemptions by step",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"${preemptions_metric_type}\" resource.type=\"k8s_pod\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.label.\"step\""]
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "$${metric.labels.step}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "preemptions", "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 24, "yPos": 82, "width": 24, "height": 16,
+        "widget": {
+          "title": "Failed scheduling by step",
+          "xyChart": {
+            "chartOptions": { "mode": "COLOR" },
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"${failed_scheduling_metric_type}\" resource.type=\"k8s_pod\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.label.\"step\""]
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "$${metric.labels.step}",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": { "label": "failed scheduling events", "scale": "LINEAR" }
+          }
+        }
+      }
+    ]
+  }
+}
