@@ -70,7 +70,7 @@ class TestWarmPool(unittest.TestCase):
 
     def test_warm_pool_name_is_rfc1123(self) -> None:
         name = warm_pool._warm_pool_name("raw-data-import", "pre-import")
-        self.assertEqual("raw-data-import-pre-import", name)
+        self.assertEqual("warm-pool-raw-data-import-pre-import", name)
         self.assertEqual(name, name.lower())
 
     def test_bounding_box_limits_takes_per_dimension_max(self) -> None:
@@ -94,10 +94,12 @@ class TestWarmPool(unittest.TestCase):
         pod = self.core_client.create_namespaced_pod.call_args.kwargs["body"]
         # Server-assigned name (never a deterministic one) so a recreate can't 409
         # against a still-Terminating pod; the label is what selectors match.
-        self.assertEqual("raw-data-import-pre-import-", pod.metadata.generate_name)
+        self.assertEqual(
+            "warm-pool-raw-data-import-pre-import-", pod.metadata.generate_name
+        )
         self.assertIsNone(pod.metadata.name)
         self.assertEqual(
-            {"recidiviz.org/warm_pool": "raw-data-import-pre-import"},
+            {"recidiviz.org/warm_pool": "warm-pool-raw-data-import-pre-import"},
             pod.metadata.labels,
         )
         pod_spec = pod.spec
@@ -121,7 +123,7 @@ class TestWarmPool(unittest.TestCase):
         self.core_client.delete_collection_namespaced_pod.assert_called_once()
         kwargs = self.core_client.delete_collection_namespaced_pod.call_args.kwargs
         self.assertEqual(
-            "recidiviz.org/warm_pool=raw-data-import-pre-import",
+            "recidiviz.org/warm_pool=warm-pool-raw-data-import-pre-import",
             kwargs["label_selector"],
         )
 

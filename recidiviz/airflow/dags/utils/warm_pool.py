@@ -83,6 +83,10 @@ WARM_POOL_PLACEHOLDER_POD_PRIORITY_CLASS = k8s.V1PriorityClass(
 )
 WARM_POOL_PLACEHOLDER_POD_LABEL_NAME = "recidiviz.org/warm_pool"
 
+# Standard prefix on every warm-pool placeholder pod name, across all pools/specs,
+# so they can be identified/excluded by name (e.g. in Cloud Monitoring)
+WARM_POOL_NAME_PREFIX = "warm-pool-"
+
 # Minimal do-nothing container used to hold the reservation.
 PAUSE_IMAGE = "registry.k8s.io/pause:3.10"
 
@@ -146,7 +150,7 @@ def _bounding_box_limits(
 def _warm_pool_name(pool_name: str, spec_name: str) -> str:
     """Returns an RFC 1123 name unique to a (pool, spec),
     used as the placeholder pods' name prefix and warm pool label"""
-    return f"{pool_name}-{spec_name}".lower()
+    return f"{WARM_POOL_NAME_PREFIX}{pool_name}-{spec_name}".lower()
 
 
 def _create_priority_class_if_not_exists() -> None:
