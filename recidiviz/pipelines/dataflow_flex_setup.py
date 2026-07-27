@@ -103,6 +103,9 @@ setuptools.setup(
             "schema.json",
             "1.0.0/*/*.json",
         ],
+        "recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking": [
+            "*.csv"
+        ],
         "recidiviz.pipelines": [
             "supplemental/template_metadata.json",
             "metrics/template_metadata.json",
