@@ -2,7 +2,7 @@
 """rename_char_count_to_document_length_bytes
 
 Revision ID: b3b1ea07b814
-Revises: 6fa7a37f12b3
+Revises: 4c9d2e8b7a31
 Create Date: 2026-07-22 16:00:23.482771
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b3b1ea07b814"
-down_revision = "6fa7a37f12b3"
+down_revision = "4c9d2e8b7a31"
 branch_labels = None
 depends_on = None
 
