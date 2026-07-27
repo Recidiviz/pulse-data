@@ -21,6 +21,7 @@ from typing import Any
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     ENTRY_NUM_FIELD_NAME,
@@ -64,6 +65,7 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 )
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    FAKE_COLLECTION_NAME,
     FAKE_LOCATION_ER_COLLECTION_NAME,
     fake_entity_resolution_document_collection_config,
     fake_first_order_extractor_config,
@@ -326,6 +328,35 @@ JOIN composite_entry_source_map USING (person_id)"""
                     project_id="recidiviz-test",
                 )
                 check_query_is_not_ordered_outside_of_windows(query)
+
+    def test_entry_source_map_table_address(self) -> None:
+        for group_name, expected_address in [
+            (
+                "assignment",
+                "us_xx_document_store_metadata."
+                "fake_extractor_collection_assignment_entry_source_map",
+            ),
+            (
+                "location",
+                "us_xx_document_store_metadata."
+                "fake_extractor_collection_location_entry_source_map",
+            ),
+        ]:
+            with self.subTest(group=group_name):
+                self.assertEqual(
+                    BigQueryAddress.from_str(expected_address),
+                    fake_entity_resolution_document_collection_config(
+                        group_name
+                    ).entry_source_map_table_address,
+                )
+
+    def test_entry_source_map_table_description(self) -> None:
+        description = fake_entity_resolution_document_collection_config(
+            "assignment"
+        ).entry_source_map_table_description
+        self.assertIn("[assignment]", description)
+        self.assertIn(f"[{FAKE_COLLECTION_NAME}]", description)
+        self.assertIn(str(StateCode.get_state(StateCode.US_XX)), description)
 
     def test_raises_for_group_not_declared_on_collection(self) -> None:
         config = fake_first_order_extractor_config()

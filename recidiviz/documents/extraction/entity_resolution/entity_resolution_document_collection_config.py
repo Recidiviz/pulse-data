@@ -45,6 +45,9 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_composit
     EntityResolutionCompositeDocumentQueryTemplateBuilder,
     entry_source_map_schema_field,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
+    EntityResolutionEntrySourceMapBQTable,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
 )
@@ -237,4 +240,25 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
                 self.state_code
             ),
             table_id=table_id,
+        )
+
+    @property
+    def entry_source_map_table_address(self) -> BigQueryAddress:
+        """Returns the project-agnostic address of this collection's entry→source
+        map table, which maps each composite-document entry back to the first-order
+        mention occurrence it was rendered from.
+        """
+        return EntityResolutionEntrySourceMapBQTable.address(
+            state_code=self.state_code,
+            first_order_extractor_collection_name=self.first_order_extractor_collection_name,
+            entity_group_name=self.entity_group.name,
+        )
+
+    @property
+    def entry_source_map_table_description(self) -> str:
+        """Returns the description of this collection's entry→source map table."""
+        return EntityResolutionEntrySourceMapBQTable.description(
+            state_code=self.state_code,
+            first_order_extractor_collection_name=self.first_order_extractor_collection_name,
+            entity_group_name=self.entity_group.name,
         )

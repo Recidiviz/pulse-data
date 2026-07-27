@@ -20,12 +20,20 @@ import unittest
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.states_utils import find_state_codes_in_str
+from recidiviz.documents.dataset_config import (
+    document_store_metadata_dataset_for_region,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
+    ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX,
+)
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables,
 )
 from recidiviz.source_tables.source_table_config import (
     DocumentStoreSourceTableLabel,
+    SourceTableConfig,
     StateSpecificSourceTableLabel,
 )
 from recidiviz.tests.documents import fake_config
@@ -63,7 +71,9 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
                 "us_xx_document_store_metadata.document_upload_status",
                 "us_xx_document_store_metadata.fake_case_notes",
                 "us_xx_document_store_metadata.fake_extractor_collection_assignment_entity_resolution",
+                "us_xx_document_store_metadata.fake_extractor_collection_assignment_entry_source_map",
                 "us_xx_document_store_metadata.fake_extractor_collection_location_entity_resolution",
+                "us_xx_document_store_metadata.fake_extractor_collection_location_entry_source_map",
                 "us_xx_document_store_metadata.fake_input_notes",
                 "us_xx_document_store_metadata.fake_person_id_notes",
                 "us_xx_document_store_metadata.fake_staff_id_reports",
@@ -74,3 +84,48 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
             ]
         }
         self.assertEqual(expected_addresses, produced_addresses)
+
+    def _entry_source_map_tables(
+        self, state_code: StateCode
+    ) -> dict[str, SourceTableConfig]:
+        """Returns the entry→source map tables produced for |state_code|, keyed by
+        table id.
+        """
+        return {
+            table.address.table_id: table
+            for collection in collect_document_store_source_tables(
+                config_module=fake_config
+            )
+            if collection.dataset_id
+            == document_store_metadata_dataset_for_region(state_code)
+            for table in collection.source_tables
+            if table.address.table_id.endswith(ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX)
+        }
+
+    def test_entity_resolution_map_tables_have_expected_schema_and_clustering(
+        self,
+    ) -> None:
+        map_tables = self._entry_source_map_tables(StateCode.US_XX)
+
+        self.assertEqual(
+            {
+                "fake_extractor_collection_assignment_entry_source_map",
+                "fake_extractor_collection_location_entry_source_map",
+            },
+            set(map_tables),
+        )
+        for table_id, table in map_tables.items():
+            with self.subTest(table_id=table_id):
+                self.assertEqual(
+                    [
+                        "person_id",
+                        "document_contents_id",
+                        "entry_num",
+                        "source_document_contents_id",
+                        "source_document_update_datetime",
+                        "source_array_index",
+                    ],
+                    [field.name for field in table.schema_fields],
+                )
+                # Clustered on the key the map is written and replaced by.
+                self.assertEqual(["person_id"], table.clustering_fields)

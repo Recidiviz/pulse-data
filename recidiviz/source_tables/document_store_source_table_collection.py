@@ -24,6 +24,12 @@ from recidiviz.documents.dataset_config import (
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
+    EntityResolutionEntrySourceMapBQTable,
+)
 from recidiviz.documents.store.document_collection_config import (
     get_states_with_document_collections,
 )
@@ -52,7 +58,9 @@ def collect_document_store_source_tables(
     """Collects source table definitions for the document store metadata and
     contents tables of every document collection — first-order and generated
     entity-resolution — in |config_module| (the production config package by
-    default)."""
+    default). Each entity-resolution collection additionally gets its
+    entry→source map table.
+    """
     collections: list[SourceTableCollection] = []
 
     for state_code in get_states_with_document_collections(config_module):
@@ -94,6 +102,19 @@ def collect_document_store_source_tables(
                 schema_fields=config.build_bq_document_contents_schema(),
                 clustering_fields=[DOCUMENT_CONTENTS_ID_COLUMN_NAME],
             )
+            if isinstance(config, EntityResolutionDocumentCollectionConfig):
+                # An entity-resolution collection's composite documents carry an
+                # entry→source map, which lands in its own metadata table.
+                # Clustered on the root entity ID: the key the map is written and
+                # replaced by, and its consumers' leading join key.
+                metadata_collection.add_source_table(
+                    table_id=config.entry_source_map_table_address.table_id,
+                    description=config.entry_source_map_table_description,
+                    schema_fields=EntityResolutionEntrySourceMapBQTable.schema(
+                        root_entity_id_type=config.root_entity_id_type
+                    ),
+                    clustering_fields=[config.root_entity_id_column_name],
+                )
 
         metadata_collection.add_source_table(
             table_id=DocumentUploadStatusTable.table_id,
