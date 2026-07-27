@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Marshmallow response schemas for the Identity Service API."""
+"""Marshmallow request and response schemas for the Identity Service API."""
 from typing import Any
 
 import attr
 import marshmallow
-from marshmallow import fields
+from marshmallow import fields, validate
 
 from recidiviz.common import demographics
 from recidiviz.common.constants.identity import (
@@ -279,13 +279,13 @@ class IdentityHistorySchema(IdentityFullSchema):
 
 
 class MergeResponseSchema(CamelCaseSchema):
-    """Response body for POST /identities/merge."""
+    """Response body for POST /identities/{recidiviz_id}/merge."""
 
     surviving_identity = fields.Nested(IdentitySchema())
 
 
 class SplitResponseSchema(CamelCaseSchema):
-    """Response body for POST /identity/{recidiviz_id}/split."""
+    """Response body for POST /identities/{recidiviz_id}/split."""
 
     original_identity = fields.Nested(IdentitySchema())
     new_identity = fields.Nested(IdentitySchema())
@@ -299,13 +299,13 @@ class SearchResponseSchema(CamelCaseSchema):
 
 
 class IdentityByUuidRequestSchema(marshmallow.Schema):
-    """Validates query parameters for GET /identity/<recidiviz_id>."""
+    """Validates query parameters for GET /identities/<recidiviz_id>."""
 
     full = fields.Bool(load_default=False)
 
 
 class IdentityByQueryParametersRequestSchema(marshmallow.Schema):
-    """Validates query parameters for GET /identity.
+    """Validates query parameters for GET /identities.
 
     Exactly one of two lookup modes must be provided:
     - external_id + id_type
@@ -355,3 +355,31 @@ class ImportRequestSchema(marshmallow.Schema):
     """Validates the body of POST /trigger_import."""
 
     tenant = fields.Enum(Tenant, by_value=True, required=True)
+
+
+class IdentitySearchRequestSchema(marshmallow.Schema):
+    """Validates the JSON body for POST /identities/search. Provided fields
+    are ANDed together.
+    """
+
+    name = fields.Str(load_default=None)
+    tenant = fields.Enum(Tenant, by_value=True, load_default=None)
+    person_type = fields.Enum(PersonType, by_value=True, load_default=None)
+    external_id = fields.Str(load_default=None)
+    limit = fields.Int(load_default=50, validate=validate.Range(min=1, max=100))
+    cursor = fields.Str(load_default=None)
+    retired_handling = fields.Enum(
+        types.RetiredHandlingMode,
+        by_value=True,
+        load_default=types.RetiredHandlingMode.ACTIVE_ONLY,
+    )
+
+    @marshmallow.validates_schema
+    def validate_has_search_field(self, data: dict, **_kwargs: Any) -> None:
+        if not any(
+            [data["name"], data["tenant"], data["person_type"], data["external_id"]]
+        ):
+            raise marshmallow.ValidationError(
+                "At least one of name, tenant, person_type, or external_id must "
+                "be provided."
+            )

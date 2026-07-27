@@ -47,10 +47,13 @@ from recidiviz.services.identity.types import (
     Identity,
     IdentityAttributes,
     IdentityHistory,
+    IdentitySearchRequest,
     MergeEvent,
     Name,
     PhoneNumber,
     Race,
+    RetiredHandlingMode,
+    SearchResult,
     Sex,
     SourcedAttributeValue,
     SplitDestination,
@@ -724,3 +727,63 @@ class IdentityHistoryTest(unittest.TestCase):
         identity = _active_identity()
         self.assertFalse(hasattr(identity, "merge_events"))
         self.assertFalse(hasattr(identity, "split_events"))
+
+
+class IdentitySearchRequestTest(unittest.TestCase):
+    """Tests for IdentitySearchRequest field defaults and invariants."""
+
+    def test_constructs_with_single_field(self) -> None:
+        request = IdentitySearchRequest(name="frodo", limit=50)
+        self.assertEqual("frodo", request.name)
+        self.assertIsNone(request.tenant)
+        self.assertIsNone(request.person_type)
+        self.assertIsNone(request.external_id)
+        self.assertEqual(50, request.limit)
+        self.assertIsNone(request.cursor)
+        self.assertEqual(RetiredHandlingMode.ACTIVE_ONLY, request.retired_handling)
+
+    def test_constructs_with_all_fields(self) -> None:
+        request = IdentitySearchRequest(
+            name="frodo",
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_id="A123",
+            limit=10,
+            cursor="abc",
+            retired_handling=RetiredHandlingMode.RESOLVE,
+        )
+        self.assertEqual(Tenant.US_OZ, request.tenant)
+        self.assertEqual(PersonType.JII, request.person_type)
+        self.assertEqual("A123", request.external_id)
+        self.assertEqual(10, request.limit)
+        self.assertEqual("abc", request.cursor)
+        self.assertEqual(RetiredHandlingMode.RESOLVE, request.retired_handling)
+
+    def test_rejects_no_search_fields(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"requires at least one of name, tenant, person_type"
+        ):
+            IdentitySearchRequest(limit=50)
+
+    def test_rejects_limit_too_high(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"limit must be between 1 and 100"):
+            IdentitySearchRequest(name="frodo", limit=101)
+
+    def test_rejects_limit_too_low(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must be a positive integer"):
+            IdentitySearchRequest(name="frodo", limit=0)
+
+
+class SearchResultTest(unittest.TestCase):
+    """Tests for SearchResult."""
+
+    def test_constructs_with_results_and_cursor(self) -> None:
+        identity = _active_identity()
+        result = SearchResult(results=[identity], next_cursor="abc")
+        self.assertEqual([identity], result.results)
+        self.assertEqual("abc", result.next_cursor)
+
+    def test_constructs_with_no_more_results(self) -> None:
+        result = SearchResult(results=[], next_cursor=None)
+        self.assertEqual([], result.results)
+        self.assertIsNone(result.next_cursor)

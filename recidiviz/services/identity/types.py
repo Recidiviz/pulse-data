@@ -24,6 +24,7 @@ Two Identity forms are provided:
   ``split_events`` audit trail.
 """
 import datetime
+import enum
 import uuid
 
 import attr
@@ -595,6 +596,82 @@ class IdentityHistory:
         validator=[attr_validators.is_list_of(SplitEvent)]
     )
     """Split events originating from this identity."""
+
+
+class RetiredHandlingMode(enum.Enum):
+    """How IdentityServiceQuerier.search treats RETIRED identities."""
+
+    ACTIVE_ONLY = "ACTIVE_ONLY"
+    """Return only ACTIVE identities; RETIRED matches are excluded."""
+
+    RESOLVE = "RESOLVE"
+    """Replace each RETIRED match with its surviving ACTIVE identity, following
+    the merged_into chain."""
+
+    AS_STORED = "AS_STORED"
+    """Return RETIRED matches as stored, without resolving them."""
+
+
+@attr.define(frozen=True, kw_only=True)
+class IdentitySearchRequest:
+    """Search criteria for IdentityServiceQuerier.search. All provided fields are
+    ANDed together; at least one of name/tenant/person_type/external_id is required.
+    """
+
+    name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    """Case-insensitive substring match against a sourced name's given_name or
+    surname."""
+
+    tenant: Tenant | None = attr.ib(
+        default=None, validator=attr_validators.is_opt(Tenant)
+    )
+    """Restricts results to identities in this tenant."""
+
+    person_type: PersonType | None = attr.ib(
+        default=None, validator=attr_validators.is_opt(PersonType)
+    )
+    """Restricts results to identities of this person type."""
+
+    external_id: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    """Exact match against any active external ID, regardless of id_type."""
+
+    limit: int = attr.ib(validator=attr_validators.is_positive_int)
+    """Maximum number of results to return. Capped at 100."""
+
+    cursor: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    """Opaque pagination cursor returned by a previous search response's
+    next_cursor, or None to start from the beginning."""
+
+    retired_handling: RetiredHandlingMode = attr.ib(
+        default=RetiredHandlingMode.ACTIVE_ONLY,
+        validator=attr.validators.in_(RetiredHandlingMode),
+    )
+    """How RETIRED identities are treated: excluded entirely (the default),
+    resolved to their surviving ACTIVE identity, or returned as stored."""
+
+    def __attrs_post_init__(self) -> None:
+        if not (self.name or self.tenant or self.person_type or self.external_id):
+            raise ValueError(
+                "IdentitySearchRequest requires at least one of name, tenant, "
+                "person_type, or external_id."
+            )
+        if not 1 <= self.limit <= 100:
+            raise ValueError(f"limit must be between 1 and 100, got [{self.limit}]")
+
+
+@attr.define(frozen=True, kw_only=True)
+class SearchResult:
+    """Result of IdentityServiceQuerier.search: a page of matching identities plus
+    an opaque cursor for the next page, if more results exist."""
+
+    results: list[Identity] = attr.ib(validator=[attr_validators.is_list_of(Identity)])
+    """Identities matching the search request, deduplicated within the page."""
+
+    next_cursor: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Opaque cursor to pass as `cursor` in a subsequent request, or None if there
+    are no more results."""
 
 
 # TODO(OBT-35306): Add domain types for CreateCandidate, UpdateAttributeCandidate,

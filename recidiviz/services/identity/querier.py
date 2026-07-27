@@ -17,10 +17,12 @@
 """Data-access layer between the Identity Service Flask routes and the
 Identity Postgres database. Methods return typed domain objects.
 """
+import base64
+import binascii
 import uuid
 from collections import defaultdict
 
-from sqlalchemy import case
+from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.identity import IdentifierType, IdentityStatus
@@ -257,6 +259,32 @@ def _resolve_surviving_identities(
     }
 
 
+# TODO(#18145): Replace _escape_like + ilike(escape="\\") with
+#  icontains(value, autoescape=True) once we've upgraded to SQLAlchemy 2.
+def _escape_like(value: str) -> str:
+    """Escapes LIKE/ILIKE wildcard characters so a search substring is matched
+    literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _encode_cursor(recidiviz_id: uuid.UUID) -> str:
+    """Encodes the recidiviz_id of the last row on a search page as the opaque
+    cursor returned to API callers."""
+    return base64.urlsafe_b64encode(str(recidiviz_id).encode()).decode()
+
+
+def _decode_cursor(cursor: str) -> uuid.UUID:
+    """Decodes an opaque cursor produced by `_encode_cursor` back to the
+    recidiviz_id of the last row on the previous page.
+
+    Raises ValueError if `cursor` was not produced by `_encode_cursor`.
+    """
+    try:
+        return uuid.UUID(base64.urlsafe_b64decode(cursor.encode()).decode())
+    except (ValueError, TypeError, binascii.Error) as e:
+        raise ValueError(f"Invalid search cursor [{cursor}]") from e
+
+
 class IdentityServiceQuerier:
     """Implements Querier abstractions for the Identity Service data source."""
 
@@ -375,3 +403,103 @@ class IdentityServiceQuerier:
             row.recidiviz_id,
             resolve_retired=row.status is not IdentityStatus.ACTIVE,
         )
+
+    def search(self, request: types.IdentitySearchRequest) -> types.SearchResult:
+        """Returns identities matching `request`'s filters, ANDed together.
+
+        `request.retired_handling` controls how RETIRED identities are treated:
+
+        - ACTIVE_ONLY (the default): only ACTIVE identities are returned;
+          RETIRED matches are excluded entirely.
+        - AS_STORED: matched RETIRED identities are returned as stored.
+        - RESOLVE: a matched RETIRED identity is replaced by its surviving
+          ACTIVE identity (following `merged_into`, possibly multiple hops),
+          even if the survivor does not itself match the search filters.
+          Results are deduplicated by recidiviz_id within the page, so a
+          retired record and its survivor matching the same page collapse to
+          one entry.
+
+        Matches are ordered by recidiviz_id, starting after `request.cursor` if
+        given. Returns at most `request.limit` results. `SearchResult.next_cursor`
+        is the opaque cursor for the next page, continuing the underlying scan
+        from the last matching row on this page (not from the
+        deduplicated/resolved output), or None if no further matching rows exist.
+        """
+        cursor = _decode_cursor(request.cursor) if request.cursor is not None else None
+        with SessionFactory.using_database(self.database_key) as session:
+            query = session.query(schema.Identity)
+            if request.retired_handling is types.RetiredHandlingMode.ACTIVE_ONLY:
+                query = query.filter(schema.Identity.status == IdentityStatus.ACTIVE)
+            if request.tenant is not None:
+                query = query.filter(schema.Identity.tenant == request.tenant)
+            if request.person_type is not None:
+                query = query.filter(schema.Identity.person_type == request.person_type)
+            if request.name is not None:
+                pattern = f"%{_escape_like(request.name)}%"
+                query = query.filter(
+                    session.query(schema.Name.id)
+                    .filter(
+                        schema.Name.recidiviz_id == schema.Identity.recidiviz_id,
+                        or_(
+                            schema.Name.given_name.ilike(pattern, escape="\\"),
+                            schema.Name.surname.ilike(pattern, escape="\\"),
+                        ),
+                    )
+                    .exists()
+                )
+            if request.external_id is not None:
+                query = query.filter(
+                    session.query(schema.ExternalId.recidiviz_id)
+                    .filter(
+                        schema.ExternalId.recidiviz_id == schema.Identity.recidiviz_id,
+                        schema.ExternalId.external_id == request.external_id,
+                        schema.ExternalId.is_active.is_(True),
+                    )
+                    .exists()
+                )
+            if cursor is not None:
+                query = query.filter(schema.Identity.recidiviz_id > cursor)
+
+            rows = (
+                query.order_by(schema.Identity.recidiviz_id)
+                .limit(request.limit + 1)
+                .all()
+            )
+
+            has_more = len(rows) > request.limit
+            page_rows = rows[: request.limit]
+
+            should_resolve = (
+                request.retired_handling is types.RetiredHandlingMode.RESOLVE
+            )
+            retired_ids: list[uuid.UUID] = []
+            if should_resolve:
+                retired_ids = [
+                    row.recidiviz_id
+                    for row in page_rows
+                    if row.status is IdentityStatus.RETIRED
+                ]
+            surviving_identity_by_retired_id = (
+                _resolve_surviving_identities(session, retired_ids)
+                if retired_ids
+                else {}
+            )
+
+            results: list[types.Identity] = []
+            seen_ids: set[uuid.UUID] = set()
+            for row in page_rows:
+                if should_resolve and row.status is IdentityStatus.RETIRED:
+                    identity = surviving_identity_by_retired_id[row.recidiviz_id]
+                else:
+                    identity = _to_identity(row)
+                if identity is None or identity.recidiviz_id in seen_ids:
+                    continue
+                seen_ids.add(identity.recidiviz_id)
+                results.append(identity)
+
+            next_cursor = (
+                _encode_cursor(page_rows[-1].recidiviz_id)
+                if has_more and page_rows
+                else None
+            )
+            return types.SearchResult(results=results, next_cursor=next_cursor)

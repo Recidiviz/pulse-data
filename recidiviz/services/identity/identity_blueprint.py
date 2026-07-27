@@ -28,7 +28,9 @@ from recidiviz.services.identity.api_schemas import (
     IdentityByUuidRequestSchema,
     IdentityHistorySchema,
     IdentitySchema,
+    IdentitySearchRequestSchema,
     ImportRequestSchema,
+    SearchResponseSchema,
 )
 from recidiviz.services.identity.authorization import CallerRole
 from recidiviz.services.identity.constants import (
@@ -36,6 +38,7 @@ from recidiviz.services.identity.constants import (
     TRIGGER_IMPORT_BLUEPRINT_ROUTE,
 )
 from recidiviz.services.identity.querier import IdentityServiceQuerier
+from recidiviz.services.identity.types import IdentitySearchRequest
 
 identity_blueprint = Blueprint("identity", "identity")
 
@@ -75,6 +78,42 @@ class IdentityByRecidivizIdAPI(MethodView):
             history = querier.get_identity_history(identity_record)
             return jsonify(IdentityHistorySchema().dump(history))
         return jsonify(IdentitySchema().dump(identity_record))
+
+
+@identity_blueprint.route(f"{IDENTITIES_BLUEPRINT_ROUTE}/search")
+class IdentitySearchAPI(MethodView):
+    """POST /identities/search — find identities matching search criteria."""
+
+    ALLOWED_ROLES_BY_METHOD: dict[str, frozenset[CallerRole]] = {
+        "POST": IDENTITY_READ_ROLES,
+    }
+
+    @identity_blueprint.arguments(
+        IdentitySearchRequestSchema,
+        location="json",
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @identity_blueprint.response(HTTPStatus.OK)
+    def post(self, params: dict) -> Response:
+        """Returns identities matching the given search criteria (ANDed).
+
+        By default only ACTIVE identities are returned; set `retired_handling`
+        to RESOLVE to replace RETIRED matches with their surviving record, or
+        AS_STORED to return RETIRED matches unresolved. Returns at most
+        `limit` results (max 100, default 50); pass the response's
+        `next_cursor` back as `cursor` to retrieve the next page.
+        """
+        search_request = IdentitySearchRequest(
+            name=params["name"],
+            tenant=params["tenant"],
+            person_type=params["person_type"],
+            external_id=params["external_id"],
+            limit=params["limit"],
+            cursor=params["cursor"],
+            retired_handling=params["retired_handling"],
+        )
+        search_result = IdentityServiceQuerier().search(search_request)
+        return jsonify(SearchResponseSchema().dump(search_result))
 
 
 @identity_blueprint.route(IDENTITIES_BLUEPRINT_ROUTE)

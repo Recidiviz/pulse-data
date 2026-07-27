@@ -19,7 +19,7 @@ from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import patch
 
-from recidiviz.common.constants.identity import IdentifierType
+from recidiviz.common.constants.identity import IdentifierType, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.services.identity.authorization import CallerRole
 from recidiviz.services.identity.constants import (
@@ -32,6 +32,11 @@ from recidiviz.services.identity.constants import (
 from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
 from recidiviz.services.identity.server import ROLE_EXEMPT_ENDPOINTS, app
+from recidiviz.services.identity.types import (
+    IdentitySearchRequest,
+    RetiredHandlingMode,
+    SearchResult,
+)
 from recidiviz.tests.services.identity.test_utils import (
     DEFAULT_MAPPING,
     EDITOR_SERVICE_ACCOUNT,
@@ -642,3 +647,175 @@ class EndpointAuthorizationTest(TestCase):
                         self.assertTrue(
                             all(isinstance(r, CallerRole) for r in allowed_roles)
                         )
+
+
+class SearchIdentityEndpointTest(TestCase):
+    """Tests for POST /identity/search."""
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+
+    def test_returns_results_and_calls_querier_with_parsed_request(self) -> None:
+        identity = build_full_identity().identity
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.search.return_value = SearchResult(
+                results=[identity], next_cursor="abc"
+            )
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"name": "frodo", "tenant": "US_OZ"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertEqual(1, len(body["results"]))
+        self.assertEqual(str(RECIDIVIZ_ID), body["results"][0]["recidivizId"])
+        self.assertEqual("abc", body["nextCursor"])
+        mock_querier_cls.return_value.search.assert_called_once_with(
+            IdentitySearchRequest(
+                name="frodo",
+                tenant=Tenant.US_OZ,
+                person_type=None,
+                external_id=None,
+                limit=50,
+                cursor=None,
+                retired_handling=RetiredHandlingMode.ACTIVE_ONLY,
+            )
+        )
+
+    def test_returns_empty_list_when_no_matches(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.search.return_value = SearchResult(
+                results=[], next_cursor=None
+            )
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"external_id": "UNKNOWN"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        body = response.get_json()
+        self.assertEqual([], body["results"])
+        self.assertIsNone(body["nextCursor"])
+
+    def test_passes_through_person_type_limit_and_cursor(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.search.return_value = SearchResult(
+                results=[], next_cursor=None
+            )
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={
+                    "person_type": "STAFF",
+                    "limit": 10,
+                    "cursor": "prev-cursor",
+                },
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_querier_cls.return_value.search.assert_called_once_with(
+            IdentitySearchRequest(
+                person_type=PersonType.STAFF,
+                limit=10,
+                cursor="prev-cursor",
+            )
+        )
+
+    def test_passes_through_retired_handling(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.search.return_value = SearchResult(
+                results=[], next_cursor=None
+            )
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"name": "frodo", "retired_handling": "RESOLVE"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_querier_cls.return_value.search.assert_called_once_with(
+            IdentitySearchRequest(
+                name="frodo",
+                limit=50,
+                retired_handling=RetiredHandlingMode.RESOLVE,
+            )
+        )
+
+    def test_returns_400_for_invalid_retired_handling(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"name": "frodo", "retired_handling": "BOGUS"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_no_search_fields(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search", json={}, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_limit_too_high(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"external_id": "A123", "limit": 101},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_limit_too_low(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"external_id": "A123", "limit": 0},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_400_for_bad_person_type(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"person_type": "NOT_A_REAL_TYPE"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_returns_403_for_unmapped_caller(self) -> None:
+        with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT):
+            response = self.client.post(
+                f"{IDENTITIES_ROUTE}/search",
+                json={"external_id": "A123"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
