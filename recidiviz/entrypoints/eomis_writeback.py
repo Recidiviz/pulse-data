@@ -37,50 +37,38 @@ from recidiviz.eomis.client import EomisClient
 from recidiviz.eomis.credentials import resolve_eomis_credentials
 from recidiviz.eomis.flow import EomisWritebackFlow, ResultStatus
 from recidiviz.eomis.runner import LoggingAuditRecorder, run_writeback
-from recidiviz.eomis.us_ar.program_referral_flow import (
-    PROD_BASE_URL,
-    TEST_BASE_URL,
-    ArProgramReferralFlow,
-    default_view,
-)
+from recidiviz.eomis.scheduled_flows import SCHEDULED_FLOWS, ScheduledFlow
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-    in_development,
-)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 
-AR_GED_FLOW_NAME = "ar_ged"
+FLOW_NAMES = list(SCHEDULED_FLOWS)
 
 # Matches the attended CLI's default pacing between candidates.
 PAUSE_MIN_SECONDS = 1.0
 PAUSE_MAX_SECONDS = 2.0
 
 
+def scheduled_flow_for_name(flow_name: str) -> ScheduledFlow:
+    """Returns the registered scheduling config for |flow_name|."""
+    if flow_name not in SCHEDULED_FLOWS:
+        raise ValueError(f"Unexpected flow name: [{flow_name}]")
+    return SCHEDULED_FLOWS[flow_name]
+
+
 def build_flow(flow_name: str, *, bq_view: str | None) -> EomisWritebackFlow:
-    """Returns the named writeback flow, configured exactly as the attended
-    CLI configures it for an unattended (bq-sourced, unlimited) run."""
-    if flow_name == AR_GED_FLOW_NAME:
-        return ArProgramReferralFlow(
-            bq_view=bq_view or default_view(metadata.project_id()),
-            project_id=metadata.project_id(),
-            limit=None,
-            comment="",
-            add_comment="",
-        )
-    raise ValueError(f"Unexpected flow name: [{flow_name}]")
+    """Returns the named writeback flow, configured for an unattended
+    (bq-sourced, unlimited) run."""
+    return scheduled_flow_for_name(flow_name).build(
+        bq_view=bq_view, project_id=metadata.project_id()
+    )
 
 
 def base_url_for_project(flow_name: str, project_id: str) -> str:
-    """Returns the eOMIS instance the given project may write to: the
-    production instance only from the production project, the test instance
+    """Returns the eOMIS instance the given project may write to for this flow:
+    the production instance only from the production project, the test instance
     everywhere else."""
-    if flow_name != AR_GED_FLOW_NAME:
-        raise ValueError(f"Unexpected flow name: [{flow_name}]")
-    if project_id == GCP_PROJECT_PRODUCTION:
-        return PROD_BASE_URL
-    return TEST_BASE_URL
+    return scheduled_flow_for_name(flow_name).base_url_for_project(project_id)
 
 
 class EomisWritebackEntrypoint(EntrypointInterface):
@@ -92,7 +80,7 @@ class EomisWritebackEntrypoint(EntrypointInterface):
         parser.add_argument(
             "--flow",
             help="The writeback flow to run",
-            choices=[AR_GED_FLOW_NAME],
+            choices=FLOW_NAMES,
             required=True,
         )
         parser.add_argument(
@@ -121,8 +109,13 @@ class EomisWritebackEntrypoint(EntrypointInterface):
     def run_entrypoint(*, args: argparse.Namespace) -> None:
         """Runs the named flow through the shared runner and raises (exiting
         non-zero) if any candidate errored."""
-        base_url = base_url_for_project(args.flow, metadata.project_id())
-        if args.commit and base_url == PROD_BASE_URL and not args.allow_prod_write:
+        scheduled_flow = scheduled_flow_for_name(args.flow)
+        base_url = scheduled_flow.base_url_for_project(metadata.project_id())
+        if (
+            args.commit
+            and base_url == scheduled_flow.prod_base_url
+            and not args.allow_prod_write
+        ):
             raise ValueError("production writes require --allow-prod-write")
 
         flow = build_flow(args.flow, bq_view=args.bq_view)

@@ -25,12 +25,12 @@ from recidiviz.entrypoints.eomis_writeback import (
     build_flow,
 )
 from recidiviz.eomis.flow import ResultStatus, WriteResult
+from recidiviz.eomis.scheduled_flows import SCHEDULED_FLOWS
 from recidiviz.eomis.us_ar.program_referral_flow import (
-    PROD_BASE_URL,
-    TEST_BASE_URL,
     ArProgramReferralCandidate,
-    default_view,
+    ArProgramReferralFlow,
 )
+from recidiviz.eomis.us_co.sentence_credit_flow import CoSentenceCreditFlow
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -85,47 +85,38 @@ class TestArgumentParsing(unittest.TestCase):
 
 
 class TestFlowConstruction(unittest.TestCase):
-    """Tests flow building and instance selection."""
+    """Tests that the entrypoint resolves flows through the registry, holding no
+    per-flow knowledge of its own."""
 
-    def test_builds_the_ar_flow_configured_like_the_cli(self) -> None:
+    def test_build_flow_returns_the_registered_flow(self) -> None:
         with patch(
-            "recidiviz.entrypoints.eomis_writeback.ArProgramReferralFlow"
-        ) as mock_flow_cls, patch(
             "recidiviz.entrypoints.eomis_writeback.metadata.project_id",
             return_value=GCP_PROJECT_STAGING,
         ):
-            build_flow("ar_ged", bq_view=None)
-        mock_flow_cls.assert_called_once_with(
-            bq_view=default_view(GCP_PROJECT_STAGING),
-            project_id=GCP_PROJECT_STAGING,
-            limit=None,
-            comment="",
-            add_comment="",
-        )
-
-    def test_bq_view_override(self) -> None:
-        with patch(
-            "recidiviz.entrypoints.eomis_writeback.ArProgramReferralFlow"
-        ) as mock_flow_cls, patch(
-            "recidiviz.entrypoints.eomis_writeback.metadata.project_id",
-            return_value=GCP_PROJECT_STAGING,
-        ):
-            build_flow("ar_ged", bq_view="p.d.v")
-        self.assertEqual(mock_flow_cls.call_args.kwargs["bq_view"], "p.d.v")
+            self.assertIsInstance(
+                build_flow("ar_ged", bq_view=None), ArProgramReferralFlow
+            )
+            self.assertIsInstance(
+                build_flow("co_edovo", bq_view=None), CoSentenceCreditFlow
+            )
 
     def test_unknown_flow_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, r"^Unexpected flow name: \[nope\]$"):
             build_flow("nope", bq_view=None)
 
     def test_staging_targets_the_test_instance(self) -> None:
-        self.assertEqual(
-            base_url_for_project("ar_ged", GCP_PROJECT_STAGING), TEST_BASE_URL
-        )
+        for flow_name, scheduled in SCHEDULED_FLOWS.items():
+            self.assertEqual(
+                base_url_for_project(flow_name, GCP_PROJECT_STAGING),
+                scheduled.test_base_url,
+            )
 
     def test_production_targets_the_prod_instance(self) -> None:
-        self.assertEqual(
-            base_url_for_project("ar_ged", GCP_PROJECT_PRODUCTION), PROD_BASE_URL
-        )
+        for flow_name, scheduled in SCHEDULED_FLOWS.items():
+            self.assertEqual(
+                base_url_for_project(flow_name, GCP_PROJECT_PRODUCTION),
+                scheduled.prod_base_url,
+            )
 
 
 @patch("recidiviz.entrypoints.eomis_writeback.run_writeback")

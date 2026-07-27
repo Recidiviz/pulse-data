@@ -29,6 +29,12 @@ locals {
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
         }
+        # Daily to match AR; deployed paused until CDOC confirms cadence.
+        "us-co-edovo" = {
+          args      = ["--flow=co_edovo"]
+          schedule  = "0 0 * * *"
+          time_zone = "Etc/UTC"
+        }
       }
       # Which eOMIS instance/secrets the running container targets.
       recidiviz_env = "staging"
@@ -62,7 +68,7 @@ resource "google_service_account" "eomis_writeback" {
   display_name = "eOMIS Writeback Cloud Run Service Account"
   description  = <<EOT
 Runtime identity for the hosted eOMIS writeback Cloud Run job(s). Least-privilege:
-BigQuery read for candidate sourcing and access to the AR eOMIS secrets only.
+BigQuery read for candidate sourcing and access to the per-state eOMIS secrets only.
 Managed in Terraform.
 EOT
 }
@@ -74,7 +80,9 @@ resource "google_project_iam_member" "eomis_writeback_runtime_iam" {
   member   = "serviceAccount:${local.eomis_writeback_sa_email}"
 }
 
-# Secret-level access: only the AR eOMIS credentials, not all project secrets.
+# Secret-level access: only the specific eOMIS credentials, not all project secrets.
+# TODO(OBT-22951): add the CO eOMIS secrets here once they're provisioned in
+# Secret Manager (the grant requires the secret to already exist).
 resource "google_secret_manager_secret_iam_member" "eomis_writeback_secret_access" {
   for_each  = local.eomis_writeback_enabled ? toset(["eomis_us_ar_username", "eomis_us_ar_password"]) : toset([])
   secret_id = each.key
