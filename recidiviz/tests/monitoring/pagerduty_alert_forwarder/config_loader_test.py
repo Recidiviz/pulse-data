@@ -281,12 +281,14 @@ rules:
         partial_matches_in_config = set()
 
         # Some alert policies forwarded through this service are defined in OTHER repos (e.g. the
-        # Dashboards-project "Typesense" policies live in the pulse-dashboard repo, not in this
+        # Dashboards-project "Typesense" policies live in the recidiviz-dashboards repo, not in this
         # repo's monitoring_alert_policy.tf). They're validated in their own repo, so exempt them.
-        external_policy_name_substrings = ("typesense",)
+        external_policy_name_substrings = ("typesense", "staff synthetic monitor")
 
         def _is_external_policy(value: str) -> bool:
-            return any(sub in value.lower() for sub in external_policy_name_substrings)
+            return any(
+                sub.lower() in value.lower() for sub in external_policy_name_substrings
+            )
 
         for rule in self.real_config.rules:
             for match_condition in rule.match.conditions:

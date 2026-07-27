@@ -631,7 +631,7 @@ class TestRuleEngine(unittest.TestCase):
     def test_config_yaml_only_uses_supported_helpers(self) -> None:
         """Test that config.yaml only uses supported helper functions."""
         # Supported helpers
-        supported_helpers = {"gcp_resource_name"}
+        supported_helpers = {"gcp_resource_name", "strip_hyphenated_suffix"}
 
         # Read the config.yaml file
         config_path = (
@@ -970,4 +970,40 @@ class TestRuleEngineIntegration(unittest.TestCase):
         self.assertEqual(
             result["title"],
             "[STAGING] Typesense: disk almost full (OUT_OF_DISK risk)",
+        )
+
+    def test_staff_synthetic_monitor_check(self) -> None:
+        alert: dict = {
+            "incident": {
+                "condition_name": "Synthetic sign-in check failing",
+                "ended_at": None,
+                "metadata": {"system_labels": {}, "user_labels": {}},
+                "metric": {
+                    "displayName": "Check passed",
+                    "labels": {"check_id": "staff-synthetic-monitor-us-ut-9zTlJ0oGQwY"},
+                    "type": "monitoring.googleapis.com/uptime_check/check_passed",
+                },
+                "observed_value": "1.000",
+                "policy_name": "Staff synthetic monitor failing (us-east1)",
+                "policy_user_labels": {
+                    "project_id": "recidiviz-dashboard-staging",
+                    "region": "us-east1",
+                    "service": "staff-synthetic-monitor",
+                    "severity": "critical",
+                },
+                "resource": {
+                    "labels": {"project_id": "recidiviz-dashboard-staging"},
+                    "type": "cloud_run_revision",
+                },
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # The production critical rule does NOT match staging; env staging rule -> warning.
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[STAGING] Dashboards Project")
+        self.assertEqual(
+            result["title"],
+            "[STAGING] Uptime Check failing: staff-synthetic-monitor-us-ut",
         )

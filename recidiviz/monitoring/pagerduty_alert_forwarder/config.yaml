@@ -208,6 +208,14 @@ rules:
     actions:
       title_transform: "Typesense: search latency high"
 
+  # Staff synthetic monitor formatting
+  - name: "Staff Synthetic Monitoring"
+    match:
+      incident.policy_name:
+        contains: "Staff synthetic monitor failing"
+    actions:
+      title_transform: "Uptime Check failing: {incident.metric.labels.check_id|strip_hyphenated_suffix}"
+
   # Lastly, apply staging / production prefixes
   - name: "Production Alerts - Prefix Title"
     match:

@@ -272,6 +272,10 @@ class RuleEngine:
             # Returns: "experiment"
             return value.split("/")[-1]
 
+        if helper == "strip_hyphenated_suffix":
+            # Strips a hyphenated-suffix from a string
+            return value.rsplit("-", 1)[0]
+
         # Unknown helper - log warning and return original value
         logger.warning(
             "Unknown helper function: %s for field %s",
