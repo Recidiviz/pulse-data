@@ -19,8 +19,8 @@ from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents import config as default_config_module
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
-    EntityResolutionDocumentCollectionConfigBuilder,
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     load_first_order_llm_extractor_configs,
@@ -45,10 +45,10 @@ def collect_entity_resolution_document_collection_configs(
     for first_order_config in first_order_configs:
         for entity_group in first_order_config.extractor_collection.entity_groups:
             collections.append(
-                EntityResolutionDocumentCollectionConfigBuilder(
+                EntityResolutionDocumentCollectionConfig(
                     first_order_config=first_order_config,
                     entity_group=entity_group,
-                ).build()
+                )
             )
     return collections
 

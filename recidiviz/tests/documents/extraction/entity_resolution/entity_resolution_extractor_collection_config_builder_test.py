@@ -26,8 +26,8 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
-    EntityResolutionDocumentCollectionConfigBuilder,
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    entity_resolution_collection_name,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_extractor_collection_config_builder import (
     ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME,
@@ -118,8 +118,9 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
             parent_collection=parent, entity_group=group
         )
         self.assertEqual(
-            EntityResolutionDocumentCollectionConfigBuilder.collection_name(
-                first_order_collection_name=parent.name, group_name=group.name
+            entity_resolution_collection_name(
+                first_order_extractor_collection_name=parent.name,
+                entity_group_name=group.name,
             ),
             config.name,
         )

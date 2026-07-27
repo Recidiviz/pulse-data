@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Synthesizes the composite-document DocumentCollectionConfig for an
-entity-resolution extractor.
+"""Builds the SQL template that generates an entity-resolution extractor's
+composite documents.
 
 An entity-resolution (ER) extractor resolves one first-order collection's
 differently-worded mentions of the same real-world entity (an employer, a
@@ -24,9 +24,11 @@ LLM pass over a *composite document* — one per root entity, holding all of tha
 entity's first-order mentions rendered into a single numbered text blob.
 
 Rather than a bespoke composite-document builder, we reuse the document store:
-this builder synthesizes the `DocumentCollectionConfig` for the composite-document
-collection so the standard document upload flow generates, content-addresses, and
-uploads the composites like any other collection.
+the composite documents are an ordinary document collection (see
+`EntityResolutionDocumentCollectionConfig`, which derives its
+`document_generation_query_template` from this module), so the standard document
+upload flow generates, content-addresses, and uploads them like any other
+collection.
 
 The composite renders the person's mentions as a *timeline*: one block per
 source-note occurrence — a `(source document, update datetime)` pair — so an
@@ -35,18 +37,18 @@ identically-worded note appearing on two dates renders as two dated blocks.
 content-addressed store; their distinct occurrences are distinguished by
 `document_update_datetime`.)
 
-The generated `document_generation_query_template` reads the first-order
-`__pre_resolution` parsed views, numbers each included per-entry row once
-(`ROW_NUMBER` over the framework-fixed temporal sort with a deterministic
-total-order tiebreaker), then produces both outputs from those same rows in one
-`GROUP BY` per root entity: the composite `document_text` (an ordered
-`STRING_AGG` of per-occurrence blocks) and an `entry_source_map` column (an
-ordered `ARRAY_AGG` of `STRUCT<entry_num, source_document_contents_id,
-source_document_update_datetime, source_array_index>`). Because both come out
-of a single execution, the rendered text and the map cannot disagree. The map
-is declared via `other_document_generation_output_columns` so the store carries
-it through to the temp-updates table, from which the ER upload extension
-diverts it to the entry→source map table.
+The generated template reads the first-order `__pre_resolution` parsed views,
+numbers each included per-entry row once (`ROW_NUMBER` over the framework-fixed
+temporal sort with a deterministic total-order tiebreaker), then produces both
+outputs from those same rows in one `GROUP BY` per root entity: the composite
+`document_text` (an ordered `STRING_AGG` of per-occurrence blocks) and an
+`entry_source_map` column (an ordered `ARRAY_AGG` of `STRUCT<entry_num,
+source_document_contents_id, source_document_update_datetime,
+source_array_index>`). Because both come out of a single execution, the rendered
+text and the map cannot disagree. The map is declared via the collection's
+`other_document_generation_output_columns` so the store carries it through to the
+temp-updates table, from which the ER upload extension diverts it to the
+entry→source map table.
 """
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
@@ -54,17 +56,10 @@ from google.cloud.bigquery.enums import SqlTypeNames
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import BigQueryFieldMode
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.documents.dataset_config import (
-    document_extraction_pre_resolution_results_dataset_for_region,
-)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
 )
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    LLMExtractorConfig,
-)
 from recidiviz.documents.store.document_collection_config import (
-    DocumentCollectionConfig,
     DocumentRootEntityIdType,
 )
 from recidiviz.documents.store.document_store_columns import (
@@ -74,10 +69,6 @@ from recidiviz.documents.store.document_store_columns import (
 )
 from recidiviz.utils.string_formatting import fix_indent
 
-# Suffix appended to the first-order collection name (plus the entity group name)
-# to form the composite-document collection name.
-ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX = "ENTITY_RESOLUTION"
-
 # Columns of the first-order `__pre_resolution` parsed views that this builder
 # reads. These are part of the parsed-view contract (owned by the parsed-views
 # work); pinned here as constants so the generated SQL and its tests share one
@@ -85,9 +76,8 @@ ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX = "ENTITY_RESOLUTION"
 # source-note *occurrence* grain: one row per (root entity, source document,
 # document_update_datetime[, array element]), with exact duplicates (same
 # document and datetime) deduplicated upstream.
-# TODO(OBT-32175): Move these constants — and the `pre_resolution_view_address`
-#  derivation below — to be defined where LLMExtractorPreResolutionResultsViewBuilder
-#  is defined, once that exists.
+# TODO(OBT-32175): Move these constants to be defined where
+#  LLMExtractorPreResolutionResultsViewBuilder is defined, once that exists.
 PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME = "document_id"
 PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME = "source_array_index"
 
@@ -149,92 +139,45 @@ def entry_source_map_schema_field() -> bigquery.SchemaField:
     )
 
 
-class EntityResolutionDocumentCollectionConfigBuilder:
-    """Synthesizes the ER composite-document collection's `DocumentCollectionConfig`
-    from a first-order config's entity group. See the module docstring.
+class EntityResolutionCompositeDocumentQueryTemplateBuilder:
+    """Builds the composite-document generation SQL template for one
+    entity-resolution collection. See the module docstring.
+
+    Takes the values the template needs rather than the ER collection config,
+    since that config derives its generation query from this builder.
     """
 
     def __init__(
         self,
         *,
-        # The fully-resolved first-order extractor config whose validated mentions
-        # feed the composite documents.
-        first_order_config: LLMExtractorConfig,
-        # The entity group on the first-order collection to resolve — one ER
-        # collection is built per (first-order collection, entity group).
+        # The internal root entity ID type (person_id / staff_id) the composite
+        # documents are partitioned and keyed by.
+        root_entity_id_type: DocumentRootEntityIdType,
+        # The entity group whose mentions the composite documents render.
         entity_group: EntityGroupConfig,
+        # The first-order `__pre_resolution` parsed view the mentions are read
+        # from: the array-grain view for an array entity group, the doc-grain
+        # view for a top-level one.
+        pre_resolution_view_address: BigQueryAddress,
+        # The first-order collection's document_contents table, which holds the
+        # source note text keyed by document_contents_id.
+        source_document_contents_address: BigQueryAddress,
     ) -> None:
-        if entity_group not in first_order_config.extractor_collection.entity_groups:
-            raise ValueError(
-                f"Entity group [{entity_group.name}] is not declared on first-order "
-                f"collection [{first_order_config.extractor_collection.name}]."
-            )
-        self.first_order_config = first_order_config
+        self.root_entity_id_type = root_entity_id_type
         self.entity_group = entity_group
-
-    @property
-    def _first_order_collection_name(self) -> str:
-        return self.first_order_config.extractor_collection.name
-
-    @property
-    def _root_entity_id_type(self) -> DocumentRootEntityIdType:
-        """The root entity ID type of the composite-document collection: the
-        internal (person_id / staff_id) counterpart of the first-order
-        collection's root entity, which is what the __pre_resolution views the
-        composites are built from resolve every document to.
-        """
-        return (
-            self.first_order_config.input_document_collection.root_entity_id_type.internal_id_type
-        )
+        self.pre_resolution_view_address = pre_resolution_view_address
+        self.source_document_contents_address = source_document_contents_address
 
     @property
     def _root_entity_id_column_name(self) -> str:
         """The internal root entity ID column (person_id / staff_id) the composite
         documents are partitioned and keyed by.
         """
-        return self._root_entity_id_type.id_column_name
+        return self.root_entity_id_type.id_column_name
 
     @property
     def _entity_field_names(self) -> list[str]:
         return [field.name for field in self.entity_group.entity_fields]
-
-    @classmethod
-    def collection_name(
-        cls, *, first_order_collection_name: str, group_name: str
-    ) -> str:
-        """Returns the composite-document collection name for a (first-order
-        collection, entity group) pair, e.g.
-        `CASE_NOTE_EMPLOYMENT_INFO_EMPLOYER_ENTITY_RESOLUTION`.
-        """
-        return (
-            f"{first_order_collection_name}_{group_name.upper()}"
-            f"_{ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX}"
-        )
-
-    @property
-    def pre_resolution_view_address(self) -> BigQueryAddress:
-        """Returns the address of the first-order `__pre_resolution` parsed view
-        the composite documents are built from: the array-grain view for an array
-        entity group, the doc-grain view for a top-level one.
-        """
-        table_id = self._first_order_collection_name.lower()
-        if self.entity_group.source_array_field is not None:
-            table_id = f"{table_id}_{self.entity_group.source_array_field.name}"
-        return BigQueryAddress(
-            dataset_id=document_extraction_pre_resolution_results_dataset_for_region(
-                self.first_order_config.state_code
-            ),
-            table_id=table_id,
-        )
-
-    @property
-    def _source_document_contents_address(self) -> BigQueryAddress:
-        """Returns the address of the first-order collection's document_contents
-        table, which holds the source note text keyed by document_contents_id.
-        """
-        return (
-            self.first_order_config.input_document_collection.document_contents_table_address
-        )
 
     def _source_array_index_select(self) -> str:
         """Returns the `source_array_index` select expression for the mentions
@@ -300,7 +243,7 @@ class EntityResolutionDocumentCollectionConfigBuilder:
             indent_level=0,
         )
 
-    def _build_document_generation_query_template(self) -> str:
+    def build_query_template(self) -> str:
         """Returns the composite-document generation SQL template. Its output is
         exactly `{root_id, document_text, document_update_datetime,
         entry_source_map}` — the document store wrapper adds document_contents_id.
@@ -333,7 +276,7 @@ class EntityResolutionDocumentCollectionConfigBuilder:
                 source_docs.{DOCUMENT_TEXT_COLUMN_NAME} AS source_document_text,
                 {entity_field_select}
             FROM `{self.pre_resolution_view_address.format_address_for_query_template()}` pre
-            JOIN `{self._source_document_contents_address.format_address_for_query_template()}` source_docs
+            JOIN `{self.source_document_contents_address.format_address_for_query_template()}` source_docs
                 ON pre.{PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME} = source_docs.{DOCUMENT_CONTENTS_ID_COLUMN_NAME}
             WHERE ({self._mention_inclusion_filter()})
                 AND source_docs.{DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL
@@ -401,34 +344,3 @@ class EntityResolutionDocumentCollectionConfigBuilder:
         JOIN composite_entry_source_map USING ({root_id})
         """
         return fix_indent(query, indent_level=0)
-
-    def build(self) -> DocumentCollectionConfig:
-        """Returns the composite-document collection config: one composite
-        document per root entity, keyed by the internal root entity ID, whose
-        generation query renders the numbered composite text and the
-        `entry_source_map` array. A composite is always produced — length is not
-        a generation concern (the per-document size guardrail skips oversized
-        documents at extraction time).
-        """
-        return DocumentCollectionConfig(
-            state_code=self.first_order_config.state_code,
-            name=self.collection_name(
-                first_order_collection_name=self._first_order_collection_name,
-                group_name=self.entity_group.name,
-            ),
-            description=(
-                f"Auto-generated entity-resolution composite documents for the "
-                f"[{self.entity_group.name}] entity group of the "
-                f"[{self._first_order_collection_name}] collection in "
-                f"[{self.first_order_config.state_code.value}]. One composite "
-                f"document per root entity, aggregating that entity's first-order "
-                f"mentions for the entity resolution extractor to resolve."
-            ),
-            root_entity_id_type=self._root_entity_id_type,
-            # One composite document per root entity, so the root entity columns
-            # alone are the primary key — no document-specific columns.
-            document_primary_key_columns=[],
-            other_metadata_columns=[],
-            document_generation_query_template=self._build_document_generation_query_template(),
-            other_document_generation_output_columns=[entry_source_map_schema_field()],
-        )

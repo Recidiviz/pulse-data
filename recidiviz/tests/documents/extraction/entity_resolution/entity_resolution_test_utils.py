@@ -14,10 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shared helpers for entity-resolution builder tests: loaders for the fake
-first-order collection/extractor and lookups for their entity groups.
+"""Shared helpers for entity-resolution tests: loaders for the fake first-order
+collection/extractor, lookups for their entity groups, and the ER composite-document
+collection configs generated from them.
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
@@ -66,3 +70,18 @@ def get_entity_group_by_name(
 ) -> EntityGroupConfig:
     """Returns the entity group named |name| declared on |collection|."""
     return {group.name: group for group in collection.entity_groups}[name]
+
+
+def fake_entity_resolution_document_collection_config(
+    group_name: str,
+) -> EntityResolutionDocumentCollectionConfig:
+    """Returns the ER composite-document collection config generated from the fake
+    US_XX first-order extractor's |group_name| entity group.
+    """
+    first_order_config = fake_first_order_extractor_config()
+    return EntityResolutionDocumentCollectionConfig(
+        first_order_config=first_order_config,
+        entity_group=get_entity_group_by_name(
+            first_order_config.extractor_collection, group_name
+        ),
+    )

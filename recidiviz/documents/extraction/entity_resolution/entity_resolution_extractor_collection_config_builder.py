@@ -19,8 +19,8 @@ entity-resolution extractor — one per (first-order collection, entity group),
 built entirely from collection-level inputs (there is no hand-authored ER
 `collection.yaml`).
 """
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
-    EntityResolutionDocumentCollectionConfigBuilder,
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    entity_resolution_collection_name,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (
     build_entity_resolution_output_schema,
@@ -55,9 +55,9 @@ def build_entity_resolution_extractor_collection_config(
         # Share the composite-document collection's name: a state ER extractor
         # binds that collection as its input and this one as its extractor
         # collection, so they name the same (collection, group).
-        name=EntityResolutionDocumentCollectionConfigBuilder.collection_name(
-            first_order_collection_name=parent_collection.name,
-            group_name=entity_group.name,
+        name=entity_resolution_collection_name(
+            first_order_extractor_collection_name=parent_collection.name,
+            entity_group_name=entity_group.name,
         ),
         description=(
             f"Auto-generated entity-resolution extractor collection for the "

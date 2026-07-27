@@ -28,8 +28,8 @@ from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents import config as default_config_module
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
-    EntityResolutionDocumentCollectionConfigBuilder,
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_extractor_collection_config_builder import (
     build_entity_resolution_extractor_collection_config,
@@ -161,10 +161,10 @@ def collect_entity_resolution_extractor_configs(
     for first_order_config in first_order_configs:
         for entity_group in first_order_config.extractor_collection.entity_groups:
             entity_resolution_document_collection = (
-                EntityResolutionDocumentCollectionConfigBuilder(
+                EntityResolutionDocumentCollectionConfig(
                     first_order_config=first_order_config,
                     entity_group=entity_group,
-                ).build()
+                )
             )
             entity_resolution_collection = (
                 build_entity_resolution_extractor_collection_config(
@@ -174,8 +174,6 @@ def collect_entity_resolution_extractor_configs(
             )
             entity_resolution_config = generator.generate(
                 entity_resolution_collection=entity_resolution_collection,
-                first_order_config=first_order_config,
-                entity_group=entity_group,
                 entity_resolution_document_collection=entity_resolution_document_collection,
                 model_registry=model_registry,
             )

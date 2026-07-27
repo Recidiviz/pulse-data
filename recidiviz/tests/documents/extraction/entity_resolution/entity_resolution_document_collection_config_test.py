@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for entity_resolution_document_collection_config_builder.py."""
+"""Tests for entity_resolution_document_collection_config.py."""
 import datetime
 import unittest
 from typing import Any
@@ -22,7 +22,7 @@ from typing import Any
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     ENTRY_NUM_FIELD_NAME,
     ENTRY_SOURCE_MAP_COLUMN_NAME,
     PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME,
@@ -30,8 +30,10 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
     SOURCE_ARRAY_INDEX_FIELD_NAME,
     SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME,
     SOURCE_DOCUMENT_UPDATE_DATETIME_FIELD_NAME,
-    EntityResolutionDocumentCollectionConfigBuilder,
     entry_source_map_schema_field,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     load_first_order_llm_extractor_configs,
@@ -43,7 +45,6 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     PrimitiveScalarLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.store.document_collection_config import (
-    DocumentCollectionConfig,
     DocumentRootEntityIdType,
 )
 from recidiviz.documents.store.document_store_columns import (
@@ -64,6 +65,7 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     FAKE_LOCATION_ER_COLLECTION_NAME,
+    fake_entity_resolution_document_collection_config,
     fake_first_order_extractor_config,
     get_entity_group_by_name,
 )
@@ -75,11 +77,44 @@ from recidiviz.utils.types import assert_type
 _ROW_CREATE_DATETIME = datetime.datetime(2026, 7, 1, tzinfo=datetime.timezone.utc)
 
 
-class EntityResolutionDocumentCollectionConfigBuilderTest(unittest.TestCase):
-    """Tests for EntityResolutionDocumentCollectionConfigBuilder (SQL text and
-    config shape, without executing the query)."""
+class EntityResolutionDocumentCollectionConfigTest(unittest.TestCase):
+    """Tests for EntityResolutionDocumentCollectionConfig: the fields it derives
+    from its (first-order config, entity group) pair, including the generated SQL
+    text (without executing the query)."""
 
-    def test_build_produces_expected_config_for_array_group(self) -> None:
+    def _assert_derived_collection_fields(
+        self,
+        config: EntityResolutionDocumentCollectionConfig,
+        *,
+        expected_name: str,
+        expected_group_name: str,
+        expected_query_template: str,
+    ) -> None:
+        """Asserts every DocumentCollectionConfig field the ER collection derives
+        from its (first-order config, entity group) pair.
+        """
+        self.assertEqual(StateCode.US_XX, config.state_code)
+        self.assertEqual(expected_name, config.name)
+        self.assertEqual(
+            f"Auto-generated entity-resolution composite documents for the "
+            f"[{expected_group_name}] entity group of the "
+            f"[FAKE_EXTRACTOR_COLLECTION] collection in [US_XX]. One composite "
+            f"document per root entity, aggregating that entity's first-order "
+            f"mentions for the entity resolution extractor to resolve.",
+            config.description,
+        )
+        self.assertEqual(DocumentRootEntityIdType.PERSON_ID, config.root_entity_id_type)
+        self.assertEqual([], config.document_primary_key_columns)
+        self.assertEqual([], config.other_metadata_columns)
+        self.assertEqual(
+            [entry_source_map_schema_field()],
+            config.other_document_generation_output_columns,
+        )
+        self.assertEqual(
+            expected_query_template, config.document_generation_query_template
+        )
+
+    def test_derives_expected_fields_for_array_group(self) -> None:
 
         expected_document_generation_query_template = r"""WITH mentions AS (
     SELECT
@@ -163,35 +198,14 @@ SELECT
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id)"""
 
-        config = fake_first_order_extractor_config()
-        self.assertEqual(
-            DocumentCollectionConfig(
-                state_code=StateCode.US_XX,
-                name=FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
-                description=(
-                    "Auto-generated entity-resolution composite documents for the "
-                    "[assignment] entity group of the [FAKE_EXTRACTOR_COLLECTION] "
-                    "collection in [US_XX]. One composite document per root entity, "
-                    "aggregating that entity's first-order mentions for the "
-                    "entity resolution extractor to resolve."
-                ),
-                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
-                document_primary_key_columns=[],
-                other_metadata_columns=[],
-                document_generation_query_template=expected_document_generation_query_template,
-                other_document_generation_output_columns=[
-                    entry_source_map_schema_field()
-                ],
-            ),
-            EntityResolutionDocumentCollectionConfigBuilder(
-                first_order_config=config,
-                entity_group=get_entity_group_by_name(
-                    config.extractor_collection, "assignment"
-                ),
-            ).build(),
+        self._assert_derived_collection_fields(
+            fake_entity_resolution_document_collection_config("assignment"),
+            expected_name=FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+            expected_group_name="assignment",
+            expected_query_template=expected_document_generation_query_template,
         )
 
-    def test_build_produces_expected_config_for_top_level_group(self) -> None:
+    def test_derives_expected_fields_for_top_level_group(self) -> None:
 
         expected_document_generation_query_template = r"""WITH mentions AS (
     SELECT
@@ -275,41 +289,20 @@ SELECT
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id)"""
 
-        config = fake_first_order_extractor_config()
-        self.assertEqual(
-            DocumentCollectionConfig(
-                state_code=StateCode.US_XX,
-                name=FAKE_LOCATION_ER_COLLECTION_NAME,
-                description=(
-                    "Auto-generated entity-resolution composite documents for the "
-                    "[location] entity group of the [FAKE_EXTRACTOR_COLLECTION] "
-                    "collection in [US_XX]. One composite document per root entity, "
-                    "aggregating that entity's first-order mentions for the "
-                    "entity resolution extractor to resolve."
-                ),
-                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
-                document_primary_key_columns=[],
-                other_metadata_columns=[],
-                document_generation_query_template=expected_document_generation_query_template,
-                other_document_generation_output_columns=[
-                    entry_source_map_schema_field()
-                ],
-            ),
-            EntityResolutionDocumentCollectionConfigBuilder(
-                first_order_config=config,
-                entity_group=get_entity_group_by_name(
-                    config.extractor_collection, "location"
-                ),
-            ).build(),
+        self._assert_derived_collection_fields(
+            fake_entity_resolution_document_collection_config("location"),
+            expected_name=FAKE_LOCATION_ER_COLLECTION_NAME,
+            expected_group_name="location",
+            expected_query_template=expected_document_generation_query_template,
         )
 
     def test_generated_query_selects_exactly_the_expected_columns(self) -> None:
         config = fake_first_order_extractor_config()
         for entity_group in config.extractor_collection.entity_groups:
             with self.subTest(group=entity_group.name):
-                built = EntityResolutionDocumentCollectionConfigBuilder(
+                built = EntityResolutionDocumentCollectionConfig(
                     first_order_config=config, entity_group=entity_group
-                ).build()
+                )
                 # The generation query outputs the temp-updates schema minus the
                 # framework-computed document_contents_id.
                 expected_columns = {
@@ -327,16 +320,14 @@ JOIN composite_entry_source_map USING (person_id)"""
         for entity_group in config.extractor_collection.entity_groups:
             with self.subTest(group=entity_group.name):
                 query = StrictStringFormatter().format(
-                    EntityResolutionDocumentCollectionConfigBuilder(
+                    EntityResolutionDocumentCollectionConfig(
                         first_order_config=config, entity_group=entity_group
-                    )
-                    .build()
-                    .document_generation_query_template,
+                    ).document_generation_query_template,
                     project_id="recidiviz-test",
                 )
                 check_query_is_not_ordered_outside_of_windows(query)
 
-    def test_init_raises_for_group_not_declared_on_collection(self) -> None:
+    def test_raises_for_group_not_declared_on_collection(self) -> None:
         config = fake_first_order_extractor_config()
         undeclared_group = EntityGroupConfig(
             name="undeclared",
@@ -351,7 +342,7 @@ JOIN composite_entry_source_map USING (person_id)"""
         with self.assertRaisesRegex(
             ValueError, "is not declared on first-order collection"
         ):
-            EntityResolutionDocumentCollectionConfigBuilder(
+            EntityResolutionDocumentCollectionConfig(
                 first_order_config=config, entity_group=undeclared_group
             )
 
@@ -360,7 +351,7 @@ class BuildAllRealEntityResolutionDocumentCollectionsTest(unittest.TestCase):
     """Guards that an ER composite-document collection builds and validates for
     every entity group declared on a real first-order extractor."""
 
-    def test_build_for_all_real_entity_groups(self) -> None:
+    def test_all_real_entity_groups(self) -> None:
         configs_by_state = load_first_order_llm_extractor_configs()
         self.assertTrue(configs_by_state)
 
@@ -374,9 +365,9 @@ class BuildAllRealEntityResolutionDocumentCollectionsTest(unittest.TestCase):
                     ):
                         # Raises if the ER composite-document collection for this
                         # (state, collection, group) fails to build or validate.
-                        EntityResolutionDocumentCollectionConfigBuilder(
+                        EntityResolutionDocumentCollectionConfig(
                             first_order_config=config, entity_group=group
-                        ).build()
+                        )
 
 
 def _contents_row(
@@ -476,24 +467,24 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
 
     def _seed_pre_resolution(
         self,
-        builder: EntityResolutionDocumentCollectionConfigBuilder,
+        collection: EntityResolutionDocumentCollectionConfig,
         entity_group: EntityGroupConfig,
         rows: list[dict[str, Any]],
     ) -> None:
         self.create_mock_table(
-            builder.pre_resolution_view_address,
+            collection.pre_resolution_view_address,
             schema=_pre_resolution_schema(entity_group),
         )
-        self.load_rows_into_table(builder.pre_resolution_view_address, rows)
+        self.load_rows_into_table(collection.pre_resolution_view_address, rows)
 
     def _composite_documents_query(
-        self, builder: EntityResolutionDocumentCollectionConfigBuilder
+        self, collection: EntityResolutionDocumentCollectionConfig
     ) -> str:
         """The generation query, formatted and wrapped in a deterministic ordering
         (the generation query itself has no top-level ORDER BY — one row per root
         entity) so the result rows can be compared exactly."""
         query = StrictStringFormatter().format(
-            builder.build().document_generation_query_template,
+            collection.document_generation_query_template,
             project_id=self.project_id,
         )
         return f"SELECT * FROM ({query}) ORDER BY {PERSON_ID_COLUMN_NAME}"
@@ -503,7 +494,7 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
         entity_group = get_entity_group_by_name(
             config.extractor_collection, "assignment"
         )
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -515,7 +506,7 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
             ]
         )
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 # person 111 — mentions across three source documents. The same
@@ -608,7 +599,7 @@ assignment_name: Grounds
 assignment_type: external"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 111,
@@ -639,7 +630,7 @@ assignment_type: external"""
     def test_top_level_group_composite_documents(self) -> None:
         config = fake_first_order_extractor_config()
         entity_group = get_entity_group_by_name(config.extractor_collection, "location")
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -650,7 +641,7 @@ assignment_type: external"""
             ]
         )
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 _mention_row(
@@ -688,7 +679,7 @@ document_text: Moved to Building B.
 location: Building B"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 333,
@@ -710,7 +701,7 @@ location: Building B"""
         entity_group = get_entity_group_by_name(
             config.extractor_collection, "assignment"
         )
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -722,7 +713,7 @@ location: Building B"""
         # Same datetime, inserted out of order — the query must order by
         # source_document_contents_id, identically in the text and the map.
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 _mention_row(
@@ -759,7 +750,7 @@ assignment_name: Beta
 assignment_type: internal"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 444,
@@ -785,7 +776,7 @@ assignment_type: internal"""
         entity_group = get_entity_group_by_name(
             config.extractor_collection, "assignment"
         )
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -797,7 +788,7 @@ assignment_type: internal"""
         # The parse for the duplicated text exists once (per contents id), so
         # both of its occurrence rows carry identical entity field values.
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 _mention_row(
@@ -849,7 +840,7 @@ assignment_name: Kitchen duty
 assignment_type: internal"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 555,
@@ -878,7 +869,7 @@ assignment_type: internal"""
         """
         config = fake_first_order_extractor_config()
         entity_group = get_entity_group_by_name(config.extractor_collection, "location")
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -891,7 +882,7 @@ assignment_type: internal"""
         # The scrubbed document's parsed mention still exists in the
         # pre-resolution results (extraction ran before the deletion).
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 _mention_row(
@@ -928,7 +919,7 @@ document_text: Moved to Building B.
 location: Building B"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 666,
@@ -950,7 +941,7 @@ location: Building B"""
         the composite text and the entry_source_map."""
         config = fake_first_order_extractor_config()
         entity_group = get_entity_group_by_name(config.extractor_collection, "location")
-        builder = EntityResolutionDocumentCollectionConfigBuilder(
+        collection = EntityResolutionDocumentCollectionConfig(
             first_order_config=config, entity_group=entity_group
         )
         self._seed_contents(
@@ -960,7 +951,7 @@ location: Building B"""
             ]
         )
         self._seed_pre_resolution(
-            builder,
+            collection,
             entity_group,
             [
                 _mention_row(
@@ -985,7 +976,7 @@ document_text: Living at Building A.
 location: Building A"""
 
         self.run_query_test(
-            self._composite_documents_query(builder),
+            self._composite_documents_query(collection),
             expected_result=[
                 {
                     PERSON_ID_COLUMN_NAME: 777,

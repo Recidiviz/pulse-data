@@ -31,8 +31,10 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_ER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_ER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
-    EntityGroupConfig,
     LLMExtractorCollectionConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
@@ -40,9 +42,6 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorDocumentFilterConfig,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import LLMModelRegistry
-from recidiviz.documents.store.document_collection_config import (
-    DocumentCollectionConfig,
-)
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
 )
@@ -56,7 +55,7 @@ class EntityResolutionExtractorGenerator:
 
     @staticmethod
     def _build_document_filter_query_template(
-        entity_resolution_document_collection: DocumentCollectionConfig,
+        entity_resolution_document_collection: EntityResolutionDocumentCollectionConfig,
     ) -> str:
         """Returns the document metadata filter query template selecting every
         composite document in the ER document collection — the ER analogue of a
@@ -72,19 +71,18 @@ class EntityResolutionExtractorGenerator:
     def generate(
         self,
         *,
-        entity_resolution_collection: LLMExtractorCollectionConfig,
-        first_order_config: LLMExtractorConfig,
-        entity_group: EntityGroupConfig,
-        entity_resolution_document_collection: DocumentCollectionConfig,
         model_registry: LLMModelRegistry,
+        entity_resolution_collection: LLMExtractorCollectionConfig,
+        entity_resolution_document_collection: EntityResolutionDocumentCollectionConfig,
     ) -> LLMExtractorConfig:
         """Returns the fully-resolved ER extractor config for one (ER collection,
-        state), reading the composite-document collection, inheriting the parent
-        first-order extractor's resolved reference data and retry setting, applying
-        the framework's ER-specific document-count caps, and binding the ER
-        collection's default (thinking-enabled) model resolved from
-        |model_registry|.
+        state-specific ER document collection), reading the composite-document
+        collection, inheriting the parent first-order extractor's resolved reference
+        data and retry setting, applying the framework's ER-specific document-count
+        caps, and binding the ER collection's default (thinking-enabled) model resolved
+        from |model_registry|.
         """
+        first_order_config = entity_resolution_document_collection.first_order_config
         model_config = model_registry.get_model_config(
             entity_resolution_collection.default_model_config_name
         )
@@ -108,5 +106,5 @@ class EntityResolutionExtractorGenerator:
             extractor_collection=entity_resolution_collection,
             model_config=model_config,
             reference_data=first_order_config.reference_data,
-            entity_group=entity_group,
+            entity_group=entity_resolution_document_collection.entity_group,
         )

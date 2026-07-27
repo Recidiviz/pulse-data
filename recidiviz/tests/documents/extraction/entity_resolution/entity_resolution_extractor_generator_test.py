@@ -33,8 +33,8 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_ER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config_builder import (
-    EntityResolutionDocumentCollectionConfigBuilder,
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_extractor_collection_config_builder import (
     build_entity_resolution_extractor_collection_config,
@@ -57,6 +57,7 @@ from recidiviz.documents.store.document_store_columns import (
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_document_collection_config,
     fake_first_order_extractor_config,
     get_entity_group_by_name,
 )
@@ -87,11 +88,6 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
         entity_group = get_entity_group_by_name(
             first_order_config.extractor_collection, group_name
         )
-        entity_resolution_document_collection = (
-            EntityResolutionDocumentCollectionConfigBuilder(
-                first_order_config=first_order_config, entity_group=entity_group
-            ).build()
-        )
         entity_resolution_collection = (
             build_entity_resolution_extractor_collection_config(
                 parent_collection=first_order_config.extractor_collection,
@@ -100,10 +96,10 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
         )
         return EntityResolutionExtractorGenerator().generate(
             entity_resolution_collection=entity_resolution_collection,
-            first_order_config=first_order_config,
-            entity_group=entity_group,
-            entity_resolution_document_collection=entity_resolution_document_collection,
             model_registry=load_llm_model_registry(config_module=fake_config),
+            entity_resolution_document_collection=(
+                fake_entity_resolution_document_collection_config(group_name)
+            ),
         )
 
     def test_generate_top_level_group(self) -> None:
@@ -232,10 +228,11 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
         )
         mutated_generated = EntityResolutionExtractorGenerator().generate(
             entity_resolution_collection=mutated_entity_resolution_collection,
-            first_order_config=first_order_config,
-            entity_group=entity_group,
-            entity_resolution_document_collection=generated_er_config.input_document_collection,
             model_registry=load_llm_model_registry(config_module=fake_config),
+            entity_resolution_document_collection=assert_type(
+                generated_er_config.input_document_collection,
+                EntityResolutionDocumentCollectionConfig,
+            ),
         )
 
         self.assertNotEqual(
