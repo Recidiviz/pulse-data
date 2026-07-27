@@ -516,18 +516,55 @@ def good_time_restoration_cooldown_end_clause(
 
     Per NE policy a person is locked out of new restoration requests until
     either the start of the calendar month after the request was initiated or
-    the day after the credit posts — whichever is later. The action_date floor
-    keeps the cooldown from briefly reopening when approval lag pushes the
-    credit past the calendar boundary.
+    the day the restoration resolves — whichever is later. Pass whichever date
+    the caller treats as the resolution date (the credit's `action_date` for the
+    criterion, or the request's `disposition_completed_date` for the auto-clear
+    metadata). In a cross-month case (resolution lands in a later month than the
+    request) the resolution date is the cooldown end, so the person reappears on
+    the day the restoration resolves.
 
     Caller is responsible for supplying a `request_date_col` that already
     falls back to `credit_date` for historical REINSTATEs predating the
     GoodTimeRestoration data.
     """
     return f"""GREATEST(
-        DATE_ADD({action_date_col}, INTERVAL 1 DAY),
+        {action_date_col},
         DATE_ADD(DATE_TRUNC({request_date_col}, MONTH), INTERVAL 1 MONTH)
     )"""
+
+
+def good_time_restoration_requests_fragment() -> str:
+    """Bare SELECT of every good time restoration request (from the
+    GoodTimeRestoration table), mapped to person_id.
+
+    Emits one row per request with:
+      - request_date: the day the request was initiated.
+      - disposition_completed_date: the day NDCS printed the disposition (the
+        day the request is considered resolved), or NULL while the request is
+        still open.
+
+    Callers wrap this in their own named CTE and filter as needed (e.g. to
+    completed requests only). Open requests are intentionally included so
+    consumers can keep a person ineligible/pending until the disposition prints.
+    """
+    return """
+    SELECT
+        pei.person_id,
+        "US_NE" AS state_code,
+        CAST(CAST(req.requestDate AS DATETIME) AS DATE) AS request_date,
+        -- NULL while the request is still open; set only once NDCS prints the disposition.
+        IF(
+            req.dispositionCompleted = '1',
+            CAST(CAST(req.dispositionCompletedDate AS DATETIME) AS DATE),
+            NULL
+        ) AS disposition_completed_date,
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest` req
+    INNER JOIN `{project_id}.us_ne_normalized_state.state_person_external_id` pei
+    ON
+        pei.external_id = req.inmateNumber
+        AND pei.id_type = 'US_NE_ID_NBR'
+        AND pei.is_current_display_id_for_type
+    """
 
 
 def good_time_restoration_denial_fragment() -> str:
@@ -580,39 +617,66 @@ def latest_good_time_restoration_or_denial_date_fragment() -> str:
     return f"""
     WITH {good_time_restoration_denial_fragment()},
     most_recent_denial AS (
-        SELECT 
+        SELECT
             pei.person_id,
             MAX(denials[SAFE_OFFSET(0)].dateReviewed) as most_recent_denial
         FROM requests_with_denials req
         LEFT JOIN `{{project_id}}.us_ne_normalized_state.state_person_external_id` pei
-        ON 
-            pei.external_id = req.inmateNumber 
+        ON
+            pei.external_id = req.inmateNumber
             AND pei.id_type = 'US_NE_ID_NBR'
         WHERE ARRAY_LENGTH(denials) > 0
         GROUP BY 1
     ),
-    -- For the most recent restoration (keyed on action_date — the day the
-    -- credit posted), carry the cooldown end. request_date falls back to
-    -- credit_date for pre-May-2025 REINSTATEs that predate GoodTimeRestoration.
-    most_recent_restoration AS (
+    restoration_requests AS (
+        {good_time_restoration_requests_fragment()}
+    ),
+    -- Recent restorations, anchored on the day NDCS printed the disposition
+    -- (the day the request is considered resolved). Open requests have no
+    -- resolution date and are excluded, so a still-open request does not clear
+    -- a pending status early.
+    completed_requests AS (
+        SELECT
+            person_id,
+            disposition_completed_date AS most_recent_restoration,
+            {good_time_restoration_cooldown_end_clause(
+                action_date_col="disposition_completed_date"
+            )} AS most_recent_restoration_cooldown_end,
+        FROM restoration_requests
+        WHERE disposition_completed_date IS NOT NULL
+    ),
+    -- Fallback for pre-May-2025 REINSTATEs that predate GoodTimeRestoration data
+    -- (no matching request row at all): anchor on the credit's action_date, with
+    -- request_date falling back to credit_date.
+    historical_restorations AS (
         SELECT
             person_id,
             action_date AS most_recent_restoration,
-            {good_time_restoration_cooldown_end_clause()} AS most_recent_restoration_cooldown_end,
+            {good_time_restoration_cooldown_end_clause(
+                action_date_col="action_date",
+                request_date_col="credit_date",
+            )} AS most_recent_restoration_cooldown_end,
+        FROM `{{project_id}}.analyst_data.us_ne_earned_credit_activity_preprocessed_materialized`
+        WHERE
+            state_code = 'US_NE'
+            AND credit_function = 'REINSTATE'
+            AND credit_date IS NOT NULL
+            AND request_date IS NULL
+            AND person_id NOT IN (SELECT person_id FROM restoration_requests)
+    ),
+    most_recent_restoration AS (
+        SELECT
+            person_id,
+            most_recent_restoration,
+            most_recent_restoration_cooldown_end,
         FROM (
-            SELECT
-                person_id,
-                action_date,
-                COALESCE(request_date, credit_date) AS request_date,
-            FROM `{{project_id}}.analyst_data.us_ne_earned_credit_activity_preprocessed_materialized`
-            WHERE
-                state_code = 'US_NE'
-                AND credit_function = 'REINSTATE'
-                AND credit_date IS NOT NULL
+            SELECT * FROM completed_requests
+            UNION ALL
+            SELECT * FROM historical_restorations
         )
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
-            ORDER BY action_date DESC
+            ORDER BY most_recent_restoration DESC
         ) = 1
     ),
     most_recent_restoration_or_denial AS (
