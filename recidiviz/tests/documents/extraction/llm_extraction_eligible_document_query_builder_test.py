@@ -35,8 +35,8 @@ from recidiviz.documents.store.document_collection_config_collectors import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.tests.documents.extraction.fixtures import eligible_documents
-from recidiviz.tests.documents.store import config as fake_config_module
 
 
 class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):

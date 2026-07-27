@@ -17,8 +17,10 @@
 """Tests for collect_document_store_source_tables."""
 import unittest
 
+from more_itertools import one
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states_utils import find_state_codes_in_str
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables,
 )
@@ -35,14 +37,14 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
     def test_produces_expected_tables_for_fake_config(self) -> None:
         collections = collect_document_store_source_tables(config_module=fake_config)
 
-        expected_labels = [
-            StateSpecificSourceTableLabel(state_code=StateCode.US_XX),
-            DocumentStoreSourceTableLabel(state_code=StateCode.US_XX),
-        ]
         produced_addresses: set[BigQueryAddress] = set()
         for collection in collections:
-            # Every document-store table is tagged as US_XX-specific and
-            # document-store-owned.
+            state_code = one(find_state_codes_in_str(collection.dataset_id))
+            expected_labels = [
+                StateSpecificSourceTableLabel(state_code=state_code),
+                DocumentStoreSourceTableLabel(state_code=state_code),
+            ]
+
             self.assertEqual(expected_labels, collection.labels)
             produced_addresses.update(
                 table.address for table in collection.source_tables
@@ -51,13 +53,24 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
         expected_addresses = {
             BigQueryAddress.from_str(address_str)
             for address_str in [
-                "us_xx_document_store_metadata.fake_input_notes",
-                "us_xx_document_store_metadata.fake_extractor_collection_location_entity_resolution",
-                "us_xx_document_store_metadata.fake_extractor_collection_assignment_entity_resolution",
-                "us_xx_document_store_metadata.document_upload_status",
-                "us_xx_document_contents.fake_input_notes_document_contents",
-                "us_xx_document_contents.fake_extractor_collection_location_entity_resolution_document_contents",
+                "us_xx_document_contents.fake_case_notes_document_contents",
                 "us_xx_document_contents.fake_extractor_collection_assignment_entity_resolution_document_contents",
+                "us_xx_document_contents.fake_extractor_collection_location_entity_resolution_document_contents",
+                "us_xx_document_contents.fake_input_notes_document_contents",
+                "us_xx_document_contents.fake_person_id_notes_document_contents",
+                "us_xx_document_contents.fake_staff_id_reports_document_contents",
+                "us_xx_document_contents.fake_staff_reports_document_contents",
+                "us_xx_document_store_metadata.document_upload_status",
+                "us_xx_document_store_metadata.fake_case_notes",
+                "us_xx_document_store_metadata.fake_extractor_collection_assignment_entity_resolution",
+                "us_xx_document_store_metadata.fake_extractor_collection_location_entity_resolution",
+                "us_xx_document_store_metadata.fake_input_notes",
+                "us_xx_document_store_metadata.fake_person_id_notes",
+                "us_xx_document_store_metadata.fake_staff_id_reports",
+                "us_xx_document_store_metadata.fake_staff_reports",
+                "us_yy_document_contents.fake_us_yy_notes_document_contents",
+                "us_yy_document_store_metadata.document_upload_status",
+                "us_yy_document_store_metadata.fake_us_yy_notes",
             ]
         }
         self.assertEqual(expected_addresses, produced_addresses)

@@ -52,7 +52,7 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
-from recidiviz.tests.documents.store import config as fake_config_module
+from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.utils.types import assert_type
 
 # Per-document-collection tasks defined inside each document collection's task group, in
@@ -85,6 +85,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_fake_case_notes_collection_branch = (
             f"{self.us_xx_branch}.document_collections_branching.FAKE_CASE_NOTES_branch"
         )
+        self.us_xx_fake_input_notes_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_INPUT_NOTES_branch"
         self.us_xx_fake_person_id_notes_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_PERSON_ID_NOTES_branch"
         self.us_xx_fake_staff_id_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_ID_REPORTS_branch"
         self.us_xx_fake_staff_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_REPORTS_branch"
@@ -100,6 +101,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             rf"^{self.us_yy_branch}\.(?:.+\.)?(?:after_upload_noop|branch_end)$"
         )
         self.us_xx_other_document_collections_skippable_tasks_regexes = [
+            rf"^{self.us_xx_fake_input_notes_collection_branch}\..*(?<!after_upload_noop)$",
             rf"^{self.us_xx_fake_person_id_notes_collection_branch}\..*(?<!after_upload_noop)$",
             rf"^{self.us_xx_fake_staff_id_reports_collection_branch}\..*(?<!after_upload_noop)$",
             rf"^{self.us_xx_fake_staff_reports_collection_branch}\..*(?<!after_upload_noop)$",
@@ -384,8 +386,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
             # One create_table_from_query per document collection (only metadata-updates
             # call, since each document collection has 0 metadata rows → no contents
-            # call). 4 US_XX document collections + 1 US_YY document collection = 5.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 5)
+            # call). 5 US_XX document collections + 1 US_YY document collection = 6.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 6)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -573,8 +575,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
             # One create_table_from_query per document collection (only metadata-updates
             # call, since each document collection has 0 metadata rows → no contents
-            # call). Fake config defines 4 US_XX document collections.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 4)
+            # call). Fake config defines 5 US_XX document collections.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 5)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 

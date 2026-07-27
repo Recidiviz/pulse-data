@@ -53,7 +53,7 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePersonExternalId,
     NormalizedStateStaffExternalId,
 )
-from recidiviz.tests.documents.store import config as fake_config_module
+from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
@@ -161,6 +161,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             configs.keys(),
             {
                 "FAKE_CASE_NOTES",
+                "FAKE_INPUT_NOTES",
                 "FAKE_PERSON_ID_NOTES",
                 "FAKE_STAFF_ID_REPORTS",
                 "FAKE_STAFF_REPORTS",
