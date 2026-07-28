@@ -105,6 +105,7 @@ llm_document_extraction_error_type = Enum(
     enum_canonical_strings.llm_document_extraction_error_type_llm_request_content_filtered,
     enum_canonical_strings.llm_document_extraction_error_type_llm_request_timeout,
     enum_canonical_strings.llm_document_extraction_error_type_llm_request_rate_limited,
+    enum_canonical_strings.llm_document_extraction_error_type_llm_request_server_error,
     enum_canonical_strings.llm_document_extraction_error_type_llm_request_unknown_error,
     name="llm_document_extraction_error_type",
 )

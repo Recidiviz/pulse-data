@@ -75,6 +75,7 @@ llm_document_extraction_error_type_llm_request_content_filtered = (
 )
 llm_document_extraction_error_type_llm_request_timeout = "LLM_REQUEST_TIMEOUT"
 llm_document_extraction_error_type_llm_request_rate_limited = "LLM_REQUEST_RATE_LIMITED"
+llm_document_extraction_error_type_llm_request_server_error = "LLM_REQUEST_SERVER_ERROR"
 llm_document_extraction_error_type_llm_request_unknown_error = (
     "LLM_REQUEST_UNKNOWN_ERROR"
 )

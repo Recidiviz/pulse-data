@@ -178,6 +178,9 @@ class LLMDocumentExtractionErrorType(OperationsEnum):
     LLM_REQUEST_RATE_LIMITED = (
         operations_enum_strings.llm_document_extraction_error_type_llm_request_rate_limited
     )
+    LLM_REQUEST_SERVER_ERROR = (
+        operations_enum_strings.llm_document_extraction_error_type_llm_request_server_error
+    )
     LLM_REQUEST_UNKNOWN_ERROR = (
         operations_enum_strings.llm_document_extraction_error_type_llm_request_unknown_error
     )
@@ -204,6 +207,9 @@ class LLMDocumentExtractionErrorType(OperationsEnum):
             ),
             LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED: (
                 "The LLM request was rejected because the provider rate limit was exceeded."
+            ),
+            LLMDocumentExtractionErrorType.LLM_REQUEST_SERVER_ERROR: (
+                "The LLM request failed with a server-side (5xx) error from the provider."
             ),
             LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR: (
                 "The LLM request failed for a reason that did not fall into any other "
