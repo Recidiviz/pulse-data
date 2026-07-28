@@ -17112,16 +17112,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "tentative_parole_date",
     ],
     BigQueryAddress.from_str(
-        "workflows_views.us_ix_resident_record_incarceration_cases_with_dates"
-    ): [
-        "admission_date",
-        "facility_id",
-        "person_id",
-        "release_date",
-        "state_code",
-        "us_tn_facility_admission_date",
-    ],
-    BigQueryAddress.from_str(
         "workflows_views.us_ix_supervision_level_downgrade_record"
     ): [
         "eligible_date",
