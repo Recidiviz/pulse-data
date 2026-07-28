@@ -1,0 +1,160 @@
+name: CASE_NOTE_PAYMENT_INFO
+description: >
+  Extract information about a person's financial payment obligations from
+  supervision case notes, including fines, restitution, court costs, supervision
+  fees, and other payments owed as part of their supervision.
+relevance_criteria: >
+  Whether the document mentions fines, restitution, court costs, supervision
+  fees, payment plans, or other financial obligations related to supervision
+
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+
+minimum_confidence_level: inferred
+
+reference_data:
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: >
+    Payment information extracted from supervision case notes.
+  result_level_description: >
+    Financial payment information for a single case note.
+
+  inferred_fields:
+    - name: payments
+      type: ARRAY_OF_STRUCT
+      primary_keys: [payment_type]
+      description: >
+        List of financial payment obligations mentioned in the note. Empty if no
+        payment information found. Only include obligations related to the
+        person's criminal justice involvement — not rent, utilities, wages,
+        child support, or personal debts. Do not include payment requirements
+        for a prospective program unless the person is already enrolled and
+        actively owes those fees.
+      fields:
+        - name: payment_type
+          type: ENUM
+          description: The type of financial payment obligation.
+          values:
+            - name: fine
+              description:
+                A monetary penalty imposed by the court (e.g., traffic fines,
+                criminal fines).
+            - name: restitution
+              description: Payments owed to victims for damages or losses.
+            - name: court_costs
+              description:
+                Fees and costs associated with court proceedings, including
+                warrant-related fees.
+            - name: supervision_fee
+              description: >
+                Fees charged for the cost of supervision itself (monthly
+                parole/probation fees). Does not include drug testing,
+                electronic monitoring, or program fees.
+            - name: programming_fee
+              description: >
+                Fees for class enrollment or programming (substance abuse
+                classes, anger management, cognitive behavioral therapy, GED,
+                vocational training).
+            - name: drug_testing_fee
+              description: Fees for drug or alcohol testing (urinalysis, breathalyzer).
+            - name: electronic_monitoring_fee
+              description:
+                Fees for GPS monitoring, ankle monitors, or other electronic
+                supervision equipment.
+            - name: other
+              description: >
+                Any other identifiable financial obligation not covered above
+                (e.g. a stated lump-sum total across obligation types). Use a
+                single entry with this type rather than splitting unless the
+                breakdown is explicitly given.
+          required: true
+
+        - name: payment_status
+          type: ENUM
+          description: >
+            How much of the obligation has been satisfied — not whether the
+            person is on schedule. Use null if the obligation exists but there
+            is insufficient information to determine how much has been paid.
+          values:
+            - name: paid
+              description: The obligation has been fully satisfied.
+            - name: unpaid
+              description: The obligation exists but no payment has been made.
+            - name: partial
+              description:
+                Some payment has been made but the obligation is not fully
+                satisfied.
+            - name: waived
+              description: >
+                The obligation has been officially waived or forgiven (must be
+                explicitly stated by the court or an officer). A person saying
+                they "can't pay" or "shouldn't have to pay" is NOT a waiver —
+                that is evidence for ability_to_pay, not payment_status.
+
+        - name: amount_owed
+          type: FLOAT
+          description: >
+            Numeric dollar amount remaining to be paid (e.g., 500.50). Omit if
+            the remaining amount is not mentioned. Do not confuse with the
+            installment payment amount.
+
+        - name: amount_paid
+          type: FLOAT
+          description: >
+            Numeric dollar amount already paid toward the obligation (e.g.,
+            200.00).
+
+        - name: payment_plan_amount
+          type: FLOAT
+          description: >
+            Numeric dollar amount of each installment payment (e.g., 50.00 for
+            "$50/month"). This is the recurring installment, not the total
+            balance.
+
+        - name: payment_plan_frequency
+          type: ENUM
+          description: >
+            How often the installment payment is due.
+          applicable_when_nonnull: payment_plan_amount
+          required_when_nonnull: payment_plan_amount
+          values:
+            - name: weekly
+              description: Weekly payments.
+            - name: bi_weekly
+              description: Every two weeks.
+            - name: monthly
+              description: Monthly payments.
+            - name: quarterly
+              description: Every three months.
+            - name: other
+              description: >
+                A payment frequency that does not fit the above — only use if
+                the note clearly describes the frequency and it does not match
+                any listed value. If unknown or unclear, omit this field
+                instead.
+
+        - name: ability_to_pay
+          type: ENUM
+          description: >
+            The person's assessed ability to pay. Only populate when the note
+            explicitly discusses ability to pay — do NOT infer from employment
+            status, income level, or indirect factors.
+          values:
+            - name: able
+              description: The person is explicitly described as financially able to pay.
+            - name: unable
+              description: >
+                The note explicitly states the person cannot pay (e.g.,
+                "declared indigent," "states inability to pay," "court found
+                unable to pay"). Do not infer from unemployment, low income, or
+                receiving SSI alone — the obligation exists regardless of
+                ability to pay.
+            - name: limited
+              description: >
+                The note explicitly describes limited ability to pay (e.g., "can
+                only afford small payments," "financial hardship documented").
+            - name: undetermined
+              description: Ability to pay is discussed but not clearly assessed.

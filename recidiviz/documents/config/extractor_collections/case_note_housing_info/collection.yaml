@@ -1,0 +1,217 @@
+name: CASE_NOTE_HOUSING_INFO
+description: >
+  Extract housing-related information from supervision case notes, including the
+  person's housing status, where they are living, and the type of housing.
+relevance_criteria: >
+  Whether the document mentions the person's living situation
+
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+
+minimum_confidence_level: inferred
+
+reference_data:
+  known_organizations:
+    prompt_var: known_entities_context
+    header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
+    groups:
+      - label: >
+          The following are NOT housing locations (do not set primary_status or
+          housed_type based on these alone):
+        types: [nonresidential_program, staffing_agency, employer]
+      - label: >
+          The following ARE custody locations (set primary_status=in_custody
+          when the person is living there):
+        types: [community_corrections]
+      - label: >
+          The following ARE temporary housing locations (use
+          housed_type=temporary_housing when the person is living there):
+        types: [sober_living, halfway_house, shelter, hotel_motel]
+        type_notes:
+          sober_living: "use temporary_housing_type: sober_living"
+          halfway_house: "use temporary_housing_type: transitional_program"
+          shelter: "use temporary_housing_type: shelter"
+          hotel_motel: "use temporary_housing_type: hotel_motel"
+      - label: >
+          The following may or may not be housing — determine from context
+          whether the person is living there for residential treatment
+          (housed_type=temporary_housing) or attending as an outpatient (not
+          housing):
+        types: [residential_treatment]
+        type_notes:
+          residential_treatment: "use temporary_housing_type: treatment_program"
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: >
+    Housing information extracted from supervision case notes.
+  result_level_description: >
+    Housing information for a single case note.
+
+  inferred_fields:
+    - name: primary_status
+      type: ENUM
+      description: >
+        The person's main housing status as of the contact date. Choose 'housed'
+        or 'unhoused' only when explicit — having family, appearing stable,
+        buying property, or leaving one housing situation does not by itself
+        establish a status.
+      values:
+        - name: housed
+          description: >
+            Currently living somewhere indoors (house, apartment, shelter,
+            etc.). Must be explicit, not merely implied. "Homeless but in a
+            shelter" counts as housed.
+        - name: unhoused
+          description: >
+            Explicitly has nowhere indoors to live — homeless, houseless, or
+            living in a vehicle.
+        - name: in_custody
+          description: >
+            Currently staying in an incarceration facility (jail or prison).
+            Requires explicit mention of living there; parole revocations,
+            hearings, or court dates alone do not qualify. If any housing
+            information is present, extract that instead.
+
+    - name: housed_type
+      type: ENUM
+      description: >
+        The type of housing the person is living in. Living in an apartment does
+        not imply renting. Living with others does not imply dependence.
+      values:
+        - name: renting
+          description: Renting a residence — use only when explicitly stated.
+        - name: own
+          description: Owns the residence — use only when explicitly stated.
+        - name: temporary_housing
+          description: >
+            A temporary arrangement such as a shelter, sober living home,
+            treatment program, transitional program, or hotel/motel.
+        - name: dependent
+          description: >
+            Clearly relying on others for housing — look for language like "is
+            reliant on" or "temporarily staying with". Do not use merely because
+            the person lives with family or has roommates.
+        - name: other
+          description: A housing type that does not fit the above.
+      applicable_when_value:
+        primary_status: [housed]
+
+    - name: temporary_housing_type
+      type: ENUM
+      description: >
+        Type of temporary housing. Only populate when housed_type is
+        'temporary_housing'.
+      values:
+        - name: sober_living
+          description: >
+            Sober living homes, recovery residences, sober houses (e.g. "Stride
+            Sober Living", "Elevate Recovery", "Grit Grounds").
+        - name: treatment_program
+          description: >
+            Inpatient treatment facilities or residential recovery programs
+            (e.g. "Crossroads Turning Points", "Advantage Treatment Center").
+        - name: transitional_program
+          description: >
+            Transitional housing programs, parole beds, community-corrections
+            placements, halfway houses (e.g. "Hope Homes", "C.O.P. beds").
+        - name: shelter
+          description: Homeless shelters (e.g. "La Puente Homeless Shelter").
+        - name: hotel_motel
+          description: Hotel, motel, or other temporary paid lodging.
+        - name: other
+          description: >
+            A temporary housing type that does not fit the above — only use if
+            the note clearly describes the type and it does not match any listed
+            value.
+      applicable_when_value:
+        housed_type: [temporary_housing]
+
+    - name: dependent_housing_type
+      type: ENUM
+      description: >
+        Who the person is relying on for housing. Only populate when housed_type
+        is 'dependent'.
+      values:
+        - name: with_family
+          description: Staying in a family member's home (parent, sibling, child, etc.).
+        - name: with_partner
+          description: >
+            Staying in a romantic partner's home (boyfriend, girlfriend, spouse,
+            significant other).
+        - name: with_friend
+          description: Staying with a friend in their home.
+        - name: other
+          description: >
+            Staying with someone who does not fit the above categories — only
+            use if the note clearly describes who and they do not match any
+            listed value.
+      applicable_when_value:
+        housed_type: [dependent]
+
+    - name: unhoused_location
+      type: ENUM
+      description: >
+        Where the person is staying or sleeping when unhoused. Only populate
+        when primary_status is 'unhoused'.
+      values:
+        - name: vehicle
+          description: Living in a car, van, RV, truck, or other vehicle.
+        - name: encampment
+          description: >
+            Living in a tent, tent city, camp, or other outdoor sleeping
+            structure.
+        - name: street
+          description: >
+            Sleeping on sidewalks, in parks, under bridges, in doorways, or
+            other public spaces without shelter.
+        - name: abandoned_building
+          description: >
+            Squatting in an abandoned, vacant, or condemned building or
+            structure.
+        - name: other
+          description: >
+            An unhoused location that does not fit the above — only use if the
+            note clearly describes where and it does not match any listed value.
+      applicable_when_value:
+        primary_status: [unhoused]
+
+    - name: temporary_housing_name
+      type: STRING
+      description: >
+        Name of the temporary housing facility or program (e.g. "Stride Sober
+        Living", "Hope Homes", "La Puente Homeless Shelter"). Do not use names
+        resembling supervision districts or facilities — those are generic
+        location descriptors, not housing names.
+      applicable_when_value:
+        housed_type: [temporary_housing]
+
+    - name: address
+      type: STRING
+      description: >
+        Full residential address of the person's actual residence. Supervision
+        office addresses, facility names, and partial addresses should not be
+        extracted. Standardize to e.g. "123 First Road, City, State Zip" with
+        title case and consistent abbreviations (St, Ave, Blvd, Dr). Omit if no
+        full address found or person is unhoused.
+      applicable_when_value:
+        primary_status: [housed]
+
+    - name: search_status
+      type: ENUM
+      description: >
+        Current housing search status. Only populate when explicitly mentioned —
+        whether or not the person currently has housing does not affect this
+        field.
+      values:
+        - name: searching
+          description:
+            The person is actively looking for new housing or anticipating a
+            move.
+        - name: not_searching
+          description: The person is explicitly not actively looking for new housing.
+
+entity_groups:
+  - name: housing
+    entity_fields: [address, temporary_housing_name]

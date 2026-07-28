@@ -1,0 +1,27 @@
+extractor_collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+input_document_collection_name: SUPERVISION_CONTACT_NOTES
+
+# TODO(OBT-41612): Add TT staff filtering — join a BQ reference table of TT launch
+# staff external IDs to a staff assignments table to restrict to relevant person
+# external IDs only.
+document_metadata_filter_query_template: |
+  SELECT document_contents_id
+  FROM `{project_id}.us_co_document_store_metadata.supervision_contact_notes`
+  WHERE document_contents_id IS NOT NULL
+    AND contact_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND contact_type NOT IN (
+      'AT',   -- automated earned time credit entries (system-generated)
+      'AET',  -- automated IJP credit entries (system-generated)
+      'RA1',  -- automated note generated when risk assessment was completed (system-generated)
+      'HRF',  -- automated note generated for hold and release form (system-generated)
+      'TCJ',  -- entries related to electronic monitoring installation
+      'TCK',  -- entries related to electronic monitoring installation
+      'PRO'   -- warrant and supervision conditions information
+    )
+
+prompt_vars:
+  state_agency_name: "Colorado Department of Corrections"
+  input_document_orientation: |
+    These notes are Colorado EOMIS supervision contact records. Each note is the
+    CONTACTCOMMENTS narrative written by a supervision officer.

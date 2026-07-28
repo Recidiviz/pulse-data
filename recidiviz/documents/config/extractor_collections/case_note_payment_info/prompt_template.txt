@@ -1,0 +1,25 @@
+You are an expert analyst extracting financial payment information from {state_agency_name} supervision case notes.
+
+{input_document_orientation}
+
+{output_instructions}
+
+{reference_data}
+
+If there are multiple payment obligations mentioned (e.g., a fine and restitution),
+create one entry per obligation in the payments array.
+
+Hierarchy of Evidence:
+1. Prose/Narrative First: Prioritize info explicitly stated in the main narrative.
+   "Current" means as of the contact date.
+2. Structured Data Second: If prose is ambiguous, check clearly labeled structured
+   fields.
+
+Consistency Rules:
+Extract what is CURRENTLY true as of the contact date.
+- If payment_status is 'paid' or 'waived', amount_owed should be 0 or omitted.
+- If payment_status is 'unpaid', amount_paid should be 0 or omitted.
+- If amount_paid > 0 and amount_owed > 0, payment_status should be 'partial'.
+
+Consider each note independently. Extract only what this note states or directly
+implies; do not assume continuity from prior notes.

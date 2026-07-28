@@ -1,0 +1,225 @@
+name: CASE_NOTE_EMPLOYMENT_INFO
+description: >
+  Extract employment-related information from supervision case notes, including
+  current employment status, job search activity, employer details, and
+  employment changes.
+relevance_criteria: >
+  Whether the document mentions employment status, jobs, work, pay, employers,
+  or job searching
+
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+
+minimum_confidence_level: inferred
+
+reference_data:
+  known_organizations:
+    prompt_var: known_entities_context
+    header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
+    groups:
+      - label: >
+          The following are NOT employers (do not extract as employment, even if
+          mentioned in the note):
+        types:
+          [
+            nonresidential_program,
+            community_corrections,
+            residential_treatment,
+            sober_living,
+            halfway_house,
+            shelter,
+            hotel_motel,
+          ]
+      - label: "The following are known employers:"
+        types: [staffing_agency, employer]
+        type_notes:
+          staffing_agency: "treat as employment_type: temp_agency"
+  acronyms:
+    prompt_var: acronym_glossary
+    header: "COMMON ABBREVIATIONS:"
+
+output_schema:
+  full_batch_description: >
+    Employment information extracted from supervision case notes.
+  result_level_description: >
+    Employment information for a single case note.
+
+  inferred_fields:
+    - name: primary_status
+      type: ENUM
+      description: >
+        The person's primary employment status as described in the case note.
+      values:
+        - name: employed
+          description: >
+            The person currently has a job. Gig work, day labor, cash jobs, and
+            self-employment all count as employed. A stated pay rate, schedule,
+            or work hours is strong evidence of current employment even without
+            the word "employed", but only when there is some indication the
+            schedule is work-related (not a housing or program schedule).
+            Vocational training, GED programs, and job readiness classes do not
+            count as employment. Work release, work crews, and prison/jail labor
+            programs do not count as employment — leave primary_status absent
+            for these unless non-employment is also explicitly stated.
+        - name: unemployed
+          description: >
+            The person is explicitly not currently working (e.g. "not currently
+            working", "does not work", "unemployed"). Receiving disability
+            benefits, SSI, or retirement income counts only if the note also
+            states they are not working.
+
+    - name: search_status
+      type: ENUM
+      description: >
+        Whether the person is actively searching for employment. Do not infer
+        from primary_status alone — searching and employed are independent. Omit
+        if the note does not mention job searching.
+      values:
+        - name: searching
+          description: >
+            The person is actively looking for work (applications, job fairs,
+            workforce referrals).
+        - name: not_searching
+          description: The person is explicitly not looking for work.
+
+    - name: employers
+      type: ARRAY_OF_STRUCT
+      description: >
+        List of current employers mentioned in the case note. Empty if the
+        person is unemployed or no employer details are available. Do not
+        include past employers whose employment has ended. Volunteering is not
+        employment — do not include volunteer positions.
+      applicable_when_value:
+        primary_status: [employed]
+      required_when_value:
+        primary_status: [employed]
+      primary_keys: [employer_name]
+      fields:
+        - name: employer_name
+          type: STRING
+          description: Name of the employer or organization.
+
+        - name: self_employed
+          type: BOOLEAN
+          description: >
+            True if self-employed (owns a business, freelances); false if a
+            named external employer is provided; omit if unclear.
+
+        - name: employment_type
+          type: ENUM
+          description: Type of employment relationship.
+          values:
+            - name: employee_ft
+              description: >
+                Full-time employee. Use only when the note explicitly states
+                full-time; specific hours or multiple jobs do not by themselves
+                imply full-time.
+            - name: employee_pt
+              description: >
+                Part-time employee. Use only when the note explicitly states
+                part-time.
+            - name: intern
+              description: Intern or internship.
+            - name: apprentice
+              description: Apprenticeship program.
+            - name: contractor_1099
+              description: Independent contractor or 1099 worker.
+            - name: temp_agency
+              description: Employment through a staffing or temp agency.
+            - name: seasonal
+              description: Seasonal employment.
+            - name: gig
+              description: App-based or platform work (e.g. DoorDash, Uber, TaskRabbit).
+            - name: day_labor
+              description:
+                Pickup or spot jobs (e.g. standing at a labor corner, hired for
+                a single day).
+            - name: cash_informal
+              description: Under-the-table or unreported work arrangements.
+
+        - name: job_title
+          type: STRING
+          description: >
+            The person's job title or role (e.g., 'cashier', 'laborer'). Omit if
+            not mentioned.
+
+        - name: employer_location
+          type: STRING
+          description: Worksite location description or address.
+
+        - name: pay_rate_amount
+          type: FLOAT
+          description: Numeric pay rate amount (e.g., 15.50, 50000).
+
+        - name: pay_rate_time_period
+          type: ENUM
+          description: The time period the pay rate amount covers.
+          applicable_when_nonnull: pay_rate_amount
+          required_when_nonnull: pay_rate_amount
+          values:
+            - name: hour
+              description: Per hour.
+            - name: day
+              description: Per day.
+            - name: week
+              description: Per week.
+            - name: bi_weekly
+              description: Every two weeks.
+            - name: month
+              description: Per month.
+            - name: year
+              description: Per year (annual salary).
+            - name: paycheck_period
+              description: Per paycheck (period unspecified).
+            - name: YTD
+              description: Year-to-date earnings.
+            - name: piece_rate
+              description: Per unit or piece produced.
+            - name: commission
+              description: Commission-based.
+            - name: stipend
+              description: A fixed stipend or allowance.
+            - name: salary_unspecified_period
+              description: A salary where the period is not stated.
+            - name: other
+              description: A pay period that does not fit the above.
+
+    - name: employment_changes
+      type: ARRAY_OF_STRUCT
+      description: >
+        Employment change events mentioned in the note (fired, quit, started,
+        etc.), one entry per change event. A change is distinct from current
+        status: if someone was fired but has since started a new job,
+        primary_status is 'employed' based on the current job.
+      primary_keys: [employment_change_type, employment_change_date]
+      fields:
+        - name: employment_change_type
+          type: ENUM
+          description: Type of employment change.
+          values:
+            - name: no_change
+              description: >
+                The note explicitly confirms the person is still at the same
+                job. Do not use as a default.
+            - name: fired
+              description: The person was fired or terminated.
+            - name: quit
+              description: The person quit voluntarily.
+            - name: other_became_unemployed
+              description:
+                The person became unemployed for another reason (layoff, end of
+                contract, etc.).
+            - name: changed_employer
+              description: The person changed to a different employer.
+            - name: started_employment
+              description: The person started a new job.
+          required: true
+
+        - name: employment_change_date
+          type: STRING
+          description: >
+            Date of the change if mentioned (e.g., "2024-01-15").
+
+entity_groups:
+  - name: employer
+    source_array_field: employers
+    entity_fields: [employer_name]
