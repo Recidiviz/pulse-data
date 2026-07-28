@@ -20,6 +20,11 @@ WORKDIR ${WORKDIR}
 # Copy source files
 COPY ./recidiviz/pipelines/dataflow_flex_setup.py ${WORKDIR}/setup.py
 COPY ./recidiviz/pipelines/flex_pipeline_runner.py ${WORKDIR}/pipeline_runner.py
+# setup.py reads its install_requires out of this file, so it must land alongside
+# setup.py before the install below. The MANIFEST.in is what keeps it in the sdist
+# Beam later builds here and stages to Dataflow workers.
+COPY ./recidiviz/pipelines/dataflow_flex_requirements.txt ${WORKDIR}/dataflow_flex_requirements.txt
+COPY ./recidiviz/pipelines/dataflow_flex_MANIFEST.in ${WORKDIR}/MANIFEST.in
 
 # Install apache-beam and other dependencies to launch the pipeline
 # --no-cache-dir means the pip cache won't be used. Using the pip cache makes the image unnecessarily larger,

@@ -1,0 +1,12 @@
+# Copied to ${WORKDIR}/MANIFEST.in by Dockerfile.pipelines. setuptools only reads a
+# MANIFEST.in from the directory it builds in, so this cannot live in a subdirectory
+# of the sdist root -- but its source can, alongside the other files that Dockerfile
+# copies to that root.
+#
+# When Beam runs `python setup.py sdist` in ${WORKDIR} to build the artifact staged to
+# Dataflow workers, pip re-executes setup.py as that sdist is installed on each
+# worker, and it reads its install_requires from the requirements file next to it.
+# setuptools does not include that file in an sdist by default (its name is
+# irrelevant -- only README*, setup.py, setup.cfg and pyproject.toml are automatic),
+# so without this every worker-side install would fail with a FileNotFoundError.
+include dataflow_flex_requirements.txt
