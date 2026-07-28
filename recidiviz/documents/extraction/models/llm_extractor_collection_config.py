@@ -362,6 +362,27 @@ class LLMExtractorCollectionConfig:
         return sha256_hexdigest(self.generate_json_schema_str())
 
     @property
+    def validation_config_version_id(self) -> str:
+        """Returns the version ID of the confidence-level configuration validation
+        runs against — a hash of every confidence-level setting on this collection.
+        Tracked separately from `extractor_version_id` because these thresholds
+        affect what validation keeps but are never fed to the LLM, so a threshold
+        change re-validates existing raw results without re-extraction.
+
+        Only the collection-level default exists today; per-field overrides and the
+        other threshold knobs added when full validation lands extend the hashed
+        components below (they do not redefine this ID).
+        """
+        components = [
+            (
+                self.minimum_confidence_level.value
+                if self.minimum_confidence_level is not None
+                else None
+            ),
+        ]
+        return sha256_hexdigest(json.dumps(components))
+
+    @property
     def collection_version_id(self) -> str:
         """Returns the version ID of this collection. This is a hash of all the info
         from this collection fed directly to the LLM. The collection description is not

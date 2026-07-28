@@ -19,6 +19,7 @@ validator over one raw extraction result.
 """
 
 import datetime
+from enum import StrEnum
 from typing import Any
 
 import attr
@@ -28,17 +29,26 @@ from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
 )
 from recidiviz.documents.extraction.extraction_results_columns import (
-    VALIDATION_ISSUE_CHECK_NAME_FIELD,
+    VALIDATION_ISSUE_CHECK_TYPE_FIELD,
     VALIDATION_ISSUE_DETAIL_FIELD,
     VALIDATION_ISSUE_FIELD_NAME_FIELD,
 )
+
+
+class ValidationCheckType(StrEnum):
+    """The validation check that produced an audit finding, recorded on every
+    `ValidationIssue` so findings can be grouped by the check that raised them."""
+
+    SCHEMA_CONFORMANCE = "SCHEMA_CONFORMANCE"
 
 
 @attr.define(frozen=True, kw_only=True)
 class ValidationIssue:
     """One audit finding from validation of a single document."""
 
-    check_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    check_type: ValidationCheckType = attr.ib(
+        validator=attr.validators.in_(ValidationCheckType)
+    )
     """The validation check that produced this finding."""
 
     field_name: str | None = attr.ib(validator=attr_validators.is_opt_str)
@@ -52,7 +62,7 @@ class ValidationIssue:
         """Returns a dict representation of the issue, suitable for JSON
         serialization."""
         return {
-            VALIDATION_ISSUE_CHECK_NAME_FIELD: self.check_name,
+            VALIDATION_ISSUE_CHECK_TYPE_FIELD: self.check_type,
             VALIDATION_ISSUE_FIELD_NAME_FIELD: self.field_name,
             VALIDATION_ISSUE_DETAIL_FIELD: self.detail,
         }

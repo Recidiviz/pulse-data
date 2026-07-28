@@ -25,12 +25,15 @@ from recidiviz.common.constants.operations.llm_extraction_job import (
 )
 from recidiviz.documents.extraction.llm_document_validation_result import (
     LLMDocumentValidationResult,
+    ValidationCheckType,
     ValidationIssue,
 )
 
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ISSUE = ValidationIssue(
-    check_name="structural", field_name="location", detail="missing required field"
+    check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
+    field_name="location",
+    detail="missing required field",
 )
 
 

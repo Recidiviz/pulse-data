@@ -32,6 +32,7 @@ from recidiviz.documents.extraction.llm_client.types import (
 )
 from recidiviz.documents.extraction.llm_document_validation_result import (
     LLMDocumentValidationResult,
+    ValidationCheckType,
     ValidationIssue,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
@@ -168,7 +169,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
 
     def test_batch_round_trips_into_all_three_tables(self) -> None:
         issue = ValidationIssue(
-            check_name="structural",
+            check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
             field_name="location",
             detail="missing required field",
         )
