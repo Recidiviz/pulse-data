@@ -66,7 +66,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(
+                fixture, "incarceration_staff_record.json"
+            )
             self.assertEqual(doc_id, "100")
             self.assertEqual(
                 row,
@@ -85,7 +87,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(
+                fixture, "incarceration_staff_record.json"
+            )
             self.assertEqual(doc_id, "101")
             self.assertEqual(
                 row,
@@ -104,7 +108,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(
+                fixture, "incarceration_staff_record.json"
+            )
             self.assertEqual(doc_id, "102")
             self.assertEqual(
                 row,
@@ -123,7 +129,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(
+                fixture, "incarceration_staff_record.json"
+            )
             self.assertEqual(doc_id, "103")
             self.assertEqual(
                 row,

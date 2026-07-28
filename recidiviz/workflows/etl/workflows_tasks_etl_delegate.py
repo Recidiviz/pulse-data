@@ -59,7 +59,9 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
             return "US_ID"
         return state_code
 
-    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
+    def transform_row(
+        self, row: str, filename: str
+    ) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
 
         new_document: dict[str, Any] = {

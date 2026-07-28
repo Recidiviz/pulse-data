@@ -35,7 +35,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["client_record.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         data = json.loads(row)
         new_document: dict[str, Any] = {}
 

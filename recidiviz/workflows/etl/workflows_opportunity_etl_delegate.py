@@ -65,6 +65,13 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             for config in WORKFLOWS_OPPORTUNITY_CONFIGS
         }
 
+    @property
+    def OPPORTUNITY_TYPE_BY_FILENAME(self) -> Dict[str, str]:
+        return {
+            config.source_filename: config.opportunity_type
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+        }
+
     def get_supported_files(self) -> List[str]:
         return [
             config.source_filename
@@ -118,9 +125,10 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             for reason in criteria
         }
 
-    def build_document(self, row: dict[str, Any]) -> dict:
+    def build_document(self, row: dict[str, Any], opportunity_type: str) -> dict:
         """Transform the raw record from Big Query into a nested form for Firestore."""
         new_document: dict[str, Any] = {
+            "opportunityType": opportunity_type,
             "formInformation": {},
             "metadata": {},
             "eligibleCriteria": {},
@@ -178,7 +186,9 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         # Convert all keys to camelcase and return
         return convert_nested_dictionary_keys(new_document, snake_to_camel)
 
-    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
+    def transform_row(
+        self, row: str, filename: str
+    ) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
         if data.get("external_id", None) is None:
             return None, None
@@ -188,4 +198,5 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             if data.get("opportunity_id", None) is None
             else f"{data['external_id']}_{data['opportunity_id']}"
         )
-        return doc_id, self.build_document(data)
+        opportunity_type = self.OPPORTUNITY_TYPE_BY_FILENAME[filename]
+        return doc_id, self.build_document(data, opportunity_type)

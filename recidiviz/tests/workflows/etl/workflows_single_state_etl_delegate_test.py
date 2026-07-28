@@ -31,7 +31,9 @@ class TestSingleStateETLDelegate(WorkflowsSingleStateETLDelegate):
     EXPORT_FILENAME = "export_filename.json"
     _COLLECTION_NAME_BASE = "testCollection"
 
-    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
+    def transform_row(
+        self, row: str, filename: str
+    ) -> Tuple[Optional[str], Optional[dict]]:
         return (None, None)
 
     async def run_etl(self, _filename: str) -> None:

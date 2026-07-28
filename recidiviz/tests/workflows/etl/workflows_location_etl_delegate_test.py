@@ -66,7 +66,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "location_record.json")
             self.assertEqual(doc_id, "WOMEN'S FACILITY 1")
             # WorkflowsFirestoreETLDelegate will sanitize special
             # characters in the doc_id before uploading
@@ -84,7 +84,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "location_record.json")
             self.assertEqual(doc_id, "U2")
             self.assertEqual(
                 row,
@@ -100,7 +100,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "location_record.json")
             self.assertEqual(doc_id, "DISTRICT 1/2")
             # WorkflowsFirestoreETLDelegate will sanitize the
             # prohibited slash in this doc_id before uploading
@@ -118,7 +118,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
 
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "location_record.json")
             self.assertEqual(doc_id, "D3")
             self.assertEqual(
                 row,

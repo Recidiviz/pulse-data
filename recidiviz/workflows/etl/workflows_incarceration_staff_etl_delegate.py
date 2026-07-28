@@ -30,7 +30,7 @@ class WorkflowsIncarcerationStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["incarceration_staff_record.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
         if email := data.get("email"):

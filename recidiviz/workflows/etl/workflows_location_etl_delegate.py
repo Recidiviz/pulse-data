@@ -31,7 +31,7 @@ class WorkflowsLocationETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["location_record.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
         new_document = convert_nested_dictionary_keys(data, snake_to_camel)

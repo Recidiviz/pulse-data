@@ -66,7 +66,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
 
             delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "client_record.json")
             # US_TN first row has board conditions
             self.assertEqual(doc_id, "200")
             self.assertEqual(
@@ -135,7 +135,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
 
             # US_TN second row has none of the nullable fields
             fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "client_record.json")
             self.assertEqual(doc_id, "201")
             self.assertEqual(
                 {
@@ -168,7 +168,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
 
             # US_TN third row has supervision downgrade eligible and milestones
             fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "client_record.json")
             self.assertEqual(doc_id, "202")
             self.assertEqual(
                 {
@@ -225,7 +225,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
             # US_ND row
             delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
             fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "client_record.json")
             self.assertEqual(doc_id, "203")
             self.assertEqual(
                 {
@@ -258,7 +258,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
             # US_ID row
             delegate = WorkflowsClientETLDelegate(StateCode.US_ID)
             fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "client_record.json")
             self.assertEqual(doc_id, "204")
             self.assertEqual(
                 {

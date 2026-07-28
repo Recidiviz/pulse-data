@@ -39,7 +39,7 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["test_export.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         return row, {"data": row}
 
 

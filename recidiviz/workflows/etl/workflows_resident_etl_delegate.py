@@ -31,7 +31,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["resident_record.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
         metadata = convert_nested_dictionary_keys(

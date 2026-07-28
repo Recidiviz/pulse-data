@@ -25,6 +25,14 @@ from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
 
+# A real (source file -> opportunity type) pairing from WORKFLOWS_OPPORTUNITY_CONFIGS,
+# used to exercise the config-driven opportunity_type lookup. The test_opportunity_type
+# _matches_config test guards this pairing against config drift.
+TEST_OPPORTUNITY_FILENAME = (
+    "us_nd_complete_discharge_early_from_supervision_record.json"
+)
+TEST_OPPORTUNITY_TYPE = "earlyTermination"
+
 TEST_DATA = {
     "external_id": "123",
     "form_information_crime_names": [
@@ -83,6 +91,7 @@ TEST_DATA = {
 }
 
 EXPECTED_DOCUMENT = {
+    "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "123",
     "formInformation": {
         "crimeNames": ["Class (A) Misdemeanor", "Class (A) Misdemeanor"]
@@ -138,6 +147,7 @@ TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP = {
 }
 
 EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
+    "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "456",
     "eligibleCriteria": {
         "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
@@ -165,6 +175,7 @@ TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
 }
 
 EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
+    "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "456",
     "eligibleCriteria": {
         "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}
@@ -197,6 +208,7 @@ TEST_DATA_WITH_NESTED_CRITERIA = {
 }
 
 EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
+    "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "234",
     "eligibleCriteria": {
         "usTnFinesFeesEligible": {
@@ -246,16 +258,27 @@ class TestWorkflowsETLDelegate(TestCase):
             )
         )
 
+    def test_opportunity_type_matches_config(self) -> None:
+        """Guards the filename -> opportunity_type pairing the other tests rely on
+        against drift in WORKFLOWS_OPPORTUNITY_CONFIGS."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
+        self.assertEqual(
+            TEST_OPPORTUNITY_TYPE,
+            delegate.OPPORTUNITY_TYPE_BY_FILENAME[TEST_OPPORTUNITY_FILENAME],
+        )
+
     def test_transform_row(self) -> None:
         """Test that transform_row returns a tuple with id and document."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
-        result = delegate.transform_row(json.dumps(TEST_DATA))
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA), TEST_OPPORTUNITY_FILENAME
+        )
         self.assertEqual(("123_id001", EXPECTED_DOCUMENT), result)
 
     def test_build_document(self) -> None:
         """Test that the build_document method renames the keys correctly."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
-        new_document = delegate.build_document(TEST_DATA)
+        new_document = delegate.build_document(TEST_DATA, TEST_OPPORTUNITY_TYPE)
         self.assertDictEqual(
             EXPECTED_DOCUMENT,
             new_document,
@@ -264,14 +287,16 @@ class TestWorkflowsETLDelegate(TestCase):
     def test_transform_row_with_prefixed_state_keys(self) -> None:
         """Test that transform_row replaces state prefixes on specified criteria."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_XX)
-        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_PREFIX_TO_STRIP))
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_WITH_PREFIX_TO_STRIP), TEST_OPPORTUNITY_FILENAME
+        )
         self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
 
     def test_transform_row_with_ix_prefixed_state_keys(self) -> None:
         """Test that transform_row replaces state prefixes on specified criteria."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
         result = delegate.transform_row(
-            json.dumps(TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP)
+            json.dumps(TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP), TEST_OPPORTUNITY_FILENAME
         )
         self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
 
@@ -279,7 +304,8 @@ class TestWorkflowsETLDelegate(TestCase):
         """Test that transform_row replaces IX with ID for the ATLAS migration."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
         result = delegate.transform_row(
-            json.dumps(TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP)
+            json.dumps(TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP),
+            TEST_OPPORTUNITY_FILENAME,
         )
         self.assertEqual(("456", EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED), result)
 
@@ -291,7 +317,7 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        new_document = delegate.build_document(data)
+        new_document = delegate.build_document(data, TEST_OPPORTUNITY_TYPE)
         self.assertEqual(
             expected,
             new_document,
@@ -305,7 +331,7 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        new_document = delegate.build_document(data)
+        new_document = delegate.build_document(data, TEST_OPPORTUNITY_TYPE)
         self.assertEqual(
             expected,
             new_document,
@@ -318,7 +344,7 @@ class TestWorkflowsETLDelegate(TestCase):
         data["case_notes"] = None
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["caseNotes"] = {}  # type: ignore
-        new_document = delegate.build_document(data)
+        new_document = delegate.build_document(data, TEST_OPPORTUNITY_TYPE)
         self.assertEqual(
             expected,
             new_document,
@@ -327,19 +353,25 @@ class TestWorkflowsETLDelegate(TestCase):
     def test_transform_with_nested_criteria(self) -> None:
         """Tests that the delegate can process a document where the "reason" in a reasons blob is itself, a reasons blob."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
-        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NESTED_CRITERIA))
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_WITH_NESTED_CRITERIA), TEST_OPPORTUNITY_FILENAME
+        )
         self.assertEqual(("234", EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA), result)
 
     def test_transform_with_missing_external_id(self) -> None:
         """Tests that the delegate outputs None for a document with no external id."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
-        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NO_EXTERNAL_ID))
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_WITH_NO_EXTERNAL_ID), TEST_OPPORTUNITY_FILENAME
+        )
         self.assertEqual((None, None), result)
 
     def test_transform_with_null_external_id(self) -> None:
         """Tests that the delegate outputs None for a document with no external id."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
-        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NULL_EXTERNAL_ID))
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_WITH_NULL_EXTERNAL_ID), TEST_OPPORTUNITY_FILENAME
+        )
         self.assertEqual((None, None), result)
 
     def test_transform_with_eligibility_flags_already_set(self) -> None:
@@ -352,7 +384,7 @@ class TestWorkflowsETLDelegate(TestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         # this would have been inferred true if not for the fields we just added to data
         expected["isAlmostEligible"] = False
-        new_document = delegate.build_document(data)
+        new_document = delegate.build_document(data, TEST_OPPORTUNITY_TYPE)
         self.assertEqual(
             expected,
             new_document,

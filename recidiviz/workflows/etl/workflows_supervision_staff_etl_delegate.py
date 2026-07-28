@@ -32,7 +32,7 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["supervision_staff_record.json"]
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
         # Convert all keys to camelcase

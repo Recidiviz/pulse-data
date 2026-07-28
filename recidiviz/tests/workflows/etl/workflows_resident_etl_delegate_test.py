@@ -70,7 +70,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             fixture = fp.readline()
             delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
             # First row US_MO Resident with RestrictiveHousingOpp
             # and metadata blob
             self.assertEqual(doc_id, "300")
@@ -116,7 +116,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             fixture = fp.readline()
             delegate = WorkflowsResidentETLDelegate(StateCode.US_ME)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
             # Second row US_ME Resident with all Opp
             self.assertEqual(doc_id, "301")
             self.assertEqual(
@@ -157,7 +157,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             fixture = fp.readline()
             delegate = WorkflowsResidentETLDelegate(StateCode.US_ME)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
             # Third row US_ME Resident 2/3
             self.assertEqual(doc_id, "302")
             self.assertEqual(
@@ -197,7 +197,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             fixture = fp.readline()
             delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
             # Fourth row US_TN
             self.assertEqual(doc_id, "303")
             self.assertEqual(
@@ -238,7 +238,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             fixture = fp.readline()
             delegate = WorkflowsResidentETLDelegate(StateCode.US_ID)
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
             # Fifth row US_ID resident with metadata blob
             # ETL detegate should update the state code in the blob to US_ID
             self.assertEqual(doc_id, "304")
@@ -301,7 +301,9 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
         }
 
         delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-        doc_id, row = delegate.transform_row(json.dumps(test_data))
+        doc_id, row = delegate.transform_row(
+            json.dumps(test_data), "resident_record.json"
+        )
 
         self.assertEqual(doc_id, "TEST123")
         self.assertIsNone(row["gender"])

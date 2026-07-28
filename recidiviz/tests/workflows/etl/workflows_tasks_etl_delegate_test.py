@@ -55,7 +55,7 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
             fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture)
+            doc_id, row = delegate.transform_row(fixture, "tasks_record.json")
             self.assertEqual(doc_id, "100")
             self.assertEqual(
                 row,

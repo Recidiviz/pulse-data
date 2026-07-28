@@ -106,9 +106,14 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         augmented for different environment targets."""
 
     @abc.abstractmethod
-    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
+    def transform_row(
+        self, row: str, filename: str
+    ) -> Tuple[Optional[str], Optional[dict]]:
         """Prepares a row of the exported file for Firestore ingestion.
-        Returns a tuple of the document ID and the document contents."""
+        Returns a tuple of the document ID and the document contents.
+
+        `filename` identifies the source file the row came from, so delegates
+        that serve multiple collections can vary the transform per file."""
 
     @property
     def timestamp_key(self) -> str:
@@ -163,7 +168,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                     batch = firestore_client.async_batch()
                     for line in rows:
                         try:
-                            row_id, document_fields = self.transform_row(line)
+                            row_id, document_fields = self.transform_row(line, filename)
                         except Exception as e:
                             logging.error(
                                 "Transform row failed on [%s] due to: %s",
