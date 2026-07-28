@@ -42,11 +42,10 @@ class TestIntercomAPIManager(unittest.TestCase):
     def setUp(self) -> None:
         self.mock_client = MagicMock(spec=IntercomAPIClient)
 
-        self.intercom_api_manager = IntercomAPIManager(
-            client=self.mock_client, execution_datetime=datetime.now(timezone.utc)
-        )
+        self.intercom_api_manager = IntercomAPIManager(client=self.mock_client)
 
         self.job_identifier = "orzzsbd7hk67xyu"
+        self.update_datetime = datetime.now(tz=timezone.utc)
         self.sleep_patcher = patch("time.sleep", return_value=None)
         self.sleep_patcher.start()
 
@@ -140,7 +139,9 @@ class TestIntercomAPIManager(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as output_dir:
             file_paths = self.intercom_api_manager.download_and_process_export(
-                job_identifier=self.job_identifier, output_dir=output_dir
+                job_identifier=self.job_identifier,
+                output_dir=output_dir,
+                update_datetime=self.update_datetime,
             )
 
             self.assertEqual(
@@ -151,9 +152,8 @@ class TestIntercomAPIManager(unittest.TestCase):
                 file_paths,
             )
 
-            expected_update_datetime = pd.Timestamp(
-                self.intercom_api_manager.execution_datetime
-            )
+            expected_update_datetime = pd.Timestamp(self.update_datetime)
+
             for base_name, path in file_paths.items():
                 df = pd.read_csv(path, parse_dates=[UPDATE_DATETIME])
                 self.assertIn(UPDATE_DATETIME, df.columns)
@@ -175,6 +175,7 @@ class TestIntercomAPIManager(unittest.TestCase):
             self.intercom_api_manager.download_and_process_export(
                 job_identifier=self.job_identifier,
                 output_dir="",
+                update_datetime=self.update_datetime,
             )
 
     def test_extract_base_name_single_word(self) -> None:

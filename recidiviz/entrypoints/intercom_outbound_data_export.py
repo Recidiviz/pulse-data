@@ -18,14 +18,28 @@
 
 import argparse
 import csv
-from datetime import datetime
+import logging
+import tempfile
+from datetime import datetime, timezone
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.intercom.client import IntercomAPIClient
+from recidiviz.intercom.intercom_export_bq_table_manager import (
+    IntercomExportBigQueryTableManager,
+)
+from recidiviz.intercom.intercom_gcs_upload import (
+    generate_intercom_outbound_content_gcs_path,
+    intercom_gcs_upload,
+)
+from recidiviz.intercom.manager import IntercomAPIManager
+from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
 from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
     build_source_table_repository_for_yaml_managed_tables,
 )
+from recidiviz.utils import metadata
 
 
 def verify_headers(
@@ -75,6 +89,43 @@ def verify_headers(
                 )
 
 
+def export_and_upload_intercom_data(
+    start_datetime_inclusive: datetime,
+    end_datetime_inclusive: datetime,
+    update_datetime: datetime,
+) -> None:
+    """Runs the full Intercom outbound data export process."""
+
+    intercom_api_manager = IntercomAPIManager(client=IntercomAPIClient())
+
+    # Download the data and export the CSVs to the GCS bucket
+    export_job = intercom_api_manager.export_intercom_data(
+        start_datetime_inclusive=start_datetime_inclusive,
+        end_datetime_inclusive=end_datetime_inclusive,
+    )
+
+    intercom_api_manager.poll_export_status(job_identifier=export_job.job_identifier)
+
+    with tempfile.TemporaryDirectory() as temp_output_dir:
+        file_paths = intercom_api_manager.download_and_process_export(
+            job_identifier=export_job.job_identifier,
+            output_dir=temp_output_dir,
+            update_datetime=update_datetime,
+        )
+    verify_headers(file_paths)
+
+    current_project_id = metadata.project_id()
+    for base_name, source_path in file_paths.items():
+        destination_gcs_path = generate_intercom_outbound_content_gcs_path(
+            project_id=current_project_id,
+            file_base_name=base_name,
+            update_datetime=update_datetime,
+        )
+        intercom_gcs_upload(
+            intercom_source_path=source_path, destination_gcs_path=destination_gcs_path
+        )
+
+
 class IntercomOutboundDataExport(EntrypointInterface):
     """Entrypoint for Intercom outbound content data export"""
 
@@ -82,12 +133,6 @@ class IntercomOutboundDataExport(EntrypointInterface):
     def get_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
 
-        parser.add_argument(
-            "--destination-dataset",
-            help="The dataset that the exported Intercom data will be added to",
-            type=str,
-            required=True,
-        )
         parser.add_argument(
             "--start-datetime-inclusive",
             help="UTC datetime for start of date range, inclusive",
@@ -104,5 +149,62 @@ class IntercomOutboundDataExport(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(*, args: argparse.Namespace) -> None:
-        """Runs Intercom outbound content data export."""
+    def run_entrypoint(
+        *,
+        args: argparse.Namespace,
+    ) -> None:
+        """Runs Intercom outbound content data export and writes to the
+        intercom_export.export_tracker table."""
+
+        start_datetime_inclusive = args.start_datetime_inclusive
+        end_datetime_inclusive = args.end_datetime_inclusive
+        update_datetime = datetime.now(tz=timezone.utc)
+
+        if (start_datetime_inclusive is not None) != (
+            end_datetime_inclusive is not None
+        ):
+            raise ValueError(
+                "start_datetime_inclusive and end_datetime_inclusive must either both be "
+                "a datetime, or both be None. You entered: "
+                f"start_datetime_inclusive: [{start_datetime_inclusive}] and "
+                f"end_datetime_inclusive: [{end_datetime_inclusive}]. "
+            )
+
+        bq_table_manager = IntercomExportBigQueryTableManager(
+            client=BigQueryClientImpl()
+        )
+        if not start_datetime_inclusive and not end_datetime_inclusive:
+            start_datetime_inclusive = bq_table_manager.get_latest_export_window_end()
+            end_datetime_inclusive = update_datetime
+
+        try:
+            export_and_upload_intercom_data(
+                start_datetime_inclusive=start_datetime_inclusive,
+                end_datetime_inclusive=end_datetime_inclusive,
+                update_datetime=update_datetime,
+            )
+            job_status = IntercomCloudRunJobStatus.SUCCESS
+        except Exception as e:
+            logging.error("Failed to export Intercom data", exc_info=e)
+            job_status = IntercomCloudRunJobStatus.FAILURE
+
+        export_job_info = IntercomCloudRunJobInfo(
+            export_datetime=update_datetime,
+            export_window_start_inclusive=start_datetime_inclusive,
+            export_window_end_inclusive=end_datetime_inclusive,
+            status=job_status,
+        )
+
+        # Write the data to the BQ Intercom export tracker table
+        bq_table_manager.write_to_table(cloud_run_job_info=export_job_info)
+
+        if job_status == IntercomCloudRunJobStatus.FAILURE:
+            raise ValueError(
+                "Intercom export cloud run job failed due to a failure in the Intercom data export."
+            )
+
+
+if __name__ == "__main__":
+    IntercomOutboundDataExport.run_entrypoint(
+        args=IntercomOutboundDataExport.get_parser().parse_args()
+    )

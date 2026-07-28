@@ -81,6 +81,7 @@ class IntercomAPIClient:
         wait=wait_exponential(multiplier=1, min=4, max=10),
         reraise=True,
     )
+    # TODO(OBT-27442): Change args to start_datetime_inclusive and end_datetime_inclusive
     def create_data_export(
         self, created_at_after: datetime, created_at_before: datetime
     ) -> IntercomExportJobResponse:

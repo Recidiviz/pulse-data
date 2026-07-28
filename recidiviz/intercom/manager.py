@@ -26,7 +26,6 @@ from datetime import datetime
 import attr
 import pandas as pd
 
-from recidiviz.common import attr_validators
 from recidiviz.intercom.client import IntercomAPIClient
 from recidiviz.intercom.types import IntercomExportJobResponse, IntercomJobStatus
 
@@ -58,9 +57,6 @@ class IntercomAPIManager:
 
     client: IntercomAPIClient = attr.ib(
         validator=attr.validators.instance_of(IntercomAPIClient)
-    )
-    execution_datetime: datetime = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
     )
 
     def export_intercom_data(
@@ -96,7 +92,7 @@ class IntercomAPIManager:
         )
 
     def download_and_process_export(
-        self, job_identifier: str, output_dir: str
+        self, job_identifier: str, output_dir: str, update_datetime: datetime
     ) -> dict[str, str]:
         """
         Download export and extract CSV files to local temp directory.
@@ -118,7 +114,7 @@ class IntercomAPIManager:
                     with zip_file.open(filename) as csv_file:
                         df = pd.read_csv(csv_file)
 
-                        df[UPDATE_DATETIME] = self.execution_datetime
+                        df[UPDATE_DATETIME] = update_datetime
 
                         output_path = os.path.join(
                             output_dir,
