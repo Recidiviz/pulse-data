@@ -169,6 +169,7 @@ output:
                   - Discretionary Release
                   - Flat Discretionary Release
                   - Correctional Release Center
+                  - Correctional Release Center Release
                   - WK F 41-160411C
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - Community Supervision End Date
@@ -180,7 +181,6 @@ output:
                   - Absolute Discharge
                   - NEW CODE - Earned Release
                   - OLD/NEW CODE - Expiration
-                  - Correctional Release Center Release
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - CLASSIFICATION
                   - Received from Overcrowding
