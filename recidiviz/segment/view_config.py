@@ -26,7 +26,6 @@ from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, String
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.segment.all_jii_segment_pages import ALL_JII_SEGMENT_PAGES_VIEW_BUILDER
 from recidiviz.segment.all_segment_pages import ALL_SEGMENT_PAGES_VIEW_BUILDER
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_big_query_view_builder import (
@@ -181,5 +180,4 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         ),
         # Pages views
         ALL_SEGMENT_PAGES_VIEW_BUILDER,
-        ALL_JII_SEGMENT_PAGES_VIEW_BUILDER,
     ]

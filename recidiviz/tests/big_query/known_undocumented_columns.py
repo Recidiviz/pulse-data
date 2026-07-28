@@ -4437,16 +4437,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "source_filename",
         "state_code",
     ],
-    BigQueryAddress.from_str("segment_events.all_jii_segment_pages"): [
-        "context_page_path",
-        "context_page_url",
-        "event_ts",
-        "id",
-        "person_id",
-        "session_id",
-        "state_code",
-        "user_id",
-    ],
     BigQueryAddress.from_str(
         "segment_events.frontend_almost_eligible_copy_cta_clicked"
     ): ["almost_eligible_criteria", "opportunity_type", "staff_id"],
