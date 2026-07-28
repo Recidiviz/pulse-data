@@ -48,8 +48,10 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     CourseCompletionAcceptedResponse,
     CourseCompletionAlreadyCompletedResponse,
     CourseCompletionDuplicateResponse,
+    CourseCompletionForbiddenResponse,
     CourseCompletionPersonNotFoundResponse,
     CourseCompletionRequest,
+    CourseCompletionUnauthenticatedResponse,
     CourseCompletionValidationErrorResponse,
     ValidationErrorDetails,
 )
@@ -172,6 +174,31 @@ def create_edovo_api_blueprint() -> Blueprint:
                 outcome=RequestOutcome.REJECTED,
                 reason=f"auth:{error.code}",
             )
+            # Spec-shaped body for the two documented auth outcomes: a
+            # human-readable message that also carries the specific verifier
+            # code so Edovo can quote it back (error_code stays the stable
+            # machine value). 5xx (e.g. tokeninfo unreachable, missing WIF
+            # config) is operational, not part of the partner contract, so it
+            # re-raises to the shared handler.
+            auth_message = f"{error.description} ({error.code})"
+            if error.status_code is HTTPStatus.UNAUTHORIZED:
+                return make_response(
+                    jsonify(
+                        CourseCompletionUnauthenticatedResponse(
+                            message=auth_message
+                        ).model_dump()
+                    ),
+                    error.status_code,
+                )
+            if error.status_code is HTTPStatus.FORBIDDEN:
+                return make_response(
+                    jsonify(
+                        CourseCompletionForbiddenResponse(
+                            message=auth_message
+                        ).model_dump()
+                    ),
+                    error.status_code,
+                )
             raise
 
         try:

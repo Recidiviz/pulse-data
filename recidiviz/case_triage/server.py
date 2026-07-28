@@ -170,7 +170,8 @@ csrf = CSRFProtect(app)
 csrf.exempt(workflows_blueprint)
 csrf.exempt(outliers_api_blueprint)
 csrf.exempt(jii_api_blueprint)
-# Edovo uses HMAC-SHA256 request signing — no session cookie, no CSRF token needed.
+# Edovo authenticates via Workload Identity Federation (a Bearer token), not a
+# session cookie — no CSRF token needed.
 csrf.exempt(edovo_blueprint)
 
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")

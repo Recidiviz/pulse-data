@@ -20,6 +20,7 @@ External dependencies (WIF token verification, BigQuery person existence check) 
 mocked. The database layer uses a real local Postgres instance.
 """
 import json
+import os
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -28,7 +29,10 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from recidiviz.case_triage.edovo.edovo_routes import create_edovo_api_blueprint
+from recidiviz.case_triage.edovo.edovo_routes import (
+    RequestOutcome,
+    create_edovo_api_blueprint,
+)
 from recidiviz.case_triage.edovo.person_existence import PersonNotFoundError
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -40,8 +44,10 @@ from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
 MODULE = "recidiviz.case_triage.edovo.edovo_routes"
+WIF_MODULE = "recidiviz.case_triage.edovo.wif_verifier"
 
 _DOC_ID = "A123456"
+_WIF_SA_UNIQUE_ID = "123456789012345678901"
 
 _VALID_BODY: dict[str, object] = {
     "person_external_id": _DOC_ID,
@@ -147,6 +153,13 @@ class TestEdovoRoutes(TestCase):
         with patch(f"{MODULE}._log_audit") as mock_audit:
             response = self._post()
         self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        data = response.get_json()
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["error_code"], "FORBIDDEN")
+        # error_code stays the stable machine value; the human message carries
+        # the description and the specific verifier code.
+        self.assertIn("wrong service account", data["message"])
+        self.assertIn("wrong_identity", data["message"])
         mock_audit.assert_called_once()
         self.assertEqual(mock_audit.call_args.kwargs["reason"], "auth:wrong_identity")
 
@@ -186,6 +199,11 @@ class TestEdovoRoutes(TestCase):
         )
         response = self._post()
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        data = response.get_json()
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["error_code"], "UNAUTHENTICATED")
+        self.assertIn("Bearer token failed verification", data["message"])
+        self.assertIn("invalid_bearer_token", data["message"])
 
     def test_person_not_found_returns_422(self) -> None:
         self.mock_resolve.side_effect = PersonNotFoundError(_DOC_ID)
@@ -273,3 +291,121 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
         self.assertIn("commit_error", reasons)
+
+
+class TestEdovoAuthErrors(TestCase):
+    """Auth-path responses driven through the real ``verify_bearer_token``.
+
+    Auth is the first thing the handler checks, before any DB or BigQuery
+    access, so these need only the blueprint and the shared error handlers — no
+    Postgres. External calls are faked exactly as the smoke test does: patch the
+    verifier's ``requests.get`` (Google tokeninfo) and set the SA unique-id env.
+    """
+
+    def setUp(self) -> None:
+        self.test_app = Flask(__name__)
+        register_error_handlers(self.test_app)
+        self.test_app.register_blueprint(
+            create_edovo_api_blueprint(), url_prefix="/edovo"
+        )
+        self.client: FlaskClient = self.test_app.test_client()
+        self.unique_id_env = patch.dict(
+            os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": _WIF_SA_UNIQUE_ID}
+        )
+        self.unique_id_env.start()
+
+    def tearDown(self) -> None:
+        self.unique_id_env.stop()
+
+    def _post(self, *, auth: str | None) -> TestResponse:
+        headers = {"Idempotency-Key": _IDEMPOTENCY_KEY}
+        if auth is not None:
+            headers["Authorization"] = auth
+        return self.client.post(
+            "/edovo/course-completions",
+            data=json.dumps(_VALID_BODY),
+            content_type="application/json",
+            headers=headers,
+        )
+
+    def _assert_unauthenticated(
+        self, response: TestResponse, verifier_code: str
+    ) -> None:
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        data = response.get_json()
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["error_code"], "UNAUTHENTICATED")
+        # A human-readable message that carries — but is not merely — the code.
+        self.assertIn(verifier_code, data["message"])
+        self.assertNotEqual(data["message"], verifier_code)
+
+    @staticmethod
+    def _tokeninfo(
+        *, status_code: HTTPStatus, payload: dict[str, object] | None = None
+    ) -> MagicMock:
+        response = MagicMock()
+        response.status_code = status_code
+        response.json.return_value = payload or {}
+        return response
+
+    def test_missing_authorization_header_returns_401(self) -> None:
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            response = self._post(auth=None)
+        self._assert_unauthenticated(response, "invalid_authorization_header")
+        self.assertEqual(
+            mock_audit.call_args.kwargs["outcome"], RequestOutcome.REJECTED
+        )
+        self.assertEqual(
+            mock_audit.call_args.kwargs["reason"], "auth:invalid_authorization_header"
+        )
+
+    def test_non_bearer_scheme_returns_401(self) -> None:
+        self._assert_unauthenticated(
+            self._post(auth="Basic dXNlcjpwYXNz"), "invalid_authorization_header"
+        )
+
+    def test_empty_bearer_token_returns_401(self) -> None:
+        self._assert_unauthenticated(
+            self._post(auth="Bearer "), "invalid_authorization_header"
+        )
+
+    def test_tokeninfo_rejected_returns_401(self) -> None:
+        with patch(f"{WIF_MODULE}.requests.get") as mock_get:
+            mock_get.return_value = self._tokeninfo(status_code=HTTPStatus.BAD_REQUEST)
+            response = self._post(auth="Bearer rejected.token")
+        self._assert_unauthenticated(response, "invalid_bearer_token")
+
+    def test_wrong_identity_returns_403(self) -> None:
+        with patch(f"{WIF_MODULE}.requests.get") as mock_get, patch(
+            f"{MODULE}._log_audit"
+        ) as mock_audit:
+            mock_get.return_value = self._tokeninfo(
+                status_code=HTTPStatus.OK,
+                payload={"aud": "some-other-service-account", "expires_in": 3600},
+            )
+            response = self._post(auth="Bearer valid.but.wrong.identity")
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        data = response.get_json()
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["error_code"], "FORBIDDEN")
+        self.assertIn("wrong_identity", data["message"])
+        self.assertNotEqual(data["message"], "wrong_identity")
+        self.assertEqual(mock_audit.call_args.kwargs["reason"], "auth:wrong_identity")
+
+    def test_missing_unique_id_env_returns_500_in_shared_shape(self) -> None:
+        # A 5xx is operational, not part of the partner contract: it must keep
+        # flowing to the shared handler's {code, description} shape, NOT the new
+        # {status, error_code, message} partner shape.
+        with patch.dict(os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": ""}), patch(
+            f"{MODULE}._log_audit"
+        ) as mock_audit:
+            response = self._post(auth="Bearer any.well.formed.token")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        data = response.get_json()
+        self.assertIn("code", data)
+        self.assertNotIn("error_code", data)
+        self.assertNotIn("status", data)
+        self.assertEqual(
+            mock_audit.call_args.kwargs["reason"],
+            "auth:token_verification_misconfigured",
+        )

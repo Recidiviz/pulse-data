@@ -18,7 +18,8 @@
 
 Request shape: POST /edovo/course-completions
 Response shapes: accepted (201), duplicate (200), validation error (400),
-person not found (422), already completed (422).
+unauthenticated (401), forbidden (403), person not found (422),
+already completed (422).
 """
 from decimal import Decimal
 from typing import Literal
@@ -139,3 +140,15 @@ class CourseCompletionAlreadyCompletedResponse(CourseCompletionErrorResponse):
 
     error_code: Literal["ALREADY_COMPLETED"] = "ALREADY_COMPLETED"
     message: str = "This person has already received credit for this course."
+
+
+class CourseCompletionUnauthenticatedResponse(CourseCompletionErrorResponse):
+    """401 Unauthorized — the request carried no valid bearer token."""
+
+    error_code: Literal["UNAUTHENTICATED"] = "UNAUTHENTICATED"
+
+
+class CourseCompletionForbiddenResponse(CourseCompletionErrorResponse):
+    """403 Forbidden — the bearer token is valid but is not the expected service account."""
+
+    error_code: Literal["FORBIDDEN"] = "FORBIDDEN"
