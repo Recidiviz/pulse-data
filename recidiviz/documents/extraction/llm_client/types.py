@@ -192,6 +192,11 @@ class LLMClientDocumentExtractionResult:
                 f"error_message=[{self.error_message!r}]."
             )
 
+    @property
+    def is_error_result(self) -> bool:
+        """Returns True if this result represents a failed extraction request."""
+        return self.error_type is not None
+
     @classmethod
     def from_error(
         cls,

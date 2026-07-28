@@ -36,11 +36,17 @@ from recidiviz.documents.extraction.llm_client.types import (
 )
 from recidiviz.documents.extraction.llm_document_validation_result import (
     LLMDocumentValidationResult,
+    ValidationCheckType,
+    ValidationIssue,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionEligibleDocumentRecord,
     LLMExtractionJobManager,
     LLMJobDocumentExtractionResult,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+    RESULT_KEY,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -94,24 +100,31 @@ def _client_result(
     )
 
 
+def _validation_result(
+    *,
+    validated_content: dict[str, Any] | None,
+    result_type_override: LLMExtractionJobDocumentResultType | None,
+    audit_issues: list[ValidationIssue] | None = None,
+) -> LLMDocumentValidationResult:
+    return LLMDocumentValidationResult(
+        validated_content=validated_content,
+        audit_issues=audit_issues if audit_issues is not None else [],
+        result_type_override=result_type_override,
+        validation_config_version_id="vc1",
+        validation_datetime_utc=_NOW,
+    )
+
+
 def _success_result(
     *, job_id: str, document_contents_id: str, is_relevant: bool = True
 ) -> LLMJobDocumentExtractionResult:
-    return LLMJobDocumentExtractionResult(
+    return LLMJobDocumentExtractionResult.for_success(
         job_id=job_id,
-        document_contents_id=document_contents_id,
-        result_datetime_utc=_NOW,
         raw_result=_client_result(document_contents_id),
-        result_type=LLMExtractionJobDocumentResultType.SUCCESS,
-        is_relevant=is_relevant,
-        error_type=None,
-        error_message=None,
-        validation_results=LLMDocumentValidationResult(
-            validated_content={"is_relevant": is_relevant},
-            audit_issues=[],
+        result_datetime_utc=_NOW,
+        validation_results=_validation_result(
+            validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: is_relevant}},
             result_type_override=None,
-            validation_config_version_id="vc1",
-            validation_datetime_utc=_NOW,
         ),
     )
 
@@ -123,19 +136,135 @@ def _failure_result(
     result_type: LLMExtractionJobDocumentResultType,
     error_type: LLMDocumentExtractionErrorType,
 ) -> LLMJobDocumentExtractionResult:
-    return LLMJobDocumentExtractionResult(
+    return LLMJobDocumentExtractionResult.for_failed_request(
         job_id=job_id,
-        document_contents_id=document_contents_id,
-        result_datetime_utc=_NOW,
         raw_result=_client_result(
             document_contents_id, error_type=LLMRequestErrorType.RATE_LIMITED
         ),
+        result_datetime_utc=_NOW,
         result_type=result_type,
-        is_relevant=None,
         error_type=error_type,
-        error_message="something failed",
-        validation_results=None,
     )
+
+
+class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
+    """Tests the classification/construction the LLMJobDocumentExtractionResult
+    factories encapsulate — no Postgres involved."""
+
+    def test_for_success(self) -> None:
+        # is_relevant is taken from the validated content, not passed in.
+        for is_relevant in (True, False):
+            with self.subTest(is_relevant=is_relevant):
+                result = LLMJobDocumentExtractionResult.for_success(
+                    job_id="job1",
+                    raw_result=_client_result("doc1"),
+                    result_datetime_utc=_NOW,
+                    validation_results=_validation_result(
+                        validated_content={"result": {"is_relevant": is_relevant}},
+                        result_type_override=None,
+                    ),
+                )
+                self.assertEqual(
+                    LLMExtractionJobDocumentResultType.SUCCESS, result.result_type
+                )
+                self.assertEqual(is_relevant, result.is_relevant)
+                self.assertIsNone(result.error_type)
+                self.assertIsNone(result.error_message)
+                self.assertTrue(result.is_validated_result)
+
+    def test_for_success_requires_validated_content(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"requires validated content"):
+            LLMJobDocumentExtractionResult.for_success(
+                job_id="job1",
+                raw_result=_client_result("doc1"),
+                result_datetime_utc=_NOW,
+                validation_results=_validation_result(
+                    validated_content=None,
+                    result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    audit_issues=[
+                        ValidationIssue(
+                            check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
+                            field_name=None,
+                            detail="bad",
+                        )
+                    ],
+                ),
+            )
+
+    def test_for_failed_validation_derives_result_type_from_override(self) -> None:
+        result = LLMJobDocumentExtractionResult.for_failed_validation(
+            job_id="job1",
+            raw_result=_client_result("doc1"),
+            result_datetime_utc=_NOW,
+            validation_results=_validation_result(
+                validated_content=None,
+                result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                audit_issues=[
+                    ValidationIssue(
+                        check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
+                        field_name=None,
+                        detail="bad",
+                    )
+                ],
+            ),
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            result.result_type,
+        )
+        self.assertIsNone(result.is_relevant)
+        self.assertIsNone(result.error_type)
+        self.assertIsNone(result.error_message)
+        self.assertFalse(result.is_validated_result)
+
+    def test_for_failed_validation_requires_failed_validation(self) -> None:
+        # A validation result that passed is not a failure — so the factory refuses
+        # it rather than silently stamping a SUCCESS.
+        with self.assertRaisesRegex(ValueError, r"requires a failed validation result"):
+            LLMJobDocumentExtractionResult.for_failed_validation(
+                job_id="job1",
+                raw_result=_client_result("doc1"),
+                result_datetime_utc=_NOW,
+                validation_results=_validation_result(
+                    validated_content={"result": {"is_relevant": True}},
+                    result_type_override=None,
+                ),
+            )
+
+    def test_for_failed_request(self) -> None:
+        # The caller supplies the classified result/error types; the factory stamps
+        # them, carries the message from the raw result, and leaves nothing
+        # validated. (The request-error -> type classification itself lives in, and
+        # is tested by, LLMExtractionResultProcessor.)
+        result = LLMJobDocumentExtractionResult.for_failed_request(
+            job_id="job1",
+            raw_result=_client_result(
+                "doc1", error_type=LLMRequestErrorType.RATE_LIMITED
+            ),
+            result_datetime_utc=_NOW,
+            result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            result.result_type,
+        )
+        self.assertEqual(
+            LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED, result.error_type
+        )
+        self.assertEqual("error for doc1", result.error_message)
+        self.assertIsNone(result.is_relevant)
+        self.assertIsNone(result.validation_results)
+
+    def test_for_failed_request_requires_error_result(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"requires an error raw_result"):
+            LLMJobDocumentExtractionResult.for_failed_request(
+                job_id="job1",
+                raw_result=_client_result("doc1"),
+                result_datetime_utc=_NOW,
+                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_UNKNOWN_ERROR,
+            )
 
 
 @pytest.mark.uses_db
@@ -536,7 +665,7 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE,
             failed_document.error_type,
         )
-        self.assertEqual("something failed", failed_document.error_message)
+        self.assertEqual("error for doc4", failed_document.error_message)
 
     def test_mark_job_failed(self) -> None:
         self._record_eligible(["doc1"])

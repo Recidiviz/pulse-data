@@ -1,0 +1,176 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2026 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Shared builders for the result JSON the FAKE_EXTRACTOR_COLLECTION extractor
+emits, conforming to the JSON Schema the extractor sends the model.
+
+The per-field builders produce a single INFERRED field's JSON (value or null
+branch) and one `assignments` array element. The result builders assemble those
+into a whole document result — `build_fake_extractor_result_content` returns the
+unwrapped `{is_relevant, ...}` content stored in the BQ result tables, and the
+`fake_*_result_json` builders wrap that content in the top-level `{"result": ...}`
+envelope the raw model response carries and the validator consumes.
+
+Kept dependency-light (no BQ table or entity imports) so both the view builder
+tests and the validator/processor tests can share it.
+"""
+from typing import Any
+
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ADVERSARIAL_INTERPRETATION_FIELD_NAME,
+    CITATION_END_FIELD_NAME,
+    CITATION_START_FIELD_NAME,
+    CITATION_TEXT_FIELD_NAME,
+    CITATIONS_FIELD_NAME,
+    CONFIDENCE_LEVEL_FIELD_NAME,
+    IS_RELEVANT_FIELD_NAME,
+    NULL_REASON_FIELD_NAME,
+    RESULT_KEY,
+    VALUE_FIELD_NAME,
+)
+
+
+def build_inferred_field_result_json(
+    value: Any, confidence_level: str = "explicit"
+) -> dict[str, Any]:
+    """Returns the JSON the extractor emits for one INFERRED field on the nonnull
+    branch: its value plus the companion-metadata keys.
+    """
+    return {
+        VALUE_FIELD_NAME: value,
+        CONFIDENCE_LEVEL_FIELD_NAME: confidence_level,
+        ADVERSARIAL_INTERPRETATION_FIELD_NAME: f"adv-{value}",
+        CITATIONS_FIELD_NAME: [
+            {
+                CITATION_TEXT_FIELD_NAME: f"citation for {value}",
+                CITATION_START_FIELD_NAME: 0,
+                CITATION_END_FIELD_NAME: 15,
+            }
+        ],
+    }
+
+
+def build_null_inferred_field_result_json(
+    null_reason: str = "no_info_found",
+) -> dict[str, Any]:
+    """Returns the JSON the extractor emits for one INFERRED field on the null
+    branch: no value, just the null reason and the other companion-metadata keys.
+    """
+    return {
+        NULL_REASON_FIELD_NAME: null_reason,
+        CONFIDENCE_LEVEL_FIELD_NAME: "explicit",
+        ADVERSARIAL_INTERPRETATION_FIELD_NAME: "adv-null",
+        CITATIONS_FIELD_NAME: [],
+    }
+
+
+def build_fake_extractor_assignment_result_json(
+    name: str, kind: str, rate: float, period: str
+) -> dict[str, Any]:
+    """Returns one element of the `assignments` ARRAY_OF_STRUCT field's JSON."""
+    return {
+        "assignment_name": build_inferred_field_result_json(name),
+        "assignment_type": build_inferred_field_result_json(kind),
+        "rate_amount": build_inferred_field_result_json(rate, "inferred"),
+        "rate_period": build_inferred_field_result_json(period),
+    }
+
+
+def build_fake_extractor_result_content(
+    *,
+    primary_status: str,
+    status_note: str,
+    location: str | None,
+    assignments: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Returns the full result-JSON content for one relevant extraction result.
+    A None |location| takes the null branch (no value, with a null reason).
+    """
+    return {
+        IS_RELEVANT_FIELD_NAME: True,
+        "primary_status": build_inferred_field_result_json(primary_status),
+        "status_note": status_note,
+        "location": (
+            build_inferred_field_result_json(location, "inferred")
+            if location is not None
+            else build_null_inferred_field_result_json()
+        ),
+        "assignments": assignments,
+    }
+
+
+def build_fake_extractor_irrelevant_result_content() -> dict[str, Any]:
+    """Returns the result-JSON content stored for an irrelevant document — just
+    the relevance determination, no extracted fields.
+    """
+    return {IS_RELEVANT_FIELD_NAME: False}
+
+
+def wrap_in_result_key(result_content: dict[str, Any]) -> dict[str, Any]:
+    """Wraps |result_content| in the top-level `{"result": ...}` envelope that the
+    raw model response carries and the validator consumes.
+    """
+    return {RESULT_KEY: result_content}
+
+
+def fake_minimal_relevant_result_json() -> dict[str, Any]:
+    """Returns a wrapped result that conforms to FAKE_EXTRACTOR_COLLECTION's schema
+    with only is_relevant and the two required/structural fields — the optional
+    `location` and `assignments` fields are absent (as an older schema's output
+    would be), so absent-is-null is exercised.
+    """
+    return wrap_in_result_key(
+        {
+            IS_RELEVANT_FIELD_NAME: True,
+            "primary_status": build_inferred_field_result_json("active"),
+            "status_note": "Currently active.",
+        }
+    )
+
+
+def fake_all_fields_result_json() -> dict[str, Any]:
+    """Returns a wrapped result that populates every field in
+    FAKE_EXTRACTOR_COLLECTION's schema, including the nested `assignments` array and
+    all of its sub-fields (a second element on the null branch), so the whole schema
+    is exercised.
+    """
+    return wrap_in_result_key(
+        build_fake_extractor_result_content(
+            primary_status="active",
+            status_note="Currently active.",
+            location="Kitchen",
+            assignments=[
+                build_fake_extractor_assignment_result_json(
+                    "Dish duty", "internal", 12.5, "hourly"
+                ),
+                {
+                    "assignment_name": build_inferred_field_result_json("Laundry"),
+                    "assignment_type": build_null_inferred_field_result_json(),
+                    "rate_amount": build_null_inferred_field_result_json(),
+                    "rate_period": build_null_inferred_field_result_json(
+                        "not_applicable"
+                    ),
+                },
+            ],
+        )
+    )
+
+
+def fake_irrelevant_result_json() -> dict[str, Any]:
+    """Returns a wrapped result for an irrelevant document — the irrelevant branch
+    of the anyOf carries only is_relevant.
+    """
+    return wrap_in_result_key(build_fake_extractor_irrelevant_result_content())

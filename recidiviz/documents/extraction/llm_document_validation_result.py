@@ -33,6 +33,10 @@ from recidiviz.documents.extraction.extraction_results_columns import (
     VALIDATION_ISSUE_DETAIL_FIELD,
     VALIDATION_ISSUE_FIELD_NAME_FIELD,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+    RESULT_KEY,
+)
 
 
 class ValidationCheckType(StrEnum):
@@ -122,9 +126,28 @@ class LLMDocumentValidationResult:
         return self.validated_content is not None
 
     @property
+    def result_type(self) -> LLMExtractionJobDocumentResultType:
+        """Returns the per-document result type validation resolves the document
+        to: the override an extraction-error check set, or SUCCESS when validation
+        left the raw SUCCESS classification intact."""
+        if self.result_type_override is not None:
+            return self.result_type_override
+        return LLMExtractionJobDocumentResultType.SUCCESS
+
+    @property
     def will_retry(self) -> bool:
         """Returns whether validation queued the document for another LLM call."""
         return (
             self.result_type_override
             is LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
         )
+
+    @property
+    def is_relevant(self) -> bool | None:
+        """Returns the model's relevance classification for a document that
+        extracted and validated cleanly, or None when the document failed an
+        extraction-error check (nothing usable to persist).
+        """
+        if self.validated_content is None:
+            return None
+        return self.validated_content[RESULT_KEY][IS_RELEVANT_FIELD_NAME]

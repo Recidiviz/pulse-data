@@ -71,6 +71,25 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
             ).passed_validation
         )
 
+    def test_result_type_falls_back_to_success(self) -> None:
+        # An override is passed through; its absence resolves to SUCCESS.
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            _validation_result(
+                validated_content=None,
+                result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                audit_issues=[_ISSUE],
+            ).result_type,
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.SUCCESS,
+            _validation_result(
+                validated_content={"is_relevant": True},
+                result_type_override=None,
+                audit_issues=[],
+            ).result_type,
+        )
+
     def test_will_retry_only_on_transient_override(self) -> None:
         self.assertTrue(
             _validation_result(

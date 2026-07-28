@@ -57,6 +57,7 @@ from recidiviz.persistence.entity.operations.entities import (
     LLMExtractionJob,
     LLMExtractionJobDocument,
 )
+from recidiviz.utils.types import assert_type
 
 # The per-document result types that permanently remove a document from job
 # selection for an extractor version — a document with any of these is "done"
@@ -176,6 +177,110 @@ class LLMJobDocumentExtractionResult:
                 f"[{self.document_contents_id}] in job [{self.job_id}]: got "
                 f"error_type=[{self.error_type}], error_message=[{self.error_message}]."
             )
+
+    @classmethod
+    def for_success(
+        cls,
+        *,
+        job_id: str,
+        raw_result: LLMClientDocumentExtractionResult,
+        result_datetime_utc: datetime.datetime,
+        validation_results: LLMDocumentValidationResult,
+    ) -> "LLMJobDocumentExtractionResult":
+        """Returns the result for a document that extracted and validated cleanly:
+        a SUCCESS carrying the validated content and the model's relevance. Requires
+        |validation_results| to hold usable validated content.
+        """
+        if validation_results.validated_content is None:
+            raise ValueError(
+                f"for_success requires validated content for document "
+                f"[{raw_result.document_contents_id}] in job [{job_id}], but "
+                f"validation produced none."
+            )
+
+        return cls(
+            job_id=job_id,
+            document_contents_id=raw_result.document_contents_id,
+            result_datetime_utc=result_datetime_utc,
+            raw_result=raw_result,
+            result_type=LLMExtractionJobDocumentResultType.SUCCESS,
+            is_relevant=validation_results.is_relevant,
+            error_type=None,
+            error_message=None,
+            validation_results=validation_results,
+        )
+
+    @classmethod
+    def for_failed_validation(
+        cls,
+        *,
+        job_id: str,
+        raw_result: LLMClientDocumentExtractionResult,
+        result_datetime_utc: datetime.datetime,
+        validation_results: LLMDocumentValidationResult,
+    ) -> "LLMJobDocumentExtractionResult":
+        """Returns the result for a document whose raw JSON parsed but failed an
+        extraction-error validation check: the classification is downgraded to the
+        `result_type_override` the validator set (a document-level failure), with
+        no usable content and no persisted error category — validation errors have
+        no LLMDocumentExtractionErrorType value yet, and the audit issues on
+        |validation_results| carry the detail. Requires |validation_results| to
+        have failed validation.
+        """
+        if validation_results.passed_validation:
+            raise ValueError(
+                f"for_failed_validation requires a failed validation result for "
+                f"document [{raw_result.document_contents_id}] in job [{job_id}], "
+                f"but validation passed."
+            )
+        result_type = assert_type(
+            validation_results.result_type_override,
+            LLMExtractionJobDocumentResultType,
+        )
+        return cls(
+            job_id=job_id,
+            document_contents_id=raw_result.document_contents_id,
+            result_datetime_utc=result_datetime_utc,
+            raw_result=raw_result,
+            result_type=result_type,
+            is_relevant=None,
+            error_type=None,
+            error_message=None,
+            validation_results=validation_results,
+        )
+
+    @classmethod
+    def for_failed_request(
+        cls,
+        *,
+        job_id: str,
+        raw_result: LLMClientDocumentExtractionResult,
+        result_datetime_utc: datetime.datetime,
+        result_type: LLMExtractionJobDocumentResultType,
+        error_type: LLMDocumentExtractionErrorType,
+    ) -> "LLMJobDocumentExtractionResult":
+        """Returns the result for a document whose LLM request failed before any
+        JSON was produced (so there is nothing to validate). The caller classifies
+        the request error into |result_type| and the persisted |error_type|; the
+        error message is carried from |raw_result|. Requires |raw_result| to be an
+        error result.
+        """
+        if not raw_result.is_error_result:
+            raise ValueError(
+                f"for_failed_request requires an error raw_result for document "
+                f"[{raw_result.document_contents_id}] in job [{job_id}]."
+            )
+        return cls(
+            job_id=job_id,
+            document_contents_id=raw_result.document_contents_id,
+            result_datetime_utc=result_datetime_utc,
+            raw_result=raw_result,
+            result_type=result_type,
+            is_relevant=None,
+            error_type=error_type,
+            error_message=raw_result.error_message,
+            validation_results=None,
+        )
 
 
 class LLMExtractionJobManager:
