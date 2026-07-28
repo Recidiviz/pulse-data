@@ -113,6 +113,7 @@ output:
                   - COMPACT OUT/UTAH TO OTHR STATE
                   - COMPACT DENIED
                   - COMP RET TO UTAH/NOT COMPLETE
+                  - COMPACT WITHDRAWN
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                   - MOVE/OTHER STATE PRISON
                   - MOVE/OTHER STATE JAIL
@@ -208,6 +209,7 @@ output:
                   - INMATE COURTESY RELEASE
                   - CASE DISMISSED BY COURT
                   - INMATE COURT ORDER RELEASE
+                  - CCC RELEASE
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - EXPIRATION OF SENTENCE
                   - EXPIRATION TO HOLD
@@ -273,6 +275,7 @@ output:
                   - APPEAL REVERSED
                   - INVESTIGATION NOT COMPLETED
                   - DENIED FIELD OP TRANSFR/OBSCIS
+                  - COMPACT WITHDRAWN
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - DIAGNOSTIC RELEASE
                   - REVERSED COURT ORDER
@@ -283,7 +286,6 @@ output:
                   - PLEA IN ABEYANCE EXTENDED
                   - PROBATION RESTARTED
                   - COLLECTION ONLY START
-                  - CCC RELEASE
                   - DIVERSION START
                   - NEW DIAGNOSTIC REFERRAL
                   - DIAGNOSTIC START
