@@ -94,6 +94,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=raw_result,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            prior_transient_failure_count=0,
         )
 
         self.assertEqual(LLMExtractionJobDocumentResultType.SUCCESS, result.result_type)
@@ -127,6 +128,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=raw_result,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            prior_transient_failure_count=0,
         )
 
         self.assertEqual(
@@ -157,6 +159,102 @@ class LLMExtractionResultProcessorTest(TestCase):
                     error_type_for_request_error(request_error_type),
                     LLMDocumentExtractionErrorType,
                 )
+
+    def test_transient_failures_escalate_once_retry_budget_is_spent(self) -> None:
+        # A transient failure stays TRANSIENT until the document's prior-transient
+        # count reaches the config's retry budget, then escalates to
+        # RETRIES_EXHAUSTED so job selection stops retrying it. Both transient
+        # sources escalate: a transient request error (carrying its error category
+        # and message) and a validation downgrade (carrying neither).
+        budget = self.config.max_transient_retry_count
+        self.assertGreater(budget, 0)
+
+        transient_request = LLMClientDocumentExtractionResult.from_error(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            error_type=LLMRequestErrorType.TIMEOUT,
+            error_message="failed: timeout",
+            token_counts=_TOKEN_COUNTS,
+        )
+        downgraded_json = self.build_fake_collection_relevant_result_json()
+        del downgraded_json[RESULT_KEY]["primary_status"]
+        validation_downgrade = LLMClientDocumentExtractionResult.from_success(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            result_json=downgraded_json,
+            token_counts=_TOKEN_COUNTS,
+        )
+
+        transient = LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+        exhausted = (
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED
+        )
+        for raw_result in (transient_request, validation_downgrade):
+            for prior_count, expected_result_type in (
+                (budget - 1, transient),
+                (budget, exhausted),
+                (budget + 1, exhausted),
+            ):
+                with self.subTest(
+                    error_type=raw_result.error_type, prior_count=prior_count
+                ):
+                    result = self.processor.validate_and_classify(
+                        config=self.config,
+                        raw_result=raw_result,
+                        job_id=_JOB_ID,
+                        source_document_text=_SOURCE_TEXT,
+                        prior_transient_failure_count=prior_count,
+                    )
+                    self.assertEqual(expected_result_type, result.result_type)
+                    # Escalation only re-stamps result_type; the request error's
+                    # category/message and the downgrade's null error carry over.
+                    if raw_result is transient_request:
+                        self.assertEqual(
+                            LLMDocumentExtractionErrorType.LLM_REQUEST_TIMEOUT,
+                            result.error_type,
+                        )
+                        self.assertEqual("failed: timeout", result.error_message)
+                    else:
+                        self.assertIsNone(result.error_type)
+                        self.assertIsNone(result.error_message)
+                    self.assertIsNone(result.is_relevant)
+
+    def test_permanent_and_success_results_never_escalate(self) -> None:
+        # Only transient failures escalate: a permanent request error and a
+        # successful result are unaffected even past the retry budget.
+        beyond_budget = self.config.max_transient_retry_count + 1
+
+        permanent = LLMClientDocumentExtractionResult.from_error(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            error_type=LLMRequestErrorType.CONTENT_FILTERED,
+            error_message="failed: content filtered",
+            token_counts=_TOKEN_COUNTS,
+        )
+        permanent_result = self.processor.validate_and_classify(
+            config=self.config,
+            raw_result=permanent,
+            job_id=_JOB_ID,
+            source_document_text=_SOURCE_TEXT,
+            prior_transient_failure_count=beyond_budget,
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+            permanent_result.result_type,
+        )
+
+        success = LLMClientDocumentExtractionResult.from_success(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            result_json=self.build_fake_collection_relevant_result_json(),
+            token_counts=_TOKEN_COUNTS,
+        )
+        success_result = self.processor.validate_and_classify(
+            config=self.config,
+            raw_result=success,
+            job_id=_JOB_ID,
+            source_document_text=_SOURCE_TEXT,
+            prior_transient_failure_count=beyond_budget,
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.SUCCESS, success_result.result_type
+        )
 
     def test_request_failures_classified_and_categorized(self) -> None:
         # A raw call that failed at the request phase is routed to the failed-request
@@ -215,6 +313,7 @@ class LLMExtractionResultProcessorTest(TestCase):
                     raw_result=raw_result,
                     job_id=_JOB_ID,
                     source_document_text=_SOURCE_TEXT,
+                    prior_transient_failure_count=0,
                 )
 
                 self.assertEqual(expected_result_type, result.result_type)

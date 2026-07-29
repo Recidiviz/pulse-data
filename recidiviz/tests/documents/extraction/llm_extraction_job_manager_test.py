@@ -191,11 +191,12 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
                 ),
             )
 
-    def test_for_failed_validation_derives_result_type_from_override(self) -> None:
+    def test_for_failed_validation(self) -> None:
         result = LLMJobDocumentExtractionResult.for_failed_validation(
             job_id="job1",
             raw_result=_client_result("doc1"),
             result_datetime_utc=_NOW,
+            result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
             validation_results=_validation_result(
                 validated_content=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
@@ -225,6 +226,7 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
                 job_id="job1",
                 raw_result=_client_result("doc1"),
                 result_datetime_utc=_NOW,
+                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 validation_results=_validation_result(
                     validated_content={"result": {"is_relevant": True}},
                     result_type_override=None,

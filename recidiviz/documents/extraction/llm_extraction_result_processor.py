@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Processes one raw LLM extraction result into an `LLMJobDocumentExtractionResult`:
-classify the LLM call, and for a SUCCESS run the validator and fold its
-result in.
+classify the LLM call, for a SUCCESS run the validator and fold its result in, and
+escalate a transient failure to retries-exhausted once the retry budget is spent.
 """
 
 import datetime
@@ -49,13 +49,6 @@ def result_type_for_request_error(
 
     Enumerates every member so adding a new LLMRequestErrorType without classifying
     it here fails loudly.
-
-    TODO(OBT-32102): DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED is never produced here. A
-    transient failure is only escalated to retries-exhausted once a document has
-    transiently failed across max_transient_retry_count jobs, which requires the
-    document's prior-transient-failure count — an input this per-result processor is
-    not given. Thread that count through (from the job manager) and escalate here
-    when it reaches config.max_transient_retry_count.
     """
     if error_type is LLMRequestErrorType.MALFORMED_RESPONSE:
         return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT
@@ -102,7 +95,9 @@ def error_type_for_request_error(
 
 class LLMExtractionResultProcessor:
     """Processes one raw result into an `LLMJobDocumentExtractionResult`: classify
-    the LLM call, and for a SUCCESS run the validator and fold its result in.`
+    the LLM call, for a SUCCESS run the validator and fold its result in, and
+    escalate a transient failure to retries-exhausted once the retry budget is
+    spent.
     """
 
     def __init__(self, *, validator: LLMExtractionResultValidator) -> None:
@@ -118,10 +113,15 @@ class LLMExtractionResultProcessor:
         # synthetic per-run id.
         job_id: str,
         source_document_text: str,
+        # How many times this document has already failed transiently across prior
+        # completed jobs (0 on its first attempt). Determines whether a transient
+        # failure here escalates to retries-exhausted.
+        prior_transient_failure_count: int,
     ) -> LLMJobDocumentExtractionResult:
         """Returns the full processed outcome for one raw extraction result:
         the raw call classified into a per-document result type, the validation
-        outcome folded in for a SUCCESS.
+        outcome folded in for a SUCCESS, and a transient failure escalated to
+        retries-exhausted once the retry budget is spent.
         """
         # One timestamp for both the result and its validation, so Postgres and BQ
         # share it.
@@ -132,7 +132,13 @@ class LLMExtractionResultProcessor:
                 job_id=job_id,
                 raw_result=raw_result,
                 result_datetime_utc=now,
-                result_type=result_type_for_request_error(raw_result.error_type),
+                result_type=self._effective_result_type(
+                    classified_result_type=result_type_for_request_error(
+                        raw_result.error_type
+                    ),
+                    config=config,
+                    prior_transient_failure_count=prior_transient_failure_count,
+                ),
                 error_type=error_type_for_request_error(raw_result.error_type),
             )
 
@@ -148,6 +154,11 @@ class LLMExtractionResultProcessor:
                 job_id=job_id,
                 raw_result=raw_result,
                 result_datetime_utc=now,
+                result_type=self._effective_result_type(
+                    classified_result_type=validation_results.result_type,
+                    config=config,
+                    prior_transient_failure_count=prior_transient_failure_count,
+                ),
                 validation_results=validation_results,
             )
 
@@ -157,3 +168,26 @@ class LLMExtractionResultProcessor:
             result_datetime_utc=now,
             validation_results=validation_results,
         )
+
+    @staticmethod
+    def _effective_result_type(
+        *,
+        classified_result_type: LLMExtractionJobDocumentResultType,
+        config: LLMExtractorConfig,
+        prior_transient_failure_count: int,
+    ) -> LLMExtractionJobDocumentResultType:
+        """Returns the classification a document lands on once the retry budget is
+        applied: a transient failure whose document has already exhausted its
+        transient-retry budget escalates to DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED
+        so job selection treats it as terminal instead of retrying it forever; every
+        other classification is returned unchanged.
+        """
+        if (
+            classified_result_type
+            is LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+            and prior_transient_failure_count >= config.max_transient_retry_count
+        ):
+            return (
+                LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED
+            )
+        return classified_result_type

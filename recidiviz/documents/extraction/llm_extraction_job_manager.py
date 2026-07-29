@@ -57,7 +57,6 @@ from recidiviz.persistence.entity.operations.entities import (
     LLMExtractionJob,
     LLMExtractionJobDocument,
 )
-from recidiviz.utils.types import assert_type
 
 # The per-document result types that permanently remove a document from job
 # selection for an extractor version — a document with any of these is "done"
@@ -217,13 +216,14 @@ class LLMJobDocumentExtractionResult:
         job_id: str,
         raw_result: LLMClientDocumentExtractionResult,
         result_datetime_utc: datetime.datetime,
+        result_type: LLMExtractionJobDocumentResultType,
         validation_results: LLMDocumentValidationResult,
     ) -> "LLMJobDocumentExtractionResult":
         """Returns the result for a document whose raw JSON parsed but failed an
-        extraction-error validation check: the classification is downgraded to the
-        `result_type_override` the validator set (a document-level failure), with
-        no usable content and no persisted error category — validation errors have
-        no LLMDocumentExtractionErrorType value yet, and the audit issues on
+        extraction-error validation check: the caller supplies the downgraded
+        |result_type| (a document-level failure), with no usable content and no
+        persisted error category — validation errors have no
+        LLMDocumentExtractionErrorType value yet, and the audit issues on
         |validation_results| carry the detail. Requires |validation_results| to
         have failed validation.
         """
@@ -233,10 +233,6 @@ class LLMJobDocumentExtractionResult:
                 f"document [{raw_result.document_contents_id}] in job [{job_id}], "
                 f"but validation passed."
             )
-        result_type = assert_type(
-            validation_results.result_type_override,
-            LLMExtractionJobDocumentResultType,
-        )
         return cls(
             job_id=job_id,
             document_contents_id=raw_result.document_contents_id,
