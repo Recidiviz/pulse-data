@@ -107,6 +107,9 @@ VALID_CSV_ACTIONS = {
     RELEASE_AND_CREATE_ACTION,
 }
 
+# Actions that end in a completion write and therefore need a completion_date.
+COMPLETING_ACTIONS = {CREATE_ACTION, UPDATE_ACTION, RELEASE_AND_CREATE_ACTION}
+
 
 @dataclass(frozen=True)
 class ArProgramReferralCandidate(Candidate):
@@ -114,6 +117,10 @@ class ArProgramReferralCandidate(Candidate):
     referral_status: str | None
     # Only for RELEASE_AND_CREATE: date of the prior referral to close out.
     prior_referral_date: str | None = None
+    # The certificate award date the completion is being recorded for. Equal to
+    # referral_date wherever the write also creates the referral; on UPDATE the
+    # referral already exists and carries its own, earlier, application date.
+    completion_date: str | None = None
 
     def display_fields(self) -> dict[str, str]:
         return {
@@ -340,6 +347,8 @@ class ArProgramReferralFlow(EomisWritebackFlow[ArProgramReferralCandidate]):
     ) -> WriteResult:
         """Flips an existing referral to Completed successfully (49) and
         verifies the new status by reading the listing back."""
+        if not candidate.completion_date:
+            raise ValueError("completion candidate is missing completion_date")
         if not commit:
             return WriteResult(
                 candidate,
@@ -350,7 +359,7 @@ class ArProgramReferralFlow(EomisWritebackFlow[ArProgramReferralCandidate]):
             referral=referral,
             status=STATUS_COMPLETED,
             status_date=today_eomis(),
-            comment=self._completion_comment(self._comment, referral.referral_date),
+            comment=self._completion_comment(self._comment, candidate.completion_date),
             uuid=client.uuid,
         )
         response = client.post_write(payload, referral.detail_url)
@@ -611,6 +620,7 @@ def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
             reason="missing GED referral",
             referral_date=certificate_date,
             referral_status=referral_status,
+            completion_date=certificate_date,
         )
     if entered_prior:
         if is_completed_status(referral_status):
@@ -652,6 +662,7 @@ def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
             referral_date=certificate_date,
             referral_status=referral_status,
             prior_referral_date=prior_referral_date,
+            completion_date=certificate_date,
         )
     if is_completed_status(referral_status):
         return ArProgramReferralCandidate(
@@ -662,12 +673,25 @@ def classify_view_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
             referral_status=referral_status,
         )
     if is_flippable_status(referral_status):
+        certificate_date = clean_date(row.get("certificate_award_date"))
+        if certificate_date is None:
+            return ArProgramReferralCandidate(
+                offender_id=offender_id,
+                action=SKIP_ACTION,
+                reason=(
+                    "education-record-only completion; no certificate award "
+                    "date to record a completion against (V1 non-actionable)"
+                ),
+                referral_date=clean_date(row.get("referral_application_date")),
+                referral_status=referral_status,
+            )
         return ArProgramReferralCandidate(
             offender_id=offender_id,
             action=UPDATE_ACTION,
             reason="mark existing referral complete",
             referral_date=clean_date(row.get("referral_application_date")),
             referral_status=referral_status,
+            completion_date=certificate_date,
         )
     return ArProgramReferralCandidate(
         offender_id=offender_id,
@@ -799,6 +823,11 @@ def load_csv_candidates(
                 f"{candidate.offender_id}: release-and-create requires a "
                 "prior_referral_date column value"
             )
+        if candidate.action in COMPLETING_ACTIONS and not candidate.completion_date:
+            raise ValueError(
+                f"{candidate.offender_id}: {candidate.action} requires a "
+                "certificate_award_date or referral_date column value"
+            )
     return candidates
 
 
@@ -810,17 +839,20 @@ def classify_csv_row(row: dict[str, Any]) -> ArProgramReferralCandidate:
                 f"[{row['OFFENDERID']}]: unknown action [{action}]; "
                 f"expected one of {sorted(VALID_CSV_ACTIONS)}"
             )
+        referral_date = clean_date(
+            row.get("referral_date")
+            or row.get("referral_application_date")
+            or row.get("certificate_award_date")
+        )
         return ArProgramReferralCandidate(
             offender_id=str(row["OFFENDERID"]).strip(),
             action=action,
             reason="csv action",
-            referral_date=clean_date(
-                row.get("referral_date")
-                or row.get("referral_application_date")
-                or row.get("certificate_award_date")
-            ),
+            referral_date=referral_date,
             referral_status=clean_optional(row.get("referral_status")),
             prior_referral_date=clean_date(row.get("prior_referral_date")),
+            completion_date=clean_date(row.get("certificate_award_date"))
+            or referral_date,
         )
     return classify_view_row(row)
 
@@ -830,15 +862,17 @@ def build_id_candidates(
 ) -> list[ArProgramReferralCandidate]:
     if action == "auto":
         raise ValueError("--source ids requires --action create or --action update")
-    if action == CREATE_ACTION and not referral_date:
-        raise ValueError("--action create requires --referral-date")
+    if action in COMPLETING_ACTIONS and not referral_date:
+        raise ValueError(f"--action {action} requires --referral-date")
+    eomis_date = to_eomis_date(referral_date) if referral_date else None
     return [
         ArProgramReferralCandidate(
             offender_id=offender_id,
             action=action,
             reason="manual id",
-            referral_date=to_eomis_date(referral_date) if referral_date else None,
+            referral_date=eomis_date,
             referral_status=None,
+            completion_date=eomis_date,
         )
         for offender_id in offender_ids
     ]

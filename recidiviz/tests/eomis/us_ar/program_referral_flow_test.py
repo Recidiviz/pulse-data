@@ -108,6 +108,18 @@ class TestClassifyViewRow(unittest.TestCase):
         )
         self.assertEqual(candidate.action, UPDATE_ACTION)
         self.assertEqual(candidate.referral_date, "11/30/2023")
+        self.assertEqual(candidate.completion_date, "01/02/2024")
+
+    def test_open_referral_without_certificate_is_skipped(self) -> None:
+        candidate = classify_view_row(
+            _view_row(
+                certificate_award_date=None,
+                referral_status="Referred, not Screened",
+                referral_application_date="2023-11-30",
+            )
+        )
+        self.assertEqual(candidate.action, SKIP_ACTION)
+        self.assertIn("education-record-only", candidate.reason)
 
     def test_already_complete_referral_is_skipped(self) -> None:
         candidate = classify_view_row(
@@ -287,9 +299,12 @@ class TestManualSources(unittest.TestCase):
             build_id_candidates(["0000001"], "auto", None)
         with self.assertRaisesRegex(ValueError, "--referral-date"):
             build_id_candidates(["0000001"], CREATE_ACTION, None)
+        with self.assertRaisesRegex(ValueError, "--referral-date"):
+            build_id_candidates(["0000001"], UPDATE_ACTION, None)
         [candidate] = build_id_candidates(["0000001"], CREATE_ACTION, "2024-01-02")
         self.assertEqual(candidate.action, CREATE_ACTION)
         self.assertEqual(candidate.referral_date, "01/02/2024")
+        self.assertEqual(candidate.completion_date, "01/02/2024")
 
     def test_csv_row_with_explicit_action_bypasses_classification(self) -> None:
         candidate = classify_csv_row(
@@ -301,6 +316,30 @@ class TestManualSources(unittest.TestCase):
         )
         self.assertEqual(candidate.action, UPDATE_ACTION)
         self.assertEqual(candidate.reason, "csv action")
+        self.assertEqual(candidate.completion_date, "01/02/2024")
+
+    def test_csv_action_prefers_certificate_award_date_for_completion(self) -> None:
+        candidate = classify_csv_row(
+            {
+                "OFFENDERID": "0000001",
+                "action": "UPDATE",
+                "referral_application_date": "2023-11-30",
+                "certificate_award_date": "2024-01-02",
+            }
+        )
+        self.assertEqual(candidate.referral_date, "11/30/2023")
+        self.assertEqual(candidate.completion_date, "01/02/2024")
+
+    def test_csv_completion_without_any_date_fails_before_any_write(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", newline="", encoding="utf-8"
+        ) as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=["OFFENDERID", "action"])
+            writer.writeheader()
+            writer.writerow({"OFFENDERID": "0000001", "action": UPDATE_ACTION})
+            csv_file.flush()
+            with self.assertRaisesRegex(ValueError, "certificate_award_date"):
+                load_csv_candidates(csv_file.name, None)
 
     def test_csv_row_without_action_uses_view_classification(self) -> None:
         candidate = classify_csv_row(_view_row())
