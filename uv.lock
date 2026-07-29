@@ -5784,6 +5784,7 @@ dev = [
     { name = "types-beautifulsoup4" },
     { name = "types-cachetools" },
     { name = "types-dateparser" },
+    { name = "types-defusedxml" },
     { name = "types-freezegun" },
     { name = "types-grpcio" },
     { name = "types-html5lib" },
@@ -5998,6 +5999,7 @@ requires-dist = [
     { name = "types-beautifulsoup4", marker = "extra == 'dev'" },
     { name = "types-cachetools", marker = "extra == 'dev'" },
     { name = "types-dateparser", marker = "extra == 'dev'", specifier = "==1.2.2.20250809" },
+    { name = "types-defusedxml", marker = "extra == 'dev'" },
     { name = "types-freezegun", marker = "extra == 'dev'" },
     { name = "types-grpcio", marker = "extra == 'dev'" },
     { name = "types-html5lib", marker = "extra == 'dev'" },
@@ -6977,6 +6979,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/63/54/2d2b77d1beba5bdb7faeabc7d7f0b9b2f8e428f79f45a144ad7ab87d1a29/types_dateparser-1.2.2.20250809.tar.gz", hash = "sha256:a898f5527e6c34d213bc5d85254b8246d8b1e76239ed9243711198add0c8a29c", size = 15804, upload-time = "2025-08-09T03:15:11.298Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/5a/a5cf930804f639f5f1c58434613a1bbc1bd4641e29aec07444f316b41dff/types_dateparser-1.2.2.20250809-py3-none-any.whl", hash = "sha256:f12ae46abc3085e60e16fbe55730c5acbce980cbe3b176b17b08b4cef85850ef", size = 22140, upload-time = "2025-08-09T03:15:10.234Z" },
+]
+
+[[package]]
+name = "types-defusedxml"
+version = "0.7.0.20260504"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/d2/4553c8fa9cdebfe1e84b950cf790a4d2376a97fa016e43f7c65323fa6c7d/types_defusedxml-0.7.0.20260504.tar.gz", hash = "sha256:2ab2828a3f97111ba1c16cee273ad4124a831fc9198c41bf8368ff6ea48ad300", size = 10729, upload-time = "2026-05-04T05:22:50.192Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/2d/8a4b5ba1d732b8bc691f0efbb1c6f77cb5f6f473b2afe181d83d910773c5/types_defusedxml-0.7.0.20260504-py3-none-any.whl", hash = "sha256:a959e3a0a43b93e464bd625d91ec9193a2703ddc10443bdd627792485fae0b10", size = 13467, upload-time = "2026-05-04T05:22:49.319Z" },
 ]
 
 [[package]]

@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements routes to support external requests from Workflows."""
 import datetime
+import hmac
 import logging
 import uuid
 from http import HTTPStatus
@@ -79,6 +80,10 @@ from recidiviz.case_triage.workflows.writeback.route_helpers import (
 from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
     UsCoContactNoteRequestData,
     UsCoContactNoteWritebackExecutor,
+)
+from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
+    McpCallbackData,
+    UsIaEarlyDischargeStatusTracker,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     UsNdEarlyTerminationRequestData,
@@ -868,6 +873,56 @@ def create_workflows_api_blueprint() -> Blueprint:
             return jsonify_response(
                 "Route optimization failed", HTTPStatus.INTERNAL_SERVER_ERROR
             )
+
+    @workflows_api.post("/webhook/mcp_us_ia_early_discharge_status")
+    def handle_mcp_us_ia_early_discharge_callback() -> Response:
+        """Receives ATG processing results from MCP after an early discharge submission.
+
+        MCP calls this endpoint once ATG has accepted or rejected the request.
+        Auth is via a shared secret in the Authorization header, validated with
+        constant-time comparison to prevent timing attacks.
+        """
+        auth_header = request.headers.get("Authorization", "")
+        expected_token = get_secret("workflows_us_ia_mcp_callback_token")
+        if expected_token is None or not hmac.compare_digest(
+            auth_header, expected_token
+        ):
+            logging.warning(
+                "MCP early discharge callback: unauthorized request from [%s]",
+                request.remote_addr,
+            )
+            return jsonify_response("Unauthorized", HTTPStatus.UNAUTHORIZED)
+
+        body = request.get_data(as_text=True)
+        if not body:
+            return jsonify_response("Empty request body", HTTPStatus.BAD_REQUEST)
+
+        try:
+            callback_data = McpCallbackData.from_callback_xml(body)
+        except Exception as e:
+            logging.error(
+                "MCP early discharge callback: failed to parse payload: %s", e
+            )
+            return jsonify_response(
+                f"Invalid callback payload: {e}", HTTPStatus.BAD_REQUEST
+            )
+
+        try:
+            tracker = UsIaEarlyDischargeStatusTracker.from_message_id(
+                callback_data.message_id, FirestoreClientImpl()
+            )
+        except ValueError as e:
+            logging.error("MCP early discharge callback: %s", e)
+            return jsonify_response(str(e), HTTPStatus.NOT_FOUND)
+
+        tracker.apply_mcp_callback(callback_data)
+
+        logging.info(
+            "MCP early discharge callback: applied status [%s] for message ID [%s]",
+            callback_data.transaction_status,
+            callback_data.message_id,
+        )
+        return jsonify_response("Callback processed", HTTPStatus.OK)
 
     @workflows_api.get("/<state>/opportunities")
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)

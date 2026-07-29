@@ -2138,6 +2138,175 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
+    # ------------------------------------------------------------------
+    # US_IA MCP callback route
+    # ------------------------------------------------------------------
+
+    _IA_CALLBACK_MESSAGE_ID = "callback-msg-id-5678"
+    _IA_NS_WS = "http://www.cjis.iowa.gov/WSResponse/1.0"
+
+    def _make_callback_soap(
+        self,
+        message_id: str = _IA_CALLBACK_MESSAGE_ID,
+        transaction_status: str = "S",
+        error_msg: str | None = None,
+    ) -> str:
+        error_el = f"<ws:ErrorMsg>{error_msg}</ws:ErrorMsg>" if error_msg else ""
+        return (
+            f'<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+            f"<soap:Body>"
+            f'<ws:WSResponse xmlns:ws="{self._IA_NS_WS}">'
+            f"<ws:MessageId>{message_id}</ws:MessageId>"
+            f"<ws:TransactionStatus>{transaction_status}</ws:TransactionStatus>"
+            f"{error_el}"
+            f"</ws:WSResponse>"
+            f"</soap:Body>"
+            f"</soap:Envelope>"
+        )
+
+    def _setup_callback_firestore(
+        self,
+        mock_firestore: MagicMock,
+        person_external_id: str = "A123456",
+        charge_ids: list[str] | None = None,
+    ) -> None:
+        charge_ids = charge_ids if charge_ids is not None else ["CHG789"]
+        mock_docs = []
+        for charge_id in charge_ids:
+            doc = MagicMock()
+            doc.id = f"usIaEarlyDischarge_{charge_id}"
+            doc.reference.parent.parent.id = f"us_ia_{person_external_id}"
+            mock_docs.append(doc)
+        mock_firestore.return_value.client.collection_group.return_value.where.return_value.get.return_value = (
+            mock_docs
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_success(
+        self, mock_get_secret: MagicMock, mock_firestore: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+        self._setup_callback_firestore(mock_firestore)
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={
+                    "Authorization": "valid-token",
+                    "Content-Type": "text/xml",
+                },
+                data=self._make_callback_soap(transaction_status="S"),
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_firestore.return_value.set_document.assert_called()
+        for mock_call in mock_firestore.return_value.set_document.call_args_list:
+            _, doc, *_ = mock_call.args
+            self.assertEqual(doc["status"], ExternalSystemRequestStatus.SUCCESS.value)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_bad_token_returns_401(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={
+                    "Authorization": "wrong-token",
+                    "Content-Type": "text/xml",
+                },
+                data=self._make_callback_soap(),
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_missing_token_returns_401(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={"Content-Type": "text/xml"},
+                data=self._make_callback_soap(),
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_invalid_payload_returns_400(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={
+                    "Authorization": "valid-token",
+                    "Content-Type": "text/xml",
+                },
+                data="this is not valid xml",
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_failure_status(
+        self, mock_get_secret: MagicMock, mock_firestore: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+        self._setup_callback_firestore(mock_firestore)
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={
+                    "Authorization": "valid-token",
+                    "Content-Type": "text/xml",
+                },
+                data=self._make_callback_soap(
+                    transaction_status="E",
+                    error_msg="ATG rejected: ineligible offense",
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_firestore.return_value.set_document.assert_called()
+        for mock_call in mock_firestore.return_value.set_document.call_args_list:
+            _, doc, *_ = mock_call.args
+            self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
+            self.assertEqual(doc["errorMessage"], "ATG rejected: ineligible offense")
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_mcp_early_discharge_callback_unknown_message_id_returns_404(
+        self, mock_get_secret: MagicMock, mock_firestore: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "valid-token"
+        mock_firestore.return_value.client.collection_group.return_value.where.return_value.get.return_value = (
+            []
+        )
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/webhook/mcp_us_ia_early_discharge_status",
+                headers={
+                    "Authorization": "valid-token",
+                    "Content-Type": "text/xml",
+                },
+                data=self._make_callback_soap(message_id="unknown-id"),
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        mock_firestore.return_value.set_document.assert_not_called()
+
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
     def test_workflows_config_response(self, mock_workflows_querier: MagicMock) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(

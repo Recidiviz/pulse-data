@@ -59,14 +59,30 @@ ALLOWED_ORIGINS = [
 ]
 
 proxy_endpoint = "workflows.proxy"
-webhook_endpoints = [
-    "jii.handle_twilio_status",
-    "jii.handle_twilio_incoming_message",
-    "workflows.handle_twilio_status",
-    "workflows.handle_twilio_incoming_message",
-]
 
 twilio_validator = TwilioValidator()
+
+
+def validate_twilio(handle_recidiviz_only_authorization: Callable[[], None]) -> None:
+    if get_bool_param_value("IsTest", request.values, default=False):
+        handle_recidiviz_only_authorization()
+        return
+    logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
+    signature = request.headers["X-Twilio-Signature"]
+    twilio_validator.validate(
+        url=request.url, params=request.values.to_dict(), signature=signature
+    )
+
+
+# Maps endpoints to their validator, or None if auth is inside the route.
+# None entries are external system callbacks authenticated via shared secret.
+endpoint_validators: dict[str, Callable[[Callable[[], None]], None] | None] = {
+    "jii.handle_twilio_status": validate_twilio,
+    "jii.handle_twilio_incoming_message": validate_twilio,
+    "workflows.handle_twilio_status": validate_twilio,
+    "workflows.handle_twilio_incoming_message": validate_twilio,
+    "workflows.handle_mcp_us_ia_early_discharge_callback": None,
+}
 
 
 def validate_request_helper(
@@ -74,17 +90,10 @@ def validate_request_helper(
 ) -> None:
     if request.method == "OPTIONS":
         return
-    if request.endpoint in webhook_endpoints:
-        # If the request is a test, ensure the user is a Recidiviz user
-        if get_bool_param_value("IsTest", request.values, default=False):
-            handle_recidiviz_only_authorization()
-            return
-
-        logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
-
-        signature = request.headers["X-Twilio-Signature"]
-        params = request.values.to_dict()
-        twilio_validator.validate(url=request.url, params=params, signature=signature)
+    if request.endpoint in endpoint_validators:
+        validator = endpoint_validators[request.endpoint]
+        if validator is not None:
+            validator(handle_recidiviz_only_authorization)
         return
     if request.endpoint == proxy_endpoint:
         handle_recidiviz_only_authorization()
@@ -93,9 +102,8 @@ def validate_request_helper(
 
 
 def validate_cors_helper() -> Optional[Response]:
-    if request.endpoint in [proxy_endpoint] + webhook_endpoints:
-        # Proxy or webhook requests will generally be sent from a developer's machine or Twilio server
-        # and not a browser, so there is no origin to check against.
+    if request.endpoint in endpoint_validators or request.endpoint == proxy_endpoint:
+        # Server-to-server requests have no browser Origin header to validate.
         return None
 
     is_allowed = any(

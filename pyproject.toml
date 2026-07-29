@@ -189,6 +189,7 @@ dev = [
     "tabula-py",
     "types-beautifulsoup4",
     "types-cachetools",
+    "types-defusedxml",
     # TODO(#60465): Un-pin when airflow environment is upgraded to a compatible version
     "types-dateparser==1.2.2.20250809",
     "types-freezegun",
