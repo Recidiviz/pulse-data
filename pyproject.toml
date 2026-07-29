@@ -146,7 +146,7 @@ dependencies = [
     # TODO(#66748) litellm PyPI package was compromised in v1.82.7+. Pinning to
     # last known safe version. Unpin once a new version is verified safe.
     # See: https://www.stepsecurity.io/blog/litellm-credential-stealer-hidden-in-pypi-wheel
-    "litellm<1.82.7",
+    "litellm<1.84.1",
     "nest_asyncio",
 ]
 
