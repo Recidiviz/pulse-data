@@ -38,6 +38,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
 )
+from recidiviz.calculator.query.state.views.analyst_data.route_planner_client_interactions import (
+    ROUTE_OPTIMIZATION_ACTION,
+    ROUTE_PLANNER_LINK_ACTIONS,
+    SURFACED_ROUTE_PLANNER_ACTION,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
     USAGE_EVENTS_DICT,
 )
@@ -52,11 +57,6 @@ from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
-from recidiviz.observations.views.events.person.supervision_contact import (
-    ROUTE_OPTIMIZATION_ACTION,
-    ROUTE_PLANNER_LINK_ACTIONS,
-    SURFACED_ROUTE_PLANNER_ACTION,
-)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
@@ -997,6 +997,72 @@ CONTACT_DUE_DATES_MET = EventCountMetric(
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT_DUE,
         event_conditions_dict={"contact_missed": ["false"], "is_full_period": ["true"]},
+    ),
+    event_segmentation_columns=["task_name"],
+)
+
+# Route planner metrics on contact due dates. These count contact *requirements* met
+# after the Route Planner was used, attributed via the task's eligibility span, where the
+# CONTACTS_AFTER_ROUTE_PLANNER_* metrics count completed *contacts* using a fixed
+# one-month lookback. The two are complementary: a client can be added to the Route
+# Planner regardless of whether they are eligible for a contact task, and only the
+# contact-event metrics capture those.
+CONTACT_DUE_DATES_MET_INCLUDED_IN_ROUTE_PLANNER = EventCountMetric(
+    name="contact_due_dates_met_included_in_route_planner",
+    display_name="Contact Due Dates Met on Tasks Included in Route Planner",
+    description="Number of contact due dates whose contact was completed before the due date, on tasks that the Route Planner surfaces, counting distinct by date and type. Denominator for the other Route Planner contact due date metrics, so those give the share of completed contacts the Route Planner touched.",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={
+            "contact_included_in_route_planner": ["true"],
+            "contact_missed": ["false"],
+            "is_full_period": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_name"],
+)
+
+CONTACT_DUE_DATES_MET_AFTER_ROUTE_PLANNER_SURFACED = EventCountMetric(
+    name="contact_due_dates_met_after_route_planner_surfaced",
+    display_name="Contact Due Dates Met After Being Surfaced in Route Planner",
+    description="Number of contact due dates whose contact was completed before the due date, and where the client surfaced in the Route Planner while that contact was still required, counting distinct by date and type",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={
+            "contact_after_route_planner_surfaced": ["true"],
+            "contact_missed": ["false"],
+            "is_full_period": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_name"],
+)
+
+CONTACT_DUE_DATES_MET_AFTER_ROUTE_PLANNER_LINK_INTERACTION = EventCountMetric(
+    name="contact_due_dates_met_after_route_planner_link_interaction",
+    display_name="Contact Due Dates Met After Link Interaction in Route Planner",
+    description="Number of contact due dates whose contact was completed before the due date, and where an officer interacted with a route link the client was on while that contact was still required, counting distinct by date and type",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={
+            "contact_after_route_planner_link_interaction": ["true"],
+            "contact_missed": ["false"],
+            "is_full_period": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_name"],
+)
+
+CONTACT_DUE_DATES_MET_AFTER_ROUTE_PLANNER_ROUTE_OPTIMIZATION_ATTEMPT = EventCountMetric(
+    name="contact_due_dates_met_after_route_planner_route_optimization_attempt",
+    display_name="Contact Due Dates Met After Route Optimization Attempt in Route Planner",
+    description="Number of contact due dates whose contact was completed before the due date, and where an officer attempted route optimization with the client selected while that contact was still required, counting distinct by date and type",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={
+            "contact_after_route_planner_route_optimization_attempt": ["true"],
+            "contact_missed": ["false"],
+            "is_full_period": ["true"],
+        },
     ),
     event_segmentation_columns=["task_name"],
 )
@@ -4903,7 +4969,7 @@ CONTACTS_AFTER_ROUTE_PLANNER_SURFACED = EventCountMetric(
     name="contacts_after_route_planner_surfaced",
     display_name="Contacts After Being Surfaced in Route Planner",
     description=(
-        "Flag for whether a contact was attempted or completed within a month of a client being surfaced in the Route Planner."
+        "Number of contacts that were the first route planner relevant contact attempted or completed in the month after a client was surfaced in the Route Planner. Only the next such contact is credited to an interaction, so one surfacing is not counted against every contact in the following month."
     ),
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT,
@@ -4915,7 +4981,7 @@ CONTACTS_AFTER_ROUTE_PLANNER_LINK_INTERACTION = EventCountMetric(
     name="contacts_after_route_planner_link_interaction",
     display_name="Contacts After Link Interaction in Route Planner",
     description=(
-        "Flag for whether a contact was attempted or completed within a month of an officer interacting with a link in the Route Planner."
+        "Number of contacts that were the first route planner relevant contact attempted or completed in the month after an officer interacted with a route link in the Route Planner. Only the next such contact is credited to an interaction, so one interaction is not counted against every contact in the following month."
     ),
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT,
@@ -4929,7 +4995,7 @@ CONTACTS_AFTER_ROUTE_PLANNER_ROUTE_OPTIMIZATION_ATTEMPT = EventCountMetric(
     name="contacts_after_route_planner_route_optimization_attempt",
     display_name="Contacts After Route Optimization Attempt in Route Planner",
     description=(
-        "Flag for whether a contact was attempted or completed within a month of an officer attempting route optimization in the Route Planner."
+        "Number of contacts that were the first route planner relevant contact attempted or completed in the month after an officer attempted route optimization in the Route Planner. Only the next such contact is credited to an interaction, so one attempt is not counted against every contact in the following month."
     ),
     event_selector=EventSelector(
         event_type=EventType.SUPERVISION_CONTACT,
