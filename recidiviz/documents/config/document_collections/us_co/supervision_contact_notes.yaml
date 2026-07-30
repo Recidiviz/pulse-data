@@ -40,3 +40,7 @@ document_generation_query: |
   FROM `{project_id}.us_co_raw_data_up_to_date_views.eomis_supervisioncontact_latest`
   WHERE CONTACTCOMMENTS IS NOT NULL
     AND TRIM(CONTACTCOMMENTS) != ''
+    # Guard against null values in the document primary key. As of 7/30/26 there is one contact with a null CONTACTDATE.
+    AND DATE(CONTACTDATE) IS NOT NULL
+    AND CONTACTTIME IS NOT NULL
+    AND CONTACTTYPE IS NOT NULL
