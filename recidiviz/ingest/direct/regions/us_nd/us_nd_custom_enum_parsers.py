@@ -57,6 +57,9 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.str_field_utils import parse_datetime
 
 SOLITARY_UNIT_CODES = list(
@@ -638,3 +641,39 @@ def parse_role_type_facility_staff(raw_text: str) -> StateStaffRoleType:
     if raw_text:
         return StateStaffRoleType.INTERNAL_UNKNOWN
     return StateStaffRoleType.INTERNAL_UNKNOWN
+
+
+_LAW_VIOLATION_KEYWORDS = (
+    "CRIMINAL OFFENSE",
+    "CHARGED WITH",
+    "NEW OFFENSE",
+    "NEW CRIME",
+    "PLED GUILTY",
+    "CONVICTED",
+    "COMMITTED THE OFFENSE",
+    "ARREST",
+)
+
+_ABSCONDED_VIOLATION_KEYWORDS = (
+    "ABSCOND",
+    "WHEREABOUTS ARE UNKNOWN",
+    "WHEREABOUTS WERE UNKNOWN",
+)
+
+
+def parse_elite_supervision_violation_type(
+    raw_text: str,
+) -> StateSupervisionViolationType:
+    """A parser that determines a supervision violation type from raw text stored in the
+    Elite Offender Report Texts field (elite_offender_report_texts.CATEGORY_TEXT)"""
+    if raw_text:
+        if "FELONY" in raw_text:
+            return StateSupervisionViolationType.FELONY
+        if "MISDEMEANOR" in raw_text:
+            return StateSupervisionViolationType.MISDEMEANOR
+        if any(keyword in raw_text for keyword in _LAW_VIOLATION_KEYWORDS):
+            return StateSupervisionViolationType.LAW
+        if any(keyword in raw_text for keyword in _ABSCONDED_VIOLATION_KEYWORDS):
+            return StateSupervisionViolationType.ABSCONDED
+        return StateSupervisionViolationType.TECHNICAL
+    return StateSupervisionViolationType.INTERNAL_UNKNOWN

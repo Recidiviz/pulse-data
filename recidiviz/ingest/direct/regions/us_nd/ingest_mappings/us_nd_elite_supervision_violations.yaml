@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_elite_supervision_violations` to the corresponding Ingest Object
+# fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDER_BOOK_ID: STRING
+  CATEGORY_SEQ: STRING
+  CREATE_DATETIME: DATETIME
+  CATEGORY_TEXT: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDER_BOOK_ID
+                - CATEGORY_SEQ
+          violation_date: CREATE_DATETIME
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: CATEGORY_TEXT
+                    $custom_parser: us_nd_custom_enum_parsers.parse_elite_supervision_violation_type
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - OFFENDER_BOOK_ID
+                      - CATEGORY_SEQ
+                response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                response_date: CREATE_DATETIME

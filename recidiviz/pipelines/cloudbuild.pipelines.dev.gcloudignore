@@ -16,6 +16,9 @@ recidiviz/tools/
 # Ignore all frontend code
 frontends/
 
+# Ignore all claude worktrees
+.claude
+
 ## GENERAL IGNORES
 
 ## -- Keep everything below in sync with .dockerignore -- ##
