@@ -10,6 +10,7 @@ These apply to **every task** without exception:
 - **TODO format**: Reference GitHub issues as `TODO(#12345)` and Linear issues as `TODO(OBT-12345)`. The org has moved to Linear for issue tracking so use Linear ticket number if you have it. Use `TODO(XXXX)` as a placeholder before filing. This fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
 - **Data privacy**: Never access data from Maine (`US_ME`) or California (`US_CA`). If a query might touch this data, flag it to the user and confirm before running.
 - **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
+- **Worktree naming**: Name worktrees `<us_xx>_<feature_name>` (e.g. `us_nc_location_metadata`), prepending the state code of the state the work relates to. If the work spans multiple states or isn't state-specific, be flexible — just use a descriptive `<feature_name>`.
 - **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.
 - **Python style**: Follow the Python style rules in `.claude/rules/python-style.md` (loaded below) whenever writing or modifying Python.
 
