@@ -187,6 +187,17 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     }
   }
 
+  rule {
+    description = "Allow MCP/ATG early discharge callback, which sends XML bodies that trigger OWASP false positives"
+    action      = "allow"
+    priority    = "903"
+    match {
+      expr {
+        expression = "request.path.matches(\"/workflows/webhook/mcp_us_ia_early_discharge_status\")"
+      }
+    }
+  }
+
   # ----------------------------------------------
   # Static hosts to block
   # ----------------------------------------------
