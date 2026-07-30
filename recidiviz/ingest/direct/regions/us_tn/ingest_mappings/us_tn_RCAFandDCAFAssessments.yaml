@@ -94,6 +94,7 @@ output:
                   - "MAXIMUM"
           assessment_metadata:
             $normalized_values_json_dict:
+              ClassificationType: ClassificationType
               QUESTION1: Question1
               QUESTION2: Question2
               QUESTION3: Question3

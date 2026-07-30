@@ -573,26 +573,33 @@ _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
     "SXB",  # SEXUAL BATTERY
 ]
 
-_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP = {
+# Maps each CAF/DCAF/RCAF "generation" to its raw offense severity answer values,
+# in ascending severity order. In the CAF, offense severity question is Q3, while
+# in RCAF/DCAFs, offense severity question is Q2.
+_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP = {
     "CAF": [0, 1, 3, 4],
-    "DCAF": [10, 11, 13, 15],
+    "DCAF": [10, 11, 12, 13],
+    "DCAF_V2": [10, 11, 12, 14],
     "RCAF": [10, 11, 12, 13],
+    "RCAF_V2": [10, 11, 12, 13],
+    "RCAF_V3": [10, 12, 13, 14],
 }
 
 
 def _build_offense_severity_lookup_cte() -> str:
     """
-    Builds a lookup CTE from _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP that maps
-    (assessment_type, raw_score) to a 1-indexed offense_severity_row_number.
+    Builds a lookup CTE from _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP that
+    maps (offense_severity_lookup_key, raw_score) to a 1-indexed
+    offense_severity_row_number.
     """
     rows = []
     for (
-        assessment_type,
-        scores,
-    ) in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP.items():
-        for idx, raw_score in enumerate(scores):
+        offense_severity_lookup_key,
+        raw_scores,
+    ) in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP.items():
+        for idx, raw_score in enumerate(raw_scores):
             rows.append(
-                f"SELECT '{assessment_type}' AS assessment_type, {raw_score} AS raw_score, {idx + 1} AS offense_severity_row_number"
+                f"SELECT '{offense_severity_lookup_key}' AS offense_severity_lookup_key, {raw_score} AS raw_score, {idx + 1} AS offense_severity_row_number"
             )
     return (
         "offense_severity_lookup AS (\n        "
@@ -607,7 +614,7 @@ def latest_caf_score_cte() -> str:
     offense severity (2026 policy) from assessment_score_sessions_materialized.
 
     This returns two CTEs:
-    - offense_severity_lookup: Maps (assessment_type, raw_score) to offense_severity_row_number
+    - offense_severity_lookup: Maps (offense_severity_lookup_key, raw_score) to offense_severity_row_number
     - CAF_scores: Assessment spans with offense_severity_row_number joined from the lookup
 
     The offense_severity_row_number is a 1-indexed position representing the severity level,
@@ -619,7 +626,7 @@ def latest_caf_score_cte() -> str:
     return f"""
     {_build_offense_severity_lookup_cte()}
     ,
-    -- pull offense severity from v1 or v2 CAF and deduplicate to pull a single assessment 
+    -- pull offense severity from v1 or v2 CAF and deduplicate to pull a single assessment
     -- from each day
     all_CAF_scores AS (
         SELECT
@@ -631,7 +638,10 @@ def latest_caf_score_cte() -> str:
         FROM
             `{{project_id}}.sessions.assessment_score_sessions_materialized` asmt
         LEFT JOIN offense_severity_lookup
-            ON asmt.assessment_type = offense_severity_lookup.assessment_type
+            ON CASE
+                WHEN asmt.assessment_type = 'CAF' THEN 'CAF'
+                WHEN asmt.assessment_type IN ('DCAF', 'RCAF') THEN JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.ClassificationType')
+            END = offense_severity_lookup.offense_severity_lookup_key
             AND CASE
                 WHEN asmt.assessment_type = 'CAF' THEN CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION3'), '') AS INT64)
                 WHEN asmt.assessment_type IN ('DCAF', 'RCAF') THEN CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION2'), '') AS INT64)
@@ -649,7 +659,7 @@ def latest_caf_score_cte() -> str:
     ,
     -- create offense severity score spans
     caf_offense_severity_spans AS (
-        SELECT 
+        SELECT
             state_code,
             person_id,
             offense_severity_row_number,
@@ -661,27 +671,46 @@ def latest_caf_score_cte() -> str:
     """
 
 
-def offense_severity_to_q2_score(assessment_type: str) -> str:
+def offense_severity_to_q2_score(
+    generation_keys: list[str],
+    q2_scores_by_rank: list[int],
+) -> str:
     """
     Returns a SQL CASE expression that maps offense_severity_row_number to the
-    appropriate q2_score for the given assessment type.
+    appropriate q2_score.
 
     Args:
-        assessment_type: One of 'CAF', 'DCAF', or 'RCAF' (classification assessment types)
+        generation_keys: The CAF/DCAF/RCAF "generation(s)" (keys in
+            _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP) this pricing
+            applies to -- more than one when several generations share the same
+            scoring (e.g. RCAF and RCAF_V2) -- used only to validate that
+            [q2_scores_by_rank] has one entry per severity rank for every generation
+            listed.
+        q2_scores_by_rank: The point value to award for each offense_severity_row_number,
+            in rank order (i.e. q2_scores_by_rank[0] is the score for rank 1, etc).
 
     Returns:
         str: SQL CASE expression mapping offense_severity_row_number to q2_score
     """
-    if assessment_type not in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP:
-        raise ValueError(
-            f"Unknown assessment_type: {assessment_type}. "
-            f"Must be one of {list(_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP.keys())}"
-        )
+    for generation_key in generation_keys:
+        if generation_key not in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP:
+            raise ValueError(
+                f"Unknown generation_key: [{generation_key}]. "
+                f"Must be one of {list(_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP.keys())}"
+            )
 
-    scores = _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP[assessment_type]
+        expected_rank_count = len(
+            _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP[generation_key]
+        )
+        if len(q2_scores_by_rank) != expected_rank_count:
+            raise ValueError(
+                f"Expected {expected_rank_count} q2_scores_by_rank for generation_key "
+                f"[{generation_key}], got {len(q2_scores_by_rank)}: {q2_scores_by_rank}"
+            )
+
     when_clauses = [
         f"WHEN offense_severity_row_number = {idx + 1} THEN {score}"
-        for idx, score in enumerate(scores)
+        for idx, score in enumerate(q2_scores_by_rank)
     ]
     return f"CASE {' '.join(when_clauses)} END"
 
