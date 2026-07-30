@@ -22,6 +22,9 @@
 # was last run on 2026-04-16 and then silently went stale, leaving the mirror
 # months behind main.
 #
+# The sync itself never enumerates the destination, because doing so against this
+# CMEK-encrypted bucket costs one metadata GET per object (see #93765).
+#
 # Staging-only (`count` guard): the bucket lives in recidiviz-staging and has no
 # prod equivalent. The default Cloud Build service account already has GCS write
 # access to the project's buckets (roles/cloudbuild.builds.builder), so no
@@ -41,28 +44,30 @@ resource "google_cloudbuild_trigger" "repositories_bucket_sync" {
   }
 
   build {
-    # rsync the checked-out working tree into the bucket's pulse-data/ prefix.
-    #   --delete-unmatched-destination-objects  keeps the mirror true (files
-    #       removed from the repo are removed from the mirror). It is scoped to
-    #       the pulse-data/ prefix, so sibling objects in the bucket (fonts,
-    #       geocoded CSVs, colab_directory/, recidiviz-research/) are untouched.
-    #   --exclude=(^|/)\.git/  keeps the ~500MB of git history out of the mirror;
-    #       notebooks only need the working tree. (.gitignore/.github are kept.)
+    # The sync logic lives in a checked-in script rather than inline args: inline
+    # bash here would need every `$` doubled to survive Cloud Build substitution —
+    # which this trigger runs with ALLOW_LOOSE, so an unescaped variable would
+    # silently expand to the empty string rather than fail.
+    #
+    # The script uploads the tracked tree and then deletes only mirror objects
+    # that are no longer tracked in the repo, scoped to the pulse-data/
+    # prefix, so sibling objects in the bucket (fonts, geocoded CSVs,
+    # colab_directory/, recidiviz-research/) are untouched. It deliberately does
+    # not use `gcloud storage rsync`, which times out against this CMEK bucket —
+    # see #93765 and the script's own header for the details.
     step {
       name       = "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
-      entrypoint = "gcloud"
+      entrypoint = "bash"
       args = [
-        "storage",
-        "rsync",
-        ".",
+        "recidiviz/tools/deploy/sync_repo_to_colab_mirror.sh",
         "gs://recidiviz-staging-repositories/pulse-data",
-        "--recursive",
-        "--delete-unmatched-destination-objects",
-        "--exclude=(^|/)\\.git/",
       ]
-      id = "rsync-working-tree-to-repositories-bucket"
+      id = "sync-working-tree-to-repositories-bucket"
     }
 
-    timeout = "1800s"
+    # Generous relative to the ~10 minutes the upload of ~26.5k objects takes at
+    # the throughput observed in this builder, so a slow run fails loudly on a
+    # real error rather than on the clock.
+    timeout = "3600s"
   }
 }
