@@ -31,6 +31,8 @@ from typing import Any, Callable, Optional, Type
 import attr
 import pytz
 
+from recidiviz.utils import string_formatting
+
 # The signature of an attrs field validator, as attrs invokes it:
 # (instance, attribute, value) -> None, raising on an invalid value.
 AttrValidator = Callable[[Any, attr.Attribute, Any], None]
@@ -93,9 +95,6 @@ def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> 
         raise ValueError("String value should not be empty.")
 
 
-_SNAKE_CASE_REGEX = re.compile(r"^[a-z][a-z0-9_]*$")
-
-
 def is_snake_case(_instance: Any, attribute: attr.Attribute, value: str) -> None:
     """Validates that the value is a non-empty snake_case string: a lowercase
     letter followed by any number of lowercase letters, digits, and
@@ -103,10 +102,10 @@ def is_snake_case(_instance: Any, attribute: attr.Attribute, value: str) -> None
     """
     if not isinstance(value, str):
         raise ValueError(f"Expected value type str, found {type(value)}.")
-    if not _SNAKE_CASE_REGEX.fullmatch(value):
+    if not string_formatting.is_snake_case(value):
         raise ValueError(
             f"Field [{attribute.name}] must be snake_case (matching "
-            f"[{_SNAKE_CASE_REGEX.pattern}]), received: [{value}]"
+            f"[{string_formatting.SNAKE_CASE_REGEX.pattern}]), received: [{value}]"
         )
 
 

@@ -1,0 +1,19 @@
+manifest_language: 1.0.0
+input_columns:
+  PERSONNAME: STRING
+  DOB: STRING
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        - $if:
+            $env: feature__my_feature_flag
+          $then:
+            $concat:
+              $separator: " "
+              $values:
+                - PERSONNAME
+                - $literal("NEW")
+        - $else: PERSONNAME
+    birthdate: DOB

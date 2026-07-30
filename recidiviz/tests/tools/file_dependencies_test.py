@@ -174,6 +174,13 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.utils.secrets": [
                         Callsite(filepath="r/utils/secrets.py", lineno=0, col_offset=0)
                     ],
+                    "recidiviz.utils.string_formatting": [
+                        Callsite(
+                            filepath="r/utils/string_formatting.py",
+                            lineno=0,
+                            col_offset=0,
+                        )
+                    ],
                     "recidiviz.utils.types": [
                         Callsite(filepath="r/utils/types.py", lineno=0, col_offset=0)
                     ],
@@ -206,6 +213,15 @@ class FileDependenciesTest(unittest.TestCase):
                         Callsite(
                             filepath="r/tests/tools/fixtures/example_dependency_entrypoint.py",
                             lineno=22,
+                            col_offset=0,
+                        )
+                    ]
+                },
+                "recidiviz.utils.string_formatting": {
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=34,
                             col_offset=0,
                         )
                     ]
@@ -352,6 +368,13 @@ class FileDependenciesTest(unittest.TestCase):
                             col_offset=0,
                         )
                     ],
+                    "recidiviz.utils.string_formatting": [
+                        Callsite(
+                            filepath="r/utils/string_formatting.py",
+                            lineno=19,
+                            col_offset=0,
+                        )
+                    ],
                 },
                 "requests": {
                     "recidiviz.tests.tools.fixtures.example_dependency_entrypoint": [
@@ -383,6 +406,15 @@ class FileDependenciesTest(unittest.TestCase):
                         )
                     ]
                 },
+                "textwrap": {
+                    "recidiviz.utils.string_formatting": [
+                        Callsite(
+                            filepath="r/utils/string_formatting.py",
+                            lineno=20,
+                            col_offset=0,
+                        )
+                    ]
+                },
                 "typing": {
                     "recidiviz.common.attr_validators": [
                         Callsite(
@@ -406,6 +438,13 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.secrets": [
                         Callsite(filepath="r/utils/secrets.py", lineno=23, col_offset=0)
+                    ],
+                    "recidiviz.utils.string_formatting": [
+                        Callsite(
+                            filepath="r/utils/string_formatting.py",
+                            lineno=21,
+                            col_offset=0,
+                        )
                     ],
                     "recidiviz.utils.types": [
                         Callsite(filepath="r/utils/types.py", lineno=19, col_offset=0)

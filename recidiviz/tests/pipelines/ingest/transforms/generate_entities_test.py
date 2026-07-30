@@ -21,6 +21,7 @@ import unittest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.feature_flags_registry import resolve_ingest_feature_flags
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
@@ -38,6 +39,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.transforms.generate_entities import GenerateEntities
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 _CONTEXT = IngestViewContentsContext(
     is_local=True,
@@ -45,6 +47,7 @@ _CONTEXT = IngestViewContentsContext(
     is_production=False,
     is_sandbox=False,
     state_code=StateCode.US_XX,
+    feature_flags=resolve_ingest_feature_flags(GCP_PROJECT_STAGING),
 )
 
 _UPPER_BOUND = "2024-01-15T00:00:00"

@@ -1,11 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "description": "Expression that returns a boolean value of an environment property. Will evaluate to the same value for every input CSV row, regardless of the CSV's contents. This can be used to gate new ingest mappings logic that we want to test in a staging environment first before shipping it to production.",
+  "description": "Expression that returns a boolean value of an environment property. Will evaluate to the same value for every input CSV row, regardless of the CSV's contents. This can be used to gate new ingest mappings logic that we want to test in a staging environment first before shipping it to production, or to gate logic on an ingest feature flag. Properties prefixed with `feature__` are ingest feature flags; the portion after the prefix must name a flag registered in recidiviz/ingest/direct/feature_flags_registry.py, which is enforced by a unit test.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "$env": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^(is_local|is_production|is_staging|feature__[a-z][a-z0-9_]*)$"
     }
   },
   "required": ["$env"],
@@ -18,6 +19,9 @@
     },
     {
       "$env": "is_production"
+    },
+    {
+      "$env": "feature__tomis_2_0_enabled"
     }
   ],
   "#contextualized_examples": [
@@ -33,6 +37,11 @@
           "$else": "$literal(\"OLD DEPRECATED VALUE\")"
         }
       ]
+    },
+    {
+      "$not": {
+        "$env": "feature__tomis_2_0_enabled"
+      }
     }
   ]
 }

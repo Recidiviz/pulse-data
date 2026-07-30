@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.ingest.direct.ingest_mappings.env_property_utils import env_property_type
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
@@ -45,11 +46,11 @@ class IngestViewManifestCompilerDelegate:
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         """Returns the path to the ingest view manifest for a given ingest name."""
 
-    @abc.abstractmethod
     def get_env_property_type(self, property_name: str) -> Type:
         """Returns the expected value type for the given env property (i.e. the type
         of the value returned by IngestViewContentsContext.get_env_property()).
         """
+        return env_property_type(property_name)
 
     @abc.abstractmethod
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
@@ -104,12 +105,6 @@ class IngestViewManifestCompilerDelegate:
             for filename in os.listdir(mappings_dir)
             if filename.startswith(prefix) and filename.endswith(".yaml")
         )
-
-
-# Supported $env properties
-IS_LOCAL_PROPERTY_NAME = "is_local"
-IS_STAGING_PROPERTY_NAME = "is_staging"
-IS_PRODUCTION_PROPERTY_NAME = "is_production"
 
 
 def ingest_view_manifest_dir(

@@ -38,12 +38,16 @@ from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
+from recidiviz.ingest.direct.feature_flags_registry import all_feature_flag_names
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.ingest_mappings.env_property_utils import (
+    feature_flag_for_env_property,
 )
 from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
     IdentityIngestViewManifestCompilerDelegate,
@@ -291,6 +295,66 @@ class DirectIngestRegionDirStructureBase:
             lambda region_code: "identity_config.yaml",
             validate_identity_config_contents,
         )
+
+    def test_mapping_feature_flags_are_registered(self) -> None:
+        """The ingest mappings compiler intentionally validates only the *shape*
+        of a `feature__`-prefixed `$env` property, so that env_property_utils
+        need not depend on the feature flag registry. This test closes that
+        gap: it compiles every mapping for both ingest pipeline types and asserts
+        that each feature flag those mappings reference actually exists in the
+        registry. It covers `launch_env` and inline `output` references alike."""
+        registered_flags = set(all_feature_flag_names())
+
+        for region_code in self.region_dir_names:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            for pipeline_type, delegate in [
+                (
+                    IngestPipelineType.ACTIVITY,
+                    ActivityIngestViewManifestCompilerDelegate(region=region),
+                ),
+                (
+                    IngestPipelineType.IDENTITY,
+                    IdentityIngestViewManifestCompilerDelegate(region=region),
+                ),
+            ]:
+                manifest_collector = IngestViewManifestCollector(
+                    region=region,
+                    delegate=delegate,
+                    ingest_pipeline_type=pipeline_type,
+                )
+                for (
+                    ingest_view_name,
+                    manifest,
+                ) in manifest_collector.ingest_view_to_manifest.items():
+                    with self.test.subTest(
+                        region_code=region_code,
+                        pipeline_type=pipeline_type.value,
+                        ingest_view_name=ingest_view_name,
+                    ):
+                        env_properties_referenced = {
+                            *manifest.should_launch_manifest.env_properties_referenced(),
+                            *manifest.output.env_properties_referenced(),
+                        }
+                        referenced_flags = {
+                            flag_name
+                            for property_name in env_properties_referenced
+                            if (
+                                flag_name := feature_flag_for_env_property(
+                                    property_name
+                                )
+                            )
+                            is not None
+                        }
+                        if unregistered := referenced_flags - registered_flags:
+                            self.test.fail(
+                                f"Ingest mapping [{ingest_view_name}] for region "
+                                f"[{region_code}] references feature flag(s) "
+                                f"{sorted(unregistered)} that are not registered "
+                                f"in recidiviz/ingest/direct/"
+                                f"feature_flags_registry.py."
+                            )
 
     def test_identity_views_declare_literal_person_type(self) -> None:
         """Every identity ingest view must author `person_type` as a literal

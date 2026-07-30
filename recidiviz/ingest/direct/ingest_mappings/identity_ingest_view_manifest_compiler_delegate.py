@@ -28,9 +28,6 @@ from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IS_LOCAL_PROPERTY_NAME,
-    IS_PRODUCTION_PROPERTY_NAME,
-    IS_STAGING_PROPERTY_NAME,
     IngestViewManifestCompilerDelegate,
     yaml_mappings_filepath,
 )
@@ -70,15 +67,6 @@ class IdentityIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDeleg
             ingest_view_name=ingest_view_name,
             ingest_pipeline_type=IngestPipelineType.IDENTITY,
         )
-
-    def get_env_property_type(self, property_name: str) -> Type:
-        if property_name in (
-            IS_LOCAL_PROPERTY_NAME,
-            IS_STAGING_PROPERTY_NAME,
-            IS_PRODUCTION_PROPERTY_NAME,
-        ):
-            return bool
-        raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     def get_common_args(self) -> dict[str, DeserializableEntityFieldValue]:
         return {"tenant": self.tenant}

@@ -18,6 +18,7 @@
 import unittest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.feature_flags_registry import resolve_ingest_feature_flags
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
@@ -30,6 +31,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 
 class IngestViewManifestCollectorTest(unittest.TestCase):
@@ -77,6 +79,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_production=False,
                 is_sandbox=False,
                 state_code=StateCode.US_XX,
+                feature_flags=resolve_ingest_feature_flags(GCP_PROJECT_STAGING),
             )
         )
         self.assertListEqual(
@@ -90,6 +93,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_production=True,
                 is_sandbox=False,
                 state_code=StateCode.US_YY,
+                feature_flags=resolve_ingest_feature_flags(GCP_PROJECT_STAGING),
             )
         )
         self.assertListEqual(
@@ -104,6 +108,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_production=False,
                 is_sandbox=False,
                 state_code=StateCode.US_YY,
+                feature_flags=resolve_ingest_feature_flags(GCP_PROJECT_STAGING),
             )
         )
         self.assertListEqual(

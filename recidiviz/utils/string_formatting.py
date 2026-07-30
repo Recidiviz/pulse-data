@@ -30,6 +30,16 @@ def fix_indent(s: str, *, indent_level: int) -> str:
     return indent(dedent(s).strip(), prefix=" " * indent_level)
 
 
+SNAKE_CASE_REGEX = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+def is_snake_case(s: str) -> bool:
+    """Returns whether |s| is a non-empty snake_case string: a lowercase letter
+    followed by any number of lowercase letters, digits, and underscores.
+    """
+    return bool(SNAKE_CASE_REGEX.fullmatch(s))
+
+
 def collapse_whitespace(s: str) -> str:
     """Returns |s| with every run of whitespace (including newlines) collapsed to
     a single space, and leading/trailing whitespace stripped.

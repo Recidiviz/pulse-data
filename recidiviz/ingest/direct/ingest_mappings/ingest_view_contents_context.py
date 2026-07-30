@@ -19,10 +19,12 @@ logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+from recidiviz.ingest.direct.feature_flags_registry import resolve_ingest_feature_flags
+from recidiviz.ingest.direct.ingest_mappings.env_property_utils import (
     IS_LOCAL_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
     IS_STAGING_PROPERTY_NAME,
+    feature_flag_for_env_property,
 )
 from recidiviz.utils import environment
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -43,12 +45,17 @@ class IngestViewContentsContext:
         is_production: bool,
         is_sandbox: bool,
         state_code: StateCode,
+        # Value of every registered ingest feature flag, keyed by the bare
+        # (unprefixed) flag name. Already resolved for the relevant project,
+        # so that this context stays a simple bundle of static values.
+        feature_flags: dict[str, bool],
     ) -> None:
         self.is_local = is_local
         self.is_staging = is_staging
         self.is_production = is_production
         self.is_sandbox = is_sandbox
         self.state_code = state_code
+        self.feature_flags = feature_flags
 
     def get_env_property(self, property_name: str) -> bool:
         """
@@ -62,14 +69,31 @@ class IngestViewContentsContext:
             return self.is_staging
         if property_name == IS_PRODUCTION_PROPERTY_NAME:
             return self.is_production
+        if (flag_name := feature_flag_for_env_property(property_name)) is not None:
+            if flag_name not in self.feature_flags:
+                raise ValueError(
+                    f"Unregistered feature flag [{flag_name}] referenced via `$env` "
+                    f"property [{property_name}]. Register it in "
+                    f"recidiviz/ingest/direct/feature_flags_registry.py."
+                )
+            return self.feature_flags[flag_name]
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     @classmethod
     @environment.test_only
-    def build_for_tests(cls, state_code: StateCode) -> "IngestViewContentsContext":
+    def build_for_tests(
+        cls,
+        state_code: StateCode,
+        project_id: str = GCP_PROJECT_STAGING,
+    ) -> "IngestViewContentsContext":
         """Creates a context for use in tests. Ingest views gated with `is_local: True`
-        will be run with this context"""
+        will be run with this context.
+
+        Feature flags are resolved for `project_id`, which defaults to staging
+        to match the staging-like posture of the other properties here. Pass
+        GCP_PROJECT_PRODUCTION to exercise the production side of a flag.
+        """
         return IngestViewContentsContext(
             is_local=True,
             # We run all views gated to staging in tests
@@ -77,6 +101,7 @@ class IngestViewContentsContext:
             is_production=False,
             is_sandbox=False,
             state_code=state_code,
+            feature_flags=resolve_ingest_feature_flags(project_id),
         )
 
     @classmethod
@@ -95,4 +120,5 @@ class IngestViewContentsContext:
             is_production=project_id == GCP_PROJECT_PRODUCTION,
             is_sandbox=is_sandbox,
             state_code=state_code,
+            feature_flags=resolve_ingest_feature_flags(project_id),
         )

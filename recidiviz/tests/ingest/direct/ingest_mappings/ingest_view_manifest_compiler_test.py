@@ -27,6 +27,7 @@ from unittest.mock import patch
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.ingest.direct.feature_flags_registry import all_feature_flag_names
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
@@ -206,16 +207,6 @@ class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDel
         #  normal string field in the fake schema.
         return field_name == "full_name"
 
-    def get_env_property_type(self, property_name: str) -> Type:
-        if property_name in (
-            "is_local",
-            "is_staging",
-            "is_production",
-        ):
-            return bool
-
-        raise ValueError(f"Unexpected test env property: {property_name}")
-
 
 def ingest_mappingest_json_schema_path(version_str: str) -> str:
     return os.path.join(
@@ -238,6 +229,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         is_staging: bool = False,
         is_local: bool = False,
         is_sandbox: bool = False,
+        feature_flags: dict[str, bool] | None = None,
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
@@ -262,6 +254,8 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 is_production=is_production,
                 is_sandbox=is_sandbox,
                 state_code=StateCode.US_XX,
+                feature_flags=feature_flags
+                or {flag_name: False for flag_name in all_feature_flag_names()},
             ),
         )
 
@@ -2643,6 +2637,93 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             manifest.output.env_properties_referenced(),
             {"is_production", "is_local"},
         )
+
+    def test_should_launch_feature_flag_enabled(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                birthdate=datetime.date(1962, 1, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                birthdate=datetime.date(1954, 4, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="COSMOS KRAMER",
+                external_ids=[],
+            ),
+        ]
+
+        results = self._run_parse_for_ingest_view(
+            "should_launch_feature_flag",
+            feature_flags={"my_feature_flag": True},
+        )
+        self.assertEqual(expected_output, results)
+
+        results = self._run_parse_for_ingest_view(
+            "should_launch_feature_flag_inverse",
+            feature_flags={"my_feature_flag": False},
+        )
+        self.assertEqual(expected_output, results)
+
+    def test_should_launch_feature_flag_disabled(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view \[should_launch_feature_flag\] "
+            r"because should_launch is false.",
+        ):
+            _ = self._run_parse_for_ingest_view(
+                "should_launch_feature_flag",
+                feature_flags={"my_feature_flag": False},
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view "
+            r"\[should_launch_feature_flag_inverse\] because should_launch is "
+            r"false.",
+        ):
+            _ = self._run_parse_for_ingest_view(
+                "should_launch_feature_flag_inverse",
+                feature_flags={"my_feature_flag": True},
+            )
+
+    def test_boolean_condition_feature_flag(self) -> None:
+        for flag_enabled, expected_first_name in [
+            (True, "ANNA NEW"),
+            (False, "ANNA"),
+        ]:
+            with self.subTest(flag_enabled=flag_enabled):
+                results = self._run_parse_for_ingest_view(
+                    "boolean_condition_feature_flag",
+                    feature_flags={"my_feature_flag": flag_enabled},
+                )
+                self.assertEqual(expected_first_name, results[0].name)  # type: ignore[attr-defined]
+
+    def test_env_property_names_returned_feature_flag(self) -> None:
+        manifest = self.compiler.compile_manifest(
+            ingest_view_name="boolean_condition_feature_flag"
+        )
+        self.assertSetEqual(
+            manifest.output.env_properties_referenced(),
+            {"feature__my_feature_flag"},
+        )
+
+    def test_unregistered_feature_flag_raises_value_error(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unregistered feature flag \[my_feature_flag\] referenced via "
+            r"`\$env` property \[feature__my_feature_flag\]\. Register it in "
+            r"recidiviz/ingest/direct/feature_flags_registry\.py\.$",
+        ):
+            self._run_parse_for_ingest_view(
+                "boolean_condition_feature_flag", feature_flags={}
+            )
 
     def test_get_hydrated_entities(self) -> None:
         manifest = self.compiler.compile_manifest(ingest_view_name="enum_variable")
