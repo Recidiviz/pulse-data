@@ -27,6 +27,10 @@ earned-time credit processing.
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.case_triage.edovo.external_id_matching import (
+    PERSON_EXTERNAL_ID_ADDRESS,
+    zero_stripped,
+)
 from recidiviz.case_triage.edovo.supported_states import SUPPORTED_STATES
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import project_id
@@ -54,12 +58,14 @@ def assert_person_exists(
     id_type = SUPPORTED_STATES[state_code]
     # Only checking existence — select a constant, not person_id / the external
     # id, so nothing tempts downstream code to read an identifier from here.
+    # The zero-stripped comparison is shared with the credit calculator's
+    # resolution query; see external_id_matching for why.
     query = f"""
         SELECT 1
-        FROM `{project_id()}.normalized_state.state_person_external_id`
+        FROM `{project_id()}.{PERSON_EXTERNAL_ID_ADDRESS.to_str()}`
         WHERE state_code = @state_code
           AND id_type    = @id_type
-          AND external_id = @external_id
+          AND {zero_stripped("external_id")} = {zero_stripped("@external_id")}
         LIMIT 1
     """
     job = bq_client.run_query_async(

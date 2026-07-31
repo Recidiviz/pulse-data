@@ -25,13 +25,21 @@ from unittest.mock import MagicMock, patch
 
 from flask import Flask
 
+from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.case_triage.edovo.credit_calculator import (
     CourseHoursConflict,
     EdovoCreditCalculation,
     PersonCreditResult,
+    _resolve_external_ids_to_person_ids,
     calculate_all_pending_credits,
     pooled_credits_for_hours,
 )
+from recidiviz.case_triage.edovo.external_id_matching import (
+    PERSON_EXTERNAL_ID_ADDRESS,
+    strip_leading_zeros,
+    zero_stripped,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.case_triage.schema import (
     EdovoCourseCompletion,
 )
@@ -39,6 +47,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
@@ -82,14 +93,14 @@ def _make_bq_client(person_id_by_external_id: dict[str, int]) -> MagicMock:
         requested = {
             v
             for p in kwargs["query_parameters"]
-            if p.name == "external_ids"
+            if p.name == "stripped_external_ids"
             for v in p.values
         }
         return iter(
             [
-                {"external_id": ext, "person_id": pid}
+                {"stripped_external_id": ext.lstrip("0"), "person_id": pid}
                 for ext, pid in person_id_by_external_id.items()
-                if ext in requested
+                if ext.lstrip("0") in requested
             ]
         )
 
@@ -379,3 +390,143 @@ class TestCalculateAllPendingCredits(TestCase):
         second = self._results_by_person({_EXT_A: _PID_A})
         self.assertEqual(first, second)
         self.assertEqual(first[(_PID_A, _STATE_CODE)].credits_earned, 1)
+
+
+class TestResolveExternalIdsAgainstEmulator(BigQueryEmulatorTestCase):
+    """Runs the production resolution query against the BigQuery emulator.
+
+    The mock above returns a configured mapping, so it cannot show whether the SQL
+    matches a zero-padded id. These guard the regression that matters: an id the
+    endpoint accepts but this query misses is persisted and then earns no credit.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.project_id_override = patch(
+            f"{MODULE}.project_id", return_value=self.project_id
+        )
+        self.project_id_override.start()
+        self.create_mock_table(
+            address=PERSON_EXTERNAL_ID_ADDRESS,
+            schema=[
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("external_id", str),
+                schema_field_for_type("id_type", str),
+                schema_field_for_type("person_id", int),
+            ],
+        )
+
+    def tearDown(self) -> None:
+        self.project_id_override.stop()
+        super().tearDown()
+
+    def _load_people(
+        self, people: list[tuple[str, int]], state_code: str = _STATE_CODE
+    ) -> None:
+        self.load_rows_into_table(
+            PERSON_EXTERNAL_ID_ADDRESS,
+            [
+                {
+                    "state_code": state_code,
+                    "external_id": external_id,
+                    "id_type": _ID_TYPE,
+                    "person_id": person_id,
+                }
+                for external_id, person_id in people
+            ],
+        )
+
+    def _resolve(self, *submitted_external_ids: str) -> dict[str, int]:
+        return _resolve_external_ids_to_person_ids(
+            self.bq_client,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE,
+            external_ids=set(submitted_external_ids),
+        )
+
+    def test_padded_submitted_id_resolves_to_unpadded_stored_person(self) -> None:
+        """Keyed by the submitted id — the value callers hold, and what we stored."""
+        self._load_people([("123456", _PID_A)])
+        self.assertEqual({"000123456": _PID_A}, self._resolve("000123456"))
+
+    def test_unpadded_submitted_id_resolves_to_padded_stored_person(self) -> None:
+        self._load_people([("000123456", _PID_A)])
+        self.assertEqual({"123456": _PID_A}, self._resolve("123456"))
+
+    def test_id_differing_beyond_leading_zeros_does_not_resolve(self) -> None:
+        self._load_people([("000123456", _PID_A)])
+        self.assertEqual({}, self._resolve("1234567"))
+
+    def test_ids_differing_only_by_trailing_zeros_do_not_resolve(self) -> None:
+        self._load_people([("100", _PID_A)])
+        self.assertEqual({}, self._resolve("1000"))
+
+    def test_ambiguous_match_resolves_to_nobody(self) -> None:
+        """Crediting one of several candidates is worse than reporting unresolved."""
+        self._load_people([("123456", _PID_A), ("0123456", _PID_B)])
+        self.assertEqual({}, self._resolve("123456"))
+
+    def test_one_person_stored_under_two_paddings_still_resolves(self) -> None:
+        """Two rows collapsing to a single person_id is not ambiguity."""
+        self._load_people([("123456", _PID_A), ("0123456", _PID_A)])
+        self.assertEqual({"123456": _PID_A}, self._resolve("123456"))
+
+    def test_two_submitted_paddings_of_same_person_both_resolve(self) -> None:
+        self._load_people([("123456", _PID_A)])
+        self.assertEqual(
+            {"123456": _PID_A, "000123456": _PID_A},
+            self._resolve("123456", "000123456"),
+        )
+
+    def test_all_zero_stored_id_still_resolves_to_itself(self) -> None:
+        """An entirely-zero id is left unstripped, so it still resolves exactly as
+        it did before this normalization existed."""
+        self._load_people([("000000", _PID_A)])
+        self.assertEqual({"000000": _PID_A}, self._resolve("000000"))
+
+    def test_shorter_zero_id_does_not_resolve_to_all_zero_stored_id(self) -> None:
+        self._load_people([("000000", _PID_A)])
+        self.assertEqual({}, self._resolve("0"))
+        self.assertEqual({}, self._resolve(""))
+
+    def test_all_zero_id_does_not_suppress_other_ids(self) -> None:
+        self._load_people([("000000", _PID_A), ("123456", _PID_B)])
+        self.assertEqual(
+            {"000000": _PID_A, "000123456": _PID_B},
+            self._resolve("000000", "000123456"),
+        )
+
+    def test_does_not_resolve_across_states(self) -> None:
+        self._load_people([("123456", _PID_A)], state_code=StateCode.US_XX.value)
+        self.assertEqual({}, self._resolve("000123456"))
+
+    def test_sql_and_python_stripping_agree(self) -> None:
+        """The two helpers strip opposite sides of one comparison, so they must
+        agree. BigQuery is the authority, so assert its LTRIM against Python."""
+        values = [
+            "000123456",
+            "123456",
+            "0123456",
+            "100",
+            "1000",
+            "0",
+            "000",
+            "A123456",
+            "0A123",
+            "0012340",
+            "000000",
+            "0",
+        ]
+        self._load_people([(value, _PID_A) for value in values])
+
+        rows = self.query(
+            f"SELECT external_id, {zero_stripped('external_id')} AS stripped "
+            f"FROM `{self.project_id}.{PERSON_EXTERNAL_ID_ADDRESS.to_str()}`"
+        )
+        self.assertEqual(len(values), len(rows))
+        for row in rows.itertuples():
+            self.assertEqual(
+                strip_leading_zeros(row.external_id),
+                row.stripped,
+                f"SQL and Python stripping disagree for [{row.external_id}]",
+            )

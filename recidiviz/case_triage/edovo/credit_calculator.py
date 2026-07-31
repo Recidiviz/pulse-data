@@ -32,6 +32,11 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.case_triage.edovo.external_id_matching import (
+    PERSON_EXTERNAL_ID_ADDRESS,
+    strip_leading_zeros,
+    zero_stripped,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -86,22 +91,44 @@ def _resolve_external_ids_to_person_ids(
 ) -> dict[str, int]:
     """Returns {external_id: internal person_id} for |external_ids| in the given state/id_type.
 
-    Reads ``normalized_state.state_person_external_id`` (the source the capture
-    endpoint's existence check uses). Unmatched external ids are omitted.
+    Applies the same zero-stripped comparison as the capture endpoint's existence
+    check, so an id the endpoint accepted resolves here rather than being persisted
+    and then silently earning no credit. Keys are the *submitted* ids, which is
+    what callers hold.
+
+    Unresolvable ids are omitted, as are ids matching more than one person once
+    zeros were stripped. The latter cannot happen while stripping stays injective
+    over the stored ids (it is today), so it guards a data-integrity break rather
+    than an expected case; crediting one of several candidates would be worse.
     """
+    submitted_ids_by_stripped: dict[str, set[str]] = defaultdict(set)
+    for submitted_external_id in external_ids:
+        submitted_ids_by_stripped[strip_leading_zeros(submitted_external_id)].add(
+            submitted_external_id
+        )
+
+    if not submitted_ids_by_stripped:
+        # Nothing to look up; skip the round trip rather than querying for an
+        # empty set of ids.
+        return {}
+
+    # Stored side stripped in SQL, submitted side in Python, so the comparison can
+    # stay a simple IN over a parameter; see external_id_matching.
     query = f"""
-        SELECT external_id, person_id
-        FROM `{project_id()}.normalized_state.state_person_external_id`
+        SELECT {zero_stripped("external_id")} AS stripped_external_id, person_id
+        FROM `{project_id()}.{PERSON_EXTERNAL_ID_ADDRESS.to_str()}`
         WHERE state_code = @state_code
           AND id_type = @id_type
-          AND external_id IN UNNEST(@external_ids)
+          AND {zero_stripped("external_id")} IN UNNEST(@stripped_external_ids)
     """
     query_parameters: list[
         bigquery.ScalarQueryParameter | bigquery.ArrayQueryParameter
     ] = [
         bigquery.ScalarQueryParameter("state_code", "STRING", state_code),
         bigquery.ScalarQueryParameter("id_type", "STRING", id_type),
-        bigquery.ArrayQueryParameter("external_ids", "STRING", sorted(external_ids)),
+        bigquery.ArrayQueryParameter(
+            "stripped_external_ids", "STRING", sorted(submitted_ids_by_stripped)
+        ),
     ]
     job = bq_client.run_query_async(
         query_str=query,
@@ -109,7 +136,34 @@ def _resolve_external_ids_to_person_ids(
         # Wrapper types query_parameters as scalar-only; BQ accepts arrays at runtime.
         query_parameters=query_parameters,  # type: ignore[arg-type]
     )
-    return {row["external_id"]: row["person_id"] for row in job}
+    person_ids_by_external_id: dict[str, set[int]] = defaultdict(set)
+    for row in job:
+        for submitted_external_id in submitted_ids_by_stripped[
+            row["stripped_external_id"]
+        ]:
+            person_ids_by_external_id[submitted_external_id].add(row["person_id"])
+
+    ambiguous = {
+        external_id
+        for external_id, person_ids in person_ids_by_external_id.items()
+        if len(person_ids) > 1
+    }
+    if ambiguous:
+        # Count only — the external ids are DOC-facing PII. These ids go on to be
+        # reported as unresolved, so this count is a subset of the unresolved
+        # count logged by calculate_all_pending_credits, not an addition to it.
+        logging.warning(
+            "Found [%d] Edovo external id(s) matching more than one person once "
+            "leading zeros were stripped; leaving them unresolved.",
+            len(ambiguous),
+        )
+
+    return {
+        external_id: one_person_id
+        for external_id, person_ids in person_ids_by_external_id.items()
+        if len(person_ids) == 1
+        for one_person_id in person_ids
+    }
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -227,7 +281,10 @@ def calculate_all_pending_credits(
         )
 
     if unresolved:
-        # Count only — the external ids are DOC-facing PII.
+        # Count only — the external ids are DOC-facing PII. Includes ids that
+        # matched more than one person once zeros were stripped, which
+        # _resolve_external_ids_to_person_ids logs separately — the counts
+        # overlap rather than partitioning the ids.
         logging.warning(
             "Found [%d] Edovo external id(s) that did not resolve to a known person.",
             len(unresolved),

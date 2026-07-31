@@ -33,9 +33,16 @@ from recidiviz.case_triage.edovo.edovo_routes import (
     RequestOutcome,
     create_edovo_api_blueprint,
 )
-from recidiviz.case_triage.edovo.person_existence import PersonNotFoundError
+from recidiviz.case_triage.edovo.person_existence import (
+    PersonNotFoundError,
+    assert_person_exists,
+)
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    EdovoCourseCompletion,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -45,6 +52,7 @@ from recidiviz.utils.flask_exception import FlaskException
 
 MODULE = "recidiviz.case_triage.edovo.edovo_routes"
 WIF_MODULE = "recidiviz.case_triage.edovo.wif_verifier"
+PERSON_EXISTENCE_MODULE = "recidiviz.case_triage.edovo.person_existence"
 
 _DOC_ID = "A123456"
 _WIF_SA_UNIQUE_ID = "123456789012345678901"
@@ -273,6 +281,52 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
         self.assertIn("person_resolution_error", reasons)
+
+    def _post_through_real_person_existence(
+        self, *, person_exists: bool, submitted_external_id: str
+    ) -> TestResponse:
+        """POSTs a completion with the real ``assert_person_exists`` in the path.
+
+        BigQuery returns a fixed result, so this covers the handler wiring and the
+        persistence write, not the comparison — that is emulator-tested in
+        ``test_person_existence.py``.
+        """
+        self.mock_bq_client.run_query_async.return_value = iter(
+            [{"person_id": "9876543"}] if person_exists else []
+        )
+        with patch(f"{MODULE}.assert_person_exists", assert_person_exists), patch(
+            f"{PERSON_EXISTENCE_MODULE}.project_id", return_value="recidiviz-123"
+        ):
+            return self._post(
+                {**_VALID_BODY, "person_external_id": submitted_external_id}
+            )
+
+    def _stored_external_ids(self) -> list[str]:
+        with SessionFactory.using_database(self.database_key) as session:
+            return [
+                record.person_external_id
+                for record in session.query(EdovoCourseCompletion).all()
+            ]
+
+    def test_end_to_end_padded_id_is_persisted_verbatim(self) -> None:
+        """The padded value Edovo sent is what lands in the database — the
+        comparison-only normalization must not reach the stored value."""
+        response = self._post_through_real_person_existence(
+            person_exists=True, submitted_external_id="000123456"
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(response.get_json()["status"], "accepted")
+        self.assertEqual(["000123456"], self._stored_external_ids())
+
+    def test_end_to_end_unknown_person_returns_422_and_persists_nothing(self) -> None:
+        response = self._post_through_real_person_existence(
+            person_exists=False, submitted_external_id="000123456"
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
+        self.assertEqual(response.get_json()["error_code"], "PERSON_NOT_FOUND")
+        self.assertEqual([], self._stored_external_ids())
 
     def test_commit_error_audits_and_returns_500(self) -> None:
         # A commit failure must also be audited before returning 500. Patch

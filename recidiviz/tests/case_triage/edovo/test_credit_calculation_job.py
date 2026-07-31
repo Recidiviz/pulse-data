@@ -25,6 +25,7 @@ from unittest.mock import MagicMock, patch
 from flask import Flask
 
 from recidiviz.case_triage.edovo.credit_calculation_job import run_credit_calculation
+from recidiviz.case_triage.edovo.external_id_matching import strip_leading_zeros
 from recidiviz.case_triage.edovo.pending_credit_sink import InMemoryPendingCreditSink
 from recidiviz.persistence.database.schema.case_triage.schema import (
     EdovoCourseCompletion,
@@ -49,7 +50,14 @@ def _make_bq_client() -> MagicMock:
     client = MagicMock()
 
     def _run_query_async(**_kwargs: Any) -> Iterator[dict[str, Any]]:
-        return iter([{"external_id": _PERSON_EXTERNAL_ID, "person_id": _PERSON_ID}])
+        return iter(
+            [
+                {
+                    "stripped_external_id": strip_leading_zeros(_PERSON_EXTERNAL_ID),
+                    "person_id": _PERSON_ID,
+                }
+            ]
+        )
 
     client.run_query_async.side_effect = _run_query_async
     return client
