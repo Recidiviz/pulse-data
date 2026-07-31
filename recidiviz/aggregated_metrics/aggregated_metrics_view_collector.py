@@ -222,7 +222,7 @@ def collect_assignments_by_time_period_builders_for_collections(
                         continue
 
                     builders_by_address[builder.address] = builder
-    return sorted(builders_by_address.values(), key=lambda b: builder.address.to_str())
+    return sorted(builders_by_address.values(), key=lambda b: b.address.to_str())
 
 
 def collect_aggregated_metric_view_builders_for_collection(
