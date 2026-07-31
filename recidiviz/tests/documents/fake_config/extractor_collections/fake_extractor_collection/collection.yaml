@@ -91,16 +91,23 @@ output_schema:
           applicable_when_nonnull: rate_amount
 
 entity_groups:
-  # Top-level entity group (source_array_field omitted).
+  # Top-level entity group (source_array_field omitted), declaring no
+  # grouping_instructions.
   - name: location
     entity_descriptor:
       singular: location
       plural: locations
     entity_fields: [location]
-  # Array entity group whose entity_fields are sub-fields of `assignments`.
+  # Array entity group whose entity_fields are sub-fields of `assignments`, with
+  # grouping_instructions declared.
   - name: assignment
     entity_descriptor:
       singular: work assignment
       plural: work assignments
     source_array_field: assignments
     entity_fields: [assignment_name, assignment_type]
+    grouping_instructions: >
+      Cluster mentions of the same assignment across entries into one entity,
+      even when they name different assignment types. Treat two assignments that
+      share a name but are clearly at different organizations as separate
+      entities.

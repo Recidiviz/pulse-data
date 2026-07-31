@@ -77,27 +77,27 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
 # Framework-fixed descriptions of the synthesized STRUCTURAL fields. These are
 # baked into both the generated JSON schema and the prompt's output instructions,
 # so the model knows what each field means.
-ENTITY_ID_DESCRIPTION = (
-    "Sequential integer identifying this resolved entity within the composite "
-    "document, starting at 1 and increasing by 1 with no gaps."
-)
+ENTITY_ID_DESCRIPTION = "Index of this entity in the entities array (using 1-indexing)."
 ENTRY_NUMS_DESCRIPTION = (
-    "The entry numbers (the [Entry N] markers in the composite document) that "
-    "refer to this entity. Every entry in the document must be assigned to "
-    "exactly one entity: assign every entry, never invent an entry number that "
-    "is not in the document, and never assign the same entry to more than one "
-    "entity."
+    "The entry numbers ([Entry N]) that refer to this entity. Across all "
+    "entities, assign every entry in the document to exactly one entity, and "
+    "never use a number with no matching entry in the document."
 )
 
 
 def _entities_field_description(entity_group: EntityGroupConfig) -> str:
-    return (
-        f"One element per resolved [{entity_group.name}] entity in this composite "
-        f"document. Cluster the document's entries into distinct real-world "
-        f"entities, emitting one element per entity with its canonical field "
-        f"values and the entries that mention it. Two elements may not share all "
-        f"of their entity-field values."
+    descriptor = entity_group.entity_descriptor
+    description = (
+        f'Each element is a distinct real-world {descriptor.singular} (an "entity"). If '
+        f"two would have identical entity-field values, they are the same "
+        f"{descriptor.singular} — emit one element, not two."
     )
+    # Group-level clustering heuristics that no single entity_field description can
+    # express (e.g. "cluster all self-employment into one entity") ride along here,
+    # so they reach the model through the generated `{output_instructions}`.
+    if entity_group.grouping_instructions:
+        description += f" {entity_group.grouping_instructions.strip()}"
+    return description
 
 
 def _to_structural_entity_field(
@@ -169,14 +169,18 @@ def build_entity_resolution_output_schema(
         primary_keys=[field.name for field in entity_fields],
         min_items=1,
     )
+    # Every generated description names the entity type through the group's
+    # descriptor, never through `entity_group.name` — the name is a config
+    # identifier, while the descriptor exists to name the thing in prose.
+    descriptor = entity_group.entity_descriptor
     return LLMRequestOutputSchema(
         full_batch_description=(
-            f"The resolved [{entity_group.name}] entities for one root entity's "
-            f"composite document."
+            f"The resolved {descriptor.plural} for one root entity's composite "
+            f"document."
         ),
         result_level_description=(
-            f"The set of distinct [{entity_group.name}] entities resolved from a "
-            f"single composite document's numbered entries."
+            f"The set of distinct {descriptor.plural} resolved from a single "
+            f"composite document's numbered entries."
         ),
         relevance_criteria=None,
         user_defined_fields=[entities_field],

@@ -18,10 +18,11 @@
 
 Builds the ER clustering output schema from the fake first-order collection's
 entity groups — a top-level group (`location`, whose parent field carries a
-semantic-consistency constraint) and an array group (`assignment`, with an ENUM
-entity field). Asserts both the JSON schema generated through the unchanged
-`LLMJsonSchemaGenerator.generate` (against checked-in goldens) and the structural
-properties of the synthesized `LLMRequestOutputSchema`.
+semantic-consistency constraint and which declares no `grouping_instructions`)
+and an array group (`assignment`, with an ENUM entity field and
+`grouping_instructions` declared). Asserts both the JSON schema generated through
+the unchanged `LLMJsonSchemaGenerator.generate` (against checked-in goldens) and
+the structural properties of the synthesized `LLMRequestOutputSchema`.
 """
 import json
 from unittest import TestCase
@@ -59,6 +60,7 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     get_entity_group_by_name,
 )
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.types import assert_type
 
 _FIXTURE_SUBDIR = "fixtures/entity_resolution_output_schema"
 
@@ -77,13 +79,16 @@ def _entities_field(
 
 class GoldenSchemaTest(TestCase):
     """Pins the full JSON schema generated (via the unchanged generator) from the
-    fake collection's entity groups to checked-in goldens.
+    fake collection's entity groups to checked-in goldens. Between them the two
+    groups cover both `grouping_instructions` states: `assignment` declares them
+    (so the golden shows them appended to the `entities` description) and
+    `location` does not.
     """
 
-    def _assert_matches_golden(self, *, group_name: str, golden_filename: str) -> None:
-        schema = build_entity_resolution_output_schema(
-            entity_group=_entity_group(group_name)
-        )
+    def _assert_matches_golden(
+        self, *, entity_group: EntityGroupConfig, golden_filename: str
+    ) -> None:
+        schema = build_entity_resolution_output_schema(entity_group=entity_group)
         with open(
             fixtures.as_filepath(golden_filename, subdir=_FIXTURE_SUBDIR),
             encoding="utf-8",
@@ -93,13 +98,13 @@ class GoldenSchemaTest(TestCase):
 
     def test_top_level_group_schema_matches_golden(self) -> None:
         self._assert_matches_golden(
-            group_name="location",
+            entity_group=_entity_group("location"),
             golden_filename="fake_collection_location_er_json_schema.json",
         )
 
     def test_array_group_schema_matches_golden(self) -> None:
         self._assert_matches_golden(
-            group_name="assignment",
+            entity_group=_entity_group("assignment"),
             golden_filename="fake_collection_assignment_er_json_schema.json",
         )
 
@@ -171,6 +176,38 @@ class SynthesizedSchemaStructureTest(TestCase):
         self.assertFalse(entry_nums.nullable)
         self.assertEqual(1, entry_nums.min_items)
         self.assertEqual(ENTRY_NUMS_DESCRIPTION, entry_nums.description)
+
+    def test_grouping_instructions_appended_to_entities_description(self) -> None:
+        group = _entity_group("assignment")
+        grouping_instructions = assert_type(group.grouping_instructions, str)
+        schema = build_entity_resolution_output_schema(entity_group=group)
+        self.assertTrue(
+            _entities_field(schema).description.endswith(grouping_instructions.strip()),
+            _entities_field(schema).description,
+        )
+
+    def test_no_grouping_instructions_leaves_entities_description_alone(self) -> None:
+        group = _entity_group("location")
+        self.assertIsNone(group.grouping_instructions)
+        schema = build_entity_resolution_output_schema(entity_group=group)
+        self.assertTrue(
+            _entities_field(schema).description.endswith("emit one element, not two."),
+            _entities_field(schema).description,
+        )
+
+    def test_descriptions_name_entity_type_via_descriptor(self) -> None:
+        # All three generated descriptions name the entity type through the
+        # group's descriptor, not through the group's config `name`.
+        group = _entity_group("assignment")
+        schema = build_entity_resolution_output_schema(entity_group=group)
+        for description in [
+            schema.full_batch_description,
+            schema.result_level_description,
+            _entities_field(schema).description,
+        ]:
+            with self.subTest(description=description):
+                self.assertIn(group.entity_descriptor.singular, description)
+                self.assertNotIn(f"[{group.name}]", description)
 
     def test_primary_keys_are_entity_field_names(self) -> None:
         schema = build_entity_resolution_output_schema(
