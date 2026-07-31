@@ -369,6 +369,20 @@ resource "google_storage_bucket_iam_member" "workflows-snooze-status-archive-das
   member = local.dashboard_staff_functions_service_account
 }
 
+# The workflows-snooze-status-archive bucket (and its CMEK key) already exist in both
+# recidiviz-staging and recidiviz-123, created before this Terraform module knew about
+# them. Import them so apply doesn't try (and fail) to create them fresh. Remove these
+# blocks after the first successful apply in both environments.
+import {
+  id = "${var.project_id}-snooze-status-archive"
+  to = module.workflows-snooze-status-archive.google_storage_bucket.bucket
+}
+
+import {
+  id = "projects/cmek-82ade411-5705-4461-b2cb-9/locations/us/keyRings/gcs-cmek/cryptoKeys/${var.project_id}-snooze-status-archive"
+  to = module.workflows-snooze-status-archive.google_kms_crypto_key.gcs_cmek[0]
+}
+
 module "tasks-snooze-status-archive" {
   source = "./modules/cloud-storage-bucket"
 
