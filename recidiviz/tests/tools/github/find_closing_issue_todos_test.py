@@ -24,7 +24,10 @@ from mock import MagicMock, patch
 from recidiviz.github.github_code_reference import GithubCodeReference
 from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.linear.linear_client import LinearApiError
+from recidiviz.issue_tracking.linear.linear_client import (
+    LinearApiError,
+    LinearEquivalentIssueGroup,
+)
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.github.find_closing_issue_todos import main
 
@@ -83,8 +86,9 @@ class MainTest(unittest.TestCase):
         mock_linear_client_cls: MagicMock,
         *,
         closing_issues: list[LinearIssue] | None = None,
-        resolve_linear_to_github_return: GithubIssue | None = None,
-        resolve_github_to_linear_return: LinearIssue | None = None,
+        linear_issue_group_map: dict[LinearIssue, LinearEquivalentIssueGroup]
+        | None = None,
+        github_issue_group_return: LinearEquivalentIssueGroup | None = None,
         get_closing_issues_side_effect: Exception | None = None,
     ) -> MagicMock:
         mock_client = MagicMock()
@@ -93,11 +97,17 @@ class MainTest(unittest.TestCase):
             mock_client.get_closing_issues.side_effect = get_closing_issues_side_effect
         else:
             mock_client.get_closing_issues.return_value = closing_issues or []
-        mock_client.resolve_linear_to_github.return_value = (
-            resolve_linear_to_github_return
+        issue_group_map = linear_issue_group_map or {}
+        mock_client.get_equivalent_issue_group_for_linear_issue.side_effect = (
+            lambda linear_issue: issue_group_map.get(
+                linear_issue,
+                LinearEquivalentIssueGroup(
+                    linear_issue=linear_issue, previous_issues=set(), github_issue=None
+                ),
+            )
         )
-        mock_client.resolve_github_to_linear.return_value = (
-            resolve_github_to_linear_return
+        mock_client.get_equivalent_issue_group_for_github_issue.return_value = (
+            github_issue_group_return
         )
         return mock_client
 
@@ -187,17 +197,18 @@ class MainTest(unittest.TestCase):
         mock_refs: MagicMock,
     ) -> None:
         mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        obt_456 = LinearIssue(team_prefix="OBT", number=456)
+        gh_123 = GithubIssue(repo="Recidiviz/pulse-data", number=123)
+        synced_pair_group = LinearEquivalentIssueGroup(
+            linear_issue=obt_456, previous_issues=set(), github_issue=gh_123
+        )
         self._setup_linear_client(
             mock_linear_client_cls,
-            closing_issues=[LinearIssue(team_prefix="OBT", number=456)],
-            resolve_linear_to_github_return=GithubIssue(
-                repo="Recidiviz/pulse-data", number=123
-            ),
-            resolve_github_to_linear_return=LinearIssue(team_prefix="OBT", number=456),
+            closing_issues=[obt_456],
+            linear_issue_group_map={obt_456: synced_pair_group},
+            github_issue_group_return=synced_pair_group,
         )
-        mock_gh_closing.return_value = [
-            GithubIssue(repo="Recidiviz/pulse-data", number=123)
-        ]
+        mock_gh_closing.return_value = [gh_123]
 
         result = main(
             pr_url=FAKE_PR_URL,
@@ -215,13 +226,16 @@ class MainTest(unittest.TestCase):
         mock_refs: MagicMock,
     ) -> None:
         mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        gh_123 = GithubIssue(repo="Recidiviz/pulse-data", number=123)
         self._setup_linear_client(
             mock_linear_client_cls,
-            resolve_github_to_linear_return=LinearIssue(team_prefix="OBT", number=456),
+            github_issue_group_return=LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="OBT", number=456),
+                previous_issues=set(),
+                github_issue=gh_123,
+            ),
         )
-        mock_gh_closing.return_value = [
-            GithubIssue(repo="Recidiviz/pulse-data", number=123)
-        ]
+        mock_gh_closing.return_value = [gh_123]
 
         result = main(
             pr_url=FAKE_PR_URL,
@@ -229,6 +243,94 @@ class MainTest(unittest.TestCase):
             linear_api_key="fake_key",
         )
         self.assertEqual(result, 1)
+
+    def test_linear_closing_issue_matches_todo_under_previous_identifier(
+        self,
+        _mock_github_cls: MagicMock,
+        _mock_get_pr_head_sha: MagicMock,
+        _mock_gh_closing: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        """A PR closing TN-94 (previously OBT-456) should flag a lingering
+        TODO(OBT-456) even though the identifier changed on team move."""
+        mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        tn_94 = LinearIssue(team_prefix="TN", number=94)
+        self._setup_linear_client(
+            mock_linear_client_cls,
+            closing_issues=[tn_94],
+            linear_issue_group_map={
+                tn_94: LinearEquivalentIssueGroup(
+                    linear_issue=tn_94,
+                    previous_issues={LinearIssue(team_prefix="OBT", number=456)},
+                    github_issue=None,
+                ),
+            },
+        )
+        result = main(
+            pr_url=FAKE_PR_URL,
+            github_token="fake_gh_token",
+            linear_api_key="fake_key",
+        )
+        self.assertEqual(result, 1)
+
+    def test_github_closing_issue_matches_todo_under_previous_linear_identifier(
+        self,
+        _mock_github_cls: MagicMock,
+        _mock_get_pr_head_sha: MagicMock,
+        mock_gh_closing: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        """A PR saying 'Closes #999' (the GitHub twin of TN-94, previously
+        OBT-456) should flag a lingering TODO(OBT-456) — previous identifiers
+        must come back on the GitHub-to-Linear resolution, since the resolved
+        Linear issue is never itself re-resolved."""
+        mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        gh_999 = GithubIssue(repo="Recidiviz/pulse-data", number=999)
+        self._setup_linear_client(
+            mock_linear_client_cls,
+            github_issue_group_return=LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="TN", number=94),
+                previous_issues={LinearIssue(team_prefix="OBT", number=456)},
+                github_issue=gh_999,
+            ),
+        )
+        mock_gh_closing.return_value = [gh_999]
+        result = main(
+            pr_url=FAKE_PR_URL,
+            github_token="fake_gh_token",
+            linear_api_key="fake_key",
+        )
+        self.assertEqual(result, 1)
+
+    def test_previous_identifiers_without_codebase_match(
+        self,
+        _mock_github_cls: MagicMock,
+        _mock_get_pr_head_sha: MagicMock,
+        _mock_gh_closing: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        tn_94 = LinearIssue(team_prefix="TN", number=94)
+        self._setup_linear_client(
+            mock_linear_client_cls,
+            closing_issues=[tn_94],
+            linear_issue_group_map={
+                tn_94: LinearEquivalentIssueGroup(
+                    linear_issue=tn_94,
+                    previous_issues={LinearIssue(team_prefix="ZZZ", number=1)},
+                    github_issue=None,
+                ),
+            },
+        )
+        result = main(
+            pr_url=FAKE_PR_URL,
+            github_token="fake_gh_token",
+            linear_api_key="fake_key",
+        )
+        self.assertEqual(result, 0)
 
     def test_fails_closed_on_linear_api_error(
         self,

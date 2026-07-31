@@ -25,6 +25,7 @@ from recidiviz.github.github_pull_request import GithubPullRequest
 from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
     LinearAttachment,
+    LinearEquivalentIssueGroup,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.issue_tracking.linear.linear_types import LinkKind
@@ -192,12 +193,29 @@ class MainTest(unittest.TestCase):
         resolve_map: dict[int, LinearIssue | None] | None = None,
         all_attachments: list[LinearAttachment] | None = None,
     ) -> MagicMock:
+        """Returns a mock LinearClient wired up so that the GitHub issues in
+        resolve_map resolve to their mapped Linear issue (and any others resolve
+        to no Linear issue), and so that the PR has the given body and Linear
+        attachments."""
         mock_get_pr_body.return_value = pr_body
         mock_client = MagicMock()
         mock_linear_client_cls.return_value = mock_client
         resolve_map = resolve_map or {}
-        mock_client.resolve_github_to_linear.side_effect = lambda gi: resolve_map.get(
-            gi.number
+
+        def _issue_group(
+            github_issue: GithubIssue,
+        ) -> LinearEquivalentIssueGroup | None:
+            linear_issue = resolve_map.get(github_issue.number)
+            if linear_issue is None:
+                return None
+            return LinearEquivalentIssueGroup(
+                linear_issue=linear_issue,
+                previous_issues=set(),
+                github_issue=github_issue,
+            )
+
+        mock_client.get_equivalent_issue_group_for_github_issue.side_effect = (
+            _issue_group
         )
         mock_client.get_all_pr_attachments.return_value = all_attachments or []
         mock_client.create_pr_attachment.return_value = "new-att-id"
@@ -453,8 +471,8 @@ class MainTest(unittest.TestCase):
         mock_get_pr_body.return_value = "Closes #123"
         mock_client = MagicMock()
         mock_linear_client_cls.return_value = mock_client
-        mock_client.resolve_github_to_linear.side_effect = LinearApiError(
-            "API unreachable"
+        mock_client.get_equivalent_issue_group_for_github_issue.side_effect = (
+            LinearApiError("API unreachable")
         )
         with self.assertRaises(LinearApiError):
             self._run()

@@ -27,7 +27,10 @@ import unittest
 from unittest import mock
 
 from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.linear.linear_client import LinearApiError
+from recidiviz.issue_tracking.linear.linear_client import (
+    LinearApiError,
+    LinearEquivalentIssueGroup,
+)
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.claude_workflows import claude_agent as _claude_agent_pkg
 from recidiviz.tools.claude_workflows.pg_ticket_diagnosis import (
@@ -54,25 +57,33 @@ class TestResolveLinearIdForIssue(unittest.TestCase):
         self, mock_build_client: mock.MagicMock
     ) -> None:
         mock_client = mock_build_client.return_value
-        mock_client.resolve_github_to_linear.return_value = LinearIssue.from_string(
-            "OBT-36212"
+        mock_client.get_equivalent_issue_group_for_github_issue.return_value = (
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue.from_string("OBT-36212"),
+                previous_issues=set(),
+                github_issue=_ISSUE,
+            )
         )
         self.assertEqual(run_pg.resolve_linear_id_for_issue(_ISSUE), "OBT-36212")
-        mock_client.resolve_github_to_linear.assert_called_once_with(_ISSUE)
+        mock_client.get_equivalent_issue_group_for_github_issue.assert_called_once_with(
+            _ISSUE
+        )
 
     @mock.patch(f"{_MODULE}.linear_client_from_secret")
     def test_returns_none_when_not_synced(
         self, mock_build_client: mock.MagicMock
     ) -> None:
-        mock_build_client.return_value.resolve_github_to_linear.return_value = None
+        mock_build_client.return_value.get_equivalent_issue_group_for_github_issue.return_value = (
+            None
+        )
         self.assertIsNone(run_pg.resolve_linear_id_for_issue(_ISSUE))
 
     @mock.patch(f"{_MODULE}.linear_client_from_secret")
     def test_degrades_to_none_on_linear_api_error(
         self, mock_build_client: mock.MagicMock
     ) -> None:
-        mock_build_client.return_value.resolve_github_to_linear.side_effect = (
-            LinearApiError("boom")
+        mock_build_client.return_value.get_equivalent_issue_group_for_github_issue.side_effect = LinearApiError(
+            "boom"
         )
         self.assertIsNone(run_pg.resolve_linear_id_for_issue(_ISSUE))
 

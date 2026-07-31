@@ -27,16 +27,28 @@ def resolve_cross_references(
 ) -> set[GithubIssue | LinearIssue]:
     """Expand a set of issues by resolving cross-references between GitHub and
     Linear. For each GithubIssue, looks up the synced LinearIssue (and vice
-    versa) and adds it to the returned set."""
+    versa) and adds it to the returned set, along with any identifiers the
+    Linear issue held before moving between teams.
+
+    Previous identifiers are aliases of the same issue, so they are added to
+    the output but never used as resolution inputs — their GitHub twin is the
+    one already resolved from the current identifier."""
     expanded: set[GithubIssue | LinearIssue] = set(issues)
     for issue in issues:
-        linked: GithubIssue | LinearIssue | None
         if isinstance(issue, GithubIssue):
-            linked = linear_client.resolve_github_to_linear(issue)
+            issue_group = linear_client.get_equivalent_issue_group_for_github_issue(
+                issue
+            )
         elif isinstance(issue, LinearIssue):
-            linked = linear_client.resolve_linear_to_github(issue)
+            issue_group = linear_client.get_equivalent_issue_group_for_linear_issue(
+                issue
+            )
         else:
-            raise ValueError(f"Unexpected issue type: {type(issue)}")
-        if linked:
-            expanded.add(linked)
+            raise ValueError(f"Unexpected issue type: [{type(issue)}]")
+        if issue_group is None:
+            continue
+        expanded.add(issue_group.linear_issue)
+        expanded.update(issue_group.previous_issues)
+        if issue_group.github_issue is not None:
+            expanded.add(issue_group.github_issue)
     return expanded

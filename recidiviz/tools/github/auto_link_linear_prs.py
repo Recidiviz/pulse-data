@@ -267,11 +267,13 @@ def main(*, pr_url: str, github_token: str, linear_api_key: str) -> int:
     desired_linear_links: dict[LinkKind, list[LinearIssue]] = defaultdict(list)
     for link_kind, github_issues in issue_refs.items():
         for github_issue in github_issues:
-            linear_issue = linear_client.resolve_github_to_linear(github_issue)
-            if linear_issue is None:
+            issue_group = linear_client.get_equivalent_issue_group_for_github_issue(
+                github_issue
+            )
+            if issue_group is None:
                 logging.info("No synced Linear issue for %s — skipping", github_issue)
                 continue
-            desired_linear_links[link_kind].append(linear_issue)
+            desired_linear_links[link_kind].append(issue_group.linear_issue)
 
     all_attachments = linear_client.get_all_pr_attachments(pr_url)
 

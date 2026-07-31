@@ -46,6 +46,7 @@ from recidiviz.issue_tracking.labels import (
     STALE_RAW_DATA_LABEL,
 )
 from recidiviz.issue_tracking.linear.linear_client import LinearApiError, LinearClient
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.issue_tracking.two_way_sync import resolve_cross_references
 from recidiviz.tools.utils.git_manager import GitManager
 
@@ -89,11 +90,26 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def build_reopen_comment(
-    code_refs: list[GithubCodeReference], *, commit_sha: str
+    code_refs: list[GithubCodeReference],
+    *,
+    commit_sha: str,
+    previous_identifiers: list[str],
 ) -> str:
+    """Builds the comment posted to a reopened issue, listing the outstanding
+    TODO locations. previous_identifiers holds any identifiers this issue was
+    previously known by (from Linear team moves or team key renames) that
+    matched TODOs."""
     todo_list = "\n".join(
         f"* [`{ref}`]({ref.get_github_url(commit_sha)})" for ref in sorted(code_refs)
     )
+    previous_identifier_note = ""
+    if previous_identifiers:
+        previous_identifier_note = (
+            "Note: some of these TODOs reference this issue under its previous "
+            f"identifier(s) {', '.join(previous_identifiers)} — Linear rewrites "
+            "an issue's identifier when it moves teams or when a team's key is "
+            "renamed. Consider re-pointing them to the current identifier.\n\n"
+        )
     return (
         "This issue was automatically reopened because the following TODOs "
         "still reference it in the codebase:\n\n"
@@ -101,6 +117,7 @@ def build_reopen_comment(
         "Before closing this issue, please either:\n"
         "- Address the TODOs and remove them from the codebase, or\n"
         "- Re-point the TODOs to a different tracking issue.\n\n"
+        f"{previous_identifier_note}"
         f"_Posted by [reopen-closed-todo-issues]({_WORKFLOW_URL}) "
         "GitHub Action._"
     )
@@ -145,15 +162,26 @@ def main(*, linear_api_key: str, lookback_minutes: int, dry_run: bool) -> int:
         closed_issue_and_linked_issues = resolve_cross_references(
             {closed_linear_issue.linear_issue}, linear_client
         )
-        matching_refs: list[GithubCodeReference] = []
-        for closed_issue in closed_issue_and_linked_issues:
-            if closed_issue not in all_issue_refs:
-                continue
-            matching_refs.extend(all_issue_refs[closed_issue])
+        matched_issues = [
+            issue for issue in closed_issue_and_linked_issues if issue in all_issue_refs
+        ]
+        matching_refs = sorted(
+            {ref for issue in matched_issues for ref in all_issue_refs[issue]}
+        )
         if not matching_refs:
             continue
 
-        comment = build_reopen_comment(matching_refs, commit_sha=head_sha)
+        matched_previous_identifiers = sorted(
+            issue.issue_identifier
+            for issue in matched_issues
+            if isinstance(issue, LinearIssue)
+            and issue != closed_linear_issue.linear_issue
+        )
+        comment = build_reopen_comment(
+            matching_refs,
+            commit_sha=head_sha,
+            previous_identifiers=matched_previous_identifiers,
+        )
 
         if dry_run:
             print(

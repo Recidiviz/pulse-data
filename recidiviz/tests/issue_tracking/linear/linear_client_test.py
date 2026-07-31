@@ -29,6 +29,7 @@ from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
     LinearAttachment,
     LinearClient,
+    LinearEquivalentIssueGroup,
     LinearIssueInfo,
     RetryableLinearApiError,
     linear_client_from_secret,
@@ -207,75 +208,277 @@ class GetClosingIssuesTest(unittest.TestCase):
             )
 
 
-class ResolveLinearToGithubTest(unittest.TestCase):
-    """Tests for LinearClient.resolve_linear_to_github()."""
+class GetEquivalentIssueGroupForLinearIssueTest(unittest.TestCase):
+    """Tests for LinearClient.get_equivalent_issue_group_for_linear_issue()."""
 
     @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_returns_github_issue(self, mock_post: MagicMock) -> None:
+    def test_returns_github_issue_and_previous_identifiers(
+        self, mock_post: MagicMock
+    ) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
             json=lambda: {
                 "data": {
                     "issue": {
+                        "identifier": "TN-94",
+                        "previousIdentifiers": ["OBT-123"],
                         "attachments": {
                             "nodes": [
                                 {
                                     "url": "https://github.com/Recidiviz/pulse-data/issues/45678"
                                 }
                             ]
-                        }
+                        },
                     }
                 }
             },
         )
 
         client = LinearClient(FAKE_API_KEY)
-        result = client.resolve_linear_to_github(
+        result = client.get_equivalent_issue_group_for_linear_issue(
+            LinearIssue(team_prefix="TN", number=94)
+        )
+
+        self.assertEqual(
+            result,
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="TN", number=94),
+                previous_issues={LinearIssue(team_prefix="OBT", number=123)},
+                github_issue=GithubIssue(repo="Recidiviz/pulse-data", number=45678),
+            ),
+        )
+
+        call_args = mock_post.call_args
+        sent_body = call_args.kwargs.get("json") or call_args[1]["json"]
+        self.assertIn("previousIdentifiers", sent_body["query"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_empty_previous_identifiers(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "issue": {
+                        "identifier": "OBT-123",
+                        "previousIdentifiers": [],
+                        "attachments": {"nodes": []},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_equivalent_issue_group_for_linear_issue(
             LinearIssue(team_prefix="OBT", number=123)
         )
 
         self.assertEqual(
             result,
-            GithubIssue(repo="Recidiviz/pulse-data", number=45678),
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="OBT", number=123),
+                previous_issues=set(),
+                github_issue=None,
+            ),
         )
 
     @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_returns_none_when_no_github_attachment(self, mock_post: MagicMock) -> None:
-        mock_post.return_value = MagicMock(
-            status_code=200,
-            json=lambda: {"data": {"issue": {"attachments": {"nodes": []}}}},
-        )
-
-        client = LinearClient(FAKE_API_KEY)
-        result = client.resolve_linear_to_github(
-            LinearIssue(team_prefix="OBT", number=123)
-        )
-
-        self.assertIsNone(result)
-
-
-class ResolveGithubToLinearTest(unittest.TestCase):
-    """Tests for LinearClient.resolve_github_to_linear()."""
-
-    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
-    def test_returns_linear_issue(self, mock_post: MagicMock) -> None:
+    def test_identifier_rewritten_by_both_key_rename_and_team_move(
+        self, mock_post: MagicMock
+    ) -> None:
+        # The real payload for OBT-27790, which accumulated two retired
+        # identifiers: a team key rename (GIT -> OBT, number preserved) followed
+        # by a move to another team (OBT -> TN, renumbered 27790 -> 94).
         mock_post.return_value = MagicMock(
             status_code=200,
             json=lambda: {
                 "data": {
-                    "attachmentsForURL": {
-                        "nodes": [{"issue": {"identifier": "OBT-12345"}}]
+                    "issue": {
+                        "identifier": "TN-94",
+                        "previousIdentifiers": ["GIT-27790", "OBT-27790"],
+                        "attachments": {"nodes": []},
                     }
                 }
             },
         )
 
         client = LinearClient(FAKE_API_KEY)
-        result = client.resolve_github_to_linear(
+        result = client.get_equivalent_issue_group_for_linear_issue(
+            LinearIssue(team_prefix="TN", number=94)
+        )
+
+        self.assertEqual(
+            result.previous_issues,
+            {
+                LinearIssue(team_prefix="GIT", number=27790),
+                LinearIssue(team_prefix="OBT", number=27790),
+            },
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_skips_previous_identifiers_not_in_linear_format(
+        self, mock_post: MagicMock
+    ) -> None:
+        # Linear populates previousIdentifiers with identifiers from other
+        # systems for imported issues; those can never match an in-code issue
+        # reference (parsed with the same pattern), so they're skipped rather
+        # than raising.
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "issue": {
+                        "identifier": "TN-94",
+                        "previousIdentifiers": [
+                            "OBT-123",
+                            "12345",
+                            "",
+                            "not-an-identifier",
+                        ],
+                        "attachments": {"nodes": []},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_equivalent_issue_group_for_linear_issue(
+            LinearIssue(team_prefix="TN", number=94)
+        )
+
+        self.assertEqual(
+            result.previous_issues, {LinearIssue(team_prefix="OBT", number=123)}
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_null_issue_node_returns_degenerate_issue_group(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": {"issue": None}},
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_equivalent_issue_group_for_linear_issue(
+            LinearIssue(team_prefix="OBT", number=123)
+        )
+
+        self.assertEqual(
+            result,
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="OBT", number=123),
+                previous_issues=set(),
+                github_issue=None,
+            ),
+        )
+
+
+class GetEquivalentIssueGroupForGithubIssueTest(unittest.TestCase):
+    """Tests for LinearClient.get_equivalent_issue_group_for_github_issue()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_linear_issue_and_previous_identifiers(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "attachmentsForURL": {
+                        "nodes": [
+                            {
+                                "issue": {
+                                    "identifier": "TN-94",
+                                    "previousIdentifiers": ["OBT-12345"],
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        github_issue = GithubIssue(repo="Recidiviz/pulse-data", number=45678)
+        result = client.get_equivalent_issue_group_for_github_issue(github_issue)
+
+        self.assertEqual(
+            result,
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="TN", number=94),
+                previous_issues={LinearIssue(team_prefix="OBT", number=12345)},
+                github_issue=github_issue,
+            ),
+        )
+
+        call_args = mock_post.call_args
+        sent_body = call_args.kwargs.get("json") or call_args[1]["json"]
+        self.assertIn("previousIdentifiers", sent_body["query"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_empty_previous_identifiers(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "attachmentsForURL": {
+                        "nodes": [
+                            {
+                                "issue": {
+                                    "identifier": "OBT-12345",
+                                    "previousIdentifiers": [],
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        github_issue = GithubIssue(repo="Recidiviz/pulse-data", number=45678)
+        result = client.get_equivalent_issue_group_for_github_issue(github_issue)
+
+        self.assertEqual(
+            result,
+            LinearEquivalentIssueGroup(
+                linear_issue=LinearIssue(team_prefix="OBT", number=12345),
+                previous_issues=set(),
+                github_issue=github_issue,
+            ),
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_skips_previous_identifiers_not_in_linear_format(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "attachmentsForURL": {
+                        "nodes": [
+                            {
+                                "issue": {
+                                    "identifier": "TN-94",
+                                    "previousIdentifiers": ["12345", "OBT-12345"],
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_equivalent_issue_group_for_github_issue(
             GithubIssue(repo="Recidiviz/pulse-data", number=45678),
         )
 
-        self.assertEqual(result, LinearIssue(team_prefix="OBT", number=12345))
+        assert result is not None
+        self.assertEqual(
+            result.previous_issues, {LinearIssue(team_prefix="OBT", number=12345)}
+        )
 
     @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_none_when_no_linear_issue(self, mock_post: MagicMock) -> None:
@@ -285,7 +488,7 @@ class ResolveGithubToLinearTest(unittest.TestCase):
         )
 
         client = LinearClient(FAKE_API_KEY)
-        result = client.resolve_github_to_linear(
+        result = client.get_equivalent_issue_group_for_github_issue(
             GithubIssue(repo="Recidiviz/pulse-data", number=45678),
         )
 

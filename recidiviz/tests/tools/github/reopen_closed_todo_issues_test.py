@@ -25,6 +25,7 @@ from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
+    LinearEquivalentIssueGroup,
     LinearIssueInfo,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
@@ -98,6 +99,7 @@ class BuildReopenCommentTest(unittest.TestCase):
                 )
             ],
             commit_sha=FAKE_HEAD_SHA,
+            previous_identifiers=[],
         )
         self.assertEqual(
             comment,
@@ -130,6 +132,7 @@ _Posted by [reopen-closed-todo-issues](https://github.com/Recidiviz/pulse-data/a
                 ),
             ],
             commit_sha=FAKE_HEAD_SHA,
+            previous_identifiers=[],
         )
         self.assertEqual(
             comment,
@@ -142,6 +145,35 @@ This issue was automatically reopened because the following TODOs still referenc
 Before closing this issue, please either:
 - Address the TODOs and remove them from the codebase, or
 - Re-point the TODOs to a different tracking issue.
+
+_Posted by [reopen-closed-todo-issues](https://github.com/Recidiviz/pulse-data/actions/workflows/reopen-closed-todo-issues.yml) GitHub Action._""",
+        )
+
+    def test_previous_identifiers_note(self) -> None:
+        comment = build_reopen_comment(
+            [
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
+                    filepath="foo.py",
+                    line_number=10,
+                    line_text="# TODO(OBT-100)",
+                )
+            ],
+            commit_sha=FAKE_HEAD_SHA,
+            previous_identifiers=["ENG-55", "OBT-100"],
+        )
+        self.assertEqual(
+            comment,
+            """\
+This issue was automatically reopened because the following TODOs still reference it in the codebase:
+
+* [`foo.py:10`](https://github.com/Recidiviz/pulse-data/blob/abc123def456/foo.py#L10)
+
+Before closing this issue, please either:
+- Address the TODOs and remove them from the codebase, or
+- Re-point the TODOs to a different tracking issue.
+
+Note: some of these TODOs reference this issue under its previous identifier(s) ENG-55, OBT-100 — Linear rewrites an issue's identifier when it moves teams or when a team's key is renamed. Consider re-pointing them to the current identifier.
 
 _Posted by [reopen-closed-todo-issues](https://github.com/Recidiviz/pulse-data/actions/workflows/reopen-closed-todo-issues.yml) GitHub Action._""",
         )
@@ -161,15 +193,22 @@ class MainTest(unittest.TestCase):
         mock_linear_client_cls: MagicMock,
         *,
         completed_issues: list[LinearIssueInfo] | None = None,
-        resolve_linear_to_github_map: dict[LinearIssue, GithubIssue] | None = None,
+        issue_group_map: dict[LinearIssue, LinearEquivalentIssueGroup] | None = None,
     ) -> MagicMock:
         mock_git_manager_cls.return_value.get_head_sha.return_value = FAKE_HEAD_SHA
 
         mock_client = MagicMock()
         mock_linear_client_cls.return_value = mock_client
         mock_client.get_recently_closed_issues.return_value = completed_issues or []
-        resolve_map = resolve_linear_to_github_map or {}
-        mock_client.resolve_linear_to_github.side_effect = resolve_map.get
+        resolve_map = issue_group_map or {}
+        mock_client.get_equivalent_issue_group_for_linear_issue.side_effect = (
+            lambda linear_issue: resolve_map.get(
+                linear_issue,
+                LinearEquivalentIssueGroup(
+                    linear_issue=linear_issue, previous_issues=set(), github_issue=None
+                ),
+            )
+        )
         return mock_client
 
     def test_no_recently_completed_issues(
@@ -230,13 +269,18 @@ class MainTest(unittest.TestCase):
             title="Cross-ref test",
         )
         mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        obt_555 = LinearIssue(team_prefix="OBT", number=555)
         mock_client = self._setup_mocks(
             mock_git_manager_cls,
             mock_linear_client_cls,
             completed_issues=[no_linear_todo_info],
-            resolve_linear_to_github_map={
-                LinearIssue(team_prefix="OBT", number=555): GithubIssue(
-                    repo="Recidiviz/pulse-data", number=200
+            issue_group_map={
+                obt_555: LinearEquivalentIssueGroup(
+                    linear_issue=obt_555,
+                    previous_issues=set(),
+                    github_issue=GithubIssue(
+                        repo="Recidiviz/pulse-data", number=200
+                    ),
                 ),
             },
         )
@@ -314,3 +358,92 @@ class MainTest(unittest.TestCase):
         comment_body = mock_client.create_comment.call_args[0][1]
         self.assertIn("baz.py:30", comment_body)
         self.assertIn("qux.py:40", comment_body)
+
+    def test_todo_under_previous_identifier_reopens_issue(
+        self,
+        mock_git_manager_cls: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        """A closed issue that moved teams (TN-94, previously OBT-100) should
+        be reopened when the codebase still has a TODO(OBT-100)."""
+        tn_94 = LinearIssue(team_prefix="TN", number=94)
+        tn_94_info = LinearIssueInfo(
+            linear_issue=tn_94, uuid="uuid-tn-94", title="Moved issue"
+        )
+        mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        mock_client = self._setup_mocks(
+            mock_git_manager_cls,
+            mock_linear_client_cls,
+            completed_issues=[tn_94_info],
+            issue_group_map={
+                tn_94: LinearEquivalentIssueGroup(
+                    linear_issue=tn_94,
+                    previous_issues={LinearIssue(team_prefix="OBT", number=100)},
+                    github_issue=None,
+                ),
+            },
+        )
+        result = main(linear_api_key="fake_key", lookback_minutes=70, dry_run=False)
+        self.assertEqual(result, 0)
+        mock_client.reopen_issue.assert_called_once_with(tn_94_info)
+        comment_body = mock_client.create_comment.call_args[0][1]
+        self.assertIn("foo.py:10", comment_body)
+        self.assertIn("previous identifier(s) OBT-100", comment_body)
+
+    def test_todos_under_both_old_and_new_identifiers_deduped(
+        self,
+        mock_git_manager_cls: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        """One code line referencing an issue under both its old and new
+        identifiers should produce a single reopen with the ref listed once."""
+        tn_94 = LinearIssue(team_prefix="TN", number=94)
+        tn_94_info = LinearIssueInfo(
+            linear_issue=tn_94, uuid="uuid-tn-94", title="Moved issue"
+        )
+        shared_ref = GithubCodeReference(
+            repo=RECIDIVIZ_DATA_REPO,
+            filepath="shared.py",
+            line_number=15,
+            line_text="# TODO(TN-94): supersedes TODO(OBT-100)",
+        )
+        mock_refs.return_value = {
+            tn_94: [shared_ref],
+            LinearIssue(team_prefix="OBT", number=100): [shared_ref],
+        }
+        mock_client = self._setup_mocks(
+            mock_git_manager_cls,
+            mock_linear_client_cls,
+            completed_issues=[tn_94_info],
+            issue_group_map={
+                tn_94: LinearEquivalentIssueGroup(
+                    linear_issue=tn_94,
+                    previous_issues={LinearIssue(team_prefix="OBT", number=100)},
+                    github_issue=None,
+                ),
+            },
+        )
+        result = main(linear_api_key="fake_key", lookback_minutes=70, dry_run=False)
+        self.assertEqual(result, 0)
+        mock_client.reopen_issue.assert_called_once_with(tn_94_info)
+        comment_body = mock_client.create_comment.call_args[0][1]
+        self.assertEqual(comment_body.count("shared.py:15"), 1)
+
+    def test_no_previous_identifier_note_when_only_current_matches(
+        self,
+        mock_git_manager_cls: MagicMock,
+        mock_linear_client_cls: MagicMock,
+        mock_refs: MagicMock,
+    ) -> None:
+        mock_refs.return_value = FAKE_ISSUE_REFERENCES
+        mock_client = self._setup_mocks(
+            mock_git_manager_cls,
+            mock_linear_client_cls,
+            completed_issues=[OBT_100_INFO],
+        )
+        result = main(linear_api_key="fake_key", lookback_minutes=70, dry_run=False)
+        self.assertEqual(result, 0)
+        comment_body = mock_client.create_comment.call_args[0][1]
+        self.assertNotIn("previous identifier", comment_body)

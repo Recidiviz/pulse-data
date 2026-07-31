@@ -255,8 +255,12 @@ def resolve_linear_id_for_issue(issue: GithubIssue) -> str | None:
     tickets, so a Linear outage must not block those.
     """
     try:
-        linear_issue = linear_client_from_secret().resolve_github_to_linear(issue)
-        return linear_issue.issue_identifier if linear_issue else None
+        issue_group = (
+            linear_client_from_secret().get_equivalent_issue_group_for_github_issue(
+                issue
+            )
+        )
+        return issue_group.linear_issue.issue_identifier if issue_group else None
     except Exception:
         logger.warning(
             "Linear lookup failed for %s; proceeding with GitHub number only",

@@ -31,6 +31,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from recidiviz.common import attr_validators
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.issue_tracking.linear.linear_types import (
@@ -83,6 +84,36 @@ class LinearIssueInfo:
         return self.linear_issue.team_prefix
 
 
+@attr.define(frozen=True, kw_only=True)
+class LinearEquivalentIssueGroup:
+    """The group of equivalent references by which a single Linear issue may be
+    named in the codebase: its current identifier, the identifiers it carried
+    earlier in its history, and its GitHub counterpart, if one exists."""
+
+    linear_issue: LinearIssue = attr.ib(
+        validator=attr.validators.instance_of(LinearIssue)
+    )
+    """The issue's current PREFIX-NUMBER identifier."""
+
+    previous_issues: set[LinearIssue] = attr.ib(
+        validator=attr_validators.is_set_of(LinearIssue)
+    )
+    """Identifiers this issue carried before its current one. Linear rewrites an
+    issue's identifier both when the issue moves between teams (reassigning the
+    number, e.g. OBT-27790 -> TN-94) and when a team's key is renamed (preserving
+    the number, e.g. GIT-27790 -> OBT-27790); previousIdentifiers is Linear's
+    cumulative record of both. Empty for an issue whose identifier never changed.
+
+    Per-team issue numbers are monotonic, so a retired identifier is not reissued
+    to a different issue on the same team."""
+
+    github_issue: GithubIssue | None = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(GithubIssue))
+    )
+    """The GitHub issue this Linear issue is synced to, or None if it has no
+    GitHub counterpart."""
+
+
 @attr.s(frozen=True, kw_only=True)
 class LinearAttachment:
     """A Linear attachment linking a PR to an issue."""
@@ -116,6 +147,28 @@ class LinearAttachment:
 
 # Cache of resolved workflow state IDs, keyed by team key then state type.
 _state_id_cache: dict[LinearTeamKey, dict[LinearStateType, str]] = {}
+
+
+def _parse_previous_identifiers(identifiers: list[str]) -> set[LinearIssue]:
+    """Returns the parsed subset of an issue's previousIdentifiers, skipping any
+    that aren't in Linear's PREFIX-NUMBER format. Linear populates this field
+    with identifiers from other systems for issues imported into Linear, so it
+    is not guaranteed to hold only Linear identifiers.
+
+    Skipping is lossless for matching: codebase issue references are parsed with
+    this same pattern (see issue_from_todo), so an identifier that doesn't parse
+    could never have matched an in-code reference in the first place."""
+    parsed: set[LinearIssue] = set()
+    for identifier in identifiers:
+        try:
+            parsed.add(LinearIssue.from_string(identifier))
+        except ValueError:
+            logger.info(
+                "Skipping previous identifier [%s], which is not in Linear's "
+                "PREFIX-NUMBER format",
+                identifier,
+            )
+    return parsed
 
 
 class LinearClient:
@@ -218,11 +271,18 @@ class LinearClient:
             if attachment.link_kind is LinkKind.CLOSES
         ]
 
-    def resolve_linear_to_github(self, linear_issue: LinearIssue) -> GithubIssue | None:
-        """Find the synced GitHub issue for a Linear issue."""
+    def get_equivalent_issue_group_for_linear_issue(
+        self, linear_issue: LinearIssue
+    ) -> LinearEquivalentIssueGroup:
+        """Returns every reference equivalent to a Linear issue: its current and
+        previous identifiers, plus its GitHub counterpart, if any. Returns a
+        degenerate group (just the input identifier) if the issue can't be
+        found."""
         query = """
         query($id: String!) {
             issue(id: $id) {
+                identifier
+                previousIdentifiers
                 attachments(filter: { sourceType: { eq: "github" } }) {
                     nodes { url }
                 }
@@ -231,21 +291,39 @@ class LinearClient:
         """
         result = self.query(query, {"id": str(linear_issue)})
 
-        nodes = result.get("issue", {}).get("attachments", {}).get("nodes", [])
-        for node in nodes:
+        issue_node = result.get("issue")
+        if not issue_node:
+            return LinearEquivalentIssueGroup(
+                linear_issue=linear_issue, previous_issues=set(), github_issue=None
+            )
+
+        github_issue: GithubIssue | None = None
+        for node in issue_node.get("attachments", {}).get("nodes", []):
             try:
-                return GithubIssue.from_url(node.get("url", ""))
+                github_issue = GithubIssue.from_url(node.get("url", ""))
+                break
             except ValueError:
                 continue
-        return None
 
-    def resolve_github_to_linear(self, github_issue: GithubIssue) -> LinearIssue | None:
-        """Find the synced Linear issue for a GitHub issue."""
+        return LinearEquivalentIssueGroup(
+            linear_issue=LinearIssue.from_string(issue_node["identifier"]),
+            previous_issues=_parse_previous_identifiers(
+                issue_node["previousIdentifiers"]
+            ),
+            github_issue=github_issue,
+        )
+
+    def get_equivalent_issue_group_for_github_issue(
+        self, github_issue: GithubIssue
+    ) -> LinearEquivalentIssueGroup | None:
+        """Returns every reference equivalent to the Linear issue synced to a
+        GitHub issue: its current and previous identifiers. Returns None if no
+        synced Linear issue exists."""
         query = """
         query($url: String!) {
             attachmentsForURL(url: $url) {
                 nodes {
-                    issue { identifier }
+                    issue { identifier previousIdentifiers }
                 }
             }
         }
@@ -253,10 +331,16 @@ class LinearClient:
         result = self.query(query, {"url": github_issue.url})
 
         nodes = result.get("attachmentsForURL", {}).get("nodes", [])
-        if nodes:
-            identifier = nodes[0]["issue"]["identifier"]
-            return LinearIssue.from_string(identifier)
-        return None
+        if not nodes:
+            return None
+        issue_node = nodes[0]["issue"]
+        return LinearEquivalentIssueGroup(
+            linear_issue=LinearIssue.from_string(issue_node["identifier"]),
+            previous_issues=_parse_previous_identifiers(
+                issue_node["previousIdentifiers"]
+            ),
+            github_issue=github_issue,
+        )
 
     def get_all_pr_attachments(self, pr_url: str) -> list[LinearAttachment]:
         """Fetch all Linear attachments for a PR URL."""
