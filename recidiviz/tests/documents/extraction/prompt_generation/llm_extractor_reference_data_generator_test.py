@@ -174,13 +174,46 @@ The following are known employers:
   Employers:
     - Globex"""
         self.assertEqual(
-            expected, LLMExtractorReferenceDataGenerator.generate(reference_data)
+            expected,
+            LLMExtractorReferenceDataGenerator.generate(
+                reference_data, render_flat_known_organizations=False
+            ),
+        )
+
+    def test_generate_flattens_known_organizations_for_entity_resolution(self) -> None:
+        # With render_flat_known_organizations=True (entity resolution), the grouping,
+        # type sub-headers, and "NOT employers" labels drop away — only the flat
+        # name+alias dictionary remains. Acronyms are unaffected.
+        reference_data = LLMExtractorReferenceData(
+            state_code=_STATE_CODE,
+            per_type={
+                ReferenceDataType.ACRONYMS: _ACRONYMS,
+                ReferenceDataType.KNOWN_ORGANIZATIONS: _ORGS,
+            },
+        )
+        expected = """\
+COMMON ABBREVIATIONS:
+- "PO" = Parole Officer
+- "CC" = Community Corrections
+
+Known organizations, with any known aliases:
+- Acme Staffing (aka Acme)
+- Globex
+- Sunrise Shelter (aka Sunrise, SS)"""
+        self.assertEqual(
+            expected,
+            LLMExtractorReferenceDataGenerator.generate(
+                reference_data, render_flat_known_organizations=True
+            ),
         )
 
     def test_generate_empty_when_no_reference_data(self) -> None:
         reference_data = LLMExtractorReferenceData(state_code=_STATE_CODE, per_type={})
         self.assertEqual(
-            "", LLMExtractorReferenceDataGenerator.generate(reference_data)
+            "",
+            LLMExtractorReferenceDataGenerator.generate(
+                reference_data, render_flat_known_organizations=False
+            ),
         )
 
     def test_generate_omits_types_with_no_entries(self) -> None:
@@ -194,7 +227,10 @@ The following are known employers:
             },
         )
         self.assertEqual(
-            "", LLMExtractorReferenceDataGenerator.generate(reference_data)
+            "",
+            LLMExtractorReferenceDataGenerator.generate(
+                reference_data, render_flat_known_organizations=False
+            ),
         )
 
 
@@ -246,6 +282,28 @@ The following are known employers:
         self.assertEqual(
             "",
             LLMExtractorReferenceDataGenerator.render_known_organizations(
+                _orgs_for_type()
+            ),
+        )
+
+    def test_render_known_organizations_flat(self) -> None:
+        # The flat entity-resolution rendering: every entry as `name (aka ...)` under
+        # a neutral header, in registry order, with no grouping, type sub-headers, or
+        # classification labels.
+        expected = """\
+Known organizations, with any known aliases:
+- Acme Staffing (aka Acme)
+- Globex
+- Sunrise Shelter (aka Sunrise, SS)"""
+        self.assertEqual(
+            expected,
+            LLMExtractorReferenceDataGenerator.render_known_organizations_flat(_ORGS),
+        )
+
+    def test_render_known_organizations_flat_empty(self) -> None:
+        self.assertEqual(
+            "",
+            LLMExtractorReferenceDataGenerator.render_known_organizations_flat(
                 _orgs_for_type()
             ),
         )

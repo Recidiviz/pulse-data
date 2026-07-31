@@ -280,7 +280,10 @@ class LLMExtractorConfig:
                 self.extractor_collection.output_schema
             ),
             REFERENCE_DATA_TEMPLATE_VAR: LLMExtractorReferenceDataGenerator.generate(
-                self.reference_data
+                self.reference_data,
+                # Entity-resolution extractors (the ones with an entity group) render
+                # known organizations as a flat name-and-alias dictionary.
+                render_flat_known_organizations=self.entity_group is not None,
             ),
         }
 

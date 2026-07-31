@@ -22,6 +22,12 @@ config (headers, grouping, and the order types appear in) already bound to a
 state's actual entries. Each declared type is rendered under its configured header,
 in declared order: acronyms as a flat glossary, known organizations grouped by
 organization type. A type with no entries for the state renders nothing.
+
+Entity-resolution prompts pass `render_flat_known_organizations=True`, which renders
+known organizations as a flat name-and-alias dictionary instead — the first-order
+grouping, organization-type sub-headers, and "do not extract as ..." labels are
+extraction-classification guidance, so only the names and `(aka ...)` aliases carry
+over to clustering.
 """
 
 from recidiviz.documents.extraction.models.reference_data.acronym_reference_data_entry import (
@@ -49,6 +55,11 @@ from recidiviz.documents.extraction.models.reference_data.reference_data_registr
 from recidiviz.utils.string_formatting import render_list
 from recidiviz.utils.types import assert_type
 
+# Header for the flattened known-organizations dictionary rendered for
+# entity-resolution prompts, in place of the first-order config header (which
+# frames the block as classification guidance).
+_FLAT_KNOWN_ORGANIZATIONS_HEADER = "Known organizations, with any known aliases:"
+
 
 class LLMExtractorReferenceDataGenerator:
     """Builds the `{reference_data}` block of an extractor prompt from a resolved
@@ -57,15 +68,30 @@ class LLMExtractorReferenceDataGenerator:
     """
 
     @classmethod
-    def generate(cls, reference_data: LLMExtractorReferenceData) -> str:
+    def generate(
+        cls,
+        reference_data: LLMExtractorReferenceData,
+        *,
+        render_flat_known_organizations: bool,
+    ) -> str:
         """Returns the `{reference_data}` block: every declared reference-data type
         rendered under its configured header, in declared order. Empty string when
         the collection declares no reference data (or none has entries).
+
+        Set |render_flat_known_organizations| for entity-resolution prompts, which render
+        known organizations as a flat name-and-alias dictionary rather than the
+        first-order grouped-and-labeled block.
         """
         blocks = [
             block
             for reference_data_type, for_type in reference_data.per_type.items()
-            if (block := cls._render_type(reference_data_type, for_type))
+            if (
+                block := cls._render_type(
+                    reference_data_type,
+                    for_type,
+                    render_flat_known_organizations=render_flat_known_organizations,
+                )
+            )
         ]
         return "\n\n".join(blocks)
 
@@ -74,6 +100,8 @@ class LLMExtractorReferenceDataGenerator:
         cls,
         reference_data_type: ReferenceDataType,
         for_type: LLMExtractorReferenceDataForType[ReferenceDataEntry],
+        *,
+        render_flat_known_organizations: bool,
     ) -> str:
         """Returns the rendered block for one reference-data type, dispatching on
         the type.
@@ -81,6 +109,8 @@ class LLMExtractorReferenceDataGenerator:
         if reference_data_type is ReferenceDataType.ACRONYMS:
             return cls.render_acronym_glossary(for_type)
         if reference_data_type is ReferenceDataType.KNOWN_ORGANIZATIONS:
+            if render_flat_known_organizations:
+                return cls.render_known_organizations_flat(for_type)
             return cls.render_known_organizations(for_type)
         raise ValueError(f"Unsupported reference-data type: [{reference_data_type}].")
 
@@ -104,7 +134,17 @@ class LLMExtractorReferenceDataGenerator:
         return f"{for_type.config.header}\n{glossary}"
 
     @staticmethod
+    def _known_organization_label(entry: KnownOrganizationReferenceDataEntry) -> str:
+        """Returns the single-line label both known-organization renderings use for
+        |entry|: its name, followed by `(aka ...)` when it has known aliases.
+        """
+        if not entry.aliases:
+            return entry.name
+        return f"{entry.name} (aka {', '.join(entry.aliases)})"
+
+    @classmethod
     def render_known_organizations(
+        cls,
         for_type: LLMExtractorReferenceDataForType[ReferenceDataEntry],
     ) -> str:
         """Returns the known-organizations block, grouped by organization type under
@@ -139,12 +179,30 @@ class LLMExtractorReferenceDataGenerator:
 
                 lines.append(f"  {organization_type.description}{note_text}:")
                 entry_labels = [
-                    (
-                        f"{entry.name} (aka {', '.join(entry.aliases)})"
-                        if entry.aliases
-                        else entry.name
-                    )
-                    for entry in entries
+                    cls._known_organization_label(entry) for entry in entries
                 ]
                 lines.append(render_list(entry_labels, indent_level=4))
         return "\n".join(lines)
+
+    @classmethod
+    def render_known_organizations_flat(
+        cls,
+        for_type: LLMExtractorReferenceDataForType[ReferenceDataEntry],
+    ) -> str:
+        """Returns a flat name-and-alias dictionary of the state's known
+        organizations — every entry as `name (aka ...)` under a neutral header, with
+        no grouping, organization-type sub-headers, or classification labels. Used for
+        entity resolution, where only the names and aliases aid clustering. Empty if
+        the state has no entries.
+        """
+        known_organizations = [
+            assert_type(entry, KnownOrganizationReferenceDataEntry)
+            for entry in for_type.registry.entries
+        ]
+        if not known_organizations:
+            return ""
+
+        entry_labels = [
+            cls._known_organization_label(entry) for entry in known_organizations
+        ]
+        return f"{_FLAT_KNOWN_ORGANIZATIONS_HEADER}\n{render_list(entry_labels)}"
