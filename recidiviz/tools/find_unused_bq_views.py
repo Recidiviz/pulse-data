@@ -201,6 +201,9 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.tasks.snooze_status_archive import (
+    SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER as TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archive import (
     SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER,
 )
@@ -320,6 +323,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: (
         "Consolidated archive view for supervision task records across states. "
         "Will be used for cross-state task analysis (Sophie Pepin, 2026-04-22)"
+    ),
+    TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
+        "New tasks snooze status archive view. "
+        "Downstream work is tracked in OBT-39438. (Daniel McLaughlin, 2026-07-29)"
     ),
     **{
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (

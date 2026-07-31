@@ -17,6 +17,15 @@
 locals {
   po_report_static_path  = format("%s/reporting/context/static", local.recidiviz_root)
   po_report_static_files = fileset(local.po_report_static_path, "./**/*")
+
+  # The dashboards repo's `apps/staff-functions` Cloud Functions run as 2nd-gen
+  # Cloud Functions with no explicit service account configured, so they
+  # default to their project's Compute Engine default service account.
+  dashboard_staff_functions_service_account = (
+    var.project_id == "recidiviz-123"
+    ? "serviceAccount:13012629248-compute@developer.gserviceaccount.com"
+    : "serviceAccount:626425930051-compute@developer.gserviceaccount.com"
+  )
 }
 
 module "justice-counts-data-bucket" {
@@ -331,6 +340,60 @@ module "practices-etl-data-archive" {
       }
     }
   ]
+}
+
+module "workflows-snooze-status-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "snooze-status-archive"
+  use_cmek    = true
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 7
+      }
+    }
+  ]
+}
+
+# The dashboards repo's `exportWorkflowsSnoozeStates` Cloud Function (apps/staff-functions
+# in recidiviz-dashboards) writes daily snooze exports into this bucket.
+resource "google_storage_bucket_iam_member" "workflows-snooze-status-archive-dashboard-member" {
+  bucket = module.workflows-snooze-status-archive.name
+  role   = "roles/storage.objectCreator"
+  member = local.dashboard_staff_functions_service_account
+}
+
+module "tasks-snooze-status-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "tasks-snooze-status-archive"
+  use_cmek    = true
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 7
+      }
+    }
+  ]
+}
+
+# The dashboards repo's `exportTasksSnoozeStates` Cloud Function (apps/staff-functions
+# in recidiviz-dashboards) writes daily snooze exports into this bucket.
+resource "google_storage_bucket_iam_member" "tasks-snooze-status-archive-dashboard-member" {
+  bucket = module.tasks-snooze-status-archive.name
+  role   = "roles/storage.objectCreator"
+  member = local.dashboard_staff_functions_service_account
 }
 
 module "dashboard-firestore-backups" {
