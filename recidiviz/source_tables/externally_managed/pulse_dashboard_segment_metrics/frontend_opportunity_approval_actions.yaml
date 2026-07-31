@@ -111,6 +111,14 @@ schema:
   - name: subsequent_status
     type: STRING
     mode: NULLABLE
+  - name: assigned_reviewer_pseudo_id
+    description: Who the opportunity was assigned to at the time of the action
+    type: STRING
+    mode: NULLABLE
+  - name: next_reviewer_pseudo_id
+    description: Who the opportunity was assigned to after the action
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
