@@ -166,11 +166,10 @@ def collect_entity_resolution_extractor_configs(
                     entity_group=entity_group,
                 )
             )
-            entity_resolution_collection = (
-                build_entity_resolution_extractor_collection_config(
-                    parent_collection=first_order_config.extractor_collection,
-                    entity_group=entity_group,
-                )
+            entity_resolution_collection = build_entity_resolution_extractor_collection_config(
+                parent_collection=first_order_config.extractor_collection,
+                entity_group=entity_group,
+                source_document_collection=first_order_config.input_document_collection,
             )
             entity_resolution_config = generator.generate(
                 entity_resolution_collection=entity_resolution_collection,

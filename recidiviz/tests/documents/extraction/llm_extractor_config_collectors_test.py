@@ -136,6 +136,11 @@ class ParseAllExtractorConfigsTest(TestCase):
                 ):
                     self.assertTrue(config.instructions_prompt.strip())
 
+    def _get_golden_instructions_prompt(self, fixture_file_name: str) -> str:
+        return Path(
+            fixtures.as_filepath(f"instructions_prompt/{fixture_file_name}")
+        ).read_text(encoding="utf-8")
+
     def test_playground_employment_instructions_prompt_matches_golden(self) -> None:
         # End-to-end golden for a real config: template + output instructions +
         # reference data + prompt vars assembled into the final prompt. Exercises
@@ -145,12 +150,28 @@ class ParseAllExtractorConfigsTest(TestCase):
         config = get_first_order_llm_extractor_config(
             StateCode.US_OZ, "PLAYGROUND_EMPLOYMENT_INFO"
         )
-        expected = Path(
-            fixtures.as_filepath(
-                "instructions_prompt/playground_employment_info_us_oz.txt"
-            )
-        ).read_text(encoding="utf-8")
+        expected = self._get_golden_instructions_prompt(
+            "playground_employment_info_us_oz.txt"
+        )
         self.assertEqual(expected, config.instructions_prompt)
+
+    def test_playground_employment_employer_er_instructions_prompt_matches_golden(
+        self,
+    ) -> None:
+        # End-to-end golden for the entity-resolution counterpart of the config
+        # above: the clustering template specialized by the employer entity
+        # descriptor, the ER output-format instructions, the reference-data preamble,
+        # and the flat known-organizations dictionary assembled into the final
+        # prompt. Regenerate from `.instructions_prompt` if the template or a
+        # generator intentionally changes.
+        er_config = collect_all_extractor_configs_by_state()[StateCode.US_OZ][
+            "PLAYGROUND_EMPLOYMENT_INFO_EMPLOYER_ENTITY_RESOLUTION"
+        ]
+
+        expected = self._get_golden_instructions_prompt(
+            "playground_employment_info_employer_entity_resolution_us_oz.txt"
+        )
+        self.assertEqual(expected, er_config.instructions_prompt)
 
     def test_fake_extractor_resolves(self) -> None:
         configs_by_state = load_first_order_llm_extractor_configs(

@@ -26,12 +26,14 @@ from unittest import TestCase
 
 import attr
 
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     entity_resolution_collection_name,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_extractor_collection_config_builder import (
     ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME,
     build_entity_resolution_extractor_collection_config,
+    build_entity_resolution_prompt_template,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (
     build_entity_resolution_output_schema,
@@ -47,8 +49,16 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     FAKE_LOCATION_ER_COLLECTION_NAME,
     fake_first_order_collection,
+    fake_first_order_extractor_config,
     get_entity_group_by_name,
 )
+
+# The first-order document collection whose mentions the composite documents are
+# built from; its `document_descriptor` names the source documents in the prompt.
+_FAKE_SOURCE_DOCUMENT_COLLECTION = (
+    fake_first_order_extractor_config().input_document_collection
+)
+_FAKE_SOURCE_DOCUMENT_DESCRIPTOR = _FAKE_SOURCE_DOCUMENT_COLLECTION.document_descriptor
 
 
 class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
@@ -67,7 +77,11 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
                 "canonical entities, emitting one resolved record per entity."
             ),
             relevance_criteria=None,
-            prompt_template="<FAKE PROMPT>",
+            prompt_template=build_entity_resolution_prompt_template(
+                entity_descriptor=group.entity_descriptor,
+                source_document_descriptor=_FAKE_SOURCE_DOCUMENT_DESCRIPTOR,
+                has_reference_data=bool(parent.reference_data_config.per_type_configs),
+            ),
             default_model_config_name=ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME,
             minimum_confidence_level=None,
             output_schema=build_entity_resolution_output_schema(entity_group=group),
@@ -77,7 +91,9 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         self.assertEqual(
             expected,
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=group
+                parent_collection=parent,
+                entity_group=group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ),
         )
 
@@ -94,7 +110,11 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
                 "canonical entities, emitting one resolved record per entity."
             ),
             relevance_criteria=None,
-            prompt_template="<FAKE PROMPT>",
+            prompt_template=build_entity_resolution_prompt_template(
+                entity_descriptor=group.entity_descriptor,
+                source_document_descriptor=_FAKE_SOURCE_DOCUMENT_DESCRIPTOR,
+                has_reference_data=bool(parent.reference_data_config.per_type_configs),
+            ),
             default_model_config_name=ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME,
             minimum_confidence_level=None,
             output_schema=build_entity_resolution_output_schema(entity_group=group),
@@ -104,8 +124,47 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         self.assertEqual(
             expected,
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=group
+                parent_collection=parent,
+                entity_group=group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ),
+        )
+
+    def test_prompt_template_reference_data_preamble_gated_on_has_reference_data(
+        self,
+    ) -> None:
+        # The reference-data preamble is the sole difference between the two
+        # templates: present when the collection declares reference data, absent
+        # otherwise (so a reference-data-less collection does not frame an empty
+        # block). Every real ER-parent collection declares reference data, so the
+        # has_reference_data=False branch has no golden — this pins it.
+        entity_descriptor = Descriptor(singular="employer", plural="employers")
+        source_document_descriptor = Descriptor(
+            singular="supervision note", plural="supervision notes"
+        )
+        with_reference_data = build_entity_resolution_prompt_template(
+            entity_descriptor=entity_descriptor,
+            source_document_descriptor=source_document_descriptor,
+            has_reference_data=True,
+        )
+        without_reference_data = build_entity_resolution_prompt_template(
+            entity_descriptor=entity_descriptor,
+            source_document_descriptor=source_document_descriptor,
+            has_reference_data=False,
+        )
+        preamble = (
+            "The reference data below was provided to the original extraction step "
+            "that produced these entries. Use it to interpret the supervision notes "
+            "and recognize when differently-written entries refer to the same "
+            "employer. If an employer matches one of the entries listed below, use "
+            "the spelling listed below in the canonical entry.\n\n"
+        )
+        self.assertIn(preamble, with_reference_data)
+        self.assertNotIn("The reference data below", without_reference_data)
+        # Removing just the preamble from the with-reference-data template yields the
+        # without-reference-data template exactly — nothing else differs.
+        self.assertEqual(
+            with_reference_data.replace(preamble, ""), without_reference_data
         )
 
     def test_collection_name_matches_composite_document_collection(self) -> None:
@@ -115,7 +174,9 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         parent = fake_first_order_collection()
         group = get_entity_group_by_name(parent, "assignment")
         config = build_entity_resolution_extractor_collection_config(
-            parent_collection=parent, entity_group=group
+            parent_collection=parent,
+            entity_group=group,
+            source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
         )
         self.assertEqual(
             entity_resolution_collection_name(
@@ -146,7 +207,9 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
             ),
         ):
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=undeclared_group
+                parent_collection=parent,
+                entity_group=undeclared_group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             )
 
     def test_collection_version_id_cascades_from_parent_entity_field(self) -> None:
@@ -173,10 +236,14 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
 
         self.assertNotEqual(
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=group
+                parent_collection=parent,
+                entity_group=group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ).collection_version_id,
             build_entity_resolution_extractor_collection_config(
-                parent_collection=mutated_parent, entity_group=mutated_group
+                parent_collection=mutated_parent,
+                entity_group=mutated_group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ).collection_version_id,
         )
 
@@ -185,10 +252,14 @@ class BuildEntityResolutionExtractorCollectionConfigTest(TestCase):
         group = get_entity_group_by_name(parent, "assignment")
         self.assertEqual(
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=group
+                parent_collection=parent,
+                entity_group=group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ).collection_version_id,
             build_entity_resolution_extractor_collection_config(
-                parent_collection=parent, entity_group=group
+                parent_collection=parent,
+                entity_group=group,
+                source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
             ).collection_version_id,
         )
 
@@ -208,5 +279,7 @@ class BuildAllRealEntityResolutionCollectionsTest(TestCase):
                     # Raises if the ER extractor collection for this (collection,
                     # group) fails to build or validate.
                     build_entity_resolution_extractor_collection_config(
-                        parent_collection=collection, entity_group=group
+                        parent_collection=collection,
+                        entity_group=group,
+                        source_document_collection=_FAKE_SOURCE_DOCUMENT_COLLECTION,
                     )

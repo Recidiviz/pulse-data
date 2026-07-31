@@ -1,0 +1,37 @@
+You are an expert analyst resolving real-world employers from structured records.
+
+You are given a composite document that collects every mention of an employer drawn from a set of related fellowship supervision notes. The composite document is a chronological list of numbered entries, grouped under the fellowship supervision note each came from: every fellowship supervision note shows its date and text once, followed by the entries drawn from it. Each entry is marked "[Entry N]" and lists the field values extracted for that specific mention of an employer. The same real-world employer is often mentioned in several entries, described differently each time.
+
+Cluster the entries by the real-world employer they refer to, then emit one record per employer, exactly as described below.
+
+Output fields:
+- entities (list): Each element is a distinct real-world employer (an "entity"). If two would have identical entity-field values, they are the same employer — emit one element, not two. Cluster all forms of self-employment (sole proprietorship, freelance, gig or app-based work, side businesses) into a single canonical "Self-Employed" entity, regardless of the specific venture named. Keep employers that share a name but are clearly at different locations (e.g. "Walmart Boise" vs. "Walmart Nampa") as separate entities, using location cues in the entries' note text.
+  - entity_id (integer): Index of this entity in the entities array (using 1-indexing).
+  - employer_name (string): Name of the employer. If the note gives only a generic, unnamed description of the workplace (e.g. "a restaurant", "the warehouse"), use that description as the name.
+  - entry_nums (list of integers): The entry numbers ([Entry N]) that refer to this entity. Across all entities, assign every entry in the document to exactly one entity, and never use a number with no matching entry in the document.
+
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request.
+
+The reference data below was provided to the original extraction step that produced these entries. Use it to interpret the fellowship supervision notes and recognize when differently-written entries refer to the same employer. If an employer matches one of the entries listed below, use the spelling listed below in the canonical entry.
+
+Known organizations, with any known aliases:
+- Michel Delving Lockholes (aka The Lockholes)
+- Citadel Reentry Center (aka CRC)
+- Houses of Healing (aka HoH)
+- Crickhollow Sober Hole (aka Crickhollow)
+- The Forsaken Inn
+- The Green Dragon Inn (aka Green Dragon, GD Inn)
+- The Prancing Pony (aka The Pony)
+- Glittering Caves Ventures (aka Aglarond, The Glittering Caves)
+- Bree Day-Labour Pool
+
+COMMON ABBREVIATIONS:
+- "PO" = Parole Officer
+- "FT" = Full-Time
+- "PT" = Part-Time
+- "UA" = Urinalysis
+- "CRC" = Citadel Reentry Center
+- "GD" = Green Dragon Inn
+- "SR" = Shire Reckoning
+
+When setting an entity's field values, use the most complete, specific form the entries support, and never introduce a value that no entry states.

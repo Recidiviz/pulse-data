@@ -267,13 +267,6 @@ class LLMExtractorConfig:
         `prompt_template` with the output-format instructions, reference data, and
         prompt vars rendered in.
         """
-        # TODO(OBT-36778): Delete this branch once the real entity-resolution
-        # clustering prompt lands. Until then an ER collection's prompt_template
-        # is a stub that references none of the reserved template variables, so
-        # formatting logic below will crash.
-        if self.entity_group is not None:
-            return collapse_blank_lines(self.extractor_collection.prompt_template)
-
         template_variables = {
             **{key: value.strip() for key, value in self.prompt_vars.items()},
             OUTPUT_INSTRUCTIONS_TEMPLATE_VAR: LLMExtractorOutputFormatInstructionsGenerator.generate(

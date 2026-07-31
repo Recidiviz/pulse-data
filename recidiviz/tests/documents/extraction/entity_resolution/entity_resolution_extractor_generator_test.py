@@ -19,8 +19,9 @@
 Generates the ER `LLMExtractorConfig` from the fake first-order US_XX config for
 both entity-group shapes — a top-level group (`location`) and an array group
 (`assignment`) — asserting the fully-resolved config, the thinking model flowing
-through from the ER collection, the stub prompt round-tripping through prompt
-assembly, and the parent entity-field → `extractor_version_id` cascade.
+through from the ER collection, the clustering prompt assembling from the template
+and generated sections, and the parent entity-field → `extractor_version_id`
+cascade.
 """
 from unittest import TestCase
 from unittest.mock import patch
@@ -69,6 +70,36 @@ from recidiviz.utils.types import assert_type
 # default model config name to this fake-registry config instead.
 _FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME = "ACME_LARGE_FIXED_THINKING"
 
+# The fully compiled clustering prompt for the fake `location` ER extractor:
+# framework template specialized by the group's entity descriptor, the ER
+# output-format instructions (no is_relevant, all-STRUCTURAL, no metadata wrapper),
+# the reference-data preamble, and the acronym glossary (the fake collection
+# declares acronyms but no known organizations). Regenerate from
+# `.instructions_prompt` if the template or a generator intentionally changes.
+_EXPECTED_FAKE_LOCATION_ER_INSTRUCTIONS_PROMPT = """\
+You are an expert analyst resolving real-world locations from structured records.
+
+You are given a composite document that collects every mention of a location drawn from a set of related notes. The composite document is a chronological list of numbered entries, grouped under the note each came from: every note shows its date and text once, followed by the entries drawn from it. Each entry is marked "[Entry N]" and lists the field values extracted for that specific mention of a location. The same real-world location is often mentioned in several entries, described differently each time.
+
+Cluster the entries by the real-world location they refer to, then emit one record per location, exactly as described below.
+
+Output fields:
+- entities (list): Each element is a distinct real-world location (an "entity"). If two would have identical entity-field values, they are the same location — emit one element, not two.
+  - entity_id (integer): Index of this entity in the entities array (using 1-indexing).
+  - location (string): The location associated with the record.
+  - entry_nums (list of integers): The entry numbers ([Entry N]) that refer to this entity. Across all entities, assign every entry in the document to exactly one entity, and never use a number with no matching entry in the document.
+
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request.
+
+The reference data below was provided to the original extraction step that produced these entries. Use it to interpret the notes and recognize when differently-written entries refer to the same location. If a location matches one of the entries listed below, use the spelling listed below in the canonical entry.
+
+COMMON ABBREVIATIONS:
+- "PO" = Parole Officer
+- "CRC" = Citadel Reentry Center
+- "XX" = Example Expansion
+
+When setting an entity's field values, use the most complete, specific form the entries support, and never introduce a value that no entry states."""
+
 
 class EntityResolutionExtractorGeneratorTest(TestCase):
     """Tests for EntityResolutionExtractorGenerator.generate."""
@@ -92,6 +123,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             build_entity_resolution_extractor_collection_config(
                 parent_collection=first_order_config.extractor_collection,
                 entity_group=entity_group,
+                source_document_collection=first_order_config.input_document_collection,
             )
         )
         return EntityResolutionExtractorGenerator().generate(
@@ -136,8 +168,9 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             reference_data=fake_first_order_extractor_config().reference_data,
             entity_group=entity_group,
         )
-        # instructions_prompt is eq=False, so full equality does not cover the stub
-        # prompt; test_stub_prompt_round_trips_through_prompt_assembly does.
+        # instructions_prompt is a cached derived field excluded from __eq__, so this
+        # equality check does not cover it; it is pinned by
+        # test_prompt_assembles_from_template_and_generated_sections.
         self.assertEqual(expected, generated_er_config)
 
     def test_generate_array_group(self) -> None:
@@ -174,8 +207,9 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             reference_data=fake_first_order_extractor_config().reference_data,
             entity_group=entity_group,
         )
-        # instructions_prompt is eq=False, so full equality does not cover the stub
-        # prompt; test_stub_prompt_round_trips_through_prompt_assembly does.
+        # instructions_prompt is a cached derived field excluded from __eq__, so this
+        # equality check does not cover it; it is pinned by
+        # test_prompt_assembles_from_template_and_generated_sections.
         self.assertEqual(expected, generated_er_config)
 
     def test_model_is_thinking_enabled(self) -> None:
@@ -185,13 +219,14 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
         generated_er_config = self._generate_fake_er_config_for_group("location")
         self.assertTrue(generated_er_config.model_config.enables_thinking)
 
-    def test_stub_prompt_round_trips_through_prompt_assembly(self) -> None:
-        # The stub ER prompt references none of the reserved template variables, so
-        # _build_instructions_prompt must return it verbatim rather than crash when
-        # StrictStringFormatter rejects the unused reserved kwargs.
+    def test_prompt_assembles_from_template_and_generated_sections(self) -> None:
+        # The ER extractor runs the same assembly path as first-order: the framework
+        # clustering template with the reserved variables substituted by the group's
+        # entity descriptor, the generated ER output-format instructions, and the
+        # reference data. The whole compiled prompt is pinned here.
         generated_er_config = self._generate_fake_er_config_for_group("location")
         self.assertEqual(
-            generated_er_config.extractor_collection.prompt_template,
+            _EXPECTED_FAKE_LOCATION_ER_INSTRUCTIONS_PROMPT,
             generated_er_config.instructions_prompt,
         )
 
@@ -223,7 +258,9 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
         )
         mutated_entity_resolution_collection = (
             build_entity_resolution_extractor_collection_config(
-                parent_collection=mutated_parent_collection, entity_group=mutated_group
+                parent_collection=mutated_parent_collection,
+                entity_group=mutated_group,
+                source_document_collection=first_order_config.input_document_collection,
             )
         )
         mutated_generated = EntityResolutionExtractorGenerator().generate(
