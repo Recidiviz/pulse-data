@@ -63,10 +63,30 @@
     "document_generation_query": {
       "description": "A SQL query template that generates documents.",
       "type": "string"
+    },
+    "document_descriptor": {
+      "description": "Singular/plural noun for the documents in this collection (e.g. \"supervision case note\"/\"...notes\"), used to name the source documents in generated prompts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "singular",
+        "plural"
+      ],
+      "properties": {
+        "singular": {
+          "description": "The singular noun for a document in this collection.",
+          "type": "string"
+        },
+        "plural": {
+          "description": "The plural noun for documents in this collection.",
+          "type": "string"
+        }
+      }
     }
   },
   "required": [
     "description",
+    "document_descriptor",
     "root_entity_id_type",
     "document_generation_query"
   ]

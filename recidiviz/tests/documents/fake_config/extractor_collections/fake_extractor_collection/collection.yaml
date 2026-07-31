@@ -93,8 +93,14 @@ output_schema:
 entity_groups:
   # Top-level entity group (source_array_field omitted).
   - name: location
+    entity_descriptor:
+      singular: location
+      plural: locations
     entity_fields: [location]
   # Array entity group whose entity_fields are sub-fields of `assignments`.
   - name: assignment
+    entity_descriptor:
+      singular: work assignment
+      plural: work assignments
     source_array_field: assignments
     entity_fields: [assignment_name, assignment_type]

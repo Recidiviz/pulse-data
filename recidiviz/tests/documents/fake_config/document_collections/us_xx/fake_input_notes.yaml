@@ -2,6 +2,9 @@
 description: >
   Fake input document collection that the fake extractor reads, used by
   llm_extractor_config_test.py to exercise extractor config resolution.
+document_descriptor:
+  singular: note
+  plural: notes
 root_entity_id_type: person_external_id
 document_metadata_columns:
   - name: note_id

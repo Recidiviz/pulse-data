@@ -4,6 +4,10 @@ description: >
   documenting interactions with people on supervision, including office visits,
   home visits, phone calls, and other contact types.
 
+document_descriptor:
+  singular: supervision contact note
+  plural: supervision contact notes
+
 root_entity_id_type: person_external_id
 
 document_metadata_columns:

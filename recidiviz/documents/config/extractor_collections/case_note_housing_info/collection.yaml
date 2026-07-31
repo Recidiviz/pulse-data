@@ -214,4 +214,14 @@ output_schema:
 
 entity_groups:
   - name: housing
+    entity_descriptor:
+      singular: place of residence
+      plural: places of residence
     entity_fields: [address, temporary_housing_name]
+    grouping_instructions: >
+      Group mentions describing the same physical residence or living arrangement
+      into one entity, even when separated in time (e.g. the person returns to the
+      same address or facility across several notes). Treat a permanent residence
+      and a temporary stay at a different place as separate entities. When a
+      mention lacks a facility name but its type and context clearly indicate the
+      same facility as a named mention, group them together.

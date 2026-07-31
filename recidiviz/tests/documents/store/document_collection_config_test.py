@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for document_collection_config.py."""
+import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
@@ -27,6 +29,7 @@ from recidiviz.big_query.big_query_utils import (
     to_validated_schema_field,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.store import yaml_schema
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
@@ -54,6 +57,9 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateStaffExternalId,
 )
 from recidiviz.tests.documents import fake_config as fake_config_module
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    get_fake_first_order_document_collection_config,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
@@ -93,6 +99,7 @@ def _make_config(
         other_document_generation_output_columns=(
             other_document_generation_output_columns or []
         ),
+        document_descriptor=Descriptor(singular="document", plural="documents"),
     )
 
 
@@ -149,9 +156,30 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 document_generation_query_template=expected_query_template,
                 # Never authored in YAML — always empty for a first-order collection.
                 other_document_generation_output_columns=[],
+                document_descriptor=Descriptor(
+                    singular="case note", plural="case notes"
+                ),
             ),
             config,
         )
+
+    def test_from_yaml_missing_document_descriptor_raises(self) -> None:
+        # document_descriptor is required; from_yaml pops it unconditionally. Strip
+        # it from the fake collection's real YAML and confirm parsing fails rather
+        # than silently defaulting.
+        config = get_fake_first_order_document_collection_config()
+        source_path = DocumentCollectionConfig.config_name_to_file_path(
+            config.state_code, config.name, config_module=fake_config_module
+        )
+        raw = yaml.safe_load(source_path.read_text())
+        del raw["document_descriptor"]
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            stripped_path = Path(tmp_dir) / source_path.name
+            stripped_path.write_text(yaml.dump(raw))
+            with self.assertRaisesRegex(
+                KeyError, r"Expected nonnull \[document_descriptor\]"
+            ):
+                DocumentCollectionConfig.from_yaml(stripped_path)
 
     def test_collect_configs(self) -> None:
         configs = load_first_order_document_collection_configs(
@@ -213,6 +241,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 ],
                 document_generation_query_template="SELECT 1",
                 other_document_generation_output_columns=[],
+                document_descriptor=Descriptor(singular="document", plural="documents"),
             )
 
     def test_invalid_collection_name(self) -> None:
@@ -228,6 +257,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 other_metadata_columns=[],
                 document_generation_query_template="SELECT 1",
                 other_document_generation_output_columns=[],
+                document_descriptor=Descriptor(singular="document", plural="documents"),
             )
 
     def test_primary_key_columns_derives_root_then_document_columns(self) -> None:

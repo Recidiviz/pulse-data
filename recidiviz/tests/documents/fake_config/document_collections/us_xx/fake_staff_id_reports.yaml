@@ -1,5 +1,8 @@
 # yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
 description: Fake staff ID reports for testing document collection config parsing with staff_id root entity.
+document_descriptor:
+  singular: staff report
+  plural: staff reports
 root_entity_id_type: staff_id
 document_generation_query: |
   SELECT

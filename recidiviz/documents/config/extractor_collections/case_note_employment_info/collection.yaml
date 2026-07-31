@@ -221,5 +221,15 @@ output_schema:
 
 entity_groups:
   - name: employer
+    entity_descriptor:
+      singular: employer
+      plural: employers
     source_array_field: employers
     entity_fields: [employer_name]
+    grouping_instructions: >
+      Cluster all forms of self-employment (sole proprietorship, freelance, gig
+      or app-based work, side businesses) into a single canonical "Self-Employed"
+      entity, regardless of the specific venture named. Keep employers that share
+      a name but are clearly at different locations (e.g. "Walmart Boise" vs.
+      "Walmart Nampa") as separate entities, using location cues in the entries'
+      note text.

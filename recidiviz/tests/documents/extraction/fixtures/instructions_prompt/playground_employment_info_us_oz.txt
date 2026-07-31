@@ -24,7 +24,7 @@ Output fields:
 - unemployment_reason (string): The stated reason the person is not working (e.g. poor health, recent return to custody), if one is given.
 - employment_note_summary (string, bare value): One-sentence summary of the employment-related content of the note, composed by the model rather than extracted from the text.
 - employers (list): List of current employers mentioned in the case note. A person who runs their own venture is employed by that venture with employment_type=self_employed.
-  - employer_name (string): Name of the employer.
+  - employer_name (string): Name of the employer. If the note gives only a generic, unnamed description of the workplace (e.g. "a restaurant", "the warehouse"), use that description as the name.
   - employment_type (enum): Type of employment. Allowed values:
     - employee_ft: A full-time employee (stated explicitly as full-time).
     - employee_pt: A part-time employee (stated explicitly as part-time).

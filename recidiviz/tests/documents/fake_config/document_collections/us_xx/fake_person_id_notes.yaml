@@ -1,5 +1,8 @@
 # yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
 description: Fake person ID notes for testing document collection config parsing with person_id root entity.
+document_descriptor:
+  singular: note
+  plural: notes
 root_entity_id_type: person_id
 document_metadata_columns:
   - name: note_id

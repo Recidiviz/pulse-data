@@ -30,6 +30,7 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
@@ -99,6 +100,7 @@ def _input_document_collection(
         other_metadata_columns=[],
         document_generation_query_template="SELECT 1",
         other_document_generation_output_columns=[],
+        document_descriptor=Descriptor(singular="case note", plural="case notes"),
     )
 
 

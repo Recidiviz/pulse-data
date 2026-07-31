@@ -1,5 +1,8 @@
 # yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
 description: Fake US_YY notes for testing document collection config parsing across states.
+document_descriptor:
+  singular: note
+  plural: notes
 root_entity_id_type: person_external_id
 document_metadata_columns:
   - name: note_id

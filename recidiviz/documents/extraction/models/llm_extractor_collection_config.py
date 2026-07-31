@@ -35,6 +35,7 @@ from recidiviz.big_query.big_query_attr_validators import (
     is_valid_unquoted_bq_identifier,
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents import config as default_config_module
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_MINIMUM_CONFIDENCE_LEVEL,
@@ -97,6 +98,13 @@ class EntityGroupConfig:
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The entity group's name (e.g. `employer`, `residence`)."""
 
+    entity_descriptor: Descriptor = attr.ib(
+        validator=attr.validators.instance_of(Descriptor)
+    )
+    """Singular and plural forms of the entity type this group resolves (e.g.
+    "employer"/"employers").
+    """
+
     entity_fields: list[ScalarValuedLLMRequestOutputSchemaField] = attr.ib(
         validator=[
             attr_validators.is_non_empty_list,
@@ -117,6 +125,14 @@ class EntityGroupConfig:
     """When set, the resolved ARRAY_OF_STRUCT output-schema field whose sub-fields
     the `entity_fields` are (one mention per array element). When null, the
     `entity_fields` are top-level fields (one mention per document).
+    """
+
+    grouping_instructions: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Optional group-level clustering guidance for the entity resolution prompt — 
+    heuristics that span the whole group and so cannot live on any one `entity_field`'s
+    description (e.g. "cluster all self-employment into one entity", "a permanent 
+    residence and a temporary stay are separate entities"). Null when the group needs 
+    no such guidance.
     """
 
     def __attrs_post_init__(self) -> None:
@@ -150,8 +166,12 @@ class EntityGroupConfig:
         that ARRAY_OF_STRUCT field.
         """
         name = yaml_dict.pop("name", str)
+        entity_descriptor = Descriptor.from_yaml_dict(
+            yaml_dict.pop_dict("entity_descriptor")
+        )
         entity_field_names = yaml_dict.pop_list("entity_fields", str)
         source_array_field_name = yaml_dict.pop_optional("source_array_field", str)
+        grouping_instructions = yaml_dict.pop_optional("grouping_instructions", str)
         if yaml_dict:
             raise ValueError(
                 f"Found unexpected config values for entity group [{name}]: "
@@ -206,8 +226,10 @@ class EntityGroupConfig:
 
         return cls(
             name=name,
+            entity_descriptor=entity_descriptor,
             entity_fields=entity_fields,
             source_array_field=source_array_field,
+            grouping_instructions=grouping_instructions,
         )
 
 

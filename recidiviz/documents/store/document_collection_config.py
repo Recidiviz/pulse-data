@@ -35,6 +35,7 @@ from recidiviz.big_query.big_query_utils import (
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents import config as default_config_module
 from recidiviz.documents.dataset_config import (
     document_contents_dataset_for_region,
@@ -243,6 +244,13 @@ class DocumentCollectionConfig:
         validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
+    # Singular/plural noun for the documents in this collection (e.g. "supervision
+    # case note"/"...notes"). Consumed by generated prompts that need to name the
+    # documents in this collection specifically.
+    document_descriptor: Descriptor = attr.ib(
+        kw_only=True, validator=attr.validators.instance_of(Descriptor)
+    )
+
     def __attrs_post_init__(self) -> None:
         col_names = [
             col.name
@@ -402,6 +410,10 @@ class DocumentCollectionConfig:
             yaml_dict.pop("root_entity_id_type", str)
         )
 
+        document_descriptor = Descriptor.from_yaml_dict(
+            yaml_dict.pop_dict("document_descriptor")
+        )
+
         document_pk_columns = []
         other_metadata_columns = []
         for col_dict in yaml_dict.pop_dicts_optional("document_metadata_columns") or []:
@@ -437,6 +449,7 @@ class DocumentCollectionConfig:
             # Not authorable from YAML — only generated (e.g. entity-resolution)
             # collections declare generation-output-only columns.
             other_document_generation_output_columns=[],
+            document_descriptor=document_descriptor,
         )
 
     @staticmethod

@@ -4,6 +4,9 @@ description: >
   Kingdom about members of the Fellowship of the Ring following their release
   from incarceration. Source documents for the US_OZ playground extractor
   collections.
+document_descriptor:
+  singular: fellowship supervision note
+  plural: fellowship supervision notes
 root_entity_id_type: person_external_id
 document_metadata_columns:
   - name: note_id

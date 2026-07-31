@@ -453,7 +453,7 @@
                           },
                           "value": {
                             "type": "string",
-                            "description": "Name of the employer."
+                            "description": "Name of the employer. If the note gives only a generic, unnamed description of the workplace (e.g. \"a restaurant\", \"the warehouse\"), use that description as the name.\n"
                           },
                           "confidence_level": {
                             "type": "string",

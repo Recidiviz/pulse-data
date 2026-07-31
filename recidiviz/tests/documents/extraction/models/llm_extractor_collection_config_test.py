@@ -31,6 +31,7 @@ from unittest import TestCase
 import jsonschema
 import yaml
 
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_MINIMUM_CONFIDENCE_LEVEL,
 )
@@ -142,7 +143,10 @@ def _structural_only_schema() -> LLMRequestOutputSchema:
 
 
 def _entity_group(**raw: Any) -> EntityGroupConfig:
-    """Parses one entity group against the shared `_output_schema`."""
+    """Parses one entity group against the shared `_output_schema`, defaulting the
+    required `entity_descriptor` when a test does not exercise it.
+    """
+    raw.setdefault("entity_descriptor", {"singular": "thing", "plural": "things"})
     return EntityGroupConfig.from_yaml_dict(
         yaml_dict=YAMLDict(raw), output_schema=_output_schema()
     )
@@ -280,11 +284,26 @@ class EntityGroupConfigResolutionTest(TestCase):
     def test_top_level_group_resolves_to_top_level_field_objects(self) -> None:
         schema = _output_schema()
         group = EntityGroupConfig.from_yaml_dict(
-            yaml_dict=YAMLDict({"name": "residence", "entity_fields": ["address"]}),
+            yaml_dict=YAMLDict(
+                {
+                    "name": "residence",
+                    "entity_descriptor": {
+                        "singular": "place of residence",
+                        "plural": "places of residence",
+                    },
+                    "entity_fields": ["address"],
+                }
+            ),
             output_schema=schema,
         )
         self.assertIsNone(group.source_array_field)
         self.assertEqual([schema.get_field("address")], group.entity_fields)
+        self.assertEqual(
+            Descriptor(singular="place of residence", plural="places of residence"),
+            group.entity_descriptor,
+        )
+        # grouping_instructions is optional and omitted here.
+        self.assertIsNone(group.grouping_instructions)
 
     def test_array_group_resolves_to_sub_field_objects(self) -> None:
         schema = _output_schema()
@@ -294,14 +313,26 @@ class EntityGroupConfigResolutionTest(TestCase):
             yaml_dict=YAMLDict(
                 {
                     "name": "employer",
+                    "entity_descriptor": {
+                        "singular": "employer",
+                        "plural": "employers",
+                    },
                     "source_array_field": "employers",
                     "entity_fields": ["employer_name"],
+                    "grouping_instructions": "Cluster self-employment into one entity.",
                 }
             ),
             output_schema=schema,
         )
         self.assertIs(employers, group.source_array_field)
         self.assertEqual([employers.get_field("employer_name")], group.entity_fields)
+        self.assertEqual(
+            Descriptor(singular="employer", plural="employers"),
+            group.entity_descriptor,
+        )
+        self.assertEqual(
+            "Cluster self-employment into one entity.", group.grouping_instructions
+        )
 
     def test_top_level_entity_field_unresolved_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -378,6 +409,16 @@ class EntityGroupConfigResolutionTest(TestCase):
         ):
             _entity_group(name="residence", entity_fields=["address"], bogus="x")
 
+    def test_missing_entity_descriptor_raises(self) -> None:
+        # entity_descriptor is required; from_yaml_dict pops it unconditionally.
+        with self.assertRaisesRegex(
+            KeyError, r"Expected nonnull \[entity_descriptor\]"
+        ):
+            EntityGroupConfig.from_yaml_dict(
+                yaml_dict=YAMLDict({"name": "residence", "entity_fields": ["address"]}),
+                output_schema=_output_schema(),
+            )
+
     def test_direct_construction_membership_invariant(self) -> None:
         # source_array_field set, but an entity_field is a top-level field (not one
         # of the array's sub-fields) — the post_init guard for direct construction.
@@ -393,6 +434,7 @@ class EntityGroupConfigResolutionTest(TestCase):
         ):
             EntityGroupConfig(
                 name="employer",
+                entity_descriptor=Descriptor(singular="employer", plural="employers"),
                 entity_fields=[
                     assert_type(
                         schema.get_field("address"),
@@ -400,6 +442,7 @@ class EntityGroupConfigResolutionTest(TestCase):
                     )
                 ],
                 source_array_field=employers,
+                grouping_instructions=None,
             )
 
 
@@ -446,6 +489,7 @@ class LLMExtractorCollectionConfigTest(TestCase):
         schema = _output_schema()
         group = EntityGroupConfig(
             name="employer",
+            entity_descriptor=Descriptor(singular="employer", plural="employers"),
             entity_fields=[
                 assert_type(
                     schema.get_field("address"),
@@ -453,6 +497,7 @@ class LLMExtractorCollectionConfigTest(TestCase):
                 )
             ],
             source_array_field=None,
+            grouping_instructions=None,
         )
         with self.assertRaisesRegex(
             ValueError,

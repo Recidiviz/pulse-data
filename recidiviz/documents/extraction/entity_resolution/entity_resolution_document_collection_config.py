@@ -38,6 +38,7 @@ from recidiviz.big_query.big_query_attr_validators import (
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.dataset_config import (
     document_extraction_pre_resolution_results_dataset_for_region,
 )
@@ -139,6 +140,10 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         init=False, validator=attr_validators.is_str
     )
 
+    document_descriptor: Descriptor = attr.ib(
+        init=False, validator=attr.validators.instance_of(Descriptor)
+    )
+
     @state_code.default
     def _state_code(self) -> StateCode:
         return self.first_order_config.state_code
@@ -152,6 +157,14 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         return (
             self.first_order_config.input_document_collection.root_entity_id_type.internal_id_type
         )
+
+    @document_descriptor.default
+    def _document_descriptor(self) -> Descriptor:
+        # The documents in an ER collection are composite documents. This descriptor
+        # names the collection's own documents; the ER clustering prompt names the
+        # *source* documents separately, from the first-order collection's
+        # `document_descriptor`.
+        return Descriptor(singular="composite document", plural="composite documents")
 
     @name.default
     def _name(self) -> str:

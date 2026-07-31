@@ -2,6 +2,9 @@
 description: >
   Records for members of the Fellowship of the Ring, combining fellowship
   membership, role, and demographic information.
+document_descriptor:
+  singular: fellowship record
+  plural: fellowship records
 root_entity_id_type: person_external_id
 document_metadata_columns:
   - name: period_id

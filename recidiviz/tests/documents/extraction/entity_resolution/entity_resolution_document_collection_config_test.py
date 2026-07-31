@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     ENTRY_NUM_FIELD_NAME,
     ENTRY_SOURCE_MAP_COLUMN_NAME,
@@ -114,6 +115,12 @@ class EntityResolutionDocumentCollectionConfigTest(unittest.TestCase):
         )
         self.assertEqual(
             expected_query_template, config.document_generation_query_template
+        )
+        # An ER collection's documents are composite documents, so it derives this
+        # fixed descriptor rather than reading one from YAML.
+        self.assertEqual(
+            Descriptor(singular="composite document", plural="composite documents"),
+            config.document_descriptor,
         )
 
     def test_derives_expected_fields_for_array_group(self) -> None:
@@ -362,6 +369,9 @@ JOIN composite_entry_source_map USING (person_id)"""
         config = fake_first_order_extractor_config()
         undeclared_group = EntityGroupConfig(
             name="undeclared",
+            entity_descriptor=Descriptor(
+                singular="undeclared thing", plural="undeclared things"
+            ),
             entity_fields=[
                 assert_type(
                     config.extractor_collection.output_schema.get_field("location"),
@@ -369,6 +379,7 @@ JOIN composite_entry_source_map USING (person_id)"""
                 )
             ],
             source_array_field=None,
+            grouping_instructions=None,
         )
         with self.assertRaisesRegex(
             ValueError, "is not declared on first-order collection"
