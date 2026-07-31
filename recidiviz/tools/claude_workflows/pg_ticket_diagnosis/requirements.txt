@@ -1,11 +1,11 @@
-anthropic==0.117.0
+anthropic==0.120.1
 attrs==26.1.0
 google-cloud-bigquery==3.35.1
 google-cloud-secret-manager==2.29.0
-google-auth==2.56.0
+google-auth==2.56.2
 more-itertools==11.1.0
 PyGithub==2.9.1
-pytz==2026.2
+pytz==2026.3.post1
 requests==2.34.2
 tenacity==8.5.0
 tzdata==2026.3

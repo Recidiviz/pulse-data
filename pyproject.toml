@@ -237,7 +237,9 @@ dev = [
     "looker-sdk",
     "nbautoexport",
     "notebook",
-    "mcp",
+    # TODO(#94286): Remove the <2.0.0 pin once recidiviz/tools/mcp/data_lineage/server.py
+    # is migrated to the mcp>=2.0.0 API.
+    "mcp<2.0.0",
     "pandasql",
     "pgeocode",
     "plotly",

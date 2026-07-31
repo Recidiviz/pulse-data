@@ -9,13 +9,13 @@ runs:
         path: |
           .venv
           ~/.cache/uv
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-v1-${{ hashFiles(format('{0}/uv.lock', github.workspace)) }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-v2-${{ hashFiles(format('{0}/uv.lock', github.workspace)) }}
         # If we haven't cached a venv for the new version of the lock file this will
         # restore the cache for the most recent version. Since most of the time our
         # lock file updates only change a small number of packages, this speeds up
         # the sync step significantly.
         restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-uv-
+          ${{ runner.os }}-${{ runner.arch }}-uv-v2-
     - name: Sync uv
       # Always sync to ensure environment matches lock file, even on cache hit.
       # The package cache (~/.cache/uv) speeds this up significantly.
