@@ -19,7 +19,7 @@
 from datetime import datetime, timezone
 from functools import cached_property
 
-import attrs
+import attr
 import requests
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -34,19 +34,22 @@ from recidiviz.utils.secrets import get_secret
 DEFAULT_API_REQUEST_TIMEOUT = 10.0
 
 
-@attrs.define
+@attr.define
 class IntercomAPIClient:
     """Handles Intercom API interactions"""
 
-    _AUTH_TOKEN = get_secret("intercom_rir_auth_token")
+    _auth_token: str | None = attr.ib(init=False)
     _BASE_URL = "https://api.intercom.io"
+
+    def __attrs_post_init__(self) -> None:
+        self._auth_token = get_secret("intercom_rir_auth_token")
 
     @cached_property
     def _session(self) -> requests.Session:
         session = requests.Session()
         session.headers.update(
             {
-                "Authorization": f"Bearer {self._AUTH_TOKEN}",
+                "Authorization": f"Bearer {self._auth_token}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Intercom-Version": "2.11",

@@ -128,8 +128,8 @@ class TestIntercomAPIManager(unittest.TestCase):
         files in the temporary directory with the correct update datetime.
         """
         csv_files = {
-            "receipt_20260114.csv": "id,event\n1,opened\n2,clicked\n",
-            "hard_bounce_20260114.csv": "id,reason\n10,mailbox_full\n",
+            "receipt_20260114-183225.csv": "id,event\n1,opened\n2,clicked\n",
+            "hard_bounce_20260114-183225.csv": "id,reason\n10,mailbox_full\n",
         }
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w") as zip_file:
@@ -146,8 +146,10 @@ class TestIntercomAPIManager(unittest.TestCase):
 
             self.assertEqual(
                 {
-                    "receipt": os.path.join(output_dir, "receipt_20260114.csv"),
-                    "hard_bounce": os.path.join(output_dir, "hard_bounce_20260114.csv"),
+                    "receipt": os.path.join(output_dir, "receipt_20260114-183225.csv"),
+                    "hard_bounce": os.path.join(
+                        output_dir, "hard_bounce_20260114-183225.csv"
+                    ),
                 },
                 file_paths,
             )
@@ -183,7 +185,7 @@ class TestIntercomAPIManager(unittest.TestCase):
         Test extract_base_name() properly extracts a single-word base name
         of an Intercom export CSV filename.
         """
-        filename = "receipt_20251121.csv"
+        filename = "receipt_20251121-183225.csv"
 
         base_name = extract_base_name(filename)
 
@@ -194,7 +196,7 @@ class TestIntercomAPIManager(unittest.TestCase):
         Test extract_base_name() properly extracts a multi-word base name
         of an Intercom export CSV filename.
         """
-        filename = "hard_bounce_20251121.csv"
+        filename = "hard_bounce_20251121-183225.csv"
 
         base_name = extract_base_name(filename)
 

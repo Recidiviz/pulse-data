@@ -35,7 +35,7 @@ UPDATE_DATETIME = "update_datetime"
 # Matches Intercom export filenames like "receipt_20251121.csv" or
 # "hard_bounce_20251121.csv", capturing the base name (everything before
 # the trailing `_YYYYMMDD.csv`).
-INTERCOM_EXPORT_FILENAME_REGEX = re.compile(r"^(?P<base_name>.+)_\d{8}\.csv$")
+INTERCOM_EXPORT_FILENAME_REGEX = re.compile(r"^(?P<base_name>.+)_\d{8}\-\d{6}\.csv$")
 
 
 def extract_base_name(filename: str) -> str:
@@ -46,7 +46,7 @@ def extract_base_name(filename: str) -> str:
     if not match:
         raise ValueError(
             f"Filename [{filename}] does not match expected Intercom export "
-            f"filename pattern [<base_name>_YYYYMMDD.csv]"
+            f"filename pattern [<base_name>_YYYYMMDD-HHMMSS.csv]"
         )
     return match.group("base_name")
 
@@ -120,6 +120,7 @@ class IntercomAPIManager:
                             output_dir,
                             filename,
                         )
+
                         df.to_csv(output_path, index=False)
                         file_paths[base_name] = output_path
 

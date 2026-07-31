@@ -40,6 +40,8 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
     build_source_table_repository_for_yaml_managed_tables,
 )
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
+from recidiviz.utils.metadata import set_development_project_id_override
 
 
 def verify_headers(
@@ -61,11 +63,15 @@ def verify_headers(
         )
 
         if big_query_address not in repo.source_tables:
-            raise KeyError(
-                f"No source table config found for [{big_query_address.to_str()}]. "
-                f"Check that a YAML for this table exists under "
-                f"recidiviz/source_tables/yaml_managed/gcs_backed_tables/intercom_export"
+            # Some CSVs exported by Intercom do not appear to have a stable schema (ex. `answers_combined`),
+            # so we have not createad a YAML schema file, instead allowing for there to be no corresponding
+            # source table.
+            logging.warning(
+                "No source table config found for [%s]. This data will still be saved as a CSV in GCS. If you wish for it to be available in BigQuery, add a YAML schema file under recidiviz/source_tables/yaml_managed/gcs_backed_tables/intercom_export",
+                big_query_address.to_str(),
             )
+            break
+
         source_table_config = repo.source_tables[big_query_address]
         schema_fields_by_name = [f.name for f in source_table_config.schema_fields]
 
@@ -112,18 +118,19 @@ def export_and_upload_intercom_data(
             output_dir=temp_output_dir,
             update_datetime=update_datetime,
         )
-    verify_headers(file_paths)
+        verify_headers(file_paths)
 
-    current_project_id = metadata.project_id()
-    for base_name, source_path in file_paths.items():
-        destination_gcs_path = generate_intercom_outbound_content_gcs_path(
-            project_id=current_project_id,
-            file_base_name=base_name,
-            update_datetime=update_datetime,
-        )
-        intercom_gcs_upload(
-            intercom_source_path=source_path, destination_gcs_path=destination_gcs_path
-        )
+        current_project_id = metadata.project_id()
+        for base_name, source_path in file_paths.items():
+            destination_gcs_path = generate_intercom_outbound_content_gcs_path(
+                project_id=current_project_id,
+                file_base_name=base_name,
+                update_datetime=update_datetime,
+            )
+            intercom_gcs_upload(
+                intercom_source_path=source_path,
+                destination_gcs_path=destination_gcs_path,
+            )
 
 
 class IntercomOutboundDataExport(EntrypointInterface):
@@ -176,6 +183,9 @@ class IntercomOutboundDataExport(EntrypointInterface):
         if not start_datetime_inclusive and not end_datetime_inclusive:
             start_datetime_inclusive = bq_table_manager.get_latest_export_window_end()
             end_datetime_inclusive = update_datetime
+        else:
+            start_datetime_inclusive = start_datetime_inclusive.astimezone(timezone.utc)
+            end_datetime_inclusive = end_datetime_inclusive.astimezone(timezone.utc)
 
         try:
             export_and_upload_intercom_data(
@@ -205,6 +215,9 @@ class IntercomOutboundDataExport(EntrypointInterface):
 
 
 if __name__ == "__main__":
+    if in_development():
+        set_development_project_id_override(GCP_PROJECT_STAGING)
+
     IntercomOutboundDataExport.run_entrypoint(
         args=IntercomOutboundDataExport.get_parser().parse_args()
     )

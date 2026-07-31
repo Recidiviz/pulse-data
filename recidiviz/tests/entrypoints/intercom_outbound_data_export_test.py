@@ -66,10 +66,10 @@ class TestIntercomCSVHeaderVerification(unittest.TestCase):
 
         verify_headers(file_paths)
 
-    def test_verify_headers_key_error(self) -> None:
+    def test_verify_headers_missing_yaml(self) -> None:
         """
-        Test that verify_headers() properly raises KeyError for CSV files that
-        don't match the naming of any of the Intercom YAML files.
+        Test that verify_headers() successfully runs after eoncountering a CSV
+        file that doesn't match the naming of any of the Intercom YAML files.
         """
         file_paths = {
             "call_back": self._write_csv(
@@ -82,10 +82,8 @@ class TestIntercomCSVHeaderVerification(unittest.TestCase):
             ),
         }
 
-        with self.assertRaises(KeyError) as context:
-            verify_headers(file_paths)
-
-        self.assertIn("No source table config found", str(context.exception))
+        # Should succeed on no matching YAML for a CSV
+        verify_headers(file_paths)
 
     def test_verify_headers_column_not_found(self) -> None:
         """

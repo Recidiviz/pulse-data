@@ -111,5 +111,10 @@ class IntercomCloudRunJobInfo:
     # The state of the export job (SUCCESS or FAILURE)
     status: IntercomCloudRunJobStatus
 
-    def to_json(self) -> dict[str, Any]:
-        return cattrs.unstructure(self)
+    def to_json(self) -> dict[str, str]:
+        return {
+            "export_datetime": self.export_datetime.isoformat(),
+            "export_window_start_inclusive": self.export_window_start_inclusive.isoformat(),
+            "export_window_end_inclusive": self.export_window_end_inclusive.isoformat(),
+            "status": self.status.value,
+        }

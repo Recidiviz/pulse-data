@@ -56,11 +56,11 @@ class IntercomExportBigQueryTableManager:
     ) -> None:
         """Write to the intercom_export.export_table BQ table."""
 
-        tracker_table_row = [cloud_run_job_info.to_json()]
+        tracker_table_row = cloud_run_job_info.to_json()
 
         tracker_job = self.client.load_into_table_async(
             address=self.intercom_export_tracker_address,
-            rows=tracker_table_row,
+            rows=[tracker_table_row],
         )
         tracker_job.result(timeout=DEFAULT_TIMEOUT)
 
