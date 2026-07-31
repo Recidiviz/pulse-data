@@ -5,11 +5,9 @@ facilities (Mordor, Isengard, Barad-dûr). Pay is quoted in silver pennies
 or castar; extract the numeric amount regardless of currency. Officers
 often refer to people by their aliases (e.g. Strider, Mithrandir).
 
-CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is
-considered relevant according to the following criteria:
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is considered relevant according to the following criteria:
 Whether the document mentions jobs, work, pay, employers, or job searching
-If it is not relevant, set is_relevant to false and use null_reason='no_info_found'
-for all other fields.
+If it is not relevant, set is_relevant to false.
 
 Output fields:
 - is_relevant (boolean, bare value): Whether the document mentions jobs, work, pay, employers, or job searching
@@ -55,13 +53,9 @@ Fields must be logically consistent:
 - `employers[].pay_rate_time_period` applies only when `pay_rate_amount` is set; otherwise set it to null with null_reason='not_applicable'.
 - `employers[].pay_rate_time_period` must be set when `pay_rate_amount` is set.
 
-Each document produces exactly one extraction result object, conforming
-to the output schema supplied separately with this request. Each field
-listed above is reported with a metadata wrapper, in one of two shapes
-(the schema enforces exactly one). Emit only the keys shown for the
-shape you use — the key that distinguishes the other shape
-(`value` or `null_reason`) is absent, not
-null. Within a shape, include every key shown. Exceptions:
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request.
+
+Each field listed above is reported with a metadata wrapper, in one of two shapes (the schema enforces exactly one). Emit only the keys shown for the shape you use — the key that distinguishes the other shape (`value` or `null_reason`) is absent, not null. Within a shape, include every key shown. Exceptions:
 - fields tagged "bare value", which you output directly
 - "list" fields, which are arrays whose elements are objects (each sub-field follows these same rules)
 

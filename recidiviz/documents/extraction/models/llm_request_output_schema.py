@@ -129,6 +129,14 @@ class LLMRequestOutputSchema:
 
         return [is_relevant_field, *self.user_defined_fields]
 
+    @property
+    def has_inferred_fields(self) -> bool:
+        """Returns True if any user-defined field is INFERRED — i.e. reported through
+        the value/null_reason metadata wrapper rather than as a bare STRUCTURAL
+        value.
+        """
+        return any(field.is_inferred_field for field in self.user_defined_fields)
+
     def get_field(self, field_name: str) -> LLMRequestOutputSchemaField:
         """Returns the user-defined top-level field named |field_name|, raising
         if the schema declares no such field.

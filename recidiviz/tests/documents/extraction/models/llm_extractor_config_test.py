@@ -304,11 +304,9 @@ class LLMExtractorConfigFromYamlTest(TestCase):
 _EXPECTED_FAKE_INSTRUCTIONS_PROMPT = """\
 You are extracting fictional assignment information for the Department of Fictional Affairs.
 
-CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is
-considered relevant according to the following criteria:
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is considered relevant according to the following criteria:
 Whether the document mentions a fictional assignment record
-If it is not relevant, set is_relevant to false and use null_reason='no_info_found'
-for all other fields.
+If it is not relevant, set is_relevant to false.
 
 Output fields:
 - is_relevant (boolean, bare value): Whether the document mentions a fictional assignment record
@@ -334,13 +332,9 @@ Fields must be logically consistent:
 - `assignments` applies only when `primary_status` is one of ['active']; otherwise leave it empty.
 - `assignments[].rate_period` applies only when `rate_amount` is set; otherwise set it to null with null_reason='not_applicable'.
 
-Each document produces exactly one extraction result object, conforming
-to the output schema supplied separately with this request. Each field
-listed above is reported with a metadata wrapper, in one of two shapes
-(the schema enforces exactly one). Emit only the keys shown for the
-shape you use — the key that distinguishes the other shape
-(`value` or `null_reason`) is absent, not
-null. Within a shape, include every key shown. Exceptions:
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request.
+
+Each field listed above is reported with a metadata wrapper, in one of two shapes (the schema enforces exactly one). Emit only the keys shown for the shape you use — the key that distinguishes the other shape (`value` or `null_reason`) is absent, not null. Within a shape, include every key shown. Exceptions:
 - fields tagged "bare value", which you output directly
 - "list" fields, which are arrays whose elements are objects (each sub-field follows these same rules)
 
@@ -476,7 +470,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "0813609efa507db3bd1fab26b14bd44a8f2bb8bb8f9fdb3fecfbcbcd5722a15d",
+            "30d16f4b0668ae7553fe741b2d1ad02a010408152f89c218f5c425c12df34db4",
             config.extractor_version_id,
         )
 

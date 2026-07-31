@@ -67,7 +67,6 @@ from recidiviz.utils.string_formatting import (
     fix_indent,
     render_list,
 )
-from recidiviz.utils.types import assert_type
 
 # Human-readable type labels shown for each field in the "Output fields:" listing.
 _FIELD_TYPE_LABELS = {
@@ -81,25 +80,27 @@ _FIELD_TYPE_LABELS = {
 }
 
 
-OUTPUT_FORMAT_INSTRUCTIONS_TEMPLATE = f"""
-CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is
+_RELEVANCE_PREAMBLE_TEMPLATE = f"""\
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is \
 considered relevant according to the following criteria:
 {{relevance_criteria}}
-If it is not relevant, set {IS_RELEVANT_FIELD_NAME} to false and use {NULL_REASON_FIELD_NAME}='{NullReason.NO_INFO_FOUND.value}'
-for all other fields.
+If it is not relevant, set {IS_RELEVANT_FIELD_NAME} to false."""
 
+_OUTPUT_FIELDS_TEMPLATE = """\
 Output fields:
-{{output_fields_description}}
+{output_fields_description}"""
 
-{{semantic_consistency_constraints}}
+_RESULT_OBJECT_SENTENCE = (
+    "Each document produces exactly one extraction result object, conforming "
+    "to the output schema supplied separately with this request."
+)
 
-Each document produces exactly one extraction result object, conforming
-to the output schema supplied separately with this request. Each field
-listed above is reported with a metadata wrapper, in one of two shapes
-(the schema enforces exactly one). Emit only the keys shown for the
-shape you use — the key that distinguishes the other shape
-(`{VALUE_FIELD_NAME}` or `{NULL_REASON_FIELD_NAME}`) is absent, not
-null. Within a shape, include every key shown. Exceptions:
+_METADATA_WRAPPER_TEMPLATE = f"""\
+Each field listed above is reported with a metadata wrapper, in one of two shapes (the \
+schema enforces exactly one). Emit only the keys shown for the shape you use — the key \
+that distinguishes the other shape (`{VALUE_FIELD_NAME}` or \
+`{NULL_REASON_FIELD_NAME}`) is absent, not null. Within a shape, include every key \
+shown. Exceptions:
 {{metadata_wrapper_exceptions}}
 
 When you extract a value:
@@ -116,8 +117,7 @@ confident:
 {{confidence_level_value_descriptions_list}}
 
 `{NULL_REASON_FIELD_NAME}` values, used only on the null shape above:
-{{null_reason_value_descriptions_list}}
-"""
+{{null_reason_value_descriptions_list}}"""
 
 STRUCTURAL_FIELD_LABEL = "bare value"
 
@@ -157,29 +157,64 @@ class LLMExtractorOutputFormatInstructionsGenerator:
 
     @classmethod
     def generate(cls, output_schema: LLMRequestOutputSchema) -> str:
-        """Returns the `{output_instructions}` block for |output_schema|. This includes
-        relevance criteria, output field descriptions, semantic consistency constraint
-        descriptions, and explanations of the INFERRED field wrapper shapes.
+        """Returns the `{output_instructions}` block for |output_schema|. Two orthogonal
+        schema properties decide what appears:
+
+          - a relevance gate (`is_relevant_field`) adds the relevance preamble;
+          - metadata-wrapped fields (`has_inferred_fields`) add the wrapper machinery
+            (branch shapes, confidence/null_reason vocab) and the `bare value` tags
+            that set STRUCTURAL fields apart.
+
+        An all-STRUCTURAL, relevance-free schema (entity resolution) therefore
+        renders just the field listing and any constraints.
         """
-        formatted = StrictStringFormatter().format(
-            OUTPUT_FORMAT_INSTRUCTIONS_TEMPLATE,
-            # TODO(OBT-36778): Adapt this generator to render the relevance-free,
-            # all-STRUCTURAL entity-resolution schema (no `is_relevant`) when the
-            # real ER clustering prompt lands. Until then prompt generation
-            # supports only relevance-bearing (first-order) schemas, whose
-            # `is_relevant_field` is always present.
-            relevance_criteria=collapse_whitespace(
-                assert_type(
-                    output_schema.is_relevant_field,
-                    PrimitiveScalarLLMRequestOutputSchemaField,
-                ).description
-            ),
-            output_fields_description=cls.render_output_fields_description(
-                output_schema
-            ),
-            semantic_consistency_constraints=cls.render_semantic_consistency_constraints(
-                output_schema
-            ),
+        has_inferred_fields = output_schema.has_inferred_fields
+        sections: list[str] = []
+
+        if (is_relevant_field := output_schema.is_relevant_field) is not None:
+            sections.append(cls._render_relevance_preamble(is_relevant_field))
+
+        sections.append(
+            StrictStringFormatter().format(
+                _OUTPUT_FIELDS_TEMPLATE,
+                output_fields_description=cls.render_output_fields_description(
+                    output_schema, mark_structural_fields=has_inferred_fields
+                ),
+            )
+        )
+
+        if constraints := cls.render_semantic_consistency_constraints(output_schema):
+            sections.append(constraints)
+
+        sections.append(_RESULT_OBJECT_SENTENCE)
+
+        if has_inferred_fields:
+            sections.append(
+                cls._render_inferred_field_metadata_wrapper_instructions(output_schema)
+            )
+
+        return collapse_blank_lines("\n\n".join(sections))
+
+    @classmethod
+    def _render_relevance_preamble(
+        cls, is_relevant_field: PrimitiveScalarLLMRequestOutputSchemaField
+    ) -> str:
+        """Returns the relevance-preamble section."""
+        return StrictStringFormatter().format(
+            _RELEVANCE_PREAMBLE_TEMPLATE,
+            relevance_criteria=collapse_whitespace(is_relevant_field.description),
+        )
+
+    @classmethod
+    def _render_inferred_field_metadata_wrapper_instructions(
+        cls, output_schema: LLMRequestOutputSchema
+    ) -> str:
+        """Returns the metadata-wrapper section: the two INFERRED-field result shapes
+        and the confidence/null_reason vocab. Rendered only when the schema has
+        inferred fields.
+        """
+        return StrictStringFormatter().format(
+            _METADATA_WRAPPER_TEMPLATE,
             metadata_wrapper_exceptions=cls.render_metadata_wrapper_exceptions(
                 output_schema
             ),
@@ -192,43 +227,56 @@ class LLMExtractorOutputFormatInstructionsGenerator:
                 NullReason
             ),
         )
-        return collapse_blank_lines(formatted)
 
     @classmethod
     def render_output_fields_description(
-        cls, output_schema: LLMRequestOutputSchema
+        cls, output_schema: LLMRequestOutputSchema, *, mark_structural_fields: bool
     ) -> str:
         """Returns a bulleted listing of each output field, including its name, type,
         and description. An ARRAY_OF_STRUCT field's sub-fields nest one level beneath
-        it.
+        it. When |mark_structural_fields| is True, STRUCTURAL fields are tagged
+        "bare value" to set them apart from the metadata-wrapped INFERRED fields — a
+        distinction that only carries meaning when the schema has both, so an
+        all-STRUCTURAL (entity-resolution) schema passes False.
         """
         listings: list[str] = []
         # all_fields (not user_defined_fields) so the framework-injected
         # is_relevant field — and any future framework field — is always listed.
         for field in output_schema.all_fields:
             listings.append(
-                cls._render_field_description_list_item(field, indent_level=0)
+                cls._render_field_description_list_item(
+                    field,
+                    indent_level=0,
+                    mark_structural_fields=mark_structural_fields,
+                )
             )
             if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
                 for sub_field in field.fields:
                     listings.append(
                         cls._render_field_description_list_item(
-                            sub_field, indent_level=2
+                            sub_field,
+                            indent_level=2,
+                            mark_structural_fields=mark_structural_fields,
                         )
                     )
         return "\n".join(listings)
 
     @staticmethod
     def _render_field_description_list_item(
-        field: LLMRequestOutputSchemaField, *, indent_level: int
+        field: LLMRequestOutputSchemaField,
+        *,
+        indent_level: int,
+        mark_structural_fields: bool,
     ) -> str:
         """Returns the list item for one field: `- <name> (<type>): <description>`,
         preserving any multi-line structure in the description (e.g. an ENUM
         field's baked-in "Allowed values:" bullet list) by hanging-indenting its
-        continuation lines beneath the field's bullet.
+        continuation lines beneath the field's bullet. A STRUCTURAL field is tagged
+        "bare value" only when |mark_structural_fields| is set (see
+        `render_output_fields_description`).
         """
         type_label = _FIELD_TYPE_LABELS[field.field_type]
-        if field.field_mode is LLMOutputFieldMode.STRUCTURAL:
+        if mark_structural_fields and field.field_mode is LLMOutputFieldMode.STRUCTURAL:
             type_label = f"{type_label}, {STRUCTURAL_FIELD_LABEL}"
         field_block = f"{field.name} ({type_label}): {field.description.strip()}"
         return render_list([field_block], indent_level=indent_level)

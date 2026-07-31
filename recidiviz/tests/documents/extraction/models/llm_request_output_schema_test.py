@@ -132,6 +132,18 @@ class LLMRequestOutputSchemaTest(TestCase):
             ["a", "b", "c"], [field.name for field in schema.user_defined_fields]
         )
 
+    def test_has_inferred_fields(self) -> None:
+        # True when any user-defined field is INFERRED (the default), False when
+        # every user-defined field is STRUCTURAL (the entity-resolution shape). The
+        # framework-injected is_relevant field is STRUCTURAL and does not count.
+        self.assertTrue(_build_schema(_field("a")).has_inferred_fields)
+        self.assertFalse(
+            _build_schema(
+                _field("a", field_mode="STRUCTURAL"),
+                _field("b", field_mode="STRUCTURAL"),
+            ).has_inferred_fields
+        )
+
     def test_none_relevance_criteria_has_no_is_relevant_field(self) -> None:
         # A None relevance_criteria declares a schema with no is_relevant field
         # (the entity-resolution shape); the property returns None and all_fields

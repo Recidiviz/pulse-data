@@ -71,11 +71,9 @@ def _build_schema(
 # Regenerate by running that schema through `.generate(...)` if the template or a
 # slot renderer intentionally changes.
 _EXPECTED_GENERATE_OUTPUT = """\
-CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is
-considered relevant according to the following criteria:
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is considered relevant according to the following criteria:
 Whether the document mentions jobs, work, pay, or employers
-If it is not relevant, set is_relevant to false and use null_reason='no_info_found'
-for all other fields.
+If it is not relevant, set is_relevant to false.
 
 Output fields:
 - is_relevant (boolean, bare value): Whether the document mentions jobs, work, pay, or employers
@@ -95,13 +93,9 @@ Fields must be logically consistent:
 - `employers` must have at least one entry when `primary_status` is one of ['employed'].
 - `employers[].pay_rate_time_period` applies only when `pay_rate_amount` is set; otherwise set it to null with null_reason='not_applicable'.
 
-Each document produces exactly one extraction result object, conforming
-to the output schema supplied separately with this request. Each field
-listed above is reported with a metadata wrapper, in one of two shapes
-(the schema enforces exactly one). Emit only the keys shown for the
-shape you use — the key that distinguishes the other shape
-(`value` or `null_reason`) is absent, not
-null. Within a shape, include every key shown. Exceptions:
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request.
+
+Each field listed above is reported with a metadata wrapper, in one of two shapes (the schema enforces exactly one). Emit only the keys shown for the shape you use — the key that distinguishes the other shape (`value` or `null_reason`) is absent, not null. Within a shape, include every key shown. Exceptions:
 - fields tagged "bare value", which you output directly
 - "list" fields, which are arrays whose elements are objects (each sub-field follows these same rules)
 
@@ -187,6 +181,29 @@ class GenerateTest(TestCase):
             LLMExtractorOutputFormatInstructionsGenerator.generate(schema),
         )
 
+    def test_relevance_gate_and_metadata_wrapper_are_independent(self) -> None:
+        # Tests a schema where is_relevant present but every user field STRUCTURAL
+        # (has_inferred_fields is False).
+        schema = _build_schema(
+            _field("summary", field_mode="STRUCTURAL"),
+            _field("category", field_mode="STRUCTURAL"),
+            relevance_criteria="Whether the document mentions employment",
+        )
+        expected = """\
+CRITICAL INSTRUCTION: First determine whether this document is relevant. A document is considered relevant according to the following criteria:
+Whether the document mentions employment
+If it is not relevant, set is_relevant to false.
+
+Output fields:
+- is_relevant (boolean): Whether the document mentions employment
+- summary (string): A description that is long enough to be meaningful.
+- category (string): A description that is long enough to be meaningful.
+
+Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request."""
+        self.assertEqual(
+            expected, LLMExtractorOutputFormatInstructionsGenerator.generate(schema)
+        )
+
 
 class OutputFieldsDescriptionTest(TestCase):
     """`render_output_fields_description`."""
@@ -223,7 +240,7 @@ class OutputFieldsDescriptionTest(TestCase):
         self.assertEqual(
             expected,
             LLMExtractorOutputFormatInstructionsGenerator.render_output_fields_description(
-                schema
+                schema, mark_structural_fields=True
             ),
         )
 
