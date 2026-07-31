@@ -27,6 +27,7 @@ from recidiviz.big_query.big_query_view_column import (
     Date,
     Integer,
     Json,
+    SqlFieldMode,
     String,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -53,40 +54,41 @@ def _build_reason_v2_description(reasons_fields: List[ReasonsField]) -> str:
     return f"Structured JSON reason blob (v2 format). Fields: {fields_desc}"
 
 
-def task_criteria_schema(
-    reasons_fields: List[ReasonsField] | None = None,
+def span_with_reasons_schema(
+    *,
+    value_column: BigQueryViewColumn,
+    reasons_fields: List[ReasonsField],
+    span_label: str,
+    state_code_mode: SqlFieldMode,
+    person_id_mode: SqlFieldMode,
 ) -> Sequence[BigQueryViewColumn]:
-    """Returns the schema for a criteria view. When |reasons_fields| is
-    provided, the reason_v2 column description enumerates the fields."""
+    """Returns the shared schema for a "span with reasons" view: the base span
+    keys, a caller-supplied |value_column|, and the reason / reason_v2 JSON
+    blobs. |span_label| names the span in the column descriptions (e.g.
+    "criteria span"). Shared by the criteria schema (value = meets_criteria) and
+    the classification score component schema (value = component_score)."""
     return [
         String(
             name="state_code",
-            # TODO(#62322): make state_code, person_id and meets_criteria REQUIRED after there are no more nulls in
-            # task_eligibility_criteria_general.at_least_2_months_since_negative_drug_test_streak_began
-            mode="NULLABLE",
-            description="The state code for this criteria span",
+            mode=state_code_mode,
+            description=f"The state code for this {span_label}",
         ),
         Integer(
             name="person_id",
-            mode="NULLABLE",
-            description="The person ID for this criteria span",
+            mode=person_id_mode,
+            description=f"The person ID for this {span_label}",
         ),
         Date(
             name="start_date",
             mode="REQUIRED",
-            description="Start date of the criteria span (inclusive)",
+            description=f"Start date of the {span_label} (inclusive)",
         ),
         Date(
             name="end_date",
             mode="NULLABLE",
-            description="End date of the criteria span (exclusive). NULL means the span is ongoing.",
+            description=f"End date of the {span_label} (exclusive). NULL means the span is ongoing.",
         ),
-        # Some criteria produce NULL meets_criteria values.
-        Bool(
-            name="meets_criteria",
-            mode="NULLABLE",
-            description="Whether the person meets the criteria during this span",
-        ),
+        value_column,
         Json(
             name="reason",
             mode="NULLABLE",
@@ -95,15 +97,40 @@ def task_criteria_schema(
         Json(
             name="reason_v2",
             mode="REQUIRED",
-            description=_build_reason_v2_description(reasons_fields or []),
+            description=_build_reason_v2_description(reasons_fields),
         ),
     ]
+
+
+def task_criteria_schema(
+    reasons_fields: List[ReasonsField] | None = None,
+) -> Sequence[BigQueryViewColumn]:
+    """Returns the schema for a criteria view. When |reasons_fields| is
+    provided, the reason_v2 column description enumerates the fields."""
+    return span_with_reasons_schema(
+        # Some criteria produce NULL meets_criteria values.
+        value_column=Bool(
+            name="meets_criteria",
+            mode="NULLABLE",
+            description="Whether the person meets the criteria during this span",
+        ),
+        reasons_fields=reasons_fields or [],
+        span_label="criteria span",
+        # TODO(#62322): make state_code, person_id and meets_criteria REQUIRED after there are no more nulls in
+        # task_eligibility_criteria_general.at_least_2_months_since_negative_drug_test_streak_began
+        state_code_mode="NULLABLE",
+        person_id_mode="NULLABLE",
+    )
 
 
 def get_template_with_reasons_as_json(
     query_template: str,
     reasons_fields: List[ReasonsField],
     state_code: Optional[str] = None,
+    # Name of the span-attribute column the base query emits. Defaults to the
+    # criteria contract's boolean `meets_criteria`; the classification score
+    # component builder passes an integer `component_score` instead.
+    value_column_name: str = "meets_criteria",
 ) -> str:
     # If no reason fields are provided, default to NULL
     reasons_query_fragment = "TO_JSON(STRUCT())"
@@ -128,7 +155,7 @@ SELECT
     person_id,
     start_date,
     end_date,
-    meets_criteria,
+    {value_column_name},
     reason,
     {reasons_query_fragment} AS reason_v2,
 FROM
@@ -141,7 +168,7 @@ _aggregated AS
     table_name="_pre_sessionized",
     index_columns=['person_id','state_code'],
     end_date_field_name="end_date",
-    attribute=['meets_criteria','reason','reason_v2'],
+    attribute=[value_column_name,'reason','reason_v2'],
     struct_attribute_subset=['reason','reason_v2']
 )}
 )
@@ -150,7 +177,7 @@ SELECT
     person_id,
     CAST(start_date AS DATE) AS start_date,
     CAST(end_date AS DATE) AS end_date,
-    meets_criteria,
+    {value_column_name},
     reason,
     reason_v2
 FROM _aggregated{state_code_query_fragment}
@@ -170,16 +197,44 @@ def _validated_contact_types(
     return contact_types
 
 
-def _get_reason_field_by_name(
-    criteria: "TaskCriteriaBigQueryViewBuilder", reason_name: str
+def validate_and_derive_state_specific_view_id(
+    *,
+    state_code: StateCode,
+    name: str,
+    name_type_label: str,
+    entity_description: str,
+) -> str:
+    """Validates that |name| is upper case and prefixed with |state_code|, then
+    returns the derived (state-prefix-stripped, lower-cased) view id.
+
+    |name_type_label| names the identifier in the upper-case error (e.g.
+    "Criteria" → "Criteria name [...] must be upper case."); |entity_description|
+    names the entity in the prefix error (e.g. "state-specific task criteria").
+    Shared by the state-specific criteria builder and the classification score
+    component builder.
+    """
+    if name.upper() != name:
+        raise ValueError(f"{name_type_label} name [{name}] must be upper case.")
+    state_code_prefix = f"{state_code.value}_"
+    if not name.startswith(state_code_prefix):
+        raise ValueError(
+            f"Found {entity_description} [{name}] whose name "
+            f"does not start with [{state_code_prefix}]."
+        )
+    return name.removeprefix(state_code_prefix).lower()
+
+
+def get_reason_field_by_name(
+    reasons_fields: Sequence[ReasonsField], reason_name: str, builder_label: str
 ) -> ReasonsField:
-    for reason_field in criteria.reasons_fields:
+    """Returns the reason field with the given name, raising a |builder_label|-
+    qualified error if none matches. Shared by the criteria and classification
+    score component builders."""
+    for reason_field in reasons_fields:
         if reason_field.name == reason_name:
             return reason_field
 
-    raise ValueError(
-        f"Criteria {criteria.criteria_name} has no reason field named {reason_name}"
-    )
+    raise ValueError(f"{builder_label} has no reason field named {reason_name}")
 
 
 class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -210,16 +265,12 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
         **query_format_kwargs: str,
     ) -> None:
-        if criteria_name.upper() != criteria_name:
-            raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
-
-        state_code_prefix = f"{state_code.value}_"
-        if not criteria_name.startswith(state_code_prefix):
-            raise ValueError(
-                f"Found state-specific task criteria [{criteria_name}] whose name "
-                f"does not start with [{state_code_prefix}]."
-            )
-        view_id = criteria_name.removeprefix(state_code_prefix).lower()
+        view_id = validate_and_derive_state_specific_view_id(
+            state_code=state_code,
+            name=criteria_name,
+            name_type_label="Criteria",
+            entity_description="state-specific task criteria",
+        )
         super().__init__(
             dataset_id=task_eligibility_criteria_state_specific_dataset(state_code),
             view_id=view_id,
@@ -252,7 +303,9 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
     def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
         """Return the reason field object with the corresponding name"""
-        return _get_reason_field_by_name(self, reason_name)
+        return get_reason_field_by_name(
+            self.reasons_fields, reason_name, f"Criteria {self.criteria_name}"
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, StateSpecificTaskCriteriaBigQueryViewBuilder):
@@ -345,7 +398,9 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
     def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
         """Return the reason field object with the corresponding name"""
-        return _get_reason_field_by_name(self, reason_name)
+        return get_reason_field_by_name(
+            self.reasons_fields, reason_name, f"Criteria {self.criteria_name}"
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, StateAgnosticTaskCriteriaBigQueryViewBuilder):

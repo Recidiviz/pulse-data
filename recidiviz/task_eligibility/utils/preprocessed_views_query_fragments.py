@@ -23,6 +23,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import CLASSIFICATION_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.classification_score_component_big_query_view_builder import (
+    COMPONENT_SCORE_COLUMN_NAME,
+    INITIAL_COMPONENT_SCORE_COLUMN_NAME,
+)
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     num_events_within_time_interval_spans,
 )
@@ -316,23 +320,56 @@ def _incident_details_ctes(incident_ids_with_time_period_body: str) -> str:
     """
 
 
-def _final_score_select_clause(score_columns_sql: str) -> str:
+def _final_score_select_clause(score_columns_sql: str, *, is_dual_mode: bool) -> str:
     """Returns the final SELECT shared by classification_incident_score_query_template
     and classification_prior_session_incident_score_query_template, given the SQL for
-    the score column(s) to interpolate."""
+    the score column(s) to interpolate.
+
+    Emits the classification score component contract — one span per (person,
+    start_date, end_date) with an integer `component_score` and a `reason` blob — so
+    callers can hand the result straight to a
+    ClassificationScoreComponentBigQueryViewBuilder with no wrapping SELECT of their own.
+    `incidents_list` and `latest_incident_date` are also emitted as top-level columns for
+    the builder to pack into `reason_v2`, so every caller declares the matching pair of
+    ReasonsFields.
+
+    In dual mode the reclassification score becomes `component_score` and the initial
+    score is carried alongside it — see TODO(OBT-41792) on
+    INITIAL_COMPONENT_SCORE_COLUMN_NAME."""
+    component_score_columns_sql = (
+        f"reclass_total_score AS {COMPONENT_SCORE_COLUMN_NAME},\n"
+        f"        initial_total_score AS {INITIAL_COMPONENT_SCORE_COLUMN_NAME},"
+        if is_dual_mode
+        else f"total_score AS {COMPONENT_SCORE_COLUMN_NAME},"
+    )
     return f"""
+    incident_score_spans AS (
+        SELECT
+            person_id,
+            state_code,
+            start_date,
+            end_date,
+            {score_columns_sql}
+            IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list,
+            incident_details_aggregated.latest_incident_date,
+        FROM calculated_scores_separate incident_counts
+        LEFT JOIN incident_details_aggregated
+            USING (person_id, state_code, custodial_authority_session_id, start_date, end_date)
+        WHERE end_date > start_date
+    )
     SELECT
-        person_id,
         state_code,
+        person_id,
         start_date,
-        end_date AS end_date_exclusive,
-        {score_columns_sql}
-        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list,
-        incident_details_aggregated.latest_incident_date
-    FROM calculated_scores_separate incident_counts
-    LEFT JOIN incident_details_aggregated
-        USING (person_id, state_code, custodial_authority_session_id, start_date, end_date)
-    WHERE end_date > start_date
+        end_date,
+        {component_score_columns_sql}
+        TO_JSON(STRUCT(
+            incidents_list,
+            latest_incident_date
+        )) AS reason,
+        incidents_list,
+        latest_incident_date,
+    FROM incident_score_spans
     """
 
 
@@ -616,7 +653,8 @@ def classification_incident_score_query_template(
     )
     ,
     {_incident_details_ctes(incident_ids_unnest_union)}
-    {_final_score_select_clause(score_select_sql)}
+    ,
+    {_final_score_select_clause(score_select_sql, is_dual_mode=is_dual_mode)}
     """
 
 
@@ -789,5 +827,6 @@ def classification_prior_session_incident_score_query_template(
     )
     ,
     {_incident_details_ctes(incident_ids_with_time_period_body)}
-    {_final_score_select_clause(score_column_names)}
+    ,
+    {_final_score_select_clause(score_column_names, is_dual_mode=is_dual_mode)}
     """

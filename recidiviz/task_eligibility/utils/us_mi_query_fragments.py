@@ -17,6 +17,8 @@
 """
 Helper SQL queries for Michigan
 """
+from google.cloud import bigquery
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.calculator.query.bq_utils import (
@@ -42,6 +44,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.regions.us_mi.constants import ACTIVE_SUPERVISION_STATUSES
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.classification_score_component_big_query_view_builder import (
+    INITIAL_COMPONENT_SCORE_COLUMN_NAME,
+)
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -1307,6 +1313,26 @@ def secondary_officer_dockets_cte() -> str:
             GROUP BY 1
         )
     """
+
+
+def us_mi_initial_component_score_reasons_field(score_description: str) -> ReasonsField:
+    """Returns the ReasonsField carrying a question's initial-form score, given a
+    description of how that score is derived.
+
+    TODO(OBT-41792): Remove once MI's per-form score mappings move to CSV and the
+    initial score gets its own score component views."""
+    return ReasonsField(
+        name=INITIAL_COMPONENT_SCORE_COLUMN_NAME,
+        type=bigquery.enums.StandardSqlTypeNames.INT64,
+        description=(
+            f"The points this question contributes to MI's INITIAL classification "
+            f"score during the span (the span's `component_score` carries the "
+            f"reclassification score). {score_description} "
+            f"TODO(OBT-41792): This score is carried in the reason blob as a "
+            f"workaround and is not covered by the score component span "
+            f"validations; it will move to its own `component_score` column."
+        ),
+    )
 
 
 # `Program_End_Reason` values in COMS_Program_Recommendations that indicate the

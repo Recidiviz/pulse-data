@@ -1169,27 +1169,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("classification_views.us_tn_caf_q1"): [
-        "q1_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_caf_q2"): [
-        "q2_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_caf_q6"): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "q6_score",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_caf_q7"): [
-        "q7_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_caf_q8"): [
-        "q8_score",
-    ],
     BigQueryAddress.from_str("analyst_data.us_tn_contact_comments_preprocessed"): [
         "contact_comment",
         "contact_date",
@@ -1206,64 +1185,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "classification_decision_date",
         "person_id",
         "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q1_v1"): [
-        "current_offense_date",
-        "current_offenses_list",
-        "other_prior_charges_list",
-        "prior_violent_felonies_list",
-        "q1_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q1_v2"): [
-        "current_offense_date",
-        "current_offenses_list",
-        "other_prior_charges_list",
-        "prior_violent_felonies_list",
-        "q1_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q2_v1"): [
-        "q2_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q2_v2"): [
-        "q2_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q3_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q3_v2"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q4_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q4_v2"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q5_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q6_v1"): [
-        "age",
-        "q6_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_q6_v2"): [
-        "age",
-        "q6_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_dcaf_rcaf_q7_v1"): [
-        "other_program_completions",
-        "q7_score",
-        "qualifying_program_completions",
     ],
     BigQueryAddress.from_str(
         "analyst_data.us_tn_earned_credit_activity_preprocessed"
@@ -1425,81 +1346,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "person_id",
         "sentence_effective_date",
         "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q1_v1"): [
-        "current_offense_date",
-        "current_offenses_list",
-        "other_prior_charges_list",
-        "prior_violent_felonies_list",
-        "q1_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q1_v2"): [
-        "current_offense_date",
-        "current_offenses_list",
-        "other_prior_charges_list",
-        "prior_violent_felonies_list",
-        "q1_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q2_v1"): [
-        "q2_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q2_v2"): [
-        "q2_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q3_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q3_v2"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q4_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q4_v2"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q4_v3"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q5_v1"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q5_v2"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q5_v3"): [
-        "incidents_list",
-        "latest_incident_date",
-        "total_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q6_v1"): [
-        "age",
-        "no_class_a_or_b_disciplinary_reports_in_last_12_months",
-        "q6_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q6_v2"): [
-        "age",
-        "no_class_a_or_b_disciplinary_reports_in_last_12_months",
-        "q6_score",
-    ],
-    BigQueryAddress.from_str("classification_views.us_tn_rcaf_q6_v3"): [
-        "age",
-        "no_class_a_or_b_disciplinary_reports_in_last_12_months",
-        "q6_score",
     ],
     BigQueryAddress.from_str(
         "classification_views.us_tn_recommended_custody_level_spans"
