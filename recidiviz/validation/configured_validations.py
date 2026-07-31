@@ -38,6 +38,18 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
+from recidiviz.validation.views.sentencing.case_insights_rates_missing_charges import (
+    CASE_INSIGHTS_RATES_MISSING_CHARGES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.sentencing.us_mo_sentencing_sentence_cohort_data_issues import (
+    US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.sentencing.us_mo_sentencing_time_served_all_data_issues import (
+    US_MO_SENTENCING_TIME_SERVED_ALL_DATA_ISSUES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.sentencing.us_mo_sentencing_time_served_preprocessed_data_issues import (
+    US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
@@ -249,9 +261,6 @@ from recidiviz.validation.views.state.sentence_sessions.overlapping_sentence_inf
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sentences.case_insights_rates_missing_charges import (
-    SENTENCES_CASE_INSIGHTS_CHARGE_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.sentences.compare_v2_and_v1_sentences import (
     SENTENCE_COMPARISON_VIEW_BUILDER,
 )
@@ -278,15 +287,6 @@ from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_s
 )
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sentences.us_mo_sentencing_sentence_cohort_data_issues import (
-    US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sentences.us_mo_sentencing_time_served_all_data_issues import (
-    US_MO_SENTENCING_TIME_SERVED_ALL_DATA_ISSUES_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sentences.us_mo_sentencing_time_served_preprocessed_data_issues import (
-    US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.sessions.mismatched_supervision_staff_attribute_sessions_locations import (
     MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,
@@ -615,7 +615,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=SENTENCES_CASE_INSIGHTS_CHARGE_COMPARISON_VIEW_BUILDER,
+            view_builder=CASE_INSIGHTS_RATES_MISSING_CHARGES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             hard_num_allowed_rows=5,
         ),

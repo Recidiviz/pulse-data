@@ -14020,11 +14020,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "region_code",
         "state_code",
     ],
-    BigQueryAddress.from_str("validation_views.case_insights_rates_missing_charges"): [
-        "description",
-        "region_code",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "validation_views.client_and_resident_record_percent_change_in_eligibility_exceeded"
     ): [
@@ -16035,31 +16030,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "new_code",
         "num_rows_with_new_code",
         "region_code",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.us_mo_sentencing_sentence_cohort_data_issues"
-    ): [
-        "cohort_group",
-        "imposed_date",
-        "most_severe_charge_description",
-        "most_severe_charge_v2_id",
-        "person_id",
-        "region_code",
-        "sentence_imposed_group_id",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.us_mo_sentencing_time_served_preprocessed_data_issues"
-    ): [
-        "cohort_group",
-        "imposed_date",
-        "most_severe_charge_description",
-        "most_severe_charge_v2_id",
-        "pct_served",
-        "person_id",
-        "region_code",
-        "sentence_imposed_group_id",
         "state_code",
     ],
     BigQueryAddress.from_str(
