@@ -107,4 +107,7 @@ class EntityResolutionExtractorGenerator:
             model_config=model_config,
             reference_data=first_order_config.reference_data,
             entity_group=entity_resolution_document_collection.entity_group,
+            # ER output is derived from already-extracted first-order results, so
+            # there is no golden set of documents to evaluate it against.
+            golden_eval=None,
         )

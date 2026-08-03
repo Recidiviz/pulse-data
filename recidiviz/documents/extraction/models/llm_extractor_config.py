@@ -18,10 +18,11 @@
 `(collection, state)` pair.
 
 A state's `extractor.yaml` supplies the per-state half of an extractor: which
-document collection it reads, the document filter, the prompt vars, and any
-model/cap overrides. `LLMExtractorConfig.from_yaml` parses that file and binds it
-with its already-parsed collection config, its resolved input document
-collection, and its resolved model config into one fully-resolved object.
+document collection it reads, the document filter, the prompt vars, any
+model/cap overrides, and its golden eval set. `LLMExtractorConfig.from_yaml`
+parses that file and binds it with its already-parsed collection config, its
+resolved input document collection, and its resolved model config into one
+fully-resolved object.
 """
 
 import json
@@ -36,6 +37,9 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
+)
+from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
+    LLMDocumentExtractionGoldenEvalConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
@@ -247,6 +251,15 @@ class LLMExtractorConfig:
     """Set for an auto-generated entity-resolution extractor, None for a
     first-order extractor. The single signal that distinguishes the two: the
     first-order thinking-model ban below is scoped to configs where this is None.
+    """
+
+    golden_eval: LLMDocumentExtractionGoldenEvalConfig | None = attr.ib(
+        validator=attr_validators.is_opt(LLMDocumentExtractionGoldenEvalConfig)
+    )
+    """Where this (collection, state) extractor's human-labeled eval set lives and
+    how accurate each test type must be. Required for a first-order extractor;
+    None on a generated entity-resolution extractor, which is exempt from golden
+    eval.
     """
 
     instructions_prompt: str = attr.ib(init=False, eq=False, repr=False)
@@ -478,6 +491,13 @@ class LLMExtractorConfig:
         # Raises if the name does not resolve in the registry.
         model_config = model_registry.get_model_config(model_config_name)
 
+        # Required here even though the field is nullable: only the generated
+        # entity-resolution extractor may omit golden eval, and it is built
+        # directly rather than via this code path.
+        golden_eval = LLMDocumentExtractionGoldenEvalConfig.from_yaml_dict(
+            config_dict.pop_dict("golden_eval")
+        )
+
         config = cls(
             state_code=cls.state_code_for_yaml_path(yaml_path),
             input_document_collection=input_document_collection,
@@ -524,6 +544,7 @@ class LLMExtractorConfig:
             # Extractors defined via YAMLs are always first-order extractors (not entity
             # resolution extractors), so this value will always be None.
             entity_group=None,
+            golden_eval=golden_eval,
         )
         if config_dict:
             raise ValueError(

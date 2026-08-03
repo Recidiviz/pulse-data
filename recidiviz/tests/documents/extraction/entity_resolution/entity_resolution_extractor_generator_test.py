@@ -167,6 +167,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             # it from the parent verbatim, so assert against the parent's.
             reference_data=fake_first_order_extractor_config().reference_data,
             entity_group=entity_group,
+            golden_eval=None,
         )
         # instructions_prompt is a cached derived field excluded from __eq__, so this
         # equality check does not cover it; it is pinned by
@@ -206,6 +207,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             # it from the parent verbatim, so assert against the parent's.
             reference_data=fake_first_order_extractor_config().reference_data,
             entity_group=entity_group,
+            golden_eval=None,
         )
         # instructions_prompt is a cached derived field excluded from __eq__, so this
         # equality check does not cover it; it is pinned by

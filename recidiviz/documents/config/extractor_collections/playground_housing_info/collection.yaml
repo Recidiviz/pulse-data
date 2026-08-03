@@ -11,12 +11,6 @@ default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 
 minimum_confidence_level: inferred
 
-golden_eval:
-  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1US9XCZfSxwzEnI38Ex6RerqRtcYt3867m-QmAGEa3ls"
-  accuracy_thresholds:
-    unit: 1.0
-    sample: 1.0
-
 reference_data:
   # The same known_organizations data the employment collection uses, rendered
   # with housing-specific framing.

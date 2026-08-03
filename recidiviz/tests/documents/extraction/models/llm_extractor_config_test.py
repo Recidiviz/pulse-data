@@ -39,6 +39,10 @@ from recidiviz.documents.extraction.config_defaults import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
+from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
+    GoldenEvalTestType,
+    LLMDocumentExtractionGoldenEvalConfig,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     LLMExtractorCollectionConfig,
     get_llm_extractor_collection_config,
@@ -74,6 +78,14 @@ from recidiviz.utils.string import sha256_hexdigest
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
 _FILTER_QUERY = "SELECT document_contents_id FROM `{project_id}.x.y`"
+_GOLDEN_EVAL_SHEET_URI = "https://docs.google.com/spreadsheets/d/abc123"
+_GOLDEN_EVAL_CONFIG = LLMDocumentExtractionGoldenEvalConfig(
+    source_sheet_uri=_GOLDEN_EVAL_SHEET_URI,
+    accuracy_thresholds={
+        GoldenEvalTestType.UNIT: 1.0,
+        GoldenEvalTestType.SAMPLE: 0.9,
+    },
+)
 
 # Defined under recidiviz/tests/documents/fake_config/. The fake collection
 # defaults to _DEFAULT_MODEL_CONFIG_NAME; _OVERRIDE_MODEL_CONFIG_NAME is a second,
@@ -295,6 +307,24 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         )
         self.assertEqual(0, config.max_transient_retry_count)
 
+    def test_golden_eval_block_is_parsed(self) -> None:
+        config = self._resolve_fixture(
+            "extractor_configs/fake_extractor_collection/us_xx/minimal.yaml"
+        )
+        self.assertEqual(_GOLDEN_EVAL_CONFIG, config.golden_eval)
+
+    def test_missing_golden_eval_raises(self) -> None:
+        # Every authored (first-order) extractor must declare a golden eval set.
+        # Only the generated entity-resolution extractor is exempt, and it is
+        # built directly rather than parsed from an extractor.yaml.
+        with self.assertRaisesRegex(
+            KeyError, re.escape("Expected nonnull [golden_eval]")
+        ):
+            self._resolve_fixture(
+                "extractor_configs/fake_extractor_collection/us_xx/"
+                "missing_golden_eval.yaml"
+            )
+
 
 # The full compiled prompt for the fake US_XX extractor: the fake collection's
 # `prompt_template.txt` with `{agency_name}` filled from prompt_vars and the
@@ -446,6 +476,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             ),
             reference_data=self.reference_data,
             entity_group=None,
+            golden_eval=_GOLDEN_EVAL_CONFIG,
         )
 
     def test_extractor_id_format(self) -> None:
@@ -678,6 +709,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
             model_config=model_config if model_config is not None else _model_config(),
             reference_data=self.reference_data,
             entity_group=entity_group,
+            golden_eval=_GOLDEN_EVAL_CONFIG,
         )
 
     def test_state_code_mismatch_with_input_document_collection_raises(self) -> None:

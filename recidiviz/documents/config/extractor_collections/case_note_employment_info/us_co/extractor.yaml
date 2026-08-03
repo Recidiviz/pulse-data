@@ -2,6 +2,12 @@ extractor_collection_name: CASE_NOTE_EMPLOYMENT_INFO
 
 input_document_collection_name: SUPERVISION_CONTACT_NOTES
 
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/15mi5SxXBEQSPeu-62a3wuHhzmrpRQ3repcpgUGDwTzA/edit#gid=493132846"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
 # TODO(OBT-41612): Add TT staff filtering — join a BQ reference table of TT launch
 # staff external IDs to a staff assignments table to restrict to relevant person
 # external IDs only.

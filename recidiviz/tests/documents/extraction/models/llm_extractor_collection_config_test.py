@@ -17,9 +17,8 @@
 """Tests for llm_extractor_collection_config.py.
 
 Focuses on collection-level logic not covered by the output-schema/field tests:
-entity-group resolution against the schema (now storing resolved field objects),
-cross-config resolution (model registry, parent directory), and tolerance of the
-not-yet-modeled blocks.
+entity-group resolution against the schema (now storing resolved field objects)
+and cross-config resolution (model registry, parent directory).
 """
 import json
 import re
@@ -73,6 +72,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 _DESCRIPTION = "A description that is long enough to be meaningful."
 _RELEVANCE_CRITERIA = "Whether the document mentions employment information"
 _PROMPT_TEMPLATE = "Extract the fields.\n\n{output_instructions}\n\n{reference_data}\n"
+
 # A model config that exists in recidiviz/tests/documents/fake_config/model_registry.yaml.
 _FAKE_MODEL_CONFIG_NAME = "GLOBEX_BASIC_DEFAULT"
 # The collection defined under recidiviz/tests/documents/fake_config/.
@@ -509,8 +509,8 @@ class LLMExtractorCollectionConfigTest(TestCase):
             self._collection(entity_groups=[group, group])
 
     def test_none_relevance_and_confidence_allowed(self) -> None:
-        # A synthesized entity-resolution collection declares neither, alongside a
-        # no-relevance, all-STRUCTURAL schema.
+        # A synthesized entity-resolution collection declares some fields as None,
+        # alongside a no-relevance, all-STRUCTURAL schema.
         collection = self._collection(
             relevance_criteria=None,
             minimum_confidence_level=None,
@@ -758,14 +758,6 @@ class CollectionConfigFromYamlTest(TestCase):
             ),
         ):
             self._parse(name="TEST_COLLECTION", bogus_key="value")
-
-    def test_golden_eval_block_is_tolerated(self) -> None:
-        # golden_eval is not yet modeled — consumed and discarded, no error.
-        config = self._parse(
-            name="TEST_COLLECTION",
-            golden_eval={"source_sheet_uri": "https://example.com", "anything": 1},
-        )
-        self.assertEqual("TEST_COLLECTION", config.name)
 
     def test_reference_data_block_is_parsed(self) -> None:
         config = self._parse(

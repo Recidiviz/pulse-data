@@ -5,6 +5,12 @@ extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
 input_document_collection_name: FAKE_INPUT_NOTES
 
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/abc123"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
 # Overrides the collection's default model config (ACME_LARGE_NO_THINKING) with a
 # different first-order-valid one, to exercise the model-override path. The
 # char-count caps and retry count are omitted to exercise the code-level defaults.

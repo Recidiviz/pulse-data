@@ -2,6 +2,12 @@ extractor_collection_name: PLAYGROUND_EMPLOYMENT_INFO
 
 input_document_collection_name: FELLOWSHIP_SUPERVISION_NOTES
 
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1XVxpTA6ymYctzpB2G24V3KAcl8eozihFlA3OjfyjSU4/edit#gid=1039239798"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
 # Exercises every extractor-level override: model config, both document-count
 # thresholds, and the transient retry limit. The model override currently resolves
 # to the same config as the collection default — it exists to exercise the

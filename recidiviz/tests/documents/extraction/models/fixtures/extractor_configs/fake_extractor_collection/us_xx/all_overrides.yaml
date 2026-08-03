@@ -10,6 +10,12 @@ single_job_document_count_batch_threshold: 11111
 total_pending_document_count_hard_cap: 999999
 max_transient_retry_count: 7
 
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/abc123"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 0.9
+
 document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
 

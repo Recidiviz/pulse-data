@@ -8,3 +8,9 @@ model_config_name: NONEXISTENT_MODEL
 
 document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
+
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/abc123"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 0.9

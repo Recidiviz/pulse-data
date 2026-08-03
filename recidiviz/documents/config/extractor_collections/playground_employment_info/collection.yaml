@@ -11,12 +11,6 @@ default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 
 minimum_confidence_level: inferred
 
-golden_eval:
-  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1XVxpTA6ymYctzpB2G24V3KAcl8eozihFlA3OjfyjSU4"
-  accuracy_thresholds:
-    unit: 1.0
-    sample: 1.0
-
 reference_data:
   known_organizations:
     prompt_var: known_entities_context

@@ -10,12 +10,6 @@ default_model_config_name: ACME_LARGE_NO_THINKING
 
 minimum_confidence_level: inferred
 
-golden_eval:
-  source_sheet_uri: "https://example.com/fake-golden-eval"
-  accuracy_thresholds:
-    unit: 1.0
-    sample: 1.0
-
 reference_data:
   acronyms:
     prompt_var: acronym_glossary

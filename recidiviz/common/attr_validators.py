@@ -665,6 +665,21 @@ def is_non_negative_float(
         )
 
 
+def is_float_between_zero_and_one(
+    instance: Any, attribute: attr.Attribute, value: float
+) -> None:
+    """Validator that ensures the field value is a number in [0, 1] — both bounds
+    inclusive. Use for proportions like ratios, rates, and accuracy thresholds.
+    """
+    is_numerical_strict(instance, attribute, value)
+
+    if not 0 <= value <= 1:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be "
+            f"between 0 and 1, inclusive. Found value [{value}]"
+        )
+
+
 # Date field validators
 def is_date(instance: Any, attribute: attr.Attribute, value: Any) -> None:
     """Validates that a field is a `date`, but NOT a `datetime` object."""

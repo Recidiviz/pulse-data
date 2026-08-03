@@ -2,6 +2,12 @@ extractor_collection_name: PLAYGROUND_HOUSING_INFO
 
 input_document_collection_name: FELLOWSHIP_SUPERVISION_NOTES
 
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1US9XCZfSxwzEnI38Ex6RerqRtcYt3867m-QmAGEa3ls/edit#gid=142349637"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
 # No overrides: this extractor exercises the all-defaults path (collection
 # default model config, code-level default caps and retry count).
 

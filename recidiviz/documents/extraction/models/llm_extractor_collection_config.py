@@ -19,9 +19,6 @@ collection's `collection.yaml`. A collection holds everything shared across the
 states that run an extractor — above all the output schema (the structure we
 force the model's JSON into), plus the default model config and any declared
 entity groups.
-
-The `golden_eval` block is still consumed off the YAML and discarded so the unused-key
-check passes — see the deferral note in `from_yaml`.
 """
 import json
 from functools import cache
@@ -470,12 +467,6 @@ class LLMExtractorCollectionConfig:
                 reference_data_block
             )
         )
-
-        # TODO(OBT-33687): Model and validate the `golden_eval` block
-        # (`source_sheet_uri` + `accuracy_thresholds`, required for first-order
-        # collections). For now it is consumed off the YAML and discarded so
-        # the unused-key check passes.
-        config_dict.pop_dict_optional("golden_eval")
 
         description = config_dict.pop("description", str)
         relevance_criteria = config_dict.pop("relevance_criteria", str)

@@ -1,19 +1,11 @@
-# An extractor config that is invalid in exactly one way: it declares an
-# unexpected top-level key.
+# An extractor config that is invalid in exactly one way: it omits the required
+# golden_eval block.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
 input_document_collection_name: FAKE_INPUT_NOTES
-
-golden_eval:
-  source_sheet_uri: "https://docs.google.com/spreadsheets/d/abc123"
-  accuracy_thresholds:
-    unit: 1.0
-    sample: 0.9
 
 document_metadata_filter_query_template: |
   SELECT document_contents_id FROM `{project_id}.x.y`
 
 prompt_vars:
   agency_name: "the Department of Fictional Affairs"
-
-bogus_key: value
