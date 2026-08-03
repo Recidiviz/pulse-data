@@ -14,12 +14,69 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a PTransform that clears the contents of the provided BQ table"""
+"""Defines PTransforms that clear the contents of the provided BQ table"""
 import apache_beam as beam
 from apache_beam.pvalue import PBegin, PDone
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+
+
+class ClearBQTable(beam.PTransform):
+    """PTransform that clears the contents of the provided BQ table.
+
+    Accepts either PBegin (runs immediately) or a PCollection (waits for all
+    upstream elements before clearing).
+    """
+
+    def __init__(self, address: ProjectSpecificBigQueryAddress) -> None:
+        super().__init__()
+        self.address = address
+
+    def expand(self, input_or_inputs: PBegin | beam.PCollection) -> PDone:
+        # A local variable so the lambda below does not close over self, which
+        # would serialize this whole transform into the DoFn.
+        address = self.address
+        if isinstance(input_or_inputs, PBegin):
+            trigger = input_or_inputs | beam.Create([address])
+        else:
+            trigger = (
+                input_or_inputs
+                | beam.combiners.Count.Globally()
+                | beam.Map(lambda _: address)
+            )
+        _ = trigger | beam.Map(_delete_all_rows_from_table)
+        return PDone(input_or_inputs.pipeline)
+
+
+class ClearBQTableWhenInputEmpty(beam.PTransform):
+    """PTransform that clears the contents of the provided BQ table only when
+    the input PCollection is empty.
+
+    For use alongside a truncating WriteToBigQuery over the same input: Beam's
+    FILE_LOADS method submits no load job when zero elements flow, and so
+    never applies WRITE_TRUNCATE, which would leave a previous run's rows in
+    place after a run that produced nothing. The clear and the load job are
+    mutually exclusive (the load job runs only when at least one element
+    flows, the clear only when none does), so they cannot race.
+    """
+
+    def __init__(self, address: ProjectSpecificBigQueryAddress) -> None:
+        super().__init__()
+        self.address = address
+
+    def expand(self, input_or_inputs: beam.PCollection) -> PDone:
+        # A local variable so the lambda below does not close over self, which
+        # would serialize this whole transform into the DoFn.
+        address = self.address
+        _ = (
+            input_or_inputs
+            | beam.combiners.Count.Globally()
+            | "Keep only a zero count" >> beam.Filter(lambda count: count == 0)
+            | beam.Map(lambda _: address)
+            | "Clear table" >> beam.Map(_delete_all_rows_from_table)
+        )
+        return PDone(input_or_inputs.pipeline)
 
 
 def _delete_all_rows_from_table(address: ProjectSpecificBigQueryAddress) -> None:
@@ -36,27 +93,3 @@ def _delete_all_rows_from_table(address: ProjectSpecificBigQueryAddress) -> None
         use_query_cache=False,
     )
     query_job.result()
-
-
-class ClearBQTable(beam.PTransform):
-    """PTransform that clears the contents of the provided BQ table.
-
-    Accepts either PBegin (runs immediately) or a PCollection (waits for all
-    upstream elements before clearing).
-    """
-
-    def __init__(self, address: ProjectSpecificBigQueryAddress) -> None:
-        super().__init__()
-        self.address = address
-
-    def expand(self, input_or_inputs: PBegin | beam.PCollection) -> PDone:
-        if isinstance(input_or_inputs, PBegin):
-            trigger = input_or_inputs | beam.Create([self.address])
-        else:
-            trigger = (
-                input_or_inputs
-                | beam.combiners.Count.Globally()
-                | beam.Map(lambda _: self.address)
-            )
-        _ = trigger | beam.Map(_delete_all_rows_from_table)
-        return PDone(input_or_inputs.pipeline)
