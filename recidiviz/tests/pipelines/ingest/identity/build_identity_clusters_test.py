@@ -23,6 +23,7 @@ from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.common.demographics import Sex
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterExternalId,
@@ -31,11 +32,16 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
     IdentityName,
+    IdentitySex,
 )
 from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     CLUSTER_MEMBERSHIPS,
     FRAGMENTS_WITH_DATES,
     BuildIdentityClusters,
+)
+from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
+    IdentityIngestPipelineConfig,
+    IdentityIngestPipelineTenantConfig,
 )
 from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
@@ -45,6 +51,11 @@ from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 _TENANT = Tenant.US_XX
 _VALID_ID_TYPES = frozenset({"T1", "T2"})
+# A config with only defaults; US_XX falls back to the default conflict-check
+# config (sex is checked, gender/ethnicity are not) and resolution config.
+_IDENTITY_CONFIG = IdentityIngestPipelineConfig(
+    default_config=IdentityIngestPipelineTenantConfig(), tenant_configs={}
+)
 
 
 def _fragment(
@@ -80,7 +91,9 @@ class TestRekeyFragmentsByCluster(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.transform = BuildIdentityClusters(
-            tenant=_TENANT, valid_id_types=_VALID_ID_TYPES
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
         )
 
     def test_eid_with_cluster_and_fragments(self) -> None:
@@ -183,7 +196,9 @@ class TestBuildCluster(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.transform = BuildIdentityClusters(
-            tenant=_TENANT, valid_id_types=_VALID_ID_TYPES
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
         )
 
     def test_single_eid_single_fragment(self) -> None:
@@ -320,16 +335,86 @@ class TestBuildCluster(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "has no fragments"):
             self.transform.build_cluster(element)
 
-    def test_only_external_id_only_fragments_raises(self) -> None:
+    def test_only_external_id_only_fragments_builds_attributeless_cluster(
+        self,
+    ) -> None:
+        # When no fragment carries attributes, the cluster is still built from
+        # its external IDs alone, with no resolved attributes.
         eid_key: ExternalIdKey = ("A", "T1")
         fragment = _fragment([("A", "T1")])
         cluster_key = (eid_key,)
         element = (cluster_key, [(100.0, "view_a", fragment)])
 
+        result = self.transform.build_cluster(element)
+
+        self.assertEqual(len(result.external_ids), 1)
+        self.assertIsNone(result.name)
+        self.assertIsNone(result.birthdate)
+
+    def test_same_date_and_view_ties_resolve_deterministically(self) -> None:
+        """Two fragments from the same ingest view and upper-bound date (duplicate
+        source records for one person) tie on the (date, view) sort key, so the
+        external-id tiebreaker must fix the latest-wins winner regardless of the
+        order GroupByKey delivers them in."""
+        eid_a: ExternalIdKey = ("A", "T1")
+        eid_b: ExternalIdKey = ("B", "T2")
+        fragment_a = _fragment([("A", "T1")], name_surname="Gustafson")
+        fragment_b = _fragment([("B", "T2")], name_surname="Gustafsen")
+        cluster_key = tuple(sorted([eid_a, eid_b]))
+        sourced_a = (100.0, "view_a", fragment_a)
+        sourced_b = (100.0, "view_a", fragment_b)
+
+        for fragment_order in [[sourced_a, sourced_b], [sourced_b, sourced_a]]:
+            result = self.transform.build_cluster((cluster_key, fragment_order))
+            assert result.name is not None
+            self.assertEqual(result.name.surname, "Gustafsen")
+
+    def test_conflicting_attributes_raise(self) -> None:
+        """A cluster whose fragments carry conflicting attributes is rejected and
+        fails the build (a follow-up change routes rejected clusters to a
+        rejected_clusters output instead). The fragments arrive in arbitrary
+        GroupByKey order, but the conflict values are reported oldest-first."""
+        eid_key: ExternalIdKey = ("A", "T1")
+        fragment_a = _fragment([("A", "T1")], name_surname="Williams")
+        fragment_b = _fragment([("A", "T1")], name_surname="Johnson")
+        cluster_key = (eid_key,)
+        element = (
+            cluster_key,
+            [
+                (200.0, "view_b", fragment_b),
+                (100.0, "view_a", fragment_a),
+            ],
+        )
+
         with self.assertRaisesRegex(
             ValueError,
-            r"Failed to build cluster .* no fragment has attributes",
+            r"fragments with conflicting attributes that do not describe one person: "
+            r"surname: \[Williams, Johnson\]",
         ):
+            self.transform.build_cluster(element)
+
+    def test_enum_conflict_message_renders_bare_enum_values(self) -> None:
+        # The sex conflict values are enums; the rejection message unwraps them
+        # to MALE and FEMALE rather than Sex.MALE and Sex.FEMALE.
+        fragment_a = identity_fragment_for_test(
+            external_ids=[("A", "T1")],
+            tenant=_TENANT,
+            sex=IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+        )
+        fragment_b = identity_fragment_for_test(
+            external_ids=[("A", "T1")],
+            tenant=_TENANT,
+            sex=IdentitySex(tenant=_TENANT, sex=Sex.FEMALE),
+        )
+        element = (
+            (("A", "T1"),),
+            [
+                (100.0, "view_a", fragment_a),
+                (200.0, "view_b", fragment_b),
+            ],
+        )
+
+        with self.assertRaisesRegex(ValueError, r"sex: \[MALE, FEMALE\]"):
             self.transform.build_cluster(element)
 
     def test_single_eid_conflicting_person_types_raises(self) -> None:
@@ -421,7 +506,11 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
+        } | BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+        )
 
         expected_cluster = IdentityCluster(
             tenant=_TENANT,
@@ -472,7 +561,11 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
+        } | BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+        )
 
         summaries = output | "Summarize" >> beam.Map(_cluster_summary)
 
@@ -524,7 +617,11 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         _ = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
+        } | BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+        )
 
         with self.assertRaisesRegex(
             Exception,
@@ -556,7 +653,11 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
         output = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
             FRAGMENTS_WITH_DATES: fragments,
-        } | BuildIdentityClusters(tenant=_TENANT, valid_id_types=_VALID_ID_TYPES)
+        } | BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+        )
 
         count = output | "Count" >> beam.combiners.Count.Globally()
         assert_that(count, equal_to([2]))

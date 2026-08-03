@@ -14,3 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Conflict checking for clusters built by the identity ingest pipeline.
+
+Glossary, used consistently across this package and its callers:
+
+- Attribute values are said to be "divergent" if they record different values.
+- Attribute values are said to be "conflicting" if they are divergent in
+  such a way that they likely do not describe one person.
+- A cluster with fragments that have conflicting attributes will be "rejected".
+  Otherwise, it will be "kept".
+- "Resolution" is how the identity pipeline decides what value an attribute in
+  a cluster should have if that attribute's values are divergent across the
+  cluster's fragments.
+"""

@@ -14,13 +14,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Type aliases used by the identity ingest pipeline."""
+"""Type aliases and value objects used by the identity ingest pipeline."""
+import datetime
 
+import attr
+
+from recidiviz.common import attr_validators
+from recidiviz.common.demographics import Ethnicity, Gender, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
 )
 from recidiviz.pipelines.ingest.types import IngestViewName, UpperBoundDate
 
-# An `IdentityFragment` paired with the upper-bound date and ingest view name
-# it was sourced from.
+# An IdentityFragment paired with the upper-bound date and ingest view name it
+# was sourced from.
 SourcedIdentityFragment = tuple[UpperBoundDate, IngestViewName, IdentityFragment]
+
+# A conflict-checked value in the form it is read off a fragment, before any
+# serialization. Names and name suffixes are strings, birthdate is a date, and
+# sex, gender, and ethnicity are their wrapped enums.
+ConflictValue = str | datetime.date | Sex | Gender | Ethnicity
+
+
+@attr.define(frozen=True, kw_only=True)
+class AttributeConflict:
+    """An attribute whose values conflict across a cluster's fragments, meaning
+    the fragments likely do not describe one person."""
+
+    field: str = attr.ib(validator=attr_validators.is_str)
+    """Name of the attribute in conflict, e.g. "surname" or "birthdate"."""
+
+    values: tuple[ConflictValue, ...] = attr.ib(
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(
+                (str, datetime.date, Sex, Gender, Ethnicity)
+            ),
+            iterable_validator=attr.validators.instance_of(tuple),
+        )
+    )
+    """The distinct values recorded for the attribute across the cluster's
+    fragments."""

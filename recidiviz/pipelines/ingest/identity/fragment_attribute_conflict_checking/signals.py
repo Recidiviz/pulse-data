@@ -116,11 +116,38 @@ if not set(_EMBEDDED_SUFFIX_TOKENS) <= _CANONICAL_SUFFIXES.keys():
     )
 
 
+def names_match_exactly(name_a: str | None, name_b: str | None) -> bool:
+    """Returns whether two names are identical after normalization. Used for
+    corroboration. A missing name matches nothing, including another missing
+    name.
+    """
+    normalized_a, normalized_b = normalize_name(name_a), normalize_name(name_b)
+    if not normalized_a or not normalized_b:
+        return False
+    return normalized_a == normalized_b
+
+
+def names_match_loosely(name_a: str | None, name_b: str | None) -> bool:
+    """Returns whether two names match loosely after normalization, that is,
+    within one Levenshtein edit, or one's tokens a subset of the other's. Used
+    for corroboration. A missing name matches nothing, including another missing
+    name.
+    """
+    normalized_a, normalized_b = normalize_name(name_a), normalize_name(name_b)
+    if not normalized_a or not normalized_b:
+        return False
+    if normalized_a == normalized_b:
+        return True
+    if Levenshtein.distance(normalized_a, normalized_b) <= 1:
+        return True
+    return _is_token_subset(normalized_a, normalized_b)
+
+
 def are_surnames_in_conflict(
     surname_a: str | None,
     surname_b: str | None,
     *,
-    given_names_loosely_match: bool,
+    given_names_match_loosely: bool,
     dobs_match_exactly: bool,
 ) -> bool:
     """Returns whether two surnames are too different to belong to the same
@@ -133,7 +160,7 @@ def are_surnames_in_conflict(
     - are not excused by the name-change hatch, where the given name loosely
       matches and the date of birth matches exactly.
     """
-    normalized_a, normalized_b = _normalize_name(surname_a), _normalize_name(surname_b)
+    normalized_a, normalized_b = normalize_name(surname_a), normalize_name(surname_b)
     if not normalized_a or not normalized_b:
         return False
     threshold = (
@@ -145,7 +172,7 @@ def are_surnames_in_conflict(
         return False
     if _is_token_subset(normalized_a, normalized_b):
         return False
-    if given_names_loosely_match and dobs_match_exactly:
+    if given_names_match_loosely and dobs_match_exactly:
         # The divergence is likely due to a name change.
         return False
     return True
@@ -214,7 +241,7 @@ def are_name_suffixes_in_conflict(suffix_a: str | None, suffix_b: str | None) ->
     - genuinely different generations conflict, like "JR" and "SR" or "II" and
       "III", which usually mean two people sharing IDs.
     """
-    canonical_a, canonical_b = _canonical_suffix(suffix_a), _canonical_suffix(suffix_b)
+    canonical_a, canonical_b = canonical_suffix(suffix_a), canonical_suffix(suffix_b)
     if not canonical_a or not canonical_b:
         return False
     return canonical_a != canonical_b
@@ -257,7 +284,7 @@ def are_dobs_in_conflict(
     return True
 
 
-def _normalize_name(raw_name: str | None) -> str:
+def normalize_name(raw_name: str | None) -> str:
     """Returns the normalized form used by every name comparison: uppercased,
     accented letters replaced with their base letters (JOSE for JOSE with an
     accented E), parenthetical aliases and embedded suffix tokens removed,
@@ -273,22 +300,16 @@ def _normalize_name(raw_name: str | None) -> str:
     return without_suffix or _strip_non_alpha(name)
 
 
-def _strip_non_alpha(name: str) -> str:
-    """Returns the name with every non-letter collapsed to single spaces and
-    the result trimmed."""
-    return _WHITESPACE_PATTERN.sub(" ", _NON_ALPHA_PATTERN.sub(" ", name)).strip()
-
-
-def _remove_accents(name: str) -> str:
-    """Returns the name with accented letters replaced with their base letters,
-    so the same name spelled with and without accents compares as equal. Must
-    run before the non-alphabetic strip, which would otherwise turn each
-    accented letter into a space and split the name into separate tokens
-    (MUNOZ with an accented N would become MU OZ). Letters with no
-    decomposition (like the slashed O) have no base letter and still fall to
-    the non-alphabetic strip."""
-    decomposed = unicodedata.normalize("NFKD", name)
-    return "".join(c for c in decomposed if not unicodedata.combining(c))
+def canonical_suffix(raw_suffix: str | None) -> str:
+    """Returns the canonical form of a free-form suffix, the stripped
+    uppercased value itself for unrecognized forms, or the empty string for a
+    missing suffix."""
+    if raw_suffix is None:
+        return ""
+    stripped = re.sub(r"[^A-Z0-9]", "", raw_suffix.upper())
+    # .get rather than []: unrecognized forms are expected in free-form data
+    # and simply compare as themselves.
+    return _CANONICAL_SUFFIXES.get(stripped, stripped)
 
 
 def _is_token_subset(normalized_a: str, normalized_b: str) -> bool:
@@ -312,7 +333,7 @@ def _are_given_or_middle_names_in_conflict(
     differ only in whether a lone initial matches the full name: middle names
     accept it (a stored middle initial abbreviates the full middle name),
     given names do not."""
-    normalized_a, normalized_b = _normalize_name(name_a), _normalize_name(name_b)
+    normalized_a, normalized_b = normalize_name(name_a), normalize_name(name_b)
     if not normalized_a or not normalized_b:
         return False
     if (
@@ -340,31 +361,6 @@ def _are_given_or_middle_names_in_conflict(
     return True
 
 
-def _is_initial_match(normalized_a: str, normalized_b: str) -> bool:
-    """Returns whether one normalized name is a lone initial matching the
-    other's first letter (L or L. vs LEE). _normalize_name strips the period,
-    so a bare initial and one written with a trailing period compare alike."""
-    if not normalized_a or not normalized_b:
-        return False
-    if len(normalized_a) == 1:
-        return normalized_b.startswith(normalized_a)
-    if len(normalized_b) == 1:
-        return normalized_a.startswith(normalized_b)
-    return False
-
-
-def _canonical_suffix(raw_suffix: str | None) -> str:
-    """Returns the canonical form of a free-form suffix, the stripped
-    uppercased value itself for unrecognized forms, or the empty string for a
-    missing suffix."""
-    if raw_suffix is None:
-        return ""
-    stripped = re.sub(r"[^A-Z0-9]", "", raw_suffix.upper())
-    # .get rather than []: unrecognized forms are expected in free-form data
-    # and simply compare as themselves.
-    return _CANONICAL_SUFFIXES.get(stripped, stripped)
-
-
 def _is_month_day_swap(dob_a: datetime.date, dob_b: datetime.date) -> bool:
     """Returns whether the two dates share a year with month and day
     exchanged. Only dates whose month and day are both at most 12 can swap,
@@ -375,3 +371,34 @@ def _is_month_day_swap(dob_a: datetime.date, dob_b: datetime.date) -> bool:
         and dob_a.day == dob_b.month
         and dob_a.month != dob_a.day
     )
+
+
+def _remove_accents(name: str) -> str:
+    """Returns the name with accented letters replaced with their base letters,
+    so the same name spelled with and without accents compares as equal. Must
+    run before the non-alphabetic strip, which would otherwise turn each
+    accented letter into a space and split the name into separate tokens
+    (MUNOZ with an accented N would become MU OZ). Letters with no
+    decomposition (like the slashed O) have no base letter and still fall to
+    the non-alphabetic strip."""
+    decomposed = unicodedata.normalize("NFKD", name)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def _strip_non_alpha(name: str) -> str:
+    """Returns the name with every non-letter collapsed to single spaces and
+    the result trimmed."""
+    return _WHITESPACE_PATTERN.sub(" ", _NON_ALPHA_PATTERN.sub(" ", name)).strip()
+
+
+def _is_initial_match(normalized_a: str, normalized_b: str) -> bool:
+    """Returns whether one normalized name is a lone initial matching the
+    other's first letter (L or L. vs LEE). normalize_name strips the period,
+    so a bare initial and one written with a trailing period compare alike."""
+    if not normalized_a or not normalized_b:
+        return False
+    if len(normalized_a) == 1:
+        return normalized_b.startswith(normalized_a)
+    if len(normalized_b) == 1:
+        return normalized_a.startswith(normalized_b)
+    return False

@@ -1,0 +1,9 @@
+max_ids_per_type_overrides:
+  US_XX_INMATE_NUM: 50
+  US_XX_SID: 3
+conflict_check_overrides:
+  sex: false
+  gender: true
+resolution_strategy_overrides:
+  birthdate: set_null
+  gender: keep_latest

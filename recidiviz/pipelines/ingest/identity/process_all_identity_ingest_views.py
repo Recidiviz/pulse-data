@@ -64,9 +64,17 @@ from recidiviz.pipelines.ingest.types import ExternalIdKey, IngestViewName
 class ProcessAllIdentityIngestViews(beam.PTransform):
     """PTransform that processes all ingest views for the identity ingest pipeline."""
 
-    def __init__(self, pipeline_parameters: IdentityIngestPipelineParameters) -> None:
+    def __init__(
+        self,
+        *,
+        pipeline_parameters: IdentityIngestPipelineParameters,
+        identity_config: IdentityIngestPipelineConfig,
+    ) -> None:
         super().__init__()
+        # Parameters the pipeline was launched with.
         self.pipeline_parameters = pipeline_parameters
+        # Loaded per-tenant config supplying each view's sentinel thresholds.
+        self.identity_config = identity_config
 
     def expand(
         self, input_or_inputs: PBegin
@@ -135,8 +143,6 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
             raw_data_upper_bound_dates=raw_data_upper_bound_dates,
         )
 
-        pipeline_config = IdentityIngestPipelineConfig.load_clustering_config()
-
         merged_fragments_per_view: dict[
             IngestViewName,
             beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
@@ -170,7 +176,7 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                     ingest_view_name=view_name,
                     tenant=tenant,
                     person_type=get_view_person_type(manifest),
-                    pipeline_config=pipeline_config,
+                    pipeline_config=self.identity_config,
                 ),
             )
 

@@ -66,6 +66,9 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
 from recidiviz.pipelines.ingest.identity.expected_output_helpers import (
     get_valid_external_id_types,
 )
+from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
+    IdentityIngestPipelineConfig,
+)
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
@@ -132,11 +135,14 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         if not identity_view_names:
             return
 
+        identity_config = IdentityIngestPipelineConfig.load_clustering_config()
+
         merged_identity_fragments = (
             p
             | "Process identity views"
             >> ProcessAllIdentityIngestViews(
-                pipeline_parameters=self.pipeline_parameters
+                pipeline_parameters=self.pipeline_parameters,
+                identity_config=identity_config,
             )
         )
 
@@ -175,7 +181,11 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
                 FRAGMENTS_WITH_DATES: merged_identity_fragments,
             }
             | "Build IdentityClusters"
-            >> BuildIdentityClusters(tenant=tenant, valid_id_types=valid_id_types)
+            >> BuildIdentityClusters(
+                tenant=tenant,
+                valid_id_types=valid_id_types,
+                identity_config=identity_config,
+            )
             | "Validate IdentityClusterCollection"
             >> ValidateIdentityClusterCollection()
         )

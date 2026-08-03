@@ -19,13 +19,50 @@ import datetime
 import unittest
 
 from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.signals import (
-    _normalize_name,
     are_dobs_in_conflict,
     are_given_names_in_conflict,
     are_middle_names_in_conflict,
     are_name_suffixes_in_conflict,
     are_surnames_in_conflict,
+    names_match_exactly,
+    names_match_loosely,
+    normalize_name,
 )
+
+
+class TestNamesMatchExactly(unittest.TestCase):
+    """Tests for names_match_exactly, the strict corroboration input."""
+
+    def test_normalized_equal_matches(self) -> None:
+        self.assertTrue(names_match_exactly("Lopez-Smith", "LOPEZ SMITH"))
+
+    def test_one_character_drift_does_not_match(self) -> None:
+        self.assertFalse(names_match_exactly("JON", "JOHN"))
+
+    def test_token_subset_does_not_match(self) -> None:
+        self.assertFalse(names_match_exactly("ANNE MARIE", "ANNE"))
+
+    def test_missing_name_never_matches(self) -> None:
+        self.assertFalse(names_match_exactly(None, "DOE"))
+
+
+class TestNamesMatchLoosely(unittest.TestCase):
+    """Tests for names_match_loosely, the loose corroboration input."""
+
+    def test_normalized_equal_matches(self) -> None:
+        self.assertTrue(names_match_loosely("Doe", "DOE"))
+
+    def test_one_character_drift_matches(self) -> None:
+        self.assertTrue(names_match_loosely("JON", "JOHN"))
+
+    def test_token_subset_matches(self) -> None:
+        self.assertTrue(names_match_loosely("ANNE MARIE", "ANNE"))
+
+    def test_different_names_do_not_match(self) -> None:
+        self.assertFalse(names_match_loosely("SMITH", "JONES"))
+
+    def test_missing_name_never_matches(self) -> None:
+        self.assertFalse(names_match_loosely(None, "DOE"))
 
 
 class TestAreSurnamesInConflict(unittest.TestCase):
@@ -36,7 +73,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "GUSTAFSON",
                 "GUSTAFSEN",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -46,7 +83,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "STEPHENSON",
                 "STEVENSON",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -61,7 +98,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "MILLER",
                 "MILLS",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -69,7 +106,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "JONES",
                 "JAMES",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -77,7 +114,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "OLSON",
                 "OLSEN",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -85,7 +122,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "HALL",
                 "HILL",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -95,7 +132,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "LOPEZ-SMITH",
                 "LOPEZ",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -105,7 +142,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "WILLIAMS",
                 "JOHNSON",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -117,7 +154,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "WILLIAMS",
                 "JOHNSON",
-                given_names_loosely_match=True,
+                given_names_match_loosely=True,
                 dobs_match_exactly=True,
             )
         )
@@ -125,7 +162,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 "WILLIAMS",
                 "JOHNSON",
-                given_names_loosely_match=True,
+                given_names_match_loosely=True,
                 dobs_match_exactly=False,
             )
         )
@@ -135,7 +172,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             are_surnames_in_conflict(
                 None,
                 "JOHNSON",
-                given_names_loosely_match=False,
+                given_names_match_loosely=False,
                 dobs_match_exactly=False,
             )
         )
@@ -252,7 +289,7 @@ class TestAreGivenNamesInConflict(unittest.TestCase):
         contributes no protection for the pair."""
         for empty_after_normalization in ["李明", "()"]:
             with self.subTest(name=empty_after_normalization):
-                self.assertEqual("", _normalize_name(empty_after_normalization))
+                self.assertEqual("", normalize_name(empty_after_normalization))
                 self.assertFalse(
                     are_given_names_in_conflict(
                         empty_after_normalization,
@@ -540,13 +577,13 @@ class TestSignalSymmetry(unittest.TestCase):
                         are_surnames_in_conflict(
                             surname_a,
                             surname_b,
-                            given_names_loosely_match=hatch_open,
+                            given_names_match_loosely=hatch_open,
                             dobs_match_exactly=hatch_open,
                         ),
                         are_surnames_in_conflict(
                             surname_b,
                             surname_a,
-                            given_names_loosely_match=hatch_open,
+                            given_names_match_loosely=hatch_open,
                             dobs_match_exactly=hatch_open,
                         ),
                     )
@@ -584,41 +621,41 @@ class TestSignalSymmetry(unittest.TestCase):
 
 
 class TestNormalizeName(unittest.TestCase):
-    """Tests for _normalize_name."""
+    """Tests for normalize_name."""
 
     def test_uppercases_and_collapses_punctuation(self) -> None:
-        self.assertEqual("LOPEZ SMITH", _normalize_name("Lopez-Smith"))
+        self.assertEqual("LOPEZ SMITH", normalize_name("Lopez-Smith"))
 
     def test_strips_parenthetical_alias(self) -> None:
-        self.assertEqual("MARY KAY", _normalize_name("Mary Kay (Missy)"))
+        self.assertEqual("MARY KAY", normalize_name("Mary Kay (Missy)"))
 
     def test_strips_embedded_suffix_token(self) -> None:
-        self.assertEqual("JAMES", _normalize_name("James Jr"))
+        self.assertEqual("JAMES", normalize_name("James Jr"))
         # V is a recognized suffix token, like the other roman numerals.
-        self.assertEqual("HENRY", _normalize_name("Henry V"))
+        self.assertEqual("HENRY", normalize_name("Henry V"))
 
     def test_suffix_only_name_is_kept_not_emptied(self) -> None:
         """A name that is nothing but a suffix token keeps it rather than
         normalizing away to empty and being read as a missing name (a person
         whose surname really is "JR")."""
-        self.assertEqual("JR", _normalize_name("JR"))
-        self.assertEqual("V", _normalize_name("V"))
+        self.assertEqual("JR", normalize_name("JR"))
+        self.assertEqual("V", normalize_name("V"))
 
     def test_collapses_apostrophe(self) -> None:
-        self.assertEqual("O BRIEN", _normalize_name("O'Brien"))
+        self.assertEqual("O BRIEN", normalize_name("O'Brien"))
 
     def test_removes_accents(self) -> None:
-        self.assertEqual("JOSE", _normalize_name("José"))
-        self.assertEqual("MUNOZ", _normalize_name("Muñoz"))
-        self.assertEqual("RENEE", _normalize_name("Renée"))
+        self.assertEqual("JOSE", normalize_name("José"))
+        self.assertEqual("MUNOZ", normalize_name("Muñoz"))
+        self.assertEqual("RENEE", normalize_name("Renée"))
 
     def test_accented_and_unaccented_spellings_normalize_alike(self) -> None:
-        self.assertEqual(_normalize_name("José"), _normalize_name("Jose"))
+        self.assertEqual(normalize_name("José"), normalize_name("Jose"))
 
     def test_letters_without_decomposition_are_stripped(self) -> None:
         """A letter with no NFKD decomposition (like the slashed O) has no base
         letter to reduce to and falls to the non-alphabetic strip."""
-        self.assertEqual("S RENSEN", _normalize_name("Sørensen"))
+        self.assertEqual("S RENSEN", normalize_name("Sørensen"))
 
     def test_none_normalizes_to_empty(self) -> None:
-        self.assertEqual("", _normalize_name(None))
+        self.assertEqual("", normalize_name(None))
