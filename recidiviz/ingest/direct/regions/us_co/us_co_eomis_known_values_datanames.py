@@ -41,8 +41,8 @@ Columns intentionally excluded from this mapping:
 - Boolean Y/N flags and other columns with no DATANAME in `eomis_codevaluedesc`
   (their `known_values` are self-contained and not reconciled against the code
   dictionary), e.g. eomis_inmateprofile.INMATEPHOTOFLAG,
-  eomis_ofnrelatedaddress.OFFNISHOMELESS, and the non-EOMIS
-  informix_parhrg.par_hrg_dec.
+  eomis_ofnrelatedaddress.OFFNISHOMELESS, the 54 scored LSI-R item columns in
+  eomis_lsiassessment, and the non-EOMIS informix_parhrg.par_hrg_dec.
 """
 
 # Maps a (raw_file_tag, column_name) pair to the eomis_codevaluedesc DATANAME(s)
@@ -65,6 +65,23 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     # eomis_externalmovement
     ("eomis_externalmovement", "EXTERNALMOVEMENTCODE"): ("CIMOVCOD",),
     ("eomis_externalmovement", "REASONFORMOVEMENT"): ("CITRREAS",),
+    # eomis_inaassessment
+    ("eomis_inaassessment", "INAACADEMIC"): ("INAAcademic",),
+    ("eomis_inaassessment", "INAACADEMICQ"): ("INAAcademicQ",),
+    ("eomis_inaassessment", "INAVOCATIONAL"): ("INAVocational",),
+    ("eomis_inaassessment", "INASEXOFFN"): ("INASexOffn",),
+    ("eomis_inaassessment", "INASEXOFFNQ"): ("INASexOffnQ",),
+    ("eomis_inaassessment", "INASUBABUSE"): ("INASubAbuse",),
+    ("eomis_inaassessment", "INASUBABTRMT"): ("INASubAbTrmt",),
+    ("eomis_inaassessment", "INASUBABUSEQ"): ("INASubAbuseQ",),
+    ("eomis_inaassessment", "INADEVDISAB"): ("INADevDisab",),
+    ("eomis_inaassessment", "INADEVDISABQ"): ("INADevDisabQ",),
+    ("eomis_inaassessment", "INAMEDICAL"): ("INAMedical",),
+    ("eomis_inaassessment", "MEDCLASSIFICATIONSUBCD"): ("MedClassifSubcd",),
+    ("eomis_inaassessment", "INADENTAL"): ("INADental",),
+    ("eomis_inaassessment", "DENTALCARESUBCD"): ("DentalSubCd",),
+    ("eomis_inaassessment", "INAMENHLTH"): ("INAMenHlth",),
+    ("eomis_inaassessment", "INAMENHLTHQ"): ("INAMenHlthQ",),
     # eomis_inmateprofile
     ("eomis_inmateprofile", "INMATESTATUSCODE"): ("CIINSTAT",),
     ("eomis_inmateprofile", "INMATESEXCODE"): ("CDCLSEX",),
@@ -98,6 +115,28 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_jobpmedperformance", "INMATEPAYSCALE"): ("CFPAYSCALE2",),
     ("eomis_jobpmedperformance", "EVALRECOMMENDATION"): ("EvalRecommendation",),
     ("eomis_jobpmedperformance", "PAYCHANGE"): ("PayChange",),
+    # eomis_lsiassessment
+    ("eomis_lsiassessment", "LSITESTSOURCE"): ("LSItestSource",),
+    ("eomis_lsiassessment", "LSIEMPLOYMENTEDUCATIONTYPE"): ("LSIemplEducType",),
+    # Every 0-3 graded LSI-R item shares the single LSIrating code list. The
+    # CODEDESCRIPTIONs in eomis_codevaluedesc for LSIrating are just the bare digits
+    # ("0", "1", "2", "3"), so these columns intentionally document the LSI-R rating
+    # anchors instead; expect a description mismatch when reconciling.
+    ("eomis_lsiassessment", "PARTICIPATIONPERFORMANCERATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "PEERINTERACTIONRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "AUTHORITYINTERACTIONRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "FINANCIALPROBLEMSRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "FAMILYDISSATISFIEDRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "FAMILYNONREWARDPARENTALRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "FAMILYNONREWARDOTHERRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "ACCOMUNSATISRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "LEISUREUSEOFTIMERATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "ALCOHOLPROBCURRENTRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "DRUGPROBCURRENTRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "ATTISUPPORTCRIMERATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "ATTIUNFAVORCONVENTIONRATE"): ("LSIrating",),
+    ("eomis_lsiassessment", "LSIRISKLEVEL"): ("LSIRiskLevel",),
+    ("eomis_lsiassessment", "LSIREASON"): ("LSIReason",),
     # eomis_ofnrelatedaddress
     # ADDRESSTYPE values reference codes from both CMADRTYP and CMADRTYP2.
     ("eomis_ofnrelatedaddress", "ADDRESSTYPE"): ("CMADRTYP", "CMADRTYP2"),
