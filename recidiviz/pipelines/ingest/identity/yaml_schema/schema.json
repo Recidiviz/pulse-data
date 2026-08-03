@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Recidiviz Identity Ingest Pipeline Tenant Config",
+  "description": "Per-person-type configuration for a tenant's identity ingest pipeline, parsed by identity_ingest_pipeline_config.py. Each top-level key is a PersonType value, lowercased. Attributes and id types absent from a block fall back to the code defaults defined in identity_ingest_pipeline_config.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "jii": {
+      "$ref": "#/definitions/person_type_config"
+    },
+    "staff": {
+      "$ref": "#/definitions/person_type_config"
+    },
+    "recidiviz_employee": {
+      "$ref": "#/definitions/person_type_config"
+    }
+  },
+  "definitions": {
+    "person_type_config": {
+      "description": "Configuration for one person type.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_ids_per_type_overrides": {
+          "description": "Per-id-type overrides of the maximum number of external IDs of a given type a person can have before that ID value is assumed to be a sentinel with no real ID meaning (e.g. InmateNum='000000'). ID types not listed here fall back to the pipeline default.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "conflict_check_overrides": {
+          "description": "Per-attribute overrides of whether a divergence (fragments in one cluster recording different values for the attribute) is a conflict that rejects the cluster. Only the exact-match enums sex, gender, and ethnicity are configurable. The name components, name suffix, and birthdate are always checked.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sex": {
+              "type": "boolean"
+            },
+            "gender": {
+              "type": "boolean"
+            },
+            "ethnicity": {
+              "type": "boolean"
+            }
+          }
+        },
+        "resolution_strategy_overrides": {
+          "description": "Per-attribute overrides of how a kept cluster stores an attribute whose fragments diverge benignly (not enough to conflict).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "surname": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "given_name": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "middle_name": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "name_suffix": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "birthdate": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "sex": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "gender": {
+              "$ref": "#/definitions/resolution_strategy"
+            },
+            "ethnicity": {
+              "$ref": "#/definitions/resolution_strategy"
+            }
+          }
+        }
+      }
+    },
+    "resolution_strategy": {
+      "description": "keep_latest stores the value from the fragment with the latest upper-bound date; set_null stores nothing.",
+      "type": "string",
+      "enum": [
+        "keep_latest",
+        "set_null"
+      ]
+    }
+  }
+}
