@@ -657,48 +657,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q1"): [
-        "end_date",
-        "person_id",
-        "q1_score",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q2"): [
-        "end_date",
-        "person_id",
-        "q2_score",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q3"): [
-        "end_date",
-        "person_id",
-        "q3_score",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q4"): [
-        "end_date",
-        "person_id",
-        "q4_score",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q5"): [
-        "end_date",
-        "person_id",
-        "q5_score",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("classification_views.us_ix_sls_q6"): [
-        "end_date",
-        "person_id",
-        "q6_score",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "analyst_data.us_ma_compartment_sub_sessions_preprocessed"
     ): [
