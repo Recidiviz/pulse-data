@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: identity_person_secondary
+file_description: |-
+  Identity pipeline test data from a second source system that records people
+  under the same person ID as identity_person. Each row is one JII person with
+  the name that system has on file, so tests can exercise clusters whose
+  fragments agree or conflict across sources.
+data_classification: source
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: A number used to uniquely identify this person, shared with identity_person.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_DD_IDENTITY_PERSON_ID
+  - name: FirstName
+    description: The person's first name as this source records it.
+    is_pii: True
+  - name: LastName
+    description: The person's last name as this source records it.
+    is_pii: True

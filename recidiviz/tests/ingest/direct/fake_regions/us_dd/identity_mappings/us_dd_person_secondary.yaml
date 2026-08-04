@@ -1,0 +1,19 @@
+manifest_language: 1.0.0
+input_columns:
+  ID: STRING
+  FirstName: STRING
+  LastName: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: ID
+          id_type: $literal("US_DD_IDENTITY_PERSON_ID")
+    person_type: $literal_enum(PersonType.JII)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name: FirstName
+            surname: LastName

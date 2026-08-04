@@ -47,6 +47,7 @@ class TestIdentityIngestPipeline(IdentityIngestPipelineTestCase):
         self.us_dd_upper_bound_dates_json = json.dumps(
             {
                 "identity_person": "2026-06-15T00:00:00.000000",
+                "identity_person_secondary": "2026-06-15T00:00:00.000000",
                 "identity_staff": "2026-06-15T00:00:00.000000",
             }
         )
