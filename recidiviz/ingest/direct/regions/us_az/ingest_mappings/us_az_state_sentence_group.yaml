@@ -22,6 +22,9 @@ input_columns:
   DPRAbsoluteDischargeDate: STRING
   DPRTransitionProgramReleaseDate: STRING
   DPRDrugTransitionProgramReleaseDate: STRING
+  # Parole Dates (for metadata JSON)
+  ParoleEligibilityDate: STRING
+  InitialParoleCertificationDate: STRING
   # Non-date attributes
   IsDprEligible: STRING
   HasAnyDprProgramCompleted: STRING
@@ -47,6 +50,10 @@ output:
                 # TR to ADD date is the equivalent of CSBD when a person is being released
                 # to probation instead of community supervision. We want to include
                 # whichever of these dates a person has in this field.
+                # NOTE: THIS IS NOT THE PAROLE ELIGIBILITY DATE.
+                # TODO(OBT-42082): Remap so the real PED (see
+                # ParoleEligibilityDate in view_state_sentence_group.py) is
+                # stored here, and move this value into metadata instead.
                 parole_eligibility_date_external:
                   $conditional:
                     - $if:
@@ -102,6 +109,9 @@ output:
                     state_specific_dates__dpr_dtp: DPRDrugTransitionProgramReleaseDate
                     state_specific_dates__dpr_tr_to_add: DPRTransitionToAbsoluteDischargeDate
                     state_specific_dates__dpr_add: DPRAbsoluteDischargeDate
+                    # State-specific Parole Dates
+                    state_specific_dates__ped: ParoleEligibilityDate
+                    state_specific_dates__pcd: InitialParoleCertificationDate
                     # Non-date attributes
                     state_specific_attributes__is_dpr_eligible: IsDprEligible
                     state_specific_attributes__has_any_dpr_program_completed: HasAnyDprProgramCompleted
