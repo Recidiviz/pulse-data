@@ -116,8 +116,18 @@ and should be used when testing generic functionality.
 
 ## Skills
 
-Skills are invocable workflows documented in `.claude/skills/[skill_name]/SKILL.md`.
-Available skills are listed in the system prompt at session start.
+Skills are invocable workflows. Repo-local ones are documented in
+`.claude/skills/[skill_name]/SKILL.md`. Others are installed as plugins from the
+shared [`Recidiviz/claude-skills`](https://github.com/Recidiviz/claude-skills)
+marketplace, declared under `extraKnownMarketplaces` and `enabledPlugins` in
+`.claude/settings.json`. Either way, available skills are listed in the system
+prompt at session start.
+
+`create-pr` and `review-pr-comments` come from the shared marketplace and are
+invoked with a plugin-namespaced name — `/create-pr:create-pr`, not `/create-pr`.
+To opt out of one locally, set it to `false` under `enabledPlugins` in
+`.claude/settings.local.json`. To install other shared skills just for yourself,
+run `claude plugin install <name>@recidiviz`.
 
 # Python Style Rules
 

@@ -79,7 +79,22 @@
       "Edit(./.recidiviz/justice_counts/control_panel/local/**/*)"
     ]
   },
+  "extraKnownMarketplaces": {
+    "recidiviz": {
+      "source": {
+        "source": "github",
+        "repo": "Recidiviz/claude-skills"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "create-pr@recidiviz": true,
+    "review-pr-comments@recidiviz": true
+  },
   "env": {
+    "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE": "1",
+
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "https://us-central1-recidiviz-security.cloudfunctions.net/claude-telemetry-collector/v1/metrics",
