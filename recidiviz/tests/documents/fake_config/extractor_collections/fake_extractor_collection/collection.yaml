@@ -100,8 +100,15 @@ entity_groups:
       plural: work assignments
     source_array_field: assignments
     entity_fields: [assignment_name, assignment_type]
+
     grouping_instructions: >
       Cluster mentions of the same assignment across entries into one entity,
       even when they name different assignment types. Treat two assignments that
       share a name but are clearly at different organizations as separate
       entities.
+  - name: pay_rate
+    entity_descriptor:
+      singular: pay rate
+      plural: pay rates
+    source_array_field: assignments
+    entity_fields: [rate_amount]

@@ -50,6 +50,7 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     FAKE_ER_COLLECTION_NAMES,
     FAKE_LOCATION_ER_COLLECTION_NAME,
+    FAKE_PAY_RATE_ER_COLLECTION_NAME,
 )
 from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
@@ -261,12 +262,13 @@ class CollectEntityResolutionExtractorConfigsTest(TestCase):
         )
 
         # One pair per declared entity group, in declaration order (the fake
-        # collection declares `location` then `assignment`); the ER collection name
-        # encodes the group.
+        # collection declares `location`, then `assignment`, then `pay_rate`); the ER
+        # collection name encodes the group.
         self.assertEqual(
             [
                 FAKE_LOCATION_ER_COLLECTION_NAME,
                 FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+                FAKE_PAY_RATE_ER_COLLECTION_NAME,
             ],
             [
                 entity_resolution_config.extractor_collection.name

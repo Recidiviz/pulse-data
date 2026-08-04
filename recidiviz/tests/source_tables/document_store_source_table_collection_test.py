@@ -64,6 +64,7 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
                 "us_xx_document_contents.fake_case_notes_document_contents",
                 "us_xx_document_contents.fake_extractor_collection_assignment_entity_resolution_document_contents",
                 "us_xx_document_contents.fake_extractor_collection_location_entity_resolution_document_contents",
+                "us_xx_document_contents.fake_extractor_collection_pay_rate_entity_resolution_document_contents",
                 "us_xx_document_contents.fake_input_notes_document_contents",
                 "us_xx_document_contents.fake_person_id_notes_document_contents",
                 "us_xx_document_contents.fake_staff_id_reports_document_contents",
@@ -74,6 +75,8 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
                 "us_xx_document_store_metadata.fake_extractor_collection_assignment_entry_source_map",
                 "us_xx_document_store_metadata.fake_extractor_collection_location_entity_resolution",
                 "us_xx_document_store_metadata.fake_extractor_collection_location_entry_source_map",
+                "us_xx_document_store_metadata.fake_extractor_collection_pay_rate_entity_resolution",
+                "us_xx_document_store_metadata.fake_extractor_collection_pay_rate_entry_source_map",
                 "us_xx_document_store_metadata.fake_input_notes",
                 "us_xx_document_store_metadata.fake_person_id_notes",
                 "us_xx_document_store_metadata.fake_staff_id_reports",
@@ -111,6 +114,7 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
             {
                 "fake_extractor_collection_assignment_entry_source_map",
                 "fake_extractor_collection_location_entry_source_map",
+                "fake_extractor_collection_pay_rate_entry_source_map",
             },
             set(map_tables),
         )

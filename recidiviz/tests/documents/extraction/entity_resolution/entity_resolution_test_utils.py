@@ -37,17 +37,22 @@ from recidiviz.tests.documents import fake_config
 
 FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 
-# The two ER composite-document collections generated from the fake first-order
-# collection's `location` and `assignment` entity groups.
+# The ER composite-document collections generated from the fake first-order collection's
+# `location`, `assignment` and `pay_rate` entity groups. The latter two are sourced from
+# the same array, so they also cover multiple independent groups enriching one view.
 FAKE_LOCATION_ER_COLLECTION_NAME = (
     "FAKE_EXTRACTOR_COLLECTION_LOCATION_ENTITY_RESOLUTION"
 )
 FAKE_ASSIGNMENT_ER_COLLECTION_NAME = (
     "FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT_ENTITY_RESOLUTION"
 )
+FAKE_PAY_RATE_ER_COLLECTION_NAME = (
+    "FAKE_EXTRACTOR_COLLECTION_PAY_RATE_ENTITY_RESOLUTION"
+)
 FAKE_ER_COLLECTION_NAMES = {
     FAKE_LOCATION_ER_COLLECTION_NAME,
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    FAKE_PAY_RATE_ER_COLLECTION_NAME,
 }
 
 
