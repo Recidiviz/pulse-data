@@ -37,11 +37,6 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 COMMON_VESTIGES = [
-    # Audit ledger the eOMIS writeback job streams into; written by the
-    # Cloud Run job, not yet referenced by any deployed view.
-    # TODO(OBT-37542): remove once the run-history summary view lands.
-    "eomis_writeback_metadata.eomis_writeback_candidates",
-    "eomis_writeback_metadata.eomis_writeback_runs",
     # This table provides a list of active feature variants that will populate dropdown
     # menus in the admin panel.
     "google_sheet_backed_tables.feature_variants",

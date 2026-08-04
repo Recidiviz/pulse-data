@@ -710,6 +710,11 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "determine downstream writeback logic for Arkansas GED AET reconciliation. "
         "(Jessica Liu, 07/01/2026)"
     ),
+    BigQueryAddress.from_str("earned_time.eomis_writeback_run_history"): (
+        "Operator-facing run history for eOMIS writeback runs, queried directly "
+        "when reviewing what a run did. Not referenced by downstream views. "
+        "(Josh Leichty, 07/31/2026)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
