@@ -22,13 +22,12 @@ from typing import Any
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     ENTRY_NUM_FIELD_NAME,
     ENTRY_SOURCE_MAP_COLUMN_NAME,
-    PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME,
-    PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME,
     SOURCE_ARRAY_INDEX_FIELD_NAME,
     SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME,
     SOURCE_DOCUMENT_UPDATE_DATETIME_FIELD_NAME,
@@ -36,6 +35,12 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_composit
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
+)
+from recidiviz.documents.extraction.extraction_results_columns import (
+    EXTRACTOR_VERSION_ID_COLUMN_NAME,
+    SOURCE_ARRAY_INDEX_COLUMN_NAME,
+    STATE_CODE_COLUMN_NAME,
+    VALIDATION_DATETIME_UTC_COLUMN_NAME,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     load_first_order_llm_extractor_configs,
@@ -45,6 +50,12 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     PrimitiveScalarLLMRequestOutputSchemaField,
+)
+from recidiviz.documents.extraction.views.llm_extractor_array_level_results_view_builders import (
+    LLMExtractorPreResolutionArrayFieldResultsViewBuilder,
+)
+from recidiviz.documents.extraction.views.llm_extractor_doc_level_results_view_builders import (
+    LLMExtractorPreResolutionResultsViewBuilder,
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentRootEntityIdType,
@@ -128,14 +139,14 @@ class EntityResolutionDocumentCollectionConfigTest(unittest.TestCase):
         expected_document_generation_query_template = r"""WITH mentions AS (
     SELECT
         pre.person_id AS person_id,
-        pre.document_id AS source_document_contents_id,
+        pre.document_contents_id AS source_document_contents_id,
         pre.document_update_datetime,
         pre.source_array_index AS source_array_index,
         source_docs.document_text AS source_document_text,
         pre.assignment_name, pre.assignment_type
-    FROM `{project_id}.us_xx_document_extraction_results__pre_resolution.fake_extractor_collection_assignments` pre
+    FROM `{project_id}.us_xx_document_extraction_results__pre_resolution.fake_extractor_collection_assignments_materialized` pre
     JOIN `{project_id}.us_xx_document_contents.fake_input_notes_document_contents` source_docs
-        ON pre.document_id = source_docs.document_contents_id
+        ON pre.document_contents_id = source_docs.document_contents_id
     WHERE (pre.assignment_name IS NOT NULL OR pre.assignment_type IS NOT NULL)
         AND source_docs.document_text IS NOT NULL
         AND pre.document_update_datetime IS NOT NULL
@@ -219,14 +230,14 @@ JOIN composite_entry_source_map USING (person_id)"""
         expected_document_generation_query_template = r"""WITH mentions AS (
     SELECT
         pre.person_id AS person_id,
-        pre.document_id AS source_document_contents_id,
+        pre.document_contents_id AS source_document_contents_id,
         pre.document_update_datetime,
         CAST(NULL AS INT64) AS source_array_index,
         source_docs.document_text AS source_document_text,
         pre.location
-    FROM `{project_id}.us_xx_document_extraction_results__pre_resolution.fake_extractor_collection` pre
+    FROM `{project_id}.us_xx_document_extraction_results__pre_resolution.fake_extractor_collection_materialized` pre
     JOIN `{project_id}.us_xx_document_contents.fake_input_notes_document_contents` source_docs
-        ON pre.document_id = source_docs.document_contents_id
+        ON pre.document_contents_id = source_docs.document_contents_id
     WHERE (pre.location IS NOT NULL)
         AND source_docs.document_text IS NOT NULL
         AND pre.document_update_datetime IS NOT NULL
@@ -428,27 +439,23 @@ def _contents_row(
     }
 
 
-# TODO(OBT-32175): Remove this and derive the schema from the
-#  LLMExtractorPreResolutionResultsViewBuilder instead, once it exists.
 def _pre_resolution_schema(
     entity_group: EntityGroupConfig,
 ) -> list[bigquery.SchemaField]:
-    """The subset of the first-order __pre_resolution parsed view columns the
-    composite-document query reads, derived from the entity group."""
-    schema = [
-        bigquery.SchemaField(PERSON_ID_COLUMN_NAME, "INT64"),
-        bigquery.SchemaField(PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME, "STRING"),
-        bigquery.SchemaField(DOCUMENT_UPDATE_DATETIME_COLUMN_NAME, "TIMESTAMP"),
-    ]
-    if entity_group.source_array_field is not None:
-        schema.append(
-            bigquery.SchemaField(PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME, "INT64")
+    """The real schema of the first-order `__pre_resolution` parsed view the
+    composite-document query reads, taken from the builder that produces it — so these
+    tests exercise the generated SQL against the actual column set and types rather than a
+    hand-maintained subset.
+    """
+    first_order_config = fake_first_order_extractor_config()
+    builder: BigQueryViewBuilder
+    if (source_array_field := entity_group.source_array_field) is not None:
+        builder = LLMExtractorPreResolutionArrayFieldResultsViewBuilder(
+            first_order_config, source_array_field
         )
-    schema.extend(
-        bigquery.SchemaField(field.name, "STRING")
-        for field in entity_group.entity_fields
-    )
-    return schema
+    else:
+        builder = LLMExtractorPreResolutionResultsViewBuilder(first_order_config)
+    return [column.as_schema_field() for column in builder.schema]
 
 
 _OMIT_SOURCE_ARRAY_INDEX = object()
@@ -464,16 +471,20 @@ def _mention_row(
 ) -> dict[str, Any]:
     row: dict[str, Any] = {
         PERSON_ID_COLUMN_NAME: person_id,
-        PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME: document_id,
+        DOCUMENT_CONTENTS_ID_COLUMN_NAME: document_id,
         DOCUMENT_UPDATE_DATETIME_COLUMN_NAME: (
             datetime.datetime.fromisoformat(document_update_date)
             if document_update_date is not None
             else None
         ),
+        # Required __pre_resolution columns the generation query never reads.
+        STATE_CODE_COLUMN_NAME: StateCode.US_XX.value,
+        VALIDATION_DATETIME_UTC_COLUMN_NAME: _ROW_CREATE_DATETIME,
+        EXTRACTOR_VERSION_ID_COLUMN_NAME: "fake-extractor-version",
         **entity_field_values,
     }
     if source_array_index is not _OMIT_SOURCE_ARRAY_INDEX:
-        row[PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME] = source_array_index
+        row[SOURCE_ARRAY_INDEX_COLUMN_NAME] = source_array_index
     return row
 
 
@@ -514,10 +525,12 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
         rows: list[dict[str, Any]],
     ) -> None:
         self.create_mock_table(
-            collection.pre_resolution_view_address,
+            collection.pre_resolution_view_materialized_address,
             schema=_pre_resolution_schema(entity_group),
         )
-        self.load_rows_into_table(collection.pre_resolution_view_address, rows)
+        self.load_rows_into_table(
+            collection.pre_resolution_view_materialized_address, rows
+        )
 
     def _composite_documents_query(
         self, collection: EntityResolutionDocumentCollectionConfig

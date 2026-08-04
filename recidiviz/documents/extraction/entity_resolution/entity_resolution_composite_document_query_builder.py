@@ -37,8 +37,12 @@ identically-worded note appearing on two dates renders as two dated blocks.
 content-addressed store; their distinct occurrences are distinguished by
 `document_update_datetime`.)
 
-The generated template reads the first-order `__pre_resolution` parsed views,
-numbers each included per-entry row once (`ROW_NUMBER` over the framework-fixed
+The generated template reads the first-order "__pre_resolution" parsed views, and
+relies on those views producing exactly one row per (root entity, source document,
+document_update_datetime[, array element]), with exact duplicates deduplicated and
+null-datetime / deleted documents excluded upstream.
+
+It numbers each included per-entry row once (`ROW_NUMBER` over the framework-fixed
 temporal sort with a deterministic total-order tiebreaker), then produces both
 outputs from those same rows in one `GROUP BY` per root entity: the composite
 `document_text` (an ordered `STRING_AGG` of per-occurrence blocks) and an
@@ -56,6 +60,9 @@ from google.cloud.bigquery.enums import SqlTypeNames
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import BigQueryFieldMode
 from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.documents.extraction.extraction_results_columns import (
+    SOURCE_ARRAY_INDEX_COLUMN_NAME,
+)
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     EntityGroupConfig,
 )
@@ -68,18 +75,6 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.utils.string_formatting import fix_indent
-
-# Columns of the first-order `__pre_resolution` parsed views that this builder
-# reads. These are part of the parsed-view contract (owned by the parsed-views
-# work); pinned here as constants so the generated SQL and its tests share one
-# definition. The generated query additionally assumes those views are at
-# source-note *occurrence* grain: one row per (root entity, source document,
-# document_update_datetime[, array element]), with exact duplicates (same
-# document and datetime) deduplicated upstream.
-# TODO(OBT-32175): Move these constants to be defined where
-#  LLMExtractorPreResolutionResultsViewBuilder is defined, once that exists.
-PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME = "document_id"
-PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME = "source_array_index"
 
 # The generation-output-only `entry_source_map` column and its struct sub-fields.
 ENTRY_SOURCE_MAP_COLUMN_NAME = "entry_source_map"
@@ -155,17 +150,19 @@ class EntityResolutionCompositeDocumentQueryTemplateBuilder:
         root_entity_id_type: DocumentRootEntityIdType,
         # The entity group whose mentions the composite documents render.
         entity_group: EntityGroupConfig,
-        # The first-order `__pre_resolution` parsed view the mentions are read
-        # from: the array-grain view for an array entity group, the doc-grain
-        # view for a top-level one.
-        pre_resolution_view_address: BigQueryAddress,
+        # The materialized address of the first-order `__pre_resolution` parsed view
+        # the mentions are read from: the array-level view for an array entity group,
+        # the doc-level view for a top-level one.
+        pre_resolution_view_materialized_address: BigQueryAddress,
         # The first-order collection's document_contents table, which holds the
         # source note text keyed by document_contents_id.
         source_document_contents_address: BigQueryAddress,
     ) -> None:
         self.root_entity_id_type = root_entity_id_type
         self.entity_group = entity_group
-        self.pre_resolution_view_address = pre_resolution_view_address
+        self.pre_resolution_view_materialized_address = (
+            pre_resolution_view_materialized_address
+        )
         self.source_document_contents_address = source_document_contents_address
 
     @property
@@ -185,7 +182,7 @@ class EntityResolutionCompositeDocumentQueryTemplateBuilder:
         top-level group (which has one entry per source document).
         """
         if self.entity_group.source_array_field is not None:
-            return f"pre.{PRE_RESOLUTION_SOURCE_ARRAY_INDEX_COLUMN_NAME}"
+            return f"pre.{SOURCE_ARRAY_INDEX_COLUMN_NAME}"
         return "CAST(NULL AS INT64)"
 
     def _mention_inclusion_filter(self) -> str:
@@ -270,14 +267,14 @@ class EntityResolutionCompositeDocumentQueryTemplateBuilder:
         WITH mentions AS (
             SELECT
                 pre.{root_id} AS {root_id},
-                pre.{PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME} AS {SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME},
+                pre.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} AS {SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME},
                 pre.{DOCUMENT_UPDATE_DATETIME_COLUMN_NAME},
                 {self._source_array_index_select()} AS {SOURCE_ARRAY_INDEX_FIELD_NAME},
                 source_docs.{DOCUMENT_TEXT_COLUMN_NAME} AS source_document_text,
                 {entity_field_select}
-            FROM `{self.pre_resolution_view_address.format_address_for_query_template()}` pre
+            FROM `{self.pre_resolution_view_materialized_address.format_address_for_query_template()}` pre
             JOIN `{self.source_document_contents_address.format_address_for_query_template()}` source_docs
-                ON pre.{PRE_RESOLUTION_DOCUMENT_ID_COLUMN_NAME} = source_docs.{DOCUMENT_CONTENTS_ID_COLUMN_NAME}
+                ON pre.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} = source_docs.{DOCUMENT_CONTENTS_ID_COLUMN_NAME}
             WHERE ({self._mention_inclusion_filter()})
                 AND source_docs.{DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL
                 AND pre.{DOCUMENT_UPDATE_DATETIME_COLUMN_NAME} IS NOT NULL

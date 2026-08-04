@@ -357,6 +357,28 @@ class LLMExtractorCollectionConfig:
                 f"names: {sorted(duplicate_names)}."
             )
 
+    def entity_groups_for_array_field(
+        self, array_field: ArrayOfStructLLMRequestOutputSchemaField | None
+    ) -> list[EntityGroupConfig]:
+        """Returns the entity groups whose `entity_fields` are sub-fields of
+        |array_field|, or — when |array_field| is None — the groups whose
+        `entity_fields` are top-level fields of this collection.
+
+        A group's mentions live at exactly one of those places, so every group this
+        collection declares is returned for exactly one |array_field| value.
+        """
+        target_name = array_field.name if array_field is not None else None
+        return [
+            group
+            for group in self.entity_groups
+            if (
+                group.source_array_field.name
+                if group.source_array_field is not None
+                else None
+            )
+            == target_name
+        ]
+
     def generate_json_schema(self) -> JSONSchemaDict:
         """Returns the deterministic JSON output schema that will be provided to
         the LLM.

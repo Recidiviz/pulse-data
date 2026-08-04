@@ -39,9 +39,6 @@ from recidiviz.big_query.big_query_attr_validators import (
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.descriptor import Descriptor
-from recidiviz.documents.dataset_config import (
-    document_extraction_pre_resolution_results_dataset_for_region,
-)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
     entity_resolution_collection_name,
 )
@@ -57,6 +54,12 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.views.llm_extractor_array_level_results_view_builders import (
+    LLMExtractorPreResolutionArrayFieldResultsViewBuilder,
+)
+from recidiviz.documents.extraction.views.llm_extractor_doc_level_results_view_builders import (
+    LLMExtractorPreResolutionResultsViewBuilder,
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
@@ -194,7 +197,7 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         return EntityResolutionCompositeDocumentQueryTemplateBuilder(
             root_entity_id_type=self.root_entity_id_type,
             entity_group=self.entity_group,
-            pre_resolution_view_address=self.pre_resolution_view_address,
+            pre_resolution_view_materialized_address=self.pre_resolution_view_materialized_address,
             source_document_contents_address=self.first_order_config.input_document_collection.document_contents_table_address,
         ).build_query_template()
 
@@ -219,22 +222,22 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         """
         return self.first_order_config.extractor_collection.name
 
-    # TODO(OBT-32175): Move this derivation to be defined where
-    #  LLMExtractorPreResolutionResultsViewBuilder is defined, once that exists.
     @property
-    def pre_resolution_view_address(self) -> BigQueryAddress:
-        """Returns the address of the first-order `__pre_resolution` parsed view
-        the composite documents are built from: the array-grain view for an array
-        entity group, the doc-grain view for a top-level one.
+    def pre_resolution_view_materialized_address(self) -> BigQueryAddress:
+        """Returns the address the composite documents are built from: the
+        materialized table behind the first-order "__pre_resolution" parsed view — the
+        array-level view for an array entity group, the doc-level view for a top-level
+        one. Reading the materialized table means composite-document generation reads an
+        already-computed table instead of re-running the whole parse.
         """
-        table_id = self.first_order_extractor_collection_name.lower()
-        if self.entity_group.source_array_field is not None:
-            table_id = f"{table_id}_{self.entity_group.source_array_field.name}"
-        return BigQueryAddress(
-            dataset_id=document_extraction_pre_resolution_results_dataset_for_region(
-                self.state_code
-            ),
-            table_id=table_id,
+        if (source_array_field := self.entity_group.source_array_field) is not None:
+            return LLMExtractorPreResolutionArrayFieldResultsViewBuilder.materialized_address_for_array_field(
+                self.first_order_config, source_array_field
+            )
+        return (
+            LLMExtractorPreResolutionResultsViewBuilder.materialized_address_for_config(
+                self.first_order_config
+            )
         )
 
     @property

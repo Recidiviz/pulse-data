@@ -51,6 +51,7 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     FAKE_ER_COLLECTION_NAMES,
     FAKE_LOCATION_ER_COLLECTION_NAME,
     FAKE_PAY_RATE_ER_COLLECTION_NAME,
+    patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
@@ -60,12 +61,6 @@ from recidiviz.utils.string import StrictStringFormatter
 
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _OVERRIDE_MODEL_CONFIG_NAME = "ACME_LARGE_DETERMINISTIC"
-
-# The framework-fixed ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME only exists in
-# the production model registry. Tests below generate real ER configs against the
-# fake config module's fake registry, so they patch the builder's default model
-# config name to this fake-registry config instead.
-_FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME = "ACME_LARGE_FIXED_THINKING"
 
 
 class ParseAllExtractorConfigsTest(TestCase):
@@ -243,14 +238,7 @@ class CollectEntityResolutionExtractorConfigsTest(TestCase):
     """Tests for collect_entity_resolution_extractor_configs."""
 
     def setUp(self) -> None:
-        self.enterContext(
-            patch(
-                "recidiviz.documents.extraction.entity_resolution."
-                "entity_resolution_extractor_collection_config_builder."
-                "ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME",
-                _FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME,
-            )
-        )
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
 
     def test_pair_per_declared_entity_group(self) -> None:
         first_order_config = get_first_order_llm_extractor_config(
@@ -303,14 +291,7 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
     """Tests for collect_all_extractor_configs_by_state."""
 
     def setUp(self) -> None:
-        self.enterContext(
-            patch(
-                "recidiviz.documents.extraction.entity_resolution."
-                "entity_resolution_extractor_collection_config_builder."
-                "ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME",
-                _FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME,
-            )
-        )
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
 
     def test_includes_first_order_and_entity_resolution(self) -> None:
         configs_by_state = collect_all_extractor_configs_by_state(

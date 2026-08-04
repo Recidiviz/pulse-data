@@ -255,16 +255,21 @@ class ParseAllCollectionConfigsTest(TestCase):
         groups_by_name = {group.name: group for group in collection.entity_groups}
 
         # Top-level group: no source_array_field; entity_fields are the actual
-        # top-level field objects.
+        # top-level field objects. entity_groups_for_array_field(None) stands for the
+        # doc level, where this group's mentions live.
         location_group = groups_by_name["location"]
         self.assertIsNone(location_group.source_array_field)
         self.assertEqual(
             [collection.output_schema.get_field("location")],
             location_group.entity_fields,
         )
+        self.assertEqual(
+            [location_group], collection.entity_groups_for_array_field(None)
+        )
 
         # Array group: source_array_field is the resolved array object; entity_fields
-        # are its sub-field objects.
+        # are its sub-field objects. Both groups sourced from the assignments array
+        # come back for it, in declaration order.
         assignment_group = groups_by_name["assignment"]
         assignments = collection.output_schema.get_field("assignments")
         assert isinstance(assignments, ArrayOfStructLLMRequestOutputSchemaField)
@@ -275,6 +280,10 @@ class ParseAllCollectionConfigsTest(TestCase):
                 assignments.get_field("assignment_type"),
             ],
             assignment_group.entity_fields,
+        )
+        self.assertEqual(
+            [assignment_group, groups_by_name["pay_rate"]],
+            collection.entity_groups_for_array_field(assignments),
         )
 
 
@@ -476,6 +485,13 @@ class LLMExtractorCollectionConfigTest(TestCase):
 
     def test_valid_name(self) -> None:
         self.assertEqual("TEST_COLLECTION", self._collection().name)
+
+    def test_no_entity_groups_for_any_array_field_when_none_declared(self) -> None:
+        collection = self._collection()
+        employers = collection.output_schema.get_field("employers")
+        assert isinstance(employers, ArrayOfStructLLMRequestOutputSchemaField)
+        self.assertEqual([], collection.entity_groups_for_array_field(None))
+        self.assertEqual([], collection.entity_groups_for_array_field(employers))
 
     def test_non_upper_snake_case_name_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, "must be UPPER_SNAKE_CASE"):
