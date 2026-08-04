@@ -42,6 +42,9 @@ from recidiviz.common.descriptor import Descriptor
 from recidiviz.documents.dataset_config import (
     document_extraction_pre_resolution_results_dataset_for_region,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
+    entity_resolution_collection_name,
+)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     EntityResolutionCompositeDocumentQueryTemplateBuilder,
     entry_source_map_schema_field,
@@ -59,27 +62,6 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     DocumentRootEntityIdType,
 )
-
-# Suffix appended to the first-order extractor collection name (plus the entity
-# group name) to form the composite-document collection name.
-ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX = "ENTITY_RESOLUTION"
-
-
-def entity_resolution_collection_name(
-    *, first_order_extractor_collection_name: str, entity_group_name: str
-) -> str:
-    """Returns the composite-document collection name for a (first-order extractor
-    collection, entity group) pair, e.g.
-    `CASE_NOTE_EMPLOYMENT_INFO_EMPLOYER_ENTITY_RESOLUTION`.
-
-    The ER extractor collection shares this name with the composite-document
-    collection, so a state's ER extractor binds one as its input document
-    collection and the other as its extractor collection.
-    """
-    return (
-        f"{first_order_extractor_collection_name}_{entity_group_name.upper()}"
-        f"_{ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX}"
-    )
 
 
 @attr.define

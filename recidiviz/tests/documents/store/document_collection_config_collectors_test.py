@@ -26,7 +26,7 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
     ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (

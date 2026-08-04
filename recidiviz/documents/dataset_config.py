@@ -98,3 +98,16 @@ def document_extraction_pre_resolution_results_dataset_for_region(
         f"{prefix}{state_code.value.lower()}"
         f"_document_extraction_results__pre_resolution"
     )
+
+
+def document_extraction_entity_mentions_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the dataset containing the per-state entity mentions views for this
+    region.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return (
+        f"{prefix}{state_code.value.lower()}"
+        f"_document_extraction_results__entity_mentions"
+    )

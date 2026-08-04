@@ -16,13 +16,17 @@
 # =============================================================================
 """Shared helpers for entity-resolution tests: loaders for the fake first-order
 collection/extractor, lookups for their entity groups, and the ER composite-document
-collection configs generated from them.
+collection and extractor configs generated from them.
 """
+from contextlib import AbstractContextManager
+from unittest.mock import patch
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    collect_entity_resolution_extractor_configs,
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
@@ -54,6 +58,29 @@ FAKE_ER_COLLECTION_NAMES = {
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     FAKE_PAY_RATE_ER_COLLECTION_NAME,
 }
+
+# The framework-fixed ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME only exists in the
+# production model registry. Tests that generate real ER configs against the fake
+# config module's fake registry patch the builder's default model config name to
+# this fake-registry config instead.
+FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME = "ACME_LARGE_FIXED_THINKING"
+_ENTITY_RESOLUTION_MODEL_CONFIG_NAME_PATCH_TARGET = (
+    "recidiviz.documents.extraction.entity_resolution."
+    "entity_resolution_extractor_collection_config_builder."
+    "ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME"
+)
+
+
+def patch_fake_entity_resolution_model_config_name() -> AbstractContextManager[str]:
+    """Returns a patch that points the ER extractor collection builder's default
+    model config name at a config that exists in the fake registry. Enter it (e.g.
+    via self.enterContext(...)) around any code that generates ER configs from the
+    fake config module.
+    """
+    return patch(
+        _ENTITY_RESOLUTION_MODEL_CONFIG_NAME_PATCH_TARGET,
+        FAKE_ENTITY_RESOLUTION_MODEL_CONFIG_NAME,
+    )
 
 
 def fake_first_order_collection() -> LLMExtractorCollectionConfig:
@@ -89,4 +116,17 @@ def fake_entity_resolution_document_collection_config(
         entity_group=get_entity_group_by_name(
             first_order_config.extractor_collection, group_name
         ),
+    )
+
+
+def fake_entity_resolution_extractor_config_pairs() -> (
+    list[tuple[LLMExtractorConfig, LLMExtractorConfig]]
+):
+    """Returns one (parent first-order config, generated ER config) pair per entity
+    group the fake US_XX first-order collection declares. Callers must have entered
+    patch_fake_entity_resolution_model_config_name.
+    """
+    return collect_entity_resolution_extractor_configs(
+        first_order_configs=[fake_first_order_extractor_config()],
+        config_module=fake_config,
     )

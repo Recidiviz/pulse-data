@@ -20,7 +20,7 @@ built entirely from collection-level inputs (there is no hand-authored ER
 `collection.yaml`).
 """
 from recidiviz.common.descriptor import Descriptor
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
     entity_resolution_collection_name,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (

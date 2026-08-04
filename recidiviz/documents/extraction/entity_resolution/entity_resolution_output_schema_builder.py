@@ -65,8 +65,8 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ArrayOfIntegerLLMRequestOutputSchemaField,
     ArrayOfStructLLMRequestOutputSchemaField,
     LLMOutputFieldType,
-    LLMRequestOutputSchemaField,
     PrimitiveScalarLLMRequestOutputSchemaField,
+    ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     ENTITIES_FIELD_NAME,
@@ -101,8 +101,8 @@ def _entities_field_description(entity_group: EntityGroupConfig) -> str:
 
 
 def _to_structural_entity_field(
-    field: LLMRequestOutputSchemaField,
-) -> LLMRequestOutputSchemaField:
+    field: ScalarValuedLLMRequestOutputSchemaField,
+) -> ScalarValuedLLMRequestOutputSchemaField:
     """Returns |field| copied verbatim (type and description) but flipped to a
     STRUCTURAL, always-present entity field: dropping the INFERRED
     companion-metadata config (and with it any semantic-consistency constraints,
@@ -115,6 +115,21 @@ def _to_structural_entity_field(
     return attr.evolve(
         field, inferred_field_config=None, required=True, nullable=not field.required
     )
+
+
+def entity_field_schema_fields(
+    entity_group: EntityGroupConfig,
+) -> list[ScalarValuedLLMRequestOutputSchemaField]:
+    """Returns the schema fields for |entity_group|'s entity_fields as a resolved
+    entity carries them: each first-order field copied verbatim but flipped to
+    STRUCTURAL, so the model emits one canonical value per entity instead of the
+    first-order extracted-value wrapper.
+
+    These are the fields that appear on every view built over the entity group's
+    clustering output, so build_entity_resolution_output_schema and the views that read
+    its results both go through here.
+    """
+    return [_to_structural_entity_field(field) for field in entity_group.entity_fields]
 
 
 def build_entity_resolution_output_schema(
@@ -147,9 +162,7 @@ def build_entity_resolution_output_schema(
     #  non-null entity_field value — an entity identified by none of its fields is
     #  meaningless. This schema can't express "at least one of these fields is
     #  non-null", so it is a validation-time check over the parsed output.
-    entity_fields = [
-        _to_structural_entity_field(field) for field in entity_group.entity_fields
-    ]
+    entity_fields = entity_field_schema_fields(entity_group)
     entry_nums_field = ArrayOfIntegerLLMRequestOutputSchemaField(
         name=ENTRY_NUMS_FIELD_NAME,
         description=ENTRY_NUMS_DESCRIPTION,

@@ -36,6 +36,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     CITATION_TEXT_FIELD_NAME,
     CITATIONS_FIELD_NAME,
     CONFIDENCE_LEVEL_FIELD_NAME,
+    ENTITIES_FIELD_NAME,
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     NULL_REASON_FIELD_NAME,
     RESULT_KEY,
@@ -117,6 +120,33 @@ def build_fake_extractor_irrelevant_result_content() -> dict[str, Any]:
     the relevance determination, no extracted fields.
     """
     return {IS_RELEVANT_FIELD_NAME: False}
+
+
+def build_fake_entity_resolution_entity_result_json(
+    entity_id: int, *, entry_nums: list[int], **entity_field_values: Any
+) -> dict[str, Any]:
+    """Returns one element of the entity-resolution entities ARRAY_OF_STRUCT field's
+    JSON: a resolved entity's sequential id, its canonical entity-field values, and the
+    composite-document entry numbers it was clustered from.
+
+    Entity fields are STRUCTURAL in the synthesized ER schema, so their values are bare
+    rather than wrapped in the companion metadata a first-order INFERRED field carries.
+    """
+    return {
+        ENTITY_ID_FIELD_NAME: entity_id,
+        **entity_field_values,
+        ENTRY_NUMS_FIELD_NAME: entry_nums,
+    }
+
+
+def build_fake_entity_resolution_result_content(
+    entities: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Returns the full result-JSON content for one entity-resolution result, the
+    resolved entities for a single composite document. The ER schema declares no
+    is_relevant field, because every composite document is relevant by construction.
+    """
+    return {ENTITIES_FIELD_NAME: entities}
 
 
 def wrap_in_result_key(result_content: dict[str, Any]) -> dict[str, Any]:

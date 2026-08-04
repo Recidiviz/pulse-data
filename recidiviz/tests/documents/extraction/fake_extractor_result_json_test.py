@@ -22,6 +22,9 @@ import unittest
 from typing import Any
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (
+    build_entity_resolution_output_schema,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
@@ -32,7 +35,13 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     RESULT_KEY,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_collection,
+    get_entity_group_by_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_fake_entity_resolution_entity_result_json,
+    build_fake_entity_resolution_result_content,
     build_fake_extractor_assignment_result_json,
     build_fake_extractor_irrelevant_result_content,
     build_fake_extractor_result_content,
@@ -108,3 +117,91 @@ class FakeExtractorResultJsonSchemaConformanceTest(unittest.TestCase):
         self._assert_wrapped_result_conforms(fake_minimal_relevant_result_json())
         self._assert_wrapped_result_conforms(fake_all_fields_result_json())
         self._assert_wrapped_result_conforms(fake_irrelevant_result_json())
+
+
+class FakeEntityResolutionResultJsonSchemaConformanceTest(unittest.TestCase):
+    """Validates the entity-resolution fixture result_json builders against the JSON
+    Schema synthesized for each of the fake collection's entity groups, the same schema
+    that constrains the ER model's structured output.
+
+    The ER schema is generated from the entity group rather than authored, so without this
+    the fixtures could drift from what the model can actually emit.
+    """
+
+    def _assert_conforms(
+        self, *, entity_group_name: str, result_content: dict[str, Any]
+    ) -> None:
+        entity_group = get_entity_group_by_name(
+            fake_first_order_collection(), entity_group_name
+        )
+        json_schema = LLMJsonSchemaGenerator.generate(
+            build_entity_resolution_output_schema(entity_group=entity_group)
+        )
+        # The ER schema has no "result" wrapper, unlike a first-order schema. With no
+        # is_relevant field there is no relevance branch to discriminate, so the entities
+        # field sits at the root, which is also the shape stored in result_json.
+        violations = [
+            f"[{error.json_path}]: {error.message}"
+            for error in iter_leaf_validation_errors(result_content, json_schema)
+        ]
+        self.assertEqual([], violations)
+
+    def test_top_level_group_entities_conform(self) -> None:
+        self._assert_conforms(
+            entity_group_name="location",
+            result_content=build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1, entry_nums=[1, 3], location="HQ"
+                    ),
+                    build_fake_entity_resolution_entity_result_json(
+                        2, entry_nums=[2], location="Annex"
+                    ),
+                ]
+            ),
+        )
+
+    def test_array_group_entities_conform(self) -> None:
+        self._assert_conforms(
+            entity_group_name="assignment",
+            result_content=build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1,
+                        entry_nums=[1, 2],
+                        assignment_name="Kitchen",
+                        assignment_type="internal",
+                    )
+                ]
+            ),
+        )
+
+    def test_float_entity_field_conforms(self) -> None:
+        self._assert_conforms(
+            entity_group_name="pay_rate",
+            result_content=build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1, entry_nums=[1], rate_amount=15.5
+                    )
+                ]
+            ),
+        )
+
+    def test_nullable_entity_field_conforms(self) -> None:
+        # assignment_type is optional in the first-order collection, so the synthesized
+        # ER schema makes its value nullable; an entity no mention filled it for returns
+        # an explicit null rather than an invented value.
+        self._assert_conforms(
+            entity_group_name="assignment",
+            result_content=build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1,
+                        entry_nums=[1],
+                        assignment_name="Kitchen",
+                        assignment_type=None,
+                    )
+                ]
+            ),
+        )
