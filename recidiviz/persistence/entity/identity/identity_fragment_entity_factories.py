@@ -128,6 +128,19 @@ class IdentityEmailFactory(EntityFactory):
         )
 
 
+class IdentityAliasFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.IdentityAlias:
+        return entity_deserialize(
+            cls=entities.IdentityAlias,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
 class IdentityAttributesFactory(EntityFactory):
     @staticmethod
     def deserialize(

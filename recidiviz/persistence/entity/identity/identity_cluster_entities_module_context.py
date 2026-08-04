@@ -51,6 +51,7 @@ class IdentityClusterEntitiesModuleContext(EntitiesModuleContext):
             identity_cluster_entities.IdentityClusterEthnicity.__name__,
             identity_cluster_entities.IdentityClusterPhoneNumber.__name__,
             identity_cluster_entities.IdentityClusterEmail.__name__,
+            identity_cluster_entities.IdentityClusterAlias.__name__,
         ]
 
     @classmethod

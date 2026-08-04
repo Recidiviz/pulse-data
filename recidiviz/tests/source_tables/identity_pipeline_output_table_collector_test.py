@@ -43,6 +43,7 @@ _TENANT = Tenant.US_OZ
 _EXPECTED_FRAGMENT_TABLE_IDS: set[str] = {
     "identity_fragment",
     "identity_attributes",
+    "identity_alias",
     "identity_email",
     "identity_ethnicity",
     "identity_external_id",
@@ -55,6 +56,7 @@ _EXPECTED_FRAGMENT_TABLE_IDS: set[str] = {
 
 _EXPECTED_CLUSTER_TABLE_IDS: set[str] = {
     "identity_cluster",
+    "identity_cluster_alias",
     "identity_cluster_email",
     "identity_cluster_ethnicity",
     "identity_cluster_external_id",

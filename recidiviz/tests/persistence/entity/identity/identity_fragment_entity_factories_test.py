@@ -18,7 +18,7 @@
 import datetime
 import unittest
 
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entity_utils import (
@@ -107,6 +107,29 @@ class TestEntityFactories(unittest.TestCase):
             surname="DOE",
             middle_name="Q",
             name_suffix="JR",
+        )
+
+        self.assertEqual(expected, result)
+
+    def test_deserialize_IdentityAlias(self) -> None:
+        result = entity_factories.IdentityAliasFactory.deserialize(
+            tenant=_TENANT,
+            given_name="John",
+            surname="Doe",
+            middle_name="Q",
+            name_suffix="Jr",
+            name_use=NameUse.ALIAS,
+            name_use_raw_text="AKA",
+        )
+
+        expected = entities.IdentityAlias(
+            tenant=_TENANT,
+            given_name="JOHN",
+            surname="DOE",
+            middle_name="Q",
+            name_suffix="JR",
+            name_use=NameUse.ALIAS,
+            name_use_raw_text="AKA",
         )
 
         self.assertEqual(expected, result)

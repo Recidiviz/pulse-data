@@ -17,7 +17,7 @@
 """Test utils for generating identity ingest pipeline `Entity` trees."""
 import datetime
 
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entity_utils import (
@@ -143,6 +143,26 @@ def generate_full_graph_identity_fragment(
                 tenant=_TENANT, address="b@example.com"
             ),
         ],
+        aliases=[
+            identity_fragment_entities.IdentityAlias(
+                tenant=_TENANT,
+                given_name="Johnny",
+                surname="Doe",
+                middle_name="Q",
+                name_suffix="Jr",
+                name_use=NameUse.ALIAS,
+                name_use_raw_text="AKA",
+            ),
+            identity_fragment_entities.IdentityAlias(
+                tenant=_TENANT,
+                given_name="Jack",
+                surname="Smith",
+                middle_name="Quentin",
+                name_suffix="Sr",
+                name_use=NameUse.FORMER,
+                name_use_raw_text="MAIDEN",
+            ),
+        ],
     )
 
     fragment = identity_fragment_entities.IdentityFragment(
@@ -238,6 +258,26 @@ def generate_full_graph_identity_cluster() -> identity_cluster_entities.Identity
             ),
             identity_cluster_entities.IdentityClusterEmail(
                 tenant=_TENANT, address="b@example.com"
+            ),
+        ),
+        aliases=(
+            identity_cluster_entities.IdentityClusterAlias(
+                tenant=_TENANT,
+                given_name="Johnny",
+                surname="Doe",
+                middle_name="Q",
+                name_suffix="Jr",
+                name_use=NameUse.ALIAS,
+                name_use_raw_text="AKA",
+            ),
+            identity_cluster_entities.IdentityClusterAlias(
+                tenant=_TENANT,
+                given_name="Jack",
+                surname="Smith",
+                middle_name="Quentin",
+                name_suffix="Sr",
+                name_use=NameUse.FORMER,
+                name_use_raw_text="MAIDEN",
             ),
         ),
     )

@@ -9,6 +9,9 @@ input_columns:
   Ethnicity: STRING
   PhoneNumber: STRING
   Email: STRING
+  AliasType: STRING
+  AliasFirstName: STRING
+  AliasLastName: STRING
 unused_columns: []
 output:
   IdentityFragment:
@@ -62,3 +65,17 @@ output:
         emails:
           - IdentityEmail:
               address: Email
+        aliases:
+          - $conditional:
+              - $if:
+                  $not_null: AliasType
+                $then:
+                  IdentityAlias:
+                    given_name: AliasFirstName
+                    surname: AliasLastName
+                    name_use:
+                      $enum_mapping:
+                        $raw_text: AliasType
+                        $mappings:
+                          NameUse.ALIAS: A
+                          NameUse.FORMER: M

@@ -64,6 +64,21 @@ identity_email:
   fields: &identity_email_fields
     address: An email address associated with the person.
 
+identity_alias:
+  fields: &identity_alias_fields
+    given_name: The first name component of the alias.
+    surname: The family name (last name) component of the alias.
+    middle_name: The middle name component of the alias.
+    name_suffix: >-
+      The generational or honorific suffix component of the alias
+      (e.g. Jr, Sr, III).
+    name_use: >-
+      How the source designates this alternate name, normalized to the
+      Recidiviz `NameUse` enum (e.g. ALIAS, FORMER, PREFERRED).
+    name_use_raw_text: >-
+      The raw text value from the source data system that was mapped to the
+      `name_use` enum.
+
 identity_attributes:
   fields: &identity_attributes_fields
     birthdate: The person's date of birth.
@@ -108,6 +123,9 @@ identity_cluster_phone_number:
 
 identity_cluster_email:
   fields: *identity_email_fields
+
+identity_cluster_alias:
+  fields: *identity_alias_fields
 
 identity_cluster:
   fields:

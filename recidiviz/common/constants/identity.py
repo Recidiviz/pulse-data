@@ -75,6 +75,10 @@ class NameUse(enum.Enum):
     ALIAS = "ALIAS"
     """An alternate or known-as name."""
 
+    INTERNAL_UNKNOWN = "INTERNAL_UNKNOWN"
+    """The source provided a name-use designation we could not map to a known
+    NameUse."""
+
 
 class SourceType(enum.Enum):
     """Provenance of an attribute value."""

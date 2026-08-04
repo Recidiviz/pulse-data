@@ -88,8 +88,31 @@ def resolve_cluster_attributes(
         attributes, lambda a: a.phone_numbers, key=lambda p: p.number
     )
     emails = _union(attributes, lambda a: a.emails, key=lambda e: e.address)
+    aliases = _union(
+        attributes,
+        lambda a: a.aliases,
+        key=lambda al: (
+            al.given_name,
+            al.surname,
+            al.middle_name,
+            al.name_suffix,
+            al.name_use,
+        ),
+    )
 
-    if not any([name, birthdate, sex, gender, ethnicity, races, phone_numbers, emails]):
+    if not any(
+        [
+            name,
+            birthdate,
+            sex,
+            gender,
+            ethnicity,
+            races,
+            phone_numbers,
+            emails,
+            aliases,
+        ]
+    ):
         return None
     return IdentityAttributes(
         tenant=tenant,
@@ -101,6 +124,7 @@ def resolve_cluster_attributes(
         races=races,
         phone_numbers=phone_numbers,
         emails=emails,
+        aliases=aliases,
     )
 
 

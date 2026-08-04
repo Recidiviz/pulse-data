@@ -20,10 +20,11 @@ import unittest
 
 import attr
 
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
+    IdentityAlias,
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,
@@ -310,6 +311,46 @@ class TestResolveClusterAttributes(unittest.TestCase):
         self.assertEqual(resolved.races[0].race, Race.BLACK)
         self.assertEqual(resolved.races[0].race_raw_text, "BLACK")
 
+    def test_aliases_dedup_ignoring_name_use_raw_text(self) -> None:
+        # Two fragments record the same alias name with different raw use text.
+        # They collapse to one alias carrying the latest fragment's raw text.
+        def _alias_fragment(
+            external_id: str, name_use_raw_text: str
+        ) -> IdentityFragment:
+            return IdentityFragment(
+                tenant=_TENANT,
+                external_ids=[
+                    IdentityExternalId(
+                        tenant=_TENANT, external_id=external_id, id_type="US_OZ_T1"
+                    )
+                ],
+                person_type=PersonType.JII,
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            surname="JONES",
+                            name_use=NameUse.ALIAS,
+                            name_use_raw_text=name_use_raw_text,
+                        )
+                    ],
+                ),
+            )
+
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _alias_fragment("A", "AKA"),
+                _alias_fragment("B", "ALIAS"),
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual(len(resolved.aliases), 1)
+        self.assertEqual(resolved.aliases[0].surname, "JONES")
+        self.assertEqual(resolved.aliases[0].name_use_raw_text, "ALIAS")
+
     def test_all_fields_null_resolved_returns_none(self) -> None:
         # The only attribute is a divergent optional attribute that nulls out,
         # so nothing remains to store.
@@ -362,6 +403,9 @@ class TestResolveClusterAttributesFieldCoverage(unittest.TestCase):
             races=[IdentityRace(tenant=_TENANT, race=Race.WHITE)],
             phone_numbers=[IdentityPhoneNumber(tenant=_TENANT, number="5550100001")],
             emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+            aliases=[
+                IdentityAlias(tenant=_TENANT, surname="JONES", name_use=NameUse.ALIAS)
+            ],
         )
         late = IdentityAttributes(
             tenant=_TENANT,
@@ -382,6 +426,9 @@ class TestResolveClusterAttributesFieldCoverage(unittest.TestCase):
             races=[IdentityRace(tenant=_TENANT, race=Race.BLACK)],
             phone_numbers=[IdentityPhoneNumber(tenant=_TENANT, number="5550100002")],
             emails=[IdentityEmail(tenant=_TENANT, address="jane@example.com")],
+            aliases=[
+                IdentityAlias(tenant=_TENANT, given_name="JACK", name_use=NameUse.ALIAS)
+            ],
         )
         # Latest for every conflict-checked scalar, so each resolves to the late
         # fragment's value.
@@ -424,6 +471,10 @@ class TestResolveClusterAttributesFieldCoverage(unittest.TestCase):
             {e.address for e in resolved.emails},
             {"john@example.com", "jane@example.com"},
         )
+        self.assertEqual(
+            {(al.given_name, al.surname) for al in resolved.aliases},
+            {(None, "JONES"), ("JACK", None)},
+        )
 
     def test_identity_attributes_fields_all_resolved_or_exempt(self) -> None:
         resolved_fields = {
@@ -435,6 +486,7 @@ class TestResolveClusterAttributesFieldCoverage(unittest.TestCase):
             "races",
             "phone_numbers",
             "emails",
+            "aliases",
         }
         exempt_fields = {
             # Set directly on the resolved entity, not resolved across

@@ -36,7 +36,7 @@ from recidiviz.common.attr_validators import (
     is_valid_email,
     is_valid_phone_number,
 )
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -113,10 +113,29 @@ class IdentityEmail(IdentityEntityMixin, Entity):
 
 
 @attr.s(eq=False, kw_only=True)
+class IdentityAlias(IdentityEntityMixin, Entity):
+    """An alternate name for the person, distinct from their primary name.
+
+    Mirrors one alias-typed row of the Identity Service's names table: the
+    typed name parts plus a name_use designating how the source classifies the name
+    (alias, former, preferred).
+    """
+
+    given_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    surname: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    middle_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    name_suffix: str | None = attr.ib(default=None, validator=is_opt_valid_name_suffix)
+    name_use: NameUse = attr.ib(validator=attr.validators.instance_of(NameUse))
+    name_use_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
+    identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
 class IdentityAttributes(IdentityEntityMixin, Entity):
     """Identity attributes associated with one dataset's view of a person
     (as the attributes field on IdentityFragment) or with a cluster's chosen
-    best-known attributes (as the attributes field on IdentityCluster)."""
+    best-known attributes (as the attributes field on IdentityCluster).
+    """
 
     name: "IdentityName | None" = attr.ib(default=None, validator=is_opt(IdentityName))
 
@@ -144,6 +163,10 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
 
     emails: list["IdentityEmail"] = attr.ib(
         factory=list, validator=is_list_of(IdentityEmail)
+    )
+
+    aliases: list["IdentityAlias"] = attr.ib(
+        factory=list, validator=is_list_of(IdentityAlias)
     )
 
     fragment: "IdentityFragment | None" = attr.ib(default=None)

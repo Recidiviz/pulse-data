@@ -20,7 +20,7 @@ from enum import Enum
 from typing import Type
 
 import recidiviz.pipelines.ingest.identity
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
@@ -100,7 +100,7 @@ class IdentityIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDeleg
         return self._enum_cls_cache[enum_cls_name]
 
     def _hydrate_enum_cls_cache(self) -> None:
-        for enum_cls in (Ethnicity, Gender, PersonType, Race, Sex):
+        for enum_cls in (Ethnicity, Gender, NameUse, PersonType, Race, Sex):
             self._enum_cls_cache[enum_cls.__name__] = enum_cls
 
     def get_custom_function_registry(self) -> CustomFunctionRegistry:

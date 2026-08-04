@@ -140,6 +140,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
             self.assert_source_tables_match(
                 collection,
                 expected_addresses=[
+                    f"{collection.dataset_id}.identity_alias",
                     f"{collection.dataset_id}.identity_attributes",
                     f"{collection.dataset_id}.identity_email",
                     f"{collection.dataset_id}.identity_ethnicity",
@@ -180,6 +181,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
                 collection,
                 expected_addresses=[
                     f"{collection.dataset_id}.identity_cluster",
+                    f"{collection.dataset_id}.identity_cluster_alias",
                     f"{collection.dataset_id}.identity_cluster_email",
                     f"{collection.dataset_id}.identity_cluster_ethnicity",
                     f"{collection.dataset_id}.identity_cluster_external_id",

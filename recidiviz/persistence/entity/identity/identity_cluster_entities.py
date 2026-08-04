@@ -43,7 +43,7 @@ from recidiviz.common.attr_validators import (
     is_valid_phone_number,
 )
 from recidiviz.common.common_utils import get_hash_of_json
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
@@ -144,6 +144,19 @@ class IdentityClusterEmail(IdentityClusterEntity, Entity):
 
 
 @attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
+class IdentityClusterAlias(IdentityClusterEntity, Entity):
+    given_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    surname: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    middle_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    name_suffix: str | None = attr.ib(default=None, validator=is_opt_valid_name_suffix)
+    name_use: NameUse = attr.ib(validator=attr.validators.instance_of(NameUse))
+    name_use_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
+    identity_cluster: "IdentityCluster | None" = attr.ib(
+        default=None, on_setattr=attr.setters.validate
+    )
+
+
+@attr.s(eq=False, kw_only=True, on_setattr=attr.setters.frozen)
 class IdentityCluster(
     IdentityClusterEntity,
     HasMultipleExternalIdsEntity["IdentityClusterExternalId"],
@@ -198,6 +211,11 @@ class IdentityCluster(
     emails: tuple["IdentityClusterEmail", ...] = attr.ib(
         factory=tuple,
         validator=is_tuple_of(IdentityClusterEmail),
+    )
+
+    aliases: tuple["IdentityClusterAlias", ...] = attr.ib(
+        factory=tuple,
+        validator=is_tuple_of(IdentityClusterAlias),
     )
 
     # SHA-256 of the cluster's sorted external IDs; not a stable person

@@ -514,7 +514,7 @@ class TestIdentityCluster(unittest.TestCase):
         )
         self.assertEqual(
             cluster.cluster_hash,
-            "1b06ba9643610bf0214902c2cfe541f0320c496d4ee22133da1c84c6a26b5948",
+            "b91dc9b29beec6b86ece4f2810bf78e48e70d733c9d5513d574222c8f0c04930",
         )
 
     def test_full_graph_field_coverage(self) -> None:

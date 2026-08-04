@@ -370,6 +370,7 @@ class TestConflictCheckFieldCoverage(unittest.TestCase):
             "races",
             "phone_numbers",
             "emails",
+            "aliases",
         }
         entity_fields = {f.name for f in attr.fields(IdentityAttributes)} | {
             f.name for f in attr.fields(IdentityName)

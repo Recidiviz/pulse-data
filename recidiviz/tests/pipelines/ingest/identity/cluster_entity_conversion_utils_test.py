@@ -87,6 +87,7 @@ class TestConvertAttributesToClusterKwargs(unittest.TestCase):
                 "races": (),
                 "phone_numbers": (),
                 "emails": (),
+                "aliases": (),
             },
         )
 

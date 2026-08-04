@@ -31,7 +31,10 @@ SELECT
   Race,
   Ethnicity,
   PhoneNumber,
-  Email
+  Email,
+  AliasType,
+  AliasFirstName,
+  AliasLastName
 FROM {identity_person}
 """
 

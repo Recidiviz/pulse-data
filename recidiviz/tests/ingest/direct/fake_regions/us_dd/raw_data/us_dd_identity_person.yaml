@@ -69,3 +69,18 @@ columns:
   - name: Email
     description: The person's email address.
     is_pii: True
+  - name: AliasType
+    description: |-
+      Type of the person's alias. Raw values are mapped to the NameUse enum.
+      Null when the person has no alias.
+    known_values:
+      - value: A
+        description: Alias / also-known-as name
+      - value: M
+        description: Maiden (former) name
+  - name: AliasFirstName
+    description: First name of the person's alias.
+    is_pii: True
+  - name: AliasLastName
+    description: Last name of the person's alias.
+    is_pii: True

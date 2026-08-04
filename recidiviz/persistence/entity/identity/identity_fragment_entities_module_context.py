@@ -52,6 +52,7 @@ class IdentityFragmentEntitiesModuleContext(EntitiesModuleContext):
             identity_fragment_entities.IdentityEthnicity.__name__,
             identity_fragment_entities.IdentityPhoneNumber.__name__,
             identity_fragment_entities.IdentityEmail.__name__,
+            identity_fragment_entities.IdentityAlias.__name__,
         ]
 
     @classmethod
