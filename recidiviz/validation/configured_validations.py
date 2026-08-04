@@ -359,6 +359,9 @@ from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_
 from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_vs_impact_report_registered_users_supervision import (
     OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.user_metrics.weekly_digest_email_sent_percent_change_exceeded import (
+    WEEKLY_DIGEST_EMAIL_SENT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.client_and_resident_record_percent_change_in_eligibility_exceeded import (
     CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
 )
@@ -732,6 +735,18 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=WEEKLY_DIGEST_EMAIL_SENT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+            comparison_columns=[
+                "this_week_emails_sent",
+                "last_week_emails_sent",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+            soft_max_allowed_error=0.2,
+            hard_max_allowed_error=0.5,
         ),
         ExistenceDataValidationCheck(
             view_builder=PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
