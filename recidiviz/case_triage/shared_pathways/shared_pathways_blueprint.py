@@ -149,7 +149,10 @@ class SharedPathwaysBlueprint:
             response.vary = "Origin"
             response.access_control_allow_origin = request.origin
             response.access_control_allow_headers = parse_set_header(
-                "authorization, sentry-trace"
+                # `baggage` is added by Sentry alongside sentry-trace for trace
+                # propagation; it only seems to reach the server during local
+                # development (see case_triage/helpers.py's identical allowlist).
+                "authorization, sentry-trace, baggage"
             )
             # Cache preflight responses for 2 hours
             response.access_control_max_age = 2 * 60 * 60

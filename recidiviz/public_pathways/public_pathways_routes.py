@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes for the Public Pathways Flask blueprint. """
-from flask import Blueprint, Response
+from flask import Blueprint, Response, request
 from flask_limiter import Limiter
 from werkzeug.exceptions import BadRequest
 from werkzeug.http import parse_set_header
@@ -29,6 +29,9 @@ from recidiviz.case_triage.shared_pathways.shared_pathways_blueprint import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.public_pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.public_pathways.individual_level_bulk_export import (
+    build_bulk_individual_level_export_response,
+)
 from recidiviz.public_pathways.individual_level_export import (
     build_individual_level_export_response,
 )
@@ -39,6 +42,25 @@ from recidiviz.public_pathways.public_pathways_authorization import (
     INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG,
     on_successful_authorization,
 )
+
+
+def _parse_optional_year_month() -> tuple[int, int] | None:
+    """Returns the (year, month) pair from the request's ?year=&month= query
+    params, or None if neither is present. Raises BadRequest if only one is
+    present, or if either fails to parse as an int.
+    """
+    year_str = request.args.get("year")
+    month_str = request.args.get("month")
+    if year_str is None and month_str is None:
+        return None
+    if year_str is None or month_str is None:
+        raise BadRequest("year and month must both be provided, or neither")
+
+    try:
+        return int(year_str), int(month_str)
+    except ValueError as e:
+        raise BadRequest(f"Invalid year/month: [{year_str}]/[{month_str}]") from e
+
 
 PUBLIC_PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3050",
@@ -72,6 +94,18 @@ def create_public_pathways_api_blueprint(limiter: Limiter) -> Blueprint:
         response.access_control_expose_headers = parse_set_header("Content-Disposition")
         return response
 
+    def _validated_state_code(state: str) -> StateCode:
+        try:
+            state_code = StateCode(state)
+        except ValueError as e:
+            raise BadRequest(f"Invalid state code: [{state}]") from e
+
+        if state_code.value not in enabled_states:
+            raise BadRequest(
+                f"Public Pathways is not enabled for state: [{state_code.value}]"
+            )
+        return state_code
+
     @blueprint.get(
         "/<state>/PrisonPopulationIndividualLevel",
         defaults={INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG: True},
@@ -84,18 +118,28 @@ def create_public_pathways_api_blueprint(limiter: Limiter) -> Blueprint:
         # keyword argument matched by name.
         individual_level_export: bool,  # pylint: disable=unused-argument
     ) -> Response:
-        try:
-            state_code = StateCode(state)
-        except ValueError as e:
-            raise BadRequest(f"Invalid state code: [{state}]") from e
-
-        if state_code.value not in enabled_states:
-            raise BadRequest(
-                f"Public Pathways is not enabled for state: [{state_code.value}]"
-            )
+        state_code = _validated_state_code(state)
+        year_month = _parse_optional_year_month()
 
         return build_individual_level_export_response(
-            state_code=state_code, enabled_states=enabled_states
+            state_code=state_code,
+            enabled_states=enabled_states,
+            year_month=year_month,
         )
+
+    @blueprint.get(
+        "/<state>/PrisonPopulationIndividualLevelBulk",
+        defaults={INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG: True},
+    )
+    @limiter.limit("10 per minute")  # type: ignore[attr-defined]
+    def individual_level_export_bulk(
+        state: str,
+        # Name must match INDIVIDUAL_LEVEL_EXPORT_VIEW_ARG: Flask calls this
+        # function with **view_args, so the defaults key above is passed as a
+        # keyword argument matched by name.
+        individual_level_export: bool,  # pylint: disable=unused-argument
+    ) -> Response:
+        state_code = _validated_state_code(state)
+        return build_bulk_individual_level_export_response(state_code=state_code)
 
     return blueprint

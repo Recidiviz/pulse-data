@@ -34,6 +34,8 @@ from flask_limiter.util import get_remote_address
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata,
     PublicPrisonPopulationOverTime,
@@ -41,6 +43,7 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.public_pathways.individual_level_bulk_export import bulk_export_gcs_path
 from recidiviz.public_pathways.public_pathways_authorization import (
     on_successful_authorization,
 )
@@ -50,6 +53,7 @@ from recidiviz.public_pathways.public_pathways_routes import (
 from recidiviz.tests.case_triage.shared_pathways.fixture_helpers import (
     load_metrics_fixture,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.public_pathways import fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -419,6 +423,46 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         self.assertEqual(HTTPStatus.OK, second_response.status_code)
         self.assertEqual(first_response.get_data(), second_response.get_data())
 
+    def test_individual_level_export_specific_month(self) -> None:
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+            query_string={"year": "2021", "month": "12"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_data())
+        self.assertEqual(
+            'attachment; filename="us_ny_individual_level_data_2021-12-01.csv"',
+            response.headers["Content-Disposition"],
+        )
+
+        rows = list(csv.DictReader(io.StringIO(response.get_data(as_text=True))))
+        self.assertEqual(3, len(rows))
+        self.assertTrue(all(row["date_in_population"] == "2021-12-01" for row in rows))
+
+    def test_individual_level_export_month_requires_both_params(self) -> None:
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+            query_string={"month": "12"},
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_individual_level_export_month_invalid_format(self) -> None:
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+            query_string={"year": "not-a-year", "month": "12"},
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_individual_level_export_month_no_snapshot_in_window(self) -> None:
+        response = self.test_client.get(
+            self.individual_level_export_path,
+            headers={"Origin": "http://localhost:3050"},
+            query_string={"year": "2019", "month": "1"},
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
     def test_individual_level_export_invalid_state(self) -> None:
         response = self.test_client.get(
             "/public_pathways/NOTASTATE/PrisonPopulationIndividualLevel",
@@ -577,6 +621,72 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         )
 
 
+@mock.patch(
+    "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+)
+class TestPublicPathwaysIndividualLevelExportBulk(PublicPathwaysBlueprintTestCase):
+    """Implements tests for the bulk individual-level export route."""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="US_NY"
+        )
+        self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
+        os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
+
+        self.bulk_export_path = (
+            "/public_pathways/US_NY/PrisonPopulationIndividualLevelBulk"
+        )
+
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = mock.patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.fs_patcher.stop()
+        if self.old_auth_claim_namespace:
+            os.environ["AUTH0_CLAIM_NAMESPACE"] = self.old_auth_claim_namespace
+        else:
+            os.environ.pop("AUTH0_CLAIM_NAMESPACE", None)
+
+    def test_bulk_export_not_yet_precomputed(self) -> None:
+        response = self.test_client.get(
+            self.bulk_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_bulk_export_returns_precomputed_zip(self) -> None:
+        gcs_path = bulk_export_gcs_path(state_code=StateCode.US_NY)
+        self.fs.upload_from_string(gcs_path, "fake zip contents", "application/zip")
+        self.fs.update_metadata(gcs_path, {"last_updated": "2022-08-03"})
+
+        response = self.test_client.get(
+            self.bulk_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_data())
+        self.assertEqual("application/zip", response.content_type)
+        self.assertEqual(
+            'attachment; filename="us_ny_individual_level_data_last_5_years_2022-08-03.zip"',
+            response.headers["Content-Disposition"],
+        )
+        self.assertEqual(b"fake zip contents", response.get_data())
+
+    def test_bulk_export_wrong_state_user_unauthorized(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="US_ID"
+        )
+        response = self.test_client.get(
+            self.bulk_export_path,
+            headers={"Origin": "http://localhost:3050"},
+        )
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+
 def make_cors_test(
     request_origin: str,
     request_method: str = "OPTIONS",
@@ -605,7 +715,7 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         request_origin="http://localhost:3050",
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3050",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Access-Control-Expose-Headers": "Content-Disposition",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
@@ -616,7 +726,7 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         request_origin="https://pathways-staging.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://pathways-staging.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
     )
@@ -625,7 +735,7 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         request_origin="https://pathways.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://pathways.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
     )
@@ -635,7 +745,7 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         request_method="GET",
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3050",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
         expected_status=HTTPStatus.BAD_REQUEST,

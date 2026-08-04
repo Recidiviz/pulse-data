@@ -18,12 +18,13 @@
 import csv
 import io
 import json
-from datetime import date
-from typing import Iterable
+from datetime import date, timedelta
+from typing import Callable, Iterable
 
 from flask import Response
 from sqlalchemy import Column, func
 from sqlalchemy.orm import Query, Session, sessionmaker
+from werkzeug.exceptions import BadRequest
 
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
@@ -102,6 +103,12 @@ _ROWS_PER_CHUNK = 1000
 # always produces a fresh key, so this is not required for cache correctness.
 _CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 
+# How far a resolved month snapshot's date_in_population may drift from the 1st of
+# the requested month. Most months land exactly on the 1st, but ETL delays have
+# pushed it a few days late in the past; this tolerates that without matching an
+# unrelated month's snapshot.
+_MONTH_SNAPSHOT_WINDOW_DAYS = 15
+
 
 def individual_level_export_columns() -> list[Column]:
     """Returns the PublicPrisonPopulationOverTime columns included in the
@@ -119,7 +126,8 @@ def individual_level_export_filename(
     *, state_code: StateCode, last_updated: date
 ) -> str:
     """Returns the filename for the individual-level export, stamped with the date
-    of the most recently received data for the given state.
+    the export's snapshot represents for the given state (the most recently
+    received data, or a specific resolved month's snapshot date).
     """
     return (
         f"{state_code.value.lower()}_individual_level_data_"
@@ -127,7 +135,7 @@ def individual_level_export_filename(
     )
 
 
-def _get_metric_metadata(session: Session) -> MetricMetadata:
+def get_metric_metadata(session: Session) -> MetricMetadata:
     """Returns the MetricMetadata row for PublicPrisonPopulationOverTime, which
     carries both the last_updated date and the dynamic_filter_options id-to-label
     maps used to translate the columns in the individual-level export.
@@ -140,7 +148,7 @@ def _get_metric_metadata(session: Session) -> MetricMetadata:
     )
 
 
-def _build_label_maps(
+def build_label_maps(
     dynamic_filter_options: str | dict[str, str | None]
 ) -> dict[str, dict[str, str]]:
     """Returns a value->label dict per translatable export column: time_period from
@@ -203,8 +211,7 @@ def _translate_row(
 
 def _build_latest_snapshot_query(columns: list[Column]) -> Query:
     """Returns a query for the given columns, filtered to rows for the most recent
-    date_in_population. This is the only filter applied: the individual-level export
-    is always unfiltered and always reflects the latest snapshot.
+    date_in_population.
     """
     max_date_subquery = Query(
         func.max(PublicPrisonPopulationOverTime.date_in_population)
@@ -214,12 +221,61 @@ def _build_latest_snapshot_query(columns: list[Column]) -> Query:
     )
 
 
-def _cache_key(*, state_code: StateCode, last_updated: date) -> str:
+def build_snapshot_query_for_date(columns: list[Column], snapshot_date: date) -> Query:
+    """Returns a query for the given columns, filtered to rows for exactly the
+    given date_in_population.
+    """
+    return Query(columns).filter(
+        PublicPrisonPopulationOverTime.date_in_population == snapshot_date
+    )
+
+
+def resolve_snapshot_date_for_month(
+    session: Session, *, year: int, month: int
+) -> date | None:
+    """Returns the date_in_population closest to the 1st of the given month, among
+    dates within _MONTH_SNAPSHOT_WINDOW_DAYS of it, or None if none fall in that
+    window (e.g. the month predates this state's earliest data, or is in the
+    future).
+    """
+    month_start = date(year, month, 1)
+    window_start = month_start - timedelta(days=_MONTH_SNAPSHOT_WINDOW_DAYS)
+    window_end = month_start + timedelta(days=_MONTH_SNAPSHOT_WINDOW_DAYS)
+
+    candidate_dates = (
+        Query(PublicPrisonPopulationOverTime.date_in_population)
+        .filter(
+            PublicPrisonPopulationOverTime.date_in_population >= window_start,
+            PublicPrisonPopulationOverTime.date_in_population <= window_end,
+        )
+        .distinct()
+        .with_session(session)
+        .all()
+    )
+    if not candidate_dates:
+        return None
+    return min(
+        (candidate_date for (candidate_date,) in candidate_dates),
+        key=lambda candidate_date: abs((candidate_date - month_start).days),
+    )
+
+
+def _cache_key(
+    *,
+    state_code: StateCode,
+    last_updated: date,
+    year_month: tuple[int, int] | None = None,
+) -> str:
     """Returns the individual-level export cache key for state_code, scoped to
     last_updated so a new data import always produces a fresh key rather than
-    serving a stale cached export.
+    serving a stale cached export. When a specific month is requested, the key is
+    further scoped to that month so each requested month caches independently.
     """
-    return f"{state_code.value} individual_level_export {last_updated.isoformat()}"
+    month_suffix = f" {year_month[0]}-{year_month[1]:02d}" if year_month else ""
+    return (
+        f"{state_code.value} individual_level_export "
+        f"{last_updated.isoformat()}{month_suffix}"
+    )
 
 
 def _build_csv(
@@ -227,16 +283,17 @@ def _build_csv(
     session_factory: sessionmaker,
     columns: list[Column],
     label_maps: dict[str, dict[str, str]],
+    build_query: Callable[[], Query],
 ) -> str:
     """Returns the individual-level export as a single CSV-encoded string: a
-    header row followed by one row per record in the latest snapshot, fetched
+    header row followed by one row per record matched by build_query(), fetched
     from the database in batches of _ROWS_PER_CHUNK. Columns present in label_maps
     are translated from their raw internal codes to display labels, matching what
     the dashboard UI shows for the same values.
     """
     column_names = [column.name for column in columns]
     with session_factory() as session:
-        query = _build_latest_snapshot_query(columns).with_session(session)
+        query = build_query().with_session(session)
 
         buffer = io.StringIO()
         writer = csv.writer(buffer)
@@ -250,13 +307,38 @@ def _build_csv(
         return buffer.getvalue()
 
 
+def build_csv_for_date(
+    *,
+    session_factory: sessionmaker,
+    columns: list[Column],
+    label_maps: dict[str, dict[str, str]],
+    snapshot_date: date,
+) -> str:
+    """Returns the individual-level export as a single CSV-encoded string, for
+    exactly the given date_in_population. Used by the bulk multi-month export,
+    which resolves and builds one CSV per month itself.
+    """
+    return _build_csv(
+        session_factory=session_factory,
+        columns=columns,
+        label_maps=label_maps,
+        build_query=lambda: build_snapshot_query_for_date(columns, snapshot_date),
+    )
+
+
 def build_individual_level_export_response(
-    *, state_code: StateCode, enabled_states: list[str]
+    *,
+    state_code: StateCode,
+    enabled_states: list[str],
+    year_month: tuple[int, int] | None = None,
 ) -> Response:
-    """Returns a CSV response of the most recent individual-level Public Pathways
-    data for the given state, limited to INCLUDED_INDIVIDUAL_LEVEL_COLUMNS. The
-    export itself is cached in Redis per state/last_updated date, so repeat
-    requests for the same snapshot skip the database query.
+    """Returns a CSV response of individual-level Public Pathways data for the
+    given state, limited to INCLUDED_INDIVIDUAL_LEVEL_COLUMNS. With no year_month
+    given, returns the most recent snapshot; with one given, returns the snapshot
+    resolved by resolve_snapshot_date_for_month() for that (year, month), raising
+    BadRequest if none resolves. The export itself is cached in Redis per
+    state/last_updated date (and month, if given), so repeat requests for the same
+    snapshot skip the database query.
     """
     database_manager = PathwaysDatabaseManager(
         enabled_states, SchemaType.PUBLIC_PATHWAYS
@@ -264,7 +346,7 @@ def build_individual_level_export_response(
     session_factory = database_manager.get_pathways_session(state_code)
 
     with session_factory() as session:
-        metric_metadata = _get_metric_metadata(session)
+        metric_metadata = get_metric_metadata(session)
         last_updated = metric_metadata.last_updated
         dynamic_filter_options = metric_metadata.dynamic_filter_options
         if dynamic_filter_options is None:
@@ -273,18 +355,42 @@ def build_individual_level_export_response(
                 f"in state [{state_code.value}]; cannot translate the individual-level "
                 f"export's columns to display labels."
             )
-        label_maps = _build_label_maps(dynamic_filter_options)
+        label_maps = build_label_maps(dynamic_filter_options)
+
+        snapshot_date: date | None = None
+        if year_month is not None:
+            year, month = year_month
+            snapshot_date = resolve_snapshot_date_for_month(
+                session, year=year, month=month
+            )
+            if snapshot_date is None:
+                raise BadRequest(
+                    f"No individual-level snapshot found within "
+                    f"{_MONTH_SNAPSHOT_WINDOW_DAYS} days of {year}-{month:02d} for "
+                    f"state [{state_code.value}]"
+                )
 
     columns = individual_level_export_columns()
     filename = individual_level_export_filename(
-        state_code=state_code, last_updated=last_updated
+        state_code=state_code, last_updated=snapshot_date or last_updated
+    )
+
+    build_query = (
+        (lambda: build_snapshot_query_for_date(columns, snapshot_date))
+        if snapshot_date is not None
+        else (lambda: _build_latest_snapshot_query(columns))
     )
 
     csv_data = cloud_memorystore_utils.get_or_set_str(
         get_public_pathways_metric_redis(),
-        _cache_key(state_code=state_code, last_updated=last_updated),
+        _cache_key(
+            state_code=state_code, last_updated=last_updated, year_month=year_month
+        ),
         lambda: _build_csv(
-            session_factory=session_factory, columns=columns, label_maps=label_maps
+            session_factory=session_factory,
+            columns=columns,
+            label_maps=label_maps,
+            build_query=build_query,
         ),
         ex=_CACHE_TTL_SECONDS,
     )

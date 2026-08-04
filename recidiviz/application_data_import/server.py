@@ -91,6 +91,9 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.public_pathways.individual_level_bulk_export import (
+    build_and_upload_bulk_individual_level_export,
+)
 from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -536,6 +539,23 @@ def _import_pathways_helper(
                 schema_type.value,
                 state_code,
                 db_entity.__name__,
+                e,
+                exc_info=True,
+            )
+
+    if (
+        schema_type is SchemaType.PUBLIC_PATHWAYS
+        and db_entity is public_pathways_schema.PublicPrisonPopulationOverTime
+    ):
+        try:
+            build_and_upload_bulk_individual_level_export(
+                state_code=StateCode(state_code),
+                enabled_states=enabled_states_getter(),
+            )
+        except Exception as e:
+            logging.error(
+                "Failed to precompute bulk individual-level export for %s: %s",
+                state_code,
                 e,
                 exc_info=True,
             )

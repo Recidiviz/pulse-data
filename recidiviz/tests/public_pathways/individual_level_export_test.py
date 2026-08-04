@@ -22,9 +22,9 @@ import unittest
 
 from recidiviz.public_pathways.individual_level_export import (
     INCLUDED_INDIVIDUAL_LEVEL_COLUMNS,
-    _build_label_maps,
     _translate_row,
     _translate_value,
+    build_label_maps,
 )
 
 
@@ -95,7 +95,7 @@ class TestTranslateValue(unittest.TestCase):
 
 
 class TestBuildLabelMaps(unittest.TestCase):
-    """Tests for _build_label_maps."""
+    """Tests for build_label_maps."""
 
     def test_parses_dynamic_filter_options_and_includes_time_period(self) -> None:
         dynamic_filter_options_json = json.dumps(
@@ -122,7 +122,7 @@ class TestBuildLabelMaps(unittest.TestCase):
             }
         )
 
-        label_maps = _build_label_maps(dynamic_filter_options_json)
+        label_maps = build_label_maps(dynamic_filter_options_json)
 
         self.assertEqual(
             {
@@ -140,7 +140,7 @@ class TestBuildLabelMaps(unittest.TestCase):
         """Local dev fixtures (tools/shared_pathways/load_fixtures.py) insert
         dynamic_filter_options via a raw SQL INSERT, which Postgres parses directly
         into a jsonb object; SQLAlchemy then returns it as a dict rather than a JSON
-        string. _build_label_maps must handle this shape too."""
+        string. build_label_maps must handle this shape too."""
         dynamic_filter_options = {
             "facility_id_name_map": json.dumps(
                 [{"value": "FACILITY_A", "label": "Facility A"}]
@@ -155,14 +155,14 @@ class TestBuildLabelMaps(unittest.TestCase):
             "admission_reason_id_name_map": None,
         }
 
-        label_maps = _build_label_maps(dynamic_filter_options)
+        label_maps = build_label_maps(dynamic_filter_options)
 
         self.assertEqual({"FACILITY_A": "Facility A"}, label_maps["facility"])
 
     def test_tolerates_missing_keys(self) -> None:
         """Some dynamic_filter_options data (e.g. older or hand-written fixtures, see
         tests/public_pathways/fixtures/metric_metadata.csv) omits keys entirely rather
-        than setting them to null. _build_label_maps must not KeyError on those."""
+        than setting them to null. build_label_maps must not KeyError on those."""
         dynamic_filter_options: dict[str, str | None] = {
             "gender_id_name_map": json.dumps([{"value": "MALE", "label": "Male"}]),
             "date_in_population_id_name_map": json.dumps(
@@ -170,7 +170,7 @@ class TestBuildLabelMaps(unittest.TestCase):
             ),
         }
 
-        label_maps = _build_label_maps(dynamic_filter_options)
+        label_maps = build_label_maps(dynamic_filter_options)
 
         self.assertNotIn("facility", label_maps)
         self.assertNotIn("race", label_maps)

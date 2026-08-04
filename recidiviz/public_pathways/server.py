@@ -36,7 +36,7 @@ from recidiviz.case_triage.util import (
 from recidiviz.public_pathways.public_pathways_routes import (
     create_public_pathways_api_blueprint,
 )
-from recidiviz.utils import structured_logging
+from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.environment import get_gcp_environment, in_development, in_gcp
 
 # Sentry setup
@@ -79,6 +79,12 @@ if in_gcp():
 else:
     # Python logs at the warning level by default
     logging.basicConfig(level=logging.INFO)
+
+if in_development():
+    # Metadata calls (e.g. project_id(), used to resolve GCS bucket names) fail
+    # outside GCP unless a project id override is set; this makes them resolve
+    # to staging for the local dev server, same as admin_panel/server.py.
+    metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
 
 
 # Security headers

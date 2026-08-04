@@ -783,6 +783,66 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
             )
 
     @patch(
+        "recidiviz.application_data_import.server.build_and_upload_bulk_individual_level_export",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_public_pathways_precomputes_bulk_export(
+        self,
+        _mock_redis: MagicMock,
+        _mock_import_csv: MagicMock,
+        mock_build_bulk_export: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_build_bulk_export.assert_called_once_with(
+                state_code=StateCode.US_XX,
+                enabled_states=self.enabled_states_getter(),
+            )
+
+    @patch(
+        "recidiviz.application_data_import.server.build_and_upload_bulk_individual_level_export",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_public_pathways_bulk_export_precompute_error_does_not_fail_import(
+        self,
+        _mock_redis: MagicMock,
+        _mock_import_csv: MagicMock,
+        mock_build_bulk_export: MagicMock,
+    ) -> None:
+        mock_build_bulk_export.side_effect = Exception("GCS upload failed")
+        with self.app.test_request_context():
+            with self.assertLogs(level="INFO") as log:
+                response = self.client.post(
+                    f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+                )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertTrue(
+                any(
+                    "Failed to precompute bulk individual-level export for US_XX" in msg
+                    for msg in log.output
+                )
+            )
+
+    @patch(
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )

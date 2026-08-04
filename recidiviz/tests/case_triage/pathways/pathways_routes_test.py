@@ -582,7 +582,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         request_origin="http://localhost:3000",
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3000",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
         },
@@ -592,7 +592,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         request_origin="https://dashboard-staging.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://dashboard-staging.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
     )
@@ -601,7 +601,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         request_origin="https://dashboard.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://dashboard.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
     )
@@ -610,7 +610,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         request_origin="https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
         expected_headers={
             "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
     )
@@ -619,7 +619,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         request_method="GET",
         expected_headers={
             "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, baggage",
             "Vary": "Origin",
         },
         expected_status=HTTPStatus.BAD_REQUEST,
