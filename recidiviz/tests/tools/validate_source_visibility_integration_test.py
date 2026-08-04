@@ -63,6 +63,20 @@ def test_pipeline_dependencies() -> None:
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
             "recidiviz.big_query.big_query_address",
+            # WriteToBigQuery clears a table via BigQueryClient before a
+            # truncating write, so every pipeline that writes output depends on
+            # it and the modules it pulls in.
+            "recidiviz.big_query.big_query_address_formatter",
+            "recidiviz.big_query.big_query_client",
+            "recidiviz.big_query.big_query_create_or_replace_view_query_provider",
+            "recidiviz.big_query.big_query_view",
+            "recidiviz.big_query.big_query_view_column",
+            "recidiviz.big_query.big_query_view_sandbox_context",
+            "recidiviz.big_query.config",
+            "recidiviz.big_query.big_query_query_builder",
+            "recidiviz.big_query.export.export_query_config",
+            "recidiviz.big_query.row_access_policy_query_builder",
+            "recidiviz.metrics.metric_big_query_view",
             "recidiviz.big_query.big_query_query_provider",
             "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_job_labels",
