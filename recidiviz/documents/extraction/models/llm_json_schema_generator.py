@@ -79,6 +79,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     CITATION_TEXT_FIELD_NAME,
     CITATIONS_FIELD_NAME,
     CONFIDENCE_LEVEL_FIELD_NAME,
+    IS_RELEVANT_FIELD_NAME,
     NULL_REASON_FIELD_NAME,
     RESULT_KEY,
     VALUE_FIELD_NAME,
@@ -105,9 +106,26 @@ class LLMJsonSchemaGenerator:
         """
         is_relevant_field = output_schema.is_relevant_field
         if is_relevant_field is None:
+            if output_schema.has_result_envelope:
+                raise ValueError(
+                    f"Output schema declares no [{IS_RELEVANT_FIELD_NAME}] field, so "
+                    f"the schema generated here carries its fields at the document "
+                    f"root, but [has_result_envelope] is True — every reader would "
+                    f"look for them under a [{RESULT_KEY}] envelope that is never "
+                    f"emitted."
+                )
+
             return cls._output_fields_object_schema(
                 output_schema, description=output_schema.result_level_description
             ).to_json_schema()
+
+        if not output_schema.has_result_envelope:
+            raise ValueError(
+                f"Output schema declares an [{IS_RELEVANT_FIELD_NAME}] field, so the "
+                f"schema generated here wraps its fields in a [{RESULT_KEY}] envelope, "
+                f"but [has_result_envelope] is False — every reader would look for "
+                f"them at the document root instead of inside that envelope."
+            )
 
         return ObjectJSONSchema(
             description=output_schema.result_level_description,

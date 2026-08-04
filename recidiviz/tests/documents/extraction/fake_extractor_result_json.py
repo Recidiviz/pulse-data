@@ -152,7 +152,17 @@ def build_fake_entity_resolution_result_content(
 def wrap_in_result_key(result_content: dict[str, Any]) -> dict[str, Any]:
     """Wraps |result_content| in the top-level `{"result": ...}` envelope that the
     raw model response carries and the validator consumes.
+
+    Raises if |result_content| is already wrapped, so passing a whole result JSON where
+    extracted-fields content is expected fails loudly instead of producing a
+    double-wrapped result that every reader would silently parse as empty.
     """
+    if RESULT_KEY in result_content:
+        raise ValueError(
+            f"Result content already carries a [{RESULT_KEY}] key, so wrapping it "
+            f"would double-wrap it. Pass the extracted-fields content, not a whole "
+            f"result JSON. Found keys: {sorted(result_content)}."
+        )
     return {RESULT_KEY: result_content}
 
 

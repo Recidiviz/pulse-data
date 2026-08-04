@@ -120,6 +120,19 @@ class LLMRequestOutputSchema:
         )
 
     @property
+    def has_result_envelope(self) -> bool:
+        """Returns whether a result JSON conforming to this schema wraps its extracted
+        fields in a top-level `result` property, rather than carrying them at the
+        document root.
+
+        `LLMJsonSchemaGenerator.generate` emits that wrapper for exactly the schemas
+        that have an `is_relevant` field, so every reader of a result JSON has to strip
+        it on the same condition — the SQL parsed views do so once per document as they
+        read the results table, and `LLMRequestOutputDocument` does so in Python.
+        """
+        return self.is_relevant_field is not None
+
+    @property
     def all_fields(self) -> list[LLMRequestOutputSchemaField]:
         """Returns every output field: the framework-injected `is_relevant` field
         first (when the schema has one), followed by the user-defined fields.
