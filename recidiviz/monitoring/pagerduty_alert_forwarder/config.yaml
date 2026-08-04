@@ -55,6 +55,14 @@ rules:
     actions:
       title_transform: "Cloud Run Job Failure: {incident.resource.labels.job_name}"
 
+  # eOMIS writeback jobs are FDE-owned, not platform-owned
+  - name: "eOMIS Writeback Job Failures"
+    match:
+      incident.resource.labels.job_name:
+        contains: "eomis-writeback"
+    actions:
+      pagerduty_service: "EOMIS Writeback"
+
   - name: "Cloud Function Failure"
     match:
       incident.policy_name:

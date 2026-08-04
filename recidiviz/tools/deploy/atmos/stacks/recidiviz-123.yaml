@@ -80,6 +80,7 @@ components:
           - "[Polaris] General Infrastructure"
           - "[PRODUCTION] Dashboards Project"
           - "[STAGING] Dashboards Project"
+          - "EOMIS Writeback"
 
     data-platform-alerting:
       metadata:

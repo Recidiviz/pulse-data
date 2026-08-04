@@ -708,6 +708,59 @@ class TestRuleEngineIntegration(unittest.TestCase):
             "🚨 [PRODUCTION] Cloud Run Job Failure: calculation-pipeline-prod",
         )
 
+    def test_staging_eomis_writeback_job_failure_routes_to_eomis_service(self) -> None:
+        """Test staging eOMIS writeback job failure routes to the EOMIS Writeback service."""
+        alert = {
+            "incident": {
+                "incident_id": "test-124",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-staging",
+                        "job_name": "eomis-writeback-us-ar-ged",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Service is overridden but env severity and title still apply
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "EOMIS Writeback")
+        self.assertEqual(
+            result["title"],
+            "[STAGING] Cloud Run Job Failure: eomis-writeback-us-ar-ged",
+        )
+
+    def test_production_eomis_writeback_job_failure_routes_to_eomis_service(
+        self,
+    ) -> None:
+        """Test production eOMIS writeback job failure routes to the EOMIS Writeback service."""
+        alert = {
+            "incident": {
+                "incident_id": "test-125",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "job_name": "eomis-writeback-us-co-edovo",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["pagerduty_service"], "EOMIS Writeback")
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Cloud Run Job Failure: eomis-writeback-us-co-edovo",
+        )
+
     def test_staging_data_platform_stale_metric_exports(self) -> None:
         """Test staging data platform alert with stale metric exports."""
         alert = {
