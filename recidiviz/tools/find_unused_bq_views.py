@@ -45,6 +45,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
+    classification_score_components_state_specific_dataset,
 )
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
@@ -79,41 +80,8 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_age import (
-    US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_fight_threaten_pow_incidents import (
-    US_MI_CLASSIFICATION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_incident_free_periods import (
-    US_MI_CLASSIFICATION_INCIDENT_FREE_PERIODS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_other_class_i_or_ii_incidents import (
-    US_MI_CLASSIFICATION_OTHER_CLASS_I_OR_II_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prev_level_5_release import (
-    US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prior_session_fight_threaten_pow_incidents import (
-    US_MI_CLASSIFICATION_PRIOR_SESSION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_prior_session_violent_incidents import (
-    US_MI_CLASSIFICATION_PRIOR_SESSION_VIOLENT_INCIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_programs_high import (
-    US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_programs_moderate import (
-    US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_recent_ad_seg import (
-    US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_vfo_level import (
-    US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.classification.classification_question_views.us_mi.us_mi_classification_violent_incidents import (
-    US_MI_CLASSIFICATION_VIOLENT_INCIDENTS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.classification.classification_score_component_big_query_view_collector import (
+    ClassificationScoreComponentBigQueryViewCollector,
 )
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
@@ -353,25 +321,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "PSI work (Nick Tallant, 2025-01-30)"
     ),
     **{
-        VIEW_BUILDER.address: (
+        view_builder.address: (
             "New MI classification form sub-score input view. Not yet referenced "
             "downstream; will be consumed once the MI classification form scoring "
             "is built (Maggie Taylor, 2026-06-25)"
         )
-        for VIEW_BUILDER in [
-            US_MI_CLASSIFICATION_AGE_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_PROGRAMS_MODERATE_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_PROGRAMS_HIGH_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_VFO_LEVEL_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_RECENT_AD_SEG_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_PREV_LEVEL_5_RELEASE_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_VIOLENT_INCIDENTS_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_OTHER_CLASS_I_OR_II_INCIDENTS_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_INCIDENT_FREE_PERIODS_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_PRIOR_SESSION_VIOLENT_INCIDENTS_VIEW_BUILDER,
-            US_MI_CLASSIFICATION_PRIOR_SESSION_FIGHT_THREATEN_POW_INCIDENTS_VIEW_BUILDER,
-        ]
+        for view_builder in ClassificationScoreComponentBigQueryViewCollector().collect_view_builders()
+        if view_builder.dataset_id
+        == classification_score_components_state_specific_dataset(StateCode.US_MI)
     },
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
@@ -799,9 +756,6 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
         # classification analog of the TES `all_criteria` view above. Its only consumers
         # are the score component span validations, and a validation alone does not mark
         # a parent view as used (see above), so it needs an explicit exemption.
-        # TODO(OBT-40781): Once the score component views move to a
-        # `task_eligibility_classification_score_components_<state>` dataset, drop this
-        # branch and add the view id to the task_eligibility set above instead.
         return True
 
     return False

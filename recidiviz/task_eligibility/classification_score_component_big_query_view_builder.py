@@ -27,13 +27,21 @@ from typing import List, Sequence
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Integer
+from recidiviz.calculator.query.state.dataset_config import (
+    classification_score_components_state_specific_dataset,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     get_reason_field_by_name,
     get_template_with_reasons_as_json,
     span_with_reasons_schema,
+    validate_and_derive_state_specific_view_id,
 )
+
+# TODO(OBT-42797): Move this builder next to its collector and views, in
+# recidiviz/calculator/query/state/views/classification/. Blocked on the
+# task_eligibility utils that import the column-name constants below.
 
 # Name of the integer column each score component view emits, carrying the
 # points this question contributes during the span. Analogous to the criteria
@@ -78,19 +86,12 @@ class ClassificationScoreComponentBigQueryViewBuilder(SimpleBigQueryViewBuilder)
     classification-instrument question contributes a given number of points
     (``component_score``) to a resident's recommended-custody-level score.
 
-    This is the classification analog of the TES criteria view builder: it reuses
-    the criteria schema-from-``reasons_fields`` generation and reason-JSON template
-    wrapper, emitting an integer ``component_score`` in place of the boolean
-    ``meets_criteria``. The output address (``dataset_id`` / ``view_id``) is passed
-    explicitly rather than derived, so score component views can adopt this contract
-    in place before any dataset relocation.
-
-    TODO(OBT-40781): Restore the intended criteria-mirroring design once the
-    score component views are relocated to a dedicated
-    ``task_eligibility_classification_score_components_<state>`` dataset: hardcode the
-    dataset and derive ``view_id`` from a state-prefixed ``component_name`` (drop
-    the explicit ``dataset_id`` / ``view_id`` params), and re-add the dedicated
-    collector + view_config wiring.
+    This is the classification analog of the TES criteria view builder: it reuses the
+    criteria schema-from-``reasons_fields`` generation and reason-JSON template wrapper,
+    emitting an integer ``component_score`` in place of the boolean ``meets_criteria``.
+    Like the criteria builder, it hardcodes its output dataset
+    (``classification_score_components_<state>``) and derives its ``view_id`` from the
+    state-prefixed ``component_name``, so the state is encoded in exactly one place.
     """
 
     def __init__(
@@ -99,10 +100,10 @@ class ClassificationScoreComponentBigQueryViewBuilder(SimpleBigQueryViewBuilder)
         # State whose classification instrument this question belongs to. Used to
         # scope the emitted spans to that state.
         state_code: StateCode,
-        # Dataset the view is deployed to.
-        dataset_id: str,
-        # Id of the view within the dataset.
-        view_id: str,
+        # Upper-case, `US_XX_`-prefixed name uniquely identifying this score component
+        # (e.g. `US_IX_SLS_Q1`). The view id is this name with the state prefix
+        # stripped, and must match the name of the file the builder is defined in.
+        component_name: str,
         # Query producing one row per (person, span) with the columns
         # state_code, person_id, start_date, end_date, component_score, reason,
         # and one column per entry in `reasons_fields`.
@@ -114,8 +115,16 @@ class ClassificationScoreComponentBigQueryViewBuilder(SimpleBigQueryViewBuilder)
         reasons_fields: List[ReasonsField],
         **query_format_kwargs: str,
     ) -> None:
+        view_id = validate_and_derive_state_specific_view_id(
+            state_code=state_code,
+            name=component_name,
+            name_type_label="Component",
+            entity_description="classification score component",
+        )
         super().__init__(
-            dataset_id=dataset_id,
+            dataset_id=classification_score_components_state_specific_dataset(
+                state_code
+            ),
             view_id=view_id,
             description=description,
             view_query_template=get_template_with_reasons_as_json(
@@ -133,6 +142,7 @@ class ClassificationScoreComponentBigQueryViewBuilder(SimpleBigQueryViewBuilder)
             **query_format_kwargs,
         )
         self.state_code = state_code
+        self.component_name = component_name
         self.reasons_fields = reasons_fields
 
     def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
@@ -140,5 +150,5 @@ class ClassificationScoreComponentBigQueryViewBuilder(SimpleBigQueryViewBuilder)
         return get_reason_field_by_name(
             self.reasons_fields,
             reason_name,
-            f"Classification score component {self.address.to_str()}",
+            f"Classification score component {self.component_name}",
         )

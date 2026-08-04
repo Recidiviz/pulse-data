@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.regions.us_mi.constants import ACTIVE_SUPERVISION_STATUSES
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.classification_score_component_big_query_view_builder import (
+    COMPONENT_SCORE_COLUMN_NAME,
     INITIAL_COMPONENT_SCORE_COLUMN_NAME,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -1315,6 +1316,25 @@ def secondary_officer_dockets_cte() -> str:
     """
 
 
+def us_mi_program_completion_count_reasons_field(
+    *,
+    count_column_name: str,
+    program_level: str,
+) -> ReasonsField:
+    """Returns the ReasonsField carrying a cumulative program completion count, given the
+    column name the count is emitted under and the human-readable program level (e.g.
+    "high") it counts."""
+    return ReasonsField(
+        name=count_column_name,
+        type=bigquery.enums.StandardSqlTypeNames.INT64,
+        description=(
+            f"Cumulative count of completed {program_level}-level programs the person "
+            f"has completed on or before the span (deduplicated by program "
+            f"recommendation and start date, with no time window)."
+        ),
+    )
+
+
 def us_mi_initial_component_score_reasons_field(score_description: str) -> ReasonsField:
     """Returns the ReasonsField carrying a question's initial-form score, given a
     description of how that score is derived.
@@ -1360,6 +1380,11 @@ def build_program_completion_count_query_template(
     Completions are deduplicated by program recommendation + program start date,
     and each such (recommendation, start date) completion contributes to the
     count from its completion (end) date onward, with no time window.
+
+    Emits the classification score component span contract, so the result can be wrapped
+    by ClassificationScoreComponentBigQueryViewBuilder: `component_score` is a NULL
+    placeholder (no points are mapped to program completion counts yet) and the count is
+    exposed as a reason field named |count_column_name|.
 
     program_name_patterns: SQL LIKE patterns (case-sensitive, `%` wildcards
         allowed) for the COMS `Program` names that make up this program level.
@@ -1414,15 +1439,30 @@ completion_spans AS (
     'completion_spans',
     index_columns=['person_id', 'state_code'],
 )}
+,
 -- Count the distinct completed programs active in each sub-session
+completion_counts AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        COUNT(DISTINCT completion_id) AS {count_column_name},
+    FROM sub_sessions_with_attributes
+    GROUP BY person_id, state_code, start_date, end_date
+)
 SELECT
     person_id,
     state_code,
     start_date,
-    end_date AS end_date_exclusive,
-    COUNT(DISTINCT completion_id) AS {count_column_name},
-FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4
+    end_date,
+    -- No points are mapped to program completion counts yet, so the score is a
+    -- placeholder; the count itself is carried in the reason fields until MI's
+    -- point values land. See TODO(OBT-41792) on the views built from this template.
+    CAST(NULL AS INT64) AS {COMPONENT_SCORE_COLUMN_NAME},
+    TO_JSON(STRUCT({count_column_name})) AS reason,
+    {count_column_name},
+FROM completion_counts
 """
 
 
