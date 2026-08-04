@@ -20,7 +20,7 @@ from typing import Sequence
 
 import attr
 
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.llm_document_validation_result import (
     LLMDocumentValidationResult,
@@ -55,7 +55,8 @@ class LLMExtractionResultsPersister:
     )
     """The sandbox prefix to use for the BQ result tables, or None to write to the production tables.
     The persister does not create or delete tables, so the caller must ensure the tables exist before calling persist_results."""
-    _bq_client: BigQueryClient = attr.ib(factory=BigQueryClientImpl)
+    _bq_client: BigQueryClient = attr.ib()
+    """Client used to write the result rows to BigQuery."""
 
     def persist_results(
         self,
@@ -129,6 +130,22 @@ class LLMExtractionResultsPersister:
             if result.validation_results is not None
         ]
 
+        # TODO(OBT-41801): Switch these writes from streaming inserts to BQ load jobs
+        # (self._bq_client.load_into_table_async, awaiting each returned LoadJob
+        # before returning so the persist-then-mark ordering still holds). Load
+        # jobs are the right path for large backfills: streaming inserts here go
+        # through tabledata.insertAll, which BigQuery rejects above a 10 MB
+        # payload per request (a 413), bills per GB, and lands rows in a streaming
+        # buffer that can take minutes (rarely up to 90) to become visible. Load
+        # jobs have no 10 MB request cap (up to 15 TB/job), are free (shared slot
+        # pool), and commit atomically. Deferred for now because the BigQuery
+        # emulator this persister is tested against does not support load jobs
+        # (load_table_from_json returns "400 unspecified job configuration"), so
+        # the change would force the round-trip emulator test down to a mocked
+        # client. Load jobs also require the row dicts to be JSON-serializable
+        # (the to_row builders would need to emit timestamps as ISO strings, since
+        # json.dumps can't serialize datetime), and their 1,500-loads-per-table-
+        # per-day quota means the persist chunk size must stay large.
         if raw_rows:
             self._bq_client.stream_into_table(
                 address=ExtractionRawResultsBQTable.address(

@@ -446,9 +446,11 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
 
         # Once completed, there is no open job for the version.
         self.manager.mark_job_started(state_code=_STATE, job_id=created.job_id)
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_success_result(job_id=created.job_id, document_contents_id="doc1"),
+            results=[
+                _success_result(job_id=created.job_id, document_contents_id="doc1")
+            ],
         )
         self.manager.mark_job_completed(state_code=_STATE, job_id=created.job_id)
         self.assertIsNone(
@@ -481,9 +483,9 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             extractor_version_id=_EXTRACTOR_VERSION,
             document_contents_ids=["doc1"],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_success_result(job_id=job.job_id, document_contents_id="doc1"),
+            results=[_success_result(job_id=job.job_id, document_contents_id="doc1")],
         )
 
         document = self._get_job_document_row(job.job_id, "doc1")
@@ -515,11 +517,11 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             document_contents_ids=["doc1"],
         )
         with self.assertRaisesRegex(ValueError, r"No job document found"):
-            self.manager.set_job_document_result(
+            self.manager.set_job_document_results(
                 state_code=_STATE,
-                result=_success_result(
-                    job_id=job.job_id, document_contents_id="not_a_doc"
-                ),
+                results=[
+                    _success_result(job_id=job.job_id, document_contents_id="not_a_doc")
+                ],
             )
 
     def test_get_document_contents_ids_needing_processing(self) -> None:
@@ -539,38 +541,44 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             document_contents_ids=eligible,
         )
 
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_failure_result(
-                job_id=job.job_id,
-                document_contents_id="doc_transient",
-                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
-                error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
-            ),
+            results=[
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_transient",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                )
+            ],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_success_result(
-                job_id=job.job_id, document_contents_id="doc_success"
-            ),
+            results=[
+                _success_result(job_id=job.job_id, document_contents_id="doc_success")
+            ],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_failure_result(
-                job_id=job.job_id,
-                document_contents_id="doc_permanent",
-                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
-                error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
-            ),
+            results=[
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_permanent",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                )
+            ],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_failure_result(
-                job_id=job.job_id,
-                document_contents_id="doc_exhausted",
-                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
-                error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
-            ),
+            results=[
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_exhausted",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                )
+            ],
         )
 
         needing = self.manager.get_document_contents_ids_needing_processing(
@@ -594,17 +602,88 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             extractor_version_id=other_version,
             document_contents_ids=["doc1"],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_success_result(
-                job_id=other_job.job_id, document_contents_id="doc1"
-            ),
+            results=[
+                _success_result(job_id=other_job.job_id, document_contents_id="doc1")
+            ],
         )
 
         needing = self.manager.get_document_contents_ids_needing_processing(
             state_code=_STATE, extractor_version_id=_EXTRACTOR_VERSION
         )
         self.assertEqual(["doc1"], needing)
+
+    def test_set_job_document_results_batch_persists_all(self) -> None:
+        # A single batched call persists a success and a failure to their
+        # respective rows, and leaves both no longer pending.
+        self._record_eligible(["doc_ok", "doc_bad"])
+        job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=["doc_ok", "doc_bad"],
+        )
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _success_result(job_id=job.job_id, document_contents_id="doc_ok"),
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_bad",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                ),
+            ],
+        )
+
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.SUCCESS,
+            self._get_job_document_row(job.job_id, "doc_ok").result_type,
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+            self._get_job_document_row(job.job_id, "doc_bad").result_type,
+        )
+        self.assertEqual(
+            [],
+            self.manager.get_pending_job_documents(
+                state_code=_STATE, job_id=job.job_id
+            ),
+        )
+
+    def test_set_job_document_results_unknown_document_rolls_back_batch(self) -> None:
+        # If any result in the batch has no matching row, the whole batch rolls
+        # back — the valid result's row is not persisted either.
+        self._record_eligible(["doc_ok"])
+        job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=["doc_ok"],
+        )
+        with self.assertRaisesRegex(ValueError, r"No job document found"):
+            self.manager.set_job_document_results(
+                state_code=_STATE,
+                results=[
+                    _success_result(job_id=job.job_id, document_contents_id="doc_ok"),
+                    _success_result(
+                        job_id=job.job_id, document_contents_id="not_a_doc"
+                    ),
+                ],
+            )
+
+        # The valid result was rolled back with the failing one.
+        self.assertEqual(
+            ["doc_ok"],
+            [
+                d.document_contents_id
+                for d in self.manager.get_pending_job_documents(
+                    state_code=_STATE, job_id=job.job_id
+                )
+            ],
+        )
+
+    def test_set_job_document_results_empty_is_noop(self) -> None:
+        self.manager.set_job_document_results(state_code=_STATE, results=[])
 
     def test_mark_job_completed_derives_success_vs_partial_failure(self) -> None:
         # All documents succeed → SUCCESS.
@@ -616,11 +695,11 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
         )
         self.manager.mark_job_started(state_code=_STATE, job_id=success_job.job_id)
         for doc in ["doc1", "doc2"]:
-            self.manager.set_job_document_result(
+            self.manager.set_job_document_results(
                 state_code=_STATE,
-                result=_success_result(
-                    job_id=success_job.job_id, document_contents_id=doc
-                ),
+                results=[
+                    _success_result(job_id=success_job.job_id, document_contents_id=doc)
+                ],
             )
         self.manager.mark_job_completed(state_code=_STATE, job_id=success_job.job_id)
         completed = self._get_job_row(success_job.job_id)
@@ -642,20 +721,22 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             document_contents_ids=["doc3", "doc4"],
         )
         self.manager.mark_job_started(state_code=_STATE, job_id=partial_job.job_id)
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_success_result(
-                job_id=partial_job.job_id, document_contents_id="doc3"
-            ),
+            results=[
+                _success_result(job_id=partial_job.job_id, document_contents_id="doc3")
+            ],
         )
-        self.manager.set_job_document_result(
+        self.manager.set_job_document_results(
             state_code=_STATE,
-            result=_failure_result(
-                job_id=partial_job.job_id,
-                document_contents_id="doc4",
-                result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
-                error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE,
-            ),
+            results=[
+                _failure_result(
+                    job_id=partial_job.job_id,
+                    document_contents_id="doc4",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE,
+                )
+            ],
         )
         self.manager.mark_job_completed(state_code=_STATE, job_id=partial_job.job_id)
         self.assertEqual(

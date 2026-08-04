@@ -28,7 +28,11 @@ from recidiviz.cloud_storage.gcs_file_system import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.llm_client.types import LLMDocumentExtractionRequest
+from recidiviz.documents.extraction.llm_client.types import (
+    BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME,
+    LLMDocumentExtractionRequest,
+)
+from recidiviz.documents.extraction.models.llm_model_registry import LLMModelConfig
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
 )
@@ -72,6 +76,22 @@ class LLMDocumentExtractionRequestBuilder:
     request_parameters: dict[str, Any] = attr.ib(validator=attr_validators.is_dict)
     """The generation parameters — temperature, thinking budget, caching, billing
     labels — keyed by parameter name."""
+
+    @staticmethod
+    def build_request_parameters(
+        *, model_config: LLMModelConfig, labels: dict[str, str]
+    ) -> dict[str, Any]:
+        """Returns the request_parameters for an extractor: |model_config|'s
+        resolved generation parameters (temperature, thinking budget, etc.) plus
+        the billing |labels| for cost attribution, keyed by parameter name.
+
+        The billing-labels key is always present (mapped to |labels|, empty or
+        not), never omitted.
+        """
+        return {
+            **model_config.resolved_parameter_values,
+            BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME: labels,
+        }
 
     def build_request(
         self, *, job_document: LLMExtractionJobDocument

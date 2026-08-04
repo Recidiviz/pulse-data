@@ -487,6 +487,13 @@ class LLMModelConfig:
         return self.base_model.supports_implicit_caching_in_batch
 
     @property
+    def resolved_parameter_values(self) -> dict[str, int | float]:
+        """Returns the resolved generation parameters keyed by name — each
+        declared parameter's concrete value (temperature, top_p, thinking budget,
+        etc.)."""
+        return {name: value.value for name, value in self.parameter_values.items()}
+
+    @property
     def model_config_version_id(self) -> str:
         """Returns the version ID of this model config. This is a hash of every model
         input fed to the LLM. Any change to what the model receives yields a new ID. The
@@ -498,10 +505,7 @@ class LLMModelConfig:
             # model configs with a particular name.
             self.name,
             self.model,
-            json.dumps(
-                {name: value.value for name, value in self.parameter_values.items()},
-                sort_keys=True,
-            ),
+            json.dumps(self.resolved_parameter_values, sort_keys=True),
         ]
         return sha256_hexdigest(json.dumps(components))
 

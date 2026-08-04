@@ -157,13 +157,15 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
         document_contents_id: str,
         result_type: LLMExtractionJobDocumentResultType,
     ) -> None:
-        self.job_manager.set_job_document_result(
+        self.job_manager.set_job_document_results(
             state_code=_STATE_CODE,
-            result=self._document_result(
-                job_id=job_id,
-                document_contents_id=document_contents_id,
-                result_type=result_type,
-            ),
+            results=[
+                self._document_result(
+                    job_id=job_id,
+                    document_contents_id=document_contents_id,
+                    result_type=result_type,
+                )
+            ],
         )
 
     @staticmethod

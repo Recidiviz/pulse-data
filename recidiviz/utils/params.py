@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Helpers for working with parameters from requests."""
+
 import argparse
 import re
 from typing import Any, Callable, List, Optional
@@ -126,6 +127,25 @@ def str_to_list(list_str: str) -> List[str]:
     Separates strings by commas and returns a list
     """
     return list_str.split(",")
+
+
+def parse_key_value_args(key_value_args: list[str]) -> dict[str, str]:
+    """Returns the KEY=VALUE arguments parsed into a dict, raising on a malformed
+    entry."""
+    parsed: dict[str, str] = {}
+    for arg in key_value_args:
+        key, sep, value = arg.partition("=")
+        if not sep or not key or not value:
+            raise ValueError(
+                f"Invalid format for [{arg}]; expected the form KEY=VALUE."
+            )
+        if "=" in value:
+            raise ValueError(
+                f"Invalid format for [{arg}]; expected a single '=' separating "
+                f"KEY and VALUE."
+            )
+        parsed[key] = value
+    return parsed
 
 
 def str_matches_regex_type(regex: str) -> Callable[[Any], str]:

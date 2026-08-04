@@ -518,51 +518,70 @@ class LLMExtractionJobManager:
                 for document in pending
             ]
 
-    def set_job_document_result(
-        self, *, state_code: StateCode, result: LLMJobDocumentExtractionResult
+    def set_job_document_results(
+        self, *, state_code: StateCode, results: list[LLMJobDocumentExtractionResult]
     ) -> None:
-        """Persists one document's outcome (its non-PII columns) to
-        `llm_extraction_job_document`.
+        """Persists a batch of documents' outcomes (their non-PII columns) to
+        `llm_extraction_job_document` in a single transaction.
 
-        Callers must persist the result's content to BQ *first*: a terminal
+        Callers must persist each result's content to BQ *first*: a terminal
         result here permanently removes the document from job selection, so
         marking before the BQ write turns a crash between the two writes into
-        silent data loss.
+        silent data loss. Raises if any result has no matching job-document row,
+        rolling back the whole batch.
         """
-        token_counts = result.raw_result.token_counts
+        if not results:
+            return
+
+        # One UPDATE per result, all in a single session/transaction rather than a
+        # bulk statement: each row is matched by a different (job_id,
+        # document_contents_id) key and set to different values, which a single
+        # UPDATE can't express, and SQLAlchemy `bulk_update_mappings` (which could)
+        # has no precedent in this codebase and bypasses ORM validation. The one
+        # cost that dominates at scale — a connection acquire + commit per row — is
+        # already collapsed to one by sharing the session, so the extra statements
+        # are cheap round-trips within that transaction.
         with SessionFactory.using_database(self.database_key) as session:
-            updated = (
-                session.query(schema.LLMExtractionJobDocument)
-                .filter(
-                    schema.LLMExtractionJobDocument.state_code == state_code.value,
-                    schema.LLMExtractionJobDocument.job_id == result.job_id,
-                    schema.LLMExtractionJobDocument.document_contents_id
-                    == result.document_contents_id,
+            for result in results:
+                updated = (
+                    session.query(schema.LLMExtractionJobDocument)
+                    .filter(
+                        schema.LLMExtractionJobDocument.state_code == state_code.value,
+                        schema.LLMExtractionJobDocument.job_id == result.job_id,
+                        schema.LLMExtractionJobDocument.document_contents_id
+                        == result.document_contents_id,
+                    )
+                    .update(
+                        self._job_document_result_values(result),
+                        synchronize_session=False,
+                    )
                 )
-                .update(
-                    {
-                        schema.LLMExtractionJobDocument.result_datetime_utc: result.result_datetime_utc,
-                        schema.LLMExtractionJobDocument.result_type: result.result_type.value,
-                        schema.LLMExtractionJobDocument.is_relevant: result.is_relevant,
-                        schema.LLMExtractionJobDocument.error_type: (
-                            result.error_type.value
-                            if result.error_type is not None
-                            else None
-                        ),
-                        schema.LLMExtractionJobDocument.error_message: result.error_message,
-                        schema.LLMExtractionJobDocument.input_token_count: token_counts.input_token_count,
-                        schema.LLMExtractionJobDocument.output_token_count: token_counts.output_token_count,
-                        schema.LLMExtractionJobDocument.cached_input_token_count: token_counts.cached_input_token_count,
-                        schema.LLMExtractionJobDocument.thinking_token_count: token_counts.thinking_token_count,
-                    },
-                    synchronize_session=False,
-                )
-            )
-            if not updated:
-                raise ValueError(
-                    f"No job document found for state [{state_code.value}], job "
-                    f"[{result.job_id}], document [{result.document_contents_id}]."
-                )
+                if not updated:
+                    raise ValueError(
+                        f"No job document found for state [{state_code.value}], job "
+                        f"[{result.job_id}], document [{result.document_contents_id}]."
+                    )
+
+    @staticmethod
+    def _job_document_result_values(
+        result: LLMJobDocumentExtractionResult,
+    ) -> dict[Any, Any]:
+        """Returns the `llm_extraction_job_document` column updates for one
+        processed document's outcome."""
+        token_counts = result.raw_result.token_counts
+        return {
+            schema.LLMExtractionJobDocument.result_datetime_utc: result.result_datetime_utc,
+            schema.LLMExtractionJobDocument.result_type: result.result_type.value,
+            schema.LLMExtractionJobDocument.is_relevant: result.is_relevant,
+            schema.LLMExtractionJobDocument.error_type: (
+                result.error_type.value if result.error_type is not None else None
+            ),
+            schema.LLMExtractionJobDocument.error_message: result.error_message,
+            schema.LLMExtractionJobDocument.input_token_count: token_counts.input_token_count,
+            schema.LLMExtractionJobDocument.output_token_count: token_counts.output_token_count,
+            schema.LLMExtractionJobDocument.cached_input_token_count: token_counts.cached_input_token_count,
+            schema.LLMExtractionJobDocument.thinking_token_count: token_counts.thinking_token_count,
+        }
 
     def mark_job_completed(self, *, state_code: StateCode, job_id: str) -> None:
         """Closes the job, deriving the job-level result from its document rows:

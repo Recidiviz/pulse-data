@@ -140,7 +140,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
         self.config = get_first_order_llm_extractor_config(
             _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
         )
-        self.persister = LLMExtractionResultsPersister()
+        self.persister = LLMExtractionResultsPersister(bq_client=self.bq_client)
 
     def tearDown(self) -> None:
         self._clear_emulator_table_data()

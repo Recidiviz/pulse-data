@@ -124,6 +124,22 @@ class TestParams(unittest.TestCase):
         ):
             _ = MyClass(my_field="")
 
+    def test_parse_key_value_args(self) -> None:
+        self.assertEqual(
+            {"requester": "alice", "env": "sandbox"},
+            params.parse_key_value_args(["requester=alice", "env=sandbox"]),
+        )
+        self.assertEqual({}, params.parse_key_value_args([]))
+
+        for bad in ["novalue", "=onlyvalue", "emptyvalue="]:
+            with self.assertRaisesRegex(ValueError, r"expected the form KEY=VALUE"):
+                params.parse_key_value_args([bad])
+
+        with self.assertRaisesRegex(
+            ValueError, r"expected a single '=' separating KEY and VALUE"
+        ):
+            params.parse_key_value_args(["note=a=b"])
+
     def test_opt_str_to_bool(self) -> None:
         @attr.define
         class MyClass:
