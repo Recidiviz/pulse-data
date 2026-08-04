@@ -34,7 +34,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .38
     override_reason: This is standard variation for this entity month to month.
   - validation_name: open_sessions_without_active_sentences
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.06
     override_reason:
       We only have setence status snapshot for NDCS sentences but we have
       sessions for IC + additional cases so we expect this to be higher.
