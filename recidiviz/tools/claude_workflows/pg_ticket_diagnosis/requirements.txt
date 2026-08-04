@@ -1,4 +1,4 @@
-anthropic==0.120.1
+anthropic==0.120.2
 attrs==26.1.0
 google-cloud-bigquery==3.35.1
 google-cloud-secret-manager==2.29.0

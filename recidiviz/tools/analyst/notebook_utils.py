@@ -74,6 +74,7 @@ from recidiviz.tools.analyst.plots import (  # isort:skip
     add_point_labels,
 )
 
+
 # IPython magics - only run if in notebook environment
 def is_notebook() -> bool:
     try:
@@ -89,6 +90,8 @@ def is_notebook() -> bool:
 
 if is_notebook():
     ipython = get_ipython()
+    if not ipython:
+        raise RuntimeError("Trying to run IPython Magics outside notebook environment")
     ipython.run_line_magic("load_ext", "google.cloud.bigquery")
     ipython.run_line_magic("load_ext", "autoreload")
     ipython.run_line_magic(
