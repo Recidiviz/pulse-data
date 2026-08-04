@@ -34,6 +34,9 @@ VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
 
 AIRFLOW_OPERATIONS: str = "airflow_operations"
 
+# The append-only audit ledger for eOMIS writeback runs
+EOMIS_WRITEBACK_METADATA_DATASET: str = "eomis_writeback_metadata"
+
 # Archival views that track hydration of various parts of our platform overtime
 HYDRATION_ARCHIVE: str = "hydration_archive"
 
@@ -44,6 +47,10 @@ LABEL_STUDIO_DATASET: str = "label_studio"
 
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
+    EOMIS_WRITEBACK_METADATA_DATASET: (
+        "Stores the append-only audit ledger for eOMIS writeback runs: run lifecycle "
+        "events and per-candidate write events. Rows contain offender IDs."
+    ),
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."
     ),

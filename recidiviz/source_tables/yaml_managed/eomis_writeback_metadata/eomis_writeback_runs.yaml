@@ -1,0 +1,39 @@
+address:
+  dataset_id: eomis_writeback_metadata
+  table_id: eomis_writeback_runs
+description: >-
+  Append-only lifecycle events for eOMIS writeback runs: one `started` row when a run begins and one terminal-status row
+  when it ends. A run whose latest row is `started` died without finishing and must be treated as unconfirmed — its
+  writes may or may not have landed in eOMIS. BigQuery streaming inserts can duplicate rows on retries, so consumers
+  must use latest-event semantics per run, never row counts.
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+    description: Unique identifier for one execution of the writeback job. Joins to eomis_writeback_candidates.
+  - name: flow_name
+    type: STRING
+    mode: REQUIRED
+    description: The registered writeback flow this run executed (e.g. "AR GED program referrals").
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: The state whose eOMIS instance this run writes to (e.g. "US_AR").
+  - name: is_commit_run
+    type: BOOLEAN
+    mode: REQUIRED
+    description: True if the run was allowed to write to eOMIS; false for dry runs.
+  - name: status
+    type: STRING
+    mode: REQUIRED
+    description: >-
+      "started" when the run begins, then exactly one of "success", "completed_with_errors", or "failed" when it ends.
+  - name: error_detail
+    type: STRING
+    mode: NULLABLE
+    description: Terminal failure detail. Always present on "failed" and "completed_with_errors" rows, null otherwise.
+  - name: recorded_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this event was recorded.
+clustering_fields: null

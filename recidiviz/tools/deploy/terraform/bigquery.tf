@@ -54,6 +54,12 @@ module "export_archives_dataset" {
   description = "This dataset contains tables that archive the contents of daily exports."
 }
 
+module "eomis_writeback_metadata_dataset" {
+  source      = "./modules/big_query_dataset"
+  dataset_id  = "eomis_writeback_metadata"
+  description = "Stores the append-only audit ledger for eOMIS writeback runs: run lifecycle events and per-candidate write events. Rows contain offender IDs."
+}
+
 module "twilio_webhook_requests_dataset" {
   source      = "./modules/big_query_dataset"
   dataset_id  = "twilio_webhook_requests"

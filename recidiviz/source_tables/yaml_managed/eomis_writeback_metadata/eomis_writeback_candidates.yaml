@@ -1,0 +1,56 @@
+address:
+  dataset_id: eomis_writeback_metadata
+  table_id: eomis_writeback_candidates
+description: >-
+  Append-only per-person events for eOMIS writeback runs, across all registered flows. Every candidate a run loads gets
+  a "classified" row (including skips, with the skip reason); each actionable candidate then gets an "attempting" row
+  streamed before the eOMIS write and a result-status row after it. A candidate whose latest row is "attempting" is a
+  write the job started but never confirmed — a human must check eOMIS directly. A "success" result means the write was
+  verified by read-back; it does not verify downstream sentence-credit recomputation. BigQuery streaming inserts can
+  duplicate rows on retries, so consumers must use latest-event semantics per candidate, never row counts.
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+    description: The run that produced this event. Joins to eomis_writeback_runs.
+  - name: flow_name
+    type: STRING
+    mode: REQUIRED
+    description: The registered writeback flow that produced this event.
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: The state whose eOMIS instance this event concerns (e.g. "US_AR"). Always filter on this column.
+  - name: eomis_offender_id
+    type: STRING
+    mode: REQUIRED
+    description: The eOMIS offender ID of the person whose record this event concerns.
+  - name: action
+    type: STRING
+    mode: REQUIRED
+    description: >-
+      The action the run classified for this person. Labels are flow-defined (e.g. "create", "update", "write");
+      "skip" is shared across flows and marks non-actionable rows.
+  - name: status
+    type: STRING
+    mode: REQUIRED
+    description: >-
+      "classified" when the candidate is loaded, "attempting" immediately before an eOMIS write, then a terminal result:
+      "success", "dry-run", "read", "skipped", or "error".
+  - name: candidate_reason
+    type: STRING
+    mode: REQUIRED
+    description: >-
+      Why the run classified this person's action the way it did (e.g. the skip reason). Present on every event so
+      result rows remain self-contained under latest-event semantics.
+  - name: result_detail
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      The write result detail for terminal result rows (e.g. the error message or read-back confirmation detail).
+      Always null on "classified" and "attempting" rows.
+  - name: recorded_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this event was recorded.
+clustering_fields: null
