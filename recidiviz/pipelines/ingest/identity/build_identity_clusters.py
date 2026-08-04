@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """PTransform that builds one IdentityCluster from each cluster of external IDs
-that clustering produced. Rejects clusters whose fragments have conflicting
-attributes (they do not describe one person).
+that clustering produced. Clusters whose fragments have conflicting attributes
+are rejected: they are emitted by the transform as RejectedIdentityClusters
+rather than as IdentityClusters.
 """
 from collections.abc import Iterable, Iterator
-from enum import Enum
 
 import apache_beam as beam
 from more_itertools import one
@@ -40,14 +40,16 @@ from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.fi
     find_fragment_attribute_conflicts,
 )
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
-    ConflictCheckedAttributesConfig,
     IdentityIngestPipelineConfig,
+)
+from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
+    RejectedIdentityCluster,
 )
 from recidiviz.pipelines.ingest.identity.resolve_cluster_attributes import (
     resolve_cluster_attributes,
 )
 from recidiviz.pipelines.ingest.identity.types import (
-    ConflictValue,
+    AttributeConflict,
     SourcedIdentityFragment,
 )
 from recidiviz.pipelines.ingest.transforms.types import ClusterKey
@@ -56,9 +58,14 @@ from recidiviz.pipelines.ingest.types import (
     IngestViewName,
     UpperBoundDate,
 )
+from recidiviz.utils.types import assert_type
 
 CLUSTER_MEMBERSHIPS = "cluster_memberships"
 FRAGMENTS_WITH_DATES = "fragments_with_dates"
+
+# Tags for the transform's output.
+KEPT_CLUSTERS = "kept_clusters"
+REJECTED_CLUSTERS = "rejected_clusters"
 
 # The candidate form of an identity cluster: the external-ID membership that
 # clustering produced, paired with the sourced fragments carrying those IDs,
@@ -68,7 +75,8 @@ IdentityClusterCandidate = tuple[ClusterKey, Iterable[SourcedIdentityFragment]]
 
 class BuildIdentityClusters(beam.PTransform):
     """Builds one IdentityCluster from each cluster of external IDs that
-    clustering produced."""
+    clustering produced, routing clusters whose fragments have conflicting
+    attributes to a separate REJECTED_CLUSTERS output."""
 
     def __init__(
         self,
@@ -94,9 +102,10 @@ class BuildIdentityClusters(beam.PTransform):
             beam.PCollection[tuple[ExternalIdKey, ClusterKey]]
             | beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
         ],
-    ) -> beam.PCollection[IdentityCluster]:
-        """Takes a dict with two keyed PCollections and produces one
-        IdentityCluster per cluster.
+    ) -> beam.pvalue.DoOutputsTuple:
+        """Takes a dict with two keyed PCollections and produces one element
+        per cluster, on one of two outputs: an IdentityCluster on KEPT_CLUSTERS,
+        or a RejectedIdentityCluster on REJECTED_CLUSTERS.
 
         Example input:
 
@@ -132,9 +141,11 @@ class BuildIdentityClusters(beam.PTransform):
           2. rekey_fragments_by_cluster re-keys each fragment by its cluster
              (a sorted tuple of all ExternalIdKeys in the cluster).
           3. GroupByKey groups all fragments sharing the same cluster key.
-          4. build_cluster checks the candidate's structural invariants, checks
-             its fragments for attribute conflicts, and constructs an
-             IdentityCluster from the resolved attributes.
+          4. build_cluster checks the candidate's structural invariants
+             (raising on violation), then either constructs an IdentityCluster
+             from the resolved attributes or, when the fragments have attribute
+             conflicts, a RejectedIdentityCluster.
+          5. route_cluster sends each element to the output matching its type.
         """
         return (
             input_or_inputs
@@ -143,6 +154,12 @@ class BuildIdentityClusters(beam.PTransform):
             >> beam.FlatMap(self.rekey_fragments_by_cluster)
             | "Group by cluster" >> beam.GroupByKey()
             | "Build IdentityCluster" >> beam.Map(self.build_cluster)
+            | "Route kept and rejected clusters"
+            # The declared output type describes the main (kept) output;
+            # rejected clusters leave through the tagged output.
+            >> beam.FlatMap(self.route_cluster)
+            .with_output_types(IdentityCluster)
+            .with_outputs(REJECTED_CLUSTERS, main=KEPT_CLUSTERS)
         )
 
     def rekey_fragments_by_cluster(
@@ -188,10 +205,14 @@ class BuildIdentityClusters(beam.PTransform):
         for fragment_with_date in collections[FRAGMENTS_WITH_DATES]:
             yield cluster_key, fragment_with_date
 
-    def build_cluster(self, candidate: IdentityClusterCandidate) -> IdentityCluster:
-        """Constructs an IdentityCluster from a candidate, first checking its
-        structural invariants and that its fragments are free of attribute conflicts (both
-        raise on violation), then resolving the fragments' attributes."""
+    def build_cluster(
+        self, candidate: IdentityClusterCandidate
+    ) -> IdentityCluster | RejectedIdentityCluster:
+        """Builds the cluster for a candidate: checks its structural invariants
+        (raising on violation), then returns either an IdentityCluster built
+        from the fragments' resolved attributes or, when the fragments have
+        attribute conflicts, a RejectedIdentityCluster recording those
+        conflicts."""
         cluster_key, sourced_fragments_iterable = candidate
         sourced_fragments = tuple(sourced_fragments_iterable)
         fragments = [fragment for _, _, fragment in sourced_fragments]
@@ -215,17 +236,16 @@ class BuildIdentityClusters(beam.PTransform):
             self.tenant, person_type
         )
 
-        # TODO(OBT-15461): Instead of raising (which fails the whole run on the
-        # first wrongly-merged cluster), build_cluster should emit a cluster
-        # with conflicts to a separate rejected_clusters output (a tagged ParDo
-        # side-output) rather than the kept-clusters output, so the run
-        # completes; a downstream step then writes the rejected clusters to a BQ
-        # table for review.
-        self._raise_on_attribute_conflicts(
-            cluster_key,
-            sorted_fragments,
-            tenant_config.conflict_checked_attributes_config,
+        conflicts = find_fragment_attribute_conflicts(
+            sorted_fragments, tenant_config.conflict_checked_attributes_config
         )
+        if conflicts:
+            return self._build_rejected_cluster(
+                cluster_key=cluster_key,
+                person_type=person_type,
+                sorted_fragments=sorted_fragments,
+                conflicts=conflicts,
+            )
 
         attributes = resolve_cluster_attributes(
             tenant=self.tenant,
@@ -234,15 +254,27 @@ class BuildIdentityClusters(beam.PTransform):
         )
         return IdentityCluster(
             tenant=self.tenant,
-            external_ids=tuple(
-                IdentityClusterExternalId(
-                    tenant=self.tenant, external_id=eid, id_type=id_type
-                )
-                for eid, id_type in cluster_key
-            ),
+            external_ids=self._cluster_external_id_entities(cluster_key),
             person_type=person_type,
             **(convert_attributes_to_cluster_kwargs(attributes) if attributes else {}),
         )
+
+    @staticmethod
+    def route_cluster(
+        cluster: IdentityCluster | RejectedIdentityCluster,
+    ) -> Iterator[IdentityCluster | beam.pvalue.TaggedOutput]:
+        """Routes each built element to the output matching its type: kept
+        IdentityClusters to the main KEPT_CLUSTERS output,
+        RejectedIdentityClusters to REJECTED_CLUSTERS. Raises on any other
+        type: the main output feeds the cluster tables the Identity Service
+        imports, so an unrecognized element must fail the run rather than be
+        imported."""
+        if isinstance(cluster, RejectedIdentityCluster):
+            yield beam.pvalue.TaggedOutput(REJECTED_CLUSTERS, cluster)
+        elif isinstance(cluster, IdentityCluster):
+            yield cluster
+        else:
+            raise ValueError(f"Unexpected built cluster type [{type(cluster)}]")
 
     def _raise_on_structural_errors(
         self,
@@ -279,29 +311,42 @@ class BuildIdentityClusters(beam.PTransform):
                 f"every fragment in a cluster must share a single person type."
             ) from e
 
-    def _raise_on_attribute_conflicts(
+    def _build_rejected_cluster(
         self,
+        *,
         cluster_key: ClusterKey,
-        fragments: list[IdentityFragment],
-        conflict_checked_attributes_config: ConflictCheckedAttributesConfig,
-    ) -> None:
-        """Raises if the cluster's fragments conflict on any conflict-checked
-        attribute, meaning clustering wrongly merged two different people.
-        """
-        conflicts = find_fragment_attribute_conflicts(
-            fragments, conflict_checked_attributes_config
+        person_type: PersonType,
+        sorted_fragments: list[IdentityFragment],
+        conflicts: tuple[AttributeConflict, ...],
+    ) -> RejectedIdentityCluster:
+        """Builds a RejectedIdentityCluster recording why this cluster was
+        rejected. The fragment ids match rows in the debug
+        {tenant}_identity_fragment.* tables, deduplicated because the upstream
+        fan-out emits a fragment once per external ID it carries."""
+        contributing_fragment_ids: list[str] = []
+        for fragment in sorted_fragments:
+            fragment_id = assert_type(fragment.identity_fragment_id, str)
+            if fragment_id not in contributing_fragment_ids:
+                contributing_fragment_ids.append(fragment_id)
+        return RejectedIdentityCluster(
+            tenant=self.tenant,
+            person_type=person_type,
+            external_ids=cluster_key,
+            conflicts=conflicts,
+            contributing_fragment_ids=tuple(contributing_fragment_ids),
         )
-        if conflicts:
-            conflict_summary = "; ".join(
-                f"{conflict.field}: "
-                f"{self._format_values(_serialize_conflict_value(v) for v in conflict.values)}"
-                for conflict in conflicts
+
+    def _cluster_external_id_entities(
+        self, cluster_key: ClusterKey
+    ) -> tuple[IdentityClusterExternalId, ...]:
+        """Returns the IdentityClusterExternalId entities for the cluster's
+        external ids."""
+        return tuple(
+            IdentityClusterExternalId(
+                tenant=self.tenant, external_id=external_id, id_type=id_type
             )
-            raise ValueError(
-                f"Cluster with external ids {self._format_values(cluster_key)} has "
-                f"fragments with conflicting attributes that do not describe one person: "
-                f"{conflict_summary}."
-            )
+            for external_id, id_type in cluster_key
+        )
 
     def _check_id_types_are_valid(self, cluster_key: ClusterKey) -> list[str]:
         """Returns an error if any of the cluster's external IDs has an id_type
@@ -360,21 +405,11 @@ class BuildIdentityClusters(beam.PTransform):
         return f"[{', '.join(str(v) for v in values)}]"
 
 
-def _serialize_conflict_value(value: ConflictValue) -> str:
-    """Serializes a conflict value for the human-readable rejection message.
-    Enums render as their value (MALE, not Sex.MALE); dates and strings render
-    as themselves.
-    """
-    if isinstance(value, Enum):
-        return str(value.value)
-    return str(value)
-
-
 def _fragment_recency_sort_key(
     sourced_fragment: SourcedIdentityFragment,
 ) -> tuple[UpperBoundDate, IngestViewName, list[tuple[str, str]]]:
     """Orders fragments oldest-first by (upper-bound date, ingest view name),
-    tie broken by sorted external ids.
+    tie-broken by sorted external ids.
 
     Latest-wins resolution and the conflict check both consume the fragments in
     this order, so their output stays deterministic. The external-id tiebreak

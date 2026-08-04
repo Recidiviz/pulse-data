@@ -28,6 +28,7 @@ from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
     identity_fragment_dataset_for_tenant,
     identity_ingest_view_results_dataset_for_tenant,
+    identity_rejections_dataset_for_tenant,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.utils.types import assert_type
@@ -98,6 +99,14 @@ class IdentityIngestPipelineParameters(PipelineParameters):
         )
 
     @property
+    def rejections_output_dataset(self) -> str:
+        return self.get_output_dataset(
+            default_dataset_id=identity_rejections_dataset_for_tenant(
+                assert_type(self.tenant, str)
+            )
+        )
+
+    @property
     def flex_template_name(self) -> str:
         return "identity_ingest"
 
@@ -118,4 +127,5 @@ class IdentityIngestPipelineParameters(PipelineParameters):
             "ingest_view_results_output_dataset",
             "fragment_output_dataset",
             "clustering_output_dataset",
+            "rejections_output_dataset",
         ]

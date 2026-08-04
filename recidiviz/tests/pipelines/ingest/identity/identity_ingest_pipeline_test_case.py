@@ -23,10 +23,15 @@ from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
 )
 from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
+from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
+    REJECTED_AT_COL,
+    REJECTED_IDENTITY_CLUSTER_TABLE_ID,
+)
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
     build_identity_fragment_output_source_table_collection,
     build_identity_ingest_view_results_source_table_collection,
+    build_identity_rejections_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
@@ -61,6 +66,7 @@ class IdentityIngestPipelineTestCase(
             ingest_view_results_collection,
             build_identity_fragment_output_source_table_collection(cls.tenant()),
             build_identity_cluster_output_source_table_collection(cls.tenant()),
+            build_identity_rejections_source_table_collection(cls.tenant()),
         ]
 
         return [
@@ -117,12 +123,22 @@ class IdentityIngestPipelineTestCase(
                     self.state_code(), fixture_address, test_name
                 )
                 # The ingest_view_results tables have a materialization-time
-                # column populated with `datetime.now()` at pipeline run time;
-                # exclude it from fixture comparison so runs are deterministic.
+                # column and the rejected_identity_cluster table a rejected_at
+                # column, both populated with datetime.now() at pipeline run
+                # time; exclude them from fixture comparison so runs are
+                # deterministic. The rejected_identity_cluster table's repeated
+                # columns are excluded because the fixture comparison cannot
+                # serialize them; their contents are covered by
+                # RejectedIdentityCluster's unit tests.
                 columns_to_ignore = [
                     field.name
                     for field in source_table.schema_fields
-                    if field.name == MATERIALIZATION_TIME_COL_NAME
+                    if field.name in (MATERIALIZATION_TIME_COL_NAME, REJECTED_AT_COL)
+                    or (
+                        source_table.address.table_id
+                        == REJECTED_IDENTITY_CLUSTER_TABLE_ID
+                        and field.mode == "REPEATED"
+                    )
                 ]
 
                 try:

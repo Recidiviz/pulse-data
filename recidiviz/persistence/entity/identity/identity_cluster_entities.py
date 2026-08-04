@@ -44,6 +44,7 @@ from recidiviz.common.attr_validators import (
 )
 from recidiviz.common.common_utils import get_hash_of_json
 from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -256,6 +257,24 @@ class IdentityCluster(
         # be computed here.
         self.identity_cluster_id = get_hash_of_json(json_entity_tree["external_ids"])
         self.cluster_hash = get_hash_of_json(json_entity_tree)
+
+    @classmethod
+    def cluster_id_for_external_ids(
+        cls,
+        *,
+        tenant: Tenant,
+        external_ids: tuple[IdentityClusterExternalId, ...],
+        person_type: PersonType,
+    ) -> str:
+        """Returns the identity_cluster_id a cluster with these external ids
+        carries. identity_cluster_id hashes external_ids only, so it does not
+        depend on the cluster's other attributes and is identical whether the
+        cluster is kept or rejected. Builds an attributeless cluster and reads
+        its id so this reuses the hashing in __attrs_post_init__ rather than
+        duplicating it."""
+        return cls(
+            tenant=tenant, external_ids=external_ids, person_type=person_type
+        ).identity_cluster_id
 
     def get_external_ids(self) -> Sequence["IdentityClusterExternalId"]:
         return self.external_ids

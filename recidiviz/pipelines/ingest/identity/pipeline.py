@@ -23,6 +23,8 @@ dataset for the Identity Service to consume via POST /trigger_import.
 See recidiviz/tools/calculator/run_sandbox_dataflow_pipeline_utils.py for details
 on how to launch a local run.
 """
+import datetime
+
 import apache_beam as beam
 from apache_beam import Pipeline
 
@@ -61,6 +63,8 @@ from recidiviz.pipelines.ingest.identity.assign_identity_fragment_ids import (
 from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     CLUSTER_MEMBERSHIPS,
     FRAGMENTS_WITH_DATES,
+    KEPT_CLUSTERS,
+    REJECTED_CLUSTERS,
     BuildIdentityClusters,
 )
 from recidiviz.pipelines.ingest.identity.expected_output_helpers import (
@@ -78,6 +82,9 @@ from recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views impor
 from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.identity.validate_identity_cluster_collection import (
     ValidateIdentityClusterCollection,
+)
+from recidiviz.pipelines.ingest.identity.write_rejected_clusters_to_bq import (
+    WriteRejectedIdentityClustersToBQ,
 )
 from recidiviz.pipelines.ingest.transforms.cluster_root_external_ids import (
     ClusterRootExternalIds,
@@ -182,19 +189,29 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             ingest_view_names=identity_view_names,
         )
 
+        build_outputs = {
+            CLUSTER_MEMBERSHIPS: cluster_memberships,
+            FRAGMENTS_WITH_DATES: merged_identity_fragments,
+        } | "Build IdentityClusters" >> BuildIdentityClusters(
+            tenant=tenant,
+            valid_id_types=valid_id_types,
+            identity_config=identity_config,
+        )
+
         identity_clusters: beam.PCollection[IdentityCluster] = (
-            {
-                CLUSTER_MEMBERSHIPS: cluster_memberships,
-                FRAGMENTS_WITH_DATES: merged_identity_fragments,
-            }
-            | "Build IdentityClusters"
-            >> BuildIdentityClusters(
-                tenant=tenant,
-                valid_id_types=valid_id_types,
-                identity_config=identity_config,
-            )
+            build_outputs[KEPT_CLUSTERS]
             | "Validate IdentityClusterCollection"
             >> ValidateIdentityClusterCollection()
+        )
+
+        # Write each rejected cluster to the rejected_identity_cluster table for
+        # review. The kept-cluster tables never see these clusters, so a
+        # rejection is visible only here.
+        _ = build_outputs[
+            REJECTED_CLUSTERS
+        ] | f"Write RejectedIdentityClusters to {self.pipeline_parameters.rejections_output_dataset}" >> WriteRejectedIdentityClustersToBQ(
+            output_dataset=self.pipeline_parameters.rejections_output_dataset,
+            rejected_at=datetime.datetime.now(tz=datetime.UTC),
         )
 
         # Write each IdentityCluster's serialized rows to the per-tenant

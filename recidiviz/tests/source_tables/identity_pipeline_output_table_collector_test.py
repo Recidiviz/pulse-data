@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 from more_itertools import one
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -29,8 +30,13 @@ from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
     build_identity_fragment_output_source_table_collection,
     build_identity_pipeline_output_source_table_collections,
+    build_identity_rejections_source_table_collection,
 )
-from recidiviz.source_tables.source_table_config import DataflowPipelineSourceTableLabel
+from recidiviz.source_tables.source_table_config import (
+    DataflowPipelineSourceTableLabel,
+    SourceTableCollectionUpdateConfig,
+    StateSpecificSourceTableLabel,
+)
 
 _TENANT = Tenant.US_OZ
 
@@ -78,9 +84,14 @@ class TestBuildIdentityFragmentOutputSourceTableCollection(unittest.TestCase):
 
     def test_carries_identity_ingest_pipeline_label(self) -> None:
         collection = build_identity_fragment_output_source_table_collection(_TENANT)
-        label = one(collection.labels)
-        self.assertIsInstance(label, DataflowPipelineSourceTableLabel)
-        self.assertEqual(label.value, IDENTITY_INGEST_PIPELINE_NAME)
+        self.assertIn(
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            collection.labels,
+        )
+        self.assertIn(
+            StateSpecificSourceTableLabel(state_code=StateCode.US_OZ),
+            collection.labels,
+        )
 
     def test_emits_one_table_per_fragment_entity(self) -> None:
         collection = build_identity_fragment_output_source_table_collection(_TENANT)
@@ -132,9 +143,14 @@ class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
 
     def test_carries_identity_ingest_pipeline_label(self) -> None:
         collection = build_identity_cluster_output_source_table_collection(_TENANT)
-        label = one(collection.labels)
-        self.assertIsInstance(label, DataflowPipelineSourceTableLabel)
-        self.assertEqual(label.value, IDENTITY_INGEST_PIPELINE_NAME)
+        self.assertIn(
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            collection.labels,
+        )
+        self.assertIn(
+            StateSpecificSourceTableLabel(state_code=StateCode.US_OZ),
+            collection.labels,
+        )
 
     def test_emits_one_table_per_cluster_entity(self) -> None:
         collection = build_identity_cluster_output_source_table_collection(_TENANT)
@@ -170,13 +186,48 @@ class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
         self.assertEqual("STRING", fk_field.field_type)
 
 
+class TestBuildIdentityRejectionsSourceTableCollection(unittest.TestCase):
+    """Tests for build_identity_rejections_source_table_collection."""
+
+    def test_uses_the_rejections_dataset(self) -> None:
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        self.assertEqual(collection.dataset_id, "us_oz_identity_rejections")
+
+    def test_is_regenerable(self) -> None:
+        """Each run rewrites the rejections tables, so the collection is
+        regenerable."""
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        self.assertEqual(
+            collection.update_config, SourceTableCollectionUpdateConfig.regenerable()
+        )
+
+    def test_carries_identity_ingest_pipeline_label(self) -> None:
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        self.assertIn(
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            collection.labels,
+        )
+        self.assertIn(
+            StateSpecificSourceTableLabel(state_code=StateCode.US_OZ),
+            collection.labels,
+        )
+
+    def test_emits_the_rejected_identity_cluster_table(self) -> None:
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        source_table = one(collection.source_tables)
+        self.assertEqual(source_table.address.table_id, "rejected_identity_cluster")
+        self.assertEqual(source_table.clustering_fields, ["identity_cluster_id"])
+
+
 class TestBuildIdentityPipelineOutputSourceTableCollections(unittest.TestCase):
     """Tests for build_identity_pipeline_output_source_table_collections."""
 
     def test_collections_per_tenant(self) -> None:
+        # Four collections per tenant, each in its own dataset: ingest view
+        # results, fragments, cluster output, and rejections.
         state_codes = get_direct_ingest_states_existing_in_env()
         collections = build_identity_pipeline_output_source_table_collections()
-        self.assertEqual(len(collections), 3 * len(state_codes))
+        self.assertEqual(len(collections), 4 * len(state_codes))
         self.assertEqual(
             {c.dataset_id for c in collections},
             {
@@ -186,6 +237,7 @@ class TestBuildIdentityPipelineOutputSourceTableCollections(unittest.TestCase):
                     f"{state_code.value.lower()}_identity_ingest_view_results",
                     f"{state_code.value.lower()}_identity_fragment",
                     f"{state_code.value.lower()}_identity_cluster",
+                    f"{state_code.value.lower()}_identity_rejections",
                 )
             },
         )

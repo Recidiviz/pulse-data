@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.activity.normalized_state_entity import (
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.identity import write_rejected_clusters_to_bq
 from recidiviz.pipelines.ingest.identity.pipeline import IdentityIngestPipeline
 from recidiviz.pipelines.ingest.transforms import write_root_entities_to_bq
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
@@ -168,6 +169,10 @@ def run_test_pipeline(
         patch("apache_beam.io.ReadFromBigQuery", read_from_bq_constructor),
         patch(
             f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
+            write_to_bq_constructor,
+        ),
+        patch(
+            f"{write_rejected_clusters_to_bq.__name__}.WriteToBigQuery",
             write_to_bq_constructor,
         ),
         patch(write_to_bq_class, write_to_bq_constructor),

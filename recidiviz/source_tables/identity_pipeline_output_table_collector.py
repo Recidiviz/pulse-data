@@ -40,6 +40,12 @@ from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
     identity_fragment_dataset_for_tenant,
     identity_ingest_view_results_dataset_for_tenant,
+    identity_rejections_dataset_for_tenant,
+)
+from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
+    IDENTITY_CLUSTER_ID_COL,
+    REJECTED_IDENTITY_CLUSTER_TABLE_ID,
+    rejected_identity_cluster_schema_fields,
 )
 from recidiviz.pipelines.pipeline_names import IDENTITY_INGEST_PIPELINE_NAME
 from recidiviz.source_tables.ingest_pipeline_output_helpers import (
@@ -49,6 +55,7 @@ from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    StateSpecificSourceTableLabel,
 )
 
 
@@ -76,7 +83,10 @@ def build_identity_ingest_view_results_source_table_collection(
             f"Stores materialized ingest view results produced by the "
             f"identity ingest pipeline for tenant {tenant.value}."
         ),
-        labels=[DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME)],
+        labels=[
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            StateSpecificSourceTableLabel(state_code=state_code),
+        ],
         manifest_collector=IngestViewManifestCollector(
             region=region,
             delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
@@ -96,7 +106,10 @@ def build_identity_fragment_output_source_table_collection(
     collection = SourceTableCollection(
         dataset_id=identity_fragment_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
-        labels=[DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME)],
+        labels=[
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
+        ],
         description=(
             f"Stores pre-clustering IdentityFragment output produced by the "
             f"identity ingest pipeline for tenant {tenant.value}."
@@ -122,10 +135,13 @@ def build_identity_cluster_output_source_table_collection(
     collection = SourceTableCollection(
         dataset_id=identity_cluster_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
-        labels=[DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME)],
+        labels=[
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
+        ],
         description=(
-            f"Stores output produced by the identity ingest pipeline for tenant "
-            f"{tenant.value}."
+            f"Stores clustered identity output produced by the identity ingest "
+            f"pipeline for tenant {tenant.value}, consumed by the Identity Service."
         ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(
@@ -136,6 +152,38 @@ def build_identity_cluster_output_source_table_collection(
             schema_fields=schema_fields,
             clustering_fields=["identity_cluster_id"],
         )
+    return collection
+
+
+def build_identity_rejections_source_table_collection(
+    tenant: Tenant,
+) -> SourceTableCollection:
+    """Build the source table collection for the "{tenant}_identity_rejections"
+    dataset, the pipeline-written record of what it dropped from clustering and
+    why. Each run rewrites the tables, so the collection is regenerable."""
+    collection = SourceTableCollection(
+        dataset_id=identity_rejections_dataset_for_tenant(tenant.value),
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        labels=[
+            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
+        ],
+        description=(
+            f"Stores the identity ingest pipeline's record of clusters and "
+            f"external ids it dropped from clustering for tenant {tenant.value}, "
+            f"for human review."
+        ),
+    )
+    collection.add_source_table(
+        table_id=REJECTED_IDENTITY_CLUSTER_TABLE_ID,
+        schema_fields=rejected_identity_cluster_schema_fields(),
+        description=(
+            "Records each cluster the identity ingest pipeline rejected "
+            "because its fragments have conflicting attributes, one "
+            "self-contained row per rejection per run."
+        ),
+        clustering_fields=[IDENTITY_CLUSTER_ID_COL],
+    )
     return collection
 
 
@@ -155,6 +203,9 @@ def build_identity_pipeline_output_source_table_collections() -> list[
                 Tenant.from_state_code(state_code)
             ),
             build_identity_cluster_output_source_table_collection(
+                Tenant.from_state_code(state_code)
+            ),
+            build_identity_rejections_source_table_collection(
                 Tenant.from_state_code(state_code)
             ),
         )

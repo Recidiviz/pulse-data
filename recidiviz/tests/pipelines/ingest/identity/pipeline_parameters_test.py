@@ -62,6 +62,10 @@ class TestIdentityIngestPipelineParameters(unittest.TestCase):
             "us_oz_identity_cluster",
             pipeline_parameters.clustering_output_dataset,
         )
+        self.assertEqual(
+            "us_oz_identity_rejections",
+            pipeline_parameters.rejections_output_dataset,
+        )
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_secondary_instance(self) -> None:
@@ -111,6 +115,10 @@ class TestIdentityIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(
             "my_prefix_us_oz_identity_cluster",
             pipeline_parameters.clustering_output_dataset,
+        )
+        self.assertEqual(
+            "my_prefix_us_oz_identity_rejections",
+            pipeline_parameters.rejections_output_dataset,
         )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 

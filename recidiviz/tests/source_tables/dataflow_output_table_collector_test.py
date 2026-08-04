@@ -32,6 +32,7 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
@@ -154,7 +155,8 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
     def test_identity_cluster(self) -> None:
         """Tests the expected output schema of the identity ingest pipeline's
-        cluster output, one collection per tenant."""
+        cluster output, one regenerable collection per tenant. This is the
+        public output the Identity Service consumes."""
         identity_collections = self._identity_collections_with_dataset_suffix(
             "_identity_cluster"
         )
@@ -170,6 +172,10 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         )
 
         for collection in identity_collections:
+            self.assertEqual(
+                collection.update_config,
+                SourceTableCollectionUpdateConfig.regenerable(),
+            )
             self.assert_source_tables_match(
                 collection,
                 expected_addresses=[
@@ -182,6 +188,36 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
                     f"{collection.dataset_id}.identity_cluster_phone_number",
                     f"{collection.dataset_id}.identity_cluster_race",
                     f"{collection.dataset_id}.identity_cluster_sex",
+                ],
+            )
+
+    def test_identity_rejections(self) -> None:
+        """Tests the expected output schema of the identity ingest pipeline's
+        rejections output, one regenerable collection per tenant holding the
+        rejected_identity_cluster table."""
+        identity_collections = self._identity_collections_with_dataset_suffix(
+            "_identity_rejections"
+        )
+
+        state_codes = get_direct_ingest_states_existing_in_env()
+        self.assertEqual(len(identity_collections), len(state_codes))
+        self.assertEqual(
+            {c.dataset_id for c in identity_collections},
+            {
+                f"{state_code.value.lower()}_identity_rejections"
+                for state_code in state_codes
+            },
+        )
+
+        for collection in identity_collections:
+            self.assertEqual(
+                collection.update_config,
+                SourceTableCollectionUpdateConfig.regenerable(),
+            )
+            self.assert_source_tables_match(
+                collection,
+                expected_addresses=[
+                    f"{collection.dataset_id}.rejected_identity_cluster"
                 ],
             )
 
