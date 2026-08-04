@@ -68,8 +68,8 @@ resource "google_service_account" "eomis_writeback" {
   display_name = "eOMIS Writeback Cloud Run Service Account"
   description  = <<EOT
 Runtime identity for the hosted eOMIS writeback Cloud Run job(s). Least-privilege:
-BigQuery read for candidate sourcing and access to the per-state eOMIS secrets only.
-Managed in Terraform.
+BigQuery read for candidate sourcing, append access to the eomis_writeback_metadata
+audit ledger, and access to the per-state eOMIS secrets only. Managed in Terraform.
 EOT
 }
 
@@ -78,6 +78,15 @@ resource "google_project_iam_member" "eomis_writeback_runtime_iam" {
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${local.eomis_writeback_sa_email}"
+}
+
+# Streaming-insert access for the audit ledger, scoped to that dataset only.
+resource "google_bigquery_dataset_iam_member" "eomis_writeback_audit_ledger_editor" {
+  count      = local.eomis_writeback_enabled ? 1 : 0
+  project    = var.project_id
+  dataset_id = module.eomis_writeback_metadata_dataset.dataset_id
+  role       = "roles/bigquery.dataEditor"
+  member     = "serviceAccount:${local.eomis_writeback_sa_email}"
 }
 
 # Secret-level access: only the specific eOMIS credentials, not all project secrets.

@@ -33,9 +33,10 @@ import argparse
 import logging
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.eomis.bq_audit import BigQueryAuditRecorder, RunStatus, generate_run_id
 from recidiviz.eomis.client import EomisClient
 from recidiviz.eomis.credentials import resolve_eomis_credentials
-from recidiviz.eomis.flow import EomisWritebackFlow, ResultStatus
+from recidiviz.eomis.flow import EomisWritebackFlow, ResultStatus, WriteResult
 from recidiviz.eomis.runner import LoggingAuditRecorder, run_writeback
 from recidiviz.eomis.scheduled_flows import SCHEDULED_FLOWS, ScheduledFlow
 from recidiviz.utils import metadata
@@ -69,6 +70,49 @@ def base_url_for_project(flow_name: str, project_id: str) -> str:
     the production instance only from the production project, the test instance
     everywhere else."""
     return scheduled_flow_for_name(flow_name).base_url_for_project(project_id)
+
+
+def _run_flow(
+    *,
+    flow: EomisWritebackFlow,
+    base_url: str,
+    args: argparse.Namespace,
+    recorder: BigQueryAuditRecorder,
+) -> list[WriteResult]:
+    """Loads and classifies candidates, records every one in the ledger, and
+    runs the actionable ones. Returns no results when nothing is actionable —
+    the most common outcome once the schedule is live."""
+    candidates = flow.load_candidates()
+    recorder.record_classified(candidates)
+    selected = [candidate for candidate in candidates if candidate.is_actionable]
+    logging.info(
+        "%s: run [%s] loaded [%d] candidates, [%d] actionable; mode [%s] against [%s]",
+        flow.flow_name,
+        recorder.run_id,
+        len(candidates),
+        len(selected),
+        "COMMIT" if args.commit else "dry-run",
+        base_url,
+    )
+    if not selected:
+        return []
+
+    credentials = resolve_eomis_credentials(
+        flow.state_code, username_override=None, password_override=None
+    )
+    client = EomisClient(base_url, credentials.username, credentials.password)
+    return run_writeback(
+        flow=flow,
+        client=client,
+        candidates=selected,
+        commit=args.commit,
+        recorders=[LoggingAuditRecorder(), recorder],
+        max_writes=(
+            args.max_writes if args.max_writes is not None else flow.max_writes_per_run
+        ),
+        pause_min=PAUSE_MIN_SECONDS,
+        pause_max=PAUSE_MAX_SECONDS,
+    )
 
 
 class EomisWritebackEntrypoint(EntrypointInterface):
@@ -108,7 +152,8 @@ class EomisWritebackEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
         """Runs the named flow through the shared runner and raises (exiting
-        non-zero) if any candidate errored."""
+        non-zero) if any candidate errored. Every run — including one that
+        crashes — leaves a lifecycle record in the BigQuery audit ledger."""
         scheduled_flow = scheduled_flow_for_name(args.flow)
         base_url = scheduled_flow.base_url_for_project(metadata.project_id())
         if (
@@ -119,44 +164,34 @@ class EomisWritebackEntrypoint(EntrypointInterface):
             raise ValueError("production writes require --allow-prod-write")
 
         flow = build_flow(args.flow, bq_view=args.bq_view)
-        candidates = flow.load_candidates()
-        selected = [candidate for candidate in candidates if candidate.is_actionable]
-        logging.info(
-            "%s: loaded [%d] candidates, [%d] actionable; mode [%s] against [%s]",
-            flow.flow_name,
-            len(candidates),
-            len(selected),
-            "COMMIT" if args.commit else "dry-run",
-            base_url,
+        recorder = BigQueryAuditRecorder.for_run(
+            run_id=generate_run_id(), flow=flow, commit=args.commit
         )
-        if not selected:
-            return
-
-        credentials = resolve_eomis_credentials(
-            flow.state_code, username_override=None, password_override=None
-        )
-        client = EomisClient(base_url, credentials.username, credentials.password)
-        results = run_writeback(
-            flow=flow,
-            client=client,
-            candidates=selected,
-            commit=args.commit,
-            recorders=[LoggingAuditRecorder()],
-            max_writes=(
-                args.max_writes
-                if args.max_writes is not None
-                else flow.max_writes_per_run
-            ),
-            pause_min=PAUSE_MIN_SECONDS,
-            pause_max=PAUSE_MAX_SECONDS,
-        )
+        recorder.record_run_started()
+        error_detail: str | None = None
+        try:
+            results = _run_flow(
+                flow=flow, base_url=base_url, args=args, recorder=recorder
+            )
+        except Exception as error:
+            recorder.record_run_finished(
+                status=RunStatus.FAILED, error_detail=str(error)
+            )
+            raise
 
         errored = [result for result in results if result.status is ResultStatus.ERROR]
         if errored:
-            raise RuntimeError(
-                f"{flow.flow_name}: [{len(errored)}] of [{len(results)}] candidates "
-                "errored; see the audit log above for details."
+            status = RunStatus.COMPLETED_WITH_ERRORS
+            error_detail = (
+                f"[{len(errored)}] of [{len(results)}] candidates errored. See the "
+                f"job log or the eomis_writeback_candidates table for details."
             )
+        else:
+            status = RunStatus.SUCCESS
+
+        recorder.record_run_finished(status=status, error_detail=error_detail)
+        if status is not RunStatus.SUCCESS:
+            raise RuntimeError(f"{flow.flow_name}: {error_detail}")
 
 
 if __name__ == "__main__":

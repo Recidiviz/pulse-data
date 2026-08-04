@@ -24,6 +24,7 @@ from recidiviz.entrypoints.eomis_writeback import (
     base_url_for_project,
     build_flow,
 )
+from recidiviz.eomis.bq_audit import RunStatus
 from recidiviz.eomis.flow import ResultStatus, WriteResult
 from recidiviz.eomis.scheduled_flows import SCHEDULED_FLOWS
 from recidiviz.eomis.us_ar.program_referral_flow import (
@@ -119,17 +120,23 @@ class TestFlowConstruction(unittest.TestCase):
             )
 
 
+@patch("recidiviz.entrypoints.eomis_writeback.BigQueryAuditRecorder")
 @patch("recidiviz.entrypoints.eomis_writeback.run_writeback")
 @patch("recidiviz.entrypoints.eomis_writeback.EomisClient")
 @patch("recidiviz.entrypoints.eomis_writeback.resolve_eomis_credentials")
 @patch("recidiviz.entrypoints.eomis_writeback.build_flow")
 @patch("recidiviz.entrypoints.eomis_writeback.metadata.project_id")
 class TestRunEntrypoint(unittest.TestCase):
-    """Tests the run semantics: prod-write guard, dry-run default, and the
-    non-zero exit when any candidate errored."""
+    """Tests the run semantics: prod-write guard, dry-run default, the
+    non-zero exit when any candidate errored, and the audit ledger lifecycle
+    events on every exit path."""
 
     def _parse(self, argv: list[str]) -> argparse.Namespace:
         return EomisWritebackEntrypoint.get_parser().parse_args(argv)
+
+    @staticmethod
+    def _recorder(mock_recorder_cls: MagicMock) -> MagicMock:
+        return mock_recorder_cls.for_run.return_value
 
     def test_commit_against_prod_requires_allow_prod_write(
         self,
@@ -138,6 +145,7 @@ class TestRunEntrypoint(unittest.TestCase):
         _mock_credentials: MagicMock,
         _mock_client: MagicMock,
         _mock_run: MagicMock,
+        mock_recorder_cls: MagicMock,
     ) -> None:
         mock_project_id.return_value = GCP_PROJECT_PRODUCTION
         with self.assertRaisesRegex(
@@ -147,6 +155,7 @@ class TestRunEntrypoint(unittest.TestCase):
                 args=self._parse(["--flow=ar_ged", "--commit"])
             )
         mock_build_flow.assert_not_called()
+        mock_recorder_cls.for_run.assert_not_called()
 
     def test_dry_run_against_prod_project_is_allowed(
         self,
@@ -155,6 +164,7 @@ class TestRunEntrypoint(unittest.TestCase):
         _mock_credentials: MagicMock,
         _mock_client: MagicMock,
         mock_run: MagicMock,
+        _mock_recorder_cls: MagicMock,
     ) -> None:
         mock_project_id.return_value = GCP_PROJECT_PRODUCTION
         mock_build_flow.return_value.load_candidates.return_value = [
@@ -173,15 +183,23 @@ class TestRunEntrypoint(unittest.TestCase):
         mock_credentials: MagicMock,
         mock_client: MagicMock,
         mock_run: MagicMock,
+        mock_recorder_cls: MagicMock,
     ) -> None:
         mock_project_id.return_value = GCP_PROJECT_STAGING
-        mock_build_flow.return_value.load_candidates.return_value = [_candidate("skip")]
+        candidates = [_candidate("skip")]
+        mock_build_flow.return_value.load_candidates.return_value = candidates
 
         EomisWritebackEntrypoint.run_entrypoint(args=self._parse(["--flow=ar_ged"]))
 
         mock_credentials.assert_not_called()
         mock_client.assert_not_called()
         mock_run.assert_not_called()
+        recorder = self._recorder(mock_recorder_cls)
+        recorder.record_run_started.assert_called_once()
+        recorder.record_classified.assert_called_once_with(candidates)
+        recorder.record_run_finished.assert_called_once_with(
+            status=RunStatus.SUCCESS, error_detail=None
+        )
 
     def test_any_errored_candidate_raises(
         self,
@@ -190,6 +208,7 @@ class TestRunEntrypoint(unittest.TestCase):
         _mock_credentials: MagicMock,
         _mock_client: MagicMock,
         mock_run: MagicMock,
+        mock_recorder_cls: MagicMock,
     ) -> None:
         mock_project_id.return_value = GCP_PROJECT_STAGING
         mock_build_flow.return_value.load_candidates.return_value = [
@@ -206,6 +225,59 @@ class TestRunEntrypoint(unittest.TestCase):
                 args=self._parse(["--flow=ar_ged", "--commit"])
             )
 
+        self._recorder(mock_recorder_cls).record_run_finished.assert_called_once_with(
+            status=RunStatus.COMPLETED_WITH_ERRORS,
+            error_detail="[1] of [2] candidates errored. See the job log or the "
+            "eomis_writeback_candidates table for details.",
+        )
+
+    def test_successful_run_records_success(
+        self,
+        mock_project_id: MagicMock,
+        mock_build_flow: MagicMock,
+        _mock_credentials: MagicMock,
+        _mock_client: MagicMock,
+        mock_run: MagicMock,
+        mock_recorder_cls: MagicMock,
+    ) -> None:
+        mock_project_id.return_value = GCP_PROJECT_STAGING
+        mock_build_flow.return_value.load_candidates.return_value = [
+            _candidate("create")
+        ]
+        mock_run.return_value = [_result(ResultStatus.DRY_RUN)]
+
+        EomisWritebackEntrypoint.run_entrypoint(args=self._parse(["--flow=ar_ged"]))
+
+        recorder = self._recorder(mock_recorder_cls)
+        recorder.record_run_started.assert_called_once()
+        recorder.record_run_finished.assert_called_once_with(
+            status=RunStatus.SUCCESS, error_detail=None
+        )
+        self.assertIn(recorder, mock_run.call_args.kwargs["recorders"])
+
+    def test_crash_records_failed_and_reraises(
+        self,
+        mock_project_id: MagicMock,
+        mock_build_flow: MagicMock,
+        _mock_credentials: MagicMock,
+        _mock_client: MagicMock,
+        _mock_run: MagicMock,
+        mock_recorder_cls: MagicMock,
+    ) -> None:
+        mock_project_id.return_value = GCP_PROJECT_STAGING
+        mock_build_flow.return_value.load_candidates.side_effect = RuntimeError(
+            "source view unavailable"
+        )
+
+        with self.assertRaisesRegex(RuntimeError, r"^source view unavailable$"):
+            EomisWritebackEntrypoint.run_entrypoint(args=self._parse(["--flow=ar_ged"]))
+
+        recorder = self._recorder(mock_recorder_cls)
+        recorder.record_run_started.assert_called_once()
+        recorder.record_run_finished.assert_called_once_with(
+            status=RunStatus.FAILED, error_detail="source view unavailable"
+        )
+
     def test_max_writes_defaults_to_the_flow_circuit_breaker(
         self,
         mock_project_id: MagicMock,
@@ -213,6 +285,7 @@ class TestRunEntrypoint(unittest.TestCase):
         _mock_credentials: MagicMock,
         _mock_client: MagicMock,
         mock_run: MagicMock,
+        _mock_recorder_cls: MagicMock,
     ) -> None:
         mock_project_id.return_value = GCP_PROJECT_STAGING
         mock_build_flow.return_value.load_candidates.return_value = [
