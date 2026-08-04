@@ -111,7 +111,7 @@ rules:
       incident.policy_name: "BQ Deployed View Too Expensive"
     actions:
       severity: warning
-      title_transform: "BigQuery Deployed View Too Expensive"
+      title_transform: "BigQuery Deployed View Too Expensive: `{incident.metric.labels.dataset_id}.{incident.metric.labels.table_id}`"
 
   - name: "Unmapped Enum Values"
     match:

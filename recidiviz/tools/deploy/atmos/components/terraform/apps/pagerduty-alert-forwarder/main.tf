@@ -216,6 +216,10 @@ resource "google_cloud_run_v2_service" "alert_forwarder" {
     ignore_changes  = []
     prevent_destroy = false
   }
+
+  depends_on = [
+    google_secret_manager_secret_version.pagerduty_integration_keys_json
+  ]
 }
 
 # IAM: Allow unauthenticated access from Pub/Sub
@@ -339,7 +343,7 @@ resource "google_pubsub_topic_iam_member" "monitoring_publisher" {
   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
 }
 
-# Allow the dashboard projects' Cloud Monitoring notification service agents to publish to the
+# Allow the monitored projects' Cloud Monitoring notification service agents to publish to the
 # forwarder topic (their pubsub notification channels point here, e.g. for the Typesense alerts).
 data "google_project" "dashboard_staging" {
   project_id = "recidiviz-dashboard-staging"
@@ -347,6 +351,10 @@ data "google_project" "dashboard_staging" {
 
 data "google_project" "dashboard_production" {
   project_id = "recidiviz-dashboard-production"
+}
+
+data "google_project" "platform_staging" {
+  project_id = "recidiviz-staging"
 }
 
 resource "google_pubsub_topic_iam_member" "dashboard_staging_publisher" {
@@ -361,6 +369,13 @@ resource "google_pubsub_topic_iam_member" "dashboard_production_publisher" {
   topic   = google_pubsub_topic.monitoring_alerts.name
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:service-${data.google_project.dashboard_production.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_topic_iam_member" "platform_staging_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.monitoring_alerts.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.platform_staging.number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
 }
 
 # IAM: Secret Manager access for PagerDuty keys
