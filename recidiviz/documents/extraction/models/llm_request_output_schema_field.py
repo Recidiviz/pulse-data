@@ -74,7 +74,7 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Column names the parsed extraction-result views emit alongside the extracted
-# fields: the envelope (identity/provenance) columns, the array-element position
+# fields: the identity and provenance columns, the array-element position
 # key, and the companion-metadata STRUCT columns. A user-defined output schema
 # field — at any nesting level — may not use one of these names, or the generated
 # views would declare duplicate column names and fail only when the views are

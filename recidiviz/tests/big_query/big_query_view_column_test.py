@@ -93,7 +93,7 @@ class BigQueryViewColumnTest(unittest.TestCase):
 
     def test_sql_cast_clause_with_value_expression(self) -> None:
         """An explicit value expression is cast to the column's type, but the alias
-        stays the column name (the value_column_sql / JSON_VALUE path)."""
+        stays the column name (the scalar_value_column_sql_clause / JSON_VALUE path)."""
         column = Float(name="wage", description="d", mode="NULLABLE")
         self.assertEqual(
             "CAST(JSON_VALUE(j, '$.wage') AS FLOAT64) AS wage",
