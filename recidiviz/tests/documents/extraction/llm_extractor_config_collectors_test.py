@@ -94,6 +94,18 @@ class ParseAllExtractorConfigsTest(TestCase):
                         rendered_query, {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
                     )
 
+    def test_all_real_first_order_extractors_declare_golden_eval(self) -> None:
+        # Every first-order extractor must ship a golden eval set so extraction
+        # quality is measurable for that (collection, state). Only the
+        # auto-generated entity-resolution extractors are exempt, and this loader
+        # returns first-order extractors only.
+        configs_by_state = load_first_order_llm_extractor_configs()
+        self.assertTrue(configs_by_state)
+        for state_code, state_configs in configs_by_state.items():
+            for collection_name, config in state_configs.items():
+                with self.subTest(collection=collection_name, state=state_code.value):
+                    self.assertIsNotNone(config.golden_eval)
+
     def test_all_real_extractors_compute_version_ids(self) -> None:
         # Every real extractor must compute all four version IDs as 64-char hex
         # digests, and extractor_id (the llm_extractors primary key) must be

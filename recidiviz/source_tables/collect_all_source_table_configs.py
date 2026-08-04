@@ -54,6 +54,7 @@ from recidiviz.source_tables.externally_managed.collect_externally_managed_sourc
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_results_source_table_collection,
 )
 from recidiviz.source_tables.intercom_exports_source_table import (
     build_intercom_export_tracker_table,
@@ -223,6 +224,8 @@ def build_source_table_repository_for_collected_schemata(
             f"[{metadata.project_id()}]"
         )
 
+    extractor_configs_by_state = collect_all_extractor_configs_by_state()
+
     return SourceTableRepository(
         source_table_collections=[
             *collect_externally_managed_source_table_collections(project_id=project_id),
@@ -234,8 +237,9 @@ def build_source_table_repository_for_collected_schemata(
             *collect_sentencing_source_tables(),
             *collect_document_store_source_tables(),
             *collect_extraction_results_source_table_collections(
-                configs=collect_all_extractor_configs_by_state()
+                configs=extractor_configs_by_state
             ),
+            collect_golden_eval_results_source_table_collection(),
             build_intercom_export_tracker_table(),
         ],
     )

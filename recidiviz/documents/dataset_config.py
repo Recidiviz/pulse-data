@@ -111,3 +111,15 @@ def document_extraction_entity_mentions_dataset_for_region(
         f"{prefix}{state_code.value.lower()}"
         f"_document_extraction_results__entity_mentions"
     )
+
+
+def document_extraction_golden_eval_results_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing LLM document-extraction golden eval result
+    tables. Unlike the other datasets here this one is state-agnostic: one table per
+    extractor collection spans every state that runs the extractor, with state_code
+    as a column.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_golden_eval_results"
