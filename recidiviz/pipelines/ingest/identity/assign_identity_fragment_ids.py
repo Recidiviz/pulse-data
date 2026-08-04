@@ -14,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""PTransform that assigns each IdentityFragment a deterministic
-identity_fragment_id, the join key for the debug {tenant}_identity_fragment.*
-output tables.
+"""Assigns each IdentityFragment a deterministic content-hash identity_fragment_id
+that identifies the fragment across the pipeline's branches, including as the join
+key for the debug {tenant}_identity_fragment.* output tables.
 """
 import copy
-
-import apache_beam as beam
 
 from recidiviz.common.common_utils import get_hash_of_json
 from recidiviz.persistence.entity.entity_utils import (
@@ -37,40 +35,28 @@ from recidiviz.persistence.entity.serialization import serialize_entity_tree_int
 IDENTITY_FRAGMENT_ID_FIELD = "identity_fragment_id"
 
 
-class AssignIdentityFragmentIds(beam.PTransform):
-    """Assigns each IdentityFragment a deterministic identity_fragment_id."""
+def assign_identity_fragment_id(fragment: IdentityFragment) -> IdentityFragment:
+    """Returns a copy of the fragment with its identity_fragment_id set to a
+    deterministic SHA-256 of the fragment's content."""
 
-    def expand(
-        self, input_or_inputs: beam.PCollection[IdentityFragment]
-    ) -> beam.PCollection[IdentityFragment]:
-        return input_or_inputs | "Assign identity_fragment_id" >> beam.Map(
-            self.assign_identity_fragment_id
+    # Deep copy so the assignment never mutates a Beam element in place.
+    fragment = copy.deepcopy(fragment)
+
+    json_entity_tree = serialize_entity_tree_into_json(
+        fragment, IDENTITY_FRAGMENT_ENTITIES_CONTEXT
+    )
+    json_entity_tree.pop(IDENTITY_FRAGMENT_ID_FIELD)
+    identity_fragment_id = get_hash_of_json(json_entity_tree)
+
+    # Set back edges so each child row carries an identity_fragment_id
+    # when the tree is serialized to rows.
+    set_backedges_allowing_intermediate_entities(
+        fragment, IDENTITY_FRAGMENT_ENTITIES_CONTEXT
+    )
+    fragment.identity_fragment_id = identity_fragment_id
+
+    if not fragment.identity_fragment_id:
+        raise ValueError(
+            f"Failed to assign an identity_fragment_id to fragment [{fragment}]."
         )
-
-    @staticmethod
-    def assign_identity_fragment_id(fragment: IdentityFragment) -> IdentityFragment:
-        """Returns a copy of |fragment| with its identity_fragment_id set to a
-        deterministic SHA-256 of the fragment's content."""
-
-        # Make a deep copy, as Beam elements must not be mutated in place (fragment
-        # is also passed to the pipeline's clustering branch).
-        fragment = copy.deepcopy(fragment)
-
-        json_entity_tree = serialize_entity_tree_into_json(
-            fragment, IDENTITY_FRAGMENT_ENTITIES_CONTEXT
-        )
-        json_entity_tree.pop(IDENTITY_FRAGMENT_ID_FIELD)
-        identity_fragment_id = get_hash_of_json(json_entity_tree)
-
-        # Set back edges so each child row carries an identity_fragment_id
-        # when the tree is serialized to rows.
-        set_backedges_allowing_intermediate_entities(
-            fragment, IDENTITY_FRAGMENT_ENTITIES_CONTEXT
-        )
-        fragment.identity_fragment_id = identity_fragment_id
-
-        if not fragment.identity_fragment_id:
-            raise ValueError(
-                f"Failed to assign an identity_fragment_id to fragment [{fragment}]."
-            )
-        return fragment
+    return fragment

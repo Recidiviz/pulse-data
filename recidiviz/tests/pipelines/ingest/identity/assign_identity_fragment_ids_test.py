@@ -28,7 +28,7 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.pipelines.ingest.identity.assign_identity_fragment_ids import (
-    AssignIdentityFragmentIds,
+    assign_identity_fragment_id,
 )
 from recidiviz.tests.persistence.entity.identity.entities_test_utils import (
     generate_full_graph_identity_fragment,
@@ -43,7 +43,7 @@ class TestAssignIdentityFragmentId(unittest.TestCase):
         fragment = generate_full_graph_identity_fragment(set_back_edges=False)
         self.assertIsNone(fragment.identity_fragment_id)
 
-        result = AssignIdentityFragmentIds.assign_identity_fragment_id(fragment)
+        result = assign_identity_fragment_id(fragment)
         self.assertIsNotNone(result.identity_fragment_id)
         self.assertTrue(result.identity_fragment_id)
 
@@ -56,7 +56,7 @@ class TestAssignIdentityFragmentId(unittest.TestCase):
         attributes.races.reverse()
         races_before = list(attributes.races)
 
-        _ = AssignIdentityFragmentIds.assign_identity_fragment_id(fragment)
+        _ = assign_identity_fragment_id(fragment)
 
         # The input fragment (which also feeds the clustering branch) is left
         # untouched: no id assigned, no back edges wired, child order preserved.
@@ -65,10 +65,10 @@ class TestAssignIdentityFragmentId(unittest.TestCase):
         self.assertEqual(races_before, attributes.races)
 
     def test_id_is_deterministic_for_equal_content(self) -> None:
-        first = AssignIdentityFragmentIds.assign_identity_fragment_id(
+        first = assign_identity_fragment_id(
             generate_full_graph_identity_fragment(set_back_edges=False)
         )
-        second = AssignIdentityFragmentIds.assign_identity_fragment_id(
+        second = assign_identity_fragment_id(
             generate_full_graph_identity_fragment(set_back_edges=False)
         )
         self.assertEqual(first.identity_fragment_id, second.identity_fragment_id)
@@ -82,19 +82,15 @@ class TestAssignIdentityFragmentId(unittest.TestCase):
         other_name.given_name = "A Different Given Name"
 
         self.assertNotEqual(
-            AssignIdentityFragmentIds.assign_identity_fragment_id(
-                fragment
-            ).identity_fragment_id,
-            AssignIdentityFragmentIds.assign_identity_fragment_id(
-                other
-            ).identity_fragment_id,
+            assign_identity_fragment_id(fragment).identity_fragment_id,
+            assign_identity_fragment_id(other).identity_fragment_id,
         )
 
     def test_child_rows_carry_fragment_id_fk(self) -> None:
         """After assignment, serializing a child entity yields a row whose
         identity_fragment_id FK matches the root's id, proving back edges were
         wired through the intermediate IdentityAttributes."""
-        result = AssignIdentityFragmentIds.assign_identity_fragment_id(
+        result = assign_identity_fragment_id(
             generate_full_graph_identity_fragment(set_back_edges=False)
         )
         name = assert_type(

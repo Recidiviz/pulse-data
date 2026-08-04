@@ -56,7 +56,7 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.identity.assign_identity_fragment_ids import (
-    AssignIdentityFragmentIds,
+    assign_identity_fragment_id,
 )
 from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     CLUSTER_MEMBERSHIPS,
@@ -75,6 +75,7 @@ from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
 from recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views import (
     ProcessAllIdentityIngestViews,
 )
+from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.identity.validate_identity_cluster_collection import (
     ValidateIdentityClusterCollection,
 )
@@ -137,6 +138,9 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
 
         identity_config = IdentityIngestPipelineConfig.load_clustering_config()
 
+        # Assign each fragment its content-hash identity_fragment_id once, before
+        # the fragments fan out to the clustering, cluster-build, and debug
+        # branches, so every branch reads the same id.
         merged_identity_fragments = (
             p
             | "Process identity views"
@@ -144,11 +148,14 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
                 pipeline_parameters=self.pipeline_parameters,
                 identity_config=identity_config,
             )
+            | "Assign identity fragment ids"
+            >> beam.MapTuple(_assign_id_to_sourced_fragment)
         )
 
-        # The pre-clustering fragments feed two branches: clustering (below) and
-        # the debug {tenant}_identity_fragment output. MergeIngestViewRootEntityTrees
-        # emits each fragment once per external ID it carries.
+        # The pre-clustering fragments feed clustering (below), the cluster-build
+        # branch, and the debug {tenant}_identity_fragment output.
+        # MergeIngestViewRootEntityTrees emits each fragment once per external ID
+        # it carries.
         # Silence No value for argument 'pcoll' in function call (no-value-for-parameter)
         # pylint: disable=E1120
         fragments: beam.PCollection[IdentityFragment] = (
@@ -212,7 +219,6 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         # different id) each keep their own row.
         _ = (
             fragments
-            | "Assign identity fragment ids" >> AssignIdentityFragmentIds()
             | "Key fragments by id"
             >> beam.Map(lambda fragment: (fragment.identity_fragment_id, fragment))
             | "Group fragments by id" >> beam.GroupByKey()
@@ -226,3 +232,16 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
                 entities_module=identity_fragment_entities,
             )
         )
+
+
+def _assign_id_to_sourced_fragment(
+    external_id_key: ExternalIdKey, sourced_fragment: SourcedIdentityFragment
+) -> tuple[ExternalIdKey, SourcedIdentityFragment]:
+    """Returns the keyed sourced fragment with its fragment's
+    identity_fragment_id assigned."""
+    upper_bound_date, ingest_view_name, fragment = sourced_fragment
+    return external_id_key, (
+        upper_bound_date,
+        ingest_view_name,
+        assign_identity_fragment_id(fragment),
+    )
