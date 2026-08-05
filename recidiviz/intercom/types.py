@@ -118,3 +118,17 @@ class IntercomCloudRunJobInfo:
             "export_window_end_inclusive": self.export_window_end_inclusive.isoformat(),
             "status": self.status.value,
         }
+
+
+@attr.frozen
+class IntercomSearchTicketsResponse:
+    """Represents an Intercom search tickets endpoint response."""
+
+    # The returned tickets
+    tickets: list[dict[str, Any]]
+    # The cursor to use in the next request to get the next page of results.
+    # None if the last page of the response has been reached.
+    next_cursor: str | None
+
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)

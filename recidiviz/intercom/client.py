@@ -18,6 +18,7 @@
 
 from datetime import datetime, timezone
 from functools import cached_property
+from typing import Any
 
 import attr
 import requests
@@ -26,12 +27,25 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from recidiviz.intercom.types import (
     IntercomExportJobResponse,
     IntercomJobStatus,
+    IntercomSearchTicketsResponse,
     IntercomTicket,
     IntercomTicketResponse,
 )
 from recidiviz.utils.secrets import get_secret
 
 DEFAULT_API_REQUEST_TIMEOUT = 10.0
+QUERY = "query"
+OPERATOR = "operator"
+AND = "AND"
+VALUE = "value"
+PAGINATION = "pagination"
+PER_PAGE = "per_page"
+STARTING_AFTER = "starting_after"
+TICKETS = "tickets"
+PAGES = "pages"
+NEXT = "next"
+UPDATED_AT = "updated_at"
+FIELD = "field"
 
 
 @attr.define
@@ -184,3 +198,83 @@ class IntercomAPIClient:
         )
         response.raise_for_status()
         return response.content
+
+    def get_search_tickets_response(
+        self,
+        query_filters: list[dict[str, str]],
+        per_page: int,
+        next_cursor: str | None = None,
+    ) -> IntercomSearchTicketsResponse:
+        """Queries the Intercom API Search Tickets endpoint and returns an
+        IntercomSearchTicketsResponse object with a list of inbound support tickets."""
+
+        url = f"{self._BASE_URL}/tickets/search"
+
+        payload: dict = {
+            QUERY: {
+                OPERATOR: AND,
+                VALUE: query_filters,
+            },
+            PAGINATION: {
+                PER_PAGE: per_page,
+            },
+        }
+
+        if next_cursor:
+            payload[PAGINATION][STARTING_AFTER] = next_cursor
+
+        response = self._session.post(
+            url, json=payload, timeout=DEFAULT_API_REQUEST_TIMEOUT
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        tickets = data[TICKETS]
+        pages = data[PAGES]
+        # If there are no more pages, the data["pages"]["next"] key does not exist
+        next_page = pages.get(NEXT, None)
+        next_cursor = next_page[STARTING_AFTER] if next_page else None
+
+        return IntercomSearchTicketsResponse(tickets=tickets, next_cursor=next_cursor)
+
+    def search_tickets(
+        self, updated_before: datetime, updated_after: datetime, per_page: int = 50
+    ) -> list[dict[str, Any]]:
+        """Fetches tickets from Intercom using the search endpoint.
+
+        Args:
+            updated_before: Deatetime to filter tickets updated before this time
+            updated_after: Datetime to filter tickets updated after this time
+            per_page: Number of tickets to fetch per page (max 150, per the Intercom API)
+
+        Returns:
+            List of Intercom inbound support tickets JSON
+        """
+
+        query_filters = [
+            {
+                FIELD: UPDATED_AT,
+                OPERATOR: ">",
+                VALUE: str(updated_after.timestamp()),
+            },
+            {
+                FIELD: UPDATED_AT,
+                OPERATOR: "<",
+                VALUE: str(updated_before.timestamp()),
+            },
+        ]
+
+        search_tickets_response = self.get_search_tickets_response(
+            query_filters=query_filters, per_page=per_page
+        )
+        tickets = search_tickets_response.tickets
+
+        while search_tickets_response.next_cursor is not None:
+            search_tickets_response = self.get_search_tickets_response(
+                query_filters=query_filters,
+                per_page=per_page,
+                next_cursor=search_tickets_response.next_cursor,
+            )
+            tickets.extend(search_tickets_response.tickets)
+
+        return tickets
