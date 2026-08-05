@@ -87,6 +87,10 @@ class RestTransportConfig:
     # Timeout in seconds for each outbound request. Defaults to 360.
     timeout_seconds: int = attr.ib(default=360)
 
+    # MIME type sent as the Content-Type request header. Defaults to
+    # application/json; use text/xml for systems that require XML bodies.
+    content_type: str = attr.ib(default="application/json")
+
 
 class RestTransport:
     """Resolves secrets and sends HTTP requests to an external system.
@@ -107,7 +111,7 @@ class RestTransport:
 
         self._url = url
         self._headers = {
-            "Content-Type": "application/json",
+            "Content-Type": config.content_type,
             **config.auth_strategy.headers(credential),
         }
 

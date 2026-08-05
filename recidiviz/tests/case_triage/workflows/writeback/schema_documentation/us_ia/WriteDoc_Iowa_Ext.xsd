@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:nc="http://release.niem.gov/niem/niem-core/5.0/" xmlns:niem-xs="http://release.niem.gov/niem/proxy/niem-xs/5.0/" xmlns:j="http://release.niem.gov/niem/domains/jxdm/7.2/" xmlns:appinfo="http://release.niem.gov/niem/appinfo/5.0/" xmlns:cls="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-instance/" xmlns:clsa="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-schema-appinfo/" xmlns:ct="http://release.niem.gov/niem/conformanceTargets/3.0/" xmlns:structures="http://release.niem.gov/niem/structures/5.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ia="http://mcp.com/iowa/v/1.0/" xmlns:ia-ext="http://mcp.com/iowa/extension/v/1.0/" targetNamespace="http://mcp.com/iowa/extension/v/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1" xml:lang="en-US" ct:conformanceTargets="http://reference.niem.gov/niem/specification/naming-and-design-rules/5.0/#ExtensionDocument">
+	<!-- NIEM schema imports -->
+	<xs:import namespace="http://release.niem.gov/niem/niem-core/5.0/" schemaLocation="./niem/xsd/niem-core.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/proxy/niem-xs/5.0/" schemaLocation="./niem/xsd/adapters/niem-xs.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/domains/jxdm/7.2/" schemaLocation="./niem/xsd/domains/jxdm.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/appinfo/5.0/" schemaLocation="./niem/xsd/utility/appinfo.xsd"/>
+	<xs:import namespace="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-instance/" schemaLocation="./niem/xsd/utility/code-lists-instance.xsd"/>
+	<xs:import namespace="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-schema-appinfo/" schemaLocation="./niem/xsd/utility/code-lists-schema-appinfo.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/conformanceTargets/3.0/" schemaLocation="./niem/xsd/utility/conformanceTargets.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/structures/5.0/" schemaLocation="./niem/xsd/utility/structures.xsd"/>
+	<!-- complexType Definitions, NIEM mapping ======================================================================== -->
+	<xs:complexType name="IowaExchangeType">
+		<xs:annotation>
+			<xs:documentation>A data type for a common ancestor containing exchange level data relevant to exchanges in Iowa.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="MessageAugmentationType">
+		<xs:annotation>
+			<xs:documentation>A data type for additional data message information in McLean.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="ia-ext:ActionCode" minOccurs="1" maxOccurs="1"/>
+					<xs:element ref="ia-ext:MessageKey" minOccurs="0" maxOccurs="1"/>
+					<xs:element ref="ia-ext:SystemIdentificationNumber" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- Augmentation Elements ======================================================================== -->
+	<xs:element name="MessageAugmentation" type="ia-ext:MessageAugmentationType" substitutionGroup="nc:MessageAugmentationPoint">
+		<xs:annotation>
+			<xs:documentation>Additional information about a message in the McLean.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- New Element definitions ======================================================================== -->
+	<xs:element name="IowaExchange" type="niem-xs:string">
+		<xs:annotation>
+			<xs:documentation>A root element defining the common ancestor level data relevant to exchanges in Iowa</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="ActionCode" type="niem-xs:string">
+		<xs:annotation>
+			<xs:documentation>A code identifying which action to perform with the message.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="MessageKey" type="niem-xs:string">
+		<xs:annotation>
+			<xs:documentation>A value to identify a database record that uniquely points to a message.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="SystemIdentificationNumber" type="niem-xs:string">
+		<xs:annotation>
+			<xs:documentation>A unique number assigned for each record in the Iowa System. This can be any record e.g. warrant, stolen vehicle, protective order.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="TransactionDetails" type="nc:MessageType">
+		<xs:annotation>
+			<xs:documentation>Details about a message Transaction.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+</xs:schema>

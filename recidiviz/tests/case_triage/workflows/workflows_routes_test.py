@@ -40,6 +40,9 @@ from recidiviz.case_triage.workflows.workflows_routes import (
 from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
     UsCoContactNoteRequestData,
 )
+from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
+    UsIaEarlyDischargeRequestData,
+)
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     JustificationReason,
     UsNdEarlyTerminationRequestData,
@@ -2139,8 +2142,187 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     # ------------------------------------------------------------------
-    # US_IA MCP callback route
+    # US_IA early discharge routes
     # ------------------------------------------------------------------
+
+    _IA_REQUEST_BODY = {
+        "personExternalId": "A123456",
+        "officerExternalId": "STAFF01",
+        "supervisorExternalId": "SUP99",
+        "chargeIds": ["CHG789"],
+        "region": "District 1",
+        "workUnit": "Unit A",
+        "narrative": "Released early per policy.",
+    }
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    def test_submit_early_discharge_form_enqueues_task(
+        self,
+        mock_task_manager: MagicMock,
+        mock_executor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov"
+        )
+        expected_payload = {**self._IA_REQUEST_BODY, "should_queue_task": False}
+        mock_executor.return_value.to_cloud_task_payload.return_value = expected_payload
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/submit_early_discharge_form",
+                headers={"Origin": "http://localhost:3000"},
+                json=self._IA_REQUEST_BODY,
+            )
+
+        mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertEqual(
+            mock_task_manager.return_value.create_task.call_args.kwargs["body"],
+            expected_payload,
+        )
+        mock_executor.return_value.execute.assert_not_called()
+        mock_executor.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.IN_PROGRESS
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    def test_submit_early_discharge_form_no_queue_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_executor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov"
+        )
+        body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/submit_early_discharge_form",
+                headers={"Origin": "http://localhost:3000"},
+                json=body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_executor.return_value.execute.assert_called_once()
+        # SUCCESS is a no-op in the tracker; route helper still calls it
+        mock_executor.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.SUCCESS
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    def test_submit_early_discharge_form_wrong_state_returns_400(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "po@nd.gov"
+        )
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/submit_early_discharge_form",
+                headers={"Origin": "http://localhost:3000"},
+                json=self._IA_REQUEST_BODY,
+            )
+
+        mock_executor.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    def test_submit_early_discharge_form_missing_field_returns_400(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov"
+        )
+        body = {
+            k: v
+            for k, v in self._IA_REQUEST_BODY.items()
+            if k != "supervisorExternalId"
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/submit_early_discharge_form",
+                headers={"Origin": "http://localhost:3000"},
+                json=body,
+            )
+
+        mock_executor.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    def test_handle_early_discharge_form_success(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov"
+        )
+        body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/handle_early_discharge_form",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=body,
+            )
+
+        expected_data = UsIaEarlyDischargeRequestData.model_validate(body)
+        mock_executor.assert_called_once_with(expected_data)
+        mock_executor.return_value.execute.assert_called_once()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    def test_handle_early_discharge_form_api_failure_returns_500(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov"
+        )
+        mock_executor.return_value.execute.side_effect = Exception("MCP unreachable")
+        body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/handle_early_discharge_form",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=body,
+            )
+
+        mock_executor.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     _IA_CALLBACK_MESSAGE_ID = "callback-msg-id-5678"
     _IA_NS_WS = "http://www.cjis.iowa.gov/WSResponse/1.0"
@@ -2200,6 +2382,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
         mock_firestore.return_value.set_document.assert_called()
         for mock_call in mock_firestore.return_value.set_document.call_args_list:
             _, doc, *_ = mock_call.args
@@ -2279,8 +2462,11 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_firestore.return_value.set_document.assert_called()
-        for mock_call in mock_firestore.return_value.set_document.call_args_list:
-            _, doc, *_ = mock_call.args
+
+        for (
+            set_document_call
+        ) in mock_firestore.return_value.set_document.call_args_list:
+            _, doc, *_ = set_document_call.args
             self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
             self.assertEqual(doc["errorMessage"], "ATG rejected: ineligible offense")
 

@@ -83,7 +83,9 @@ from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
 )
 from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
     McpCallbackData,
+    UsIaEarlyDischargeRequestData,
     UsIaEarlyDischargeStatusTracker,
+    UsIaEarlyDischargeWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     UsNdEarlyTerminationRequestData,
@@ -873,6 +875,45 @@ def create_workflows_api_blueprint() -> Blueprint:
             return jsonify_response(
                 "Route optimization failed", HTTPStatus.INTERNAL_SERVER_ERROR
             )
+
+    @workflows_api.post("/external_request/<state>/submit_early_discharge_form")
+    @requires_pydantic_schema(UsIaEarlyDischargeRequestData)
+    def submit_early_discharge_form(
+        state: str, parsed_request_body: UsIaEarlyDischargeRequestData
+    ) -> Response:
+        # Frontend entry point. Either runs the writeback synchronously or enqueues
+        # a Cloud Task that calls handle_early_discharge_form to do it asynchronously.
+        if state.upper() != StateCode.US_IA.value:
+            return jsonify_response(
+                f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
+            )
+
+        if parsed_request_body.should_queue_task:
+            return handle_writeback_enqueue(
+                writeback_executor=UsIaEarlyDischargeWritebackExecutor(
+                    parsed_request_body
+                ),
+                base_url=cloud_run_metadata.url,
+                handler_path="/workflows/external_request/US_IA/handle_early_discharge_form",
+            )
+        return handle_writeback(
+            writeback_executor=UsIaEarlyDischargeWritebackExecutor(parsed_request_body)
+        )
+
+    @workflows_api.post("/external_request/<state>/handle_early_discharge_form")
+    @requires_pydantic_schema(UsIaEarlyDischargeRequestData)
+    def handle_early_discharge_form(
+        state: str, parsed_request_body: UsIaEarlyDischargeRequestData
+    ) -> Response:
+        # Cloud Tasks target. Only called by the task queue, never directly by the frontend.
+        if state.upper() != StateCode.US_IA.value:
+            return jsonify_response(
+                f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
+            )
+
+        return handle_writeback(
+            writeback_executor=UsIaEarlyDischargeWritebackExecutor(parsed_request_body)
+        )
 
     @workflows_api.post("/webhook/mcp_us_ia_early_discharge_status")
     def handle_mcp_us_ia_early_discharge_callback() -> Response:

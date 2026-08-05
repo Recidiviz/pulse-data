@@ -14,27 +14,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""US_IA early discharge writeback — MCP callback handling.
+"""US_IA early discharge writeback implementation.
 
-Provides the data model for MCP's asynchronous callback (McpCallbackData)
-and the Firestore status tracker that records per-charge outcomes
-(UsIaEarlyDischargeStatusTracker).
-
-The callback endpoint receives ATG's accept/reject result after MCP forwards
-our discharge request. The full form-submission writeback
-(UsIaEarlyDischargeWritebackExecutor and the XML request builder) is
-implemented separately.
+Flow:
+  1. PO submits the early discharge form on the Recidiviz tool.
+  2. We POST the request as XML to MCP. MCP acknowledges receipt immediately;
+     the Firestore status is set to IN_PROGRESS.
+  3. MCP transfers the request to ATG (the OMS). ATG processes it and sends
+     a status message back to MCP.
+  4. MCP POSTs the ATG result to our callback endpoint, which calls
+     ``UsIaEarlyDischargeStatusTracker.apply_mcp_callback`` to write the
+     final SUCCESS or FAILURE status to Firestore.
 """
+import io
+import uuid
+import xml.etree.ElementTree as ET  # nosec B405 — used only to build/write XML, never to parse untrusted input (parsing uses defusedxml below)
 from datetime import datetime, timezone
-from typing import Self
+from typing import Self, TypeAlias
 
 from defusedxml.ElementTree import fromstring as _safe_fromstring
 from google.cloud.firestore_v1 import FieldFilter
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
-from recidiviz.case_triage.workflows.writeback.base import WritebackStatusTracker
+from recidiviz.case_triage.workflows.writeback.base import (
+    WritebackExecutorInterface,
+    WritebackRequestData,
+    WritebackStatusTracker,
+)
+from recidiviz.case_triage.workflows.writeback.transports.rest import (
+    RestTransport,
+    RestTransportConfig,
+    TokenHeaderAuth,
+)
+from recidiviz.common.http import HttpMethod
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
+from recidiviz.utils.environment import in_gcp_production
+from recidiviz.utils.secrets import get_secret
 
 # Firestore document ID for the early discharge opportunity status.
 EARLY_DISCHARGE_STATUS_DOC_ID = "usIaEarlyDischarge"
@@ -44,6 +60,229 @@ EARLY_DISCHARGE_STATUS_DOC_ID = "usIaEarlyDischarge"
 _NS_EXCHANGE_NOTIFICATION = "http://www.cjis.iowa.gov/exchange-notification/1.0"
 # Namespace for the payload fields (MessageId, TransactionStatus, etc.).
 _NS_WS_RESPONSE = "http://www.cjis.iowa.gov/WSResponse/1.0"
+
+# XML namespace URIs defined by the MCP/NIEM schema.
+_NS_NIEM_CORE = "http://release.niem.gov/niem/niem-core/5.0/"
+_NS_IA = "http://www.cjis.iowa.gov/WriteDoc/1.0"
+_NS_IA_EXT = "http://mcp.com/iowa/extension/v/1.0/"
+_NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
+_NS_J = "http://release.niem.gov/niem/domains/jxdm/7.2/"
+
+_SCHEMA_LOCATION = f"{_NS_IA} WriteDoc_Iowa.xsd"
+
+# Declarative XML tree node: (namespace_uri, local_tag, body). ``body`` is a
+# string for text leaves or a list of child nodes for containers.
+_XmlNode: TypeAlias = tuple[str, str, "str | list[_XmlNode]"]
+
+
+def _append_xml_children(parent: ET.Element, children: list[_XmlNode]) -> None:
+    """Recursively append a declarative _XmlNode tree under ``parent``."""
+    for ns, tag, body in children:
+        el = ET.SubElement(parent, f"{{{ns}}}{tag}")
+        if isinstance(body, str):
+            el.text = body
+        else:
+            _append_xml_children(el, body)
+
+
+# Confirmed with MCP and ATG that _MCP_ACTION_CODE should be set to "A" since
+# we are only adding new records in this flow. MessageKey and SystemIdentificationNumber are
+# optional (minOccurs="0") so leaving blank for now (until MCP/ATG lets me know otherwise).
+_MCP_ACTION_CODE = "A"
+_MCP_MESSAGE_KEY = ""
+_MCP_SYSTEM_ID = ""
+
+MCP_TRANSPORT_CONFIG = RestTransportConfig(
+    system_name="MCP",
+    url_secret="workflows_us_ia_early_discharge_url",  # nosec
+    credential_secret="workflows_us_ia_early_discharge_key",
+    test_url_secret="workflows_us_ia_early_discharge_test_url",
+    auth_strategy=TokenHeaderAuth("X-API-Key"),
+    http_method=HttpMethod.POST,
+    content_type="text/xml",
+)
+
+
+class UsIaEarlyDischargeRequestData(WritebackRequestData):
+    """Writeback request data for submitting an early discharge request in IA.
+
+    All fields are populated by the Recidiviz frontend from the early discharge
+    form and the person's case data.
+    """
+
+    # OffenderCd
+    person_external_id: str
+    # StaffId of the supervision officer submitting the request.
+    officer_external_id: str
+    # StaffId of the supervision officer's supervisor
+    supervisor_external_id: str
+    # List of charge ids submitted on the form
+    charge_ids: list[str]
+    # District (region) associated with the supervision case.
+    region: str
+    # Work unit associated with the supervision case.
+    work_unit: str
+    # Progress of Supervision/Restitution Status/Recommendations Narrative
+    # TODO(OBT-42080): Revise if narrative is confirmed to be optional on the IA early discharge form.
+    narrative: str
+
+    @field_validator(
+        "person_external_id",
+        "officer_external_id",
+        "supervisor_external_id",
+        "region",
+        "work_unit",
+        "narrative",
+    )
+    @classmethod
+    def validate_non_empty_str(cls, v: str) -> str:
+        if not v:
+            raise ValueError("Field must be non-empty.")
+        return v
+
+    @field_validator("charge_ids")
+    @classmethod
+    def validate_charge_ids(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("At least one charge ID must be specified.")
+        return v
+
+
+class McpEarlyDischargeXmlRequest(BaseModel):
+    """Models the XML request POSTed to MCP."""
+
+    model_config = ConfigDict(frozen=True)
+
+    # Offender code (SubjectCorrectionsIdentification).
+    offender_id: str
+    # Supervision officer staff ID (CaseOfficial RoleOfPerson).
+    staff_manager_id: str
+    # Supervisor staff ID (SubjectSupervision SupervisionPerson).
+    staff_supervisor_id: str
+    # Charge IDs (one ChargeIdentification element per entry).
+    charge_identification: list[str]
+    # Region name (JudicialOfficialFirm LocationLocale).
+    case_region: str
+    # Work unit name (JudicialOfficialFirm OrganizationUnitName).
+    case_work_unit: str
+    # Narrative (CaseOfficialCaseStatusText).
+    # TODO(OBT-42080): Revise if narrative becomes optional on the IA early discharge form.
+    case_status_notes: str
+    # Unique message ID generated per submission.
+    message_id: str
+
+    @classmethod
+    def from_request_data(
+        cls,
+        request_data: UsIaEarlyDischargeRequestData,
+        *,
+        use_test_ids: bool,
+    ) -> "McpEarlyDischargeXmlRequest":
+        """Build the MCP request, substituting MCP sandbox IDs for Recidiviz test submissions in production."""
+        if use_test_ids:
+            # TODO(OBT-42944): confirm with MCP how we want to implement the logic for detecting
+            # a Recidiviz user in production
+            offender_id = get_secret("workflows_us_ia_test_offender_id")
+            staff_manager_id = get_secret("workflows_us_ia_test_staff_id")
+            if offender_id is None or staff_manager_id is None:
+                raise ValueError("Missing OffenderId and/or StaffId secret")
+        else:
+            offender_id = request_data.person_external_id
+            staff_manager_id = request_data.officer_external_id
+
+        return cls(
+            offender_id=offender_id,
+            staff_manager_id=staff_manager_id,
+            staff_supervisor_id=request_data.supervisor_external_id,
+            charge_identification=request_data.charge_ids,
+            case_region=request_data.region,
+            case_work_unit=request_data.work_unit,
+            case_status_notes=request_data.narrative,
+            message_id=str(uuid.uuid4()),
+        )
+
+    def _charge_node(self, charge_id: str) -> _XmlNode:
+        # One CaseCharge per charge ID. The XSD requires ChargeIdentification
+        # maxOccurs="1" inside ChargeType, so multiple charges must be separate
+        # CaseCharge elements (CaseAugmentation allows maxOccurs="unbounded").
+        # Each CaseCharge repeats the offender/supervisor IDs in its ChargeSubject.
+        # Short aliases (rebound to `_NS_*` constants) keep the nested tree
+        # compact enough for black to leave the shape intact.
+        core, j = _NS_NIEM_CORE, _NS_J
+        return (j, "CaseCharge", [
+            (j, "ChargeIdentification", [
+                (core, "IdentificationID", charge_id),
+            ]),
+            (j, "ChargeSubject", [
+                (j, "SubjectSupervision", [
+                    (core, "SupervisionPerson", [
+                        (core, "PersonHumanResourceIdentification", [
+                            (core, "IdentificationID", self.staff_supervisor_id),
+                        ]),
+                    ]),
+                ]),
+                (j, "SubjectCorrectionsIdentification", [
+                    (core, "IdentificationID", self.offender_id),
+                ]),
+            ]),
+        ])  # fmt: skip
+
+    def _case_official_node(self) -> _XmlNode:
+        core, j = _NS_NIEM_CORE, _NS_J
+        children: list[_XmlNode] = [
+            (core, "RoleOfPerson", [
+                (core, "PersonHumanResourceIdentification", [
+                    (core, "IdentificationID", self.staff_manager_id),
+                ]),
+            ]),
+            (j, "JudicialOfficialFirm", [
+                (core, "OrganizationLocation", [
+                    (core, "LocationLocale", [
+                        (core, "LocaleDistrictName", self.case_region),
+                    ]),
+                ]),
+                (core, "OrganizationUnitName", self.case_work_unit),
+            ]),
+            (j, "CaseOfficialCaseStatusText", self.case_status_notes),
+        ]  # fmt: skip
+        return (j, "CaseOfficial", children)
+
+    def to_xml(self) -> str:
+        """Serialize the request to a NIEM-conformant XML string."""
+        # Register prefixes for readable output (``<j:CaseCharge>`` vs ``ns0:``).
+        # Scoped here rather than at import so unrelated imports don't mutate
+        # ElementTree's global namespace map.
+        ET.register_namespace("", _NS_NIEM_CORE)
+        ET.register_namespace("ia", _NS_IA)
+        ET.register_namespace("ia-ext", _NS_IA_EXT)
+        ET.register_namespace("xsi", _NS_XSI)
+        ET.register_namespace("j", _NS_J)
+
+        core, ia_ext, j = _NS_NIEM_CORE, _NS_IA_EXT, _NS_J
+        body: list[_XmlNode] = [
+            (core, "Case", [
+                (j, "CaseAugmentation", [
+                    *(self._charge_node(cid) for cid in self.charge_identification),
+                    self._case_official_node(),
+                ]),
+            ]),
+            (ia_ext, "TransactionDetails", [
+                (core, "MessageID", self.message_id),
+                (ia_ext, "MessageAugmentation", [
+                    (ia_ext, "ActionCode", _MCP_ACTION_CODE),
+                    (ia_ext, "MessageKey", _MCP_MESSAGE_KEY),
+                    (ia_ext, "SystemIdentificationNumber", _MCP_SYSTEM_ID),
+                ]),
+            ]),
+        ]  # fmt: skip
+
+        root = ET.Element(f"{{{_NS_IA}}}WriteDocExchange")
+        root.set(f"{{{_NS_XSI}}}schemaLocation", _SCHEMA_LOCATION)
+        _append_xml_children(root, body)
+
+        buf = io.BytesIO()
+        ET.ElementTree(root).write(buf, encoding="utf-8", xml_declaration=True)
+        return buf.getvalue().decode("utf-8")
 
 
 class McpCallbackData(BaseModel):
@@ -154,6 +393,17 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
             firestore_client=firestore_client,
         )
 
+    def record_pending_message_id(self, message_id: str) -> None:
+        """Store the message ID in clientOpportunityUpdates ."""
+        for path in self.firestore_paths:
+            self.firestore_client.set_document(
+                path,
+                {
+                    "earlyDischargeMessageId": message_id,
+                },
+                merge=True,
+            )
+
     def set_status(self, status: ExternalSystemRequestStatus) -> None:
         if status is ExternalSystemRequestStatus.SUCCESS:
             # SUCCESS is only written via apply_mcp_callback once ATG confirms.
@@ -187,3 +437,52 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
                 update,
                 merge=True,
             )
+
+
+class UsIaEarlyDischargeWritebackExecutor(
+    WritebackExecutorInterface[UsIaEarlyDischargeRequestData]
+):
+    """Writeback implementation for IA early discharge requests.
+
+    POSTs the NIEM XML to MCP. A 200 response confirms MCP received the
+    request; the final outcome arrives asynchronously via the MCP callback
+    and must be handled by a separate endpoint.
+    """
+
+    def __init__(self, request: UsIaEarlyDischargeRequestData) -> None:
+        super().__init__(request)
+        firestore_paths = [
+            f"clientUpdatesV2/us_ia_{request.person_external_id}"
+            f"/clientOpportunityUpdates/usIaEarlyDischarge_{charge_id}"
+            for charge_id in request.charge_ids
+        ]
+        self._tracker = UsIaEarlyDischargeStatusTracker(
+            firestore_paths=firestore_paths,
+            firestore_client=FirestoreClientImpl(),
+        )
+
+    def execute(self) -> None:
+        # TODO(OBT-42944): confirm with MCP how we want to implement the logic for detecting
+        # a Recidiviz user in production.  Currently defaulting to officer_external_id == "RECIDIVIZ".
+        use_test_ids = (
+            in_gcp_production() and self.request.officer_external_id == "RECIDIVIZ"
+        )
+        transport = RestTransport(
+            MCP_TRANSPORT_CONFIG,
+            # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
+            use_test_url=use_test_ids,
+        )
+
+        mcp_request = McpEarlyDischargeXmlRequest.from_request_data(
+            self.request,
+            use_test_ids=use_test_ids,
+        )
+        self._tracker.record_pending_message_id(mcp_request.message_id)
+        transport.send(body=mcp_request.to_xml())
+
+    def create_status_tracker(self) -> UsIaEarlyDischargeStatusTracker:
+        return self._tracker
+
+    @property
+    def operation_action_description(self) -> str:
+        return "Submitting early discharge request to MCP"

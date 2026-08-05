@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:nc="http://release.niem.gov/niem/niem-core/5.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:structures="http://release.niem.gov/niem/structures/5.0/" xmlns:ct="http://release.niem.gov/niem/conformanceTargets/3.0/" xmlns:appinfo="http://release.niem.gov/niem/appinfo/5.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:niem-xs="http://release.niem.gov/niem/proxy/niem-xs/5.0/" targetNamespace="http://release.niem.gov/niem/niem-core/5.0/" version="1" xml:lang="en-US" xsi:schemaLocation="http://release.niem.gov/niem/appinfo/5.0/ utility/appinfo.xsd http://release.niem.gov/niem/conformanceTargets/3.0/ utility/conformanceTargets.xsd" ct:conformanceTargets="http://reference.niem.gov/niem/specification/naming-and-design-rules/5.0/#ReferenceSchemaDocument">
+	<xs:annotation>
+		<xs:documentation>NIEM Core.</xs:documentation>
+		<xs:appinfo>
+			<appinfo:LocalTerm term="2D" literal="Two-dimensional"/>
+			<appinfo:LocalTerm term="3D" literal="Three-dimensional"/>
+			<appinfo:LocalTerm term="Alpha2" definition="Two-letter"/>
+			<appinfo:LocalTerm term="Alpha3" definition="Three-letter"/>
+			<appinfo:LocalTerm term="CMV" literal="Commercial Motor Vehicle"/>
+			<appinfo:LocalTerm term="DEA" literal="Drug Enforcement Administration"/>
+			<appinfo:LocalTerm term="ESN" literal="electronic serial number"/>
+			<appinfo:LocalTerm term="FATCA" literal="Foreign Account Tax Compliance Act"/>
+			<appinfo:LocalTerm term="FIPS" literal="Federal Information Processing Standards"/>
+			<appinfo:LocalTerm term="GENC" literal="Geopolitical Entities, Names, and Codes"/>
+			<appinfo:LocalTerm term="GSM" literal="Global System for Mobile communication"/>
+			<appinfo:LocalTerm term="IMEI" literal="International Mobile Equipment Identity"/>
+			<appinfo:LocalTerm term="IPv4" literal="Internet Protocol version 4"/>
+			<appinfo:LocalTerm term="IPv6" literal="Internet Protocol version 6"/>
+			<appinfo:LocalTerm term="ISO" literal="International Organization for Standardization"/>
+			<appinfo:LocalTerm term="ISO3166" definition="ISO 3166 is a standard published by the International Organization for Standardization (ISO) that defines codes for the names of countries, dependent territories, special areas of geographical interest, and their principal subdivisions (e.g., provinces or states). The official name of the standard is Codes for the representation of names of countries and their subdivisions."/>
+			<appinfo:LocalTerm term="ISSN" literal="International Standard Serial Number"/>
+			<appinfo:LocalTerm term="MAC" literal="media access control address"/>
+			<appinfo:LocalTerm term="MIME" literal="Multipurpose Internet Mail Extensions"/>
+			<appinfo:LocalTerm term="MSRP" literal="Manufacturer's suggested retail price"/>
+			<appinfo:LocalTerm term="NANP" literal="North American Numbering Plan"/>
+			<appinfo:LocalTerm term="Postdirectional" definition="A word following a street name that indicates the directional taken by the thoroughfare from an arbitrary starting point or line, or the sector where it is located."/>
+			<appinfo:LocalTerm term="Predirectional" definition="A word preceding a street name that indicates the directional taken by the thoroughfare from an arbitrary starting point or line, or the sector where it is located."/>
+			<appinfo:LocalTerm term="RFID" literal="Radio-frequency identification"/>
+			<appinfo:LocalTerm term="RH" definition="Rhesus (Rh) factor is an inherited protein found on the surface of red blood cells."/>
+			<appinfo:LocalTerm term="SSN" literal="Social Security Number"/>
+			<appinfo:LocalTerm term="TCP" literal="Transmission Control Protocol"/>
+			<appinfo:LocalTerm term="UMTS" literal="Universal Mobile Telecommunications Service"/>
+			<appinfo:LocalTerm term="UTC" literal="Coordinated Universal Time"/>
+			<appinfo:LocalTerm term="UTM" literal="Universal Transverse Mercator"/>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:import namespace="http://release.niem.gov/niem/proxy/niem-xs/5.0/" schemaLocation="adapters/niem-xs.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/structures/5.0/" schemaLocation="utility/structures.xsd"/>
+	<xs:complexType name="ActivityType">
+		<xs:annotation>
+			<xs:documentation>A data type for a single or set of related actions, events, or process steps.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="CaseType">
+		<xs:annotation>
+			<xs:documentation>A data type for an aggregation of information about a set of related activities and events.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="nc:ActivityType">
+				<xs:sequence>
+					<xs:element ref="nc:CaseAugmentationPoint" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="IdentificationType">
+		<xs:annotation>
+			<xs:documentation>A data type for a representation of an identity.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:IdentificationID" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="LocaleType">
+		<xs:annotation>
+			<xs:documentation>A data type for a geopolitical area.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:LocaleDistrictName" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="LocationType">
+		<xs:annotation>
+			<xs:documentation>A data type for geospatial location.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:LocationLocale" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="MessageType">
+		<xs:annotation>
+			<xs:documentation>A data type for an electronic form of communication that can be exchanged asynchronously.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:MessageID" minOccurs="1" maxOccurs="1"/>
+					<xs:element ref="nc:MessageAugmentationPoint" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="OrganizationType">
+		<xs:annotation>
+			<xs:documentation>A data type for a body of people organized for a particular purpose.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:OrganizationLocation" minOccurs="0" maxOccurs="1"/>
+					<xs:element ref="nc:OrganizationUnitName" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="PersonType">
+		<xs:annotation>
+			<xs:documentation>A data type for a human being.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="structures:ObjectType">
+				<xs:sequence>
+					<xs:element ref="nc:PersonHumanResourceIdentification" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="SupervisionType">
+		<xs:annotation>
+			<xs:documentation>A data type for an act of officially overseeing, supervising, or keeping track in some capacity of a person.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="nc:ActivityType">
+				<xs:sequence>
+					<xs:element ref="nc:SupervisionPerson" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="TextType">
+		<xs:annotation>
+			<xs:documentation>A data type for a character string.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="niem-xs:string"/>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:element name="Case" type="nc:CaseType">
+		<xs:annotation>
+			<xs:documentation>An aggregation of information about a set of related activities and events.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="CaseAugmentationPoint" abstract="true">
+		<xs:annotation>
+			<xs:documentation>An augmentation point for CaseType.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="IdentificationID" type="niem-xs:string" nillable="true">
+		<xs:annotation>
+			<xs:documentation>An identifier.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="LocaleDistrictName" type="nc:TextType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A name given to an area defined for administrative or official purposes.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="LocationLocale" type="nc:LocaleType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A geopolitical area.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="MessageAugmentationPoint" abstract="true">
+		<xs:annotation>
+			<xs:documentation>An augmentation point for MessageType.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="MessageID" type="niem-xs:string" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A message identifier associated with an email or message content.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="OrganizationLocation" type="nc:LocationType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A location of an organization.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="OrganizationUnitName" type="nc:TextType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A name of a high-level division of an organization.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="PersonHumanResourceIdentification" type="nc:IdentificationType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A human resources or employment identification assigned to a person.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="RoleOfAbstract" abstract="true">
+		<xs:annotation>
+			<xs:documentation>A data concept for a property of a role object. This specifies the base object, of which the role object is a function.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="RoleOfPerson" type="nc:PersonType" substitutionGroup="nc:RoleOfAbstract" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A person of whom the role object is a function.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="SupervisionPerson" type="nc:PersonType" nillable="true">
+		<xs:annotation>
+			<xs:documentation>A person who is being supervised.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+</xs:schema>

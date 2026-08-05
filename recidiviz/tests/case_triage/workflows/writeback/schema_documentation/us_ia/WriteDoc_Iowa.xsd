@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2014 rel. 2 sp1 (x64) (http://www.altova.com) (URL Integration, Inc.) -->
+<xs:schema xmlns:structures="http://release.niem.gov/niem/structures/5.0/" xmlns:nc="http://release.niem.gov/niem/niem-core/5.0/" xmlns:niem-xs="http://release.niem.gov/niem/proxy/niem-xs/5.0/" xmlns:j="http://release.niem.gov/niem/domains/jxdm/7.2/" xmlns:appinfo="http://release.niem.gov/niem/appinfo/5.0/" xmlns:cls="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-instance/" xmlns:clsa="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-schema-appinfo/" xmlns:ct="http://release.niem.gov/niem/conformanceTargets/3.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ia="http://www.cjis.iowa.gov/WriteDoc/1.0" xmlns:ia-ext="http://mcp.com/iowa/extension/v/1.0/" targetNamespace="http://www.cjis.iowa.gov/WriteDoc/1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1" xml:lang="en-US" ct:conformanceTargets="http://reference.niem.gov/niem/specification/naming-and-design-rules/5.0/#ReferenceSchemaDocument">
+	<!-- NIEM schema imports -->
+	<xs:import namespace="http://release.niem.gov/niem/niem-core/5.0/" schemaLocation="./niem/xsd/niem-core.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/proxy/niem-xs/5.0/" schemaLocation="./niem/xsd/adapters/niem-xs.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/domains/jxdm/7.2/" schemaLocation="./niem/xsd/domains/jxdm.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/appinfo/5.0/" schemaLocation="./niem/xsd/utility/appinfo.xsd"/>
+	<xs:import namespace="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-instance/" schemaLocation="./niem/xsd/utility/code-lists-instance.xsd"/>
+	<xs:import namespace="http://reference.niem.gov/niem/specification/code-lists/5.0/code-lists-schema-appinfo/" schemaLocation="./niem/xsd/utility/code-lists-schema-appinfo.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/conformanceTargets/3.0/" schemaLocation="./niem/xsd/utility/conformanceTargets.xsd"/>
+	<xs:import namespace="http://release.niem.gov/niem/structures/5.0/" schemaLocation="./niem/xsd/utility/structures.xsd"/>
+	<!-- Extension schema imports -->
+	<xs:import namespace="http://mcp.com/iowa/extension/v/1.0/" schemaLocation="./WriteDoc_Iowa_Ext.xsd"/>
+	<!-- complexType Definitions -->
+	<xs:complexType name="WriteDocExchangeType">
+		<xs:annotation>
+			<xs:documentation>A data type containing the data for an Attorney General Protrdction Order that are being exchanged betwen agencies in Iowa.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="ia-ext:IowaExchangeType">
+				<xs:sequence>
+					<xs:element ref="nc:Case" minOccurs="1" maxOccurs="1"/>
+					<xs:element ref="ia-ext:TransactionDetails" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- Element definitions -->
+	<xs:element name="WriteDocExchange" type="ia:WriteDocExchangeType">
+		<xs:annotation>
+			<xs:documentation>A message payload describing an exchange for a Write Doc in Iowa.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+</xs:schema>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<w:WantList w:release="5.2" w:product="NIEM" w:nillableDefault="true"
+  xmlns:nc="http://release.niem.gov/niem/niem-core/5.0/"
+  xmlns:w="http://niem.gov/niem/wantlist/2.2" xmlns:j="http://release.niem.gov/niem/domains/jxdm/7.2/">
+  <w:Element w:name="j:CaseAugmentation" w:isReference="false" w:nillable="false"/>
+  <w:Element w:name="nc:Case" w:isReference="false" w:nillable="false"/>
+  <w:Type w:name="j:CaseAugmentationType" w:isRequested="false">
+    <w:ElementInType w:name="j:CaseCharge" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="unbounded"/>
+    <w:ElementInType w:name="j:CaseOfficial" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="j:CaseOfficialType" w:isRequested="false">
+    <w:ElementInType w:name="j:CaseOfficialCaseStatusText"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="j:ChargeType" w:isRequested="false">
+    <w:ElementInType w:name="j:ChargeIdentification"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+    <w:ElementInType w:name="j:ChargeSubject" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="j:JudicialOfficialType" w:isRequested="false">
+    <w:ElementInType w:name="nc:RoleOfPerson" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="1"/>
+    <w:ElementInType w:name="j:JudicialOfficialFirm"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="j:SubjectType" w:isRequested="false">
+    <w:ElementInType w:name="j:SubjectSupervision" w:isReference="false"
+      w:minOccurs="0" w:maxOccurs="1"/>
+    <w:ElementInType w:name="j:SubjectCorrectionsIdentification"
+      w:isReference="false" w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:ActivityType" w:isRequested="false">
+  </w:Type>
+  <w:Type w:name="nc:CaseType" w:isRequested="false">
+    <w:ElementInType w:name="nc:CaseAugmentationPoint"
+      w:isReference="false" w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:IdentificationType" w:isRequested="false">
+    <w:ElementInType w:name="nc:IdentificationID" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:LocaleType" w:isRequested="false">
+    <w:ElementInType w:name="nc:LocaleDistrictName"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:LocationType" w:isRequested="false">
+    <w:ElementInType w:name="nc:LocationLocale" w:isReference="false"
+      w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:MessageType" w:isRequested="true">
+    <w:ElementInType w:name="nc:MessageID" w:isReference="false"
+      w:minOccurs="1" w:maxOccurs="1"/>
+    <w:ElementInType w:name="nc:MessageAugmentationPoint"
+      w:isReference="false" w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:OrganizationType" w:isRequested="false">
+    <w:ElementInType w:name="nc:OrganizationLocation"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+    <w:ElementInType w:name="nc:OrganizationUnitName"
+      w:isReference="false" w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:PersonType" w:isRequested="false">
+    <w:ElementInType w:name="nc:PersonHumanResourceIdentification"
+      w:isReference="false" w:minOccurs="1" w:maxOccurs="1"/>
+  </w:Type>
+  <w:Type w:name="nc:SupervisionType" w:isRequested="false">
+    <w:ElementInType w:name="nc:SupervisionPerson" w:isReference="false"
+      w:minOccurs="0" w:maxOccurs="1"/>
+  </w:Type>
+</w:WantList>

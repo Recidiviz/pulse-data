@@ -14,26 +14,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the US_IA early discharge MCP callback handling."""
+"""Tests for the US_IA early discharge writeback."""
+import os
+import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 from typing import Generator
 from unittest import TestCase
 
 import pytest
+import requests
+import responses
 from flask import Flask
-from mock import MagicMock
+from mock import MagicMock, patch
+from pydantic import ValidationError
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
+    _MCP_ACTION_CODE,
+    _MCP_MESSAGE_KEY,
+    _MCP_SYSTEM_ID,
     _NS_EXCHANGE_NOTIFICATION,
+    _NS_IA,
+    _NS_IA_EXT,
+    _NS_J,
+    _NS_NIEM_CORE,
     _NS_WS_RESPONSE,
     EARLY_DISCHARGE_STATUS_DOC_ID,
     McpCallbackData,
+    McpEarlyDischargeXmlRequest,
+    UsIaEarlyDischargeRequestData,
     UsIaEarlyDischargeStatusTracker,
+    UsIaEarlyDischargeWritebackExecutor,
 )
 
 PERSON_EXTERNAL_ID = "A123456"
+STAFF_ID = "STAFF01"
+STAFF_SUPERVISOR_ID = "SUP99"
 CHARGE_IDENTIFICATION = ["CHG789", "CHG790"]
+CASE_REGION = "District 1"
+CASE_WORK_UNIT = "Unit A"
 _TEST_MESSAGE_ID = "test-message-id-1234"
 
 
@@ -65,11 +85,272 @@ def _make_callback_xml(
     )
 
 
+MODULE = "recidiviz.case_triage.workflows.writeback.us_ia_early_discharge"
+TRANSPORT_MODULE = "recidiviz.case_triage.workflows.writeback.transports.rest"
+
+
+def _make_request_data(**overrides: object) -> UsIaEarlyDischargeRequestData:
+    return UsIaEarlyDischargeRequestData(
+        **{  # type: ignore[arg-type]
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "officer_external_id": STAFF_ID,
+            "supervisor_external_id": STAFF_SUPERVISOR_ID,
+            "charge_ids": CHARGE_IDENTIFICATION,
+            "region": CASE_REGION,
+            "work_unit": CASE_WORK_UNIT,
+            "narrative": "Released early per policy.",
+            **overrides,
+        }
+    )
+
+
 @pytest.fixture(autouse=True)
 def app_context() -> Generator[None, None, None]:
     test_app = Flask("test_us_ia_writeback")
     with test_app.app_context():
         yield
+
+
+# ---------------------------------------------------------------------------
+# UsIaEarlyDischargeRequestData
+# ---------------------------------------------------------------------------
+
+
+class TestUsIaEarlyDischargeRequestData(TestCase):
+    """Tests model validation for UsIaEarlyDischargeRequestData."""
+
+    def test_valid_camel_case(self) -> None:
+        data = UsIaEarlyDischargeRequestData.model_validate(
+            {
+                "personExternalId": PERSON_EXTERNAL_ID,
+                "officerExternalId": STAFF_ID,
+                "supervisorExternalId": STAFF_SUPERVISOR_ID,
+                "chargeIds": CHARGE_IDENTIFICATION,
+                "region": CASE_REGION,
+                "workUnit": CASE_WORK_UNIT,
+                "narrative": "Released early per policy.",
+            }
+        )
+        self.assertEqual(data.person_external_id, PERSON_EXTERNAL_ID)
+        self.assertEqual(data.supervisor_external_id, STAFF_SUPERVISOR_ID)
+
+    def test_valid_snake_case(self) -> None:
+        data = UsIaEarlyDischargeRequestData.model_validate(
+            {
+                "person_external_id": PERSON_EXTERNAL_ID,
+                "officer_external_id": STAFF_ID,
+                "supervisor_external_id": STAFF_SUPERVISOR_ID,
+                "charge_ids": CHARGE_IDENTIFICATION,
+                "region": CASE_REGION,
+                "work_unit": CASE_WORK_UNIT,
+                "narrative": "Released early per policy.",
+            }
+        )
+        self.assertEqual(data.charge_ids, CHARGE_IDENTIFICATION)
+
+    def test_narrative(self) -> None:
+        data = _make_request_data(narrative="Released early per policy.")
+        self.assertEqual(data.narrative, "Released early per policy.")
+
+    def test_missing_required_field_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsIaEarlyDischargeRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "staffId": STAFF_ID,
+                    # missing staffSupervisorId and others
+                }
+            )
+
+    def test_empty_string_fields_raise(self) -> None:
+        for field in (
+            "person_external_id",
+            "officer_external_id",
+            "supervisor_external_id",
+            "region",
+            "work_unit",
+            "narrative",
+        ):
+            with self.subTest(field=field):
+                with self.assertRaises(ValidationError):
+                    _make_request_data(**{field: ""})
+
+    def test_empty_charge_ids_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            _make_request_data(charge_ids=[])
+
+    def test_should_queue_task_defaults_true(self) -> None:
+        data = _make_request_data()
+        self.assertTrue(data.should_queue_task)
+
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_to_cloud_task_payload_sets_should_queue_false(
+        self, _mock_firestore: MagicMock
+    ) -> None:
+        executor = UsIaEarlyDischargeWritebackExecutor(_make_request_data())
+        payload = executor.to_cloud_task_payload()
+        self.assertFalse(payload["should_queue_task"])
+        self.assertEqual(payload["person_external_id"], PERSON_EXTERNAL_ID)
+
+
+# ---------------------------------------------------------------------------
+# McpEarlyDischargeXmlRequest
+# ---------------------------------------------------------------------------
+
+
+class TestMcpEarlyDischargeXmlRequest(TestCase):
+    """Tests XML serialization for McpEarlyDischargeXmlRequest."""
+
+    def _build_and_parse(self, **overrides: object) -> ET.Element:
+        request_data = _make_request_data(**overrides)
+        xml_request = McpEarlyDischargeXmlRequest.from_request_data(
+            request_data, use_test_ids=False
+        )
+        xml_str = xml_request.to_xml()
+        return ET.fromstring(xml_str)
+
+    def _find(self, root: ET.Element, ns: str, tag: str) -> ET.Element | None:
+        return root.find(f".//{{{ns}}}{tag}")
+
+    def test_root_element_is_write_doc_exchange(self) -> None:
+        root = self._build_and_parse()
+        self.assertEqual(root.tag, f"{{{_NS_IA}}}WriteDocExchange")
+
+    def test_offender_id_in_corrections_identification(self) -> None:
+        root = self._build_and_parse()
+        corrections_id = root.find(
+            f".//{{{_NS_J}}}SubjectCorrectionsIdentification"
+            f"/{{{_NS_NIEM_CORE}}}IdentificationID"
+        )
+        self.assertIsNotNone(corrections_id)
+        self.assertEqual(corrections_id.text, PERSON_EXTERNAL_ID)  # type: ignore[union-attr]
+
+    def test_supervisor_id_in_supervision_person(self) -> None:
+        root = self._build_and_parse()
+        supervisor_id = root.find(
+            f".//{{{_NS_J}}}SubjectSupervision"
+            f"/{{{_NS_NIEM_CORE}}}SupervisionPerson"
+            f"/{{{_NS_NIEM_CORE}}}PersonHumanResourceIdentification"
+            f"/{{{_NS_NIEM_CORE}}}IdentificationID"
+        )
+        self.assertIsNotNone(supervisor_id)
+        self.assertEqual(supervisor_id.text, STAFF_SUPERVISOR_ID)  # type: ignore[union-attr]
+
+    def test_staff_manager_id_in_case_official(self) -> None:
+        root = self._build_and_parse()
+        manager_id = root.find(
+            f".//{{{_NS_J}}}CaseOfficial"
+            f"/{{{_NS_NIEM_CORE}}}RoleOfPerson"
+            f"/{{{_NS_NIEM_CORE}}}PersonHumanResourceIdentification"
+            f"/{{{_NS_NIEM_CORE}}}IdentificationID"
+        )
+        self.assertIsNotNone(manager_id)
+        self.assertEqual(manager_id.text, STAFF_ID)  # type: ignore[union-attr]
+
+    def test_charge_identification(self) -> None:
+        root = self._build_and_parse()
+        charge_id_els = root.findall(
+            f".//{{{_NS_J}}}ChargeIdentification"
+            f"/{{{_NS_NIEM_CORE}}}IdentificationID"
+        )
+        self.assertEqual([el.text for el in charge_id_els], CHARGE_IDENTIFICATION)
+
+    def test_case_region_and_work_unit(self) -> None:
+        root = self._build_and_parse()
+        district = root.find(f".//{{{_NS_NIEM_CORE}}}LocaleDistrictName")
+        unit = root.find(f".//{{{_NS_NIEM_CORE}}}OrganizationUnitName")
+        self.assertIsNotNone(district)
+        self.assertEqual(district.text, CASE_REGION)  # type: ignore[union-attr]
+        self.assertIsNotNone(unit)
+        self.assertEqual(unit.text, CASE_WORK_UNIT)  # type: ignore[union-attr]
+
+    def test_narrative_present_when_provided(self) -> None:
+        root = self._build_and_parse(narrative="Good behavior noted.")
+        status_text = root.find(f".//{{{_NS_J}}}CaseOfficialCaseStatusText")
+        self.assertIsNotNone(status_text)
+        self.assertEqual(status_text.text, "Good behavior noted.")  # type: ignore[union-attr]
+
+    def test_transaction_details_constants(self) -> None:
+        root = self._build_and_parse()
+        action_code = root.find(f".//{{{_NS_IA_EXT}}}ActionCode")
+        message_key = root.find(f".//{{{_NS_IA_EXT}}}MessageKey")
+        system_id = root.find(f".//{{{_NS_IA_EXT}}}SystemIdentificationNumber")
+        self.assertIsNotNone(action_code)
+        self.assertEqual(action_code.text, _MCP_ACTION_CODE)  # type: ignore[union-attr]
+        self.assertIsNotNone(message_key)
+        # ET returns None for empty elements after round-trip, normalize to ""
+        self.assertEqual(message_key.text or "", _MCP_MESSAGE_KEY)  # type: ignore[union-attr]
+        self.assertIsNotNone(system_id)
+        self.assertEqual(system_id.text or "", _MCP_SYSTEM_ID)  # type: ignore[union-attr]
+
+    def test_message_id_is_unique_per_call(self) -> None:
+        request_data = _make_request_data()
+        req_a = McpEarlyDischargeXmlRequest.from_request_data(
+            request_data, use_test_ids=False
+        )
+        req_b = McpEarlyDischargeXmlRequest.from_request_data(
+            request_data, use_test_ids=False
+        )
+        self.assertNotEqual(req_a.message_id, req_b.message_id)
+
+    def test_xml_declaration_present(self) -> None:
+        request_data = _make_request_data()
+        xml_str = McpEarlyDischargeXmlRequest.from_request_data(
+            request_data, use_test_ids=False
+        ).to_xml()
+        self.assertTrue(xml_str.startswith("<?xml"))
+
+    @patch(f"{MODULE}.get_secret")
+    def test_use_test_ids_substitutes_secrets(self, mock_get_secret: MagicMock) -> None:
+        mock_get_secret.side_effect = {
+            "workflows_us_ia_test_offender_id": "TEST_OFFENDER",
+            "workflows_us_ia_test_staff_id": "TEST_STAFF",
+        }.get
+
+        request_data = _make_request_data()
+        xml_request = McpEarlyDischargeXmlRequest.from_request_data(
+            request_data, use_test_ids=True
+        )
+        self.assertEqual(xml_request.offender_id, "TEST_OFFENDER")
+        self.assertEqual(xml_request.staff_manager_id, "TEST_STAFF")
+
+    @patch(f"{MODULE}.get_secret")
+    def test_use_test_ids_missing_secrets_raises(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = None
+        with self.assertRaises(ValueError):
+            McpEarlyDischargeXmlRequest.from_request_data(
+                _make_request_data(), use_test_ids=True
+            )
+
+    # XSD files from the CJIS_WriteDoc_SSP package provided by MCP, stored in
+    # schema_documentation/us_ia/ (not committed to git).
+    _WRITE_DOC_XSD = "recidiviz/tests/case_triage/workflows/writeback/schema_documentation/us_ia/WriteDoc_Iowa.xsd"
+
+    @pytest.mark.skipif(
+        not shutil.which("xmllint")
+        or not os.path.exists(
+            "recidiviz/tests/case_triage/workflows/writeback/schema_documentation/us_ia/WriteDoc_Iowa_Ext.xsd"
+        ),
+        reason="xmllint not installed or full MCP SSP package not present",
+    )
+    def test_xml_validates_against_mcp_schema(self) -> None:
+        xml_str = McpEarlyDischargeXmlRequest.from_request_data(
+            _make_request_data(charge_ids=["CHG001", "CHG002"]),
+            use_test_ids=False,
+        ).to_xml()
+        result = subprocess.run(
+            ["xmllint", "--noout", "--schema", self._WRITE_DOC_XSD, "-"],
+            input=xml_str.encode("utf-8"),
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"Schema validation failed:\n{result.stderr.decode()}",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +404,130 @@ class TestMcpCallbackData(TestCase):
     def test_parse_invalid_xml_raises(self) -> None:
         with self.assertRaises(ET.ParseError):
             McpCallbackData.from_callback_xml("not xml at all")
+
+
+# ---------------------------------------------------------------------------
+# UsIaEarlyDischargeWritebackExecutor
+# ---------------------------------------------------------------------------
+
+
+class TestUsIaEarlyDischargeWritebackExecutor(TestCase):
+    """Tests for UsIaEarlyDischargeWritebackExecutor."""
+
+    def setUp(self) -> None:
+        self.fake_url = "http://fake-mcp.com"
+
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_posts_xml_to_mcp(
+        self, _mock_firestore: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.POST, self.fake_url, status=200)
+
+            UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+            self.assertEqual(len(rsps.calls), 1)
+            sent_body = rsps.calls[0].request.body
+            assert isinstance(sent_body, str)
+            self.assertIn(
+                f"<IdentificationID>{PERSON_EXTERNAL_ID}</IdentificationID>",
+                sent_body,
+            )
+
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_sends_text_xml_content_type(
+        self, _mock_firestore: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.POST, self.fake_url, status=200)
+
+            UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+            content_type = rsps.calls[0].request.headers.get("Content-Type", "")
+            self.assertEqual(content_type, "text/xml")
+
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_missing_secrets_raises(
+        self, _mock_firestore: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = None
+        with self.assertRaises(EnvironmentError):
+            UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_http_error_raises(
+        self, _mock_firestore: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.POST, self.fake_url, status=500)
+            with self.assertRaises(requests.exceptions.HTTPError):
+                UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_network_error_raises(
+        self, _mock_firestore: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.POST, self.fake_url, body=ConnectionRefusedError())
+            with self.assertRaises(ConnectionRefusedError):
+                UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    @patch(f"{MODULE}.in_gcp_production")
+    def test_execute_prod_recidiviz_user_uses_test_url(
+        self,
+        mock_in_prod: MagicMock,
+        _mock_firestore: MagicMock,
+        mock_transport_secret: MagicMock,
+        mock_module_secret: MagicMock,
+    ) -> None:
+        mock_in_prod.return_value = True
+        mock_transport_secret.return_value = self.fake_url
+        mock_module_secret.side_effect = {
+            "workflows_us_ia_test_offender_id": "TEST_OFFENDER",
+            "workflows_us_ia_test_staff_id": "TEST_STAFF",
+        }.get
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.POST, self.fake_url, status=200)
+            UsIaEarlyDischargeWritebackExecutor(
+                _make_request_data(officer_external_id="RECIDIVIZ")
+            ).execute()
+            mock_transport_secret.assert_any_call(
+                "workflows_us_ia_early_discharge_test_url"
+            )
+
+    @patch(
+        f"{MODULE}.uuid.uuid4",
+        return_value=MagicMock(hex="", __str__=lambda self: _TEST_MESSAGE_ID),
+    )
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_records_pending_message_id(
+        self,
+        mock_firestore_cls: MagicMock,
+        mock_get_secret: MagicMock,
+        _mock_uuid: MagicMock,
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock() as rsps:
+            rsps.add(responses.POST, self.fake_url, status=200)
+            UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
+
+        path = mock_firestore_cls.return_value.set_document.call_args.args[0]
+        self.assertTrue(path.startswith("clientUpdatesV2"))
+        doc = mock_firestore_cls.return_value.set_document.call_args.args[1]
+        self.assertEqual(doc["earlyDischargeMessageId"], _TEST_MESSAGE_ID)
 
 
 # ---------------------------------------------------------------------------
