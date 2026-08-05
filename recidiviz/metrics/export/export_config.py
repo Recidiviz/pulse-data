@@ -508,6 +508,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_JII_PRODUCTION,
         },
         publish_success_pubsub_message=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
 ]
 
