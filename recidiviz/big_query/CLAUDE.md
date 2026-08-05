@@ -948,6 +948,11 @@ for detailed usage examples.
    SUPERVISION) derived from the user's product-roster role type."`), rather
    than restating the column name.
 
+   **Don't restate basic conventions.** Describe what the view does, but there's no need
+   to mention mechanics or conventions that views typically follow. E.g. "Reads from the
+   materialized <x> table." is unnecessary since it's standard convention to read from
+   the materialized table when available (see #4 below).
+
 4. **Use `.table_for_query` when referencing other views** - This ensures you
    query the materialized table when available
 
