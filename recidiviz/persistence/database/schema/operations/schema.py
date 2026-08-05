@@ -44,6 +44,7 @@ from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
 from sqlalchemy.sql.sqltypes import Enum
 
 from recidiviz.common.constants.operations import enum_canonical_strings
+from recidiviz.persistence.database.column_types import UTCDateTime
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 direct_ingest_instance = Enum(
@@ -659,7 +660,7 @@ class LLMExtractorCollection(OperationsBase):
     output_schema_json = Column(Text, nullable=False)
 
     # Description of what extractors in this collection do.
-    description = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
 
     # Minimum ordinal confidence level for validated output. One of:
     # speculative, ambiguous, inferred, explicit, verbatim. Individual fields
@@ -669,7 +670,7 @@ class LLMExtractorCollection(OperationsBase):
     minimum_confidence_level = Column(String(255), nullable=True)
 
     # When this collection version was recorded.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractor(OperationsBase):
@@ -700,7 +701,7 @@ class LLMExtractor(OperationsBase):
     input_document_collection_name = Column(String(255), nullable=False)
 
     # When this extractor was first defined.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractorVersion(OperationsBase):
@@ -761,13 +762,13 @@ class LLMExtractorVersion(OperationsBase):
     model_config_version_id = Column(String(255), nullable=False)
 
     # If set, this version is skipped for new job creation.
-    invalidated_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+    invalidated_datetime_utc = Column(UTCDateTime, nullable=True)
 
     # Human-readable reason; nonnull iff invalidated_datetime_utc is nonnull.
     invalidation_reason = Column(Text, nullable=True)
 
     # When this version was added.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractorDocumentFilter(OperationsBase):
@@ -801,7 +802,7 @@ class LLMExtractorDocumentFilter(OperationsBase):
     document_metadata_filter_query_template = Column(Text, nullable=False)
 
     # When this filter was added.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractionEligibleDocumentMetadata(OperationsBase):
@@ -830,10 +831,10 @@ class LLMExtractionEligibleDocumentMetadata(OperationsBase):
     # The document's date (from document collection metadata). Used to order
     # oldest-first when processing order matter (e.g. when we can't fit all
     # pending documents in a single batch job).
-    document_update_datetime = Column(DateTime(timezone=True), nullable=False)
+    document_update_datetime = Column(UTCDateTime, nullable=False)
 
     # When this row was added.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractionEligibleDocument(OperationsBase):
@@ -879,7 +880,7 @@ class LLMExtractionEligibleDocument(OperationsBase):
     document_contents_id = Column(String(255), nullable=False)
 
     # When this row was added.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractionJob(OperationsBase):
@@ -938,10 +939,10 @@ class LLMExtractionJob(OperationsBase):
     extractor_version_id = Column(String(255), nullable=False)
 
     # When the job started (null if not yet started).
-    start_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+    start_datetime_utc = Column(UTCDateTime, nullable=True)
 
     # When the job was identified as completed.
-    completion_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+    completion_datetime_utc = Column(UTCDateTime, nullable=True)
 
     # SUCCESS, FAILURE, or PARTIAL_FAILURE. Nonnull iff completion_datetime_utc is set.
     result_type = Column(llm_extraction_job_result_type, nullable=True)
@@ -989,7 +990,7 @@ class LLMExtractionBatchJobMetadata(OperationsBase):
     gcs_output_uri = Column(String, nullable=True)
 
     # When this row was created.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
 
 
 class LLMExtractionJobDocument(OperationsBase):
@@ -1077,7 +1078,7 @@ class LLMExtractionJobDocument(OperationsBase):
     job_index = Column(Integer, nullable=False)
 
     # When the result was processed.
-    result_datetime_utc = Column(DateTime(timezone=True), nullable=True)
+    result_datetime_utc = Column(UTCDateTime, nullable=True)
 
     # SUCCESS, JOB_LEVEL_FAILURE, DOCUMENT_LEVEL_FAILURE_TRANSIENT,
     # DOCUMENT_LEVEL_FAILURE_PERMANENT, or DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED.
@@ -1144,7 +1145,7 @@ class LLMExtractionCapOverride(OperationsBase):
     override_document_count_cap = Column(Integer, nullable=False)
 
     # When this override expires.
-    expires_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    expires_datetime_utc = Column(UTCDateTime, nullable=False)
 
     # When this override was created.
-    row_creation_datetime_utc = Column(DateTime(timezone=True), nullable=False)
+    row_creation_datetime_utc = Column(UTCDateTime, nullable=False)
