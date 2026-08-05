@@ -113,6 +113,7 @@ class TestBuildLabelMaps(unittest.TestCase):
                     ]
                 ),
                 "ethnicity_id_name_map": None,
+                "months_at_facility_id_name_map": None,
                 "sentence_length_min_id_name_map": None,
                 "sentence_length_max_id_name_map": None,
                 "charge_county_id_name_map": None,
@@ -147,6 +148,7 @@ class TestBuildLabelMaps(unittest.TestCase):
             ),
             "race_id_name_map": None,
             "ethnicity_id_name_map": None,
+            "months_at_facility_id_name_map": None,
             "sentence_length_min_id_name_map": None,
             "sentence_length_max_id_name_map": None,
             "charge_county_id_name_map": None,
