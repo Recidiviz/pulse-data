@@ -81,6 +81,14 @@ class LLMExtractionEligibleDocumentQueryBuilder:
         # The root-entity WHERE narrows first; the QUALIFY then dedupes; the
         # document_limit ORDER BY/LIMIT runs last so the cap applies to deduped
         # rows.
+        # TODO(OBT-42801): The narrowing here all runs after both CTEs are fully
+        # materialized, so a bounded sandbox run still scans the whole collection.
+        # Push the root_entity_ids / document_limit narrowing earlier so a bounded
+        # run reads a bounded amount of data.
+        # TODO(OBT-42802): Avoid the three-way join here: store
+        # document_length_bytes on the metadata row to drop the document_contents
+        # join, and have the filter query read from latest_metadata directly so
+        # the filter and dedup compose into one scan instead of a separate join.
         query = f"""
 WITH eligible_documents AS (
 {fix_indent(filter_query, indent_level=4)}

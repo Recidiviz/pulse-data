@@ -16,6 +16,8 @@
 # =============================================================================
 """Turns an eligible-document query into a persisted extraction job."""
 
+import logging
+
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -84,6 +86,12 @@ class LLMExtractionJobGenerator:
             state_code=state_code, extractor_version_id=extractor_version_id
         )
         if open_job is not None:
+            logging.info(
+                "Resuming open job [%s] for state [%s], extractor version [%s].",
+                open_job.job_id,
+                state_code.value,
+                extractor_version_id,
+            )
             return open_job
 
         self.job_manager.record_eligible_documents(
@@ -99,8 +107,19 @@ class LLMExtractionJobGenerator:
             )
         )
         if not document_contents_ids:
+            logging.info(
+                "No eligible documents for state [%s], extractor version [%s].",
+                state_code.value,
+                extractor_version_id,
+            )
             return None
 
+        logging.info(
+            "Creating new job for state [%s], extractor version [%s] with [%d] eligible documents.",
+            state_code.value,
+            extractor_version_id,
+            len(document_contents_ids),
+        )
         return self.job_manager.create_job(
             state_code=state_code,
             extractor_version_id=extractor_version_id,
@@ -111,6 +130,7 @@ class LLMExtractionJobGenerator:
         """Returns the eligible documents produced by running the extractor's
         eligible-document query against BQ, one record per document_contents_id.
         """
+        logging.info("Querying eligible documents from BQ")
         query = self.eligible_documents_query_builder.build_query(
             project_id=self.bq_client.project_id
         )

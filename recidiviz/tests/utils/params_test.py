@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for utils/params.py."""
+import argparse
 import unittest
 
 import attr
@@ -139,6 +140,19 @@ class TestParams(unittest.TestCase):
             ValueError, r"expected a single '=' separating KEY and VALUE"
         ):
             params.parse_key_value_args(["note=a=b"])
+
+    def test_positive_int(self) -> None:
+        self.assertEqual(1, params.positive_int("1"))
+        self.assertEqual(14, params.positive_int("14"))
+        for bad in ("0", "-1"):
+            with self.assertRaises(argparse.ArgumentTypeError):
+                params.positive_int(bad)
+
+    def test_non_negative_int(self) -> None:
+        self.assertEqual(0, params.non_negative_int("0"))
+        self.assertEqual(5, params.non_negative_int("5"))
+        with self.assertRaises(argparse.ArgumentTypeError):
+            params.non_negative_int("-1")
 
     def test_opt_str_to_bool(self) -> None:
         @attr.define

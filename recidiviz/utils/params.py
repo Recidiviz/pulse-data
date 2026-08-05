@@ -148,6 +148,24 @@ def parse_key_value_args(key_value_args: list[str]) -> dict[str, str]:
     return parsed
 
 
+def positive_int(value: str) -> int:
+    """Returns |value| parsed as an int, rejecting anything below 1."""
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError(f"Expected a positive integer, got [{value}].")
+    return parsed
+
+
+def non_negative_int(value: str) -> int:
+    """Returns |value| parsed as an int, rejecting anything below 0."""
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError(
+            f"Expected a non-negative integer, got [{value}]."
+        )
+    return parsed
+
+
 def str_matches_regex_type(regex: str) -> Callable[[Any], str]:
     def matches_regex_str(value: Any) -> str:
         if not isinstance(value, str):

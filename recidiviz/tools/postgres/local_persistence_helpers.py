@@ -17,8 +17,9 @@
 """This module sets up a local postgres instance using SQLAlchemyDatabaseKey and SQLAlchemyEngineManager
 for use in scripts and testing."""
 
-
 import os
+from collections.abc import Generator
+from contextlib import contextmanager
 from typing import Dict, Optional
 
 from sqlalchemy.engine import URL, Engine
@@ -61,6 +62,10 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_sche
 from recidiviz.tools.postgres.local_postgres_helpers import (
     TEST_POSTGRES_USER_NAME,
     OnDiskPostgresLaunchResult,
+    start_on_disk_postgresql_database,
+    start_persistent_on_disk_postgresql_database,
+    stop_and_clear_on_disk_postgresql_database,
+    stop_on_disk_postgresql_database,
 )
 from recidiviz.utils import environment
 
@@ -186,12 +191,68 @@ def use_on_disk_postgresql_database(
         session.execute(
             f"ALTER DATABASE {launch_result.database_name} SET TIMEZONE TO 'UTC'"
         )
+    # ALTER DATABASE ... SET TIMEZONE only applies to connections opened after it
+    # commits. Dispose the pool so every later connection reconnects and inherits
+    # UTC, rather than reusing a connection that still carries the server's initdb
+    # default (the developer's local timezone on a non-UTC machine).
+    engine.dispose()
 
     if create_tables:
         # Auto-generate all tables that exist in our schema in this database
         database_key.declarative_meta.metadata.create_all(engine)
 
     return engine
+
+
+@environment.local_only
+@contextmanager
+def local_postgres(
+    *,
+    database_key: SQLAlchemyDatabaseKey,
+    persistent_data_dir: str | None,
+) -> Generator[OnDiskPostgresLaunchResult, None, None]:
+    """Spins up an on-disk Postgres bound to |database_key|'s schema for the
+    duration of the block, connecting SQLAlchemy to it via
+    use_on_disk_postgresql_database, and yields the launch result so callers can
+    build their own connection to it.
+
+    When |persistent_data_dir| is None, the database is thrown away on exit: its
+    tracking does NOT persist across invocations, so every block starts with no
+    prior data.
+
+    When |persistent_data_dir| is a path, the cluster lives in that data
+    directory and survives the process, so a later block reconnects to the same
+    data. The server is stopped on exit but the data is left in place. Note that
+    the schema is created but never migrated: create_all only adds missing
+    tables, so after a schema change you must delete the data directory to pick
+    it up.
+    """
+    if persistent_data_dir is not None:
+        launch_result = start_persistent_on_disk_postgresql_database(
+            persistent_data_dir
+        )
+    else:
+        launch_result = start_on_disk_postgresql_database()
+    try:
+        # create_all is idempotent, so this is safe whether the cluster is fresh
+        # or a persistent cluster already holding prior data. It runs inside the
+        # try so a failure here still tears the just-started server down rather
+        # than orphaning it.
+        use_on_disk_postgresql_database(launch_result, database_key)
+        yield launch_result
+    finally:
+        if persistent_data_dir is not None:
+            # Stop the server but preserve the data so the next block can resume.
+            # Unregister the engine (without clearing rows, unlike
+            # teardown_on_disk_postgresql_database) so re-entering this block in
+            # the same process doesn't hit an already-initialized database key.
+            stop_on_disk_postgresql_database(launch_result)
+            SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                database_key=database_key
+            )
+        else:
+            teardown_on_disk_postgresql_database(database_key)
+            stop_and_clear_on_disk_postgresql_database(launch_result)
 
 
 DECLARATIVE_BASES = [

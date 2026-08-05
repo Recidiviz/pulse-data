@@ -17,6 +17,7 @@
 """This module generates a local postgres instance for use in scripts and testing.
 It is purposely separated from SQLAlchemyEngine / DatabaseKey dependencies for use in
 both the Airflow and Recidiviz virtual environments."""
+
 import logging
 import os
 import pwd
@@ -109,6 +110,30 @@ def pick_random_port() -> int:
         return s.getsockname()[1]
 
 
+def _start_server_on_random_port(
+    db_data_dir: str,
+    db_log_path: str,
+    password_record: pwd.struct_passwd | None = None,
+) -> int:
+    """Starts the postgres server for |db_data_dir| on a random free port,
+    retrying on a port collision, and returns the port it bound to."""
+    bound_port: int = 0
+
+    def _start() -> None:
+        nonlocal bound_port
+        bound_port = pick_random_port()
+        _start_postgresql_server(db_data_dir, db_log_path, bound_port, password_record)
+
+    retry_on_exceptions_with_backoff(
+        _start,
+        errors_to_retry=(RuntimeError, PostgresPortStillInUseError),
+        max_tries=5,
+        min_backoff_secs=1,
+        max_backoff_secs=3,
+    )
+    return bound_port
+
+
 @environment.local_only
 def can_start_on_disk_postgresql_database() -> bool:
     try:
@@ -189,24 +214,8 @@ def start_on_disk_postgresql_database(
         as_user=password_record,
     )
 
-    on_disk_postgres_port: int = 0
-
-    def _start_postgresql_server_with_random_port() -> None:
-        nonlocal on_disk_postgres_port
-        on_disk_postgres_port = pick_random_port()
-        return _start_postgresql_server(
-            temp_db_data_dir,
-            temp_db_log_path,
-            on_disk_postgres_port,
-            password_record,
-        )
-
-    retry_on_exceptions_with_backoff(
-        _start_postgresql_server_with_random_port,
-        errors_to_retry=(RuntimeError, PostgresPortStillInUseError),
-        max_tries=5,
-        min_backoff_secs=1,
-        max_backoff_secs=3,
+    on_disk_postgres_port = _start_server_on_random_port(
+        temp_db_data_dir, temp_db_log_path, password_record
     )
 
     # Create a user and database within postgres.
@@ -239,6 +248,85 @@ def start_on_disk_postgresql_database(
 
     print(
         f"Created database `{launch_result.database_name}` on postgres instance bound to port {launch_result.port}"
+    )
+    print(f"To query data, connect with `psql {launch_result.url()}`")
+
+    return launch_result
+
+
+@environment.local_only
+def start_persistent_on_disk_postgresql_database(
+    data_directory: str,
+) -> OnDiskPostgresLaunchResult:
+    """Starts a local postgres instance whose data lives in |data_directory|, a
+    caller-owned stable directory, and returns the launch result.
+
+    Unlike start_on_disk_postgresql_database, this does NOT clear other on-disk
+    instances and does NOT use a fresh temp directory, so the cluster — and any
+    data in it — survives across process invocations. Tearing the
+    cluster down is the caller's responsibility (e.g. stop_on_disk_postgresql_database
+    plus removing the directory); it is never torn down here.
+    """
+    if _is_root_user():
+        raise RuntimeError(
+            "start_persistent_on_disk_postgresql_database does not support running "
+            "as root; run it as a normal user."
+        )
+
+    cluster_already_initialized = os.path.exists(
+        os.path.join(data_directory, "PG_VERSION")
+    )
+    os.makedirs(data_directory, exist_ok=True)
+
+    _log_file, db_log_path = tempfile.mkstemp(
+        prefix=get_on_disk_postgres_log_dir_prefix()
+    )
+
+    if not cluster_already_initialized:
+        run_command(f"pg_ctl -D {data_directory} -l {db_log_path} initdb")
+    else:
+        # A prior run that was hard-killed (kill -9 / OOM / laptop sleep) never
+        # ran its stop, so an orphaned server may still be bound to this data
+        # directory and would make `pg_ctl start` below fail. Best-effort stop
+        # any such server first (pg_ctl reads the data dir's postmaster.pid to
+        # find it, so no port is needed); this is a no-op when nothing is running.
+        run_command(
+            f"pg_ctl -D {data_directory} stop -m immediate", assert_success=False
+        )
+
+    on_disk_postgres_port = _start_server_on_random_port(data_directory, db_log_path)
+
+    # Create the user and database unconditionally, ignoring failure if they already
+    # exist (as start_on_disk_postgresql_database does). Gating on
+    # cluster_already_initialized would permanently brick the data directory if a
+    # prior run was interrupted between initdb (which writes PG_VERSION) and createdb:
+    # every subsequent run would see PG_VERSION, skip creation, and fail to connect to
+    # a database that was never created. Running createuser/createdb unconditionally
+    # also handles a data directory reused across pytest workers, where database_name
+    # embeds a different get_pytest_worker_id().
+    database_name = f"{TEST_POSTGRES_DB_NAME}{get_pytest_worker_id()}"
+    run_command(
+        f"createuser -p {on_disk_postgres_port} --superuser {TEST_POSTGRES_USER_NAME}",
+        assert_success=False,
+    )
+    run_command(
+        f"createdb -p {on_disk_postgres_port} -O {TEST_POSTGRES_USER_NAME} {database_name}",
+        assert_success=False,
+    )
+
+    launch_result = OnDiskPostgresLaunchResult(
+        database_name=database_name,
+        temp_db_data_dir=data_directory,
+        port=on_disk_postgres_port,
+    )
+    # Deliberately not registered in REGISTERED_ON_DISK_POSTGRES_INSTANCES: that map
+    # is only swept by _clear_all_on_disk_postgresql_databases over temp dirs matching
+    # the ephemeral prefix, and a persistent data directory is caller-owned and must
+    # never be shutil.rmtree'd by that sweep.
+
+    print(
+        f"Started persistent postgres database `{launch_result.database_name}` "
+        f"(data dir {data_directory}) on port {launch_result.port}"
     )
     print(f"To query data, connect with `psql {launch_result.url()}`")
 
@@ -281,6 +369,19 @@ def stop_and_clear_on_disk_postgresql_database(
         launch_result=launch_result, assert_success=assert_success
     )
     shutil.rmtree(launch_result.temp_db_data_dir)
+
+
+@environment.local_only
+def stop_on_disk_postgresql_database(
+    launch_result: OnDiskPostgresLaunchResult,
+    assert_success: bool = True,
+) -> None:
+    """Stops the postgres server but leaves the PG data directory in place, so the
+    cluster can be restarted later against the same directory. The counterpart to
+    start_persistent_on_disk_postgresql_database."""
+    _stop_on_disk_postgresql_database(
+        launch_result=launch_result, assert_success=assert_success
+    )
 
 
 def is_port_in_use(port: int) -> int | None:
