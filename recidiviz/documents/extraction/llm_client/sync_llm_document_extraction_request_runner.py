@@ -20,13 +20,11 @@ transient errors.
 """
 
 import contextlib
-import itertools
 import logging
 import random
 import threading
 import time
 from collections.abc import Callable, Iterable, Iterator
-from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 
 import attr
 
@@ -36,6 +34,10 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionRequest,
     LLMRequestErrorType,
+)
+from recidiviz.utils.future_executor import (
+    CompletedWorkItem,
+    map_with_bounded_concurrency,
 )
 
 # Maximum number of extraction requests in flight against the provider at once.
@@ -183,69 +185,53 @@ class SyncLLMDocumentExtractionRequestRunner:
             max_requests_per_second=self._max_requests_per_second
         )
         cancel_event = threading.Event()
-        executor = ThreadPoolExecutor(max_workers=self._max_concurrency)
-        try:
-            yield self._result_iterator(
-                executor=executor,
-                requests=requests,
-                rate_limiter=rate_limiter,
-                cancel_event=cancel_event,
-                progress_callback=progress_callback,
-            )
-        finally:
-            # On abnormal exit this tears the run down promptly: queued futures
-            # are cancelled before they start, and workers mid-backoff observe
-            # the event and return instead of re-hitting the provider. On normal
-            # exit (iterator fully consumed) both are no-ops. shutdown does not
-            # wait, so at most the in-flight provider calls finish in the
-            # background.
-            cancel_event.set()
-            executor.shutdown(wait=False, cancel_futures=True)
 
-    def _result_iterator(
-        self,
-        *,
-        executor: ThreadPoolExecutor,
-        requests: Iterable[LLMDocumentExtractionRequest],
-        rate_limiter: RequestsPerSecondLimiter,
-        cancel_event: threading.Event,
-        progress_callback: ProgressCallback | None,
-    ) -> Iterator[LLMClientDocumentExtractionResult]:
-        """Generator that submits requests to |executor| with at most
-        `max_concurrency` in flight and yields results as they complete. Keeping
-        the in-flight set bounded — pulling from |requests| only as slots free
-        up, rather than submitting everything up front — keeps peak memory
-        proportional to `max_concurrency` rather than the total request count,
-        and preserves the laziness of a generator passed as |requests|.
-        """
-        request_iter = iter(requests)
-
-        def submit(
+        def execute_request(
             request: LLMDocumentExtractionRequest,
-        ) -> Future[LLMClientDocumentExtractionResult]:
-            return executor.submit(
-                self._execute_with_retries,
+        ) -> LLMClientDocumentExtractionResult:
+            return self._execute_with_retries(
                 request=request,
                 rate_limiter=rate_limiter,
                 cancel_event=cancel_event,
             )
 
-        in_flight = {
-            submit(request)
-            for request in itertools.islice(request_iter, self._max_concurrency)
-        }
-        while in_flight:
-            done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
-            # Refill before yielding so workers stay busy while the consumer
-            # processes this batch of results.
-            in_flight |= {
-                submit(request) for request in itertools.islice(request_iter, len(done))
-            }
-            for future in done:
-                result = future.result()
-                if progress_callback is not None:
-                    progress_callback(result)
-                yield result
+        with map_with_bounded_concurrency(
+            work_fn=execute_request,
+            items=requests,
+            max_concurrency=self._max_concurrency,
+        ) as completed_requests:
+            try:
+                yield self._results_with_progress(completed_requests, progress_callback)
+            finally:
+                # Runs before map_with_bounded_concurrency's teardown, so by the
+                # time the executor shuts down, workers mid-backoff have already
+                # observed the event and return instead of re-hitting the
+                # provider. On normal exit (iterator fully consumed) this is a
+                # no-op.
+                cancel_event.set()
+
+    @staticmethod
+    def _results_with_progress(
+        completed_requests: Iterator[
+            CompletedWorkItem[
+                LLMDocumentExtractionRequest, LLMClientDocumentExtractionResult
+            ]
+        ],
+        progress_callback: ProgressCallback | None,
+    ) -> Iterator[LLMClientDocumentExtractionResult]:
+        """Yields each completed request's result, first invoking
+        |progress_callback| (if given) with it, serially from the consuming
+        thread.
+
+        Reads `result` without guarding it: `_execute_with_retries` encodes every
+        provider failure in the result it returns rather than raising, so a raise
+        here would be a bug in our own code and should not be swallowed.
+        """
+        for completed in completed_requests:
+            result = completed.result
+            if progress_callback is not None:
+                progress_callback(result)
+            yield result
 
     def _execute_with_retries(
         self,
