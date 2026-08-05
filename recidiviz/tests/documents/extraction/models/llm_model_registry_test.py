@@ -21,6 +21,8 @@ from unittest import TestCase
 import attr
 
 from recidiviz.documents.extraction.models.llm_model_registry import (
+    THINKING_LEVEL_MINIMAL,
+    THINKING_LEVEL_PARAMETER_NAME,
     BaseLLMModel,
     LLMAPIProvider,
     LLMModelConfig,
@@ -30,6 +32,8 @@ from recidiviz.documents.extraction.models.llm_model_registry import (
     LLMModelIntegerParameterDefinition,
     LLMModelIntegerParameterValue,
     LLMModelRegistry,
+    LLMModelStringEnumParameterDefinition,
+    LLMModelStringEnumParameterValue,
     load_llm_model_registry,
 )
 from recidiviz.tests.documents import fake_config
@@ -74,6 +78,20 @@ _ACME_LARGE_THINKING_BUDGET_TOKENS_PARAMETER = LLMModelIntegerParameterDefinitio
     is_optional=True,
 )
 
+_ACME_XLARGE_THINKING_LEVEL_PARAMETER = LLMModelStringEnumParameterDefinition(
+    name=THINKING_LEVEL_PARAMETER_NAME,
+    allowed_values=["MINIMAL", "LOW", "MEDIUM", "HIGH"],
+    description="Controls the depth of reasoning. MINIMAL disables substantive thinking.",
+    is_optional=False,
+)
+
+_ACME_XLARGE_OPTIONAL_THINKING_LEVEL_PARAMETER = LLMModelStringEnumParameterDefinition(
+    name=THINKING_LEVEL_PARAMETER_NAME,
+    allowed_values=["MINIMAL", "LOW", "MEDIUM", "HIGH"],
+    description="Controls the depth of reasoning. MINIMAL disables substantive thinking.",
+    is_optional=True,
+)
+
 _ACME_SMALL = BaseLLMModel(
     name="acme-small",
     family=_ACME_FAMILY,
@@ -98,6 +116,28 @@ _ACME_LARGE = BaseLLMModel(
     parameters={
         "temperature": _ACME_LARGE_TEMPERATURE_PARAMETER,
         "thinking_budget_tokens": _ACME_LARGE_THINKING_BUDGET_TOKENS_PARAMETER,
+    },
+)
+_ACME_XLARGE = BaseLLMModel(
+    name="acme-xlarge",
+    family=_ACME_FAMILY,
+    is_thinking_model=True,
+    input_token_limit=500000,
+    supports_structured_output=True,
+    supports_implicit_caching_in_batch=True,
+    known_pinned_versions=["acme-xlarge-001"],
+    parameters={THINKING_LEVEL_PARAMETER_NAME: _ACME_XLARGE_THINKING_LEVEL_PARAMETER},
+)
+_ACME_XLARGE_OPTIONAL_LEVEL = BaseLLMModel(
+    name="acme-xlarge",
+    family=_ACME_FAMILY,
+    is_thinking_model=True,
+    input_token_limit=500000,
+    supports_structured_output=True,
+    supports_implicit_caching_in_batch=True,
+    known_pinned_versions=["acme-xlarge-001"],
+    parameters={
+        THINKING_LEVEL_PARAMETER_NAME: _ACME_XLARGE_OPTIONAL_THINKING_LEVEL_PARAMETER
     },
 )
 _GLOBEX_BASIC = BaseLLMModel(
@@ -182,6 +222,35 @@ class LLMModelParameterDefinitionTest(TestCase):
                 is_optional=False,
             )
 
+    def test_string_enum_validate_value_valid(self) -> None:
+        _ACME_XLARGE_THINKING_LEVEL_PARAMETER.validate_value("MINIMAL")
+        _ACME_XLARGE_THINKING_LEVEL_PARAMETER.validate_value("HIGH")
+
+    def test_string_enum_validate_value_not_in_allowed_values_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Value [TURBO] for parameter [thinking_level] is not in the "
+                "allowed values ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']."
+            ),
+        ):
+            _ACME_XLARGE_THINKING_LEVEL_PARAMETER.validate_value("TURBO")
+
+    def test_string_enum_empty_allowed_values_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [allowed_values] on [LLMModelStringEnumParameterDefinition] "
+                "must be a non-empty list."
+            ),
+        ):
+            LLMModelStringEnumParameterDefinition(
+                name="thinking_level",
+                allowed_values=[],
+                description="Controls the depth of reasoning.",
+                is_optional=False,
+            )
+
 
 class LLMModelParameterValueTest(TestCase):
     """Tests for LLMModelIntegerParameterValue and LLMModelFloatParameterValue."""
@@ -219,6 +288,35 @@ class LLMModelParameterValueTest(TestCase):
         ):
             LLMModelIntegerParameterValue(
                 parameter_definition=_ACME_SMALL_MAX_OUTPUT_TOKENS_PARAMETER, value=True
+            )
+
+    def test_string_enum_valid_value(self) -> None:
+        enum_value = LLMModelStringEnumParameterValue(
+            parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER, value="HIGH"
+        )
+        self.assertEqual("HIGH", enum_value.value)
+
+    def test_string_enum_value_not_in_allowed_values_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Value [TURBO] for parameter [thinking_level] is not in the "
+                "allowed values ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']."
+            ),
+        ):
+            LLMModelStringEnumParameterValue(
+                parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                value="TURBO",
+            )
+
+    def test_string_enum_non_string_value_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape("Expected value type str, found <class 'int'>."),
+        ):
+            LLMModelStringEnumParameterValue(
+                parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                value=42,  # type: ignore[arg-type]
             )
 
 
@@ -325,6 +423,45 @@ class LLMModelConfigTest(TestCase):
                     )
                 },
             )
+
+    def test_enables_thinking_thinking_level_non_minimal(self) -> None:
+        config = LLMModelConfig(
+            name="ACME_XLARGE_FULL_THINKING",
+            base_model=_ACME_XLARGE,
+            model="acme-xlarge-001",
+            parameter_values={
+                THINKING_LEVEL_PARAMETER_NAME: LLMModelStringEnumParameterValue(
+                    parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                    value="HIGH",
+                )
+            },
+        )
+        self.assertTrue(config.enables_thinking)
+
+    def test_enables_thinking_thinking_level_minimal(self) -> None:
+        config = LLMModelConfig(
+            name="ACME_XLARGE_MINIMAL_THINKING",
+            base_model=_ACME_XLARGE,
+            model="acme-xlarge-001",
+            parameter_values={
+                THINKING_LEVEL_PARAMETER_NAME: LLMModelStringEnumParameterValue(
+                    parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                    value=THINKING_LEVEL_MINIMAL,
+                )
+            },
+        )
+        self.assertFalse(config.enables_thinking)
+
+    def test_enables_thinking_optional_thinking_level_omitted(self) -> None:
+        # When thinking_level is optional and omitted, the model uses its default
+        # (MEDIUM), so thinking is considered enabled.
+        config = LLMModelConfig(
+            name="ACME_XLARGE_DYNAMIC",
+            base_model=_ACME_XLARGE_OPTIONAL_LEVEL,
+            model="acme-xlarge-001",
+            parameter_values={},
+        )
+        self.assertTrue(config.enables_thinking)
 
     def test_optional_parameter_may_be_omitted(self) -> None:
         config = LLMModelConfig(
@@ -508,7 +645,7 @@ class ParseModelRegistryTest(TestCase):
         """
         expected = LLMModelRegistry(
             model_families=[_ACME_FAMILY, _GLOBEX_FAMILY],
-            base_models=[_ACME_SMALL, _ACME_LARGE, _GLOBEX_BASIC],
+            base_models=[_ACME_SMALL, _ACME_LARGE, _ACME_XLARGE, _GLOBEX_BASIC],
             model_configs=[
                 LLMModelConfig(
                     name="ACME_SMALL_ALL_MINS",
@@ -594,6 +731,28 @@ class ParseModelRegistryTest(TestCase):
                             parameter_definition=_ACME_LARGE_THINKING_BUDGET_TOKENS_PARAMETER,
                             value=0,
                         ),
+                    },
+                ),
+                LLMModelConfig(
+                    name="ACME_XLARGE_FULL_THINKING",
+                    base_model=_ACME_XLARGE,
+                    model="acme-xlarge-001",
+                    parameter_values={
+                        THINKING_LEVEL_PARAMETER_NAME: LLMModelStringEnumParameterValue(
+                            parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                            value="HIGH",
+                        )
+                    },
+                ),
+                LLMModelConfig(
+                    name="ACME_XLARGE_MINIMAL_THINKING",
+                    base_model=_ACME_XLARGE,
+                    model="acme-xlarge-001",
+                    parameter_values={
+                        THINKING_LEVEL_PARAMETER_NAME: LLMModelStringEnumParameterValue(
+                            parameter_definition=_ACME_XLARGE_THINKING_LEVEL_PARAMETER,
+                            value=THINKING_LEVEL_MINIMAL,
+                        )
                     },
                 ),
                 LLMModelConfig(
@@ -718,4 +877,28 @@ class ParseModelRegistryTest(TestCase):
         ):
             LLMModelRegistry.from_yaml(
                 _bad_registry_path("allowed_range_min_greater_than_max.yaml")
+            )
+
+    def test_parse_string_enum_value_not_in_allowed_values(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Value [TURBO] for parameter [thinking_level] is not in the "
+                "allowed values ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']."
+            ),
+        ):
+            LLMModelRegistry.from_yaml(
+                _bad_registry_path("string_enum_value_not_in_allowed_values.yaml")
+            )
+
+    def test_parse_non_string_value_for_string_enum_parameter(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Parameter [thinking_level] in model config [ACME_XLARGE_DEFAULT] "
+                "must be a string, found [42]."
+            ),
+        ):
+            LLMModelRegistry.from_yaml(
+                _bad_registry_path("non_string_value_for_string_enum_parameter.yaml")
             )

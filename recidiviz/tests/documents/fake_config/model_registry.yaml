@@ -2,7 +2,8 @@
 # multiple families, a family shared by two base models, multiple pinned
 # versions, a base model with no parameters, integer bounds on a FLOAT
 # parameter, values at exact range boundaries, an int value for a FLOAT
-# parameter, an omitted optional parameter, and a config with no parameters.
+# parameter, an omitted optional parameter, a config with no parameters, and a
+# STRING_ENUM parameter with MINIMAL and non-MINIMAL thinking level values.
 
 model_families:
   acme:
@@ -50,6 +51,21 @@ base_models:
         allowed_range: [0, 1024]
         is_optional: true
         description: Maximum tokens for internal reasoning. May be omitted to use dynamic thinking.
+
+  # A thinking model that uses a STRING_ENUM thinking_level parameter.
+  acme-xlarge:
+    family: acme
+    is_thinking_model: true
+    input_token_limit: 500000
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: true
+    known_pinned_versions:
+      - acme-xlarge-001
+    parameters:
+      thinking_level:
+        type: STRING_ENUM
+        allowed_values: [MINIMAL, LOW, MEDIUM, HIGH]
+        description: Controls the depth of reasoning. MINIMAL disables substantive thinking.
 
   # A base model that declares no tunable parameters.
   globex-basic:
@@ -100,6 +116,16 @@ configs:
     model: acme-large-001
     temperature: 0.0
     thinking_budget_tokens: 0
+
+  # STRING_ENUM thinking_level: non-MINIMAL value enables thinking.
+  ACME_XLARGE_FULL_THINKING:
+    model: acme-xlarge-001
+    thinking_level: HIGH
+
+  # STRING_ENUM thinking_level: MINIMAL value disables thinking.
+  ACME_XLARGE_MINIMAL_THINKING:
+    model: acme-xlarge-001
+    thinking_level: MINIMAL
 
   # No parameters at all (the base model declares none).
   GLOBEX_BASIC_DEFAULT:

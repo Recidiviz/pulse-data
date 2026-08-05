@@ -1,0 +1,25 @@
+# A minimal model registry that is invalid in exactly one way: a config
+# parameter value that is not in the STRING_ENUM parameter's allowed_values.
+model_families:
+  acme:
+    default_api_provider: vertex_ai
+
+base_models:
+  acme-xlarge:
+    family: acme
+    is_thinking_model: true
+    input_token_limit: 500000
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: true
+    known_pinned_versions:
+      - acme-xlarge-001
+    parameters:
+      thinking_level:
+        type: STRING_ENUM
+        allowed_values: [MINIMAL, LOW, MEDIUM, HIGH]
+        description: Controls the depth of reasoning. MINIMAL disables substantive thinking.
+
+configs:
+  ACME_XLARGE_DEFAULT:
+    model: acme-xlarge-001
+    thinking_level: TURBO

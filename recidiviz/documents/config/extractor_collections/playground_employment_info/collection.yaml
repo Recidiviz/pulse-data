@@ -7,7 +7,7 @@ description: >
 relevance_criteria: >
   Whether the document mentions jobs, work, pay, employers, or job searching
 
-default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
+default_model_config_name: GEMINI_3_5_FLASH_MINIMAL_THINKING
 
 minimum_confidence_level: inferred
 

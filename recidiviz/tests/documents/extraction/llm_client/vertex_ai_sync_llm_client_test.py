@@ -54,6 +54,18 @@ _DEFAULT_REQUEST_PARAMETERS: dict[str, Any] = {
     },
 }
 
+_DEFAULT_LEVEL_REQUEST_PARAMETERS: dict[str, Any] = {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_output_tokens": 8192,
+    "thinking_level": "MINIMAL",
+    "labels": {
+        "state_code": "us_xx",
+        "environment": "staging",
+        "requester": "test_user",
+    },
+}
+
 
 def _request(
     *,
@@ -110,7 +122,7 @@ class VertexAISyncLLMClientTest(TestCase):
 
     def setUp(self) -> None:
         self.model_config = load_llm_model_registry().get_model_config(
-            "GEMINI_2_5_FLASH_NO_THINKING"
+            "GEMINI_3_5_FLASH_MINIMAL_THINKING"
         )
 
         self.genai_client_patcher = patch(
@@ -209,6 +221,35 @@ class VertexAISyncLLMClientTest(TestCase):
             k: v
             for k, v in _DEFAULT_REQUEST_PARAMETERS.items()
             if k != "thinking_budget_tokens"
+        }
+
+        self._execute(_request(request_parameters=parameters))
+
+        self.assertIsNone(self._last_generate_config().thinking_config)
+
+    def test_thinking_level_is_passed_through(self) -> None:
+        self.mock_generate_content.return_value = _response()
+
+        self._execute(
+            _request(
+                request_parameters={
+                    **_DEFAULT_LEVEL_REQUEST_PARAMETERS,
+                    "thinking_level": "HIGH",
+                }
+            )
+        )
+
+        thinking_config = assert_type(
+            self._last_generate_config().thinking_config, types.ThinkingConfig
+        )
+        self.assertEqual(types.ThinkingLevel.HIGH, thinking_config.thinking_level)
+
+    def test_omitted_thinking_level_leaves_thinking_config_unset(self) -> None:
+        self.mock_generate_content.return_value = _response()
+        parameters = {
+            k: v
+            for k, v in _DEFAULT_LEVEL_REQUEST_PARAMETERS.items()
+            if k != "thinking_level"
         }
 
         self._execute(_request(request_parameters=parameters))

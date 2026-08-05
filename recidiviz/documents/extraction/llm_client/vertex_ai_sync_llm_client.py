@@ -30,6 +30,7 @@ from recidiviz.documents.extraction.llm_client.types import (
     MAX_OUTPUT_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME,
     TEMPERATURE_EXTRACTION_REQUEST_PARAMETER_NAME,
     THINKING_BUDGET_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME,
+    THINKING_LEVEL_EXTRACTION_REQUEST_PARAMETER_NAME,
     TOP_P_EXTRACTION_REQUEST_PARAMETER_NAME,
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionRequest,
@@ -214,15 +215,18 @@ class VertexAISyncLLMClient(SyncLLMClient):
         """
         parameters = request.request_parameters
 
-        # thinking_budget_tokens is the one optional parameter: omitting it uses
-        # model-managed dynamic thinking, so we set a ThinkingConfig only when a
-        # budget is present.
         thinking_config: types.ThinkingConfig | None = None
         if THINKING_BUDGET_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME in parameters:
             thinking_config = types.ThinkingConfig(
                 thinking_budget=parameters[
                     THINKING_BUDGET_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME
                 ]
+            )
+        if THINKING_LEVEL_EXTRACTION_REQUEST_PARAMETER_NAME in parameters:
+            thinking_config = types.ThinkingConfig(
+                thinking_level=types.ThinkingLevel(
+                    parameters[THINKING_LEVEL_EXTRACTION_REQUEST_PARAMETER_NAME]
+                )
             )
 
         return types.GenerateContentConfig(

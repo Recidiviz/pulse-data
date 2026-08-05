@@ -56,6 +56,12 @@ reasoning tokens. A value of 0 disables thinking; omitting it uses
 model-managed dynamic thinking.
 """
 
+THINKING_LEVEL_EXTRACTION_REQUEST_PARAMETER_NAME = "thinking_level"
+"""Name of the tunable parameter that sets the thinking level for
+level-style thinking models (e.g. Gemini 3.5+). Omitting it leaves
+ThinkingConfig unset.
+"""
+
 
 class LLMRequestErrorType(StrEnum):
     """An error encountered while executing a single LLM extraction request (as

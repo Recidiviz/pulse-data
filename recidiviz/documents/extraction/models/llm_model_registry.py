@@ -40,7 +40,20 @@ MODEL_REGISTRY_FILENAME = "model_registry.yaml"
 THINKING_BUDGET_TOKENS_PARAMETER_NAME = "thinking_budget_tokens"
 """Name of the tunable parameter that caps a thinking model's internal
 reasoning tokens. A value of 0 disables thinking; omitting it uses
-model-managed dynamic thinking.
+model-managed dynamic thinking. Used by Gemini 2.5 and earlier.
+"""
+
+THINKING_LEVEL_PARAMETER_NAME = "thinking_level"
+"""Name of the tunable parameter that sets a thinking model's reasoning depth
+via a string enum. MINIMAL is treated as thinking disabled for policy purposes;
+omitting it uses the model default. Used by Gemini 3.5 and later.
+"""
+
+THINKING_LEVEL_MINIMAL = "MINIMAL"
+"""The thinking level value that disables substantive reasoning. Gemini 3.5+
+still emits thought signatures at this level, but uses as few thinking tokens
+as possible. Treated as thinking-off for policy enforcement (first-order
+extractors may use configs with this level).
 """
 
 
@@ -57,6 +70,7 @@ class LLMModelParameterType(Enum):
 
     FLOAT = "FLOAT"
     INTEGER = "INTEGER"
+    STRING_ENUM = "STRING_ENUM"
 
 
 NumericalParameterT = TypeVar("NumericalParameterT", int, float)
@@ -113,9 +127,9 @@ class LLMModelNumericalParameterDefinition(Generic[NumericalParameterT], abc.ABC
     def from_yaml_dict(
         *, name: str, yaml_dict: YAMLDict
     ) -> "LLMModelNumericalParameterDefinition":
-        """Returns the parameter definition parsed from one entry of a base
-        model's `parameters` block, choosing the definition subclass that
-        matches the declared `type`.
+        """Returns the numerical parameter definition parsed from one entry of a
+        base model's `parameters` block, choosing the subclass that matches the
+        declared `type`. Raises if the type is not a numerical type.
         """
         range_values = yaml_dict.pop("allowed_range", list)
         if len(range_values) != 2:
@@ -237,6 +251,94 @@ class LLMModelFloatParameterValue:
 
 
 @attr.define(frozen=True, kw_only=True)
+class LLMModelStringEnumParameterDefinition:
+    """Catalog entry for a string-enum-valued tunable parameter of a base
+    model, declaring the set of values a model config may set it to.
+    """
+
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Name of the parameter as passed to the model API (e.g. `thinking_level`)."""
+
+    allowed_values: list[str] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(str),
+        ]
+    )
+    """The exhaustive set of valid string values for this parameter."""
+
+    description: str = attr.ib(
+        validator=recidiviz_attr_validators.is_meaningful_description
+    )
+    """Human-readable description of what this parameter controls."""
+
+    is_optional: bool = attr.ib(validator=attr_validators.is_bool)
+    """Whether a model config may omit a value for this parameter. When false,
+    every config on this base model must set a value.
+    """
+
+    def validate_value(self, value: str) -> None:
+        """Validates that |value| is one of the declared allowed values."""
+        if value not in self.allowed_values:
+            raise ValueError(
+                f"Value [{value}] for parameter [{self.name}] is not in the "
+                f"allowed values {self.allowed_values}."
+            )
+
+
+@attr.define(frozen=True, kw_only=True)
+class LLMModelStringEnumParameterValue:
+    """A value chosen for a string-enum-valued tunable parameter in a model
+    config, paired with the parameter's catalog definition. Validates on
+    construction that the value is one of the definition's allowed values.
+    """
+
+    parameter_definition: LLMModelStringEnumParameterDefinition = attr.ib(
+        validator=attr.validators.instance_of(LLMModelStringEnumParameterDefinition)
+    )
+    """The parameter this value is for."""
+
+    value: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The string value of this parameter."""
+
+    def __attrs_post_init__(self) -> None:
+        self.parameter_definition.validate_value(self.value)
+
+
+def _llm_model_parameter_definition_from_yaml_dict(
+    *, name: str, yaml_dict: YAMLDict
+) -> LLMModelNumericalParameterDefinition | LLMModelStringEnumParameterDefinition:
+    """Returns the parameter definition parsed from one entry of a base model's
+    `parameters` block, dispatching to the appropriate definition class based on
+    the declared `type`.
+    """
+    parameter_type = LLMModelParameterType(yaml_dict.peek("type", str))
+    if parameter_type is LLMModelParameterType.STRING_ENUM:
+        yaml_dict.pop("type", str)
+        allowed_values = yaml_dict.pop("allowed_values", list)
+        definition = LLMModelStringEnumParameterDefinition(
+            name=name,
+            allowed_values=allowed_values,
+            description=yaml_dict.pop("description", str),
+            is_optional=yaml_dict.pop_optional("is_optional", bool) or False,
+        )
+        if yaml_dict:
+            raise ValueError(
+                f"Found unexpected config values for parameter [{name}]: "
+                f"{repr(yaml_dict.get())}"
+            )
+        return definition
+    if parameter_type in (
+        LLMModelParameterType.FLOAT,
+        LLMModelParameterType.INTEGER,
+    ):
+        return LLMModelNumericalParameterDefinition.from_yaml_dict(
+            name=name, yaml_dict=yaml_dict
+        )
+    raise ValueError(f"Unexpected parameter_type: [{parameter_type}]")
+
+
+@attr.define(frozen=True, kw_only=True)
 class LLMModelFamily:
     """Provider API-access info shared by a family of models (e.g. all Gemini
     models).
@@ -311,8 +413,17 @@ class BaseLLMModel:
     )
     """Allowlist of approved pinned version strings for this model."""
 
-    parameters: dict[str, LLMModelNumericalParameterDefinition] = attr.ib(
-        validator=attr_validators.is_dict_of(str, LLMModelNumericalParameterDefinition)
+    parameters: dict[
+        str,
+        LLMModelNumericalParameterDefinition | LLMModelStringEnumParameterDefinition,
+    ] = attr.ib(
+        validator=attr_validators.is_dict_of(
+            str,
+            (
+                LLMModelNumericalParameterDefinition,
+                LLMModelStringEnumParameterDefinition,
+            ),
+        )
     )
     """Catalog of tunable parameters configs may set, keyed by parameter name."""
 
@@ -337,7 +448,7 @@ class BaseLLMModel:
 
     def parameter_definition(
         self, parameter_name: str
-    ) -> LLMModelNumericalParameterDefinition:
+    ) -> LLMModelNumericalParameterDefinition | LLMModelStringEnumParameterDefinition:
         """Returns the catalog entry for |parameter_name|, raising if this model
         does not declare such a parameter.
         """
@@ -372,7 +483,7 @@ class BaseLLMModel:
             for parameter_name in parameters_dict.keys():
                 parameters[
                     parameter_name
-                ] = LLMModelNumericalParameterDefinition.from_yaml_dict(
+                ] = _llm_model_parameter_definition_from_yaml_dict(
                     name=parameter_name,
                     yaml_dict=parameters_dict.pop_dict(parameter_name),
                 )
@@ -399,10 +510,52 @@ class BaseLLMModel:
         return base_model
 
 
+def _build_parameter_value(
+    *,
+    config_name: str,
+    parameter_name: str,
+    definition: LLMModelNumericalParameterDefinition
+    | LLMModelStringEnumParameterDefinition,
+    value: object,
+) -> LLMModelIntegerParameterValue | LLMModelFloatParameterValue | LLMModelStringEnumParameterValue:
+    """Returns the typed parameter value object for one entry in a config's
+    parameter block, dispatching on the parameter's definition type.
+    """
+    if isinstance(definition, LLMModelIntegerParameterDefinition):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(
+                f"Parameter [{parameter_name}] in model config [{config_name}] "
+                f"must be an integer, found [{value!r}]."
+            )
+        return LLMModelIntegerParameterValue(
+            parameter_definition=definition, value=value
+        )
+    if isinstance(definition, LLMModelFloatParameterDefinition):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(
+                f"Parameter [{parameter_name}] in model config [{config_name}] "
+                f"must be numeric, found [{value!r}]."
+            )
+        return LLMModelFloatParameterValue(parameter_definition=definition, value=value)
+    if isinstance(definition, LLMModelStringEnumParameterDefinition):
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Parameter [{parameter_name}] in model config [{config_name}] "
+                f"must be a string, found [{value!r}]."
+            )
+        return LLMModelStringEnumParameterValue(
+            parameter_definition=definition, value=value
+        )
+    raise ValueError(
+        f"Unexpected parameter definition type [{type(definition)}] "
+        f"for parameter [{parameter_name}]."
+    )
+
+
 @attr.define(frozen=True, kw_only=True)
 class LLMModelConfig:
     """A named, reusable bundle of model parameters that extractors reference by
-    name (e.g. `GEMINI_2_5_FLASH_NO_THINKING`) instead of repeating model
+    name (e.g. `GEMINI_3_5_FLASH_MINIMAL_THINKING`) instead of repeating model
     settings. Fully resolved: holds the base model whose traits (context window,
     capability flags) downstream consumers read directly off this config.
     """
@@ -421,15 +574,23 @@ class LLMModelConfig:
     """
 
     parameter_values: dict[
-        str, LLMModelIntegerParameterValue | LLMModelFloatParameterValue
+        str,
+        LLMModelIntegerParameterValue
+        | LLMModelFloatParameterValue
+        | LLMModelStringEnumParameterValue,
     ] = attr.ib(
         validator=attr_validators.is_dict_of(
-            str, (LLMModelIntegerParameterValue, LLMModelFloatParameterValue)
+            str,
+            (
+                LLMModelIntegerParameterValue,
+                LLMModelFloatParameterValue,
+                LLMModelStringEnumParameterValue,
+            ),
         )
     )
     """Parameter values to set on each request, keyed by parameter name. Every
     parameter must be declared in the base model's catalog and fall within its
-    declared range.
+    declared range or allowed values.
     """
 
     def __attrs_post_init__(self) -> None:
@@ -462,17 +623,27 @@ class LLMModelConfig:
 
     @property
     def enables_thinking(self) -> bool:
-        """Whether requests made with this config generate thinking tokens.
-        False for a non-thinking base model, or for a thinking-capable model
-        whose `thinking_budget_tokens` is explicitly set to 0. A thinking-capable
-        model that omits the budget uses model-managed dynamic thinking, so
-        thinking is enabled.
+        """Whether requests made with this config generate substantive thinking
+        tokens. False for a non-thinking base model. For thinking-capable models:
+        - Budget-style (Gemini 2.5): false only when thinking_budget_tokens == 0.
+        - Level-style (Gemini 3.5+): false only when thinking_level == MINIMAL.
+          MINIMAL still emits thought signatures but uses as few thinking tokens
+          as possible, so it is treated as thinking-off for policy enforcement.
+        - Omitting the thinking parameter uses model-managed defaults, so
+          thinking is considered enabled.
         """
         if not self.base_model.is_thinking_model:
             return False
-        if THINKING_BUDGET_TOKENS_PARAMETER_NAME not in self.parameter_values:
-            return True
-        return self.parameter_values[THINKING_BUDGET_TOKENS_PARAMETER_NAME].value != 0
+        if THINKING_BUDGET_TOKENS_PARAMETER_NAME in self.parameter_values:
+            return (
+                self.parameter_values[THINKING_BUDGET_TOKENS_PARAMETER_NAME].value != 0
+            )
+        if THINKING_LEVEL_PARAMETER_NAME in self.parameter_values:
+            return (
+                self.parameter_values[THINKING_LEVEL_PARAMETER_NAME].value
+                != THINKING_LEVEL_MINIMAL
+            )
+        return True
 
     @property
     def input_token_limit(self) -> int:
@@ -487,7 +658,7 @@ class LLMModelConfig:
         return self.base_model.supports_implicit_caching_in_batch
 
     @property
-    def resolved_parameter_values(self) -> dict[str, int | float]:
+    def resolved_parameter_values(self) -> dict[str, int | float | str]:
         """Returns the resolved generation parameters keyed by name — each
         declared parameter's concrete value (temperature, top_p, thinking budget,
         etc.)."""
@@ -535,32 +706,12 @@ class LLMModelConfig:
         for parameter_name in yaml_dict.keys():
             definition = base_model.parameter_definition(parameter_name)
             value = yaml_dict.pop(parameter_name, object)
-            parameter_value: LLMModelIntegerParameterValue | LLMModelFloatParameterValue
-            if isinstance(definition, LLMModelIntegerParameterDefinition):
-                if isinstance(value, bool) or not isinstance(value, int):
-                    raise ValueError(
-                        f"Parameter [{parameter_name}] in model config [{name}] "
-                        f"must be an integer, found [{value!r}]."
-                    )
-                parameter_value = LLMModelIntegerParameterValue(
-                    parameter_definition=definition, value=value
-                )
-            elif isinstance(definition, LLMModelFloatParameterDefinition):
-                if isinstance(value, bool) or not isinstance(value, (int, float)):
-                    raise ValueError(
-                        f"Parameter [{parameter_name}] in model config [{name}] "
-                        f"must be numeric, found [{value!r}]."
-                    )
-                parameter_value = LLMModelFloatParameterValue(
-                    parameter_definition=definition, value=value
-                )
-            else:
-                raise ValueError(
-                    f"Unexpected parameter definition type [{type(definition)}] "
-                    f"for parameter [{parameter_name}]."
-                )
-
-            parameter_values[parameter_name] = parameter_value
+            parameter_values[parameter_name] = _build_parameter_value(
+                config_name=name,
+                parameter_name=parameter_name,
+                definition=definition,
+                value=value,
+            )
 
         return cls(
             name=name,

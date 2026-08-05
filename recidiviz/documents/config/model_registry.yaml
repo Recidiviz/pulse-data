@@ -1,6 +1,6 @@
 # The single global registry of LLM models that document extractors may call.
 # Extractors reference a named entry under `configs` (e.g.
-# GEMINI_2_5_FLASH_NO_THINKING) rather than repeating model settings.
+# GEMINI_3_5_FLASH_MINIMAL_THINKING) rather than repeating model settings.
 #
 # Parsed and validated by
 # recidiviz/documents/extraction/models/llm_model_registry.py.
@@ -55,6 +55,46 @@ base_models:
           Maximum tokens for internal reasoning. 0 disables thinking. May be
           omitted to use model-managed dynamic thinking.
 
+  gemini-3.5-flash:
+    family: gemini
+    is_thinking_model: true
+    # Max input/output tokens per
+    # https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-5-flash
+    input_token_limit: 1048576
+    supports_structured_output: true
+    supports_implicit_caching_in_batch: true
+    known_pinned_versions:
+      - gemini-3.5-flash
+    parameters:
+      temperature:
+        type: FLOAT
+        allowed_range: [0.0, 2.0]
+        description: Controls randomness. 0.0 = deterministic.
+      max_output_tokens:
+        type: INTEGER
+        allowed_range: [1, 65536]
+        description: Maximum tokens in the response.
+      top_p:
+        type: FLOAT
+        allowed_range: [0.0, 1.0]
+        description: >
+          Nucleus sampling threshold: the model samples only from the smallest
+          set of tokens whose cumulative probability is at least top_p. 1.0
+          considers the full distribution; 0.0 considers only the single
+          most-probable token (effectively greedy).
+      thinking_level:
+        type: STRING_ENUM
+        # https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-5-flash#api-changes
+        allowed_values: [MINIMAL, LOW, MEDIUM, HIGH]
+        # Optional: omit this parameter in a config to use the model default
+        # (MEDIUM). MINIMAL is treated as thinking-off for policy enforcement.
+        is_optional: true
+        description: >
+          Reasoning depth. MINIMAL uses as few thinking tokens as possible
+          (treated as thinking disabled for policy purposes). LOW suits simple
+          high-throughput tasks. MEDIUM (default) balances reasoning and
+          latency. HIGH enables deep reasoning for complex multi-step tasks.
+
 configs:
   GEMINI_2_5_FLASH_NO_THINKING:
     model: gemini-2.5-flash
@@ -72,3 +112,24 @@ configs:
     temperature: 0.0
     max_output_tokens: 8192
     top_p: 1.0
+
+  # Gemini 3.5 Flash with MINIMAL thinking — as close as possible to no
+  # thinking while still satisfying the model's thought-signature requirement.
+  # Treated as thinking-off for policy enforcement (permitted for first-order
+  # extractors).
+  GEMINI_3_5_FLASH_MINIMAL_THINKING:
+    model: gemini-3.5-flash
+    temperature: 0.0
+    max_output_tokens: 8192
+    top_p: 1.0
+    thinking_level: MINIMAL
+
+  # Gemini 3.5 Flash with MEDIUM thinking — used for entity-resolution
+  # extractors whose clustering benefits from moderate inference without the
+  # cost of HIGH. A fixed level can be tuned with eval later.
+  GEMINI_3_5_FLASH_MEDIUM_THINKING:
+    model: gemini-3.5-flash
+    temperature: 0.0
+    max_output_tokens: 8192
+    top_p: 1.0
+    thinking_level: MEDIUM

@@ -35,10 +35,10 @@ from recidiviz.documents.store.document_collection_config import (
 )
 
 # Framework-fixed default model for entity-resolution extractors: a
-# thinking-enabled Gemini 2.5 config (see `model_registry.yaml`). Not
+# thinking-enabled Gemini 3.5 config (see `model_registry.yaml`). Not
 # config-overridable for now — no use case yet justifies a per-group or per-state
 # override.
-ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME = "GEMINI_2_5_FLASH_THINKING"
+ENTITY_RESOLUTION_DEFAULT_MODEL_CONFIG_NAME = "GEMINI_3_5_FLASH_MEDIUM_THINKING"
 
 
 def build_entity_resolution_prompt_template(

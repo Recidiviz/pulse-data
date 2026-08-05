@@ -91,7 +91,7 @@ class SyncLLMDocumentExtractionRequestRunnerTest(TestCase):
 
     def setUp(self) -> None:
         self.model_config = load_llm_model_registry().get_model_config(
-            "GEMINI_2_5_FLASH_NO_THINKING"
+            "GEMINI_3_5_FLASH_MINIMAL_THINKING"
         )
 
     def _runner(
