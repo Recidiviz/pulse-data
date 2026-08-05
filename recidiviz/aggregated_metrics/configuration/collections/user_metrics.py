@@ -42,6 +42,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED,
     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_INCARCERATION,
     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_SUPERVISION,
+    DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS,
     DISTINCT_PROVISIONED_INSIGHTS_USERS,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
     WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS,
@@ -69,6 +70,13 @@ def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_conf
     min_end_date = datetime.date(2024, 2, 1)
     max_end_date = first_day_of_month(current_date)
 
+    # Total clients who have been reviewed by a supervisor and now require officer action
+    supervisor_reviewed_population_metrics = [
+        metric
+        for metric in DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS
+        if "review" not in metric.name
+    ]
+
     return AggregatedMetricsCollection(
         collection_tag="workflows",
         output_dataset_id=USER_METRICS_DATASET_ID,
@@ -94,6 +102,7 @@ def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_conf
                     # Used for supervisors who supervise clients to distinguish
                     # the users who do not have access to Insights yet
                     DISTINCT_PROVISIONED_INSIGHTS_USERS,
+                    *supervisor_reviewed_population_metrics,
                 ],
             ),
         },
@@ -146,6 +155,13 @@ def _build_insights_user_metrics_aggregated_metrics_collection_config() -> (
 
     current_date = current_date_us_eastern()
 
+    # Total clients who have been submitted by an officer for supervisor review
+    supervisor_review_population_metrics = [
+        metric
+        for metric in DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS
+        if "review" in metric.name
+    ]
+
     return AggregatedMetricsCollection(
         collection_tag="insights",
         output_dataset_id=USER_METRICS_DATASET_ID,
@@ -160,6 +176,7 @@ def _build_insights_user_metrics_aggregated_metrics_collection_config() -> (
                     DISTINCT_OUTLIER_OFFICERS,
                     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED,
                     DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED,
+                    *supervisor_review_population_metrics,
                 ],
             ),
         },

@@ -13561,17 +13561,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "supervising_officer",
         "supervision_level",
     ],
-    BigQueryAddress.from_str("user_metrics.insights_user_available_actions"): [
-        "almost_eligible_opportunities",
-        "eligible_opportunities",
-        "email_address",
-        "location_name",
-        "staff_external_id",
-        "state_code",
-        "total_opportunities",
-        "total_outliers",
-        "unit_supervisor_name",
-    ],
     BigQueryAddress.from_str("user_metrics.officer_monthly_usage_report"): [
         "actions_taken_this_month",
         "clients_eligible_end_of_month",
@@ -13648,45 +13637,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "person_name",
         "release_date",
         "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "user_metrics.workflows_facilities_user_available_actions"
-    ): [
-        "almost_eligible_clients_by_opportunity",
-        "almost_eligible_clients_by_opportunity.num_almost_eligible_clients",
-        "almost_eligible_clients_by_opportunity.opportunity_name",
-        "almost_eligible_opportunities",
-        "eligible_clients_by_opportunity",
-        "eligible_clients_by_opportunity.num_eligible_clients",
-        "eligible_clients_by_opportunity.opportunity_name",
-        "eligible_opportunities",
-        "email_address",
-        "facility_counselor_id",
-        "facility_counselor_name",
-        "location_name",
-        "state_code",
-        "total_opportunities",
-    ],
-    BigQueryAddress.from_str(
-        "user_metrics.workflows_supervision_user_available_actions"
-    ): [
-        "almost_eligible_clients_by_opportunity",
-        "almost_eligible_clients_by_opportunity.num_almost_eligible_clients",
-        "almost_eligible_clients_by_opportunity.opportunity_name",
-        "almost_eligible_opportunities",
-        "eligible_clients_by_opportunity",
-        "eligible_clients_by_opportunity.num_eligible_clients",
-        "eligible_clients_by_opportunity.opportunity_name",
-        "eligible_opportunities",
-        "email_address",
-        "location_name",
-        "officer_id",
-        "officer_name",
-        "state_code",
-        "total_opportunities",
-        "urgent_clients_by_opportunity",
-        "urgent_clients_by_opportunity.num_urgent_clients",
-        "urgent_clients_by_opportunity.opportunity_name",
     ],
     BigQueryAddress.from_str(
         "validation_external_accuracy.county_jail_population_person_level"
