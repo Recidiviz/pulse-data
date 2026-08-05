@@ -1,0 +1,3 @@
+document_contents_id,document_text,document_length_bytes,row_create_datetime
+CID_A,some case note text,19,2026-01-02 12:00:00
+CID_B,another case note,17,2026-02-02 12:00:00

@@ -56,8 +56,13 @@ class SQLAlchemyEngineManager(BaseEngineManager):
         return cls.init_engine_for_db_instance(
             database_key=database_key,
             db_url=db_url,
-            # Log information about how connections are being reused.
-            echo_pool=True,
+            # Log information about how connections are being reused. Only in GCP:
+            # how a deployed server reuses connections is a real signal, but the
+            # same output from a local script or test is noise about a pool that
+            # exists for seconds. Note that echo_pool also makes SQLAlchemy attach
+            # its own stdout handler to the pool logger, so leaving it on locally
+            # prints every pool event twice.
+            echo_pool=environment.in_gcp(),
             pool_recycle=database_key.pool_recycle,
             **additional_kwargs,
         )
@@ -168,8 +173,12 @@ class SQLAlchemyEngineManager(BaseEngineManager):
 
         engine = cls._engine_for_database.get(database_key, None)
 
-        # Add pool monitoring logging
-        if engine:
+        # Add pool monitoring logging. Only in GCP: this runs on every engine
+        # lookup, i.e. once per session, so outside a deployed server — local
+        # scripts and tests against an ephemeral Postgres — it emits the same line
+        # dozens of times and buries whatever the script is actually saying, with
+        # no pool worth monitoring behind it.
+        if engine and environment.in_gcp():
             try:
                 logging.info(
                     "Pool stats for %s: %s", database_key, engine.pool.status()

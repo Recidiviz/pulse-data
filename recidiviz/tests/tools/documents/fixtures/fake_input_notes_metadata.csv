@@ -1,0 +1,4 @@
+person_external_id,person_external_id_type,note_id,document_contents_id,document_update_datetime,row_create_datetime
+P1,US_XX_DOC,NOTE_1,CID_A,2026-01-01 10:00:00,2026-01-02 12:00:00
+P2,US_XX_DOC,NOTE_2,CID_B,2026-02-01 10:00:00,2026-02-02 12:00:00
+P3,US_XX_DOC,NOTE_3,,2026-03-01 10:00:00,2026-03-02 12:00:00

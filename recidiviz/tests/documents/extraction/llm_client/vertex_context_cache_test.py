@@ -15,6 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for VertexContextCacheManager."""
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -129,6 +133,36 @@ class VertexContextCacheManagerTest(TestCase):
         )
         # Invalidating an unknown prompt is a no-op, not an error.
         self.manager.invalidate(system_prompt="never cached")
+
+    def test_concurrent_lookups_for_same_prompt_create_one_cache(self) -> None:
+        # The request runner drives one client from a pool of worker threads, all
+        # sharing this manager and asking for the same system prompt. Every thread
+        # that arrives while the first `caches.create` is still in flight must wait
+        # for it rather than creating its own duplicate cache, since each duplicate
+        # is separately billed for cache storage until its TTL elapses.
+        num_threads = 8
+        all_threads_ready = threading.Barrier(num_threads)
+
+        def slow_create(**_kwargs: Any) -> types.CachedContent:
+            # Holds the create open long enough that unsynchronized threads would
+            # all miss the memo and pile in behind it.
+            time.sleep(0.05)
+            return types.CachedContent(name="cachedContents/abc123")
+
+        self.mock_client.caches.create.side_effect = slow_create
+
+        def lookup() -> str | None:
+            all_threads_ready.wait()
+            return self.manager.cached_content_name(system_prompt=_SYSTEM_PROMPT)
+
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            names = [
+                future.result()
+                for future in [executor.submit(lookup) for _ in range(num_threads)]
+            ]
+
+        self.assertEqual(["cachedContents/abc123"] * num_threads, names)
+        self.mock_client.caches.create.assert_called_once()
 
     def test_is_stale_cache_error(self) -> None:
         stale_400 = errors.ClientError(

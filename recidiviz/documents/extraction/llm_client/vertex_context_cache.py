@@ -19,6 +19,7 @@ system prompt, used by the Vertex document-extraction client to avoid
 re-uploading a shared system prompt on every call."""
 
 import logging
+import threading
 
 from google import genai
 from google.genai import errors, types
@@ -57,6 +58,10 @@ class VertexContextCacheManager:
     prompt. Creates one cache per distinct prompt on first use and reuses it on
     subsequent calls, memoizing prompts too small to cache so the caller passes
     them inline.
+
+    Thread-safe: the extraction request runner drives one client from a pool of
+    worker threads, all of which share this manager and (within a run) ask for
+    the same system prompt.
     """
 
     def __init__(self, *, client: genai.Client, model: str) -> None:
@@ -69,6 +74,12 @@ class VertexContextCacheManager:
         # re-uploading the prompt each time. A None value memoizes that the prompt
         # is too small to cache, so it is passed inline instead. Populated lazily.
         self._cache_name_by_system_prompt: dict[str, str | None] = {}
+        # Guards the memo above. Held across `caches.create` — not just around the
+        # dict access — so that concurrent callers asking for the same prompt
+        # produce exactly one cache: without it every worker that arrives before
+        # the first create returns misses the memo and creates its own duplicate
+        # cache, each separately billed for cache storage until its TTL elapses.
+        self._lock = threading.Lock()
 
     def cached_content_name(self, *, system_prompt: str) -> str | None:
         """Returns the name of the explicit context cache for |system_prompt|,
@@ -76,20 +87,23 @@ class VertexContextCacheManager:
         when the prompt is too small for Vertex to cache (below the provider's
         minimum cacheable token count) — the caller then passes the prompt inline.
         The cacheability decision is memoized either way, so we attempt
-        `caches.create` at most once per distinct system prompt.
+        `caches.create` at most once per distinct system prompt, even when many
+        threads ask for it at once.
         """
-        if system_prompt not in self._cache_name_by_system_prompt:
-            self._cache_name_by_system_prompt[
-                system_prompt
-            ] = self._create_cached_content(system_prompt=system_prompt)
-        return self._cache_name_by_system_prompt[system_prompt]
+        with self._lock:
+            if system_prompt not in self._cache_name_by_system_prompt:
+                self._cache_name_by_system_prompt[
+                    system_prompt
+                ] = self._create_cached_content(system_prompt=system_prompt)
+            return self._cache_name_by_system_prompt[system_prompt]
 
     def invalidate(self, *, system_prompt: str) -> None:
         """Forgets the memoized cache name for |system_prompt| so the next
         `cached_content_name` call recreates it. Used when Vertex reports the
         cache no longer exists server-side.
         """
-        self._cache_name_by_system_prompt.pop(system_prompt, None)
+        with self._lock:
+            self._cache_name_by_system_prompt.pop(system_prompt, None)
 
     def _create_cached_content(self, *, system_prompt: str) -> str | None:
         """Creates an explicit context cache for |system_prompt|, returning its

@@ -241,6 +241,15 @@ class VertexAISyncLLMClient(SyncLLMClient):
                 MAX_OUTPUT_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME
             ],
             thinking_config=thinking_config,
+            # We declare no tools, so the SDK's automatic-function-calling loop
+            # has nothing to call and exits after a single generate_content. But
+            # leaving it on is not free: it logs "AFC is enabled with max remote
+            # calls: N" at INFO on every call — one line per document — and
+            # deep-copies the whole config, response schema included, before each
+            # dispatch. Turning it off skips both.
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                disable=True
+            ),
             response_mime_type=JSON_RESPONSE_MIME_TYPE,
             # The raw-JSON-Schema field — NOT response_schema, which coerces into
             # the google-genai Schema type (an OpenAPI-3.0 subset that cannot
