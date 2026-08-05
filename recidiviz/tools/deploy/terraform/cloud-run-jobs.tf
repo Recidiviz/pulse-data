@@ -254,6 +254,10 @@ resource "google_cloud_run_v2_job" "intercom_outbound_data_export" {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["uv"]
         args    = ["run", "python", "-m", "recidiviz.entrypoints.intercom_outbound_data_export"]
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
         resources {
           limits = {
             cpu    = "1000m"
