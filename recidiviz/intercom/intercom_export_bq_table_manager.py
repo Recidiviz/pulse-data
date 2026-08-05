@@ -23,12 +23,12 @@ import attr
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
-from recidiviz.intercom.intercom_exports_columns import (
+from recidiviz.intercom.intercom_export_columns import (
     EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME,
     STATUS_COLUMN_NAME,
 )
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
-from recidiviz.source_tables.intercom_exports_source_table import (
+from recidiviz.source_tables.intercom_export_source_tables import (
     INTERCOM_EXPORT_TRACKER_TABLE_ID,
 )
 

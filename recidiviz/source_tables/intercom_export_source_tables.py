@@ -17,7 +17,8 @@
 """Build the BQ table to track Intercom outbound content data export jobs."""
 
 from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
-from recidiviz.intercom.intercom_exports_columns import (
+from recidiviz.intercom.intercom_export_columns import (
+    build_intercom_export_tickets_schema,
     build_intercom_export_tracker_schema,
 )
 from recidiviz.source_tables.source_table_config import (
@@ -26,10 +27,12 @@ from recidiviz.source_tables.source_table_config import (
 )
 
 INTERCOM_EXPORT_TRACKER_TABLE_ID = "export_tracker"
+INTERCOM_EXPORT_TICKETS_TABLE_ID = "tickets"
 
 
-def build_intercom_export_tracker_table() -> SourceTableCollection:
-    """Add an Intercom export cloud run job tracker table to the Intercom export source table collection"""
+def build_intercom_source_tables() -> SourceTableCollection:
+    """Add an Intercom export cloud run job tracker table and an Intercom tickets table
+    to the Intercom export source table collection"""
 
     intercom_collection = SourceTableCollection(
         dataset_id=INTERCOM_EXPORT_DATASET,
@@ -41,6 +44,12 @@ def build_intercom_export_tracker_table() -> SourceTableCollection:
         table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
         description="Tracking for Intercom export cloud run job",
         schema_fields=build_intercom_export_tracker_schema(),
+    )
+
+    intercom_collection.add_source_table(
+        table_id=INTERCOM_EXPORT_TICKETS_TABLE_ID,
+        description="Contains inbound support tickets created when users reach out to us via Intercom",
+        schema_fields=build_intercom_export_tickets_schema(),
     )
 
     return intercom_collection

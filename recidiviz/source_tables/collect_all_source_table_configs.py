@@ -56,8 +56,8 @@ from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
     collect_golden_eval_results_source_table_collection,
 )
-from recidiviz.source_tables.intercom_exports_source_table import (
-    build_intercom_export_tracker_table,
+from recidiviz.source_tables.intercom_export_source_tables import (
+    build_intercom_source_tables,
 )
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
@@ -240,7 +240,7 @@ def build_source_table_repository_for_collected_schemata(
                 configs=extractor_configs_by_state
             ),
             collect_golden_eval_results_source_table_collection(),
-            build_intercom_export_tracker_table(),
+            build_intercom_source_tables(),
         ],
     )
 

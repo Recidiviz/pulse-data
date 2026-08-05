@@ -29,7 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATA
 from recidiviz.intercom.intercom_export_bq_table_manager import (
     IntercomExportBigQueryTableManager,
 )
-from recidiviz.intercom.intercom_exports_columns import (
+from recidiviz.intercom.intercom_export_columns import (
     EXPORT_DATETIME_COLUMN_NAME,
     EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME,
     EXPORT_WINDOW_START_INCLUSIVE_COLUMN_NAME,
@@ -37,7 +37,7 @@ from recidiviz.intercom.intercom_exports_columns import (
     build_intercom_export_tracker_schema,
 )
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
-from recidiviz.source_tables.intercom_exports_source_table import (
+from recidiviz.source_tables.intercom_export_source_tables import (
     INTERCOM_EXPORT_TRACKER_TABLE_ID,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
