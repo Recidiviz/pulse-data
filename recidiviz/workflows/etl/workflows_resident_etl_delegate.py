@@ -38,9 +38,6 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             json.loads(data.get("metadata", "{}")), snake_to_camel
         )
 
-        if metadata.get("stateCode") == "US_IX":
-            metadata["stateCode"] = "US_ID"
-
         new_document = {
             "pseudonymizedId": data["pseudonymized_id"],
             "personExternalId": data["person_external_id"],

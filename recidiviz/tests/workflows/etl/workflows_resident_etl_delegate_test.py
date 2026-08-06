@@ -235,52 +235,6 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                 row,
             )
 
-            fixture = fp.readline()
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_ID)
-
-            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
-            # Fifth row US_ID resident with metadata blob
-            # ETL detegate should update the state code in the blob to US_ID
-            self.assertEqual(doc_id, "304")
-            self.assertEqual(
-                {
-                    "pseudonymizedId": "p304",
-                    "personExternalId": "304",
-                    "displayId": "d304",
-                    "stateCode": "US_ID",
-                    "personName": {
-                        "givenNames": "Harlan",
-                        "middleNames": "Faux",
-                        "nameSuffix": "",
-                        "surname": "Martian",
-                    },
-                    "custodyLevel": None,
-                    "portionServedNeeded": None,
-                    "officerId": "100",
-                    "facilityId": "ABC",
-                    "unitId": "ABC 123",
-                    "facilityUnitId": "ABC-_-ABC 123",
-                    "gender": "FEMALE",
-                    "admissionDate": "2023-01-01",
-                    "releaseDate": "2027-03-28",
-                    "metadata": {
-                        "stateCode": "US_ID",
-                        "anotherTopLevelKey": "US_IX",
-                    },
-                    "sccpEligibilityDate": None,
-                    "allEligibleOpportunities": [
-                        "usMoOverdueRestrictiveHousingReviewHearing"
-                    ],
-                    "allIneligibleOpportunities": [
-                        "usMoWorkRelease",
-                        "usMoOutsideClearance",
-                    ],
-                    "usTnFacilityAdmissionDate": None,
-                    "usMePortionNeededEligibleDate": None,
-                },
-                row,
-            )
-
     def test_transform_row_with_missing_gender(self) -> None:
         """Test that the transform_row method handles missing gender gracefully."""
         # Create test data with missing gender

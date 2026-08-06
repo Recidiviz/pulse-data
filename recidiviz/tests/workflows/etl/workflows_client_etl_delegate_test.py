@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for WorkflowsClientETLDelegate to parse json rows."""
+
 import os
 from datetime import datetime, timezone
 from unittest import IsolatedAsyncioTestCase
@@ -250,40 +251,6 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                     "allEligibleOpportunities": ["earlyTermination"],
                     "metadata": {
                         "stateCode": "US_ND",
-                    },
-                },
-                row,
-            )
-
-            # US_ID row
-            delegate = WorkflowsClientETLDelegate(StateCode.US_ID)
-            fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture, "client_record.json")
-            self.assertEqual(doc_id, "204")
-            self.assertEqual(
-                {
-                    "personExternalId": "204",
-                    "pseudonymizedId": "p204",
-                    "displayId": "d204",
-                    "stateCode": "US_ID",
-                    "address": "456 Fake st., Faketown, ID 12345",
-                    "expirationDate": "2022-02-28",
-                    "phoneNumber": "8889997777",
-                    "personName": {
-                        "givenNames": "Fifth",
-                        "middleNames": "Persons",
-                        "nameSuffix": "",
-                        "surname": "Realname",
-                    },
-                    "officerId": "100",
-                    "supervisionType": "PROBATION",
-                    "supervisionLevel": "MEDIUM",
-                    "supervisionLevelStart": "2020-03-10",
-                    "supervisionStartDate": "2021-03-04",
-                    "allEligibleOpportunities": ["earnedDischarge"],
-                    "metadata": {
-                        "stateCode": "US_ID",
-                        "notStateCode": "US_IX",
                     },
                 },
                 row,

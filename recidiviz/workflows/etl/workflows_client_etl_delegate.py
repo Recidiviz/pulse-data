@@ -57,10 +57,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
                         state_code, value
                     )
                 case "metadata":
-                    metadata = json.loads(value)
-                    if metadata.get("state_code") == "US_IX":
-                        metadata["state_code"] = "US_ID"
-                    new_document[key] = metadata
+                    new_document[key] = json.loads(value)
                 case _:
                     new_document[key] = value
 

@@ -20,6 +20,18 @@ e.g. workflows_views.resident_record, workflows_views.client_record, jii_views.r
 
 from recidiviz.common.constants.states import StateCode
 
+# TODO(#10703): Remove this alias once US_IX is merged back into US_ID.
+_STATE_CODE_DISPLAY_ALIASES: dict[StateCode, StateCode] = {
+    StateCode.US_IX: StateCode.US_ID,
+}
+
+
+def _display_state_code(state_code: StateCode) -> str:
+    """Returns the state code value to surface to consumers of this CTE, aliasing
+    US_IX to US_ID since Idaho's ATLAS system is still referred to as US_ID outside
+    of our own codebase and data infrastructure."""
+    return _STATE_CODE_DISPLAY_ALIASES.get(state_code, state_code).value.upper()
+
 
 def generate_person_state_specific_data_cte(
     source_dataset: str,
@@ -55,7 +67,7 @@ def generate_person_state_specific_data_cte(
         SELECT
             person.person_id,
             TO_JSON_STRING(
-                (SELECT AS STRUCT m.* EXCEPT (person_id), "{state_code.value.upper()}" AS state_code
+                (SELECT AS STRUCT m.* EXCEPT (person_id), "{_display_state_code(state_code)}" AS state_code
                     FROM deduped_{state_code.value.lower()}_data m
                     WHERE person.person_id = m.person_id)
             ) as {dest_column_and_cte_name},
