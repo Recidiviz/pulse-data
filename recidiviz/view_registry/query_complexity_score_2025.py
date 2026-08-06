@@ -251,6 +251,7 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
             "DENSE_RANK",
             "RANK",
             "APPROX_QUANTILES",
+            "APPROX_TOP_COUNT",
             "TRUNC",
             "IEEE_DIVIDE",
             "ENDS_WITH",

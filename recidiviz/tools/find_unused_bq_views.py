@@ -308,10 +308,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         for table_id in [
             "cni_accuracy_per_field_annotations_parsed",
             "cni_accuracy_per_field_annotation_pairs",
+            "cni_accuracy_per_field_annotation_summary",
             "cni_accuracy_per_field_irr_summary",
             "cni_accuracy_per_field_irr_trend",
             "meetings_module_quality_annotations_parsed",
             "meetings_module_quality_annotation_pairs",
+            "meetings_module_quality_annotation_summary",
             "meetings_module_quality_irr_summary",
             "meetings_module_quality_irr_trend",
         ]
