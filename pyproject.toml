@@ -224,7 +224,7 @@ dev = [
     "censusgeocode",
     "Cycler",
     "fuzzywuzzy",
-    "geopandas",
+    "geopandas>=1.1.2",
     "geopy",
     "h2o",
     "jupyter-client",
@@ -248,7 +248,7 @@ dev = [
     "pytest_asyncio",
     "scikit-learn",
     "sentry-cli",
-    "shapely<2.0.0",
+    "shapely>=2.0.0",
     "SyntheticControlMethods",
     "ydata-profiling",
     # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed
