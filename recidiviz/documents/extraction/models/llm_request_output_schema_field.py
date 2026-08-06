@@ -748,6 +748,21 @@ class ScalarValuedLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
         return f"$.{self.name}"
 
 
+def assert_scalar_valued_field(
+    field: LLMRequestOutputSchemaField,
+) -> ScalarValuedLLMRequestOutputSchemaField:
+    """Returns |field| narrowed to a scalar-valued field, raising if it is not one.
+    `assert_type` can't be used for this because
+    ScalarValuedLLMRequestOutputSchemaField is abstract (mypy `type-abstract`).
+    """
+    if not isinstance(field, ScalarValuedLLMRequestOutputSchemaField):
+        raise ValueError(
+            f"Expected field [{field.name}] to be scalar-valued, but it has type "
+            f"[{field.field_type.value}]."
+        )
+    return field
+
+
 @attr.define(frozen=True, kw_only=True)
 class PrimitiveScalarLLMRequestOutputSchemaField(
     ScalarValuedLLMRequestOutputSchemaField

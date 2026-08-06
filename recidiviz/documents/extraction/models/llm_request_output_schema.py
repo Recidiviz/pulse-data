@@ -128,7 +128,7 @@ class LLMRequestOutputSchema:
         `LLMJsonSchemaGenerator.generate` emits that wrapper for exactly the schemas
         that have an `is_relevant` field, so every reader of a result JSON has to strip
         it on the same condition — the SQL parsed views do so once per document as they
-        read the results table, and `LLMRequestOutputDocument` does so in Python.
+        read the results table, and `LLMRequestOutputValues` does so in Python.
         """
         return self.is_relevant_field is not None
 
