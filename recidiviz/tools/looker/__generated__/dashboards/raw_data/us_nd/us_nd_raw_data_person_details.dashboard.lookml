@@ -375,6 +375,79 @@
     width: 24
     height: 6
 
+  - name: docstars_activerevocation
+    title: docstars_activerevocation
+    explore: us_nd_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_nd_docstars_activerevocation.primary_key,
+      us_nd_docstars_activerevocation.CASE_NUMBER,
+      us_nd_docstars_activerevocation.SID,
+      us_nd_docstars_activerevocation.RecID,
+      us_nd_docstars_activerevocation.RecDate__raw,
+      us_nd_docstars_activerevocation.ABSCONDER,
+      us_nd_docstars_activerevocation.ALLEGED_VIOLATIONS,
+      us_nd_docstars_activerevocation.BOND_AMOUNT,
+      us_nd_docstars_activerevocation.COUNTYCODE,
+      us_nd_docstars_activerevocation.ENDDATE__raw,
+      us_nd_docstars_activerevocation.STARTDATE__raw,
+      us_nd_docstars_activerevocation.INACTIVEDATE__raw,
+      us_nd_docstars_activerevocation.OFFICER_RESPONSE,
+      us_nd_docstars_activerevocation.RELEASE_DATE__raw,
+      us_nd_docstars_activerevocation.REVOCATION_RESULT,
+      us_nd_docstars_activerevocation.REVOKED_DETAIL,
+      us_nd_docstars_activerevocation.CREATED_BY,
+      us_nd_docstars_activerevocation.LAST_UPDATE,
+      us_nd_docstars_activerevocation.file_id,
+      us_nd_docstars_activerevocation.is_deleted]
+    sorts: [us_nd_docstars_activerevocation.RecDate__raw]
+    note_display: hover
+    note_text: "Each row represents a revocation proceeding against a person, covering the period from when the revocation was initiated through when it was resolved. Rows are linked to the violations that gave rise to them via docstars_violation_revocation_link, whose REVOCATION_ID matches RecID in this file.  NOTE: numeric identifiers in this file (SID, CASE_NUMBER, RecID) are sent with thousands separators, e.g. 161,923. RecID matches docstars_violation_revocation_link.REVOCATION_ID as-is, since that file is formatted the same way, but joins to older Docstars files such as docstars_offenders and docstars_offendercasestable need the commas stripped."
+    listen: 
+      View Type: us_nd_docstars_offenders.view_type
+      US_ND_SID: us_nd_docstars_offenders.SID
+      US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
+      US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
+    row: 36
+    col: 0
+    width: 24
+    height: 6
+
+  - name: docstars_violations
+    title: docstars_violations
+    explore: us_nd_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_nd_docstars_violations.primary_key,
+      us_nd_docstars_violations.SID,
+      us_nd_docstars_violations.VIOLATION_ID,
+      us_nd_docstars_violations.VIOLATION_DATE__raw,
+      us_nd_docstars_violations.VIOLATION_TYPE,
+      us_nd_docstars_violations.TECHNICAL_VIOLATION,
+      us_nd_docstars_violations.TECH_VIOLATION_TYPE,
+      us_nd_docstars_violations.NEW_CRIME,
+      us_nd_docstars_violations.SEVERITY,
+      us_nd_docstars_violations.FAILURE_TO_APPEAR,
+      us_nd_docstars_violations.ABSCONDER,
+      us_nd_docstars_violations.ASSIGNED_OFFICER,
+      us_nd_docstars_violations.RecDate__raw,
+      us_nd_docstars_violations.INACTIVEDATE__raw,
+      us_nd_docstars_violations.CreatedBy,
+      us_nd_docstars_violations.file_id,
+      us_nd_docstars_violations.is_deleted]
+    sorts: [us_nd_docstars_violations.VIOLATION_DATE__raw]
+    note_display: hover
+    note_text: "Each row represents a single violation of the conditions of supervision (or, for pre-trial cases, of the conditions of release) recorded in Docstars for a given person. Rows are linked to the cases they were filed against via docstars_violation_case_link, to their allegation text via docstars_violation_allegations, to any associated new offenses via docstars_violation_crimes, to the responses taken via docstars_violation_responses, and to any resulting revocation via docstars_violation_revocation_link.  NOTE: numeric identifiers in this file (SID, VIOLATION_ID) are sent with thousands separators (e.g. 218,036), unlike the same identifiers in other Docstars files (e.g. docstars_offenders.SID is sent as 218036). Commas must be stripped before joining to other raw tables."
+    listen: 
+      View Type: us_nd_docstars_offenders.view_type
+      US_ND_SID: us_nd_docstars_offenders.SID
+      US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
+      US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
+    row: 42
+    col: 0
+    width: 24
+    height: 6
+
   - name: elite_offenderidentifier
     title: elite_offenderidentifier
     explore: us_nd_raw_data
@@ -396,7 +469,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 36
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -427,7 +500,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 42
+    row: 54
     col: 0
     width: 24
     height: 6
@@ -460,7 +533,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 48
+    row: 60
     col: 0
     width: 24
     height: 6
@@ -494,7 +567,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 54
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -555,7 +628,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 60
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -594,7 +667,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 66
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -622,7 +695,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 72
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -657,7 +730,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 78
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -696,7 +769,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 84
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -727,7 +800,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 90
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -765,7 +838,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 96
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -797,7 +870,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 102
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -832,7 +905,7 @@
       US_ND_SID: us_nd_docstars_offenders.SID
       US_ND_ELITE_BOOKING: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
       US_ND_ELITE: us_nd_elite_offenders.ROOT_OFFENDER_ID
-    row: 108
+    row: 120
     col: 0
     width: 24
     height: 6

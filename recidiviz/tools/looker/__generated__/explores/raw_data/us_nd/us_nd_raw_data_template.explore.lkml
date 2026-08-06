@@ -45,6 +45,20 @@ explore: us_nd_raw_data_template {
     view_label: "us_nd_docstars_offensestable"
   }
 
+  join: us_nd_docstars_activerevocation {
+    sql_on: REPLACE(${us_nd_docstars_activerevocation.SID},',','') = ${us_nd_docstars_offenders.SID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_nd_docstars_activerevocation"
+  }
+
+  join: us_nd_docstars_violations {
+    sql_on: ${us_nd_docstars_offenders.SID} = REPLACE(${us_nd_docstars_violations.SID},',','');;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_nd_docstars_violations"
+  }
+
   join: us_nd_elite_offenderidentifier {
     sql_on: ${us_nd_docstars_offenders.SID} = ${us_nd_elite_offenderidentifier.IDENTIFIER} AND ${us_nd_elite_offenderidentifier.IDENTIFIER_TYPE} = 'SID';;
     type: full_outer

@@ -51,6 +51,11 @@ class ManualRawDataPruningExemptionReason(Enum):
     )
     AUTOMATICALLY_PRUNED = "This file is enabled for automatic raw data pruning and should not be manually pruned."
 
+    NO_VALID_PRIMARY_KEYS = (
+        "This file has no valid primary keys, which makes it ineligible for both "
+        "automatic and manual raw data pruning."
+    )
+
 
 class AutomaticRawDataPruningExemptionReason(Enum):
     """
@@ -100,6 +105,17 @@ FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
     StateCode.US_ND: {
         # TODO(#33357): Account for these incrementals before rolling out automatic raw data pruning.
         "docstars_offenders": ManualRawDataPruningExemptionReason.MIXED_INCREMENTAL_AND_HISTORICAL,
+        # These files were first transferred in August 2026, after automatic pruning
+        # became the default, so they have no legacy history to reimport and go
+        # straight to automatic pruning rather than the manual process.
+        "docstars_activerevocation": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_reference_tables": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_violation_allegations": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_violation_case_link": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_violation_responses": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_violations": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "docstars_violation_crimes": ManualRawDataPruningExemptionReason.NO_VALID_PRIMARY_KEYS,
+        "docstars_violation_revocation_link": ManualRawDataPruningExemptionReason.NO_VALID_PRIMARY_KEYS,
     },
     StateCode.US_TN: {
         "Address": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
