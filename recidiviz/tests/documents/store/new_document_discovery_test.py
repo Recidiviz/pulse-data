@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for new_document_discovery.py."""
 
+import contextlib
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -24,14 +25,22 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
 from recidiviz.tests.documents import fake_config as fake_config_module
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.store.document_store_test_utils import (
     get_fake_first_order_document_collection_config,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestNewDocumentDiscovery(unittest.TestCase):
@@ -195,3 +204,92 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         # The generation-output snapshot deliberately survives a failed run for
         # debugging; the temp dataset's table expiration reaps it.
         self.bq_client.delete_table.assert_not_called()
+
+
+class TestNewDocumentDiscoveryEntityResolution(unittest.TestCase):
+    """Tests the entry→source map hydration wiring in discovery: an
+    entity-resolution collection's map is rebuilt between the generation-output
+    materialization and the diff; first-order collections are untouched."""
+
+    def setUp(self) -> None:
+        self.bq_client = MagicMock()
+        self.exit_stack = contextlib.ExitStack()
+        self.addCleanup(self.exit_stack.close)
+        self.exit_stack.enter_context(patch_fake_entity_resolution_model_config_name())
+        self.get_config_patcher = patch(
+            "recidiviz.documents.store.new_document_discovery.get_document_collection_config",
+            side_effect=lambda state_code, name: get_document_collection_config(
+                state_code, name, config_module=fake_config_module
+            ),
+        )
+        self.get_config_patcher.start()
+
+    def tearDown(self) -> None:
+        self.get_config_patcher.stop()
+
+    def _run_discovery(self, collection_name: str) -> None:
+        NewDocumentDiscoverer(
+            state_code=StateCode.US_XX,
+            collection_name=collection_name,
+            project_id="recidiviz-testing",
+            big_query_client=self.bq_client,
+            run_id="test_run_id",
+        ).run()
+
+    def _write_table_ids(self) -> list[str]:
+        return [
+            call.kwargs["address"].table_id
+            for call in self.bq_client.create_table_from_query.call_args_list
+        ]
+
+    def test_er_collection_hydrates_map_between_materialize_and_diff(self) -> None:
+        mock_row_iterator = MagicMock()
+        mock_row_iterator.total_rows = 0
+        self.bq_client.create_table_from_query.return_value = mock_row_iterator
+
+        self._run_discovery(FAKE_ASSIGNMENT_ER_COLLECTION_NAME)
+
+        er_collection = assert_type(
+            get_document_collection_config(
+                StateCode.US_XX, FAKE_ASSIGNMENT_ER_COLLECTION_NAME, fake_config_module
+            ),
+            EntityResolutionDocumentCollectionConfig,
+        )
+        generation_output_table_id = (
+            er_collection.temp_document_generation_output_table_address(
+                "test_run_id"
+            ).table_id
+        )
+        self.assertEqual(
+            [
+                generation_output_table_id,
+                er_collection.entry_source_map_table_address.table_id,
+                er_collection.temp_document_metadata_updates_table_address(
+                    "test_run_id"
+                ).table_id,
+            ],
+            self._write_table_ids(),
+        )
+        # The map is rebuilt from the same snapshot the diff reads.
+        map_write_call = self.bq_client.create_table_from_query.call_args_list[1]
+        self.assertIn(generation_output_table_id, map_write_call.kwargs["query"])
+
+    def test_first_order_collection_never_touches_a_map_table(self) -> None:
+        mock_row_iterator = MagicMock()
+        mock_row_iterator.total_rows = 0
+        self.bq_client.create_table_from_query.return_value = mock_row_iterator
+
+        self._run_discovery(get_fake_first_order_document_collection_config().name)
+
+        first_order_collection = get_fake_first_order_document_collection_config()
+        self.assertEqual(
+            [
+                first_order_collection.temp_document_generation_output_table_address(
+                    "test_run_id"
+                ).table_id,
+                first_order_collection.temp_document_metadata_updates_table_address(
+                    "test_run_id"
+                ).table_id,
+            ],
+            self._write_table_ids(),
+        )

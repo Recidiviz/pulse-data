@@ -26,6 +26,12 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_hydrator import (
+    EntityResolutionEntrySourceMapHydrator,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -134,17 +140,21 @@ class NewDocumentDiscoverer:
           1. Materializes the results of the collection's full document_generation_query
              to a temp table. This single snapshot is what every consumer of one run's
              generation output reads.
-          2. Diffs that output against the collection's "latest" metadata view
-             (which returns the most up-to-date row per document primary key) to
-             identify added, updated, and deleted documents. Writes the
-             diff results to a temp document metadata updates table.
-          3. From the temp document metadata updates table, selects distinct
+          2. For an entity-resolution collection, rebuilds its entry→source map
+             table from that output. This runs before the diff and regardless of its
+             outcome because a composite's map can change while its text, and
+             therefore its document_contents_id, does not.
+          3. Diffs the generation output against the collection's "latest"
+             metadata view (which returns the most up-to-date row per document
+             primary key) to identify added, updated, and deleted documents.
+             Writes the diff results to a temp document metadata updates table.
+          4. From the temp document metadata updates table, selects distinct
              (document_contents_id, document_text) pairs whose
              document_contents_id is not already present in the collection's
              persistent document_contents table. Each row is assigned a batch
              number based on cumulative byte size and written to a temp new
              document contents table.
-          4. Deletes the generation-output temp table: it is consumed entirely
+          5. Deletes the generation-output temp table: it is consumed entirely
              within discovery. If discovery raises before deletion, the table
              deliberately survives for debugging and the temp dataset's table
              expiration reaps it.
@@ -153,6 +163,13 @@ class NewDocumentDiscoverer:
         document_generation_output_address = (
             self._materialize_document_generation_output()
         )
+
+        if isinstance(self.config, EntityResolutionDocumentCollectionConfig):
+            EntityResolutionEntrySourceMapHydrator(
+                project_id=self.project_id,
+                big_query_client=self.big_query_client,
+                config=self.config,
+            ).run(document_generation_output_address)
 
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(

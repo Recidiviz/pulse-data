@@ -50,9 +50,11 @@ outputs from those same rows in one `GROUP BY` per root entity: the composite
 source_document_contents_id, source_document_update_datetime,
 source_array_index>`). Because both come out of a single execution, the rendered
 text and the map cannot disagree. The map is declared via the collection's
-`other_document_generation_output_columns` so the store carries it through to the
-temp-updates table, from which the ER upload extension diverts it to the
-entry→source map table.
+`other_document_generation_output_columns`; the entry→source map table is rebuilt
+on every discovery run from the run's materialized generation output — every root
+entity's row, not just changed ones — because a mention's `source_array_index`
+can shift without changing a byte of the rendered text (see
+`entity_resolution_entry_source_map_table.py`).
 """
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames

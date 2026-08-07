@@ -24,10 +24,12 @@ back onto the original first-order mention rows.
 
 The map is produced as the nested `entry_source_map` generation-output column of
 the composite-document collection (see
-`entity_resolution_composite_document_query_builder.py`), carried through the
-document store's temp-updates table, and then diverted here by the ER upload
-extension. The table is exactly that struct `UNNEST`ed with the root entity and
-the composite document's `document_contents_id` attached, so its schema is derived
+`entity_resolution_composite_document_query_builder.py`). On every discovery run
+the document store materializes the collection's full generation output — every
+root entity's composite, not just changed ones — and this table is rebuilt from
+that snapshot, independent of document-change detection and of upload success.
+The table is exactly that struct `UNNEST`ed with the root entity and the
+composite document's `document_contents_id` attached, so its schema is derived
 from the struct's sub-fields rather than restated — the two cannot drift apart.
 
 Rows are keyed by **root entity**, not by the composite's `document_contents_id`,

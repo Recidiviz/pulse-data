@@ -183,8 +183,8 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
     @other_document_generation_output_columns.default
     def _other_document_generation_output_columns(self) -> list[bigquery.SchemaField]:
         """The composite-document generation query emits the entry→source map
-        alongside the document text; the store carries it through to the
-        temp-updates table for the ER upload extension to divert to the map table.
+        alongside the document text. This value ultimately gets written to the
+        *entry_source_map_table as part of the document discovery flow.
         """
         return [entry_source_map_schema_field()]
 
