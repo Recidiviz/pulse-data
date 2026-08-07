@@ -461,6 +461,10 @@ class OutliersQuerier:
                         officers_subquery.c.supervisor_external_id
                         == SupervisionOfficerSupervisor.external_id
                     ),
+                    # TODO(OBT-43371) Move this logic to the outliers config
+                    # US_TX supervisors may not yet supervise any officers, but
+                    # should still be included in results.
+                    isouter=self.state_code is StateCode.US_TX,
                 )
                 .join(
                     SupervisionOfficerOutlierStatus,

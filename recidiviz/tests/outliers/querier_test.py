@@ -16,12 +16,14 @@
 # =============================================================================
 """This class implements tests for the OutliersQuerier class"""
 from datetime import date, datetime
+from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import freezegun
 import pytest
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.orm import Query
 
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
@@ -241,6 +243,38 @@ class TestOutliersQuerier(InsightsDbTestCase):
         ).get_supervision_officer_supervisor_entities()
 
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_supervisor_entities")  # type: ignore[attr-defined]
+
+    def test_get_supervision_officer_supervisor_entities_us_tx_join_is_outer(
+        self,
+    ) -> None:
+        """The join from a supervisor to their officers should be a LEFT JOIN
+        for US_TX, so that supervisors without any officers are still
+        included, but should remain an INNER JOIN for other states."""
+        querier = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        )
+        # Warm the cached DB session (bound to the US_XX test database) before
+        # swapping state_code below, since only the join behavior - not the DB
+        # connection - should change with state_code.
+        _ = querier.insights_database_session
+
+        original_join = Query.join
+        recorded_join_calls = []
+
+        def spy_join(query: Query, *args: Any, **kwargs: Any) -> Query:
+            recorded_join_calls.append((args, kwargs))
+            return original_join(query, *args, **kwargs)
+
+        querier.state_code = StateCode.US_TX
+        with patch.object(Query, "join", spy_join):
+            querier.get_supervision_officer_supervisor_entities()
+        self.assertTrue(recorded_join_calls[0][1].get("isouter"))
+
+        recorded_join_calls.clear()
+        querier.state_code = StateCode.US_XX
+        with patch.object(Query, "join", spy_join):
+            querier.get_supervision_officer_supervisor_entities()
+        self.assertFalse(recorded_join_calls[0][1].get("isouter"))
 
     def test_get_officers_for_supervisor(self) -> None:
         actual = OutliersQuerier(
