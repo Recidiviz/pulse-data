@@ -1656,7 +1656,7 @@ resource "google_monitoring_alert_policy" "has_unmapped_enum_values_in_ingest_pi
   display_name = "Unmapped Enum Values in Ingest Pipeline"
 
   documentation {
-    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND textPayload=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
+    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND (textPayload=~\"Unmapped enum value\" OR jsonPayload.message=~\"Unmapped enum value\")` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
     mime_type = "text/markdown"
   }
 
@@ -1789,7 +1789,7 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
   display_name = "Unmapped Enum Values in Ingest Pipeline  (deprecated cumulative counter)"
 
   documentation {
-    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND textPayload=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
+    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND jsonPayload.message=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
     mime_type = "text/markdown"
   }
 
