@@ -55,11 +55,28 @@ from recidiviz.utils.secrets import get_secret
 # Firestore document ID for the early discharge opportunity status.
 EARLY_DISCHARGE_STATUS_DOC_ID = "usIaEarlyDischarge"
 
+
+class McpCallbackParseError(Exception):
+    """Raised when the MCP callback body cannot be parsed as XML."""
+
+
+class McpCallbackMissingFieldsError(Exception):
+    """Raised when the MCP callback XML is missing MessageId or TransactionStatus."""
+
+
+class McpMessageNotFoundError(Exception):
+    """Raised when no Firestore documents match the given MCP message ID."""
+
+
+class McpMessageAmbiguousError(Exception):
+    """Raised when the MCP message ID matches documents belonging to multiple persons."""
+
+
 # XML namespace URIs in MCP's callback body.
 # Root element namespace for the AsynchronousNotificationMessage envelope.
 _NS_EXCHANGE_NOTIFICATION = "http://www.cjis.iowa.gov/exchange-notification/1.0"
 # Namespace for the payload fields (MessageId, TransactionStatus, etc.).
-_NS_WS_RESPONSE = "http://www.cjis.iowa.gov/WSResponse/1.0"
+MCP_WS_RESPONSE_NS = "http://www.cjis.iowa.gov/WSResponse/1.0"
 
 # XML namespace URIs defined by the MCP/NIEM schema.
 _NS_NIEM_CORE = "http://release.niem.gov/niem/niem-core/5.0/"
@@ -310,16 +327,21 @@ class McpCallbackData(BaseModel):
     @classmethod
     def from_callback_xml(cls, xml_str: str) -> "McpCallbackData":
         """Parse MCP's AsynchronousNotificationMessage callback body."""
-        root = _safe_fromstring(xml_str)
+        try:
+            root = _safe_fromstring(xml_str)
+        except Exception as e:
+            raise McpCallbackParseError(
+                f"Failed to parse MCP callback XML: [{e}]"
+            ) from e
 
         def _text(tag: str) -> str | None:
-            el = root.find(f".//{{{_NS_WS_RESPONSE}}}{tag}")
+            el = root.find(f".//{{{MCP_WS_RESPONSE_NS}}}{tag}")
             return el.text if el is not None else None
 
         message_id = _text("MessageId")
         transaction_status = _text("TransactionStatus")
         if message_id is None or transaction_status is None:
-            raise ValueError(
+            raise McpCallbackMissingFieldsError(
                 f"Missing required fields in MCP callback body: [{xml_str}]"
             )
         return cls(
@@ -367,8 +389,8 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
         firestore_client: FirestoreClientImpl,
     ) -> Self:
         """Returns a tracker for the submission associated with the given MCP message ID.
-        Raises ValueError if no documents are found in clientOpportunityUpdates for the message ID,
-        or if the documents span multiple persons.
+        Raises McpMessageNotFoundError if no documents are found in clientOpportunityUpdates
+        for the message ID, or McpMessageAmbiguousError if the documents span multiple persons.
         """
         docs = (
             firestore_client.client.collection_group("clientOpportunityUpdates")
@@ -377,13 +399,13 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
         )
 
         if not docs:
-            raise ValueError(
+            raise McpMessageNotFoundError(
                 f"No pending early discharge request found for message ID [{message_id}]"
             )
 
         record_ids = {doc.reference.parent.parent.id for doc in docs}
         if len(record_ids) != 1:
-            raise ValueError(
+            raise McpMessageAmbiguousError(
                 f"Expected a single person for message ID [{message_id}], "
                 f"got [{record_ids}]"
             )
@@ -453,7 +475,7 @@ class UsIaEarlyDischargeWritebackExecutor(
         super().__init__(request)
         firestore_paths = [
             f"clientUpdatesV2/us_ia_{request.person_external_id}"
-            f"/clientOpportunityUpdates/usIaEarlyDischarge_{charge_id}"
+            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_{charge_id}"
             for charge_id in request.charge_ids
         ]
         self._tracker = UsIaEarlyDischargeStatusTracker(

@@ -39,10 +39,14 @@ from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
     _NS_IA_EXT,
     _NS_J,
     _NS_NIEM_CORE,
-    _NS_WS_RESPONSE,
     EARLY_DISCHARGE_STATUS_DOC_ID,
+    MCP_WS_RESPONSE_NS,
     McpCallbackData,
+    McpCallbackMissingFieldsError,
+    McpCallbackParseError,
     McpEarlyDischargeXmlRequest,
+    McpMessageAmbiguousError,
+    McpMessageNotFoundError,
     UsIaEarlyDischargeRequestData,
     UsIaEarlyDischargeStatusTracker,
     UsIaEarlyDischargeWritebackExecutor,
@@ -65,20 +69,20 @@ def _make_callback_xml(
 ) -> str:
     """Build a test AsynchronousNotificationMessage matching the confirmed MCP format."""
     error_code_el = (
-        f'<ErrorCode xmlns="{_NS_WS_RESPONSE}">{error_code}</ErrorCode>'
+        f'<ErrorCode xmlns="{MCP_WS_RESPONSE_NS}">{error_code}</ErrorCode>'
         if error_code
         else ""
     )
     error_el = (
-        f'<ErrorMsg xmlns="{_NS_WS_RESPONSE}">{error_msg}</ErrorMsg>'
+        f'<ErrorMsg xmlns="{MCP_WS_RESPONSE_NS}">{error_msg}</ErrorMsg>'
         if error_msg
         else ""
     )
     return (
         f'<AsynchronousNotificationMessage xmlns="{_NS_EXCHANGE_NOTIFICATION}">'
-        f'<MessageId xmlns="{_NS_WS_RESPONSE}">{message_id}</MessageId>'
-        f'<Description xmlns="{_NS_WS_RESPONSE}">Recidiviz CBC Discharge Asynchronous Response</Description>'
-        f'<TransactionStatus xmlns="{_NS_WS_RESPONSE}">{transaction_status}</TransactionStatus>'
+        f'<MessageId xmlns="{MCP_WS_RESPONSE_NS}">{message_id}</MessageId>'
+        f'<Description xmlns="{MCP_WS_RESPONSE_NS}">Recidiviz CBC Discharge Asynchronous Response</Description>'
+        f'<TransactionStatus xmlns="{MCP_WS_RESPONSE_NS}">{transaction_status}</TransactionStatus>'
         f"{error_code_el}"
         f"{error_el}"
         f"</AsynchronousNotificationMessage>"
@@ -385,24 +389,24 @@ class TestMcpCallbackData(TestCase):
 
     def test_parse_missing_message_id_raises(self) -> None:
         xml = (
-            f'<ws:WSResponse xmlns:ws="{_NS_WS_RESPONSE}">'
+            f'<ws:WSResponse xmlns:ws="{MCP_WS_RESPONSE_NS}">'
             f"<ws:TransactionStatus>S</ws:TransactionStatus>"
             f"</ws:WSResponse>"
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(McpCallbackMissingFieldsError):
             McpCallbackData.from_callback_xml(xml)
 
     def test_parse_missing_transaction_status_raises(self) -> None:
         xml = (
-            f'<ws:WSResponse xmlns:ws="{_NS_WS_RESPONSE}">'
+            f'<ws:WSResponse xmlns:ws="{MCP_WS_RESPONSE_NS}">'
             f"<ws:MessageId>{_TEST_MESSAGE_ID}</ws:MessageId>"
             f"</ws:WSResponse>"
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(McpCallbackMissingFieldsError):
             McpCallbackData.from_callback_xml(xml)
 
     def test_parse_invalid_xml_raises(self) -> None:
-        with self.assertRaises(ET.ParseError):
+        with self.assertRaises(McpCallbackParseError):
             McpCallbackData.from_callback_xml("not xml at all")
 
 
@@ -538,7 +542,7 @@ class TestUsIaEarlyDischargeWritebackExecutor(TestCase):
 def _expected_firestore_path(charge_id: str) -> str:
     return (
         f"clientUpdatesV2/us_ia_{PERSON_EXTERNAL_ID}"
-        f"/clientOpportunityUpdates/usIaEarlyDischarge_{charge_id}"
+        f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_{charge_id}"
     )
 
 
@@ -668,8 +672,8 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
         self.assertEqual(
             tracker.firestore_paths,
             [
-                "clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/usIaEarlyDischarge_CHG789",
-                "clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/usIaEarlyDischarge_CHG790",
+                f"clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_CHG789",
+                f"clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_CHG790",
             ],
         )
         mock_firestore.client.collection_group.assert_called_once_with(
@@ -681,7 +685,9 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
         mock_firestore.client.collection_group.return_value.where.return_value.get.return_value = (
             []
         )
-        with self.assertRaisesRegex(ValueError, rf"\[{_TEST_MESSAGE_ID}\]"):
+        with self.assertRaisesRegex(
+            McpMessageNotFoundError, rf"\[{_TEST_MESSAGE_ID}\]"
+        ):
             UsIaEarlyDischargeStatusTracker.from_message_id(
                 _TEST_MESSAGE_ID, mock_firestore
             )
@@ -694,7 +700,9 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
             doc1,
             doc2,
         ]
-        with self.assertRaisesRegex(ValueError, r"Expected a single person"):
+        with self.assertRaisesRegex(
+            McpMessageAmbiguousError, r"Expected a single person"
+        ):
             UsIaEarlyDischargeStatusTracker.from_message_id(
                 _TEST_MESSAGE_ID, mock_firestore
             )

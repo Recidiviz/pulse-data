@@ -17,6 +17,7 @@
 """Implement tests for Workflows APIs"""
 import datetime
 import os
+import xml.etree.ElementTree as ET
 from http import HTTPStatus
 from typing import Callable, Dict, Optional
 from unittest import TestCase, mock
@@ -26,6 +27,7 @@ import responses
 from flask import Flask
 from flask.testing import FlaskClient
 from freezegun import freeze_time
+from werkzeug.test import TestResponse
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
@@ -2327,6 +2329,14 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     _IA_CALLBACK_MESSAGE_ID = "callback-msg-id-5678"
     _IA_NS_WS = "http://www.cjis.iowa.gov/WSResponse/1.0"
 
+    def _parse_callback_response_transaction_status(
+        self, response: TestResponse
+    ) -> str | None:
+        """Returns the TransactionStatus value from an XML WSResponse body."""
+        root = ET.fromstring(response.data)
+        el = root.find(f"{{{self._IA_NS_WS}}}TransactionStatus")
+        return el.text if el is not None else None
+
     def _make_callback_soap(
         self,
         message_id: str = _IA_CALLBACK_MESSAGE_ID,
@@ -2382,7 +2392,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "S"
+        )
         mock_firestore.return_value.set_document.assert_called()
         for mock_call in mock_firestore.return_value.set_document.call_args_list:
             _, doc, *_ = mock_call.args
@@ -2404,7 +2416,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 data=self._make_callback_soap(),
             )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "E"
+        )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_mcp_early_discharge_callback_missing_token_returns_401(
@@ -2419,10 +2434,13 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 data=self._make_callback_soap(),
             )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "E"
+        )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
-    def test_mcp_early_discharge_callback_invalid_payload_returns_400(
+    def test_mcp_early_discharge_callback_invalid_payload(
         self, mock_get_secret: MagicMock
     ) -> None:
         mock_get_secret.return_value = "valid-token"
@@ -2437,7 +2455,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 data="this is not valid xml",
             )
 
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "E"
+        )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
@@ -2461,6 +2482,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "S"
+        )
         mock_firestore.return_value.set_document.assert_called()
 
         for (
@@ -2472,7 +2496,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
-    def test_mcp_early_discharge_callback_unknown_message_id_returns_404(
+    def test_mcp_early_discharge_callback_unknown_message_id(
         self, mock_get_secret: MagicMock, mock_firestore: MagicMock
     ) -> None:
         mock_get_secret.return_value = "valid-token"
@@ -2490,7 +2514,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 data=self._make_callback_soap(message_id="unknown-id"),
             )
 
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            self._parse_callback_response_transaction_status(response), "E"
+        )
         mock_firestore.return_value.set_document.assert_not_called()
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")

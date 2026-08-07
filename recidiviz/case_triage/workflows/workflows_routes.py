@@ -17,8 +17,10 @@
 """Implements routes to support external requests from Workflows."""
 import datetime
 import hmac
+import io
 import logging
 import uuid
+import xml.etree.ElementTree as ET  # nosec B405 — used only to build/write XML we are sending out, not to parse
 from http import HTTPStatus
 from typing import Annotated, List, Optional, Union
 
@@ -82,7 +84,12 @@ from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
     UsCoContactNoteWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
+    MCP_WS_RESPONSE_NS,
     McpCallbackData,
+    McpCallbackMissingFieldsError,
+    McpCallbackParseError,
+    McpMessageAmbiguousError,
+    McpMessageNotFoundError,
     UsIaEarlyDischargeRequestData,
     UsIaEarlyDischargeStatusTracker,
     UsIaEarlyDischargeWritebackExecutor,
@@ -148,6 +155,39 @@ STAGING_URL = "https://app-staging.recidiviz.org"
 PRODUCTION_URL = "https://app.recidiviz.org"
 
 OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP"
+
+
+def _mcp_ws_response(
+    *,
+    status_code: HTTPStatus,
+    message_id: str,
+    description: str,
+    transaction_status: str,
+    error_code: str | None = None,
+    error_msg: str | None = None,
+) -> Response:
+    """Returns a Flask Response with an XML body conforming to WSResponse.xsd.
+
+    MCP expects this format as the HTTP response to its callback POSTs.
+    """
+    ET.register_namespace("ia", MCP_WS_RESPONSE_NS)
+    root = ET.Element(f"{{{MCP_WS_RESPONSE_NS}}}WSResponse")
+    ET.SubElement(root, f"{{{MCP_WS_RESPONSE_NS}}}MessageId").text = message_id
+    ET.SubElement(root, f"{{{MCP_WS_RESPONSE_NS}}}Description").text = description
+    ET.SubElement(
+        root, f"{{{MCP_WS_RESPONSE_NS}}}TransactionStatus"
+    ).text = transaction_status
+    if error_code is not None:
+        ET.SubElement(root, f"{{{MCP_WS_RESPONSE_NS}}}ErrorCode").text = error_code
+    if error_msg is not None:
+        ET.SubElement(root, f"{{{MCP_WS_RESPONSE_NS}}}ErrorMsg").text = error_msg
+    buf = io.BytesIO()
+    ET.ElementTree(root).write(buf, encoding="utf-8", xml_declaration=True)
+    return make_response(
+        buf.getvalue().decode("utf-8"),
+        status_code,
+        {"Content-Type": "text/xml; charset=utf-8"},
+    )
 
 
 def create_workflows_api_blueprint() -> Blueprint:
@@ -932,29 +972,76 @@ def create_workflows_api_blueprint() -> Blueprint:
                 "MCP early discharge callback: unauthorized request from [%s]",
                 request.remote_addr,
             )
-            return jsonify_response("Unauthorized", HTTPStatus.UNAUTHORIZED)
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id="",
+                description="Unauthorized",
+                transaction_status="E",
+            )
 
         body = request.get_data(as_text=True)
         if not body:
-            return jsonify_response("Empty request body", HTTPStatus.BAD_REQUEST)
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id="",
+                description="Empty request body",
+                transaction_status="E",
+            )
 
         try:
             callback_data = McpCallbackData.from_callback_xml(body)
-        except Exception as e:
+        except McpCallbackParseError as e:
             logging.error(
-                "MCP early discharge callback: failed to parse payload: %s", e
+                "MCP early discharge callback: failed to parse payload: %s; body: [%s]",
+                e,
+                body,
             )
-            return jsonify_response(
-                f"Invalid callback payload: {e}", HTTPStatus.BAD_REQUEST
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id="",
+                description="Invalid callback XML",
+                transaction_status="E",
+                error_msg=str(e),
             )
+        except McpCallbackMissingFieldsError as e:
+            logging.error(
+                "MCP early discharge callback: missing required fields: %s; body: [%s]",
+                e,
+                body,
+            )
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id="",
+                description="Missing required fields in callback payload",
+                transaction_status="E",
+                error_msg=str(e),
+            )
+
+        logging.info(
+            "MCP early discharge callback: received message ID [%s]",
+            callback_data.message_id,
+        )
 
         try:
             tracker = UsIaEarlyDischargeStatusTracker.from_message_id(
                 callback_data.message_id, FirestoreClientImpl()
             )
-        except ValueError as e:
-            logging.error("MCP early discharge callback: %s", e)
-            return jsonify_response(str(e), HTTPStatus.NOT_FOUND)
+        except McpMessageNotFoundError as e:
+            logging.error("MCP early discharge callback: %s; body: [%s]", e, body)
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id=callback_data.message_id,
+                description=str(e),
+                transaction_status="E",
+            )
+        except McpMessageAmbiguousError as e:
+            logging.error("MCP early discharge callback: %s; body: [%s]", e, body)
+            return _mcp_ws_response(
+                status_code=HTTPStatus.OK,
+                message_id=callback_data.message_id,
+                description=str(e),
+                transaction_status="E",
+            )
 
         tracker.apply_mcp_callback(callback_data)
 
@@ -963,7 +1050,18 @@ def create_workflows_api_blueprint() -> Blueprint:
             callback_data.transaction_status,
             callback_data.message_id,
         )
-        return jsonify_response("Callback processed", HTTPStatus.OK)
+        if callback_data.transaction_status == "E":
+            logging.warning(
+                "MCP early discharge callback: ATG returned error for message ID [%s]; body: [%s]",
+                callback_data.message_id,
+                body,
+            )
+        return _mcp_ws_response(
+            status_code=HTTPStatus.OK,
+            message_id=callback_data.message_id,
+            description="Callback processed",
+            transaction_status="S",
+        )
 
     @workflows_api.get("/<state>/opportunities")
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)
