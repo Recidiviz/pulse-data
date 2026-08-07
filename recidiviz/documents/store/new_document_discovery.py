@@ -22,6 +22,7 @@ from functools import cached_property
 
 import attr
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
@@ -31,8 +32,9 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
-from recidiviz.documents.store.document_collection_query_builder import (
+from recidiviz.documents.store.document_collection_query_builders import (
     DocumentCollectionDiffQueryBuilder,
+    DocumentCollectionGenerationQueryBuilder,
 )
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
     DocumentMetadataUpdatesQueryBuilder,
@@ -68,12 +70,19 @@ class NewDocumentDiscoverer:
         validator=attr_validators.is_positive_int,
         default=DEFAULT_TARGET_UPLOAD_BATCH_BYTES,
     )
+    generation_query_builder: DocumentCollectionGenerationQueryBuilder = attr.ib(
+        init=False,
+        validator=attr.validators.instance_of(DocumentCollectionGenerationQueryBuilder),
+    )
     diff_query_builder: DocumentCollectionDiffQueryBuilder = attr.ib(
         init=False,
         validator=attr.validators.instance_of(DocumentCollectionDiffQueryBuilder),
     )
 
     def __attrs_post_init__(self) -> None:
+        self.generation_query_builder = DocumentCollectionGenerationQueryBuilder(
+            project_id=self.project_id
+        )
         self.diff_query_builder = DocumentCollectionDiffQueryBuilder(
             project_id=self.project_id
         )
@@ -81,6 +90,36 @@ class NewDocumentDiscoverer:
     @cached_property
     def config(self) -> DocumentCollectionConfig:
         return get_document_collection_config(self.state_code, self.collection_name)
+
+    def _materialize_document_generation_output(
+        self,
+    ) -> ProjectSpecificBigQueryAddress:
+        """Runs the collection's document_generation_query and materializes its
+        full output — every document for every root entity — to a run-scoped
+        temp table, returning that table's address. This single snapshot is what
+        every consumer of one run's generation output reads.
+        """
+        document_generation_output_address = (
+            self.config.temp_document_generation_output_table_address(
+                self.run_id
+            ).to_project_specific_address(self.project_id)
+        )
+        generation_query = (
+            self.generation_query_builder.build_document_generation_query(self.config)
+        )
+
+        logging.info(
+            "Materializing generation output for collection [%s] to [%s]",
+            self.config.name,
+            document_generation_output_address.to_str(),
+        )
+        self.big_query_client.create_table_from_query(
+            address=document_generation_output_address.to_project_agnostic_address(),
+            query=generation_query,
+            use_query_cache=False,
+            overwrite=True,
+        )
+        return document_generation_output_address
 
     def run(self) -> SingleCollectionDocumentDiscoveryResult | None:
         """Discovers new documents for the collection by diffing the
@@ -92,8 +131,10 @@ class NewDocumentDiscoverer:
         metadata rows.
 
         Steps:
-          1. Runs the collection's document_generation_query.
-          2. Diffs the results against the collection's "latest" metadata view
+          1. Materializes the results of the collection's full document_generation_query
+             to a temp table. This single snapshot is what every consumer of one run's
+             generation output reads.
+          2. Diffs that output against the collection's "latest" metadata view
              (which returns the most up-to-date row per document primary key) to
              identify added, updated, and deleted documents. Writes the
              diff results to a temp document metadata updates table.
@@ -103,13 +144,25 @@ class NewDocumentDiscoverer:
              persistent document_contents table. Each row is assigned a batch
              number based on cumulative byte size and written to a temp new
              document contents table.
+          4. Deletes the generation-output temp table: it is consumed entirely
+             within discovery. If discovery raises before deletion, the table
+             deliberately survives for debugging and the temp dataset's table
+             expiration reaps it.
         """
+
+        document_generation_output_address = (
+            self._materialize_document_generation_output()
+        )
+
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(
                 self.run_id
             ).to_project_specific_address(self.project_id)
         )
-        diff_query = self.diff_query_builder.build_document_diff_query(self.config)
+        diff_query = self.diff_query_builder.build_document_diff_query(
+            config=self.config,
+            document_generation_output_address=document_generation_output_address,
+        )
 
         logging.info(
             "Writing diff results for collection [%s] to [%s]",
@@ -128,6 +181,9 @@ class NewDocumentDiscoverer:
                 "No new metadata rows for collection [%s]; skipping new "
                 "document contents discovery.",
                 self.config.name,
+            )
+            self._delete_document_generation_output_table(
+                document_generation_output_address
             )
             return None
 
@@ -156,6 +212,10 @@ class NewDocumentDiscoverer:
             overwrite=True,
         )
 
+        self._delete_document_generation_output_table(
+            document_generation_output_address
+        )
+
         return SingleCollectionDocumentDiscoveryResult(
             state_code=self.state_code,
             collection_name=self.config.name,
@@ -163,4 +223,14 @@ class NewDocumentDiscoverer:
             temp_new_document_contents_address=temp_document_address,
             num_new_document_contents_rows=row_iterator.total_rows,
             num_document_metadata_updates_rows=metadata_row_iterator.total_rows,
+        )
+
+    def _delete_document_generation_output_table(
+        self, document_generation_output_address: ProjectSpecificBigQueryAddress
+    ) -> None:
+        """Deletes the run's generation-output temp table, which has no
+        consumers outside discovery."""
+        self.big_query_client.delete_table(
+            document_generation_output_address.to_project_agnostic_address(),
+            not_found_ok=True,
         )

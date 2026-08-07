@@ -19,6 +19,7 @@
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_utils import null_sql_cast_clause_for_schema_field
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
@@ -40,8 +41,8 @@ from recidiviz.utils.string import StrictStringFormatter
 
 
 @attr.define
-class DocumentCollectionDiffQueryBuilder:
-    """Builds queries to diff document collection generations against the latest metadata table state."""
+class DocumentCollectionGenerationQueryBuilder:
+    """Builds the query that generates a document collection's documents."""
 
     project_id: str = attr.ib(validator=attr_validators.is_str)
 
@@ -57,7 +58,7 @@ class DocumentCollectionDiffQueryBuilder:
     ) -> str:
         """Wraps the config's document_generation_query_template to produce
         a query that generates all columns needed for downstream processing. This
-        includes the all output columns form document_generation_query_template, plus
+        includes all output columns from document_generation_query_template, plus
         document_contents_id computed from document_text. Any rows with null
         document_text are also filtered out.
         """
@@ -79,23 +80,40 @@ SELECT
 FROM ({inner_query})
 WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 
+
+@attr.define
+class DocumentCollectionDiffQueryBuilder:
+    """Builds queries to diff document collection generations against the latest metadata table state."""
+
+    project_id: str = attr.ib(validator=attr_validators.is_str)
+
     def build_document_diff_query(
         self,
+        *,
         config: DocumentCollectionConfig,
+        document_generation_output_address: ProjectSpecificBigQueryAddress,
     ) -> str:
         """Builds a query that diffs freshly generated documents against the
-        latest state in the metadata table. Returns temp table schema rows for:
+        latest state in the metadata table. Reads |document_generation_output_address|,
+        the run's already-materialized document_generation_query output.
+        Returns temp table schema rows for:
         - Added documents: primary key exists in new but not current
         - Updated documents: primary key exists in both but document_contents_id or metadata differs
         - Deleted documents: primary key exists in current but not new, with
           all non-pk fields set to NULL
         """
-        generation_query = self.build_document_generation_query(config)
         latest_query = DocumentCollectionMetadataTableQueryBuilder(
             project_id=self.project_id,
         ).build_latest_documents_query(config)
 
         temp_table_schema = config.build_bq_document_generation_output_schema()
+
+        generation_output_columns = list_to_query_string(
+            [col.name for col in temp_table_schema]
+        )
+        generation_output_query = document_generation_output_address.select_query(
+            select_statement=f"SELECT {generation_output_columns}"
+        )
 
         join_clause = join_on_columns_fragment(
             config.primary_key_column_names, table1="new_docs", table2="current_docs"
@@ -135,7 +153,7 @@ WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 
         return f"""
 WITH new_docs AS (
-    {generation_query}
+    {generation_output_query}
 ),
 current_docs AS (
     {latest_query}

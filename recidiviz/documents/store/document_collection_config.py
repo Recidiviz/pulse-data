@@ -65,6 +65,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 DOCUMENT_COLLECTIONS_SUBDIR = "document_collections"
 
+TEMP_DOCUMENT_GENERATION_OUTPUT_TABLE_ID_PREFIX = "temp_document_generation_output_"
 TEMP_METADATA_UPDATES_TABLE_ID_PREFIX = "temp_document_metadata_updates_"
 TEMP_NEW_DOCUMENT_CONTENTS_TABLE_ID_PREFIX = "temp_new_document_contents_"
 
@@ -345,6 +346,21 @@ class DocumentCollectionConfig:
             get_document_store_column_schema(DOCUMENT_UPDATE_DATETIME_COLUMN_NAME),
             *self.other_document_generation_output_columns,
         ]
+
+    def temp_document_generation_output_table_address(
+        self, run_id: str
+    ) -> BigQueryAddress:
+        """Returns the project-agnostic BigQuery address for the temp table holding
+        this run's full document_generation_query output — every document for every
+        root entity, before the diff narrows to changed rows.
+        """
+        return BigQueryAddress(
+            dataset_id=document_store_temp_dataset_for_region(self.state_code),
+            table_id=(
+                f"{TEMP_DOCUMENT_GENERATION_OUTPUT_TABLE_ID_PREFIX}"
+                f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"
+            ),
+        )
 
     def temp_document_metadata_updates_table_address(
         self, run_id: str

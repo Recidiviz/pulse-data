@@ -47,6 +47,7 @@ from recidiviz.documents.store import (
     document_collection_config_collectors,
 )
 from recidiviz.documents.store.document_collection_config import (
+    TEMP_DOCUMENT_GENERATION_OUTPUT_TABLE_ID_PREFIX,
     TEMP_METADATA_UPDATES_TABLE_ID_PREFIX,
 )
 from recidiviz.documents.store.document_store_columns import (
@@ -243,6 +244,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         """Wires up the mock BQ client end-to-end for a single DAG run."""
 
         def _create_table_side_effect(*, address: Any, **_kwargs: Any) -> MagicMock:
+            if address.table_id.startswith(
+                TEMP_DOCUMENT_GENERATION_OUTPUT_TABLE_ID_PREFIX
+            ):
+                return MagicMock()
             if address.table_id.startswith(TEMP_METADATA_UPDATES_TABLE_ID_PREFIX):
                 return self._row_iterator_mock(metadata_rows)
             if "_document_contents_" in address.table_id:
@@ -319,9 +324,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Only the metadata-updates temp table is written; the new-contents
-            # step is short-circuited when there are no metadata updates.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 1)
+            # Only the generation-output and metadata-updates temp tables are
+            # written; the new-contents step is short-circuited when there are
+            # no metadata updates.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 2)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -356,9 +362,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 self.mock_bq_client.load_table_from_cloud_storage.call_count, 1
             )
 
-            # All rows inserted, so both temp tables for the document collection are
-            # deleted (metadata updates table + new contents table).
-            self.assertEqual(self.mock_bq_client.delete_table.call_count, 2)
+            # All rows inserted, so all three temp tables for the document
+            # collection are deleted: the generation-output table by discovery,
+            # the metadata updates and new contents tables by the recorder.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
 
     def test_no_filters_runs_all_states_and_document_collections(self) -> None:
         """Without any filter, every (state, document collection) branch runs to
@@ -384,10 +391,11 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # One create_table_from_query per document collection (only metadata-updates
-            # call, since each document collection has 0 metadata rows → no contents
-            # call). 5 US_XX document collections + 1 US_YY document collection = 6.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 6)
+            # Two create_table_from_query calls per document collection (the
+            # generation-output and metadata-updates temp tables; 0 metadata
+            # rows → no contents call). 5 US_XX document collections + 1 US_YY
+            # document collection = 6 collections × 2 = 12.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 12)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -550,8 +558,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # No upload status CSVs to load.
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
-            # Full success, both temp tables deleted.
-            self.assertEqual(self.mock_bq_client.delete_table.call_count, 2)
+            # Full success: discovery deleted the generation-output temp table
+            # and the recorder deleted the metadata updates and new contents
+            # temp tables.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
 
     def test_state_filter_fans_out_to_all_document_collections(self) -> None:
         """state_code_filter alone runs all document collections defined for the state.
@@ -573,10 +583,11 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # One create_table_from_query per document collection (only metadata-updates
-            # call, since each document collection has 0 metadata rows → no contents
-            # call). Fake config defines 5 US_XX document collections.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 5)
+            # Two create_table_from_query calls per document collection (the
+            # generation-output and metadata-updates temp tables; 0 metadata
+            # rows → no contents call). Fake config defines 5 US_XX document
+            # collections, so 5 × 2 = 10.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 10)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -686,5 +697,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 insert_queries = self._get_insert_query_strs()
                 self.assertEqual(len(insert_queries), 2)
 
-                # Partial-success path: temp tables are preserved for debugging.
-                self.mock_bq_client.delete_table.assert_not_called()
+                # Partial-success path: the recorder preserves its temp tables
+                # for debugging. Discovery itself succeeded, so it already
+                # deleted the generation-output temp table.
+                self.assertEqual(self.mock_bq_client.delete_table.call_count, 1)

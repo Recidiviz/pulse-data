@@ -19,7 +19,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
@@ -71,6 +74,8 @@ class TestNewDocumentDiscovery(unittest.TestCase):
                 mock.total_rows = new_document_contents_rows
             elif "temp_document_metadata_updates" in address.table_id:
                 mock.total_rows = document_metadata_updates_rows
+            elif "temp_document_generation_output" in address.table_id:
+                pass
             else:
                 raise ValueError(f"Unexpected table address: {address.to_str()}")
             return mock
@@ -85,9 +90,10 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         result = self.discovery.run()
 
         self.assertIsNone(result)
-        # Only the metadata-updates temp table is written; the new-documents
-        # step is skipped when there are no metadata updates.
-        self.assertEqual(self.bq_client.create_table_from_query.call_count, 1)
+        # Only the generation-output and metadata-updates temp tables are
+        # written; the new-documents step is skipped when there are no
+        # metadata updates.
+        self.assertEqual(self.bq_client.create_table_from_query.call_count, 2)
         self.bq_client.run_query_async.assert_not_called()
 
     def test_writes_both_temp_tables_when_updates_exist(self) -> None:
@@ -102,7 +108,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         self.assertEqual(result.collection_name, self.collection_name)
         self.assertEqual(result.num_document_metadata_updates_rows, 10)
         self.assertEqual(result.num_new_document_contents_rows, 6)
-        self.assertEqual(self.bq_client.create_table_from_query.call_count, 2)
+        self.assertEqual(self.bq_client.create_table_from_query.call_count, 3)
 
     def test_metadata_updates_without_new_documents(self) -> None:
         self._mock_temp_table_row_counts(
@@ -115,3 +121,77 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         assert result is not None
         self.assertEqual(result.num_document_metadata_updates_rows, 4)
         self.assertEqual(result.num_new_document_contents_rows, 0)
+
+    @property
+    def _generation_output_address(self) -> BigQueryAddress:
+        return get_document_collection_config(
+            StateCode.US_XX, self.collection_name, config_module=fake_config_module
+        ).temp_document_generation_output_table_address("test_run_id")
+
+    def test_materializes_generation_output_before_diff(self) -> None:
+        self._mock_temp_table_row_counts(
+            new_document_contents_rows=1,
+            document_metadata_updates_rows=1,
+        )
+
+        self.discovery.run()
+
+        (
+            materialize_call,
+            diff_call,
+            _new_documents_call,
+        ) = self.bq_client.create_table_from_query.call_args_list
+        # The first write materializes the generation query's output to the
+        # generation-output temp table.
+        self.assertEqual(
+            self._generation_output_address, materialize_call.kwargs["address"]
+        )
+        self.assertIn(
+            "us_xx_raw_data.fake_input_notes", materialize_call.kwargs["query"]
+        )
+        # The diff reads the materialized snapshot, not the live generation
+        # query.
+        self.assertIn(
+            self._generation_output_address.table_id, diff_call.kwargs["query"]
+        )
+        self.assertNotIn("us_xx_raw_data.fake_input_notes", diff_call.kwargs["query"])
+
+    def test_deletes_generation_output_table_when_no_updates(self) -> None:
+        mock_row_iterator = MagicMock()
+        mock_row_iterator.total_rows = 0
+        self.bq_client.create_table_from_query.return_value = mock_row_iterator
+
+        self.discovery.run()
+
+        self.bq_client.delete_table.assert_called_once_with(
+            self._generation_output_address, not_found_ok=True
+        )
+
+    def test_deletes_generation_output_table_after_discovery(self) -> None:
+        self._mock_temp_table_row_counts(
+            new_document_contents_rows=1,
+            document_metadata_updates_rows=1,
+        )
+
+        self.discovery.run()
+
+        self.bq_client.delete_table.assert_called_once_with(
+            self._generation_output_address, not_found_ok=True
+        )
+
+    def test_generation_output_table_survives_diff_failure(self) -> None:
+        def create_table_side_effect(
+            address: ProjectSpecificBigQueryAddress, **_kwargs: object
+        ) -> MagicMock:
+            if "temp_document_metadata_updates" in address.table_id:
+                raise ValueError("diff query failed")
+            return MagicMock()
+
+        self.bq_client.create_table_from_query.side_effect = create_table_side_effect
+
+        with self.assertRaisesRegex(ValueError, r"^diff query failed$"):
+            self.discovery.run()
+
+        # The generation-output snapshot deliberately survives a failed run for
+        # debugging; the temp dataset's table expiration reaps it.
+        self.bq_client.delete_table.assert_not_called()
