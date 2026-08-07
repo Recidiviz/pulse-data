@@ -4588,9 +4588,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "subsequent_status",
     ],
     BigQueryAddress.from_str(
-        "segment_events.frontend_us_ia_early_discharge_referral_form_signature_added"
-    ): ["form_type", "signature_field"],
-    BigQueryAddress.from_str(
         "segment_events.frontend_us_tn_expiration_form_generation_reason"
     ): ["reason"],
     BigQueryAddress.from_str(

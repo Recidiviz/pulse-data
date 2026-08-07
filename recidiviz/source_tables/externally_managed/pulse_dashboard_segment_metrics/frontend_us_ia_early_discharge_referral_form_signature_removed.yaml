@@ -1,7 +1,7 @@
 address:
   dataset_id: pulse_dashboard_segment_metrics
-  table_id: frontend_us_ia_early_discharge_referral_form_signature_added
-description: "Segment events emitted when a user adds a signature to US_IA early discharge referral form"
+  table_id: frontend_us_ia_early_discharge_referral_form_signature_removed
+description: "Segment events emitted when a user removes a signature from US_IA early discharge referral form"
 schema:
   - name: anonymous_id
     type: STRING
