@@ -326,16 +326,16 @@ class DocumentCollectionConfig:
             get_document_store_column_schema(ROW_CREATE_DATETIME_COLUMN_NAME),
         ]
 
-    def build_bq_temp_document_metadata_updates_schema(
+    def build_bq_document_generation_output_schema(
         self,
     ) -> list[bigquery.SchemaField]:
-        """Returns the BigQuery schema for the temp document metadata updates
-        table that contains rows where there were any changes to
-        document_contents_id or another metadata column for each primary key in
-        this collection. Includes document_text and any
+        """Returns the BigQuery schema of this collection's
+        document_generation_query output. Includes document_text and any
         other_document_generation_output_columns (neither persisted to the final
-        metadata table) and excludes row_create_datetime (set at final write
-        time).
+        metadata table) and excludes row_create_datetime (set at final write time). The
+        temp_document_metadata_updates_* tables share this schema — its rows are
+        generation-output rows, with non-primary-key columns NULLed for deleted
+        documents.
         """
         return [
             *self.primary_key_columns,

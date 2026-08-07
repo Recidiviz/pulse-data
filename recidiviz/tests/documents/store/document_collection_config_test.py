@@ -286,7 +286,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             other_metadata_columns=[bigquery.SchemaField("note_type", "STRING")],
             other_document_generation_output_columns=[_GENERATION_OUTPUT_COLUMN],
         )
-        temp_schema = config.build_bq_temp_document_metadata_updates_schema()
+        temp_schema = config.build_bq_document_generation_output_schema()
         self.assertEqual(
             [field.name for field in temp_schema],
             [
@@ -338,8 +338,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         config = _make_config()
         self.assertEqual(config.other_document_generation_output_column_names, [])
         temp_schema_names = [
-            field.name
-            for field in config.build_bq_temp_document_metadata_updates_schema()
+            field.name for field in config.build_bq_document_generation_output_schema()
         ]
         metadata_schema_names = [
             field.name for field in config.build_bq_metadata_schema()

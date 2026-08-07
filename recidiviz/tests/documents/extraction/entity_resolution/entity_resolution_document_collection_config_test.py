@@ -323,11 +323,11 @@ JOIN composite_entry_source_map USING (person_id)"""
                 built = EntityResolutionDocumentCollectionConfig(
                     first_order_config=config, entity_group=entity_group
                 )
-                # The generation query outputs the temp-updates schema minus the
-                # framework-computed document_contents_id.
+                # The generation query template outputs the generation-output schema
+                # minus the framework-computed document_contents_id.
                 expected_columns = {
                     field.name
-                    for field in built.build_bq_temp_document_metadata_updates_schema()
+                    for field in built.build_bq_document_generation_output_schema()
                 } - {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
                 query = StrictStringFormatter().format(
                     built.document_generation_query_template,

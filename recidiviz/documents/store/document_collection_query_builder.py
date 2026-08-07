@@ -56,9 +56,10 @@ class DocumentCollectionDiffQueryBuilder:
         config: DocumentCollectionConfig,
     ) -> str:
         """Wraps the config's document_generation_query_template to produce
-        all columns needed for downstream processing: the temp-updates table
-        columns, with document_contents_id computed from document_text (every
-        other column is passed through from the inner query by name).
+        a query that generates all columns needed for downstream processing. This
+        includes the all output columns form document_generation_query_template, plus
+        document_contents_id computed from document_text. Any rows with null
+        document_text are also filtered out.
         """
         inner_query = StrictStringFormatter().format(
             config.document_generation_query_template,
@@ -67,7 +68,7 @@ class DocumentCollectionDiffQueryBuilder:
 
         passthrough_columns = [
             col.name
-            for col in config.build_bq_temp_document_metadata_updates_schema()
+            for col in config.build_bq_document_generation_output_schema()
             if col.name != DOCUMENT_CONTENTS_ID_COLUMN_NAME
         ]
 
@@ -94,7 +95,7 @@ WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
             project_id=self.project_id,
         ).build_latest_documents_query(config)
 
-        temp_table_schema = config.build_bq_temp_document_metadata_updates_schema()
+        temp_table_schema = config.build_bq_document_generation_output_schema()
 
         join_clause = join_on_columns_fragment(
             config.primary_key_column_names, table1="new_docs", table2="current_docs"

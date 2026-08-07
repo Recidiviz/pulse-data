@@ -49,7 +49,7 @@ class TestBuildDocumentGenerationQuery(unittest.TestCase):
             for config in configs.values():
                 expected_columns = {
                     field.name
-                    for field in config.build_bq_temp_document_metadata_updates_schema()
+                    for field in config.build_bq_document_generation_output_schema()
                 }
                 query = DocumentCollectionDiffQueryBuilder(
                     project_id="test-project",

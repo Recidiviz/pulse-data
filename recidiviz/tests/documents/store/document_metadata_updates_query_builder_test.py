@@ -74,7 +74,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
     def _load_temp_metadata(self, subdir: str) -> None:
         self.load_fixture_into_table(
             address=self.temp_metadata_address.to_project_agnostic_address(),
-            schema=self.config.build_bq_temp_document_metadata_updates_schema(),
+            schema=self.config.build_bq_document_generation_output_schema(),
             fixture_path=self._fixture_path(subdir, "temp_metadata_input"),
             fixture_columns=None,
             allow_comments=False,
@@ -101,7 +101,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
     def _create_empty_temp_metadata(self) -> None:
         self.create_mock_table(
             self.temp_metadata_address.to_project_agnostic_address(),
-            schema=self.config.build_bq_temp_document_metadata_updates_schema(),
+            schema=self.config.build_bq_document_generation_output_schema(),
         )
 
     def _create_empty_upload_status(self) -> None:
