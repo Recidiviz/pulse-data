@@ -54,8 +54,8 @@ fs: Optional[DirectIngestGCSFileSystem] = None
 @functions_framework.cloud_event
 def normalize_filename(cloud_event: CloudEvent) -> None:
     """Function to normalize ingest filenames in GCS triggered by a finalized object event in GCS.
-    If the file is a zip file, it will invoke another cloud function to handle the unzipping
-    in order to allocate more memory to the process.
+    If the file is compressed (.zip or .gz), it will invoke another cloud function to handle
+    expanding it in order to allocate more memory to the process.
 
     If the existing file name is already prefixed by "unprocessed" or "processed", the function will return without
     doing anything. Otherwise, it will rename the file to format "unprocessed_{ISO_FORMATTED_DATETIME}_raw_{EXISTING_FILENAME}"
@@ -96,9 +96,9 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
     logging.info("Handling file [%s]", path.abs_path())
 
     has_normalized_filename = DirectIngestGCSFileSystem.is_normalized_file_path(path)
-    is_zipfile = path.has_zip_extension
+    is_compressed = path.has_compressed_extension
 
-    if has_normalized_filename and not is_zipfile:
+    if has_normalized_filename and not is_compressed:
         cloud_functions_log(
             severity="INFO",
             message=f"File [{path.abs_path()}] is already normalized. Returning.",
@@ -128,10 +128,10 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
                 message=f"Error normalizing file [{path.abs_path()}]: {e}",
             )
         # The file rename will retrigger the cloud function
-        # so if the file is a zip, it will be unzipped in the next invocation
+        # so if the file is compressed, it will be expanded in the next invocation
         return
 
-    if is_zipfile:
+    if is_compressed:
         response = _invoke_zipfile_handler(bucket, relative_file_path)
         cloud_functions_log(
             severity="ERROR" if response.status_code != 200 else "INFO",
@@ -164,11 +164,11 @@ def _get_access_token(audience: str) -> str:
 
 @functions_framework.http
 def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
-    """Function to handle zip files in GCS triggered by HTTP POST request.
-    If the file is a zip file, it will be unzipped and moved to deprecated storage.
+    """Function to handle compressed files in GCS triggered by HTTP POST request.
+    If the file is a .zip or .gz file, it will be expanded and moved to deprecated storage.
 
-    Function will return 200 OK if the file is not a zip file, if the unzipping fails with a ValueError,
-    or if the unzipping is successful.
+    Function will return 200 OK if the file is not compressed, if expanding it fails with a
+    ValueError, or if expanding it is successful.
     If the request data is missing, it will return 400 BAD REQUEST.
     """
     if (data := request.get_json(silent=True)) is None:
@@ -192,10 +192,10 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
         cloud_functions_log(severity="ERROR", message=error_msg)
         return error_msg, HTTPStatus.BAD_REQUEST
 
-    if not path.has_zip_extension:
+    if not path.has_compressed_extension:
         cloud_functions_log(
             severity="INFO",
-            message=f"File [{path.abs_path()}] is not a zipfile. Returning.",
+            message=f"File [{path.abs_path()}] is not compressed. Returning.",
         )
         return "OK", HTTPStatus.OK
 
@@ -215,10 +215,13 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
 
     cloud_functions_log(
         severity="INFO",
-        message=f"File [{path.abs_path()}] is a zip file, unzipping...",
+        message=f"File [{path.abs_path()}] is compressed, expanding...",
     )
     try:
-        fs.unzip(path, GcsfsBucketPath(bucket))
+        if path.has_gz_extension:
+            fs.gunzip(path, GcsfsBucketPath(bucket))
+        else:
+            fs.unzip(path, GcsfsBucketPath(bucket))
         fs.mv(
             src_path=path,
             dst_path=gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(

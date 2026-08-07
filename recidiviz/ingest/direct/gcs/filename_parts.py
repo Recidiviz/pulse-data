@@ -39,8 +39,11 @@ _INGEST_FILE_SUFFIX_REGEX_PATTERN = (
     r"\.(?P<extension>[A-Za-z]+)$"  # Extension
 )
 _RAW_DATA_FILE_NAME_REGEX = re.compile(
-    _INGEST_FILE_PREFIX_REGEX_PATTERN + r"(?P<file_tag>[_A-Za-z\d]*)"  # file_tag
-    r"(-(?P<filename_suffix>\d+))?"  # Optional filename_suffix
+    _INGEST_FILE_PREFIX_REGEX_PATTERN
+    + r"(?P<file_tag>[_A-Za-z\d]*?)"  # file_tag
+    # Optional filename_suffix, marking one chunk of a file delivered in several pieces.
+    # Two spellings are accepted: '-N', and the '_partN' form used by MiCase exports.
+    r"([-_]part(?P<filename_suffix_part>\d+)|-(?P<filename_suffix_dash>\d+))?"
     + _INGEST_FILE_SUFFIX_REGEX_PATTERN
 )
 
@@ -109,6 +112,7 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> DirectIngestRawFilenam
         date_str=utc_upload_datetime.date().isoformat(),
         file_tag=match.group("file_tag"),
         extension=match.group("extension"),
-        filename_suffix=match.group("filename_suffix")
+        filename_suffix=match.group("filename_suffix_dash")
+        or match.group("filename_suffix_part")
         or match.group("filename_suffix_conflict"),
     )

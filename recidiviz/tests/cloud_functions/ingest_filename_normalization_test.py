@@ -29,6 +29,9 @@ from recidiviz.cloud_functions.ingest_filename_normalization import (
     normalize_filename,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
+)
 
 
 def set_env_vars() -> None:
@@ -257,5 +260,56 @@ class TestHandleZipfile(TestCase):
         handle_zipfile(self.mock_request)
 
         mock_fs.unzip.assert_called_once()
+        mock_fs.gunzip.assert_not_called()
         mock_fs.mv.assert_called_once()
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    def test_gz_file_handling(self, mock_fs: MagicMock) -> None:
+        """A .gz file is decompressed rather than unzipped."""
+        self.mock_request.get_json.return_value = {
+            "bucket": "recidiviz-test-direct-ingest-state-us-xx",
+            "name": "test_file.csv.gz",
+        }
+
+        handle_zipfile(self.mock_request)
+
+        mock_fs.gunzip.assert_called_once()
+        mock_fs.unzip.assert_not_called()
+        mock_fs.mv.assert_called_once()
+
+    def test_normalized_gz_name_is_recognized_by_the_real_parser(self) -> None:
+        """A normalized .gz name must be seen as normalized, or normalize_filename would
+        rename it again on every object-finalize event and never reach decompression.
+
+        Deliberately uses the real is_normalized_file_path rather than mocking it.
+        """
+        normalized_gz = GcsfsFilePath.from_absolute_path(
+            "gs://recidiviz-test-direct-ingest-state-us-xx/"
+            "unprocessed_2026-08-07T04:50:03:716152_raw_test_file.csv.gz"
+        )
+        self.assertTrue(
+            DirectIngestGCSFileSystem.is_normalized_file_path(normalized_gz)
+        )
+        self.assertTrue(normalized_gz.has_gz_extension)
+        self.assertTrue(normalized_gz.has_compressed_extension)
+
+        unnormalized_gz = GcsfsFilePath.from_absolute_path(
+            "gs://recidiviz-test-direct-ingest-state-us-xx/test_file.csv.gz"
+        )
+        self.assertFalse(
+            DirectIngestGCSFileSystem.is_normalized_file_path(unnormalized_gz)
+        )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    def test_uncompressed_file_is_left_alone(self, mock_fs: MagicMock) -> None:
+        self.mock_request.get_json.return_value = {
+            "bucket": "recidiviz-test-direct-ingest-state-us-xx",
+            "name": "test_file.csv",
+        }
+
+        handle_zipfile(self.mock_request)
+
+        mock_fs.gunzip.assert_not_called()
+        mock_fs.unzip.assert_not_called()
+        mock_fs.mv.assert_not_called()

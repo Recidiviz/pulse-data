@@ -29,6 +29,7 @@ import attr
 from google.cloud import storage
 
 ZIP_FILE_EXTENSION = "zip"
+GZ_FILE_EXTENSION = "gz"
 
 
 def strip_forward_slash(string: str) -> str:
@@ -267,6 +268,15 @@ class GcsfsFilePath(GcsfsPath):
     @property
     def has_zip_extension(self) -> bool:
         return self.extension == ZIP_FILE_EXTENSION
+
+    @property
+    def has_gz_extension(self) -> bool:
+        return self.extension == GZ_FILE_EXTENSION
+
+    @property
+    def has_compressed_extension(self) -> bool:
+        """Whether this file is compressed in a format we know how to expand in place."""
+        return self.has_zip_extension or self.has_gz_extension
 
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.blob_name)

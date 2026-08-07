@@ -207,3 +207,12 @@ class GCSFileSystem:
         files into the provided |destination_dir|. Returns the list of unzipped paths
         generated.
         """
+
+    @abc.abstractmethod
+    def gunzip(
+        self, gz_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        """Decompresses the gzip file at the provided |gz_file_path| and writes its
+        contents into the provided |destination_dir|. Returns a single-item list of the
+        path generated, since a gzip file holds exactly one member.
+        """

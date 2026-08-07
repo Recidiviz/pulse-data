@@ -18,9 +18,12 @@
 import io
 import logging
 import os
+import shutil
 import tempfile
 import uuid
+import zlib
 from contextlib import contextmanager
+from gzip import GzipFile
 from io import TextIOWrapper
 from typing import IO, Any, Dict, Iterator, List, Optional, Union
 from zipfile import ZipFile, is_zipfile
@@ -112,6 +115,65 @@ def unzip(
             new_paths.append(new_path)
     logging.info("Finished uploading unzipped files")
     return new_paths
+
+
+# First two bytes of every gzip member, per RFC 1952. Used to validate a file's contents
+# the way is_zipfile() does for zip archives.
+GZIP_MAGIC_NUMBER = b"\x1f\x8b"
+
+
+def gunzip(
+    fs: GCSFileSystem, gz_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+) -> List[GcsfsFilePath]:
+    """Uses the provided fs to decompress the gzip file at the provided |gz_file_path|
+    and write its contents into the provided |destination_dir|. Returns a single-item
+    list of the path generated, for symmetry with unzip().
+
+    Unlike a zip archive, a gzip file holds exactly one member and carries no internal
+    file name, so the output name is the input name with the .gz extension stripped
+    (e.g. MY_FILE.csv.gz -> MY_FILE.csv).
+    """
+    logging.info("Downloading gzip file [%s] as bytes", gz_file_path.uri())
+    downloaded_bytes = fs.download_as_bytes(gz_file_path)
+    logging.info("Finished downloading gzip file [%s] as bytes", gz_file_path.uri())
+
+    if not downloaded_bytes.startswith(GZIP_MAGIC_NUMBER):
+        raise ValueError(
+            f"Path [{gz_file_path.uri()}] is not a gzip file. Cannot decompress."
+        )
+
+    # Decompress up front rather than streaming during upload: a truncated or corrupt
+    # member raises partway through, and callers treat a bad file as invalid input
+    # (ValueError) rather than a retryable server error.
+    temp_path = generate_random_temp_path(gz_file_path.base_file_name)
+    try:
+        try:
+            with GzipFile(fileobj=io.BytesIO(downloaded_bytes), mode="rb") as gz_file:
+                with open(temp_path, "wb") as decompressed_file:
+                    shutil.copyfileobj(gz_file, decompressed_file)
+        except (OSError, EOFError, zlib.error) as e:
+            raise ValueError(
+                f"Could not decompress gzip file [{gz_file_path.uri()}]: {e}"
+            ) from e
+
+        new_path = GcsfsFilePath.from_directory_and_file_name(
+            destination_dir, gz_file_path.base_file_name
+        )
+        logging.info(
+            "Uploading decompressed file %s to %s",
+            gz_file_path.file_name,
+            new_path.uri(),
+        )
+        fs.upload_from_contents_handle_stream(
+            path=new_path,
+            contents_handle=LocalFileContentsHandle(temp_path, cleanup_file=False),
+            content_type=BYTES_CONTENT_TYPE,
+        )
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    logging.info("Finished uploading decompressed file")
+    return [new_path]
 
 
 class GCSFileSystemImpl(GCSFileSystem):
@@ -480,3 +542,10 @@ class GCSFileSystemImpl(GCSFileSystem):
         destination_dir: GcsfsDirectoryPath,
     ) -> List[GcsfsFilePath]:
         return unzip(self, zip_file_path, destination_dir)
+
+    def gunzip(
+        self: GCSFileSystem,
+        gz_file_path: GcsfsFilePath,
+        destination_dir: GcsfsDirectoryPath,
+    ) -> List[GcsfsFilePath]:
+        return gunzip(self, gz_file_path, destination_dir)

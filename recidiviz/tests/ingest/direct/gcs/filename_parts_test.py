@@ -132,6 +132,42 @@ class TestFilenamePartsFromPath(TestCase):
         )
         self.assertEqual(parts.date_str, "2022-03-24")
 
+    def test_filename_parts_from_path_raw_file_type_part_suffix(
+        self,
+    ) -> None:
+        """MiCase exports name chunks `_partN` rather than `-N`."""
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                "bucket-us-tn/unprocessed_2026-08-07T04:50:03:716152_raw_AD_LOCATION_part104.csv"
+            )
+        )
+
+        self.assertEqual(parts.processed_state, "unprocessed")
+        self.assertEqual(parts.extension, "csv")
+        self.assertEqual(parts.file_tag, "AD_LOCATION")
+        self.assertEqual(parts.filename_suffix, "104")
+
+    def test_filename_parts_from_path_part_suffix_zero_indexed(self) -> None:
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                "bucket-us-tn/unprocessed_2026-08-07T04:50:03:716152_raw_IN_CASE_NOTE_TYPES_part0.csv"
+            )
+        )
+
+        self.assertEqual(parts.file_tag, "IN_CASE_NOTE_TYPES")
+        self.assertEqual(parts.filename_suffix, "0")
+
+    def test_filename_parts_from_path_part_in_file_tag_is_not_a_suffix(self) -> None:
+        """`part` must be followed by digits to count as a chunk suffix."""
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                "bucket-us-tn/unprocessed_2026-08-07T04:50:03:716152_raw_MY_partial_data.csv"
+            )
+        )
+
+        self.assertEqual(parts.file_tag, "MY_partial_data")
+        self.assertEqual(parts.filename_suffix, None)
+
     def test_shouldnt_parse_timestamp_with_underscores(self) -> None:
         path = GcsfsFilePath.from_absolute_path(
             "bucket-us-tn/unprocessed_2024-09-13T17_19_55_995516_raw_ContactNoteType.csv"

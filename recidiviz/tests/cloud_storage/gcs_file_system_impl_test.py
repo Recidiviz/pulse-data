@@ -23,7 +23,12 @@ from google.cloud.storage import Blob, Bucket
 from mock import create_autospec
 from mock.mock import call, patch
 
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl, unzip
+from recidiviz.cloud_storage.gcs_file_system_impl import (
+    GCSFileSystemImpl,
+    generate_random_temp_path,
+    gunzip,
+    unzip,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
@@ -221,6 +226,70 @@ class TestGcsFileSystem(TestCase):
 
         unzipped_contents = file_system.download_as_bytes(expected_destination_path)
         self.assertEqual(expected_contents, unzipped_contents)
+
+    def test_gunzip(self) -> None:
+        # Arrange
+        file_system = FakeGCSFileSystem()
+        gz_file_name = "example_file_structure_commas.csv.gz"
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+
+        expected_contents_path = fixtures.as_filepath(
+            "example_file_structure_commas.csv"
+        )
+        with open(expected_contents_path, mode="rb") as fixture_file:
+            expected_contents = fixture_file.read()
+        # The .gz extension is stripped; everything else about the name is preserved.
+        expected_destination_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "example_file_structure_commas.csv"
+        )
+
+        src_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, gz_file_name)
+        file_system.test_add_path(src_path, fixtures.as_filepath(gz_file_name))
+
+        # Act
+        output_paths = gunzip(
+            file_system, gz_file_path=src_path, destination_dir=bucket_path
+        )
+
+        # Assert
+        self.assertEqual([expected_destination_path], output_paths)
+        self.assertEqual(
+            expected_contents, file_system.download_as_bytes(expected_destination_path)
+        )
+
+    def test_gunzip_corrupt_gzip_raises_value_error(self) -> None:
+        """A truncated member has valid magic bytes but fails mid-decompression. It must
+        surface as invalid input (ValueError), not a server error the caller retries."""
+        file_system = FakeGCSFileSystem()
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "truncated.csv.gz"
+        )
+        with open(
+            fixtures.as_filepath("example_file_structure_commas.csv.gz"), "rb"
+        ) as f:
+            valid_gz = f.read()
+        truncated_path = generate_random_temp_path("truncated.csv.gz")
+        with open(truncated_path, "wb") as f:
+            f.write(valid_gz[: len(valid_gz) // 2])
+        file_system.test_add_path(src_path, truncated_path)
+
+        with self.assertRaisesRegex(ValueError, r"Could not decompress gzip file"):
+            gunzip(file_system, gz_file_path=src_path, destination_dir=bucket_path)
+
+    def test_gunzip_not_a_gzip_file(self) -> None:
+        file_system = FakeGCSFileSystem()
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "example_file_structure_commas.csv.gz"
+        )
+        # A plain CSV that only claims to be gzipped.
+        file_system.test_add_path(
+            src_path, fixtures.as_filepath("example_file_structure_commas.csv")
+        )
+
+        with self.assertRaisesRegex(ValueError, r"is not a gzip file\. Cannot"):
+            gunzip(file_system, gz_file_path=src_path, destination_dir=bucket_path)
 
     def test_unzip_zip_with_multiple_files(self) -> None:
         # Arrange

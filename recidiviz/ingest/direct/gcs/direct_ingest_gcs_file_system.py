@@ -436,6 +436,11 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     ) -> List[GcsfsFilePath]:
         return self.gcs_file_system.unzip(zip_file_path, destination_dir)
 
+    def gunzip(
+        self, gz_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        return self.gcs_file_system.gunzip(gz_file_path, destination_dir)
+
     class _FilterType(Enum):
         NO_FILTER = "NO_FILTER"
         UNNORMALIZED_ONLY = "UNNORMALIZED_ONLY"

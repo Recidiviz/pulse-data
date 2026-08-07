@@ -35,6 +35,7 @@ from recidiviz.cloud_storage.gcs_file_system import (
 )
 from recidiviz.cloud_storage.gcs_file_system_impl import (
     generate_random_temp_path,
+    gunzip,
     unzip,
 )
 from recidiviz.cloud_storage.gcsfs_path import (
@@ -390,3 +391,8 @@ class FakeGCSFileSystem(GCSFileSystem):
         self, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
     ) -> List[GcsfsFilePath]:
         return unzip(self, zip_file_path, destination_dir)
+
+    def gunzip(
+        self, gz_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        return gunzip(self, gz_file_path, destination_dir)
