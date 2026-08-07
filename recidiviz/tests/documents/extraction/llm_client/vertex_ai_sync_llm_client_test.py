@@ -122,7 +122,7 @@ class VertexAISyncLLMClientTest(TestCase):
 
     def setUp(self) -> None:
         self.model_config = load_llm_model_registry().get_model_config(
-            "GEMINI_3_5_FLASH_MINIMAL_THINKING"
+            "GEMINI_2_5_FLASH_NO_THINKING"
         )
 
         self.genai_client_patcher = patch(

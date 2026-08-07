@@ -55,6 +55,12 @@ base_models:
           Maximum tokens for internal reasoning. 0 disables thinking. May be
           omitted to use model-managed dynamic thinking.
 
+  # NOTE: gemini-3.5-flash is not yet available in us-central1 (our default
+  # Vertex AI region). Any config using this model requires a non-default
+  # location to be specified — see DEFAULT_VERTEX_AI_LOCATION in
+  # vertex_ai_sync_llm_client.py. Before enabling, confirm a supported US
+  # region at:
+  # https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/locations#global
   gemini-3.5-flash:
     family: gemini
     is_thinking_model: true

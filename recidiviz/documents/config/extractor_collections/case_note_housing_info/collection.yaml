@@ -5,7 +5,7 @@ description: >
 relevance_criteria: >
   Whether the document mentions the person's living situation
 
-default_model_config_name: GEMINI_3_5_FLASH_MINIMAL_THINKING
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 
 minimum_confidence_level: inferred
 

@@ -12,7 +12,7 @@ golden_eval:
 # thresholds, and the transient retry limit. The model override currently resolves
 # to the same config as the collection default — it exists to exercise the
 # override path until the registry has a second non-thinking config.
-model_config_name: GEMINI_3_5_FLASH_MINIMAL_THINKING
+model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 total_pending_document_count_hard_cap: 50000
 single_job_document_count_batch_threshold: 2500
 max_transient_retry_count: 3

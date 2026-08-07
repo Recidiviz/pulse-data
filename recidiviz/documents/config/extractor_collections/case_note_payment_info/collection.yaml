@@ -7,7 +7,7 @@ relevance_criteria: >
   Whether the document mentions fines, restitution, court costs, supervision
   fees, payment plans, or other financial obligations related to supervision
 
-default_model_config_name: GEMINI_3_5_FLASH_MINIMAL_THINKING
+default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 
 minimum_confidence_level: inferred
 
