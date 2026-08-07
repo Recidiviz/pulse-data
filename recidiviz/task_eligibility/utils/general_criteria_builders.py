@@ -773,6 +773,7 @@ def num_events_within_time_interval_spans(
     index_columns: Optional[List[str]] = None,
     event_list_field: Optional[str] = None,
     truncate_to_month: bool = False,
+    shift_interval_boundary_by_one_day: bool = False,
 ) -> str:
     """
     Creates a CTE with spans of time for the number of events within a given time interval.
@@ -794,7 +795,20 @@ def num_events_within_time_interval_spans(
             the first of the month, if intervals are specified. For example, an event on June 13:
                 - a 3-month interval with no start interval: June 13 to Sep 1
                 - a 6-month interval with a 3 month interval start: Sep 1 to Dec 1
+        shift_interval_boundary_by_one_day (bool): If True, shifts each non-zero interval
+            boundary (date_interval and, when set, date_interval_start) forward by one day,
+            so the day exactly <date_interval> (or <date_interval_start>) <date_part>s after
+            event_date is attributed to the interval ending there rather than the interval
+            starting there. This yields exact calendar arithmetic with no truncation, and is
+            mutually exclusive with truncate_to_month. Example, date_part="MONTH": an event on
+            Feb 4 with date_interval_start=6 gets start_date Aug 5 (one day after the exact
+            6-month mark), not Aug 4.
     """
+    if truncate_to_month and shift_interval_boundary_by_one_day:
+        raise ValueError(
+            "[truncate_to_month] and [shift_interval_boundary_by_one_day] cannot both be "
+            "True: they are mutually exclusive conventions for handling interval boundaries."
+        )
 
     if index_columns is None:
         index_columns = ["person_id", "state_code"]
@@ -806,6 +820,8 @@ def num_events_within_time_interval_spans(
         end_date_clause = f"DATE_ADD(event_date, INTERVAL {date_interval} {date_part})"
         if truncate_to_month:
             end_date_clause = f"DATE_TRUNC({end_date_clause}, MONTH)"
+        elif shift_interval_boundary_by_one_day:
+            end_date_clause = f"DATE_ADD({end_date_clause}, INTERVAL 1 DAY)"
     else:
         end_date_clause = "CAST(NULL AS DATE)"
 
@@ -815,6 +831,8 @@ def num_events_within_time_interval_spans(
         )
         if truncate_to_month:
             start_date_clause = f"DATE_TRUNC({start_date_clause}, MONTH)"
+        elif shift_interval_boundary_by_one_day:
+            start_date_clause = f"DATE_ADD({start_date_clause}, INTERVAL 1 DAY)"
 
     else:
         start_date_clause = "event_date"

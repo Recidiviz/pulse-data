@@ -383,6 +383,7 @@ def classification_incident_score_query_template(
     reclass_score_definitions: dict[tuple[int, int], dict[int, int]] | None = None,
     max_initial_score: int | None = None,
     max_reclass_score: int | None = None,
+    use_exact_calendar_month_windows: bool = False,
 ) -> str:
     """
     Generates a SQL query for calculating classification-form scores based on
@@ -423,6 +424,13 @@ def classification_incident_score_query_template(
             in dual-score mode.
         max_reclass_score: If set, caps reclass_total_score using LEAST(). Only valid
             in dual-score mode.
+        use_exact_calendar_month_windows: If True, computes each window's per-incident
+            eligibility boundary using exact calendar-month arithmetic instead of
+            truncating to the first of the month. The day exactly N months after an
+            incident's date is attributed to whichever of the two adjacent windows is
+            closer to the incident: that window's span becomes inclusive of the boundary
+            day, and the next window's span starts the day after. Defaults to False,
+            preserving the existing month-truncated boundary behavior.
     """
     is_dual_mode = _validate_score_definition_mode(
         score_definitions=score_definitions,
@@ -490,7 +498,8 @@ def classification_incident_score_query_template(
                 date_part="MONTH",
                 index_columns=["person_id", "state_code", "custodial_authority_session_id"],
                 event_list_field="incarceration_incident_id",
-                truncate_to_month=True,
+                truncate_to_month=not use_exact_calendar_month_windows,
+                shift_interval_boundary_by_one_day=use_exact_calendar_month_windows,
             )}
             SELECT
                 person_id,
