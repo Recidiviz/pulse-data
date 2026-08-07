@@ -20,6 +20,9 @@ task_data_fields:
   - column_name: "field_name"
     description: "Name of the extracted field being annotated."
     bq_type: "STRING"
+  - column_name: "group"
+    description: "Group identifier for the array element this field belongs to."
+    bq_type: "STRING"
   - column_name: "task_order"
     description: "Ordering of the task within the annotation batch."
     bq_type: "INT64"
@@ -39,6 +42,7 @@ primary_key_fields:
   - "document_id"
   - "extractor_version_id"
   - "field_name"
+  - "group"
 
 annotation_fields:
   - column_name: "is_correct"

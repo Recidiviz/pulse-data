@@ -347,6 +347,14 @@ def get_reserved_bq_column_name_prefix(field_name: str) -> Optional[str]:
     )
 
 
+def bq_quote_identifier(name: str) -> str:
+    """Returns name backtick-quoted for safe use as a BigQuery SQL identifier.
+
+    Required for column names that are reserved SQL keywords (e.g. ``group``).
+    """
+    return f"`{name}`"
+
+
 def validate_unquoted_bq_identifier(name: str) -> None:
     """Validates that |name| is a valid unquoted BigQuery column or table identifier.
     Raises ValueError if the name is empty, contains non-alphanumeric/underscore

@@ -66,6 +66,10 @@ schema:
             type: STRING
             mode: NULLABLE
             description: Name of the extracted field being annotated.
+          - name: group
+            type: STRING
+            mode: NULLABLE
+            description: Group identifier for the array element this field belongs to.
           - name: task_order
             type: INTEGER
             mode: NULLABLE
