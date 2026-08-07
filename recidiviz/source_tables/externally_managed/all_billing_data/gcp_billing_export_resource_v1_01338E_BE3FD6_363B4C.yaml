@@ -260,6 +260,9 @@ schema:
       - name: description
         type: STRING
         mode: NULLABLE
+      - name: applied_subscription_instance_id
+        type: STRING
+        mode: NULLABLE
   - name: cost_at_effective_price_default
     type: FLOAT
     mode: NULLABLE
