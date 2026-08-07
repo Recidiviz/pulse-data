@@ -75,6 +75,10 @@ export const LOOKER_EMBED_PERMISSIONS_LABELS = {
   lookerEmbed: "Embedded Looker Dashboards",
 };
 
+export const PAROLE_PERMISSIONS_LABELS = {
+  parole: "Parole Board",
+};
+
 export const ROUTES_PERMISSIONS_LABELS = {
   ...WORKFLOWS_PERMISSIONS_LABELS,
   ...VITALS_PERMISSIONS_LABELS,
@@ -87,6 +91,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...LANTERN_PERMISSIONS_LABELS,
   ...DIRECTOR_DASHBOARD_PERMISSIONS_LABELS,
   ...LOOKER_EMBED_PERMISSIONS_LABELS,
+  ...PAROLE_PERMISSIONS_LABELS,
 } satisfies Record<string, string>;
 
 export const ALLOWED_APPS_LABELS = {
