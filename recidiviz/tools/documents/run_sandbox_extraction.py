@@ -149,6 +149,7 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.load_views_to_sandbox import load_collected_views_to_sandbox
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.future_executor import map_with_bounded_concurrency
 from recidiviz.utils.metadata import local_project_id_override, project_id
@@ -975,6 +976,7 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
     return summary
 
 
+@requires_google_adc
 def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     # google-genai dispatches one HTTP request per document through httpx, which
