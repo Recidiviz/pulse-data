@@ -474,12 +474,25 @@ def get_latest_min_referrals_ctes() -> str:
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
     ),
     latest_min_referrals AS (
-        SELECT mr.*, mr.evaluation_date AS start_date
+        SELECT mr.*, mr.evaluation_date AS start_date,
+            tmf.latest_min_transfer_date IS NOT NULL AS resident_transferred_after_referral,
         FROM min_referrals mr
         INNER JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
             ON mr.state_code = iss.state_code
             AND mr.person_id = iss.person_id
             AND mr.evaluation_date BETWEEN iss.start_date AND IFNULL(DATE_SUB(iss.end_date_exclusive, INTERVAL 1 DAY), "9999-12-31")
+        -- Join the latest transfer to min facility per person to identify if a transfer has occurred since
+        -- the referral was submitted
+        LEFT JOIN (
+            SELECT
+                state_code, person_id,
+                MAX(completion_event_date) AS latest_min_transfer_date
+            FROM `{{project_id}}.task_eligibility_completion_events_us_nd.transfer_to_minimum_facility_materialized`
+            GROUP BY 1, 2
+        ) tmf
+            ON mr.state_code = tmf.state_code
+            AND mr.person_id = tmf.person_id
+            AND mr.evaluation_date <= tmf.latest_min_transfer_date
         WHERE CURRENT_DATE("US/Pacific") BETWEEN iss.start_date AND IFNULL(iss.end_date, '9999-12-31')
         QUALIFY ROW_NUMBER() OVER(PARTITION BY mr.state_code, mr.person_id ORDER BY mr.evaluation_date DESC, CASE WHEN mr.evaluation_result = 'Approved' THEN 0 ELSE 1 END) = 1
     )"""
@@ -737,7 +750,9 @@ def eligible_and_almost_eligible_minus_referrals(
         END AS metadata_tab_name,
     FROM eligible_and_almost_eligible eae
     LEFT JOIN latest_min_referrals lmr
-        USING (person_id, state_code)
+        ON lmr.person_id = eae.person_id
+        AND lmr.state_code = lmr.state_code
+        AND NOT lmr.resident_transferred_after_referral
     {'WHERE lmr.person_id IS NULL' if remove_recent_referrals else ''}
     """
 
