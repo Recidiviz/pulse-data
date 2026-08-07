@@ -53,9 +53,6 @@ from recidiviz.calculator.query.state.views.analyst_data.population_density_by_s
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
-    US_AZ_ACTION_QUEUE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
 )
@@ -382,9 +379,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
         "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
-        "Used in ongoing AZ reentry planning analysis. (EG)"
     ),
     REENTRY_CLIENT_VIEW_BUILDER.address: (
         "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
