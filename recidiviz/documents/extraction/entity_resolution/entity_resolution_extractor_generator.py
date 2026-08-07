@@ -60,9 +60,14 @@ class EntityResolutionExtractorGenerator:
         """Returns the document metadata filter query template selecting every
         composite document in the ER document collection — the ER analogue of a
         first-order extractor's authored filter.
+
+        DISTINCT for the same reason every authored filter is: composite documents
+        are content-addressed, so two root entities whose composites render
+        identically share one document_contents_id, and the eligible-document query
+        joins this result to the collection's metadata on that id.
         """
         query = f"""
-        SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
+        SELECT DISTINCT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
         FROM `{entity_resolution_document_collection.metadata_table_address.format_address_for_query_template()}`
         WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL
         """

@@ -144,7 +144,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(
-                    f"SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}\n"
+                    f"SELECT DISTINCT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}\n"
                     f"FROM `{composite_document_collection.metadata_table_address.format_address_for_query_template()}`\n"
                     f"WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL"
                 ),
@@ -184,7 +184,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(
-                    f"SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}\n"
+                    f"SELECT DISTINCT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}\n"
                     f"FROM `{composite_document_collection.metadata_table_address.format_address_for_query_template()}`\n"
                     f"WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL"
                 ),

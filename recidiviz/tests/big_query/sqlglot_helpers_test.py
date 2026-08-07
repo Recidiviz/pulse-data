@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
+    check_query_selects_distinct_rows,
     check_query_selects_output_columns,
     check_view_has_no_state_specific_logic,
 )
@@ -134,6 +135,29 @@ class TestSqlglotHelpers(unittest.TestCase):
             check_query_is_not_ordered_outside_of_windows(
                 order_struct_outside_of_aggregation_invalid
             )
+
+    def test_check_query_selects_distinct_rows(self) -> None:
+        check_query_selects_distinct_rows("SELECT DISTINCT a, b FROM table_a")
+
+        valid_query_with_cte = """
+        WITH cte AS (SELECT a, b FROM table_a) SELECT DISTINCT a, b FROM cte
+        """
+        check_query_selects_distinct_rows(valid_query_with_cte)
+
+        with self.assertRaisesRegex(
+            ValueError, r"Top-level SELECT statement must apply DISTINCT"
+        ):
+            check_query_selects_distinct_rows("SELECT a, b FROM table_a")
+
+        # A DISTINCT on an inner CTE says nothing about the query's own output
+        # grain, so it does not satisfy the check.
+        distinct_only_in_cte = """
+        WITH cte AS (SELECT DISTINCT a, b FROM table_a) SELECT a, b FROM cte
+        """
+        with self.assertRaisesRegex(
+            ValueError, r"Top-level SELECT statement must apply DISTINCT"
+        ):
+            check_query_selects_distinct_rows(distinct_only_in_cte)
 
     def test_check_query_selects_output_columns(self) -> None:
         valid_query_simple = "SELECT a, b FROM table_a"

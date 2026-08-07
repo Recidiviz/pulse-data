@@ -44,7 +44,10 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
 )
-from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
+from recidiviz.tests.big_query.sqlglot_helpers import (
+    check_query_selects_distinct_rows,
+    check_query_selects_output_columns,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
@@ -79,7 +82,10 @@ class ParseAllExtractorConfigsTest(TestCase):
         self.assertTrue(configs_by_state)
 
         # Each extractor's document filter template must render with a project_id
-        # into a query that selects exactly the single document_contents_id column.
+        # into a query that selects exactly the single document_contents_id column,
+        # DISTINCT (document_contents_id is a hash of the document text and can be
+        # shared many times across people, e.g. in the case of common boilerplate
+        # notes).
         for state_configs in configs_by_state.values():
             for config in state_configs.values():
                 with self.subTest(
@@ -93,6 +99,7 @@ class ParseAllExtractorConfigsTest(TestCase):
                     check_query_selects_output_columns(
                         rendered_query, {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
                     )
+                    check_query_selects_distinct_rows(rendered_query)
 
     def test_all_real_first_order_extractors_declare_golden_eval(self) -> None:
         # Every first-order extractor must ship a golden eval set so extraction

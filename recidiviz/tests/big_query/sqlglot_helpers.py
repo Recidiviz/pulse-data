@@ -118,6 +118,28 @@ def check_query_selects_output_columns(
         )
 
 
+def check_query_selects_distinct_rows(query: str) -> None:
+    """Raises a value error if the top-level SELECT statement in the provided query
+    does not apply DISTINCT, i.e. does not guarantee one row per distinct combination
+    of its output columns.
+
+    A DISTINCT on an inner CTE does not satisfy this — only the query's own output
+    grain is checked:
+
+    WITH cte AS (SELECT DISTINCT a FROM table)
+    SELECT a FROM cte  -- fails, the top-level SELECT is not DISTINCT
+    """
+    tree = sqlglot.parse_one(query, dialect="bigquery")
+    if not isinstance(tree, expr.Select):
+        raise ValueError("Query does not have a valid top-level SELECT statement")
+
+    if tree.args.get("distinct") is None:
+        raise ValueError(
+            "Top-level SELECT statement must apply DISTINCT so the query emits one "
+            "row per distinct combination of its output columns."
+        )
+
+
 def check_view_has_no_state_specific_logic(view_builder: BigQueryViewBuilder) -> None:
     """Raises a value error if the view associated with the provided builder encodes
     state-specific logic. State-specific logic is categorized in two ways:

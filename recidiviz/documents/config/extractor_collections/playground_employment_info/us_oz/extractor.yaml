@@ -18,7 +18,7 @@ single_job_document_count_batch_threshold: 2500
 max_transient_retry_count: 3
 
 document_metadata_filter_query_template: |
-  SELECT document_contents_id
+  SELECT DISTINCT document_contents_id
   FROM `{project_id}.us_oz_document_store_metadata.fellowship_supervision_notes`
   WHERE document_contents_id IS NOT NULL
 

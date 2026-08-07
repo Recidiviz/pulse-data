@@ -12,7 +12,7 @@ golden_eval:
 # default model config, code-level default caps and retry count).
 
 document_metadata_filter_query_template: |
-  SELECT document_contents_id
+  SELECT DISTINCT document_contents_id
   FROM `{project_id}.us_oz_document_store_metadata.fellowship_supervision_notes`
   WHERE document_contents_id IS NOT NULL
 
