@@ -102,6 +102,14 @@ kubectl get nodes
 
 **Note**: The Terraform service account or your user account must have `container.clusters.get` and Kubernetes RBAC permissions.
 
+This prevents the following error:
+```Error: Unknown SFTPGo API Host
+
+  with provider["registry.terraform.io/drakkan/sftpgo"],
+  on main.tf line 294, in provider "sftpgo":
+  294:   host     = "http://${google_compute_address.default.address}:8080"
+```
+
 #### 2. Configure VPN Routing for Admin service
 We want to route all traffic to the SFTPGo Admin panel through the VPN. Reach out to Aurora to configure the VPN policy to use the ZTNA network for the newly deployed domain.
 
@@ -112,7 +120,12 @@ To avoid chicken-and-egg dependency issues, create the compute address, service,
 ```bash
 # Install cert-manager chart
 atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
-     -target=helm_release.cert_manager
+  -- -target=helm_release.cert_manager
+
+# Create the Cloud DNS hosted zone so its nameservers can be delegated from
+# Squarespace *before* the ClusterIssuer and Certificate are created
+atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
+  -- -target=google_dns_managed_zone.sftpgo_admin
 
 # Create IP and SFTPGo service
 atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
@@ -120,18 +133,26 @@ atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-co
      -target=kubernetes_service_v1.sftpgo_admin_http
 ```
 
+**Why the hosted zone gets its own targeted apply**: the zone must exist before you
+can read its nameservers delegate them from Squarespace. Creating the zone on its own
+first lets the delegation propagate before anything asks cert-manager to solve a
+challenge.
+
 This prevents the following error:
 ```
-Error: Unknown SFTPGo API Host
-
-  with provider["registry.terraform.io/drakkan/sftpgo"],
-  on main.tf line 294, in provider "sftpgo":
-  294:   host     = "http://${google_compute_address.default.address}:8080"
+│ Error: API did not recognize GroupVersionKind from manifest (CRD may not be installed)
+│ 
+│   with kubernetes_manifest.letsencrypt_issuer,
+│   on ssl.tf line 84, in resource "kubernetes_manifest" "letsencrypt_issuer":
+│   84: resource "kubernetes_manifest" "letsencrypt_issuer" {
+│ 
+│ no matches for kind "ClusterIssuer" in group "cert-manager.io"
 ```
 
 ### Manual Steps for HTTPS Setup
 
-After deploying the Terraform configuration, complete these manual steps:
+After the initial partial deployment above (which creates cert-manager and the Cloud
+DNS hosted zone), complete these manual steps *before* running the full apply:
 
 #### 1. Get Cloud DNS Nameservers
 
@@ -860,10 +881,34 @@ gcloud container clusters get-credentials <cluster-name> \
    gcloud dns managed-zones describe sftpgo-admin-zone --project=<project-id>
    ```
 
-7. **Restart cert-manager if Workload Identity was recently configured**:
+7. **Rule out a poisoned zone-delegation cache**. If the challenge sits `pending` with
+   `Waiting for DNS-01 challenge propagation: DNS record for ... not yet propagated`,
+   first confirm the TXT record really is live on every authoritative nameserver:
+
+   ```bash
+   # The TXT value cert-manager expects
+   kubectl get challenge -n sftpgo -o jsonpath='{.items[0].spec.key}'; echo
+
+   # Should return that same value from all four zone nameservers
+   for ns in $(gcloud dns managed-zones describe sftpgo-admin-zone \
+       --project=<project-id> --format='value(nameServers.list())' | tr ',' ' '); do
+     printf '%-32s ' "$ns"
+     dig +short TXT _acme-challenge.sftpgo-admin-<state-code>.recidiviz.org @"$ns"
+   done
+   ```
+
+   If all four return the expected value but cert-manager still reports "not yet
+   propagated", the controller is holding a stale zone cache from a self-check that ran
+   before the Squarespace delegation existed (see
+   [Restart cert-manager](#4-restart-cert-manager) for the mechanism). Restart it — the
+   existing `Challenge` object is reused, so issuance completes within seconds:
+
    ```bash
    kubectl rollout restart deployment cert-manager -n cert-manager
    ```
+
+   This is also the restart to run if Workload Identity was configured after
+   cert-manager started.
 
 8. **Check ClusterIssuer status**:
    ```bash

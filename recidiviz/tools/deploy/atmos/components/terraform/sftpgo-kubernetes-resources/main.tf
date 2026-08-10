@@ -109,6 +109,11 @@ resource "helm_release" "sftpgo" {
       {
         name = "env.SFTPGO_LOG_LEVEL",
         value = "debug"
+      },
+      # Only schedule pods on the sftpgo node pool
+      {
+        name  = "nodeSelector.cloud\\.google\\.com/gke-nodepool"
+        value = "sftpgo-node-pool"
       }
     ],
     local.allowed_proxy_env_vars

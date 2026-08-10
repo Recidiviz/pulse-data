@@ -41,6 +41,8 @@ module "runner-cluster" {
   logging_service          = "logging.googleapis.com/kubernetes"
   monitoring_service       = "monitoring.googleapis.com/kubernetes"
   remove_default_node_pool = true
+  enable_shielded_nodes    = true
+
   service_account          = "create"
   gce_pd_csi_driver        = true
   deletion_protection = false
@@ -55,6 +57,7 @@ module "runner-cluster" {
     max_memory_gb       = 32
     auto_repair         = true
     auto_upgrade        = true
+    enable_secure_boot  = true
     autoscaling_profile = "OPTIMIZE_UTILIZATION"
     gpu_resources = []
   }
@@ -67,6 +70,7 @@ module "runner-cluster" {
       max_count    = 4
       machine_type = "c4-highcpu-2"
       disk_type    = "hyperdisk-balanced"
+      enable_secure_boot = true
     }
   ]
 }
