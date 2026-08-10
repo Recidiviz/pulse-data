@@ -380,6 +380,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "validation_external_accuracy",
     "validation_metadata",
     "validation_views",
+    "validation_views__classification",
     "validation_views__jii_texting",
     "validation_views__task_eligibility",
     "vitals_report_views",

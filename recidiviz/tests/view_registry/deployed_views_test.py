@@ -113,6 +113,9 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
 from recidiviz.validation.views.dataset_config import (
+    CLASSIFICATION_VALIDATION_VIEWS_DATASET,
+)
+from recidiviz.validation.views.dataset_config import (
     METADATA_DATASET as VALIDATION_METADATA_DATASET,
 )
 from recidiviz.validation.views.dataset_config import (
@@ -504,6 +507,7 @@ class ViewDagInvariantTests(unittest.TestCase):
                 if child_address.dataset_id in {
                     VALIDATION_VIEWS_DATASET,
                     TES_VALIDATION_VIEWS_DATASET,
+                    CLASSIFICATION_VALIDATION_VIEWS_DATASET,
                     VALIDATION_METADATA_DATASET,
                 }:
                     # Validation views may look for generic issues in, for example,
@@ -594,7 +598,11 @@ class ViewDagInvariantTests(unittest.TestCase):
             a
             for a in descendant_addresses
             if a.dataset_id
-            not in (VALIDATION_VIEWS_DATASET, TES_VALIDATION_VIEWS_DATASET)
+            not in (
+                VALIDATION_VIEWS_DATASET,
+                TES_VALIDATION_VIEWS_DATASET,
+                CLASSIFICATION_VALIDATION_VIEWS_DATASET,
+            )
         } - valid_descendants
 
         if invalid_descendants:

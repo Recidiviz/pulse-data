@@ -66,9 +66,13 @@ def classification_score_component_schema(
     span-with-reasons schema, with an integer ``component_score`` value column in
     place of the criteria schema's boolean ``meets_criteria``."""
     return span_with_reasons_schema(
-        # NULLABLE because a question may not apply during a span (the downstream
-        # scoring view supplies a default so a missing question does not null out
-        # the total). Unexpected NULLs are surfaced by validation, not the schema.
+        # NULLABLE so that a component view emitting an unscored span fails a
+        # validation instead of failing to materialize. Every emitted span is
+        # expected to carry a score: NULLs are flagged by
+        # null_component_score_classification_score_component_spans.
+        # TODO(OBT-42943): Take a `default_score` on the builder so a question with
+        # missing inputs falls back to it here, instead of leaving each scoring view
+        # to substitute its own default for a NULL.
         value_column=Integer(
             name=COMPONENT_SCORE_COLUMN_NAME,
             mode="NULLABLE",

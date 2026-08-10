@@ -44,7 +44,11 @@ from recidiviz.validation.validation_models import (
     ValidationCategory,
     ValidationCheckType,
 )
+from recidiviz.validation.views.classification.configured_validations import (
+    get_all_classification_validations,
+)
 from recidiviz.validation.views.dataset_config import (
+    CLASSIFICATION_VALIDATION_VIEWS_DATASET,
     TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET,
     VIEWS_DATASET,
 )
@@ -90,6 +94,16 @@ class TestConfiguredValidations(unittest.TestCase):
                 == TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET
             )
 
+    def test_configured_classification_validations_all_have_classification_specific_dataset(
+        self,
+    ) -> None:
+        validations = get_all_classification_validations()
+        for validation in validations:
+            assert (
+                validation.view_builder.address.dataset_id
+                == CLASSIFICATION_VALIDATION_VIEWS_DATASET
+            )
+
     def test_validations_projects_subset_of_views_projects(self) -> None:
         validations = get_all_validations()
         not_subsets = []
@@ -129,7 +143,11 @@ class TestConfiguredValidations(unittest.TestCase):
             builder.address
             for builder in found_builders
             if builder.address.dataset_id
-            in (VIEWS_DATASET, TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET)
+            in (
+                VIEWS_DATASET,
+                TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET,
+                CLASSIFICATION_VALIDATION_VIEWS_DATASET,
+            )
         )
 
         validations = get_all_validations()
