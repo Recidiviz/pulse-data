@@ -191,6 +191,78 @@ function next_alpha_version {
     echo "${NEW_VERSION}"
 }
 
+# Requests a just-in-time Privileged Access Manager (PAM) grant for the
+# `pam-deploy-app` lane so the deploying engineer holds deploy permissions only
+# for the duration of the deploy, rather than relying on standing access. This
+# is the first step in migrating deploys off go/jit onto PAM.
+#
+# Deliberately non-fatal: if the entitlement isn't reachable or the user isn't
+# eligible yet (mid-rollout), it logs and returns so engineers still on go/jit
+# are unaffected. Scoped to staging alpha deploys for now.
+#
+# TODO(#2839): once go/jit is deprecated, remove the go/jit references in this
+# comment; and once the PAM rollout is complete and all deployers are eligible,
+# make this fatal (fail the deploy rather than warning) so a deploy can no longer
+# silently fall back to standing access.
+function request_pam_deploy_grant {
+    local PROJECT_ID=$1
+    local VERSION_TAG=$2
+    local ENTITLEMENT_ID="pam-deploy-app"
+    local LOCATION="global"
+    # 2h — comfortably longer than a deploy, well under the entitlement max.
+    local DURATION="7200s"
+    local GCLOUD_USER
+    GCLOUD_USER=$(gcloud config get-value account 2>/dev/null)
+
+    echo "Requesting just-in-time Privileged Access Manager (PAM) deploy access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
+
+    if ! gcloud pam entitlements describe "${ENTITLEMENT_ID}" \
+            --project="${PROJECT_ID}" --location="${LOCATION}" >/dev/null 2>&1; then
+        echo "⚠️  PAM entitlement [${ENTITLEMENT_ID}] not reachable for [${GCLOUD_USER}] — skipping JIT elevation."
+        echo "    (Confirm you're in s-pam-deploy-app@.)"
+        return 0
+    fi
+
+    # Reuse an existing active grant rather than stacking a new one every deploy.
+    local ACTIVE_GRANT
+    ACTIVE_GRANT=$(gcloud pam grants list \
+        --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
+        --filter="requester=${GCLOUD_USER} AND state=ACTIVE" \
+        --format="value(name)" 2>/dev/null | head -1)
+    if [[ -n "${ACTIVE_GRANT}" ]]; then
+        echo "Using existing active PAM grant."
+        return 0
+    fi
+
+    if ! gcloud pam grants create \
+            --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
+            --requested-duration="${DURATION}" \
+            --justification="Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}" >/dev/null 2>&1; then
+        echo "⚠️  Could not create a PAM grant (are you in s-pam-deploy-app@?). Continuing with existing access."
+        return 0
+    fi
+
+    # Wait for the grant to activate and its IAM bindings to be written.
+    echo "Waiting for PAM grant to activate..."
+    local i
+    for i in $(seq 1 24); do
+        ACTIVE_GRANT=$(gcloud pam grants list \
+            --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
+            --filter="requester=${GCLOUD_USER} AND state=ACTIVE" \
+            --format="value(name)" 2>/dev/null | head -1)
+        [[ -n "${ACTIVE_GRANT}" ]] && break
+        sleep 5
+    done
+    if [[ -z "${ACTIVE_GRANT}" ]]; then
+        echo "⚠️  PAM grant did not reach ACTIVE in time — continuing with existing access."
+        return 0
+    fi
+    # Give IAM a moment to propagate the freshly-written bindings before the
+    # deploy (verify_can_deploy reads a secret the grant provides).
+    sleep 20
+    echo "PAM deploy access granted (auto-expires in ${DURATION})."
+}
+
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {

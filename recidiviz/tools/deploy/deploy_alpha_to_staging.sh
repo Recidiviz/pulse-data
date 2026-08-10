@@ -35,6 +35,11 @@ COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [${COMMIT_HASH:0:7}] which is the \
 tip of branch [main]. Continue?"
 
+# Elevate to the deploy-app lane via PAM before deploying (staging alpha only,
+# for now), so deploy access is just-in-time rather than standing. Non-fatal if
+# the deployer isn't onboarded to PAM yet.
+request_pam_deploy_grant recidiviz-staging "${NEW_VERSION}"
+
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${NEW_VERSION}" -c "${COMMIT_HASH}" -b main -p || exit_on_fail
 
 NEW_ALPHA_DEPLOY_BRANCH="alpha/${NEW_VERSION}"

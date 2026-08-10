@@ -102,6 +102,12 @@ fi
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
 
+# Elevate to the deploy-app lane via PAM before anything that needs deploy
+# access (cutting an RC deploys to staging), so access is just-in-time rather
+# than standing. Must come before the release-notes step below, which reads a
+# deploy secret. Non-fatal if the deployer isn't onboarded to PAM yet.
+request_pam_deploy_grant recidiviz-staging "${RELEASE_VERSION_TAG}"
+
 echo "Generating release notes."
 GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat) || exit_on_fail
 run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.check_for_prs \
@@ -110,7 +116,6 @@ run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.check_for_prs
 
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH_SHORT}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
-
 
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${RELEASE_VERSION_TAG}" \
   -c "${COMMIT_HASH}" \
