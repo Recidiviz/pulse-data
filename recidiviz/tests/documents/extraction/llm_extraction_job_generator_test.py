@@ -55,6 +55,9 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
     LLMExtractorMetadataManager,
 )
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
@@ -168,8 +171,8 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
             ],
         )
 
-    @staticmethod
     def _document_result(
+        self,
         *,
         job_id: str,
         document_contents_id: str,
@@ -198,7 +201,10 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
                 error_type=None,
                 error_message=None,
                 validation_results=LLMDocumentValidationResult(
-                    validated_content={"is_relevant": True},
+                    validated_content=LLMRequestOutputValues(
+                        output_schema=self.config.extractor_collection.output_schema,
+                        output_json={"is_relevant": True},
+                    ),
                     audit_issues=[],
                     result_type_override=None,
                     validation_config_version_id="vc1",

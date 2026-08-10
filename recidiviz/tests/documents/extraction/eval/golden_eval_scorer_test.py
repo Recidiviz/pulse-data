@@ -41,6 +41,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     IS_RELEVANT_FIELD_NAME,
     RESULT_KEY,
 )
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_fake_extractor_assignment_result_json,
@@ -60,7 +63,7 @@ _DOCUMENT_TEXT = "The record is active. Assigned to dish duty at $12.50/hour."
 
 def _expected_values(**overrides: Any) -> dict[str, Any]:
     """Returns the expected values for a document, defaulting to values that
-    match `_actual_result_json()` exactly and overriding them key by key.
+    match `_actual_output_json()` exactly and overriding them key by key.
     """
     values: dict[str, Any] = {
         IS_RELEVANT_FIELD_NAME: True,
@@ -96,8 +99,8 @@ def _document(**overrides: Any) -> GoldenEvalDocument:
     return GoldenEvalDocument(**kwargs)
 
 
-def _actual_result_json(**overrides: Any) -> dict[str, Any]:
-    """Returns the result JSON the extractor produced, defaulting to output that
+def _actual_output_json(**overrides: Any) -> dict[str, Any]:
+    """Returns the output JSON the extractor produced, defaulting to output that
     matches `_expected_values()` exactly and overriding it key by key.
     """
     kwargs: dict[str, Any] = {
@@ -175,15 +178,16 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         self,
         *,
         document: GoldenEvalDocument | None = None,
-        actual_result_json: dict[str, Any] | None,
+        actual_output_json: dict[str, Any] | None,
     ) -> list[GoldenEvalFieldScore]:
         """Returns the scores for a single document."""
         document = document if document is not None else _document()
         return self.scorer.score(
-            output_schema=self.output_schema,
             documents=[document],
-            actual_output_json_by_document_id={
-                document.golden_document_id: actual_result_json
+            actual_output_values_by_document_id={
+                document.golden_document_id: LLMRequestOutputValues(
+                    output_schema=self.output_schema, output_json=actual_output_json
+                )
             },
         )
 
@@ -200,7 +204,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_all_fields_correct(self) -> None:
         self.assertEqual(
             _all_correct_scores(),
-            self._score_one(actual_result_json=_actual_result_json()),
+            self._score_one(actual_output_json=_actual_output_json()),
         )
 
     def test_string_fields_match_fuzzily(self) -> None:
@@ -211,7 +215,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self._scores_by_field(
-            self._score_one(document=document, actual_result_json=_actual_result_json())
+            self._score_one(document=document, actual_output_json=_actual_output_json())
         )
 
         self.assertTrue(scores[("status_note", None)].is_correct)
@@ -228,7 +232,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_enum_field_mismatch(self) -> None:
         scores = self._scores_by_field(
             self._score_one(
-                actual_result_json=_actual_result_json(primary_status="inactive")
+                actual_output_json=_actual_output_json(primary_status="inactive")
             )
         )
 
@@ -243,7 +247,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self._scores_by_field(
-            self._score_one(document=document, actual_result_json=_actual_result_json())
+            self._score_one(document=document, actual_output_json=_actual_output_json())
         )
 
         self.assertEqual(
@@ -254,7 +258,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_float_sub_field_compares_exactly(self) -> None:
         scores = self._scores_by_field(
             self._score_one(
-                actual_result_json=_actual_result_json(
+                actual_output_json=_actual_output_json(
                     assignments=[
                         build_fake_extractor_assignment_result_json(
                             "Dish duty", "internal", 12.51, "hourly"
@@ -273,7 +277,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         document = _document(expected_values=_expected_values(location=None))
 
         scores = self._scores_by_field(
-            self._score_one(document=document, actual_result_json=_actual_result_json())
+            self._score_one(document=document, actual_output_json=_actual_output_json())
         )
 
         self.assertEqual(
@@ -283,7 +287,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
 
     def test_expected_present_and_actual_null_is_a_miss(self) -> None:
         scores = self._scores_by_field(
-            self._score_one(actual_result_json=_actual_result_json(location=None))
+            self._score_one(actual_output_json=_actual_output_json(location=None))
         )
 
         self.assertEqual(
@@ -297,7 +301,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         scores = self._scores_by_field(
             self._score_one(
                 document=document,
-                actual_result_json=_actual_result_json(location=None),
+                actual_output_json=_actual_output_json(location=None),
             )
         )
 
@@ -309,11 +313,11 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_field_absent_from_actual_json_reads_as_null(self) -> None:
         # An older extractor version's output can omit a field entirely; that is
         # indistinguishable from the field being null.
-        actual_result_json = _actual_result_json()
-        del actual_result_json["result"]["location"]
+        actual_output_json = _actual_output_json()
+        del actual_output_json["result"]["location"]
 
         scores = self._scores_by_field(
-            self._score_one(actual_result_json=actual_result_json)
+            self._score_one(actual_output_json=actual_output_json)
         )
 
         self.assertEqual(
@@ -344,16 +348,16 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
             ),
             self._score_one(
                 document=document,
-                actual_result_json=wrap_in_result_key(
+                actual_output_json=wrap_in_result_key(
                     build_fake_extractor_irrelevant_result_content()
                 ),
             ),
         )
 
-    def test_no_actual_result_scores_every_expected_field_as_a_miss(self) -> None:
+    def test_no_actual_output_scores_every_expected_field_as_a_miss(self) -> None:
         # A request error or a validation downgrade leaves nothing usable; every
         # expected field is a miss.
-        scores = self._score_one(actual_result_json=None)
+        scores = self._score_one(actual_output_json=None)
 
         self.assertEqual(
             _scores(
@@ -373,10 +377,10 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_malformed_array_field_scores_only_that_field_as_a_miss(self) -> None:
         # A field whose shape contradicts the schema misses, but the fields that
         # read cleanly keep their scores.
-        actual_result_json = _actual_result_json()
-        actual_result_json[RESULT_KEY]["assignments"] = {"not": "a list"}
+        actual_output_json = _actual_output_json()
+        actual_output_json[RESULT_KEY]["assignments"] = {"not": "a list"}
 
-        scores = self._score_one(actual_result_json=actual_result_json)
+        scores = self._score_one(actual_output_json=actual_output_json)
 
         self.assertEqual(
             _scores(
@@ -396,10 +400,10 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     def test_malformed_inferred_field_scores_only_that_field_as_a_miss(self) -> None:
         # `location` is INFERRED, so a bare scalar contradicts the schema — a
         # miss even though the value it carries is the expected one.
-        actual_result_json = _actual_result_json()
-        actual_result_json[RESULT_KEY]["location"] = "Kitchen"
+        actual_output_json = _actual_output_json()
+        actual_output_json[RESULT_KEY]["location"] = "Kitchen"
 
-        scores = self._score_one(actual_result_json=actual_result_json)
+        scores = self._score_one(actual_output_json=actual_output_json)
 
         self.assertEqual(
             _scores(
@@ -420,7 +424,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         # A malformed envelope is read for every field, so field-level scoring
         # degrades to the whole document missing.
         scores = self._score_one(
-            actual_result_json=_actual_result_json()[RESULT_KEY],
+            actual_output_json=_actual_output_json()[RESULT_KEY],
         )
 
         self.assertEqual(
@@ -457,7 +461,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
 
         scores = self._score_one(
             document=document,
-            actual_result_json=_actual_result_json(
+            actual_output_json=_actual_output_json(
                 assignments=[
                     build_fake_extractor_assignment_result_json(
                         "Dish duty", "internal", 12.5, "hourly"
@@ -503,11 +507,11 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
                     assignments=[{"assignment_name": "Laundry"}]
                 )
             ),
-            actual_result_json=_actual_result_json(assignments=[]),
+            actual_output_json=_actual_output_json(assignments=[]),
         )
         actual_only_scores = self._score_one(
             document=_document(expected_values=_expected_values(assignments=[])),
-            actual_result_json=_actual_result_json(
+            actual_output_json=_actual_output_json(
                 assignments=[
                     {
                         "assignment_name": build_inferred_field_result_json("Laundry"),
@@ -563,7 +567,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         scores = self._scores_by_field(
             self._score_one(
                 document=document,
-                actual_result_json=_actual_result_json(
+                actual_output_json=_actual_output_json(
                     assignments=[
                         build_fake_extractor_assignment_result_json(
                             "Dish duty", "internal", 12.5, "hourly"
@@ -601,7 +605,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self._scores_by_field(
-            self._score_one(document=document, actual_result_json=_actual_result_json())
+            self._score_one(document=document, actual_output_json=_actual_output_json())
         )
 
         self.assertTrue(scores[("assignments", None)].is_correct)
@@ -620,7 +624,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         scores = self._scores_by_field(
             self._score_one(
                 document=document,
-                actual_result_json=_actual_result_json(
+                actual_output_json=_actual_output_json(
                     assignments=[
                         build_fake_extractor_assignment_result_json(
                             "Dish duty", "internal", 12.5, "hourly"
@@ -653,7 +657,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self._scores_by_field(
-            self._score_one(document=document, actual_result_json=_actual_result_json())
+            self._score_one(document=document, actual_output_json=_actual_output_json())
         )
 
         self.assertEqual(
@@ -669,7 +673,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
             self._scores_by_field(
                 self._score_one(
                     document=document,
-                    actual_result_json=_actual_result_json(assignments=[]),
+                    actual_output_json=_actual_output_json(assignments=[]),
                 )
             )[("assignments", None)],
         )
@@ -678,7 +682,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         document = _document(expected_values=_expected_values(assignments=None))
 
         scores = self._score_one(
-            document=document, actual_result_json=_actual_result_json()
+            document=document, actual_output_json=_actual_output_json()
         )
 
         self.assertEqual(
@@ -704,7 +708,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         scores = self._scores_by_field(
             self._score_one(
                 document=document,
-                actual_result_json=_actual_result_json(
+                actual_output_json=_actual_output_json(
                     assignments=[
                         {
                             "assignment_name": build_inferred_field_result_json(
@@ -745,7 +749,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
 
         scores = self._score_one(
             document=document,
-            actual_result_json=_actual_result_json(
+            actual_output_json=_actual_output_json(
                 assignments=[
                     build_fake_extractor_assignment_result_json(
                         "Dish duty", "internal", 12.5, "hourly"
@@ -785,11 +789,16 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self.scorer.score(
-            output_schema=self.output_schema,
             documents=[first, second],
-            actual_output_json_by_document_id={
-                "unit_1": _actual_result_json(),
-                "sample_1": _actual_result_json(primary_status="inactive"),
+            actual_output_values_by_document_id={
+                "unit_1": LLMRequestOutputValues(
+                    output_schema=self.output_schema,
+                    output_json=_actual_output_json(),
+                ),
+                "sample_1": LLMRequestOutputValues(
+                    output_schema=self.output_schema,
+                    output_json=_actual_output_json(primary_status="inactive"),
+                ),
             },
         )
 
@@ -820,14 +829,13 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
     # Malformed inputs
     # ------------------------------------------------------------------
 
-    def test_document_missing_from_actual_results_raises(self) -> None:
+    def test_document_missing_from_actual_outputs_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^No actual extraction result was provided for golden eval document "
+            r"^No actual extraction output was provided for golden eval document "
             r"\[unit_1\]\.$",
         ):
             self.scorer.score(
-                output_schema=self.output_schema,
                 documents=[_document()],
-                actual_output_json_by_document_id={},
+                actual_output_values_by_document_id={},
             )

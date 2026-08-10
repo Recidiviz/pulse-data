@@ -104,7 +104,7 @@ class LLMExtractionResultsPersister:
                 validated_content=assert_type(
                     assert_type(
                         result.validation_results, LLMDocumentValidationResult
-                    ).validated_content,
+                    ).validated_content.output_json,
                     dict,
                 ),
             )

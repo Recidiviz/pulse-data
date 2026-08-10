@@ -53,6 +53,9 @@ from recidiviz.documents.extraction.llm_extraction_result_validator import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     fake_all_fields_result_json,
@@ -92,7 +95,10 @@ class LLMExtractionResultValidatorTest(TestCase):
         self, validated_content: dict[str, Any]
     ) -> LLMDocumentValidationResult:
         return LLMDocumentValidationResult(
-            validated_content=validated_content,
+            validated_content=LLMRequestOutputValues(
+                output_schema=self.config.extractor_collection.output_schema,
+                output_json=validated_content,
+            ),
             audit_issues=[],
             result_type_override=None,
             validation_config_version_id=self.version_id,
@@ -147,7 +153,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         validation = self._validate(result_json)
 
         self.assertFalse(validation.passed_validation)
-        self.assertIsNone(validation.validated_content)
+        self.assertIsNone(validation.validated_content.output_json)
         self.assertEqual(
             LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
             validation.result_type_override,

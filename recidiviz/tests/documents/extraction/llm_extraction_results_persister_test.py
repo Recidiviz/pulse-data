@@ -49,6 +49,9 @@ from recidiviz.documents.extraction.llm_extraction_results_tables import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
 )
@@ -64,6 +67,9 @@ _JOB_ID = "job1"
 _RESULT_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 5, tzinfo=pytz.UTC)
 _RAW_RESULT_JSON = {"is_relevant": True, "location": {"value": "here"}}
+_OUTPUT_SCHEMA = get_first_order_llm_extractor_config(
+    _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
+).extractor_collection.output_schema
 
 
 def _success_result(
@@ -88,7 +94,9 @@ def _success_result(
         error_type=None,
         error_message=None,
         validation_results=LLMDocumentValidationResult(
-            validated_content=validated_content,
+            validated_content=LLMRequestOutputValues(
+                output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+            ),
             audit_issues=audit_issues,
             result_type_override=result_type_override,
             validation_config_version_id="vc1",

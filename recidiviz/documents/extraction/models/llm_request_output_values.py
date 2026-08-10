@@ -35,10 +35,11 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     RESULT_KEY,
     VALUE_FIELD_NAME,
 )
+from recidiviz.utils.types import assert_type
 
 
-class LLMResultParsingError(ValueError):
-    """Raised when a result JSON's shape contradicts the output schema it is read
+class LLMOutputParsingError(ValueError):
+    """Raised when an output JSON's shape contradicts the output schema it is read
     against."""
 
 
@@ -57,7 +58,7 @@ def _scalar_field_value(
     if not field.is_inferred_field:
         return field_json
     if not isinstance(field_json, dict):
-        raise LLMResultParsingError(
+        raise LLMOutputParsingError(
             f"Expected INFERRED field [{field.name}] to hold a dict, found "
             f"[{type(field_json)}]."
         )
@@ -67,7 +68,7 @@ def _scalar_field_value(
     # value key.
     if NULL_REASON_FIELD_NAME in field_json:
         return None
-    raise LLMResultParsingError(
+    raise LLMOutputParsingError(
         f"INFERRED field [{field.name}] holds neither a [{VALUE_FIELD_NAME}] nor a "
         f"[{NULL_REASON_FIELD_NAME}]. Found keys: {sorted(field_json)}."
     )
@@ -75,39 +76,40 @@ def _scalar_field_value(
 
 @attr.define(frozen=True, kw_only=True)
 class LLMRequestOutputValues:
-    """Wraps the raw JSON result returned by an extractor, paired with the output
+    """Wraps the raw JSON output returned by an extractor, paired with the output
     schema needed to interpret it.
     """
 
     output_schema: LLMRequestOutputSchema = attr.ib(
         validator=attr.validators.instance_of(LLMRequestOutputSchema)
     )
-    """The output schema the result JSON conforms to."""
+    """The output schema the output JSON conforms to."""
 
-    result_json: dict[str, Any] | None = attr.ib(validator=attr_validators.is_opt_dict)
-    """The raw output JSON — the validated content of a SUCCESS. `None`
-    means there is no usable output (a request error or a validation downgrade),
-    which every accessor reads as "nothing produced".
+    output_json: dict[str, Any] | None = attr.ib(validator=attr_validators.is_opt_dict)
+    """The raw output JSON as the extractor returned it, which may or may not
+    have been through validation. `None` means there is no usable output (a
+    request error or a validation downgrade), which every accessor reads as
+    "nothing produced".
     """
 
     @property
     def _extracted_fields_json(self) -> dict[str, Any] | None:
-        """Returns the object holding the extracted fields within the result
+        """Returns the object holding the extracted fields within the output
         JSON — the content of the `result` envelope for a schema that has one,
         the JSON itself otherwise — or `None` when there is no usable output.
         """
-        if self.result_json is None:
+        if self.output_json is None:
             return None
         if not self.output_schema.has_result_envelope:
-            return self.result_json
-        if RESULT_KEY not in self.result_json:
-            raise LLMResultParsingError(
-                f"Result JSON for a schema with a result envelope has no "
-                f"[{RESULT_KEY}] key. Found keys: {sorted(self.result_json)}."
+            return self.output_json
+        if RESULT_KEY not in self.output_json:
+            raise LLMOutputParsingError(
+                f"Output JSON for a schema with a result envelope has no "
+                f"[{RESULT_KEY}] key. Found keys: {sorted(self.output_json)}."
             )
-        envelope_json = self.result_json[RESULT_KEY]
+        envelope_json = self.output_json[RESULT_KEY]
         if not isinstance(envelope_json, dict):
-            raise LLMResultParsingError(
+            raise LLMOutputParsingError(
                 f"Expected the [{RESULT_KEY}] envelope to hold a dict, found "
                 f"[{type(envelope_json)}]."
             )
@@ -124,6 +126,36 @@ class LLMRequestOutputValues:
         extracted_fields_json = self._extracted_fields_json
         return extracted_fields_json is not None and field_name in extracted_fields_json
 
+    @property
+    def is_relevant(self) -> bool | None:
+        """Returns the model's relevance determination: the schema's is_relevant
+        field's value when the schema declares one, True unconditionally when it
+        doesn't (every document is relevant by construction — e.g. entity
+        resolution schemas), or None when there is no usable output.
+
+        Raises an LLMOutputParsingError when the schema declares an is_relevant
+        field but the output omits it or holds a non-bool for it — a schema that
+        declares the field always requires it.
+        """
+        if self.output_json is None:
+            return None
+        if (is_relevant_field := self.output_schema.is_relevant_field) is None:
+            return True
+        extracted_fields_json = assert_type(self._extracted_fields_json, dict)
+        if is_relevant_field.name not in extracted_fields_json:
+            raise LLMOutputParsingError(
+                f"Output JSON for a schema that declares "
+                f"[{is_relevant_field.name}] does not carry it. Found keys: "
+                f"{sorted(extracted_fields_json)}."
+            )
+        is_relevant = self.value_for_field(field=is_relevant_field)
+        if not isinstance(is_relevant, bool):
+            raise LLMOutputParsingError(
+                f"Expected [{is_relevant_field.name}] to hold a bool, found "
+                f"[{type(is_relevant)}]."
+            )
+        return is_relevant
+
     def array_elements(
         self, *, field: ArrayOfStructLLMRequestOutputSchemaField
     ) -> list[dict[str, Any]] | None:
@@ -139,7 +171,7 @@ class LLMRequestOutputValues:
             return None
         elements_json = extracted_fields_json[field.name]
         if not isinstance(elements_json, list):
-            raise LLMResultParsingError(
+            raise LLMOutputParsingError(
                 f"Expected ARRAY_OF_STRUCT field [{field.name}] to hold a list, "
                 f"found [{type(elements_json)}]."
             )
@@ -157,7 +189,7 @@ class LLMRequestOutputValues:
     ) -> dict[str, Any]:
         """Returns unwrapped element |index| of ARRAY_OF_STRUCT |field|"""
         if element_json is not None and not isinstance(element_json, dict):
-            raise LLMResultParsingError(
+            raise LLMOutputParsingError(
                 f"Expected element [{index}] of ARRAY_OF_STRUCT field "
                 f"[{field.name}] to hold a dict, found [{type(element_json)}]."
             )

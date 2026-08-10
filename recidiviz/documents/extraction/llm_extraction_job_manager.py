@@ -149,7 +149,7 @@ class LLMJobDocumentExtractionResult:
         validated_content means the result is usable."""
         return (
             self.validation_results is not None
-            and self.validation_results.validated_content is not None
+            and self.validation_results.passed_validation
         )
 
     def __attrs_post_init__(self) -> None:
@@ -190,7 +190,7 @@ class LLMJobDocumentExtractionResult:
         a SUCCESS carrying the validated content and the model's relevance. Requires
         |validation_results| to hold usable validated content.
         """
-        if validation_results.validated_content is None:
+        if not validation_results.passed_validation:
             raise ValueError(
                 f"for_success requires validated content for document "
                 f"[{raw_result.document_contents_id}] in job [{job_id}], but "

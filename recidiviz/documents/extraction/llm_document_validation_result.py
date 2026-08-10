@@ -33,9 +33,8 @@ from recidiviz.documents.extraction.extraction_results_columns import (
     VALIDATION_ISSUE_DETAIL_FIELD,
     VALIDATION_ISSUE_FIELD_NAME_FIELD,
 )
-from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
-    IS_RELEVANT_FIELD_NAME,
-    RESULT_KEY,
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
 )
 
 
@@ -76,11 +75,12 @@ class ValidationIssue:
 class LLMDocumentValidationResult:
     """The validation portion of a processed document"""
 
-    validated_content: dict[str, Any] | None = attr.ib(
-        validator=attr_validators.is_opt_dict
+    validated_content: LLMRequestOutputValues = attr.ib(
+        validator=attr.validators.instance_of(LLMRequestOutputValues)
     )
-    """The validated JSON with quality filters applied, or None when the
-    document failed an extraction-error check (nothing usable to persist)."""
+    """The validated output, wrapping the JSON with quality filters applied. Its
+    `output_json` is None when the document failed an extraction-error check
+    (nothing usable to persist)."""
 
     audit_issues: list[ValidationIssue] = attr.ib(
         validator=attr_validators.is_list_of(ValidationIssue)
@@ -107,7 +107,7 @@ class LLMDocumentValidationResult:
     """When validation ran."""
 
     def __attrs_post_init__(self) -> None:
-        if self.validated_content is None and not self.audit_issues:
+        if self.validated_content.output_json is None and not self.audit_issues:
             raise ValueError(
                 f"Document failed validation but has no audit issues: "
                 f"validated_content=[{self.validated_content}], "
@@ -123,7 +123,7 @@ class LLMDocumentValidationResult:
     @property
     def passed_validation(self) -> bool:
         """Returns whether the document passed all extraction-error checks."""
-        return self.validated_content is not None
+        return self.validated_content.output_json is not None
 
     @property
     def result_type(self) -> LLMExtractionJobDocumentResultType:
@@ -148,6 +148,4 @@ class LLMDocumentValidationResult:
         extracted and validated cleanly, or None when the document failed an
         extraction-error check (nothing usable to persist).
         """
-        if self.validated_content is None:
-            return None
-        return self.validated_content[RESULT_KEY][IS_RELEVANT_FIELD_NAME]
+        return self.validated_content.is_relevant

@@ -44,9 +44,15 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
     LLMJobDocumentExtractionResult,
 )
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
+)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
     RESULT_KEY,
+)
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -58,6 +64,7 @@ from recidiviz.persistence.entity.operations.entities import (
     LLMExtractionJob,
     LLMExtractionJobDocument,
 )
+from recidiviz.tests.documents import fake_config
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
@@ -65,6 +72,9 @@ _STATE = StateCode.US_XX
 _EXTRACTOR_VERSION = "ev1"
 _FILTER = "filter1"
 _NOW = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
+_OUTPUT_SCHEMA = get_first_order_llm_extractor_config(
+    _STATE, "FAKE_EXTRACTOR_COLLECTION", config_module=fake_config
+).extractor_collection.output_schema
 
 
 def _eligible_record(
@@ -107,7 +117,9 @@ def _validation_result(
     audit_issues: list[ValidationIssue] | None = None,
 ) -> LLMDocumentValidationResult:
     return LLMDocumentValidationResult(
-        validated_content=validated_content,
+        validated_content=LLMRequestOutputValues(
+            output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+        ),
         audit_issues=audit_issues if audit_issues is not None else [],
         result_type_override=result_type_override,
         validation_config_version_id="vc1",

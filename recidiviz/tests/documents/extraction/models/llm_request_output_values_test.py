@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for LLMRequestOutputValues."""
-from typing import Any
+from typing import Any, Callable
 from unittest import TestCase
 
 from recidiviz.common.constants.states import StateCode
@@ -38,8 +38,8 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     RESULT_KEY,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMOutputParsingError,
     LLMRequestOutputValues,
-    LLMResultParsingError,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
@@ -94,10 +94,10 @@ class LLMRequestOutputValuesTest(TestCase):
         )
 
     def _output_values(
-        self, result_json: dict[str, Any] | None
+        self, output_json: dict[str, Any] | None
     ) -> LLMRequestOutputValues:
         return LLMRequestOutputValues(
-            output_schema=self.output_schema, result_json=result_json
+            output_schema=self.output_schema, output_json=output_json
         )
 
     def _full_output_values(self, **overrides: Any) -> LLMRequestOutputValues:
@@ -126,9 +126,9 @@ class LLMRequestOutputValuesTest(TestCase):
         result envelope, for shapes `build_fake_extractor_result_content` cannot
         produce.
         """
-        result_json = assert_type(self._full_output_values().result_json, dict)
-        result_json[RESULT_KEY].update(field_overrides)
-        return self._output_values(result_json)
+        output_json = assert_type(self._full_output_values().output_json, dict)
+        output_json[RESULT_KEY].update(field_overrides)
+        return self._output_values(output_json)
 
     def test_value_for_inferred_field_unwraps_value(self) -> None:
         output_values = self._full_output_values()
@@ -193,13 +193,87 @@ class LLMRequestOutputValuesTest(TestCase):
     def test_schema_without_is_relevant_reads_unwrapped_json(self) -> None:
         schema = _schema_without_is_relevant()
         output_values = LLMRequestOutputValues(
-            output_schema=schema, result_json={"status_note": "Currently active."}
+            output_schema=schema, output_json={"status_note": "Currently active."}
         )
         self.assertEqual(
             "Currently active.",
             output_values.value_for_field(field=_scalar_field(schema, "status_note")),
         )
         self.assertTrue(output_values.has_field("status_note"))
+
+    def test_is_relevant_reads_field_value(self) -> None:
+        self.assertIs(True, self._full_output_values().is_relevant)
+        self.assertIs(
+            False,
+            self._output_values(
+                {RESULT_KEY: {IS_RELEVANT_FIELD_NAME: False}}
+            ).is_relevant,
+        )
+
+    def test_is_relevant_none_when_no_usable_output(self) -> None:
+        self.assertIsNone(self._output_values(None).is_relevant)
+
+    def test_is_relevant_defaults_true_when_schema_has_no_relevance_field(self) -> None:
+        # A schema with no relevance field means every document is relevant by
+        # construction, so relevance defaults to True — unless there is no
+        # usable output at all, which still reads as unknown.
+        schema = _schema_without_is_relevant()
+        self.assertIs(
+            True,
+            LLMRequestOutputValues(
+                output_schema=schema, output_json={"status_note": "Currently active."}
+            ).is_relevant,
+        )
+        self.assertIsNone(
+            LLMRequestOutputValues(output_schema=schema, output_json=None).is_relevant
+        )
+
+    def test_is_relevant_absent_from_schema_that_declares_it_raises(self) -> None:
+        # A schema declaring is_relevant always requires it, so an output that
+        # omits it is malformed rather than "not relevant" or "unknown".
+        output_values = self._output_values(
+            {RESULT_KEY: {"status_note": "Currently active."}}
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Output JSON for a schema that declares \[is_relevant\] does not "
+            r"carry it\. Found keys: \['status_note'\]\.$",
+        ):
+            _ = output_values.is_relevant
+
+    def test_is_relevant_non_bool_raises(self) -> None:
+        output_values = self._output_values(
+            {RESULT_KEY: {IS_RELEVANT_FIELD_NAME: "true"}}
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected \[is_relevant\] to hold a bool, found \[<class 'str'>\]\.$",
+        ):
+            _ = output_values.is_relevant
+
+    def test_malformed_result_envelope_raises_from_every_accessor(self) -> None:
+        # Every accessor reads the extracted fields through the `result`
+        # envelope, so a malformed envelope fails loudly out of all of them
+        # rather than reading as "nothing produced" from some.
+        accessors: dict[str, Callable[[LLMRequestOutputValues], Any]] = {
+            "value_for_field": lambda values: values.value_for_field(
+                field=_scalar_field(self.output_schema, "status_note")
+            ),
+            "has_field": lambda values: values.has_field("status_note"),
+            "is_relevant": lambda values: values.is_relevant,
+            "array_elements": lambda values: values.array_elements(
+                field=self.assignments_field
+            ),
+        }
+        for case, output_json in (
+            ("missing envelope", {IS_RELEVANT_FIELD_NAME: True}),
+            ("non-dict envelope", {RESULT_KEY: "not a dict"}),
+        ):
+            output_values = self._output_values(output_json)
+            for accessor_name, accessor in accessors.items():
+                with self.subTest(case=case, accessor=accessor_name):
+                    with self.assertRaises(LLMOutputParsingError):
+                        accessor(output_values)
 
     def test_has_field(self) -> None:
         output_values = self._full_output_values()
@@ -247,8 +321,8 @@ class LLMRequestOutputValuesTest(TestCase):
             {IS_RELEVANT_FIELD_NAME: True, "status_note": "Currently active."}
         )
         with self.assertRaisesRegex(
-            LLMResultParsingError,
-            r"^Result JSON for a schema with a result envelope has no \[result\] key\. "
+            LLMOutputParsingError,
+            r"^Output JSON for a schema with a result envelope has no \[result\] key\. "
             r"Found keys: \['is_relevant', 'status_note'\]\.$",
         ):
             output_values.value_for_field(
@@ -258,7 +332,7 @@ class LLMRequestOutputValuesTest(TestCase):
     def test_non_dict_result_envelope_raises(self) -> None:
         output_values = self._output_values({RESULT_KEY: "not a dict"})
         with self.assertRaisesRegex(
-            LLMResultParsingError,
+            LLMOutputParsingError,
             r"^Expected the \[result\] envelope to hold a dict, found \[<class 'str'>\]\.$",
         ):
             output_values.value_for_field(
@@ -270,7 +344,7 @@ class LLMRequestOutputValuesTest(TestCase):
         # wrapper rather than a bare scalar.
         output_values = self._malformed_output_values(location="Kitchen")
         with self.assertRaisesRegex(
-            LLMResultParsingError,
+            LLMOutputParsingError,
             r"^Expected INFERRED field \[location\] to hold a dict, found "
             r"\[<class 'str'>\]\.$",
         ):
@@ -285,7 +359,7 @@ class LLMRequestOutputValuesTest(TestCase):
             location={CONFIDENCE_LEVEL_FIELD_NAME: "explicit"}
         )
         with self.assertRaisesRegex(
-            LLMResultParsingError,
+            LLMOutputParsingError,
             r"^INFERRED field \[location\] holds neither a \[value\] nor a "
             r"\[null_reason\]\. Found keys: \['confidence_level'\]\.$",
         ):
@@ -296,7 +370,7 @@ class LLMRequestOutputValuesTest(TestCase):
     def test_non_list_array_field_raises(self) -> None:
         output_values = self._malformed_output_values(assignments={"not": "a list"})
         with self.assertRaisesRegex(
-            LLMResultParsingError,
+            LLMOutputParsingError,
             r"^Expected ARRAY_OF_STRUCT field \[assignments\] to hold a list, found "
             r"\[<class 'dict'>\]\.$",
         ):
@@ -305,7 +379,7 @@ class LLMRequestOutputValuesTest(TestCase):
     def test_non_dict_array_element_raises(self) -> None:
         output_values = self._full_output_values(assignments=["not a dict"])
         with self.assertRaisesRegex(
-            LLMResultParsingError,
+            LLMOutputParsingError,
             r"^Expected element \[0\] of ARRAY_OF_STRUCT field \[assignments\] to "
             r"hold a dict, found \[<class 'str'>\]\.$",
         ):

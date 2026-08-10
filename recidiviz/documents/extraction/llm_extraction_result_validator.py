@@ -27,7 +27,6 @@ and quality-filter checks are layered on when full validation lands.
 """
 
 import datetime
-from typing import Any
 
 from jsonschema.exceptions import ValidationError
 
@@ -42,11 +41,14 @@ from recidiviz.documents.extraction.llm_document_validation_result import (
     ValidationCheckType,
     ValidationIssue,
 )
-from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
-    LLMExtractorCollectionConfig,
-)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.models.llm_json_schema_generator import (
+    LLMJsonSchemaGenerator,
+)
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
 )
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.validate_json_schema import iter_leaf_validation_errors
@@ -62,15 +64,10 @@ class StructuralConformanceCheck:
     """
 
     @classmethod
-    def issues(
-        cls,
-        *,
-        result_json: dict[str, Any],
-        extractor_collection: LLMExtractorCollectionConfig,
-    ) -> list[ValidationIssue]:
-        """Returns one `ValidationIssue` per way |result_json| fails to conform to
-        |extractor_collection|'s generated JSON Schema, or an empty list when it
-        conforms.
+    def issues(cls, *, output: LLMRequestOutputValues) -> list[ValidationIssue]:
+        """Returns one `ValidationIssue` per way |result|'s raw JSON fails to
+        conform to the JSON Schema generated from its output schema, or an empty
+        list when it conforms.
 
         The generated schema unions branches with `anyOf` in two places — the
         top-level irrelevant/relevant split of a relevance-bearing schema, and
@@ -81,15 +78,15 @@ class StructuralConformanceCheck:
         failures at their exact fields, with no knowledge of the schema's
         structure needed here.
         """
+        output_json = assert_type(output.output_json, dict)
+        json_schema = LLMJsonSchemaGenerator.generate(output.output_schema)
         return [
             ValidationIssue(
                 check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
                 field_name=cls._field_name_for_error(error),
                 detail=error.message,
             )
-            for error in iter_leaf_validation_errors(
-                result_json, extractor_collection.generate_json_schema()
-            )
+            for error in iter_leaf_validation_errors(output_json, json_schema)
         ]
 
     @staticmethod
@@ -123,20 +120,23 @@ class LLMExtractionResultValidator:
         validation_datetime_utc: datetime.datetime,
     ) -> LLMDocumentValidationResult:
         """Returns the validation outcome for |raw_result| against |config|."""
-        result_json = assert_type(raw_result.result_json, dict)
-
-        structural_violations = StructuralConformanceCheck.issues(
-            result_json=result_json,
-            extractor_collection=config.extractor_collection,
+        output_schema = config.extractor_collection.output_schema
+        raw_output = LLMRequestOutputValues(
+            output_schema=output_schema,
+            output_json=assert_type(raw_result.result_json, dict),
         )
 
+        structural_violations = StructuralConformanceCheck.issues(output=raw_output)
+
         if structural_violations:
-            validated_content = None
+            validated_content = LLMRequestOutputValues(
+                output_schema=output_schema, output_json=None
+            )
             result_type_override = (
                 LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
             )
         else:
-            validated_content = result_json
+            validated_content = raw_output
             result_type_override = None
 
         return LLMDocumentValidationResult(

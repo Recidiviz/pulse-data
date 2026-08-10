@@ -28,12 +28,40 @@ from recidiviz.documents.extraction.llm_document_validation_result import (
     ValidationCheckType,
     ValidationIssue,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema import (
+    LLMRequestOutputSchema,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    LLMOutputFieldType,
+    PrimitiveScalarLLMRequestOutputSchemaField,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+    RESULT_KEY,
+)
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ISSUE = ValidationIssue(
     check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
     field_name="location",
     detail="missing required field",
+)
+_OUTPUT_SCHEMA = LLMRequestOutputSchema(
+    full_batch_description="Batch of parsed fake documents for testing.",
+    result_level_description="One parsed fake document for testing.",
+    relevance_criteria="Whether the document is a test fixture.",
+    user_defined_fields=[
+        PrimitiveScalarLLMRequestOutputSchemaField(
+            name="status_note",
+            description="A bare note about status.",
+            required=True,
+            inferred_field_config=None,
+            scalar_type=LLMOutputFieldType.STRING,
+        )
+    ],
 )
 
 
@@ -44,7 +72,9 @@ def _validation_result(
     audit_issues: list[ValidationIssue],
 ) -> LLMDocumentValidationResult:
     return LLMDocumentValidationResult(
-        validated_content=validated_content,
+        validated_content=LLMRequestOutputValues(
+            output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+        ),
         audit_issues=audit_issues,
         result_type_override=result_type_override,
         validation_config_version_id="vc1",
@@ -58,7 +88,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
     def test_passed_validation_tracks_validated_content(self) -> None:
         self.assertTrue(
             _validation_result(
-                validated_content={"is_relevant": True},
+                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).passed_validation
@@ -69,6 +99,29 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[_ISSUE],
             ).passed_validation
+        )
+
+    def test_is_relevant_delegates_to_validated_content(self) -> None:
+        # Relevance is read off the validated content rather than tracked
+        # separately, and is unknown when nothing validated.
+        for is_relevant in (True, False):
+            with self.subTest(is_relevant=is_relevant):
+                self.assertIs(
+                    is_relevant,
+                    _validation_result(
+                        validated_content={
+                            RESULT_KEY: {IS_RELEVANT_FIELD_NAME: is_relevant}
+                        },
+                        result_type_override=None,
+                        audit_issues=[],
+                    ).is_relevant,
+                )
+        self.assertIsNone(
+            _validation_result(
+                validated_content=None,
+                result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                audit_issues=[_ISSUE],
+            ).is_relevant
         )
 
     def test_result_type_falls_back_to_success(self) -> None:
@@ -84,7 +137,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
         self.assertEqual(
             LLMExtractionJobDocumentResultType.SUCCESS,
             _validation_result(
-                validated_content={"is_relevant": True},
+                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).result_type,
@@ -101,7 +154,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
         # A clean pass and a permanent failure both mean no retry.
         self.assertFalse(
             _validation_result(
-                validated_content={"is_relevant": True},
+                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).will_retry

@@ -25,9 +25,6 @@ from recidiviz.documents.extraction.eval.golden_eval_result import (
     array_sub_field_score_name,
     render_array_element_count,
 )
-from recidiviz.documents.extraction.models.llm_request_output_schema import (
-    LLMRequestOutputSchema,
-)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
     LLMOutputFieldType,
@@ -35,8 +32,8 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMOutputParsingError,
     LLMRequestOutputValues,
-    LLMResultParsingError,
 )
 
 # The comparison key of a value that is not present on one side of a comparison.
@@ -66,41 +63,38 @@ class LLMDocumentExtractionGoldenEvalScorer:
     def score(
         self,
         *,
-        output_schema: LLMRequestOutputSchema,
         documents: Sequence[GoldenEvalDocument],
-        # The processed actual output per document — the validated content of a
-        # SUCCESS. None = nothing usable (a request error or a validation
-        # downgrade), which scores as a miss on every expected field.
-        actual_output_json_by_document_id: dict[str, dict[str, Any] | None],
+        # The processed actual output per document, each carrying the output
+        # schema its fields are read against. An `output_json` of None means
+        # nothing usable (a request error or a validation downgrade), which
+        # scores as a miss on every expected field.
+        actual_output_values_by_document_id: dict[str, LLMRequestOutputValues],
     ) -> list[GoldenEvalFieldScore]:
         """Returns one score per (document, field[, element]) comparison, over
-        every field |output_schema| declares — `is_relevant` included — for every
-        document in |documents|.
+        every field the document's own output schema declares — `is_relevant`
+        included — for every document in |documents|.
         """
         scores = []
         for document in documents:
-            if document.golden_document_id not in actual_output_json_by_document_id:
+            if document.golden_document_id not in actual_output_values_by_document_id:
                 raise ValueError(
-                    f"No actual extraction result was provided for golden eval "
+                    f"No actual extraction output was provided for golden eval "
                     f"document [{document.golden_document_id}]."
                 )
-            actual_output = LLMRequestOutputValues(
-                output_schema=output_schema,
-                result_json=actual_output_json_by_document_id[
-                    document.golden_document_id
-                ],
-            )
+            actual_output = actual_output_values_by_document_id[
+                document.golden_document_id
+            ]
             no_output = LLMRequestOutputValues(
-                output_schema=output_schema, result_json=None
+                output_schema=actual_output.output_schema, output_json=None
             )
-            for field in output_schema.all_fields:
+            for field in actual_output.output_schema.all_fields:
                 try:
                     scores.extend(
                         self._score_field(
                             document=document, field=field, actual_output=actual_output
                         )
                     )
-                except LLMResultParsingError:
+                except LLMOutputParsingError:
                     scores.extend(
                         self._score_field(
                             document=document, field=field, actual_output=no_output
