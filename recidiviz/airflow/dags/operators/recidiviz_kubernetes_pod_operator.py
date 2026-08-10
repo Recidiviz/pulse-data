@@ -40,8 +40,6 @@ from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_
 from recidiviz.airflow.dags.utils.dag_run_metadata import (
     APP_ENGINE_IMAGE_XCOM_KEY,
     PLATFORM_VERSION_XCOM_KEY,
-    _get_current_app_engine_image,
-    _get_current_platform_version,
     resolve_metadata_task_id,
 )
 from recidiviz.airflow.dags.utils.environment import (
@@ -272,25 +270,23 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         # Read the image and version snapshotted at the start of this DAG run
         # by the record_dag_run_metadata task. This pins all K8s pods in a run
         # to the same version, even if a deploy happens mid-run.
-        # The fallbacks via get_current_*() handle DagRuns that were in flight
-        # when this code first deployed (no record_dag_run_metadata XCom yet).
-        # TODO(#77283): Remove fallbacks once fully deployed.
         metadata_task_id = resolve_metadata_task_id(context["dag"])
-        self.image = (
-            ti.xcom_pull(
-                task_ids=metadata_task_id,
-                key=APP_ENGINE_IMAGE_XCOM_KEY,
+        image = ti.xcom_pull(task_ids=metadata_task_id, key=APP_ENGINE_IMAGE_XCOM_KEY)
+        if image is None:
+            raise ValueError(
+                f"No [{APP_ENGINE_IMAGE_XCOM_KEY}] XCom value found for task "
+                f"[{metadata_task_id}]"
             )
-            or _get_current_app_engine_image()
-        )
+        self.image = image
 
-        platform_version = (
-            ti.xcom_pull(
-                task_ids=metadata_task_id,
-                key=PLATFORM_VERSION_XCOM_KEY,
-            )
-            or _get_current_platform_version()
+        platform_version = ti.xcom_pull(
+            task_ids=metadata_task_id, key=PLATFORM_VERSION_XCOM_KEY
         )
+        if platform_version is None:
+            raise ValueError(
+                f"No [{PLATFORM_VERSION_XCOM_KEY}] XCom value found for task "
+                f"[{metadata_task_id}]"
+            )
         self.env_vars.append(
             k8s.V1EnvVar(name=DATA_PLATFORM_VERSION, value=platform_version)
         )
