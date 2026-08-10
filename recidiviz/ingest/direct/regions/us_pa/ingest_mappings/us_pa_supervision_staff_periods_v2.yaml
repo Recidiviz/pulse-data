@@ -173,6 +173,9 @@ output:
                         - "Corrections Officer 4"
                         - "Dir Bur Ctrl Srvs Corr"
                         - "Corr Empmt Vctnl Coor"
+                        - "Government Services Intern"
+                        - "Corrections Officer 5"
+                        - "Corrections Unit Manager"
                 role_subtype:
                   $enum_mapping:
                     $raw_text: role_description
@@ -289,6 +292,9 @@ output:
                         - "Corrections Officer 4"
                         - "Dir Bur Ctrl Srvs Corr"
                         - "Corr Empmt Vctnl Coor"
+                        - "Government Services Intern"
+                        - "Corrections Officer 5"
+                        - "Corrections Unit Manager"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER:
                         - "Parole Agent 1"
                         - "Parole Agent 2"
