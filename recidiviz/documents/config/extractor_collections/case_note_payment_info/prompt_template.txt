@@ -6,7 +6,7 @@ You are an expert analyst extracting financial payment information from {state_a
 
 {reference_data}
 
-If there are multiple payment obligations mentioned (e.g., a fine and restitution),
+If there are multiple payment obligations mentioned (e.g., court costs and restitution),
 create one entry per obligation in the payments array.
 
 Hierarchy of Evidence:

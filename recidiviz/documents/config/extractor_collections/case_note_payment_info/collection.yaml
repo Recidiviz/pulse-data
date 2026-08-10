@@ -1,11 +1,11 @@
 name: CASE_NOTE_PAYMENT_INFO
 description: >
   Extract information about a person's financial payment obligations from
-  supervision case notes, including fines, restitution, court costs, supervision
-  fees, and other payments owed as part of their supervision.
+  supervision case notes, including restitution, court costs, supervision fees,
+  and other fines and fees owed as part of their supervision.
 relevance_criteria: >
-  Whether the document mentions fines, restitution, court costs, supervision
-  fees, payment plans, or other financial obligations related to supervision
+  Whether the document mentions restitution, court costs, supervision fees,
+  payment plans, or other financial obligations related to supervision
 
 default_model_config_name: GEMINI_2_5_FLASH_NO_THINKING
 
@@ -38,10 +38,6 @@ output_schema:
           type: ENUM
           description: The type of financial payment obligation.
           values:
-            - name: fine
-              description:
-                A monetary penalty imposed by the court (e.g., traffic fines,
-                criminal fines).
             - name: restitution
               description: Payments owed to victims for damages or losses.
             - name: court_costs
@@ -152,9 +148,5 @@ output_schema:
                 unable to pay"). Do not infer from unemployment, low income, or
                 receiving SSI alone — the obligation exists regardless of
                 ability to pay.
-            - name: limited
-              description: >
-                The note explicitly describes limited ability to pay (e.g., "can
-                only afford small payments," "financial hardship documented").
             - name: undetermined
               description: Ability to pay is discussed but not clearly assessed.
