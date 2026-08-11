@@ -90,5 +90,8 @@ class DocumentUploadEntrypoint(EntrypointInterface):
             run_id=run_id,
             task_index=task_index,
             upload_datetime=datetime.now(tz=timezone.utc),
+            # TODO(OBT-42680) Thread the sandbox prefix through from the sandbox
+            # extraction script so runs can upload to the sandbox bucket.
+            sandbox_prefix=None,
         )
         uploader.run(upload_batches)

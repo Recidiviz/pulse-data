@@ -79,7 +79,11 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
     def _upload_document(self, document_contents_id: str, contents: str) -> None:
         self.fs.upload_from_string(
             path=gcs_path_for_document(
-                _PROJECT_ID, _STATE_CODE, _COLLECTION_NAME, document_contents_id
+                project_id=_PROJECT_ID,
+                state_code=_STATE_CODE,
+                collection_name=_COLLECTION_NAME,
+                document_contents_id=document_contents_id,
+                sandbox_prefix=None,
             ),
             contents=contents,
             content_type="text/plain",

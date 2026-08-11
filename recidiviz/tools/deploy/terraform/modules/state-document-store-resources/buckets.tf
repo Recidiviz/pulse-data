@@ -47,3 +47,25 @@ module "document-blob-storage-bucket" {
   location    = var.region
   use_cmek    = true
 }
+
+# storage for document blobs uploaded during sandbox extraction runs, kept
+# isolated from the definitive blob storage above. A single bucket per state
+# serves all sandbox runs (runs are namespaced within it by sandbox prefix), and
+# its contents expire so sandbox document text does not accumulate indefinitely.
+module "sandbox-document-blob-storage-bucket" {
+  source = "../cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "${local.lower_hyphened_state_code}-sandbox-document-blob-storage"
+  location    = var.region
+  use_cmek    = true
+
+  lifecycle_rules = [{
+    action = {
+      type = "Delete"
+    }
+    condition = {
+      age = 30
+    }
+  }]
+}

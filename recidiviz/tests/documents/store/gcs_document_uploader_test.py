@@ -85,6 +85,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             run_id=self.run_id,
             task_index=0,
             upload_datetime=self.upload_datetime,
+            sandbox_prefix=None,
         )
 
     def _make_upload_batch(

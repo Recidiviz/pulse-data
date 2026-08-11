@@ -93,6 +93,9 @@ class GcsDocumentUploader:
     # Timestamp written to status CSV rows as the upload time for all
     # documents processed by this task.
     upload_datetime: datetime = attr.ib(validator=attr_validators.is_datetime)
+    # Sandbox run prefix; when set, document text is uploaded to the state's
+    # sandbox blob-storage bucket, namespaced by this prefix. None in production.
+    sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
     def run(self, upload_batches: list[DocumentUploadBatch]) -> None:
         """For each `DocumentUploadBatch` specifying a batch of documents within a `temp_new_document_contents_`
@@ -226,10 +229,11 @@ class GcsDocumentUploader:
         error_msg = None
         try:
             path = gcs_path_for_document(
-                self.project_id,
-                self.state_code,
-                collection_name,
-                document_contents_row.document_contents_id,
+                project_id=self.project_id,
+                state_code=self.state_code,
+                collection_name=collection_name,
+                document_contents_id=document_contents_row.document_contents_id,
+                sandbox_prefix=self.sandbox_prefix,
             )
             self.fs.upload_from_string(
                 path=path,

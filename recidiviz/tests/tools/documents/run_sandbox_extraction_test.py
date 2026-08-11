@@ -268,10 +268,12 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
     def _seed_gcs(self, document_contents_id: str, text: str) -> None:
         self.fs.upload_from_string(
             path=gcs_path_for_document(
-                self.project_id,
-                _STATE_CODE,
-                self.config.input_document_collection.name,
-                document_contents_id,
+                project_id=self.project_id,
+                state_code=_STATE_CODE,
+                collection_name=self.config.input_document_collection.name,
+                document_contents_id=document_contents_id,
+                # TODO(OBT-42680) Test reading from sandbox doc-store bucket
+                sandbox_prefix=None,
             ),
             contents=text,
             content_type="text/plain",

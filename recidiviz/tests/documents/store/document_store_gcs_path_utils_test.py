@@ -35,12 +35,29 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
 
     def test_gcs_path_for_document(self) -> None:
         path = gcs_path_for_document(
-            self.project_id, self.state_code, "case_notes", "abc123"
+            project_id=self.project_id,
+            state_code=self.state_code,
+            collection_name="case_notes",
+            document_contents_id="abc123",
+            sandbox_prefix=None,
         )
         self.assertEqual(
             path.bucket_name, "recidiviz-testing-us-xx-document-blob-storage"
         )
         self.assertEqual(path.blob_name, "case_notes/abc123.txt")
+
+    def test_gcs_path_for_document_sandbox(self) -> None:
+        path = gcs_path_for_document(
+            project_id=self.project_id,
+            state_code=self.state_code,
+            collection_name="case_notes",
+            document_contents_id="abc123",
+            sandbox_prefix="my_prefix",
+        )
+        self.assertEqual(
+            path.bucket_name, "recidiviz-testing-us-xx-sandbox-document-blob-storage"
+        )
+        self.assertEqual(path.blob_name, "my_prefix/case_notes/abc123.txt")
 
     def test_gcs_path_for_task_output(self) -> None:
         path = gcs_path_for_task_output(

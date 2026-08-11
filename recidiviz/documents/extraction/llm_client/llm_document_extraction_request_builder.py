@@ -103,10 +103,13 @@ class LLMDocumentExtractionRequestBuilder:
         """
         document_contents_id = job_document.document_contents_id
         path = gcs_path_for_document(
-            self.project_id,
-            self.state_code,
-            self.collection_name,
-            document_contents_id,
+            project_id=self.project_id,
+            state_code=self.state_code,
+            collection_name=self.collection_name,
+            document_contents_id=document_contents_id,
+            # TODO(OBT-42680) Thread the sandbox prefix through from the sandbox
+            # extraction script so runs can read from the sandbox bucket.
+            sandbox_prefix=None,
         )
         try:
             document_text = self.fs.download_as_string(path)

@@ -29,6 +29,16 @@ def document_blob_storage_bucket_name(project_id: str, state_code: StateCode) ->
     return f"{project_id}-{state_code.lower_hyphened_code()}-document-blob-storage"
 
 
+def sandbox_document_blob_storage_bucket_name(
+    project_id: str, state_code: StateCode
+) -> str:
+    """Name of the Terraform-provisioned bucket that stores document contents
+    uploaded during sandbox extraction runs."""
+    return (
+        f"{project_id}-{state_code.lower_hyphened_code()}-sandbox-document-blob-storage"
+    )
+
+
 def temp_document_store_output_bucket_name(
     project_id: str, state_code: StateCode
 ) -> str:
@@ -37,18 +47,33 @@ def temp_document_store_output_bucket_name(
 
 
 def gcs_path_for_document(
+    *,
     project_id: str,
     state_code: StateCode,
     collection_name: str,
     document_contents_id: str,
+    sandbox_prefix: str | None,
 ) -> GcsfsFilePath:
     """Returns the GCS path where a document's contents are stored. Documents
     are namespaced by collection so that the same document text uploaded by
-    different collections is stored as a distinct object per collection."""
+    different collections is stored as a distinct object per collection.
+
+    When |sandbox_prefix| is set, the contents live in the state's sandbox blob-storage
+    bucket, keeping sandbox document text isolated from production. Because a single
+    sandbox bucket per state is shared across all sandbox runs, the contents are further
+    namespaced under the prefix so runs with different prefixes don't collide.
+    None in production."""
+    if sandbox_prefix is None:
+        bucket_name = document_blob_storage_bucket_name(project_id, state_code)
+        blob_name = collection_name.lower()
+    else:
+        bucket_name = sandbox_document_blob_storage_bucket_name(project_id, state_code)
+        blob_name = f"{sandbox_prefix}/{collection_name.lower()}"
+
     return GcsfsFilePath.from_directory_and_file_name(
         dir_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
-            bucket_name=document_blob_storage_bucket_name(project_id, state_code),
-            blob_name=collection_name.lower(),
+            bucket_name=bucket_name,
+            blob_name=blob_name,
         ),
         file_name=f"{document_contents_id}.txt",
     )
