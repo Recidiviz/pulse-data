@@ -82,8 +82,7 @@ resource "google_cloud_run_service" "identity_service" {
             "-b",
             ":$PORT",
             "--log-file=-",
-            # TODO(#71768): Update this entrypoint when the Identity Service Flask app is implemented
-            "recidiviz.identity_service.server:app",
+            "recidiviz.services.identity.server:app",
           ])
         ]
 
