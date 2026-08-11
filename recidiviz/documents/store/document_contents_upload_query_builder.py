@@ -21,8 +21,7 @@ from datetime import datetime
 import attr
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
-from recidiviz.common import attr_validators, recidiviz_attr_validators
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common import attr_validators
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
@@ -32,7 +31,6 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.documents.store.document_upload_status_table import (
     COLLECTION_NAME,
     DOCUMENT_UPLOAD_SUCCESS,
-    DocumentUploadStatusTable,
 )
 
 
@@ -40,14 +38,13 @@ from recidiviz.documents.store.document_upload_status_table import (
 class DocumentContentsUploadQueryBuilder:
     """Builder for queries related to a collection's document_contents table."""
 
-    project_id: str = attr.ib(validator=attr_validators.is_str)
-    state_code: StateCode = attr.ib(validator=recidiviz_attr_validators.is_state_code)
     collection_name: str = attr.ib(validator=attr_validators.is_upper_snake_case)
 
     def build_document_contents_insert_query(
         self,
         document_contents_table_address: ProjectSpecificBigQueryAddress,
         temp_new_document_contents_address: ProjectSpecificBigQueryAddress,
+        upload_status_table_address: ProjectSpecificBigQueryAddress,
         row_create_datetime: datetime,
     ) -> str:
         """Builds a DML INSERT query that inserts a row for each
@@ -55,9 +52,6 @@ class DocumentContentsUploadQueryBuilder:
         upload for this collection completed successfully in this run, and
         which is not already present in the document_contents table.
         """
-        upload_status_table = DocumentUploadStatusTable.get_table_address(
-            project_id=self.project_id, state_code=self.state_code
-        )
         return f"""
 INSERT INTO {document_contents_table_address.format_address_for_query()} (
     {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
@@ -73,7 +67,7 @@ SELECT
 FROM {temp_new_document_contents_address.format_address_for_query()} temp
 WHERE temp.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} IN (
     SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-    FROM {upload_status_table.format_address_for_query()}
+    FROM {upload_status_table_address.format_address_for_query()}
     WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
       AND {COLLECTION_NAME} = '{self.collection_name}'
 )

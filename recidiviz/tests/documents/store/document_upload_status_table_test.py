@@ -19,6 +19,8 @@
 import unittest
 from datetime import datetime, timezone
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
 )
@@ -72,3 +74,29 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
             ),
         )
         self.assertEqual(len(row), len(expected_columns))
+
+    def test_get_table_address(self) -> None:
+        self.assertEqual(
+            ProjectSpecificBigQueryAddress(
+                project_id="test-project",
+                dataset_id="us_xx_document_store_metadata",
+                table_id="document_upload_status",
+            ),
+            DocumentUploadStatusTable.get_table_address(
+                project_id="test-project",
+                state_code=StateCode.US_XX,
+                sandbox_dataset_prefix=None,
+            ),
+        )
+        self.assertEqual(
+            ProjectSpecificBigQueryAddress(
+                project_id="test-project",
+                dataset_id="my_prefix_us_xx_document_store_metadata",
+                table_id="document_upload_status",
+            ),
+            DocumentUploadStatusTable.get_table_address(
+                project_id="test-project",
+                state_code=StateCode.US_XX,
+                sandbox_dataset_prefix="my_prefix",
+            ),
+        )

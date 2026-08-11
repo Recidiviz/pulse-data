@@ -187,7 +187,7 @@ def _root_entity_schema_fields(
     return [get_document_store_column_schema(name) for name in column_names]
 
 
-@attr.define
+@attr.define(kw_only=True)
 class DocumentCollectionConfig:
     """Configuration for a document collection. A document collection is a set of documents that share the same schema
     and are generated using the same SQL query. A document can be any text blob associated with a root entity.
@@ -249,7 +249,7 @@ class DocumentCollectionConfig:
     # case note"/"...notes"). Consumed by generated prompts that need to name the
     # documents in this collection specifically.
     document_descriptor: Descriptor = attr.ib(
-        kw_only=True, validator=attr.validators.instance_of(Descriptor)
+        validator=attr.validators.instance_of(Descriptor)
     )
 
     def __attrs_post_init__(self) -> None:
@@ -278,14 +278,19 @@ class DocumentCollectionConfig:
         """Returns the BigQuery table ID for this document collection's metadata table."""
         return self.name.lower()
 
-    @property
-    def metadata_table_address(self) -> BigQueryAddress:
+    def metadata_table_address(
+        self, *, sandbox_dataset_prefix: str | None
+    ) -> BigQueryAddress:
         """Returns the project-agnostic BigQuery address for this collection's
-        metadata table. Convert with `.to_project_specific_address(project_id)` where
-        a concrete project is needed.
+        metadata table, scoped to |sandbox_dataset_prefix| when running under a
+        sandbox (None in production). Convert with
+        `.to_project_specific_address(project_id)` where a concrete project is
+        needed.
         """
         return BigQueryAddress(
-            dataset_id=document_store_metadata_dataset_for_region(self.state_code),
+            dataset_id=document_store_metadata_dataset_for_region(
+                self.state_code, sandbox_dataset_prefix
+            ),
             table_id=self._metadata_table_id,
         )
 
@@ -368,7 +373,7 @@ class DocumentCollectionConfig:
         """Returns the project-agnostic BigQuery address for the temp document
         metadata updates table that contains rows where there were any changes to
         document_contents_id or another metadata column for each primary key in
-        this collection."""
+        this collection. Run-scoped via run_id, so it is not sandbox-prefixed."""
         return BigQueryAddress(
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=(
@@ -381,7 +386,8 @@ class DocumentCollectionConfig:
         """Returns the project-agnostic BigQuery address for the temp new document
         contents table that tracks which document_contents_ids in this collection
         have not yet been uploaded for the state. This is the table read from to
-        perform the actual document upload."""
+        perform the actual document upload. Run-scoped via run_id, so it is not
+        sandbox-prefixed."""
         return BigQueryAddress(
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=(
@@ -395,16 +401,20 @@ class DocumentCollectionConfig:
         """Returns the BigQuery table ID for this collection's document_contents table."""
         return f"{self.name.lower()}_document_contents"
 
-    @property
-    def document_contents_table_address(self) -> BigQueryAddress:
+    def document_contents_table_address(
+        self, *, sandbox_dataset_prefix: str | None
+    ) -> BigQueryAddress:
         """Returns the project-agnostic BigQuery address for this collection's
         document_contents table, which holds one row per distinct
-        document_contents_id successfully uploaded to GCS for this collection.
-        Convert with `.to_project_specific_address(project_id)` where a concrete
-        project is needed.
+        document_contents_id successfully uploaded to GCS for this collection,
+        scoped to |sandbox_dataset_prefix| when running under a sandbox (None in
+        production). Convert with `.to_project_specific_address(project_id)` where
+        a concrete project is needed.
         """
         return BigQueryAddress(
-            dataset_id=document_contents_dataset_for_region(self.state_code),
+            dataset_id=document_contents_dataset_for_region(
+                self.state_code, sandbox_dataset_prefix
+            ),
             table_id=self._document_contents_table_id,
         )
 

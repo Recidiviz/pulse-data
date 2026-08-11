@@ -91,7 +91,7 @@ class SingleCollectionDocumentDiscoveryResult:
 
     @staticmethod
     def from_dict(
-        data: dict[str, str | int]
+        data: dict[str, str | int],
     ) -> "SingleCollectionDocumentDiscoveryResult":
         return SingleCollectionDocumentDiscoveryResult(
             state_code=StateCode(assert_type(data["state_code"], str)),

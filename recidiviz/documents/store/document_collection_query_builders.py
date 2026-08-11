@@ -107,11 +107,17 @@ class DocumentCollectionDiffQueryBuilder:
         reports every root entity missing from it as wholesale deletions (or, in the
         other direction, as additions).
         """
-        latest_query = DocumentCollectionMetadataTableQueryBuilder(
-            project_id=self.project_id,
+        # TODO(OBT-42680) Thread sandbox prefix through
+        metadata_table_address = config.metadata_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(self.project_id)
+        latest_query = DocumentCollectionMetadataTableQueryBuilder().build_latest_documents_query(
+            config,
+            metadata_table_address=metadata_table_address,
             # TODO(OBT-32176): Revisit if we need to pass a filter config through
             # here when doing ER document discovery in a sandbox.
-        ).build_latest_documents_query(config, document_filter=None)
+            document_filter=None,
+        )
 
         temp_table_schema = config.build_bq_document_generation_output_schema()
 

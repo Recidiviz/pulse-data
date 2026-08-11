@@ -98,12 +98,18 @@ class DocumentUploadStatusTable:
 
     @classmethod
     def get_table_address(
-        cls, project_id: str, state_code: StateCode
+        cls,
+        *,
+        project_id: str,
+        state_code: StateCode,
+        sandbox_dataset_prefix: str | None,
     ) -> ProjectSpecificBigQueryAddress:
         """Returns the BigQuery address for the document_upload_status table."""
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
-            dataset_id=document_store_metadata_dataset_for_region(state_code),
+            dataset_id=document_store_metadata_dataset_for_region(
+                state_code, sandbox_dataset_prefix
+            ),
             table_id=cls.table_id,
         )
 

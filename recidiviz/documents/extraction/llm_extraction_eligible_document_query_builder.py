@@ -64,21 +64,27 @@ class LLMExtractionEligibleDocumentQueryBuilder:
         document_update_datetime. Identical text shared across root entities maps
         to one document_contents_id; the query keeps the oldest such document.
         """
-        metadata_address = self.input_document_collection.metadata_table_address.to_project_specific_address(
-            project_id
-        )
+        # TODO(OBT-42680) Thread sandbox prefix through
+        metadata_address = self.input_document_collection.metadata_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(project_id)
         filter_query = self.document_filter.build_document_metadata_filter_query(
             input_document_collection_metadata_address=metadata_address,
         )
 
-        contents_address = self.input_document_collection.document_contents_table_address.to_project_specific_address(
-            project_id
+        # TODO(OBT-42680) Thread sandbox prefix through
+        contents_address = (
+            self.input_document_collection.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(project_id)
         )
 
-        latest_metadata_query = DocumentCollectionMetadataTableQueryBuilder(
-            project_id=project_id
-        ).build_latest_documents_query(
-            self.input_document_collection, document_filter=self.document_filter
+        latest_metadata_query = (
+            DocumentCollectionMetadataTableQueryBuilder().build_latest_documents_query(
+                self.input_document_collection,
+                metadata_table_address=metadata_address,
+                document_filter=self.document_filter,
+            )
         )
 
         # The QUALIFY dedupes to one row per document_contents_id; the

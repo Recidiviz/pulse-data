@@ -16,12 +16,14 @@
 # =============================================================================
 """Loads document upload results for a single collection to BQ and inserts
 successfully uploaded documents into the collection metadata table."""
+
 import logging
 from datetime import datetime
 
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
@@ -59,6 +61,9 @@ class DocumentUploadResultRecorder:
     metadata_row_create_datetime: datetime = attr.ib(
         validator=attr_validators.is_datetime
     )
+    # Sandbox-only prefix scoping the metadata/contents tables this recorder writes
+    # to; None for a production run.
+    output_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
     def _log_prefix(self, collection_name: str) -> str:
         return f"[{self.state_code.value}] Collection [{collection_name}]:"
@@ -88,7 +93,9 @@ class DocumentUploadResultRecorder:
         )
         source_uri = f"{output_dir.uri()}/*.csv"
         upload_status_table_address = DocumentUploadStatusTable.get_table_address(
-            project_id=self.project_id, state_code=self.state_code
+            project_id=self.project_id,
+            state_code=self.state_code,
+            sandbox_dataset_prefix=self.output_sandbox_prefix,
         )
 
         logging.info(
@@ -116,26 +123,29 @@ class DocumentUploadResultRecorder:
         uploads succeeded. We do not clean up temp tables if some uploads failed
         to preserve information for debugging.
         """
-        query_builder = DocumentMetadataUpdatesQueryBuilder(
-            project_id=self.project_id, state_code=self.state_code
-        )
+        query_builder = DocumentMetadataUpdatesQueryBuilder()
         contents_query_builder = DocumentContentsUploadQueryBuilder(
-            project_id=self.project_id,
-            state_code=self.state_code,
             collection_name=collection_result.collection_name,
         )
 
-        self._insert_document_contents(collection_result, contents_query_builder)
-
-        metadata_addr = (
-            collection_result.config.metadata_table_address.to_project_specific_address(
-                self.project_id
-            )
+        upload_status_table_address = DocumentUploadStatusTable.get_table_address(
+            project_id=self.project_id,
+            state_code=self.state_code,
+            sandbox_dataset_prefix=self.output_sandbox_prefix,
         )
+
+        self._insert_document_contents(
+            collection_result, contents_query_builder, upload_status_table_address
+        )
+
+        metadata_addr = collection_result.config.metadata_table_address(
+            sandbox_dataset_prefix=self.output_sandbox_prefix
+        ).to_project_specific_address(self.project_id)
         query = query_builder.build_successful_uploads_metadata_insert_query(
             config=collection_result.config,
             metadata_table_address=metadata_addr,
             temp_document_metadata_updates_address=collection_result.temp_document_metadata_updates_address,
+            upload_status_table_address=upload_status_table_address,
             row_create_datetime=self.metadata_row_create_datetime,
         )
 
@@ -173,6 +183,7 @@ class DocumentUploadResultRecorder:
         self,
         collection_result: SingleCollectionDocumentDiscoveryResult,
         query_builder: DocumentContentsUploadQueryBuilder,
+        upload_status_table_address: ProjectSpecificBigQueryAddress,
     ) -> None:
         """Hydrates the collection's content-addressed document_contents table
         with newly-uploaded document_contents_ids."""
@@ -184,12 +195,15 @@ class DocumentUploadResultRecorder:
             )
             return
 
-        document_contents_addr = collection_result.config.document_contents_table_address.to_project_specific_address(
-            self.project_id
+        document_contents_addr = (
+            collection_result.config.document_contents_table_address(
+                sandbox_dataset_prefix=self.output_sandbox_prefix
+            ).to_project_specific_address(self.project_id)
         )
         query = query_builder.build_document_contents_insert_query(
             document_contents_table_address=document_contents_addr,
             temp_new_document_contents_address=collection_result.temp_new_document_contents_address,
+            upload_status_table_address=upload_status_table_address,
             row_create_datetime=self.metadata_row_create_datetime,
         )
 

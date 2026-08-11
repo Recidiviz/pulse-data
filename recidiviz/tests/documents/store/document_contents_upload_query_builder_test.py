@@ -59,16 +59,16 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
             ).to_project_specific_address(self.project_id)
         )
         self.document_contents_table_address = (
-            self.config.document_contents_table_address.to_project_specific_address(
-                self.project_id
-            )
+            self.config.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(self.project_id)
         )
         self.upload_status_address = DocumentUploadStatusTable.get_table_address(
-            project_id=self.project_id, state_code=StateCode.US_XX
-        )
-        self.query_builder = DocumentContentsUploadQueryBuilder(
             project_id=self.project_id,
             state_code=StateCode.US_XX,
+            sandbox_dataset_prefix=None,
+        )
+        self.query_builder = DocumentContentsUploadQueryBuilder(
             collection_name=self.config.name,
         )
         self.fixture_base_dir = Path(document_contents_upload.__file__).parent
@@ -133,6 +133,7 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
         query = self.query_builder.build_document_contents_insert_query(
             document_contents_table_address=self.document_contents_table_address,
             temp_new_document_contents_address=self.temp_new_document_contents_address,
+            upload_status_table_address=self.upload_status_address,
             row_create_datetime=datetime(2026, 5, 15, 12, 0, 0),
         )
         self.query(query)
@@ -144,6 +145,21 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
             create_expected=False,
             expect_unique_output_rows=True,
         )
+
+    def test_reads_from_provided_upload_status_table(self) -> None:
+        prefixed_upload_status_address = DocumentUploadStatusTable.get_table_address(
+            project_id=self.project_id,
+            state_code=StateCode.US_XX,
+            sandbox_dataset_prefix="my_prefix",
+        )
+        query = self.query_builder.build_document_contents_insert_query(
+            document_contents_table_address=self.document_contents_table_address,
+            temp_new_document_contents_address=self.temp_new_document_contents_address,
+            upload_status_table_address=prefixed_upload_status_address,
+            row_create_datetime=datetime(2026, 5, 15, 12, 0, 0),
+        )
+        self.assertIn(prefixed_upload_status_address.format_address_for_query(), query)
+        self.assertNotIn(self.upload_status_address.format_address_for_query(), query)
 
     def test_document_contents_insert_empty_temp(self) -> None:
         self.create_mock_table(
@@ -162,6 +178,7 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
         query = self.query_builder.build_document_contents_insert_query(
             document_contents_table_address=self.document_contents_table_address,
             temp_new_document_contents_address=self.temp_new_document_contents_address,
+            upload_status_table_address=self.upload_status_address,
             row_create_datetime=datetime(2026, 5, 15, 12, 0, 0),
         )
         self.query(query)

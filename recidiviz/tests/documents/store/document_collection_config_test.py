@@ -449,7 +449,13 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         config = _make_config()
         self.assertEqual(
             BigQueryAddress.from_str("us_xx_document_store_metadata.test_collection"),
-            config.metadata_table_address,
+            config.metadata_table_address(sandbox_dataset_prefix=None),
+        )
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "my_prefix_us_xx_document_store_metadata.test_collection"
+            ),
+            config.metadata_table_address(sandbox_dataset_prefix="my_prefix"),
         )
 
     def test_document_contents_table_address(self) -> None:
@@ -458,7 +464,13 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             BigQueryAddress.from_str(
                 "us_xx_document_contents.test_collection_document_contents"
             ),
-            config.document_contents_table_address,
+            config.document_contents_table_address(sandbox_dataset_prefix=None),
+        )
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "my_prefix_us_xx_document_contents.test_collection_document_contents"
+            ),
+            config.document_contents_table_address(sandbox_dataset_prefix="my_prefix"),
         )
 
     def test_temp_document_metadata_updates_table_address(self) -> None:

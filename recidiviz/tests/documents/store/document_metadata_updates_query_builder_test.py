@@ -49,23 +49,20 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
                 "test_run_id"
             ).to_project_specific_address(self.project_id)
         )
-        self.metadata_table_address = (
-            self.config.metadata_table_address.to_project_specific_address(
-                self.project_id
-            )
-        )
+        self.metadata_table_address = self.config.metadata_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(self.project_id)
         self.document_contents_table_address = (
-            self.config.document_contents_table_address.to_project_specific_address(
-                self.project_id
-            )
+            self.config.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(self.project_id)
         )
         self.upload_status_address = DocumentUploadStatusTable.get_table_address(
-            project_id=self.project_id, state_code=StateCode.US_XX
-        )
-        self.query_builder = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id,
             state_code=StateCode.US_XX,
+            sandbox_dataset_prefix=None,
         )
+        self.query_builder = DocumentMetadataUpdatesQueryBuilder()
         self.fixture_base_dir = Path(metadata_updates.__file__).parent
 
     def _fixture_path(self, subdir: str, fixture_name: str) -> Path:
@@ -223,6 +220,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
             config=self.config,
             metadata_table_address=self.metadata_table_address,
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            upload_status_table_address=self.upload_status_address,
             row_create_datetime=datetime(2026, 3, 15, 12, 0, 0),
         )
         self.query(query)
@@ -245,6 +243,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
             config=self.config,
             metadata_table_address=self.metadata_table_address,
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            upload_status_table_address=self.upload_status_address,
             row_create_datetime=datetime(2026, 3, 15, 12, 0, 0),
         )
         self.query(query)

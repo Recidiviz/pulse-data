@@ -22,8 +22,6 @@ import attr
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.common import attr_validators, recidiviz_attr_validators
-from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -37,23 +35,12 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.documents.store.document_upload_status_table import (
     COLLECTION_NAME,
     DOCUMENT_UPLOAD_SUCCESS,
-    DocumentUploadStatusTable,
 )
 
 
 @attr.define
 class DocumentMetadataUpdatesQueryBuilder:
     """Builder for queries related to temp document metadata updates table."""
-
-    project_id: str = attr.ib(validator=attr_validators.is_str)
-    state_code: StateCode = attr.ib(validator=recidiviz_attr_validators.is_state_code)
-
-    @property
-    def upload_status_table_address(self) -> ProjectSpecificBigQueryAddress:
-        """Returns the BigQuery address for the document upload status table."""
-        return DocumentUploadStatusTable.get_table_address(
-            project_id=self.project_id, state_code=self.state_code
-        )
 
     def build_new_documents_query(
         self,
@@ -101,6 +88,7 @@ WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
         config: DocumentCollectionConfig,
         metadata_table_address: ProjectSpecificBigQueryAddress,
         temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
+        upload_status_table_address: ProjectSpecificBigQueryAddress,
         row_create_datetime: datetime,
     ) -> str:
         """Builds a DML INSERT INTO query that inserts rows from the temp
@@ -123,7 +111,7 @@ FROM {temp_document_metadata_updates_address.format_address_for_query()} temp
 WHERE temp.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NULL
    OR temp.{DOCUMENT_CONTENTS_ID_COLUMN_NAME} IN (
         SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-        FROM {self.upload_status_table_address.format_address_for_query()}
+        FROM {upload_status_table_address.format_address_for_query()}
         WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
           AND {COLLECTION_NAME} = '{config.name}'
     )"""

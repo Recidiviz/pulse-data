@@ -512,7 +512,9 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
 
     def _seed_contents(self, rows: list[dict[str, Any]]) -> None:
         input_collection = fake_first_order_extractor_config().input_document_collection
-        address = input_collection.document_contents_table_address
+        address = input_collection.document_contents_table_address(
+            sandbox_dataset_prefix=None
+        )
         self.create_mock_table(
             address, schema=input_collection.build_bq_document_contents_schema()
         )

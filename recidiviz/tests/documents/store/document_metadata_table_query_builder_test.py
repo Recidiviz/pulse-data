@@ -45,14 +45,10 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
         self.config = get_document_collection_config(
             StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
-        self.metadata_address = (
-            self.config.metadata_table_address.to_project_specific_address(
-                self.project_id
-            )
-        )
-        self.query_builder = DocumentCollectionMetadataTableQueryBuilder(
-            project_id=self.project_id,
-        )
+        self.metadata_address = self.config.metadata_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(self.project_id)
+        self.query_builder = DocumentCollectionMetadataTableQueryBuilder()
 
     def _fixture_path(self, fixture_name: str) -> Path:
         return Path(document_metadata.__file__).parent / fixture_name
@@ -89,6 +85,7 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
 
         query = self.query_builder.build_latest_documents_query(
             config=self.config,
+            metadata_table_address=self.metadata_address,
             document_filter=None,
         )
         results = self.query(query)

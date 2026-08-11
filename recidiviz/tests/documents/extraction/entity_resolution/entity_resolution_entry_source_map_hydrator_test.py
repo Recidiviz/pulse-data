@@ -348,11 +348,11 @@ class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
 
         # The composite was uploaded and recorded on the first run.
         self.create_mock_table(
-            self.er_collection.metadata_table_address,
+            self.er_collection.metadata_table_address(sandbox_dataset_prefix=None),
             schema=self.er_collection.build_bq_metadata_schema(),
         )
         self.load_rows_into_table(
-            self.er_collection.metadata_table_address,
+            self.er_collection.metadata_table_address(sandbox_dataset_prefix=None),
             [
                 {
                     "person_id": 1001,

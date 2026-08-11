@@ -90,8 +90,10 @@ class ParseAllExtractorConfigsTest(TestCase):
                     collection=config.extractor_collection.name,
                     state=config.state_code.value,
                 ):
-                    metadata_address = config.input_document_collection.metadata_table_address.to_project_specific_address(
-                        "test-project"
+                    metadata_address = (
+                        config.input_document_collection.metadata_table_address(
+                            sandbox_dataset_prefix=None
+                        ).to_project_specific_address("test-project")
                     )
                     rendered_query = (
                         config.document_filter.build_document_metadata_filter_query(
@@ -211,7 +213,9 @@ class ParseAllExtractorConfigsTest(TestCase):
         self.assertEqual(StateCode.US_XX, config.input_document_collection.state_code)
         self.assertEqual(
             "fake_input_notes",
-            config.input_document_collection.metadata_table_address.table_id,
+            config.input_document_collection.metadata_table_address(
+                sandbox_dataset_prefix=None
+            ).table_id,
         )
 
         # The state-level override resolved to the override config, not the

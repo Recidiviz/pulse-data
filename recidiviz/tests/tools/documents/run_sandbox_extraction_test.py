@@ -246,11 +246,11 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         config = self._input_collection_config()
         fixtures_dir = Path(fixtures.__file__).parent
         self._load_rows_from_fixture(
-            address=config.metadata_table_address,
+            address=config.metadata_table_address(sandbox_dataset_prefix=None),
             fixture_path=fixtures_dir / "fake_input_notes_metadata.csv",
         )
         self._load_rows_from_fixture(
-            address=config.document_contents_table_address,
+            address=config.document_contents_table_address(sandbox_dataset_prefix=None),
             fixture_path=fixtures_dir / "fake_input_notes_contents.csv",
         )
 
@@ -675,8 +675,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # the whole emulator.
         config = self._input_collection_config()
         for address in (
-            config.metadata_table_address,
-            config.document_contents_table_address,
+            config.metadata_table_address(sandbox_dataset_prefix=None),
+            config.document_contents_table_address(sandbox_dataset_prefix=None),
         ):
             self.bq_client.delete_from_table_async(address).result()
 

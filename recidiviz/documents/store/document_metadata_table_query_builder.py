@@ -18,8 +18,8 @@
 
 import attr
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorDocumentFilterConfig,
 )
@@ -37,11 +37,10 @@ from recidiviz.documents.store.document_store_columns import (
 class DocumentCollectionMetadataTableQueryBuilder:
     """Builder for queries related to document collection metadata tables"""
 
-    project_id: str = attr.ib(validator=attr_validators.is_str)
-
     def build_latest_documents_query(
         self,
         config: DocumentCollectionConfig,
+        metadata_table_address: ProjectSpecificBigQueryAddress,
         *,
         document_filter: LLMExtractorDocumentFilterConfig | None,
     ) -> str:
@@ -65,9 +64,6 @@ class DocumentCollectionMetadataTableQueryBuilder:
             if document_filter is not None
             else ""
         )
-        address = config.metadata_table_address.to_project_specific_address(
-            self.project_id
-        )
 
         output_columns = [
             *config.primary_key_column_names,
@@ -80,7 +76,7 @@ class DocumentCollectionMetadataTableQueryBuilder:
     SELECT
         {list_to_query_string(output_columns)}
     FROM
-        {address.format_address_for_query()}{root_entity_narrowing_join_sql}
+        {metadata_table_address.format_address_for_query()}{root_entity_narrowing_join_sql}
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY {list_to_query_string(config.primary_key_column_names)}
         ORDER BY {ROW_CREATE_DATETIME_COLUMN_NAME} DESC

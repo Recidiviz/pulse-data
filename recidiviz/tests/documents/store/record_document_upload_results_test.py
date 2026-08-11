@@ -29,6 +29,9 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
 )
+from recidiviz.documents.store.document_upload_status_table import (
+    DocumentUploadStatusTable,
+)
 from recidiviz.documents.store.record_document_upload_results import (
     DocumentUploadResultRecorder,
 )
@@ -53,6 +56,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             big_query_client=self.bq_client,
             run_id=self.run_id,
             metadata_row_create_datetime=self.row_create_datetime,
+            output_sandbox_prefix=None,
         )
 
         config_module_patcher = patch(
@@ -124,6 +128,41 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             },
         )
 
+    def test_sandbox_prefix_scopes_written_addresses(self) -> None:
+        sandbox_recorder = DocumentUploadResultRecorder(
+            state_code=self.state_code,
+            project_id=self.project_id,
+            big_query_client=self.bq_client,
+            run_id=self.run_id,
+            metadata_row_create_datetime=self.row_create_datetime,
+            output_sandbox_prefix="my_prefix",
+        )
+        self.bq_client.run_query_async.return_value = self.query_job_all_docs_uploaded
+
+        sandbox_recorder.run(self.discovery_result)
+
+        prefixed_metadata_dataset = self.config.metadata_table_address(
+            sandbox_dataset_prefix="my_prefix"
+        ).dataset_id
+        prefixed_contents_dataset = self.config.document_contents_table_address(
+            sandbox_dataset_prefix="my_prefix"
+        ).dataset_id
+        prefixed_upload_status_dataset = DocumentUploadStatusTable.get_table_address(
+            project_id=self.project_id,
+            state_code=self.state_code,
+            sandbox_dataset_prefix="my_prefix",
+        ).dataset_id
+        query_strings = [
+            c.kwargs["query_str"] for c in self.bq_client.run_query_async.call_args_list
+        ]
+        self.assertTrue(any(prefixed_metadata_dataset in q for q in query_strings))
+        self.assertTrue(any(prefixed_contents_dataset in q for q in query_strings))
+        self.assertTrue(any(prefixed_upload_status_dataset in q for q in query_strings))
+        loaded_address = self.bq_client.load_table_from_cloud_storage.call_args.kwargs[
+            "destination_address"
+        ]
+        self.assertTrue(loaded_address.dataset_id.startswith("my_prefix_"))
+
     def test_some_uploads_failed_retains_temp_tables(self) -> None:
         self.bq_client.run_query_async.return_value = self.query_job_doc_upload_failures
 
@@ -140,7 +179,10 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         def _run_query_side_effect(query_str: str, **_kwargs: object) -> MagicMock:
             if (
-                self.config.document_contents_table_address.table_id in query_str
+                self.config.document_contents_table_address(
+                    sandbox_dataset_prefix=None
+                ).table_id
+                in query_str
                 and "INSERT INTO" in query_str
             ):
                 raise ValueError("doc_contents insert failed")
@@ -171,7 +213,9 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         # still run the metadata insert.
         self.assertEqual(self.bq_client.run_query_async.call_count, 1)
         self.assertNotIn(
-            self.config.document_contents_table_address.table_id,
+            self.config.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ).table_id,
             self.bq_client.run_query_async.call_args.kwargs["query_str"],
         )
 

@@ -132,5 +132,6 @@ def record_document_upload_results(
         big_query_client=BigQueryClientImpl(),
         run_id=run_id,
         metadata_row_create_datetime=datetime.now(tz=timezone.utc),
+        output_sandbox_prefix=None,
     )
     recorder.run(SingleCollectionDocumentDiscoveryResult.from_dict(collection_result))

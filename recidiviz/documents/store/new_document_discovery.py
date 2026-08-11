@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Discovers new documents for a single document collection and writes them
-to temporary BQ tables for downstream processing."""
+to temporary BQ tables for downstream processing.
+
++TODO(OBT-42680) During a sandbox run for a first order document collection, the sandbox
++will fail for a brand new collection because the metadata table will not exist yet.
+"""
 
 import logging
 from functools import cached_property
@@ -207,13 +211,12 @@ class NewDocumentDiscoverer:
         temp_document_address = self.config.temp_new_document_contents_table_address(
             self.run_id
         ).to_project_specific_address(self.project_id)
-        new_documents_query = DocumentMetadataUpdatesQueryBuilder(
-            project_id=self.project_id, state_code=self.state_code
-        ).build_new_documents_query(
+        new_documents_query = DocumentMetadataUpdatesQueryBuilder().build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,
-            document_contents_table_address=self.config.document_contents_table_address.to_project_specific_address(
-                self.project_id
-            ),
+            # TODO(OBT-42680) Thread sandbox prefix through
+            document_contents_table_address=self.config.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(self.project_id),
             target_batch_bytes=self.target_upload_batch_bytes,
         )
 

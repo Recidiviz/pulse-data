@@ -95,14 +95,14 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
         contents_fixture: str,
     ) -> None:
         self.load_fixture_into_table(
-            address=config.metadata_table_address,
+            address=config.metadata_table_address(sandbox_dataset_prefix=None),
             schema=config.build_bq_metadata_schema(),
             fixture_path=self._fixture_path(metadata_fixture),
             fixture_columns=None,
             allow_comments=False,
         )
         self.load_fixture_into_table(
-            address=config.document_contents_table_address,
+            address=config.document_contents_table_address(sandbox_dataset_prefix=None),
             schema=config.build_bq_document_contents_schema(),
             fixture_path=self._fixture_path(contents_fixture),
             fixture_columns=None,

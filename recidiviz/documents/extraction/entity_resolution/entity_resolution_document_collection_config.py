@@ -198,7 +198,10 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
             root_entity_id_type=self.root_entity_id_type,
             entity_group=self.entity_group,
             pre_resolution_view_materialized_address=self.pre_resolution_view_materialized_address,
-            source_document_contents_address=self.first_order_config.input_document_collection.document_contents_table_address,
+            # TODO(OBT-42680) Thread sandbox prefix through
+            source_document_contents_address=self.first_order_config.input_document_collection.document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ),
         ).build_query_template()
 
     def __attrs_post_init__(self) -> None:

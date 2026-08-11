@@ -82,11 +82,9 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
         self.config = get_document_collection_config(
             StateCode.US_XX, "FAKE_CASE_NOTES", fake_config_module
         )
-        self.metadata_address = (
-            self.config.metadata_table_address.to_project_specific_address(
-                self.project_id
-            )
-        )
+        self.metadata_address = self.config.metadata_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(self.project_id)
         self.raw_table_address = BigQueryAddress(
             dataset_id="us_xx_raw_data",
             table_id="fake_notes",
@@ -213,7 +211,7 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
             schema=self.er_collection.build_bq_document_generation_output_schema(),
         )
         self.create_mock_table(
-            self.er_collection.metadata_table_address,
+            self.er_collection.metadata_table_address(sandbox_dataset_prefix=None),
             schema=self.er_collection.build_bq_metadata_schema(),
         )
 
@@ -273,7 +271,7 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
             ],
         )
         self.load_rows_into_table(
-            self.er_collection.metadata_table_address,
+            self.er_collection.metadata_table_address(sandbox_dataset_prefix=None),
             [
                 {
                     "person_id": 1001,
