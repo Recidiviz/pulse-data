@@ -42,6 +42,12 @@ fi
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 echo "Commit hash: ${COMMIT_HASH}"
 
+# Elevate to the deploy-app lane via PAM before the prod deploy — before the
+# pre-deploy checks below, which read deploy secrets — so deploy access is
+# just-in-time rather than standing. Non-fatal if the deployer isn't onboarded
+# to PAM yet (mid-rollout), so go/jit deploys are unaffected.
+request_pam_deploy_grant recidiviz-123 "${GIT_VERSION_TAG}"
+
 echo "Performing pre-deploy verification"
 run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 
