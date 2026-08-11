@@ -21,6 +21,7 @@ import attr
 
 from recidiviz.common.attr_validators import is_str
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import external_id_type_helpers
 from recidiviz.utils.string import is_meaningful_docstring
 
 # TODO(#84110) add is_valid_project_id
@@ -48,6 +49,23 @@ def is_opt_meaningful_description(
     if value is None:
         return
     is_meaningful_description(instance, attribute, value)
+
+
+def is_valid_external_id_type_shape(
+    _instance: Any, attribute: attr.Attribute, value: str
+) -> None:
+    """Validates that the value is shaped like an external ID type, e.g.
+    `US_CO_OFFENDERID`. See is_valid_external_id_type_shape in
+    external_id_type_helpers for what that shape does and does not guarantee.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"Expected value type str, found {type(value)}.")
+    if not external_id_type_helpers.is_valid_external_id_type_shape(value):
+        raise ValueError(
+            f"Field [{attribute.name}] must be an external ID type (matching "
+            f"[{external_id_type_helpers.EXTERNAL_ID_TYPE_REGEX.pattern}]), "
+            f"received: [{value}]"
+        )
 
 
 is_state_code = attr.validators.instance_of(StateCode)

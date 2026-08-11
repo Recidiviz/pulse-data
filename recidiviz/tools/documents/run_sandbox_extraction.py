@@ -69,6 +69,14 @@ Example usage:
         --collection PLAYGROUND_EMPLOYMENT_INFO \
         --document-limit 500 \
         --labels reason=test
+
+To narrow to specific root entities:
+    python -m recidiviz.tools.documents.run_sandbox_extraction \
+        --sandbox-prefix my_prefix \
+        --state-code US_OZ \
+        --collection PLAYGROUND_EMPLOYMENT_INFO \
+        --external-id-type US_OZ_LOTR_ID \
+        --root-entity-ids 12345 67890
 """
 
 import argparse
@@ -138,6 +146,9 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
+)
+from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -834,6 +845,23 @@ class SandboxExtractionRunner:
         )
 
 
+def _validate_external_id_type(
+    *, external_id_type: str | None, state_code: StateCode
+) -> None:
+    """Validates that |external_id_type|, if given, is an external ID type
+    registered for |state_code| in external_id_types.py.
+    """
+    if external_id_type is None:
+        return
+    allowed_id_types = external_id_types_by_state_code()[state_code]
+    if external_id_type not in allowed_id_types:
+        raise ValueError(
+            f"Got --external-id-type [{external_id_type}], which is not an "
+            f"external ID type for [{state_code.value}]. Registered types: "
+            f"{sorted(allowed_id_types)}."
+        )
+
+
 def parse_arguments() -> argparse.Namespace:
     """Parses the command-line arguments for a sandbox extraction run."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -877,6 +905,15 @@ def parse_arguments() -> argparse.Namespace:
         help="Restrict processing to documents for these root entities.",
     )
     parser.add_argument(
+        "--external-id-type",
+        default=None,
+        help="The id type qualifying every --root-entity-ids value (e.g. "
+        "US_CO_OFFENDERID). Required when the extractor's document collection is "
+        "keyed by an external root entity id, since the same id string can belong "
+        "to different people under different id types. Omit for a collection keyed "
+        "by an internal person_id / staff_id.",
+    )
+    parser.add_argument(
         "--table-expiration-days",
         type=positive_int,
         default=DEFAULT_TABLE_EXPIRATION_DAYS,
@@ -908,6 +945,9 @@ def parse_arguments() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
+    _validate_external_id_type(
+        external_id_type=args.external_id_type, state_code=args.state_code
+    )
     return args
 
 
@@ -917,7 +957,9 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
     config = get_first_order_llm_extractor_config(
         args.state_code, args.collection
     ).with_sandbox_narrowing(
-        document_limit=args.document_limit, root_entity_ids=args.root_entity_ids
+        document_limit=args.document_limit,
+        root_entity_ids=args.root_entity_ids,
+        external_id_type=args.external_id_type,
     )
     table_expiration_ms = args.table_expiration_days * 24 * 60 * 60 * 1000
     bq_client = BigQueryClientImpl(project_id=project_id())

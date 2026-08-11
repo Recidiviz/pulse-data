@@ -150,7 +150,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
                 ),
                 is_sandbox_config=False,
                 document_limit=None,
-                root_entity_ids=None,
+                root_entity_narrowing=None,
             ),
             prompt_vars={},
             # Retry is inherited from the parent (which declares no override, so
@@ -190,7 +190,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
                 ),
                 is_sandbox_config=False,
                 document_limit=None,
-                root_entity_ids=None,
+                root_entity_narrowing=None,
             ),
             prompt_vars={},
             # Retry is inherited from the parent (which declares no override, so

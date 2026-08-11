@@ -17,9 +17,7 @@
 """Builds the SQL that selects an extractor's eligible document_contents_ids."""
 
 import attr
-from google.cloud.bigquery.enums import SqlTypeNames
 
-from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorDocumentFilterConfig,
 )
@@ -79,15 +77,13 @@ class LLMExtractionEligibleDocumentQueryBuilder:
 
         latest_metadata_query = DocumentCollectionMetadataTableQueryBuilder(
             project_id=project_id
-        ).build_latest_documents_query(self.input_document_collection)
+        ).build_latest_documents_query(
+            self.input_document_collection, document_filter=self.document_filter
+        )
 
-        # The root-entity WHERE narrows first; the QUALIFY then dedupes; the
+        # The QUALIFY dedupes to one row per document_contents_id; the
         # document_limit ORDER BY/LIMIT runs last so the cap applies to deduped
         # rows.
-        # TODO(OBT-42801): The narrowing here all runs after both CTEs are fully
-        # materialized, so a bounded sandbox run still scans the whole collection.
-        # Push the root_entity_ids / document_limit narrowing earlier so a bounded
-        # run reads a bounded amount of data.
         # TODO(OBT-42802): Avoid the three-way join here: store
         # document_length_bytes on the metadata row to drop the document_contents
         # join, and have the filter query read from latest_metadata directly so
@@ -108,7 +104,6 @@ JOIN latest_metadata
     USING ({DOCUMENT_CONTENTS_ID_COLUMN_NAME})
 JOIN {contents_address.format_address_for_query()} document_contents
     USING ({DOCUMENT_CONTENTS_ID_COLUMN_NAME})
-    {self._root_entity_where_clause()}
 -- A single document_contents_id can appear for multiple root entities (identical
 -- text shared across the same or different people), so this QUALIFY dedupes down
 -- to exactly one row per document_contents_id. The document_update_datetime we
@@ -123,23 +118,6 @@ QUALIFY ROW_NUMBER() OVER (
 {self._limit_clause()}"""
 
         return fix_indent(query, indent_level=0)
-
-    def _root_entity_where_clause(self) -> str:
-        """Returns the sandbox-only root-entity WHERE clause, or empty string when
-        the filter is un-narrowed (production).
-        """
-        if (root_entity_ids := self.document_filter.root_entity_ids) is None:
-            return ""
-        root_entity_id_type = self.input_document_collection.root_entity_id_type
-        id_list = list_to_query_string(
-            sorted(root_entity_ids),
-            quoted=root_entity_id_type.id_column_type is SqlTypeNames.STRING,
-            single_quote=True,
-        )
-        return (
-            f"WHERE latest_metadata.{root_entity_id_type.id_column_name} "
-            f"IN ({id_list})"
-        )
 
     def _order_by_clause(self) -> str:
         """Returns the sandbox-only ORDER BY clause (with a leading newline), or

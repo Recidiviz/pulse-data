@@ -291,7 +291,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # covered by RunSandboxExtractionOrchestrationTest.
         return SandboxExtractionRunner(
             config=self.config.with_sandbox_narrowing(
-                document_limit=5, root_entity_ids=None
+                document_limit=5, root_entity_ids=None, external_id_type=None
             ),
             sandbox_prefix=_SANDBOX_PREFIX,
             labels={"reason": "test"},

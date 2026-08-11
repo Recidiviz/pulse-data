@@ -26,12 +26,14 @@ fully-resolved object.
 """
 
 import json
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 import attr
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
-from recidiviz.common import attr_validators
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
@@ -67,9 +69,11 @@ from recidiviz.documents.extraction.prompt_generation.llm_extractor_reference_da
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    DocumentRootEntityIdType,
 )
 from recidiviz.utils.string import StrictStringFormatter, sha256_hexdigest
-from recidiviz.utils.string_formatting import collapse_blank_lines
+from recidiviz.utils.string_formatting import collapse_blank_lines, fix_indent
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Prompt-template variables the extractor fills in itself, rendered from the
@@ -102,6 +106,123 @@ def _prompt_vars_do_not_shadow_reserved(
 
 
 @attr.define(frozen=True, kw_only=True)
+class RootEntityNarrowing(ABC):
+    """A narrowing of a document-metadata query to a specific set of root entities,
+    rendered as the JOIN clause that enforces it.
+    """
+
+    @abstractmethod
+    def build_join_clause_sql(
+        self, *, root_entity_id_type: DocumentRootEntityIdType
+    ) -> str:
+        """Returns the JOIN clause restricting a document metadata table to these
+        root entities, matched against |root_entity_id_type|'s columns.
+
+        A JOIN rather than a WHERE so an external-id collection matches the id and
+        its id_type as one unit. The clause belongs directly on a document metadata
+        table, before any join that resolves an external id to an internal
+        person_id / staff_id.
+        """
+
+
+@attr.define(frozen=True, kw_only=True)
+class InternalRootEntityNarrowing(RootEntityNarrowing):
+    """Narrowing for a collection keyed by an internal root entity id
+    (person_id / staff_id), which identifies a root entity on its own."""
+
+    root_entity_ids: list[int] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(int),
+        ]
+    )
+    """The internal ids to keep."""
+
+    def build_join_clause_sql(
+        self, *, root_entity_id_type: DocumentRootEntityIdType
+    ) -> str:
+        """Returns, for ids 1002 and 1001 on a person_id collection:
+
+        JOIN UNNEST([1001, 1002]) AS person_id
+        USING (person_id)
+        """
+        id_column = root_entity_id_type.id_column_name
+        id_list = list_to_query_string(
+            [str(root_id) for root_id in sorted(set(self.root_entity_ids))]
+        )
+        return fix_indent(
+            f"""
+            JOIN UNNEST([{id_list}]) AS {id_column}
+            USING ({id_column})
+            """,
+            indent_level=0,
+        )
+
+
+@attr.define(frozen=True, kw_only=True)
+class ExternalRootEntityNarrowing(RootEntityNarrowing):
+    """Narrowing for a collection keyed by an external root entity id, which
+    identifies a root entity only together with its id type — the same external id
+    string can belong to different people under different id types.
+    """
+
+    root_entity_ids: list[str] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of_non_empty_str,
+        ]
+    )
+    """The external ids to keep, all of external_id_type."""
+
+    external_id_type: str = attr.ib(
+        validator=recidiviz_attr_validators.is_valid_external_id_type_shape
+    )
+    """The id type qualifying every id above, e.g. "US_XX_ID_TYPE". Named for
+    the value it holds, not for DocumentRootEntityIdType, whose members
+    (PERSON_EXTERNAL_ID, ...) name the *kind* of root entity id instead."""
+
+    def build_join_clause_sql(
+        self, *, root_entity_id_type: DocumentRootEntityIdType
+    ) -> str:
+        """Returns, for ids "XYZ" and "ABC" of type "US_XX_ID_TYPE" on a
+        person_external_id collection:
+
+        JOIN (
+            SELECT person_external_id, 'US_XX_ID_TYPE' AS person_external_id_type
+            FROM UNNEST(['ABC', 'XYZ']) AS person_external_id
+        )
+        USING (person_external_id, person_external_id_type)
+
+        The id type is selected once rather than repeated per id, so the clause
+        stays readable for a run narrowed to many root entities.
+        """
+        id_column = root_entity_id_type.id_column_name
+        id_type_column = assert_type(root_entity_id_type.id_type_column_name, str)
+        id_list = list_to_query_string(
+            sorted(set(self.root_entity_ids)), quoted=True, single_quote=True
+        )
+        return fix_indent(
+            f"""
+            JOIN (
+                SELECT {id_column}, '{self.external_id_type}' AS {id_type_column}
+                FROM UNNEST([{id_list}]) AS {id_column}
+            )
+            USING ({id_column}, {id_type_column})
+            """,
+            indent_level=0,
+        )
+
+
+def _is_opt_root_entity_narrowing(
+    _instance: object, _attribute: "attr.Attribute", value: object
+) -> None:
+    # `attr.validators.instance_of` can't be used for a RootEntityNarrowing-typed
+    # field because RootEntityNarrowing is abstract (mypy `type-abstract`).
+    if value is not None and not isinstance(value, RootEntityNarrowing):
+        raise ValueError(f"Expected a RootEntityNarrowing, received [{type(value)}].")
+
+
+@attr.define(frozen=True, kw_only=True)
 class LLMExtractorDocumentFilterConfig:
     """The document-selection config for a run: the authored filter template,
     plus sandbox-only narrowing (never authored — set only via
@@ -123,18 +244,12 @@ class LLMExtractorDocumentFilterConfig:
     document_limit: int | None = attr.ib(validator=attr_validators.is_opt_positive_int)
     """Sandbox-only: cap the number of selected documents."""
 
-    root_entity_ids: list[str] | None = attr.ib(
-        validator=attr.validators.optional(
-            [
-                attr_validators.is_non_empty_list,
-                attr_validators.is_list_of_non_empty_str,
-            ]
-        )
+    root_entity_narrowing: RootEntityNarrowing | None = attr.ib(
+        validator=_is_opt_root_entity_narrowing
     )
-    """Sandbox-only: restrict selection to these root entities, matched against
-    the input collection's root-entity ID column (person or staff, per its
-    root_entity_id_type). For an external-id collection these are external IDs;
-    the id_type is constant per collection, so it is not part of the narrowing."""
+    """Sandbox-only: restrict selection to specific root entities. The variant must
+    match the input collection's root_entity_id_type, which LLMExtractorConfig
+    validates."""
 
     def __attrs_post_init__(self) -> None:
         placeholder = (
@@ -148,11 +263,11 @@ class LLMExtractorDocumentFilterConfig:
                 f"[{self.document_metadata_filter_query_template}]."
             )
         if not self.is_sandbox_config and (
-            self.document_limit is not None or self.root_entity_ids is not None
+            self.document_limit is not None or self.root_entity_narrowing is not None
         ):
             raise ValueError(
-                "Sandbox-only narrowing (document_limit / root_entity_ids) may only "
-                "be set on a sandbox config. Set narrowing via "
+                "Sandbox-only narrowing (document_limit / root_entity_narrowing) may "
+                "only be set on a sandbox config. Set narrowing via "
                 "LLMExtractorConfig.with_sandbox_narrowing, which marks the config as "
                 "a sandbox config."
             )
@@ -170,6 +285,23 @@ class LLMExtractorDocumentFilterConfig:
         """
         components = [self.document_metadata_filter_query_template]
         return sha256_hexdigest(json.dumps(components))
+
+    def build_root_entity_narrowing_join_sql(
+        self, *, root_entity_id_type: DocumentRootEntityIdType, indent_level: int
+    ) -> str:
+        """Returns the JOIN clause restricting a document metadata table to this
+        filter's sandbox-only root entities, or empty string when the filter is
+        un-narrowed (production).
+        """
+        if self.root_entity_narrowing is None:
+            return ""
+        join_clause = fix_indent(
+            self.root_entity_narrowing.build_join_clause_sql(
+                root_entity_id_type=root_entity_id_type
+            ),
+            indent_level=indent_level,
+        )
+        return f"\n{join_clause}"
 
     def build_document_metadata_filter_query(
         self,
@@ -342,6 +474,7 @@ class LLMExtractorConfig:
                 f"[{self.input_document_collection.name}], which belongs to state "
                 f"[{self.input_document_collection.state_code.value}]."
             )
+        self._validate_root_entity_narrowing_matches_collection()
         if (
             self.single_job_document_count_batch_threshold
             > self.total_pending_document_count_hard_cap
@@ -371,6 +504,30 @@ class LLMExtractorConfig:
                 f"[{self.state_code.value}] binds thinking-enabled model config "
                 f"[{self.model_config.name}]. Thinking models are only permitted "
                 f"for entity-resolution extractors."
+            )
+
+    def _validate_root_entity_narrowing_matches_collection(self) -> None:
+        """Validates that any sandbox root-entity narrowing is the variant the input
+        collection's root_entity_id_type calls for. Only this class sees both, so
+        the check cannot live on the filter config itself.
+        """
+        narrowing = self.document_filter.root_entity_narrowing
+        if narrowing is None:
+            return
+        root_entity_id_type = self.input_document_collection.root_entity_id_type
+        expected_narrowing_cls = (
+            InternalRootEntityNarrowing
+            if root_entity_id_type.id_type_column_name is None
+            else ExternalRootEntityNarrowing
+        )
+        if not isinstance(narrowing, expected_narrowing_cls):
+            raise ValueError(
+                f"Extractor [{self.extractor_collection.name}] for "
+                f"[{self.state_code.value}] narrows to root entities with "
+                f"[{type(narrowing).__name__}], but its input document collection "
+                f"[{self.input_document_collection.name}] is keyed by "
+                f"[{root_entity_id_type.value}], which requires "
+                f"[{expected_narrowing_cls.__name__}]."
             )
 
     @property
@@ -420,11 +577,20 @@ class LLMExtractorConfig:
         return sha256_hexdigest(json.dumps(components))
 
     def with_sandbox_narrowing(
-        self, *, document_limit: int | None, root_entity_ids: list[str] | None
+        self,
+        *,
+        document_limit: int | None,
+        root_entity_ids: list[str] | None,
+        external_id_type: str | None,
     ) -> "LLMExtractorConfig":
         """Returns a copy of this config with sandbox-only narrowing applied to
         its document filter. This is the only way narrowing is ever set;
         production configs are never narrowed.
+
+        Takes |root_entity_ids| as strings because callers are command-line flags,
+        and resolves them into the narrowing variant this config's input collection
+        calls for. |external_id_type| qualifies them for an external-id collection
+        and must be omitted for an internal-id one.
         """
         return attr.evolve(
             self,
@@ -432,8 +598,57 @@ class LLMExtractorConfig:
                 self.document_filter,
                 is_sandbox_config=True,
                 document_limit=document_limit,
-                root_entity_ids=root_entity_ids,
+                root_entity_narrowing=self._build_root_entity_narrowing(
+                    root_entity_ids=root_entity_ids, external_id_type=external_id_type
+                ),
             ),
+        )
+
+    def _build_root_entity_narrowing(
+        self, *, root_entity_ids: list[str] | None, external_id_type: str | None
+    ) -> RootEntityNarrowing | None:
+        """Returns the root-entity narrowing for |root_entity_ids|, as the variant
+        this config's input document collection is keyed by, or None when there are
+        no ids to narrow to.
+
+        Every way the caller can get this wrong fails here — before a run creates
+        datasets or spins up job tracking — rather than as invalid SQL at query time.
+        """
+        root_entity_id_type = self.input_document_collection.root_entity_id_type
+        is_external = root_entity_id_type.id_type_column_name is not None
+        if not root_entity_ids:
+            if external_id_type is not None:
+                raise ValueError(
+                    f"Got external_id_type [{external_id_type}] with no root entity "
+                    f"ids to qualify."
+                )
+            return None
+        if not is_external:
+            if external_id_type is not None:
+                raise ValueError(
+                    f"Got external_id_type [{external_id_type}], but input document "
+                    f"collection [{self.input_document_collection.name}] is keyed by "
+                    f"[{root_entity_id_type.value}], which has no id type."
+                )
+            try:
+                internal_ids = [int(id_str) for id_str in root_entity_ids]
+            except ValueError as e:
+                raise ValueError(
+                    f"Input document collection "
+                    f"[{self.input_document_collection.name}] is keyed by "
+                    f"[{root_entity_id_type.value}], so every root entity id must be "
+                    f"an integer, but got {root_entity_ids}."
+                ) from e
+            return InternalRootEntityNarrowing(root_entity_ids=internal_ids)
+        if external_id_type is None:
+            raise ValueError(
+                f"Input document collection "
+                f"[{self.input_document_collection.name}] is keyed by "
+                f"[{root_entity_id_type.value}], so narrowing to root entities "
+                f"requires an external_id_type to qualify them."
+            )
+        return ExternalRootEntityNarrowing(
+            root_entity_ids=root_entity_ids, external_id_type=external_id_type
         )
 
     @staticmethod
@@ -533,7 +748,7 @@ class LLMExtractorConfig:
                 ),
                 is_sandbox_config=False,
                 document_limit=None,
-                root_entity_ids=None,
+                root_entity_narrowing=None,
             ),
             prompt_vars=prompt_vars,
             max_transient_retry_count=(

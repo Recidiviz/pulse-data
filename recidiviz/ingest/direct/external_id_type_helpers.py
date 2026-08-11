@@ -22,6 +22,23 @@ from recidiviz.common.constants.state import external_id_types
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.types import assert_type
 
+# An external ID type is a US_XX state code prefix (captured, so the same regex
+# parses the owning state) followed by capital letters and underscores.
+EXTERNAL_ID_TYPE_REGEX = re.compile(r"^(?P<state_code>US_[A-Z]{2})[A-Z_]*$")
+
+
+def is_valid_external_id_type_shape(external_id_type: str) -> bool:
+    """Returns True if |external_id_type| is shaped like an external ID type,
+    e.g. `US_CO_OFFENDERID`. Every constant in external_id_types.py has this
+    shape.
+
+    This is a shape check only, not a membership check against
+    external_id_types.py. Where the state an ID type belongs to is known, check
+    membership in `external_id_types_by_state_code()[state_code]` instead — that
+    catches a typo'd or wrong-state ID type, which this cannot.
+    """
+    return EXTERNAL_ID_TYPE_REGEX.match(external_id_type) is not None
+
 
 def get_external_id_types() -> list[str]:
     return [
@@ -35,10 +52,11 @@ def get_external_id_types() -> list[str]:
 def external_id_types_by_state_code() -> dict[StateCode, set[str]]:
     result = defaultdict(set)
     for external_id_name in get_external_id_types():
-        match = re.match(r"^US_[A-Z]{2}", external_id_name)
+        match = EXTERNAL_ID_TYPE_REGEX.match(external_id_name)
         if not match:
             raise ValueError(
-                f"Expected external id name to match regex: {external_id_name}"
+                f"Expected external id name [{external_id_name}] to match "
+                f"[{EXTERNAL_ID_TYPE_REGEX.pattern}]."
             )
-        result[StateCode[match.group(0)]].add(external_id_name)
+        result[StateCode[match.group("state_code")]].add(external_id_name)
     return result

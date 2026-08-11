@@ -48,8 +48,11 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
     get_llm_extractor_collection_config,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
+    ExternalRootEntityNarrowing,
+    InternalRootEntityNarrowing,
     LLMExtractorConfig,
     LLMExtractorDocumentFilterConfig,
+    RootEntityNarrowing,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import (
     BaseLLMModel,
@@ -101,13 +104,16 @@ def _input_document_collection(
     *,
     name: str,
     state_code: StateCode,
+    root_entity_id_type: DocumentRootEntityIdType = (
+        DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+    ),
 ) -> DocumentCollectionConfig:
     """Returns a minimal valid input document collection for resolution."""
     return DocumentCollectionConfig(
         state_code=state_code,
         name=name,
         description=_DESCRIPTION,
-        root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+        root_entity_id_type=root_entity_id_type,
         document_primary_key_columns=[
             bigquery.SchemaField("note_id", "STRING"),
         ],
@@ -154,14 +160,14 @@ def _document_filter(
     template: str = _FILTER_QUERY,
     is_sandbox_config: bool = False,
     document_limit: int | None = None,
-    root_entity_ids: list[str] | None = None,
+    root_entity_narrowing: RootEntityNarrowing | None = None,
 ) -> LLMExtractorDocumentFilterConfig:
     """Builds an un-narrowed (production-shaped) document filter by default."""
     return LLMExtractorDocumentFilterConfig(
         document_metadata_filter_query_template=template,
         is_sandbox_config=is_sandbox_config,
         document_limit=document_limit,
-        root_entity_ids=root_entity_ids,
+        root_entity_narrowing=root_entity_narrowing,
     )
 
 
@@ -600,17 +606,24 @@ class LLMExtractorConfigVersionIdTest(TestCase):
     def test_with_sandbox_narrowing_sets_knobs_but_preserves_filter_id(self) -> None:
         config = self._config()
         narrowed = config.with_sandbox_narrowing(
-            document_limit=50, root_entity_ids=["P1", "P2"]
+            document_limit=50,
+            root_entity_ids=["P1", "P2"],
+            external_id_type="US_XX_DOC",
         )
 
         # The narrowing knobs (and the sandbox flag) are set on the copy; the
         # original is untouched (frozen).
         self.assertTrue(narrowed.document_filter.is_sandbox_config)
         self.assertEqual(50, narrowed.document_filter.document_limit)
-        self.assertEqual(["P1", "P2"], narrowed.document_filter.root_entity_ids)
+        self.assertEqual(
+            ExternalRootEntityNarrowing(
+                root_entity_ids=["P1", "P2"], external_id_type="US_XX_DOC"
+            ),
+            narrowed.document_filter.root_entity_narrowing,
+        )
         self.assertFalse(config.document_filter.is_sandbox_config)
         self.assertIsNone(config.document_filter.document_limit)
-        self.assertIsNone(config.document_filter.root_entity_ids)
+        self.assertIsNone(config.document_filter.root_entity_narrowing)
 
         # The authored template is unchanged, so the filter ID is byte-identical
         # despite the narrowing.
@@ -638,9 +651,13 @@ class LLMExtractorDocumentFilterConfigTest(TestCase):
 
     def test_narrowing_requires_sandbox_config(self) -> None:
         # A non-sandbox config may not carry either narrowing knob.
-        for document_limit, root_entity_ids in [(50, None), (None, ["P1"])]:
+        for document_limit, root_entity_narrowing in [
+            (50, None),
+            (None, InternalRootEntityNarrowing(root_entity_ids=[1])),
+        ]:
             with self.subTest(
-                document_limit=document_limit, root_entity_ids=root_entity_ids
+                document_limit=document_limit,
+                root_entity_narrowing=root_entity_narrowing,
             ):
                 with self.assertRaisesRegex(
                     ValueError, "may only be set on a sandbox config"
@@ -648,7 +665,7 @@ class LLMExtractorDocumentFilterConfigTest(TestCase):
                     _document_filter(
                         is_sandbox_config=False,
                         document_limit=document_limit,
-                        root_entity_ids=root_entity_ids,
+                        root_entity_narrowing=root_entity_narrowing,
                     )
 
     def test_sandbox_config_without_narrowing_is_allowed(self) -> None:
@@ -662,7 +679,9 @@ class LLMExtractorDocumentFilterConfigTest(TestCase):
         # filter hashes identically to its un-narrowed production counterpart.
         production = _document_filter()
         narrowed = _document_filter(
-            is_sandbox_config=True, document_limit=1, root_entity_ids=["P1"]
+            is_sandbox_config=True,
+            document_limit=1,
+            root_entity_narrowing=InternalRootEntityNarrowing(root_entity_ids=[1]),
         )
         self.assertEqual(production.version_id, narrowed.version_id)
 
@@ -675,6 +694,102 @@ class LLMExtractorDocumentFilterConfigTest(TestCase):
                     "`{input_document_collection_metadata_address}` WHERE x"
                 )
             ).version_id,
+        )
+
+    def test_narrowing_join_sql_is_empty_when_unnarrowed(self) -> None:
+        # A production filter contributes no clause at all — not a blank line —
+        # so the query it splices into is byte-identical to an un-narrowed one.
+        self.assertEqual(
+            "",
+            _document_filter().build_root_entity_narrowing_join_sql(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID,
+                indent_level=8,
+            ),
+        )
+
+    def test_narrowing_join_sql_leads_with_newline_at_requested_indent(self) -> None:
+        # A narrowed filter returns the clause prefixed with a newline and indented
+        # to the requested level, so a caller appends it to the end of the line the
+        # clause follows.
+        document_filter = _document_filter(
+            is_sandbox_config=True,
+            root_entity_narrowing=InternalRootEntityNarrowing(
+                root_entity_ids=[1001, 1002]
+            ),
+        )
+        expected_clause = """
+        JOIN UNNEST([1001, 1002]) AS person_id
+        USING (person_id)"""
+        self.assertEqual(
+            expected_clause,
+            document_filter.build_root_entity_narrowing_join_sql(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+                indent_level=8,
+            ),
+        )
+
+
+class RootEntityNarrowingTest(TestCase):
+    """Runs each narrowing variant's JOIN clause rendering."""
+
+    def test_internal_narrowing_sorts_and_dedupes_ids(self) -> None:
+        # Ids arrive in whatever order the caller passed and may repeat; the clause
+        # emits each once, ascending, so a repeated id cannot multiply joined rows.
+        expected_clause = """JOIN UNNEST([1001, 1002, 1003]) AS person_id
+USING (person_id)"""
+        self.assertEqual(
+            expected_clause,
+            InternalRootEntityNarrowing(
+                root_entity_ids=[1002, 1001, 1003, 1002]
+            ).build_join_clause_sql(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID
+            ),
+        )
+
+    def test_internal_narrowing_uses_the_collections_id_column(self) -> None:
+        # The same ids against a staff-keyed collection join on staff_id.
+        expected_clause = """JOIN UNNEST([21, 22]) AS staff_id
+USING (staff_id)"""
+        self.assertEqual(
+            expected_clause,
+            InternalRootEntityNarrowing(root_entity_ids=[22, 21]).build_join_clause_sql(
+                root_entity_id_type=DocumentRootEntityIdType.STAFF_ID
+            ),
+        )
+
+    def test_external_narrowing_quotes_ids_and_states_id_type_once(self) -> None:
+        # Ids are sorted, deduped and single-quoted, and the id type is selected
+        # once rather than repeated per id, so the clause stays readable for a run
+        # narrowed to many root entities.
+        expected_clause = """JOIN (
+    SELECT person_external_id, 'US_XX_DOC' AS person_external_id_type
+    FROM UNNEST(['ABC', 'XYZ']) AS person_external_id
+)
+USING (person_external_id, person_external_id_type)"""
+        self.assertEqual(
+            expected_clause,
+            ExternalRootEntityNarrowing(
+                root_entity_ids=["XYZ", "ABC", "XYZ"], external_id_type="US_XX_DOC"
+            ).build_join_clause_sql(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+            ),
+        )
+
+    def test_external_narrowing_uses_the_collections_id_columns(self) -> None:
+        # The same shape against a staff-keyed collection joins on the staff
+        # external id columns.
+        expected_clause = """JOIN (
+    SELECT staff_external_id, 'US_XX_STAFF' AS staff_external_id_type
+    FROM UNNEST(['S1']) AS staff_external_id
+)
+USING (staff_external_id, staff_external_id_type)"""
+        self.assertEqual(
+            expected_clause,
+            ExternalRootEntityNarrowing(
+                root_entity_ids=["S1"], external_id_type="US_XX_STAFF"
+            ).build_join_clause_sql(
+                root_entity_id_type=DocumentRootEntityIdType.STAFF_EXTERNAL_ID
+            ),
         )
 
 
@@ -710,11 +825,19 @@ class LLMExtractorConfigConstructionTest(TestCase):
         total_pending_document_count_hard_cap: int = (
             DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP
         ),
+        input_document_collection: DocumentCollectionConfig | None = None,
+        document_filter: LLMExtractorDocumentFilterConfig | None = None,
     ) -> LLMExtractorConfig:
         return LLMExtractorConfig(
             state_code=state_code,
-            input_document_collection=self.input_document_collection,
-            document_filter=_document_filter(),
+            input_document_collection=(
+                input_document_collection
+                if input_document_collection is not None
+                else self.input_document_collection
+            ),
+            document_filter=(
+                document_filter if document_filter is not None else _document_filter()
+            ),
             prompt_vars=(
                 prompt_vars
                 if prompt_vars is not None
@@ -800,3 +923,177 @@ class LLMExtractorConfigConstructionTest(TestCase):
         )
         self.assertTrue(config.model_config.enables_thinking)
         self.assertIsNotNone(config.entity_group)
+
+    def test_internal_narrowing_on_external_id_collection_raises(self) -> None:
+        # The collection is keyed by person_external_id, so a narrowing that holds
+        # bare internal ids cannot describe its root entities.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"narrows to root entities with \[InternalRootEntityNarrowing\], but "
+            r"its input document collection .* is keyed by \[person_external_id\], "
+            r"which requires \[ExternalRootEntityNarrowing\]",
+        ):
+            self._config(
+                document_filter=_document_filter(
+                    is_sandbox_config=True,
+                    root_entity_narrowing=InternalRootEntityNarrowing(
+                        root_entity_ids=[1001]
+                    ),
+                )
+            )
+
+    def test_external_narrowing_on_internal_id_collection_raises(self) -> None:
+        # And the reverse: a person_id collection has no id type column for an
+        # external narrowing's external_id_type to match against.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"narrows to root entities with \[ExternalRootEntityNarrowing\], but "
+            r"its input document collection .* is keyed by \[person_id\], which "
+            r"requires \[InternalRootEntityNarrowing\]",
+        ):
+            self._config(
+                input_document_collection=_input_document_collection(
+                    state_code=StateCode.US_XX,
+                    name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
+                    root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+                ),
+                document_filter=_document_filter(
+                    is_sandbox_config=True,
+                    root_entity_narrowing=ExternalRootEntityNarrowing(
+                        root_entity_ids=["ABC"], external_id_type="US_XX_DOC"
+                    ),
+                ),
+            )
+
+
+class WithSandboxNarrowingTest(TestCase):
+    """Resolves command-line-shaped narrowing arguments into the narrowing variant
+    the config's input document collection is keyed by."""
+
+    def setUp(self) -> None:
+        self.collection = get_llm_extractor_collection_config(
+            _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.reference_data = LLMExtractorReferenceData.resolve(
+            state_code=StateCode.US_XX,
+            reference_data_config=self.collection.reference_data_config,
+            reference_data_registries=load_full_reference_data_registry(
+                StateCode.US_XX, config_module=fake_config
+            ),
+        )
+
+    def _config(
+        self, *, root_entity_id_type: DocumentRootEntityIdType
+    ) -> LLMExtractorConfig:
+        return LLMExtractorConfig(
+            state_code=StateCode.US_XX,
+            input_document_collection=_input_document_collection(
+                state_code=StateCode.US_XX,
+                name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
+                root_entity_id_type=root_entity_id_type,
+            ),
+            document_filter=_document_filter(),
+            prompt_vars={"agency_name": "the Department of Fictional Affairs"},
+            max_transient_retry_count=DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
+            total_pending_document_count_hard_cap=(
+                DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP
+            ),
+            single_job_document_count_batch_threshold=(
+                DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD
+            ),
+            extractor_collection=self.collection,
+            model_config=_model_config(),
+            reference_data=self.reference_data,
+            entity_group=None,
+            golden_eval=_GOLDEN_EVAL_CONFIG,
+        )
+
+    def test_external_id_collection_resolves_to_external_narrowing(self) -> None:
+        narrowed = self._config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+        ).with_sandbox_narrowing(
+            document_limit=None,
+            root_entity_ids=["ABC", "XYZ"],
+            external_id_type="US_XX_DOC",
+        )
+        self.assertEqual(
+            ExternalRootEntityNarrowing(
+                root_entity_ids=["ABC", "XYZ"], external_id_type="US_XX_DOC"
+            ),
+            narrowed.document_filter.root_entity_narrowing,
+        )
+
+    def test_internal_id_collection_resolves_string_ids_to_ints(self) -> None:
+        # The flag hands over strings; an internal-id collection needs the INT64
+        # values its id column holds.
+        narrowed = self._config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_ID
+        ).with_sandbox_narrowing(
+            document_limit=None, root_entity_ids=["1001", "1002"], external_id_type=None
+        )
+        self.assertEqual(
+            InternalRootEntityNarrowing(root_entity_ids=[1001, 1002]),
+            narrowed.document_filter.root_entity_narrowing,
+        )
+
+    def test_no_root_entity_ids_leaves_narrowing_unset(self) -> None:
+        # A run narrowed only by document_limit carries no root entity narrowing.
+        narrowed = self._config(
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+        ).with_sandbox_narrowing(
+            document_limit=10, root_entity_ids=None, external_id_type=None
+        )
+        self.assertIsNone(narrowed.document_filter.root_entity_narrowing)
+        self.assertEqual(10, narrowed.document_filter.document_limit)
+
+    def test_external_id_type_without_root_entity_ids_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Got external_id_type \[US_XX_DOC\] with no root entity ids to qualify",
+        ):
+            self._config(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+            ).with_sandbox_narrowing(
+                document_limit=None, root_entity_ids=None, external_id_type="US_XX_DOC"
+            )
+
+    def test_external_id_type_on_internal_id_collection_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Got external_id_type \[US_XX_DOC\], but input document collection .* "
+            r"is keyed by \[person_id\], which has no id type",
+        ):
+            self._config(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID
+            ).with_sandbox_narrowing(
+                document_limit=None,
+                root_entity_ids=["1001"],
+                external_id_type="US_XX_DOC",
+            )
+
+    def test_non_integer_id_on_internal_id_collection_raises(self) -> None:
+        # Caught here, at config time, rather than as invalid SQL at query time.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"is keyed by \[person_id\], so every root entity id must be an "
+            r"integer, but got \['1001', 'NOT_AN_INT'\]",
+        ):
+            self._config(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_ID
+            ).with_sandbox_narrowing(
+                document_limit=None,
+                root_entity_ids=["1001", "NOT_AN_INT"],
+                external_id_type=None,
+            )
+
+    def test_missing_external_id_type_on_external_id_collection_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"is keyed by \[person_external_id\], so narrowing to root entities "
+            r"requires an external_id_type to qualify them",
+        ):
+            self._config(
+                root_entity_id_type=DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+            ).with_sandbox_narrowing(
+                document_limit=None, root_entity_ids=["ABC"], external_id_type=None
+            )

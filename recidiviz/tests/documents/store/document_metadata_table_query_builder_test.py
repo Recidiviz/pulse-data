@@ -89,6 +89,7 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
 
         query = self.query_builder.build_latest_documents_query(
             config=self.config,
+            document_filter=None,
         )
         results = self.query(query)
 

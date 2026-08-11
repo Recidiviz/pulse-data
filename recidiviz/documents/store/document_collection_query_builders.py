@@ -101,10 +101,17 @@ class DocumentCollectionDiffQueryBuilder:
         - Updated documents: primary key exists in both but document_contents_id or metadata differs
         - Deleted documents: primary key exists in current but not new, with
           all non-pk fields set to NULL
+
+        The two sides are compared for presence, not just for changes, so they must
+        always cover the same root entities. Narrowing one side without the other
+        reports every root entity missing from it as wholesale deletions (or, in the
+        other direction, as additions).
         """
         latest_query = DocumentCollectionMetadataTableQueryBuilder(
             project_id=self.project_id,
-        ).build_latest_documents_query(config)
+            # TODO(OBT-32176): Revisit if we need to pass a filter config through
+            # here when doing ER document discovery in a sandbox.
+        ).build_latest_documents_query(config, document_filter=None)
 
         temp_table_schema = config.build_bq_document_generation_output_schema()
 

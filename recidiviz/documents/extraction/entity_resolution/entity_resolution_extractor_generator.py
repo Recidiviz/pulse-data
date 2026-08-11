@@ -102,7 +102,7 @@ class EntityResolutionExtractorGenerator:
                 document_metadata_filter_query_template=self._build_document_filter_query_template(),
                 is_sandbox_config=False,
                 document_limit=None,
-                root_entity_ids=None,
+                root_entity_narrowing=None,
             ),
             # The ER prompt template has no extractor-specific template variables - it's
             # fully state-agnostic.

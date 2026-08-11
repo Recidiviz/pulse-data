@@ -20,6 +20,9 @@ import attr
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common import attr_validators
+from recidiviz.documents.extraction.models.llm_extractor_config import (
+    LLMExtractorDocumentFilterConfig,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -39,6 +42,8 @@ class DocumentCollectionMetadataTableQueryBuilder:
     def build_latest_documents_query(
         self,
         config: DocumentCollectionConfig,
+        *,
+        document_filter: LLMExtractorDocumentFilterConfig | None,
     ) -> str:
         """Builds a query to select the latest version of each document in the
         collection, based on document primary keys and the
@@ -49,7 +54,17 @@ class DocumentCollectionMetadataTableQueryBuilder:
         Only documents with a non-null document_contents_id are returned, since a
         null document_contents_id indicates that the document has been deleted in
         the source data.
+
+        |document_filter| specifies how the documents should be further narrowed (i.e.
+        down to documents pertaining to a specific set of root entities), if relevant.
         """
+        root_entity_narrowing_join_sql = (
+            document_filter.build_root_entity_narrowing_join_sql(
+                root_entity_id_type=config.root_entity_id_type, indent_level=4
+            )
+            if document_filter is not None
+            else ""
+        )
         address = config.metadata_table_address.to_project_specific_address(
             self.project_id
         )
@@ -65,7 +80,7 @@ class DocumentCollectionMetadataTableQueryBuilder:
     SELECT
         {list_to_query_string(output_columns)}
     FROM
-        {address.format_address_for_query()}
+        {address.format_address_for_query()}{root_entity_narrowing_join_sql}
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY {list_to_query_string(config.primary_key_column_names)}
         ORDER BY {ROW_CREATE_DATETIME_COLUMN_NAME} DESC

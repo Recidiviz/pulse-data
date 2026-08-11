@@ -24,10 +24,14 @@ from recidiviz.documents.extraction.llm_extraction_eligible_document_query_build
     LLMExtractionEligibleDocumentQueryBuilder,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
+    ExternalRootEntityNarrowing,
+    InternalRootEntityNarrowing,
     LLMExtractorDocumentFilterConfig,
+    RootEntityNarrowing,
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    DocumentRootEntityIdType,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
@@ -37,6 +41,33 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.tests.documents.extraction.fixtures import eligible_documents
+
+# The id type every external-id fixture in this suite seeds its rows with.
+_PERSON_EXTERNAL_ID_TYPE = "US_XX_DOC"
+_STAFF_EXTERNAL_ID_TYPE = "US_XX_STAFF"
+
+
+def _root_entity_narrowing(
+    config: DocumentCollectionConfig, root_entity_ids: list[str] | None
+) -> RootEntityNarrowing | None:
+    """Returns the narrowing variant |config|'s root entity id type calls for,
+    built from the string ids a test supplies.
+    """
+    if root_entity_ids is None:
+        return None
+    root_entity_id_type = config.root_entity_id_type
+    if root_entity_id_type.id_type_column_name is None:
+        return InternalRootEntityNarrowing(
+            root_entity_ids=[int(root_id) for root_id in root_entity_ids]
+        )
+    return ExternalRootEntityNarrowing(
+        root_entity_ids=root_entity_ids,
+        external_id_type=(
+            _PERSON_EXTERNAL_ID_TYPE
+            if root_entity_id_type is DocumentRootEntityIdType.PERSON_EXTERNAL_ID
+            else _STAFF_EXTERNAL_ID_TYPE
+        ),
+    )
 
 
 class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
@@ -93,7 +124,8 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
             "FROM `{input_document_collection_metadata_address}` "
             "WHERE document_contents_id IS NOT NULL"
         )
-        is_narrowed = document_limit is not None or root_entity_ids is not None
+        narrowing = _root_entity_narrowing(config, root_entity_ids)
+        is_narrowed = document_limit is not None or narrowing is not None
         return LLMExtractionEligibleDocumentQueryBuilder(
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(
@@ -101,7 +133,7 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
                 ),
                 is_sandbox_config=is_narrowed,
                 document_limit=document_limit,
-                root_entity_ids=root_entity_ids,
+                root_entity_narrowing=narrowing,
             ),
             input_document_collection=config,
         ).build_query(project_id=self.project_id)
@@ -212,6 +244,23 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
                     self._run_query(config, root_entity_ids=[root_id]),
                     "root_entity_kept_output.csv",
                 )
+
+    def test_root_entity_ids_narrow_on_id_type_too(self) -> None:
+        # The external id "P1" is only unambiguous together with its id type: here
+        # it names one root entity under US_XX_DOC (CID_KEEP) and a different one
+        # under US_XX_SID (CID_DROP). Narrowing to P1 of type US_XX_DOC keeps only
+        # the former — matching on the id alone would pull in a different person's
+        # document.
+        config = self._config("FAKE_CASE_NOTES")
+        self._load_collection_tables(
+            config,
+            metadata_fixture="shared_external_id_across_id_types_metadata_input.csv",
+            contents_fixture="root_entity_contents_input.csv",
+        )
+        self._assert_matches_fixture(
+            self._run_query(config, root_entity_ids=["P1"]),
+            "root_entity_kept_output.csv",
+        )
 
     def test_no_eligible_documents_returns_empty(self) -> None:
         self.assertTrue(
