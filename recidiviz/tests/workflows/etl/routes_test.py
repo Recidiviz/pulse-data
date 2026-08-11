@@ -35,6 +35,9 @@ from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
+    WorkflowsTasksETLDelegate,
+)
 
 
 class TestWorkflowsETLRoutes(unittest.TestCase):
@@ -205,11 +208,60 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
 
     @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    def test_run_firestore_etl_triggers_opportunities_typesense_backfill(
+        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    ) -> None:
+        filename = "us_xx_supervision_level_downgrade_record.json"
+        mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
+        mock_delegate.state_code = StateCode.US_XX
+        mock_delegate.supports_file.return_value = True
+        mock_delegate.COLLECTION_BY_FILENAME = {
+            filename: "US_XX-supervisionLevelDowngrade"
+        }
+        mock_get_delegates.return_value = [mock_delegate]
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_run_firestore_etl",
+                json={"state_code": "US_XX", "filename": filename},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_not_called()
+            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX,
+                source_collection="US_XX-supervisionLevelDowngrade",
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    def test_run_firestore_etl_opportunities_backfill_failure_does_not_fail_etl(
+        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    ) -> None:
+        filename = "us_xx_supervision_level_downgrade_record.json"
+        mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
+        mock_delegate.state_code = StateCode.US_XX
+        mock_delegate.supports_file.return_value = True
+        mock_delegate.COLLECTION_BY_FILENAME = {
+            filename: "US_XX-supervisionLevelDowngrade"
+        }
+        mock_get_delegates.return_value = [mock_delegate]
+        mock_client.return_value.trigger_opportunities_backfill.side_effect = (
+            RuntimeError("boom")
+        )
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_run_firestore_etl",
+                json={"state_code": "US_XX", "filename": filename},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_opportunities_backfill.assert_called_once()
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
     def test_run_firestore_etl_skips_backfill_for_untracked_delegate(
         self, mock_get_delegates: MagicMock, mock_client: MagicMock
     ) -> None:
-        filename = "client_opportunity.json"
-        mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
+        filename = "us_xx_supervision_tasks_record.json"
+        mock_delegate = MagicMock(WorkflowsTasksETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
         mock_delegate.supports_file.return_value = True
         mock_get_delegates.return_value = [mock_delegate]
@@ -220,6 +272,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_client.return_value.trigger_backfill.assert_not_called()
+            mock_client.return_value.trigger_opportunities_backfill.assert_not_called()
 
     @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")

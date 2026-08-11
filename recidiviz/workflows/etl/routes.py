@@ -59,8 +59,9 @@ from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
 # Delegates whose completion should trigger a Typesense backfill in the separate
-# search-indexing project. The opportunity and tasks delegates are intentionally
-# excluded — their collections are not indexed in Typesense.
+# search-indexing project. The tasks delegate is intentionally excluded — its collection
+# is not indexed in Typesense. Opportunities are handled separately below, since their
+# many Firestore collections all feed one Typesense collection.
 DELEGATES_TRIGGERING_TYPESENSE_BACKFILL = (
     WorkflowsSupervisionStaffETLDelegate,
     WorkflowsIncarcerationStaffETLDelegate,
@@ -88,6 +89,10 @@ def _maybe_trigger_typesense_backfill(
     """Triggers a Typesense backfill for the delegate's collection when the delegate is
     one whose completion should refresh the search index. Failures are logged and do
     not fail the ETL, since the Firestore write has already succeeded."""
+    if isinstance(delegate, WorkflowsOpportunityETLDelegate):
+        _trigger_opportunities_typesense_backfill(delegate, filename)
+        return
+
     if not isinstance(delegate, DELEGATES_TRIGGERING_TYPESENSE_BACKFILL):
         return
 
@@ -101,6 +106,25 @@ def _maybe_trigger_typesense_backfill(
             "Failed to trigger Typesense backfill for state_code=[%s] collection=[%s]",
             delegate.state_code.value,
             collection,
+        )
+
+
+def _trigger_opportunities_typesense_backfill(
+    delegate: WorkflowsOpportunityETLDelegate, filename: str
+) -> None:
+    """Triggers a Typesense backfill of the shared `opportunities` collection from the
+    single Firestore opportunity collection this ETL just wrote."""
+    source_collection = delegate.COLLECTION_BY_FILENAME[filename]
+    try:
+        TypesenseBackfillClient().trigger_opportunities_backfill(
+            state_code=delegate.state_code, source_collection=source_collection
+        )
+    except Exception:
+        logging.exception(
+            "Failed to trigger Typesense opportunities backfill for state_code=[%s] "
+            "source_collection=[%s]",
+            delegate.state_code.value,
+            source_collection,
         )
 
 

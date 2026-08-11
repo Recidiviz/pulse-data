@@ -24,6 +24,10 @@ from recidiviz.workflows.etl.typesense_backfill_client import TypesenseBackfillC
 FUNCTION_URL = "https://typesense-backfill-abc123-uc.a.run.app"
 
 
+def _response_body(imported: int) -> dict:
+    return {"totals": {"imported": imported, "failed": 0, "deleted": 0}}
+
+
 @patch("recidiviz.workflows.etl.typesense_backfill_client.in_gcp", return_value=True)
 class TestTypesenseBackfillClient(unittest.TestCase):
     """Tests the Typesense backfill client's authenticated trigger call."""
@@ -40,6 +44,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
     ) -> None:
         mock_get_secret.return_value = FUNCTION_URL
         mock_fetch_id_token.return_value = "id-token"
+        mock_post.return_value.json.return_value = _response_body(imported=10)
 
         TypesenseBackfillClient().trigger_backfill(
             state_code=StateCode.US_XX, collection="clientCollection"
@@ -54,6 +59,108 @@ class TestTypesenseBackfillClient(unittest.TestCase):
             timeout=60,
         )
         mock_post.return_value.raise_for_status.assert_called_once()
+
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.get_secret")
+    def test_trigger_opportunities_backfill_includes_source_collection(
+        self,
+        mock_get_secret: MagicMock,
+        mock_fetch_id_token: MagicMock,
+        mock_post: MagicMock,
+        _mock_in_gcp: MagicMock,
+    ) -> None:
+        mock_get_secret.return_value = FUNCTION_URL
+        mock_fetch_id_token.return_value = "id-token"
+        mock_post.return_value.json.return_value = _response_body(imported=812)
+
+        TypesenseBackfillClient().trigger_opportunities_backfill(
+            state_code=StateCode.US_XX,
+            source_collection="US_XX-supervisionLevelDowngrade",
+        )
+
+        mock_post.assert_called_once_with(
+            FUNCTION_URL,
+            json={
+                "stateCode": "US_XX",
+                "collections": ["opportunities"],
+                "sourceCollection": "US_XX-supervisionLevelDowngrade",
+            },
+            headers={"Authorization": "Bearer id-token"},
+            timeout=60,
+        )
+        mock_post.return_value.raise_for_status.assert_called_once()
+
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.get_secret")
+    def test_trigger_opportunities_backfill_warns_when_nothing_imported(
+        self,
+        mock_get_secret: MagicMock,
+        mock_fetch_id_token: MagicMock,
+        mock_post: MagicMock,
+        _mock_in_gcp: MagicMock,
+    ) -> None:
+        mock_get_secret.return_value = FUNCTION_URL
+        mock_fetch_id_token.return_value = "id-token"
+        mock_post.return_value.json.return_value = _response_body(imported=0)
+
+        with self.assertLogs(level="WARNING") as log_context:
+            TypesenseBackfillClient().trigger_opportunities_backfill(
+                state_code=StateCode.US_XX,
+                source_collection="US_XX-supervisionLevelDowngrade",
+            )
+
+        self.assertIn(
+            "Typesense backfill imported 0 documents", "\n".join(log_context.output)
+        )
+
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.get_secret")
+    def test_trigger_backfill_tolerates_unreadable_response_body(
+        self,
+        mock_get_secret: MagicMock,
+        mock_fetch_id_token: MagicMock,
+        mock_post: MagicMock,
+        _mock_in_gcp: MagicMock,
+    ) -> None:
+        """The backfill function is deployed separately, so a 200 whose body we cannot
+        parse must not look like a failed trigger — the backfill has already run."""
+        mock_get_secret.return_value = FUNCTION_URL
+        mock_fetch_id_token.return_value = "id-token"
+        mock_post.return_value.json.side_effect = ValueError("not JSON")
+        mock_post.return_value.text = ""
+
+        with self.assertLogs(level="WARNING") as log_context:
+            TypesenseBackfillClient().trigger_backfill(
+                state_code=StateCode.US_XX, collection="clientCollection"
+            )
+
+        mock_post.assert_called_once()
+        self.assertIn("Could not read import totals", "\n".join(log_context.output))
+
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
+    @patch("recidiviz.workflows.etl.typesense_backfill_client.get_secret")
+    def test_trigger_backfill_tolerates_missing_totals_field(
+        self,
+        mock_get_secret: MagicMock,
+        mock_fetch_id_token: MagicMock,
+        mock_post: MagicMock,
+        _mock_in_gcp: MagicMock,
+    ) -> None:
+        mock_get_secret.return_value = FUNCTION_URL
+        mock_fetch_id_token.return_value = "id-token"
+        mock_post.return_value.json.return_value = {}
+        mock_post.return_value.text = "{}"
+
+        with self.assertLogs(level="WARNING") as log_context:
+            TypesenseBackfillClient().trigger_backfill(
+                state_code=StateCode.US_XX, collection="clientCollection"
+            )
+
+        self.assertIn("Could not read import totals", "\n".join(log_context.output))
 
     @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
     @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
