@@ -13,7 +13,7 @@ golden_eval:
 # external IDs only.
 document_metadata_filter_query_template: |
   SELECT DISTINCT document_contents_id
-  FROM `{project_id}.us_co_document_store_metadata.supervision_contact_notes`
+  FROM `{input_document_collection_metadata_address}`
   WHERE document_contents_id IS NOT NULL
     AND contact_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
     AND contact_type NOT IN (

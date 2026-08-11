@@ -13,7 +13,7 @@ golden_eval:
     sample: 0.9
 
 document_metadata_filter_query_template: |
-  SELECT document_contents_id FROM `{project_id}.x.y`
+  SELECT document_contents_id FROM `{input_document_collection_metadata_address}`
 
 prompt_vars:
   agency_name: "the Department of Fictional Affairs"

@@ -66,8 +66,11 @@ class LLMExtractionEligibleDocumentQueryBuilder:
         document_update_datetime. Identical text shared across root entities maps
         to one document_contents_id; the query keeps the oldest such document.
         """
+        metadata_address = self.input_document_collection.metadata_table_address.to_project_specific_address(
+            project_id
+        )
         filter_query = self.document_filter.build_document_metadata_filter_query(
-            project_id=project_id
+            input_document_collection_metadata_address=metadata_address,
         )
 
         contents_address = self.input_document_collection.document_contents_table_address.to_project_specific_address(

@@ -38,6 +38,7 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
     LLMExtractorCollectionConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
+    INPUT_DOCUMENT_COLLECTION_METADATA_ADDRESS_TEMPLATE_VAR,
     LLMExtractorConfig,
     LLMExtractorDocumentFilterConfig,
 )
@@ -54,12 +55,15 @@ class EntityResolutionExtractorGenerator:
     """
 
     @staticmethod
-    def _build_document_filter_query_template(
-        entity_resolution_document_collection: EntityResolutionDocumentCollectionConfig,
-    ) -> str:
+    def _build_document_filter_query_template() -> str:
         """Returns the document metadata filter query template selecting every
         composite document in the ER document collection — the ER analogue of a
         first-order extractor's authored filter.
+
+        Reads the input collection's metadata table via the
+        {input_document_collection_metadata_address} placeholder (like every
+        authored filter), which the eligible-document query builder fills in scoped
+        to the run's sandbox prefix when applicable.
 
         DISTINCT for the same reason every authored filter is: composite documents
         are content-addressed, so two root entities whose composites render
@@ -68,7 +72,7 @@ class EntityResolutionExtractorGenerator:
         """
         query = f"""
         SELECT DISTINCT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-        FROM `{entity_resolution_document_collection.metadata_table_address.format_address_for_query_template()}`
+        FROM `{{{INPUT_DOCUMENT_COLLECTION_METADATA_ADDRESS_TEMPLATE_VAR}}}`
         WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL
         """
         return fix_indent(query, indent_level=0)
@@ -95,9 +99,7 @@ class EntityResolutionExtractorGenerator:
             state_code=first_order_config.state_code,
             input_document_collection=entity_resolution_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
-                document_metadata_filter_query_template=self._build_document_filter_query_template(
-                    entity_resolution_document_collection
-                ),
+                document_metadata_filter_query_template=self._build_document_filter_query_template(),
                 is_sandbox_config=False,
                 document_limit=None,
                 root_entity_ids=None,

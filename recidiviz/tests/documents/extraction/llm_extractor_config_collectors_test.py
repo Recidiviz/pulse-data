@@ -60,7 +60,6 @@ from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
 )
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.string import StrictStringFormatter
 
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _OVERRIDE_MODEL_CONFIG_NAME = "ACME_LARGE_DETERMINISTIC"
@@ -81,20 +80,23 @@ class ParseAllExtractorConfigsTest(TestCase):
         configs_by_state = collect_all_extractor_configs_by_state()
         self.assertTrue(configs_by_state)
 
-        # Each extractor's document filter template must render with a project_id
-        # into a query that selects exactly the single document_contents_id column,
-        # DISTINCT (document_contents_id is a hash of the document text and can be
-        # shared many times across people, e.g. in the case of common boilerplate
-        # notes).
+        # Each extractor's document filter template must render into a query that
+        # selects exactly the single document_contents_id column, DISTINCT
+        # (document_contents_id is a hash of the document text and can be shared many
+        # times across people, e.g. in the case of common boilerplate notes).
         for state_configs in configs_by_state.values():
             for config in state_configs.values():
                 with self.subTest(
                     collection=config.extractor_collection.name,
                     state=config.state_code.value,
                 ):
-                    rendered_query = StrictStringFormatter().format(
-                        config.document_filter.document_metadata_filter_query_template,
-                        project_id="test-project",
+                    metadata_address = config.input_document_collection.metadata_table_address.to_project_specific_address(
+                        "test-project"
+                    )
+                    rendered_query = (
+                        config.document_filter.build_document_metadata_filter_query(
+                            input_document_collection_metadata_address=metadata_address,
+                        )
                     )
                     check_query_selects_output_columns(
                         rendered_query, {DOCUMENT_CONTENTS_ID_COLUMN_NAME}

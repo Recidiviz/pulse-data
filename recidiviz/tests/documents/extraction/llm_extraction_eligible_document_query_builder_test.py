@@ -88,10 +88,9 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
     ) -> str:
         # The production-shaped filter selects every live document in the
         # collection; individual tests override it to prove the filter narrows.
-        metadata_address = config.metadata_table_address
         default_filter = (
-            "SELECT document_contents_id FROM "
-            f"`{{project_id}}.{metadata_address.dataset_id}.{metadata_address.table_id}` "
+            "SELECT document_contents_id "
+            "FROM `{input_document_collection_metadata_address}` "
             "WHERE document_contents_id IS NOT NULL"
         )
         is_narrowed = document_limit is not None or root_entity_ids is not None
@@ -152,12 +151,11 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
 
     def test_filter_narrows_to_selected_contents_ids(self) -> None:
         # Only the document_contents_ids the authored filter returns are eligible.
-        metadata_address = self.case_notes_config.metadata_table_address
         self._assert_matches_fixture(
             self._run_case_notes_query(
                 filter_template=(
-                    "SELECT document_contents_id FROM "
-                    f"`{{project_id}}.{metadata_address.dataset_id}.{metadata_address.table_id}` "
+                    "SELECT document_contents_id "
+                    "FROM `{input_document_collection_metadata_address}` "
                     "WHERE document_contents_id = 'CID_HELLO'"
                 )
             ),

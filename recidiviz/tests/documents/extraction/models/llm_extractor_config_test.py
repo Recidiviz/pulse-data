@@ -77,7 +77,9 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.string import sha256_hexdigest
 
 _DESCRIPTION = "A description that is long enough to be meaningful."
-_FILTER_QUERY = "SELECT document_contents_id FROM `{project_id}.x.y`"
+_FILTER_QUERY = (
+    "SELECT document_contents_id FROM `{input_document_collection_metadata_address}`"
+)
 _GOLDEN_EVAL_SHEET_URI = "https://docs.google.com/spreadsheets/d/abc123"
 _GOLDEN_EVAL_CONFIG = LLMDocumentExtractionGoldenEvalConfig(
     source_sheet_uri=_GOLDEN_EVAL_SHEET_URI,
@@ -546,7 +548,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "a320c161656f6db0bfc436082ed2ca48c51a58bb0f2146ac4687375475c6e831",
+            "eda47df7e17f16119eea0f2bd4823dd10c9010f8cf3efee78d20e85829efdbcc",
             config.document_filter_id,
         )
 
@@ -557,7 +559,8 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             ).document_filter_id,
             self._config(
                 document_metadata_filter_query_template=(
-                    "SELECT document_contents_id FROM `{project_id}.other.table`"
+                    "SELECT document_contents_id FROM "
+                    "`{input_document_collection_metadata_address}` WHERE x"
                 )
             ).document_filter_id,
         )
@@ -621,6 +624,18 @@ class LLMExtractorConfigVersionIdTest(TestCase):
 class LLMExtractorDocumentFilterConfigTest(TestCase):
     """Tests for LLMExtractorDocumentFilterConfig's own invariants and version_id."""
 
+    def test_template_missing_metadata_address_var_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "must reference the input collection's metadata table via the "
+                "[{input_document_collection_metadata_address}] template variable"
+            ),
+        ):
+            _document_filter(
+                template="SELECT document_contents_id FROM `some.hardcoded.table`"
+            )
+
     def test_narrowing_requires_sandbox_config(self) -> None:
         # A non-sandbox config may not carry either narrowing knob.
         for document_limit, root_entity_ids in [(50, None), (None, ["P1"])]:
@@ -655,7 +670,10 @@ class LLMExtractorDocumentFilterConfigTest(TestCase):
         self.assertNotEqual(
             _document_filter(template=_FILTER_QUERY).version_id,
             _document_filter(
-                template="SELECT document_contents_id FROM `{project_id}.other.t`"
+                template=(
+                    "SELECT document_contents_id FROM "
+                    "`{input_document_collection_metadata_address}` WHERE x"
+                )
             ).version_id,
         )
 

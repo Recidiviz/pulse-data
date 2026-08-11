@@ -30,7 +30,7 @@ from pathlib import Path
 
 import attr
 
-from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.config_defaults import (
@@ -81,6 +81,12 @@ RESERVED_PROMPT_TEMPLATE_VARS = frozenset(
     {OUTPUT_INSTRUCTIONS_TEMPLATE_VAR, REFERENCE_DATA_TEMPLATE_VAR}
 )
 
+# Template variable an authored document_metadata_filter_query_template uses to
+# reference the input collection's metadata tables.
+INPUT_DOCUMENT_COLLECTION_METADATA_ADDRESS_TEMPLATE_VAR = (
+    "input_document_collection_metadata_address"
+)
+
 
 def _prompt_vars_do_not_shadow_reserved(
     instance: "LLMExtractorConfig", _attribute: attr.Attribute, value: dict[str, str]
@@ -106,7 +112,9 @@ class LLMExtractorDocumentFilterConfig:
     )
     """SQL template for a query that returns a single document_contents_id
     column, holding the document_contents_ids this extractor should process.
-    The only template variable should be {project_id}."""
+
+    It selects from the input collection's metadata table, referenced via the
+    {input_document_collection_metadata_address} template variable."""
 
     is_sandbox_config: bool = attr.ib(validator=attr_validators.is_bool)
     """Whether this is a sandbox config. Only a sandbox config may carry the
@@ -129,6 +137,16 @@ class LLMExtractorDocumentFilterConfig:
     the id_type is constant per collection, so it is not part of the narrowing."""
 
     def __attrs_post_init__(self) -> None:
+        placeholder = (
+            "{" + INPUT_DOCUMENT_COLLECTION_METADATA_ADDRESS_TEMPLATE_VAR + "}"
+        )
+        if placeholder not in self.document_metadata_filter_query_template:
+            raise ValueError(
+                f"document_metadata_filter_query_template must reference the input "
+                f"collection's metadata table via the [{placeholder}] template "
+                f"variable, but none was found in: "
+                f"[{self.document_metadata_filter_query_template}]."
+            )
         if not self.is_sandbox_config and (
             self.document_limit is not None or self.root_entity_ids is not None
         ):
@@ -153,17 +171,23 @@ class LLMExtractorDocumentFilterConfig:
         components = [self.document_metadata_filter_query_template]
         return sha256_hexdigest(json.dumps(components))
 
-    def build_document_metadata_filter_query(self, *, project_id: str) -> str:
-        """Returns the authored metadata filter query template built with the given |project_id|."""
-        # TODO(OBT-32105): Make this and all other query-building / BQ-writing
-        # code sandbox-aware so we don't accidentally read from / write to prod
-        # datasets when running in a sandbox that reads from sandbox datasets.
-        return BigQueryQueryBuilder(
-            parent_address_overrides=None, parent_address_formatter_provider=None
-        ).build_query(
-            project_id=project_id,
-            query_template=self.document_metadata_filter_query_template,
-            query_format_kwargs={},
+    def build_document_metadata_filter_query(
+        self,
+        *,
+        input_document_collection_metadata_address: ProjectSpecificBigQueryAddress,
+    ) -> str:
+        """Returns the authored metadata filter query with its
+        {input_document_collection_metadata_address} placeholder filled in from
+        |input_document_collection_metadata_address|, already scoped to the run's
+        sandbox prefix when applicable.
+        """
+        return StrictStringFormatter().format(
+            self.document_metadata_filter_query_template,
+            **{
+                INPUT_DOCUMENT_COLLECTION_METADATA_ADDRESS_TEMPLATE_VAR: (
+                    input_document_collection_metadata_address.to_str()
+                )
+            },
         )
 
 

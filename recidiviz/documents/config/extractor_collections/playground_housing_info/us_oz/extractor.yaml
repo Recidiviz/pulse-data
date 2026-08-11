@@ -13,7 +13,7 @@ golden_eval:
 
 document_metadata_filter_query_template: |
   SELECT DISTINCT document_contents_id
-  FROM `{project_id}.us_oz_document_store_metadata.fellowship_supervision_notes`
+  FROM `{input_document_collection_metadata_address}`
   WHERE document_contents_id IS NOT NULL
 
 prompt_vars:
