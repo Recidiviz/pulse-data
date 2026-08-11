@@ -25,6 +25,9 @@ from recidiviz.documents.extraction.eval.golden_eval_result import (
     array_sub_field_score_name,
     render_array_element_count,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema import (
+    LLMRequestOutputSchema,
+)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
     LLMOutputFieldType,
@@ -63,16 +66,18 @@ class LLMDocumentExtractionGoldenEvalScorer:
     def score(
         self,
         *,
+        # The output schema every document's fields are scored against: the
+        # schema of the extractor this eval run exercised.
+        output_schema: LLMRequestOutputSchema,
         documents: Sequence[GoldenEvalDocument],
-        # The processed actual output per document, each carrying the output
-        # schema its fields are read against. An `output_json` of None means
-        # nothing usable (a request error or a validation downgrade), which
-        # scores as a miss on every expected field.
-        actual_output_values_by_document_id: dict[str, LLMRequestOutputValues],
+        # The processed actual output per document, or None for a document that
+        # produced nothing usable (a request error or a validation downgrade),
+        # which scores as a miss on every expected field.
+        actual_output_values_by_document_id: dict[str, LLMRequestOutputValues | None],
     ) -> list[GoldenEvalFieldScore]:
         """Returns one score per (document, field[, element]) comparison, over
-        every field the document's own output schema declares — `is_relevant`
-        included — for every document in |documents|.
+        every field |output_schema| declares — `is_relevant` included — for every
+        document in |documents|.
         """
         scores = []
         for document in documents:
@@ -84,10 +89,16 @@ class LLMDocumentExtractionGoldenEvalScorer:
             actual_output = actual_output_values_by_document_id[
                 document.golden_document_id
             ]
-            no_output = LLMRequestOutputValues(
-                output_schema=actual_output.output_schema, output_json=None
-            )
-            for field in actual_output.output_schema.all_fields:
+            if (
+                actual_output is not None
+                and actual_output.output_schema != output_schema
+            ):
+                raise ValueError(
+                    f"Actual output for golden eval document "
+                    f"[{document.golden_document_id}] uses a different output "
+                    f"schema than the one being scored against."
+                )
+            for field in output_schema.all_fields:
                 try:
                     scores.extend(
                         self._score_field(
@@ -95,9 +106,12 @@ class LLMDocumentExtractionGoldenEvalScorer:
                         )
                     )
                 except LLMOutputParsingError:
+                    # A field whose shape contradicts the schema is unreadable,
+                    # so it scores as though the extractor produced nothing for
+                    # it — the fields that read cleanly keep their own scores.
                     scores.extend(
                         self._score_field(
-                            document=document, field=field, actual_output=no_output
+                            document=document, field=field, actual_output=None
                         )
                     )
         return scores
@@ -108,11 +122,12 @@ class LLMDocumentExtractionGoldenEvalScorer:
         *,
         document: GoldenEvalDocument,
         field: LLMRequestOutputSchemaField,
-        actual_output: LLMRequestOutputValues,
+        actual_output: LLMRequestOutputValues | None,
     ) -> list[GoldenEvalFieldScore]:
         """Returns every score for one output schema field: a single score for a
         scalar-valued field, or the array-level score plus one per sub-field of
-        each element for an ARRAY_OF_STRUCT field.
+        each element for an ARRAY_OF_STRUCT field. An |actual_output| of None —
+        nothing usable extracted — scores every expected value as a miss.
         """
         if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
             return cls._score_array_field(
@@ -120,7 +135,11 @@ class LLMDocumentExtractionGoldenEvalScorer:
             )
         if isinstance(field, ScalarValuedLLMRequestOutputSchemaField):
             expected_value = document.expected_scalar_value(field.name)
-            actual_value = actual_output.value_for_field(field=field)
+            actual_value = (
+                actual_output.value_for_field(field=field)
+                if actual_output is not None
+                else None
+            )
             return [
                 cls._build_score(
                     document=document,
@@ -146,7 +165,7 @@ class LLMDocumentExtractionGoldenEvalScorer:
         *,
         document: GoldenEvalDocument,
         field: ArrayOfStructLLMRequestOutputSchemaField,
-        actual_output: LLMRequestOutputValues,
+        actual_output: LLMRequestOutputValues | None,
     ) -> list[GoldenEvalFieldScore]:
         """Returns the scores for one ARRAY_OF_STRUCT field: an array-level score
         recording whether the counts matched and every element paired, then one
@@ -154,7 +173,11 @@ class LLMDocumentExtractionGoldenEvalScorer:
         element (a miss on every sub-field), and each unmatched actual element (a
         false positive on every sub-field).
         """
-        actual_elements = actual_output.array_elements(field=field)
+        actual_elements = (
+            actual_output.array_elements(field=field)
+            if actual_output is not None
+            else None
+        )
         element_pairs = cls._element_pairs(
             field=field, document=document, actual_elements=actual_elements or []
         )

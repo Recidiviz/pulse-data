@@ -105,9 +105,9 @@ class LLMExtractionResultProcessorTest(TestCase):
         self.assertIsNone(result.error_message)
         assert result.validation_results is not None
         self.assertTrue(result.is_validated_result)
-        self.assertEqual(
-            result_json, result.validation_results.validated_content.output_json
-        )
+        validated_output = result.validation_results.validated_output
+        assert validated_output is not None
+        self.assertEqual(result_json, validated_output.output_json)
         self.assertEqual(_JOB_ID, result.job_id)
         self.assertEqual(_DOCUMENT_CONTENTS_ID, result.document_contents_id)
         self.assertEqual(_NOW, result.result_datetime_utc)
@@ -146,7 +146,7 @@ class LLMExtractionResultProcessorTest(TestCase):
         # validation_results is still set (the raw call produced JSON), carrying
         # the override and the audit issues.
         assert result.validation_results is not None
-        self.assertIsNone(result.validation_results.validated_content.output_json)
+        self.assertIsNone(result.validation_results.validated_output)
         self.assertTrue(result.validation_results.audit_issues)
 
     def test_every_request_error_type_is_classified_and_categorized(self) -> None:

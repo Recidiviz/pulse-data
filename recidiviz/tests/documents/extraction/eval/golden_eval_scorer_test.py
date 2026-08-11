@@ -25,6 +25,8 @@ whose sub-fields span STRING, ENUM, and FLOAT.
 from typing import Any
 from unittest import TestCase
 
+import attr
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
 from recidiviz.documents.extraction.eval.golden_eval_result import GoldenEvalFieldScore
@@ -180,13 +182,21 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         document: GoldenEvalDocument | None = None,
         actual_output_json: dict[str, Any] | None,
     ) -> list[GoldenEvalFieldScore]:
-        """Returns the scores for a single document."""
+        """Returns the scores for a single document. An |actual_output_json| of
+        None means the document produced no usable output at all, which the
+        scorer takes as a None output value rather than an empty one."""
         document = document if document is not None else _document()
         return self.scorer.score(
+            output_schema=self.output_schema,
             documents=[document],
             actual_output_values_by_document_id={
-                document.golden_document_id: LLMRequestOutputValues(
-                    output_schema=self.output_schema, output_json=actual_output_json
+                document.golden_document_id: (
+                    None
+                    if actual_output_json is None
+                    else LLMRequestOutputValues(
+                        output_schema=self.output_schema,
+                        output_json=actual_output_json,
+                    )
                 )
             },
         )
@@ -789,6 +799,7 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         )
 
         scores = self.scorer.score(
+            output_schema=self.output_schema,
             documents=[first, second],
             actual_output_values_by_document_id={
                 "unit_1": LLMRequestOutputValues(
@@ -836,6 +847,28 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
             r"\[unit_1\]\.$",
         ):
             self.scorer.score(
+                output_schema=self.output_schema,
                 documents=[_document()],
                 actual_output_values_by_document_id={},
+            )
+
+    def test_actual_output_with_a_different_schema_raises(self) -> None:
+        other_schema = attr.evolve(
+            self.output_schema,
+            user_defined_fields=self.output_schema.user_defined_fields[:1],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Actual output for golden eval document \[unit_1\] uses a different "
+            r"output schema than the one being scored against\.$",
+        ):
+            self.scorer.score(
+                output_schema=self.output_schema,
+                documents=[_document()],
+                actual_output_values_by_document_id={
+                    _DOCUMENT_ID: LLMRequestOutputValues(
+                        output_schema=other_schema,
+                        output_json=_actual_output_json(),
+                    )
+                },
             )

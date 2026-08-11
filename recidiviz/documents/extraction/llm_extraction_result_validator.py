@@ -128,21 +128,21 @@ class LLMExtractionResultValidator:
 
         structural_violations = StructuralConformanceCheck.issues(output=raw_output)
 
+        validated_output: LLMRequestOutputValues | None
+        result_type_override: LLMExtractionJobDocumentResultType | None
         if structural_violations:
-            validated_content = LLMRequestOutputValues(
-                output_schema=output_schema, output_json=None
-            )
+            validated_output = None
             result_type_override = (
                 LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
             )
         else:
-            validated_content = raw_output
+            validated_output = raw_output
             result_type_override = None
 
         return LLMDocumentValidationResult(
             validation_config_version_id=config.extractor_collection.validation_config_version_id,
             validation_datetime_utc=validation_datetime_utc,
-            validated_content=validated_content,
+            validated_output=validated_output,
             audit_issues=structural_violations,
             result_type_override=result_type_override,
         )

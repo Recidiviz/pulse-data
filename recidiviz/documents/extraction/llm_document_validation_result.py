@@ -75,12 +75,12 @@ class ValidationIssue:
 class LLMDocumentValidationResult:
     """The validation portion of a processed document"""
 
-    validated_content: LLMRequestOutputValues = attr.ib(
-        validator=attr.validators.instance_of(LLMRequestOutputValues)
+    validated_output: LLMRequestOutputValues | None = attr.ib(
+        validator=attr_validators.is_opt(LLMRequestOutputValues)
     )
-    """The validated output, wrapping the JSON with quality filters applied. Its
-    `output_json` is None when the document failed an extraction-error check
-    (nothing usable to persist)."""
+    """The validated output, wrapping the JSON with quality filters applied, or
+    None when the document failed an extraction-error check (nothing usable to
+    persist)."""
 
     audit_issues: list[ValidationIssue] = attr.ib(
         validator=attr_validators.is_list_of(ValidationIssue)
@@ -107,10 +107,10 @@ class LLMDocumentValidationResult:
     """When validation ran."""
 
     def __attrs_post_init__(self) -> None:
-        if self.validated_content.output_json is None and not self.audit_issues:
+        if self.validated_output is None and not self.audit_issues:
             raise ValueError(
                 f"Document failed validation but has no audit issues: "
-                f"validated_content=[{self.validated_content}], "
+                f"validated_output=[{self.validated_output}], "
                 f"audit_issues=[{self.audit_issues}]."
             )
         if self.result_type_override is not None and not self.audit_issues:
@@ -123,7 +123,7 @@ class LLMDocumentValidationResult:
     @property
     def passed_validation(self) -> bool:
         """Returns whether the document passed all extraction-error checks."""
-        return self.validated_content.output_json is not None
+        return self.validated_output is not None
 
     @property
     def result_type(self) -> LLMExtractionJobDocumentResultType:
@@ -148,4 +148,6 @@ class LLMDocumentValidationResult:
         extracted and validated cleanly, or None when the document failed an
         extraction-error check (nothing usable to persist).
         """
-        return self.validated_content.is_relevant
+        if self.validated_output is None:
+            return None
+        return self.validated_output.is_relevant

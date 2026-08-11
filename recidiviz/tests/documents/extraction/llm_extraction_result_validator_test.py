@@ -92,12 +92,12 @@ class LLMExtractionResultValidatorTest(TestCase):
         )
 
     def _passing_result(
-        self, validated_content: dict[str, Any]
+        self, validated_output_json: dict[str, Any]
     ) -> LLMDocumentValidationResult:
         return LLMDocumentValidationResult(
-            validated_content=LLMRequestOutputValues(
+            validated_output=LLMRequestOutputValues(
                 output_schema=self.config.extractor_collection.output_schema,
-                output_json=validated_content,
+                output_json=validated_output_json,
             ),
             audit_issues=[],
             result_type_override=None,
@@ -153,7 +153,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         validation = self._validate(result_json)
 
         self.assertFalse(validation.passed_validation)
-        self.assertIsNone(validation.validated_content.output_json)
+        self.assertIsNone(validation.validated_output)
         self.assertEqual(
             LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
             validation.result_type_override,

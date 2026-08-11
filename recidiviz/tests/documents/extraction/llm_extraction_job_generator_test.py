@@ -178,7 +178,7 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
         document_contents_id: str,
         result_type: LLMExtractionJobDocumentResultType,
     ) -> LLMJobDocumentExtractionResult:
-        """Builds a SUCCESS result with validated content, or a failure result
+        """Builds a SUCCESS result with validated output, or a failure result
         with a raw error and no validation, matching |result_type|."""
         token_counts = LLMDocumentExtractionTokenCounts(
             input_token_count=10,
@@ -201,7 +201,7 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
                 error_type=None,
                 error_message=None,
                 validation_results=LLMDocumentValidationResult(
-                    validated_content=LLMRequestOutputValues(
+                    validated_output=LLMRequestOutputValues(
                         output_schema=self.config.extractor_collection.output_schema,
                         output_json={"is_relevant": True},
                     ),

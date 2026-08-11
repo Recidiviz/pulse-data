@@ -62,7 +62,7 @@ class RowMatchesSchemaTest(unittest.TestCase):
             validation_config_version_id="vc1",
             validation_datetime_utc=_VALIDATION_DATETIME,
             is_relevant=True,
-            validated_content={"is_relevant": True},
+            validated_output_json={"is_relevant": True},
         )
         self.assertEqual(
             {f.name for f in ExtractionValidatedResultsBQTable.schema()}, set(row)

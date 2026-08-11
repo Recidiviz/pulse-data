@@ -36,6 +36,9 @@ from recidiviz.documents.extraction.llm_extraction_results_tables import (
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -65,7 +68,7 @@ class LLMExtractionResultsPersister:
         results: Sequence[LLMJobDocumentExtractionResult],
     ) -> None:
         """Writes every result's content to the three BQ result tables for the
-        extractor: the raw JSON to the raw table, any validated content to the
+        extractor: the raw JSON to the raw table, any validated output to the
         validated table, and each validation outcome to the audit table.
 
         Each table is written in a single batch; a table with no rows for this
@@ -88,29 +91,30 @@ class LLMExtractionResultsPersister:
             for result in results
             if result.raw_result.result_json is not None
         ]
-        validated_rows = [
-            ExtractionValidatedResultsBQTable.to_row(
-                state_code_str=state_code_str,
-                document_contents_id=result.document_contents_id,
-                job_id=result.job_id,
-                extractor_version_id=config.extractor_version_id,
-                validation_config_version_id=assert_type(
-                    result.validation_results, LLMDocumentValidationResult
-                ).validation_config_version_id,
-                validation_datetime_utc=assert_type(
-                    result.validation_results, LLMDocumentValidationResult
-                ).validation_datetime_utc,
-                is_relevant=assert_type(result.is_relevant, bool),
-                validated_content=assert_type(
-                    assert_type(
-                        result.validation_results, LLMDocumentValidationResult
-                    ).validated_content.output_json,
-                    dict,
-                ),
+
+        validated_rows = []
+        for result in results:
+            if not result.is_validated_result:
+                continue
+            validation_result = assert_type(
+                result.validation_results, LLMDocumentValidationResult
             )
-            for result in results
-            if result.is_validated_result
-        ]
+            output = assert_type(
+                validation_result.validated_output, LLMRequestOutputValues
+            )
+            validated_rows.append(
+                ExtractionValidatedResultsBQTable.to_row(
+                    state_code_str=state_code_str,
+                    document_contents_id=result.document_contents_id,
+                    job_id=result.job_id,
+                    extractor_version_id=config.extractor_version_id,
+                    validation_config_version_id=validation_result.validation_config_version_id,
+                    validation_datetime_utc=validation_result.validation_datetime_utc,
+                    is_relevant=assert_type(result.is_relevant, bool),
+                    validated_output_json=output.output_json,
+                )
+            )
+
         audit_rows = [
             ExtractionValidationAuditBQTable.to_row(
                 state_code_str=state_code_str,

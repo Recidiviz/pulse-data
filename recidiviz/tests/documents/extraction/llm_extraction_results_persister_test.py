@@ -76,7 +76,7 @@ def _success_result(
     *,
     document_contents_id: str,
     is_relevant: bool,
-    validated_content: dict | None,
+    validated_output_json: dict | None,
     audit_issues: list[ValidationIssue],
     result_type_override: LLMExtractionJobDocumentResultType | None,
 ) -> LLMJobDocumentExtractionResult:
@@ -94,8 +94,12 @@ def _success_result(
         error_type=None,
         error_message=None,
         validation_results=LLMDocumentValidationResult(
-            validated_content=LLMRequestOutputValues(
-                output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+            validated_output=(
+                None
+                if validated_output_json is None
+                else LLMRequestOutputValues(
+                    output_schema=_OUTPUT_SCHEMA, output_json=validated_output_json
+                )
             ),
             audit_issues=audit_issues,
             result_type_override=result_type_override,
@@ -186,7 +190,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
             _success_result(
                 document_contents_id="doc_relevant",
                 is_relevant=True,
-                validated_content={"is_relevant": True, "location": "here"},
+                validated_output_json={"is_relevant": True, "location": "here"},
                 audit_issues=[],
                 result_type_override=None,
             ),
@@ -194,17 +198,17 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
             _success_result(
                 document_contents_id="doc_irrelevant",
                 is_relevant=False,
-                validated_content={"is_relevant": False},
+                validated_output_json={"is_relevant": False},
                 audit_issues=[],
                 result_type_override=None,
             ),
             # Success with a non-fatal audit issue: still writes all three tables
-            # (validated content passes through), and the audit row records the
+            # (validated output passes through), and the audit row records the
             # issue.
             _success_result(
                 document_contents_id="doc_with_issue",
                 is_relevant=True,
-                validated_content={"is_relevant": True, "location": "here"},
+                validated_output_json={"is_relevant": True, "location": "here"},
                 audit_issues=[issue],
                 result_type_override=None,
             ),
@@ -234,7 +238,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
         )
 
         def validated_row(
-            document_contents_id: str, *, is_relevant: bool, validated_content: dict
+            document_contents_id: str, *, is_relevant: bool, validated_output_json: dict
         ) -> dict:
             return ExtractionValidatedResultsBQTable.to_row(
                 state_code_str=_STATE_CODE.value,
@@ -244,7 +248,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
                 validation_config_version_id="vc1",
                 validation_datetime_utc=_VALIDATION_DATETIME,
                 is_relevant=is_relevant,
-                validated_content=validated_content,
+                validated_output_json=validated_output_json,
             )
 
         self.compare_table_to_results(
@@ -253,17 +257,17 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
                 validated_row(
                     "doc_relevant",
                     is_relevant=True,
-                    validated_content={"is_relevant": True, "location": "here"},
+                    validated_output_json={"is_relevant": True, "location": "here"},
                 ),
                 validated_row(
                     "doc_irrelevant",
                     is_relevant=False,
-                    validated_content={"is_relevant": False},
+                    validated_output_json={"is_relevant": False},
                 ),
                 validated_row(
                     "doc_with_issue",
                     is_relevant=True,
-                    validated_content={"is_relevant": True, "location": "here"},
+                    validated_output_json={"is_relevant": True, "location": "here"},
                 ),
             ],
         )
@@ -307,7 +311,7 @@ class LLMExtractionResultsPersisterTest(BigQueryEmulatorTestCase):
         result = _success_result(
             document_contents_id="doc_relevant",
             is_relevant=True,
-            validated_content={"is_relevant": True},
+            validated_output_json={"is_relevant": True},
             audit_issues=[],
             result_type_override=None,
         )

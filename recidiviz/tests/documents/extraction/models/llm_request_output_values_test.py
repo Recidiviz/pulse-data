@@ -93,9 +93,7 @@ class LLMRequestOutputValuesTest(TestCase):
             ArrayOfStructLLMRequestOutputSchemaField,
         )
 
-    def _output_values(
-        self, output_json: dict[str, Any] | None
-    ) -> LLMRequestOutputValues:
+    def _output_values(self, output_json: dict[str, Any]) -> LLMRequestOutputValues:
         return LLMRequestOutputValues(
             output_schema=self.output_schema, output_json=output_json
         )
@@ -180,15 +178,14 @@ class LLMRequestOutputValuesTest(TestCase):
             )
         )
 
-    def test_no_usable_output(self) -> None:
-        output_values = self._output_values(None)
-        self.assertIsNone(
-            output_values.value_for_field(
-                field=_scalar_field(self.output_schema, "location")
+    def test_output_json_is_required(self) -> None:
+        # "Nothing usable extracted" is the absence of an LLMRequestOutputValues,
+        # not one wrapping no JSON, so the JSON itself is never null.
+        with self.assertRaises(TypeError):
+            LLMRequestOutputValues(
+                output_schema=self.output_schema,
+                output_json=None,  # type: ignore[arg-type]
             )
-        )
-        self.assertFalse(output_values.has_field("location"))
-        self.assertIsNone(output_values.array_elements(field=self.assignments_field))
 
     def test_schema_without_is_relevant_reads_unwrapped_json(self) -> None:
         schema = _schema_without_is_relevant()
@@ -210,22 +207,15 @@ class LLMRequestOutputValuesTest(TestCase):
             ).is_relevant,
         )
 
-    def test_is_relevant_none_when_no_usable_output(self) -> None:
-        self.assertIsNone(self._output_values(None).is_relevant)
-
     def test_is_relevant_defaults_true_when_schema_has_no_relevance_field(self) -> None:
         # A schema with no relevance field means every document is relevant by
-        # construction, so relevance defaults to True — unless there is no
-        # usable output at all, which still reads as unknown.
+        # construction, so relevance defaults to True.
         schema = _schema_without_is_relevant()
         self.assertIs(
             True,
             LLMRequestOutputValues(
                 output_schema=schema, output_json={"status_note": "Currently active."}
             ).is_relevant,
-        )
-        self.assertIsNone(
-            LLMRequestOutputValues(output_schema=schema, output_json=None).is_relevant
         )
 
     def test_is_relevant_absent_from_schema_that_declares_it_raises(self) -> None:

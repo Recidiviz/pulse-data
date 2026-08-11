@@ -112,13 +112,17 @@ def _client_result(
 
 def _validation_result(
     *,
-    validated_content: dict[str, Any] | None,
+    validated_output_json: dict[str, Any] | None,
     result_type_override: LLMExtractionJobDocumentResultType | None,
     audit_issues: list[ValidationIssue] | None = None,
 ) -> LLMDocumentValidationResult:
     return LLMDocumentValidationResult(
-        validated_content=LLMRequestOutputValues(
-            output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+        validated_output=(
+            None
+            if validated_output_json is None
+            else LLMRequestOutputValues(
+                output_schema=_OUTPUT_SCHEMA, output_json=validated_output_json
+            )
         ),
         audit_issues=audit_issues if audit_issues is not None else [],
         result_type_override=result_type_override,
@@ -135,7 +139,7 @@ def _success_result(
         raw_result=_client_result(document_contents_id),
         result_datetime_utc=_NOW,
         validation_results=_validation_result(
-            validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: is_relevant}},
+            validated_output_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: is_relevant}},
             result_type_override=None,
         ),
     )
@@ -164,7 +168,7 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
     factories encapsulate — no Postgres involved."""
 
     def test_for_success(self) -> None:
-        # is_relevant is taken from the validated content, not passed in.
+        # is_relevant is taken from the validated output, not passed in.
         for is_relevant in (True, False):
             with self.subTest(is_relevant=is_relevant):
                 result = LLMJobDocumentExtractionResult.for_success(
@@ -172,7 +176,7 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
                     raw_result=_client_result("doc1"),
                     result_datetime_utc=_NOW,
                     validation_results=_validation_result(
-                        validated_content={"result": {"is_relevant": is_relevant}},
+                        validated_output_json={"result": {"is_relevant": is_relevant}},
                         result_type_override=None,
                     ),
                 )
@@ -184,14 +188,14 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
                 self.assertIsNone(result.error_message)
                 self.assertTrue(result.is_validated_result)
 
-    def test_for_success_requires_validated_content(self) -> None:
-        with self.assertRaisesRegex(ValueError, r"requires validated content"):
+    def test_for_success_requires_validated_output(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"requires validated output"):
             LLMJobDocumentExtractionResult.for_success(
                 job_id="job1",
                 raw_result=_client_result("doc1"),
                 result_datetime_utc=_NOW,
                 validation_results=_validation_result(
-                    validated_content=None,
+                    validated_output_json=None,
                     result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                     audit_issues=[
                         ValidationIssue(
@@ -210,7 +214,7 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
             result_datetime_utc=_NOW,
             result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
             validation_results=_validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[
                     ValidationIssue(
@@ -240,7 +244,7 @@ class LLMJobDocumentExtractionResultFactoryTest(unittest.TestCase):
                 result_datetime_utc=_NOW,
                 result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 validation_results=_validation_result(
-                    validated_content={"result": {"is_relevant": True}},
+                    validated_output_json={"result": {"is_relevant": True}},
                     result_type_override=None,
                 ),
             )

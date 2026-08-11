@@ -67,13 +67,17 @@ _OUTPUT_SCHEMA = LLMRequestOutputSchema(
 
 def _validation_result(
     *,
-    validated_content: dict | None,
+    validated_output_json: dict | None,
     result_type_override: LLMExtractionJobDocumentResultType | None,
     audit_issues: list[ValidationIssue],
 ) -> LLMDocumentValidationResult:
     return LLMDocumentValidationResult(
-        validated_content=LLMRequestOutputValues(
-            output_schema=_OUTPUT_SCHEMA, output_json=validated_content
+        validated_output=(
+            None
+            if validated_output_json is None
+            else LLMRequestOutputValues(
+                output_schema=_OUTPUT_SCHEMA, output_json=validated_output_json
+            )
         ),
         audit_issues=audit_issues,
         result_type_override=result_type_override,
@@ -85,31 +89,31 @@ def _validation_result(
 class LLMDocumentValidationResultTest(unittest.TestCase):
     """Tests for the derived properties of LLMDocumentValidationResult."""
 
-    def test_passed_validation_tracks_validated_content(self) -> None:
+    def test_passed_validation_tracks_validated_output(self) -> None:
         self.assertTrue(
             _validation_result(
-                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
+                validated_output_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).passed_validation
         )
         self.assertFalse(
             _validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[_ISSUE],
             ).passed_validation
         )
 
-    def test_is_relevant_delegates_to_validated_content(self) -> None:
-        # Relevance is read off the validated content rather than tracked
+    def test_is_relevant_delegates_to_validated_output(self) -> None:
+        # Relevance is read off the validated output rather than tracked
         # separately, and is unknown when nothing validated.
         for is_relevant in (True, False):
             with self.subTest(is_relevant=is_relevant):
                 self.assertIs(
                     is_relevant,
                     _validation_result(
-                        validated_content={
+                        validated_output_json={
                             RESULT_KEY: {IS_RELEVANT_FIELD_NAME: is_relevant}
                         },
                         result_type_override=None,
@@ -118,7 +122,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
                 )
         self.assertIsNone(
             _validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[_ISSUE],
             ).is_relevant
@@ -129,7 +133,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
         self.assertEqual(
             LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
             _validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[_ISSUE],
             ).result_type,
@@ -137,7 +141,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
         self.assertEqual(
             LLMExtractionJobDocumentResultType.SUCCESS,
             _validation_result(
-                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
+                validated_output_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).result_type,
@@ -146,7 +150,7 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
     def test_will_retry_only_on_transient_override(self) -> None:
         self.assertTrue(
             _validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
                 audit_issues=[_ISSUE],
             ).will_retry
@@ -154,14 +158,14 @@ class LLMDocumentValidationResultTest(unittest.TestCase):
         # A clean pass and a permanent failure both mean no retry.
         self.assertFalse(
             _validation_result(
-                validated_content={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
+                validated_output_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
                 result_type_override=None,
                 audit_issues=[],
             ).will_retry
         )
         self.assertFalse(
             _validation_result(
-                validated_content=None,
+                validated_output_json=None,
                 result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
                 audit_issues=[_ISSUE],
             ).will_retry

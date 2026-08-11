@@ -35,7 +35,6 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
     RESULT_KEY,
     VALUE_FIELD_NAME,
 )
-from recidiviz.utils.types import assert_type
 
 
 class LLMOutputParsingError(ValueError):
@@ -85,21 +84,19 @@ class LLMRequestOutputValues:
     )
     """The output schema the output JSON conforms to."""
 
-    output_json: dict[str, Any] | None = attr.ib(validator=attr_validators.is_opt_dict)
+    output_json: dict[str, Any] = attr.ib(validator=attr_validators.is_dict)
     """The raw output JSON as the extractor returned it, which may or may not
-    have been through validation. `None` means there is no usable output (a
-    request error or a validation downgrade), which every accessor reads as
-    "nothing produced".
+    have been through validation. An extractor that produced no usable output at
+    all (a request error, or a validation downgrade) has no
+    `LLMRequestOutputValues` to wrap it, rather than one holding nothing.
     """
 
     @property
-    def _extracted_fields_json(self) -> dict[str, Any] | None:
+    def _extracted_fields_json(self) -> dict[str, Any]:
         """Returns the object holding the extracted fields within the output
         JSON — the content of the `result` envelope for a schema that has one,
-        the JSON itself otherwise — or `None` when there is no usable output.
+        the JSON itself otherwise.
         """
-        if self.output_json is None:
-            return None
         if not self.output_schema.has_result_envelope:
             return self.output_json
         if RESULT_KEY not in self.output_json:
@@ -123,25 +120,22 @@ class LLMRequestOutputValues:
 
     def has_field(self, field_name: str) -> bool:
         """Returns whether the output carries top-level |field_name| at all."""
-        extracted_fields_json = self._extracted_fields_json
-        return extracted_fields_json is not None and field_name in extracted_fields_json
+        return field_name in self._extracted_fields_json
 
     @property
-    def is_relevant(self) -> bool | None:
+    def is_relevant(self) -> bool:
         """Returns the model's relevance determination: the schema's is_relevant
-        field's value when the schema declares one, True unconditionally when it
-        doesn't (every document is relevant by construction — e.g. entity
-        resolution schemas), or None when there is no usable output.
+        field's value when the schema declares one, or True unconditionally when
+        it doesn't (every document is relevant by construction — e.g. entity
+        resolution schemas).
 
         Raises an LLMOutputParsingError when the schema declares an is_relevant
         field but the output omits it or holds a non-bool for it — a schema that
         declares the field always requires it.
         """
-        if self.output_json is None:
-            return None
         if (is_relevant_field := self.output_schema.is_relevant_field) is None:
             return True
-        extracted_fields_json = assert_type(self._extracted_fields_json, dict)
+        extracted_fields_json = self._extracted_fields_json
         if is_relevant_field.name not in extracted_fields_json:
             raise LLMOutputParsingError(
                 f"Output JSON for a schema that declares "
@@ -163,11 +157,10 @@ class LLMRequestOutputValues:
         |field|, each mapping every sub-field |field| declares to its unwrapped
         scalar value (`None` for an omitted sub-field or an INFERRED null
         branch, and for every sub-field of a literal-null element). Returns
-        `None` when there is no usable output or the output omits the field
-        entirely.
+        `None` when the output omits the field entirely.
         """
         extracted_fields_json = self._extracted_fields_json
-        if extracted_fields_json is None or field.name not in extracted_fields_json:
+        if field.name not in extracted_fields_json:
             return None
         elements_json = extracted_fields_json[field.name]
         if not isinstance(elements_json, list):

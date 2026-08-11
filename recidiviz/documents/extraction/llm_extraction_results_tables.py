@@ -254,7 +254,7 @@ class ExtractionValidatedResultsBQTable:
         validation_config_version_id: str,
         validation_datetime_utc: datetime.datetime,
         is_relevant: bool,
-        validated_content: dict[str, Any],
+        validated_output_json: dict[str, Any],
     ) -> dict[str, Any]:
         return {
             STATE_CODE_COLUMN_NAME: state_code_str,
@@ -264,7 +264,7 @@ class ExtractionValidatedResultsBQTable:
             VALIDATION_CONFIG_VERSION_ID_COLUMN_NAME: validation_config_version_id,
             VALIDATION_DATETIME_UTC_COLUMN_NAME: validation_datetime_utc,
             IS_RELEVANT_COLUMN_NAME: is_relevant,
-            RESULT_JSON_COLUMN_NAME: json.dumps(validated_content),
+            RESULT_JSON_COLUMN_NAME: json.dumps(validated_output_json),
         }
 
 

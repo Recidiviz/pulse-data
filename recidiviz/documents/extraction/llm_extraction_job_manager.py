@@ -125,7 +125,7 @@ class LLMJobDocumentExtractionResult:
     is_relevant: bool | None = attr.ib(validator=attr_validators.is_opt_bool)
     """The model's relevance determination. None unless validation produced usable
     content: a raw call can return JSON that is incomplete or missing the
-    is_relevant field, so relevance is only known once validated_content exists."""
+    is_relevant field, so relevance is only known once validated_output exists."""
 
     error_type: LLMDocumentExtractionErrorType | None = attr.ib(
         validator=attr_validators.is_opt(LLMDocumentExtractionErrorType)
@@ -145,8 +145,8 @@ class LLMJobDocumentExtractionResult:
     def is_validated_result(self) -> bool:
         """Returns whether validation produced usable content for this document.
         A raw call can return JSON that is incomplete or malformed, which
-        validation rejects (leaving no validated_content); only a populated
-        validated_content means the result is usable."""
+        validation rejects (leaving no validated_output); only a populated
+        validated_output means the result is usable."""
         return (
             self.validation_results is not None
             and self.validation_results.passed_validation
@@ -187,12 +187,12 @@ class LLMJobDocumentExtractionResult:
         validation_results: LLMDocumentValidationResult,
     ) -> "LLMJobDocumentExtractionResult":
         """Returns the result for a document that extracted and validated cleanly:
-        a SUCCESS carrying the validated content and the model's relevance. Requires
-        |validation_results| to hold usable validated content.
+        a SUCCESS carrying the validated results and the model's relevance. Requires
+        |validation_results| to hold usable validated output.
         """
         if not validation_results.passed_validation:
             raise ValueError(
-                f"for_success requires validated content for document "
+                f"for_success requires validated output for document "
                 f"[{raw_result.document_contents_id}] in job [{job_id}], but "
                 f"validation produced none."
             )
