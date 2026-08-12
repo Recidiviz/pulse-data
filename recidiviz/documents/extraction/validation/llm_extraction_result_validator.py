@@ -32,6 +32,9 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
+from recidiviz.documents.extraction.validation.adversarial_interpretation_consistency_check import (
+    AdversarialInterpretationConsistencyCheck,
+)
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
     ValidationIssue,
@@ -113,4 +116,5 @@ class LLMExtractionResultValidator:
             *SemanticConsistencyCheck.issues(output=raw_output),
             *RequiredFieldConfidenceCheck.issues(output=raw_output),
             *RelevantButAllNullCheck.issues(output=raw_output),
+            *AdversarialInterpretationConsistencyCheck.issues(output=raw_output),
         ]

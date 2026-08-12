@@ -47,15 +47,22 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
 
 
 def build_inferred_field_result_json(
-    value: Any, confidence_level: str = "explicit"
+    value: Any,
+    confidence_level: str = "explicit",
+    adversarial_interpretation: str | None = None,
 ) -> dict[str, Any]:
     """Returns the JSON the extractor emits for one INFERRED field on the nonnull
     branch: its value plus the companion-metadata keys.
+
+    |adversarial_interpretation| defaults to None, which is the only value
+    consistent with the default `explicit` confidence level — validation requires
+    an alternative reading to be recorded if and only if the confidence level is
+    `speculative`. Pass the two together to build a speculative field.
     """
     return {
         VALUE_FIELD_NAME: value,
         CONFIDENCE_LEVEL_FIELD_NAME: confidence_level,
-        ADVERSARIAL_INTERPRETATION_FIELD_NAME: f"adv-{value}",
+        ADVERSARIAL_INTERPRETATION_FIELD_NAME: adversarial_interpretation,
         CITATIONS_FIELD_NAME: [
             {
                 CITATION_TEXT_FIELD_NAME: f"citation for {value}",
@@ -69,14 +76,18 @@ def build_inferred_field_result_json(
 def build_null_inferred_field_result_json(
     null_reason: str = "no_info_found",
     confidence_level: str = "explicit",
+    adversarial_interpretation: str | None = None,
 ) -> dict[str, Any]:
     """Returns the JSON the extractor emits for one INFERRED field on the null
     branch: no value, just the null reason and the other companion-metadata keys.
+
+    |adversarial_interpretation| defaults to None for the same reason it does on
+    the nonnull branch.
     """
     return {
         NULL_REASON_FIELD_NAME: null_reason,
         CONFIDENCE_LEVEL_FIELD_NAME: confidence_level,
-        ADVERSARIAL_INTERPRETATION_FIELD_NAME: "adv-null",
+        ADVERSARIAL_INTERPRETATION_FIELD_NAME: adversarial_interpretation,
         CITATIONS_FIELD_NAME: [],
     }
 
@@ -84,11 +95,16 @@ def build_null_inferred_field_result_json(
 def build_fake_extractor_assignment_result_json(
     name: str, kind: str, rate: float, period: str
 ) -> dict[str, Any]:
-    """Returns one element of the `assignments` ARRAY_OF_STRUCT field's JSON."""
+    """Returns one element of the `assignments` ARRAY_OF_STRUCT field's JSON.
+
+    `rate_amount` overrides the collection's minimum confidence level to
+    `explicit`, so it is built at that level rather than the collection default —
+    results built here stay clean through validation.
+    """
     return {
         "assignment_name": build_inferred_field_result_json(name),
         "assignment_type": build_inferred_field_result_json(kind),
-        "rate_amount": build_inferred_field_result_json(rate, "inferred"),
+        "rate_amount": build_inferred_field_result_json(rate),
         "rate_period": build_inferred_field_result_json(period),
     }
 

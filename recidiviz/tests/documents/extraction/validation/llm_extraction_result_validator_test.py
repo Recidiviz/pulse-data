@@ -20,11 +20,10 @@ Exercises the validator against the fake extractor collection: structural
 conformance against the JSON Schema generated from its output schema (a
 conforming result passes, each way a result can violate the schema is flagged,
 and a field absent from the JSON is treated as null (forward-compat)), plus the
-wiring of the checks layered on top of it — a semantic-consistency,
-required-field-confidence, or relevant-but-all-null violation downgrades the
-result the same way a structural one does, a structurally-broken result skips
-them all, and findings from several checks land in one audit. Each check itself
-is tested directly in its own test file.
+wiring of the checks layered on top of it — any extraction-error check's
+violation downgrades the result the same way a structural one does, a
+structurally-broken result skips them all, and findings from several checks land
+in one audit. Each check itself is tested directly in its own test file.
 
 These all use the relevance-bearing fake collection (a `result`-wrapped result
 with `is_relevant`). The validator also handles a relevance-free (ER) collection,
@@ -78,6 +77,7 @@ _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _SOURCE_TEXT = "The record is active. Assigned to the kitchen."
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
+_ADVERSARIAL = "The record might describe a closed matter."
 
 
 class LLMExtractionResultValidatorTest(TestCase):
@@ -368,7 +368,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         # extracted at `speculative`, below the collection's `inferred` minimum.
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["primary_status"] = build_inferred_field_result_json(
-            "active", "speculative"
+            "active", "speculative", adversarial_interpretation=_ADVERSARIAL
         )
         validation = self._validate(result_json)
 
@@ -381,6 +381,28 @@ class LLMExtractionResultValidatorTest(TestCase):
         [issue] = validation.audit_issues
         self.assertEqual(
             ValidationCheckType.REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            issue.check_type,
+        )
+        self.assertEqual("primary_status", issue.field_name)
+
+    def test_adversarial_interpretation_inconsistency_downgrades_result(self) -> None:
+        # Structurally conforming, but `primary_status` records an alternative
+        # reading at a confidence level above `speculative`.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"] = build_inferred_field_result_json(
+            "active", "explicit", adversarial_interpretation=_ADVERSARIAL
+        )
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(
+            ValidationCheckType.ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY,
             issue.check_type,
         )
         self.assertEqual("primary_status", issue.field_name)
@@ -403,6 +425,8 @@ class LLMExtractionResultValidatorTest(TestCase):
                 ValidationCheckType.SEMANTIC_CONSISTENCY,
                 # primary_status is required and speculative.
                 ValidationCheckType.REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL,
+                # primary_status is speculative with no adversarial interpretation.
+                ValidationCheckType.ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY,
             },
             {issue.check_type for issue in validation.audit_issues},
         )

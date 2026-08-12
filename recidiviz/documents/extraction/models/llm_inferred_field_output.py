@@ -14,12 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Typed view over the JSON wrapper an extractor emits for a single INFERRED
-field: its extracted value (or null branch) plus the companion metadata that
-the validation checks read.
+"""Typed views over the JSON wrapper an extractor emits for a single INFERRED
+field: its extracted value (or null branch) plus the companion metadata —
+confidence level, adversarial interpretation, and citations — that the
+validation checks read.
 
-The view is *live* over a node of a result's output JSON: the accessors read
-through to that JSON.
+Each class here is a *live view* over a node of a result's output JSON: the
+accessors read through to that JSON, and `null_out_value` writes through to it.
+Validation relies on that: the quality filters walk a deep copy of the raw output
+and edit it in place to produce the validated copy.
 """
 from typing import Any
 
@@ -32,6 +35,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ADVERSARIAL_INTERPRETATION_FIELD_NAME,
     CONFIDENCE_LEVEL_FIELD_NAME,
     NULL_REASON_FIELD_NAME,
     VALUE_FIELD_NAME,
@@ -121,3 +125,15 @@ class InferredFieldOutput:
                 f"INFERRED field [{self.display_name}] holds an unrecognized "
                 f"[{CONFIDENCE_LEVEL_FIELD_NAME}] of [{confidence_level}]."
             ) from e
+
+    @property
+    def adversarial_interpretation(self) -> str | None:
+        """Returns the strongest alternative reading of the source text the model
+        recorded, or None when it found no reasonable alternative."""
+        if ADVERSARIAL_INTERPRETATION_FIELD_NAME not in self.field_json:
+            raise LLMOutputParsingError(
+                f"INFERRED field [{self.display_name}] holds no "
+                f"[{ADVERSARIAL_INTERPRETATION_FIELD_NAME}]. Found keys: "
+                f"{sorted(self.field_json)}."
+            )
+        return self.field_json[ADVERSARIAL_INTERPRETATION_FIELD_NAME]

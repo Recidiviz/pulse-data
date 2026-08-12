@@ -625,6 +625,7 @@ class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTest
         self.assertTrue(field_output.has_value)
         self.assertEqual("Kitchen", field_output.value)
         self.assertEqual(ConfidenceLevel.INFERRED, field_output.confidence_level)
+        self.assertIsNone(field_output.adversarial_interpretation)
 
     def test_null_branch_output_read(self) -> None:
         field_output = self._field_output(
@@ -633,6 +634,7 @@ class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTest
         self.assertFalse(field_output.has_value)
         self.assertIsNone(field_output.value)
         self.assertEqual(ConfidenceLevel.EXPLICIT, field_output.confidence_level)
+        self.assertIsNone(field_output.adversarial_interpretation)
 
     def test_structural_field_rejected(self) -> None:
         # `status_note` is STRUCTURAL, so it carries none of the companion
