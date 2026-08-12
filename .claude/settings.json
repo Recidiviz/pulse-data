@@ -90,7 +90,8 @@
   },
   "enabledPlugins": {
     "create-pr@recidiviz": true,
-    "review-pr-comments@recidiviz": true
+    "review-pr-comments@recidiviz": true,
+    "writing-style@recidiviz": true
   },
   "env": {
     "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE": "1",

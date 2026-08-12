@@ -1,6 +1,11 @@
 # Python Style
 
 These rules apply whenever writing or modifying Python code in this repository.
+They cover code structure and mechanics, including where documentation lives and
+what shape it takes. For the prose inside docstrings and comments (voice,
+punctuation, what content belongs there), follow the org-wide writing
+conventions in the `writing-style` skill (the `writing-style@recidiviz` plugin);
+the plugin injects its always-on core at session start.
 
 ## Types
 
@@ -143,7 +148,7 @@ def unit_of_observation_type(self) -> MetricUnitOfObservationType:
 
 ### Document every constructor parameter
 
-For data-holding constructors, document what each parameter is for. Either give the constructor a docstring with a per-parameter description, or put a one-line `#` comment directly above each parameter — both are acceptable. (This is a deliberate exception to the general "no obvious comments" rule, scoped to public config/data objects.)
+For data-holding constructors, document what each parameter is for. Either give the constructor a docstring with a structured `Args:` block, or put a one-line `#` comment directly above each parameter — both are acceptable. (The comment form is a deliberate exception to the general "no obvious comments" rule, scoped to public config/data objects.) Whichever form you pick, document each parameter in exactly one place, and when you use a docstring, use the `Args:` block rather than prose mentions; the `writing-style` skill's docstrings reference explains why (a linter can check an `Args:` block against the signature, but not prose).
 
 ```python
 def __init__(
