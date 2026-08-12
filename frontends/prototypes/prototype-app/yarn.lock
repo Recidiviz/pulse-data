@@ -1682,10 +1682,10 @@
     "@firebase/util" "1.15.2"
     tslib "^2.1.0"
 
-"@firebase/data-connect@0.7.2":
-  version "0.7.2"
-  resolved "https://registry.yarnpkg.com/@firebase/data-connect/-/data-connect-0.7.2.tgz#1333edc262b30a4104d892840d471a091e392e83"
-  integrity sha512-Z64TRTp5KsvZtuCS1BhEg0H63TTDIi6k7idGG+z1ImAnP2qHv+xt0S5rzAONpiO7Z1geldWhpu1iY/ju+l3a3w==
+"@firebase/data-connect@0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@firebase/data-connect/-/data-connect-0.7.3.tgz#61c3d07bf8a2c9eb3928440230c3a0d88c1176b7"
+  integrity sha512-nHBFk3Ntl+NZCRIUG2d5j7I69P0otjyQ/duhVKLbw4+5cNke/F6RK1pdE5Jnf831/QOTs2Bd00LlxlZ+jNsb9w==
   dependencies:
     "@firebase/auth-interop-types" "0.2.5"
     "@firebase/component" "0.7.4"
@@ -1693,10 +1693,10 @@
     "@firebase/util" "1.15.2"
     tslib "^2.1.0"
 
-"@firebase/database-compat@2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@firebase/database-compat/-/database-compat-2.1.5.tgz#59d29bfb62aa6e71ea1cd7de45b2cf77648210ce"
-  integrity sha512-m2KZDNXrg8DBzXWQNbbrjOhsJnM+ctsSFaDYKrqj1gEetQ8BSAwRuMUdeWLM9a6qPBgOvOA+o09j1BSEzdFqOg==
+"@firebase/database-compat@2.1.6":
+  version "2.1.6"
+  resolved "https://registry.yarnpkg.com/@firebase/database-compat/-/database-compat-2.1.6.tgz#a5ee25d381864d19d64e5241ecd241bd7128373a"
+  integrity sha512-mu7S/75UIajB1A5M9Vfojk69LttW55uABp9nHEtWrV/mIaSEwvoaIe9GySsEzS2EKFK5/3f5okcAuUbihhYeJg==
   dependencies:
     "@firebase/component" "0.7.4"
     "@firebase/database" "1.1.4"
@@ -3683,10 +3683,10 @@ find-up@^5.0.0:
     locate-path "^6.0.0"
     path-exists "^4.0.0"
 
-firebase@^12.17.0:
-  version "12.17.0"
-  resolved "https://registry.yarnpkg.com/firebase/-/firebase-12.17.0.tgz#44c43984a50ce6ace7fcd9b8c67ec1f2d23a9aad"
-  integrity sha512-8iENFg2/k7asnybijN3ZrmTag0BuyiihUXrRZkX+yCW+YocknpzPZ4DUkdbyA/rdrdaCssBqHH8zpdDliv+4ng==
+firebase@^12.17.1:
+  version "12.17.1"
+  resolved "https://registry.yarnpkg.com/firebase/-/firebase-12.17.1.tgz#4d500cbd342b37de2275ef09d16a2e679e9ec03c"
+  integrity sha512-dhp41ye9jMQvhx5FwjMkf/hjDHJApl7gXmvzOZGvP0M7c/GZGUnQ4qvsvlOBkF0Pa7wAwHMdcpL0ON2pXCQ4Sw==
   dependencies:
     "@firebase/ai" "2.14.0"
     "@firebase/analytics" "0.10.23"
@@ -3698,9 +3698,9 @@ firebase@^12.17.0:
     "@firebase/app-types" "0.9.5"
     "@firebase/auth" "1.13.4"
     "@firebase/auth-compat" "0.6.9"
-    "@firebase/data-connect" "0.7.2"
+    "@firebase/data-connect" "0.7.3"
     "@firebase/database" "1.1.4"
-    "@firebase/database-compat" "2.1.5"
+    "@firebase/database-compat" "2.1.6"
     "@firebase/firestore" "4.17.0"
     "@firebase/firestore-compat" "0.4.12"
     "@firebase/functions" "0.13.6"
