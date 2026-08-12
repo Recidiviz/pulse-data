@@ -91,6 +91,7 @@
   "enabledPlugins": {
     "create-pr@recidiviz": true,
     "review-pr-comments@recidiviz": true,
+    "security-rules@recidiviz": true,
     "writing-style@recidiviz": true
   },
   "env": {
