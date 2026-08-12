@@ -134,10 +134,8 @@ class LLMAJEvalConfig:
     """BigQuery dataset ID containing the source evaluation run table."""
 
     source_table: str = attr.ib(validator=attr_validators.is_str)
-    """BigQuery table name for the source evaluation run table."""
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-    """State code for all rows in this evaluation (e.g. 'US_NE')."""
+    """BigQuery table name for the source evaluation run table. Must have a
+    state_code column; the parsed scores view passes it straight through."""
 
     metadata_fields: list[LLMAJMetadataField] = attr.ib(
         validator=[
@@ -168,7 +166,6 @@ class LLMAJEvalConfig:
         description = d.pop("description", str)
         source_dataset = d.pop("source_dataset", str)
         source_table = d.pop("source_table", str)
-        state_code = d.pop("state_code", str)
         metadata_fields = [
             LLMAJMetadataField.from_yaml_dict(fd)
             for fd in d.pop_dicts("metadata_fields")
@@ -185,7 +182,6 @@ class LLMAJEvalConfig:
             description=description,
             source_dataset=source_dataset,
             source_table=source_table,
-            state_code=state_code,
             metadata_fields=metadata_fields,
             scores_fields=scores_fields,
         )

@@ -4,9 +4,8 @@ description: >
   notes, action items, critical updates, and transcript comparison. One row per
   pipeline run evaluated. Grade values are GOOD, PARTIAL, or BAD.
 
-source_dataset: "meetings_dashboards_db_us_ne"
-source_table: "NotetakingEvaluationRun"
-state_code: "US_NE"
+source_dataset: "meetings_dashboards_db_export"
+source_table: "NotetakingEvaluationRun_materialized"
 
 # Non-JSON columns passed through from the source table.
 metadata_fields:

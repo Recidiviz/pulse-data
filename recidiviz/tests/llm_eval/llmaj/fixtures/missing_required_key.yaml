@@ -3,7 +3,6 @@ description: "Config with a scores_field missing the required json_path key."
 
 source_dataset: "test_dataset"
 source_table: "TestEvaluationRun"
-state_code: "US_OZ"
 
 metadata_fields:
   - column_name: "id"

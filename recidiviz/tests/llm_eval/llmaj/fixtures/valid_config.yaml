@@ -3,7 +3,6 @@ description: "A test LLMAJ evaluation task."
 
 source_dataset: "test_dataset"
 source_table: "TestEvaluationRun"
-state_code: "US_OZ"
 
 metadata_fields:
   - column_name: "id"

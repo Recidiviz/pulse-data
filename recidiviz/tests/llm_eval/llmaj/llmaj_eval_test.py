@@ -48,7 +48,6 @@ def _minimal_config(
         description="A test eval.",
         source_dataset="test_dataset",
         source_table="TestEvaluationRun",
-        state_code="US_OZ",
         metadata_fields=metadata_fields
         or [
             LLMAJMetadataField(
@@ -84,7 +83,6 @@ class TestLLMAJEvalConfigParsing(TestCase):
                 description="A test LLMAJ evaluation task.",
                 source_dataset="test_dataset",
                 source_table="TestEvaluationRun",
-                state_code="US_OZ",
                 metadata_fields=[
                     LLMAJMetadataField(
                         column_name="id",
@@ -279,7 +277,7 @@ class TestScoresParsedViewBuilder(TestCase):
     def test_from_clause_references_correct_source(self) -> None:
         config = _minimal_config()
         sql = build_scores_parsed_view_builder(config).view_query_template
-        self.assertIn("'US_OZ' AS state_code", sql)
+        self.assertIn("  state_code,\n", sql)
         self.assertIn("FROM `{project_id}.test_dataset.TestEvaluationRun`", sql)
 
     def test_sql_columns_match_declared_schema(self) -> None:
@@ -329,7 +327,7 @@ class TestScoresParsedViewBuilder(TestCase):
         expected_sql = textwrap.dedent(
             """\
             SELECT
-              'US_NE' AS state_code,
+              state_code,
               id,
               createdAt AS created_at,
               pipelineRunId AS pipeline_run_id,
@@ -351,6 +349,6 @@ class TestScoresParsedViewBuilder(TestCase):
               JSON_VALUE(scores, '$.transcriptComparison.rationale') AS transcript_comparison_rationale,
               JSON_VALUE(scores, '$.transcriptComparison.deepgramGrade') AS transcript_comparison_deepgram_grade,
               JSON_VALUE(scores, '$.transcriptComparison.assemblyAiGrade') AS transcript_comparison_assembly_ai_grade
-            FROM `{project_id}.meetings_dashboards_db_us_ne.NotetakingEvaluationRun`"""
+            FROM `{project_id}.meetings_dashboards_db_export.NotetakingEvaluationRun_materialized`"""
         )
         self.assertEqual(builder.view_query_template, expected_sql)

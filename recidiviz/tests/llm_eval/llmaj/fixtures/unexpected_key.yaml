@@ -3,7 +3,6 @@ description: "Config with an unexpected top-level key."
 
 source_dataset: "test_dataset"
 source_table: "TestEvaluationRun"
-state_code: "US_OZ"
 not_a_real_key: "surprise"
 
 metadata_fields:

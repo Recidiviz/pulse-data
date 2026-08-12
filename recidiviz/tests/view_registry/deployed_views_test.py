@@ -475,6 +475,11 @@ class ViewDagInvariantTests(unittest.TestCase):
             JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER.address,
             JII_TEXTING_MESSAGES_VIEW_BUILDER.address,
             JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER.address,
+            # LLMAJ evaluation of notetaking pipeline runs across all onboarded states.
+            BigQueryAddress(
+                dataset_id="llm_eval__llmaj",
+                table_id="notetaking_evaluation_scores_parsed",
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {
