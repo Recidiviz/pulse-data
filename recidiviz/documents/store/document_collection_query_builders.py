@@ -45,6 +45,7 @@ class DocumentCollectionGenerationQueryBuilder:
     """Builds the query that generates a document collection's documents."""
 
     project_id: str = attr.ib(validator=attr_validators.is_str)
+    source_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
     @staticmethod
     def _document_contents_id_sql_clause(state_code: StateCode) -> str:
@@ -56,14 +57,20 @@ class DocumentCollectionGenerationQueryBuilder:
         self,
         config: DocumentCollectionConfig,
     ) -> str:
-        """Wraps the config's document_generation_query_template to produce
+        """Wraps the config's document generation query template to produce
         a query that generates all columns needed for downstream processing. This
-        includes all output columns from document_generation_query_template, plus
-        document_contents_id computed from document_text. Any rows with null
-        document_text are also filtered out.
+        includes all output columns from that template, plus document_contents_id
+        computed from document_text. Any rows with null document_text are also
+        filtered out.
+
+        TODO(OBT-42680) This approach is confusing because we just silently ignore
+        sandbox prefix on first order collections. We should think of a different approach
+        here.
         """
         inner_query = StrictStringFormatter().format(
-            config.document_generation_query_template,
+            config.build_document_generation_query_template(
+                source_sandbox_prefix=self.source_sandbox_prefix
+            ),
             project_id=self.project_id,
         )
 
@@ -85,17 +92,17 @@ WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 class DocumentCollectionDiffQueryBuilder:
     """Builds queries to diff document collection generations against the latest metadata table state."""
 
-    project_id: str = attr.ib(validator=attr_validators.is_str)
-
     def build_document_diff_query(
         self,
         *,
         config: DocumentCollectionConfig,
         document_generation_output_address: ProjectSpecificBigQueryAddress,
+        metadata_table_address: ProjectSpecificBigQueryAddress,
     ) -> str:
         """Builds a query that diffs freshly generated documents against the
         latest state in the metadata table. Reads |document_generation_output_address|,
-        the run's already-materialized document_generation_query output.
+        the run's already-materialized document_generation_query output, and
+        |metadata_table_address|, the collection's metadata table.
         Returns temp table schema rows for:
         - Added documents: primary key exists in new but not current
         - Updated documents: primary key exists in both but document_contents_id or metadata differs
@@ -107,10 +114,6 @@ class DocumentCollectionDiffQueryBuilder:
         reports every root entity missing from it as wholesale deletions (or, in the
         other direction, as additions).
         """
-        # TODO(OBT-42680) Thread sandbox prefix through
-        metadata_table_address = config.metadata_table_address(
-            sandbox_dataset_prefix=None
-        ).to_project_specific_address(self.project_id)
         latest_query = DocumentCollectionMetadataTableQueryBuilder().build_latest_documents_query(
             config,
             metadata_table_address=metadata_table_address,

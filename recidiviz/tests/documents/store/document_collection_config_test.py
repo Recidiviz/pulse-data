@@ -95,7 +95,7 @@ def _make_config(
             else document_primary_key_columns
         ),
         other_metadata_columns=other_metadata_columns or [],
-        document_generation_query_template="SELECT 1",
+        authored_document_generation_query_template="SELECT 1",
         other_document_generation_output_columns=(
             other_document_generation_output_columns or []
         ),
@@ -153,7 +153,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                         mode=BigQueryFieldMode.NULLABLE,
                     ),
                 ],
-                document_generation_query_template=expected_query_template,
+                authored_document_generation_query_template=expected_query_template,
                 # Never authored in YAML — always empty for a first-order collection.
                 other_document_generation_output_columns=[],
                 document_descriptor=Descriptor(
@@ -239,10 +239,33 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 other_metadata_columns=[
                     bigquery.SchemaField("duplicate_column", "INTEGER"),
                 ],
-                document_generation_query_template="SELECT 1",
+                authored_document_generation_query_template="SELECT 1",
                 other_document_generation_output_columns=[],
                 document_descriptor=Descriptor(singular="document", plural="documents"),
             )
+
+    def test_build_generation_query_template_without_authored_template_raises(
+        self,
+    ) -> None:
+        # A base collection with no authored template and no override cannot build
+        # a generation query.
+        config = DocumentCollectionConfig(
+            state_code=StateCode.US_XX,
+            name="TEST_COLLECTION",
+            description="test collection with no authored template",
+            root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
+            document_primary_key_columns=[bigquery.SchemaField("note_id", "STRING")],
+            other_metadata_columns=[],
+            authored_document_generation_query_template=None,
+            other_document_generation_output_columns=[],
+            document_descriptor=Descriptor(singular="document", plural="documents"),
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Collection \[TEST_COLLECTION\] has no authored generation query "
+            r"template; it must override build_document_generation_query_template\.",
+        ):
+            config.build_document_generation_query_template(source_sandbox_prefix=None)
 
     def test_invalid_collection_name(self) -> None:
         with self.assertRaisesRegex(ValueError, "contains invalid characters"):
@@ -255,7 +278,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                     bigquery.SchemaField("pk_col", "STRING"),
                 ],
                 other_metadata_columns=[],
-                document_generation_query_template="SELECT 1",
+                authored_document_generation_query_template="SELECT 1",
                 other_document_generation_output_columns=[],
                 document_descriptor=Descriptor(singular="document", plural="documents"),
             )

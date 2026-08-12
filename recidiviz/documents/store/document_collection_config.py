@@ -234,8 +234,15 @@ class DocumentCollectionConfig:
         validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
-    # The SQL query template used to generate documents in this collection.
-    document_generation_query_template: str = attr.ib(validator=attr_validators.is_str)
+    # The authored, un-scoped SQL template that generates this collection's
+    # documents. Private because it is production-scoped: callers must go through
+    # build_document_generation_query_template() and pass a sandbox prefix so a
+    # sandbox run cannot accidentally read production tables. None only for
+    # collections (e.g. entity-resolution) that build their template from other
+    # document-store tables and so have no single authored template.
+    _authored_document_generation_query_template: str | None = attr.ib(
+        validator=attr_validators.is_opt_str
+    )
 
     # Columns the generation query outputs that are never exported to the metadata
     # table — carried through the temp-updates table and consumed by
@@ -265,6 +272,27 @@ class DocumentCollectionConfig:
                 f"Document collection [{self.name}] for [{self.state_code.value}] "
                 f"has duplicate column names: {duplicate_names}."
             )
+
+    def build_document_generation_query_template(
+        self, *, source_sandbox_prefix: str | None  # pylint: disable=unused-argument
+    ) -> str:
+        """Returns the SQL template that generates this collection's documents).
+        A base collection reads real source data, so its authored template is
+        prefix-invariant; collections whose generation query reads other
+        document-store tables override this to re-scope those reads.
+
+        TODO(OBT-42680) It's bad that this method takes a source_sandbox_prefix
+        arg that it just silently ignores for base collections.
+        We should think if there's a better approach we can take here.
+        """
+        if self._authored_document_generation_query_template is None:
+            raise ValueError(
+                f"Collection [{self.name}] has no authored generation query "
+                f"template; it must override "
+                f"build_document_generation_query_template."
+            )
+
+        return self._authored_document_generation_query_template
 
     @property
     def root_entity_id_column_name(self) -> str:
@@ -469,7 +497,7 @@ class DocumentCollectionConfig:
             root_entity_id_type=root_entity_id_type,
             document_primary_key_columns=document_pk_columns,
             other_metadata_columns=other_metadata_columns,
-            document_generation_query_template=yaml_dict.pop(
+            authored_document_generation_query_template=yaml_dict.pop(
                 "document_generation_query", str
             ),
             # Not authorable from YAML — only generated (e.g. entity-resolution)

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for document_collection_query_builders.py."""
+
 import unittest
 from pathlib import Path
 
@@ -59,6 +60,7 @@ class TestBuildDocumentGenerationQuery(unittest.TestCase):
                 }
                 query = DocumentCollectionGenerationQueryBuilder(
                     project_id="test-project",
+                    source_sandbox_prefix=None,
                 ).build_document_generation_query(
                     config=config,
                 )
@@ -91,10 +93,9 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
         )
         self.generation_query_builder = DocumentCollectionGenerationQueryBuilder(
             project_id=self.project_id,
+            source_sandbox_prefix=None,
         )
-        self.query_builder = DocumentCollectionDiffQueryBuilder(
-            project_id=self.project_id,
-        )
+        self.query_builder = DocumentCollectionDiffQueryBuilder()
         self.fixture_dir = Path(document_diff.__file__).parent
 
     def _fixture_path(self, fixture_name: str) -> Path:
@@ -155,6 +156,7 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
             query = self.query_builder.build_document_diff_query(
                 config=self.config,
                 document_generation_output_address=document_generation_output_address,
+                metadata_table_address=self.metadata_address,
             )
         self.bq_client.create_dataset_if_necessary(
             document_generation_output_address.dataset_id
@@ -216,11 +218,12 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
         )
 
     def _diff_query(self) -> str:
-        return DocumentCollectionDiffQueryBuilder(
-            project_id=self.project_id
-        ).build_document_diff_query(
+        return DocumentCollectionDiffQueryBuilder().build_document_diff_query(
             config=self.er_collection,
             document_generation_output_address=self.generation_output_address,
+            metadata_table_address=self.er_collection.metadata_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(self.project_id),
         )
 
     def test_er_document_diff(self) -> None:

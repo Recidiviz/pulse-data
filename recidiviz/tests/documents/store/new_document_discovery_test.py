@@ -165,6 +165,21 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         )
         self.assertNotIn("us_xx_raw_data.fake_input_notes", diff_call.kwargs["query"])
 
+    def test_source_sandbox_prefix_rejected_for_first_order_collection(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"source_sandbox_prefix is only supported for entity-resolution "
+            r"collections",
+        ):
+            NewDocumentDiscoverer(
+                state_code=StateCode.US_XX,
+                collection_name=self.collection_name,
+                project_id="recidiviz-testing",
+                big_query_client=self.bq_client,
+                run_id="test_run_id",
+                source_sandbox_prefix="sb",
+            )
+
     def test_deletes_generation_output_table_when_no_updates(self) -> None:
         mock_row_iterator = MagicMock()
         mock_row_iterator.total_rows = 0
@@ -227,13 +242,16 @@ class TestNewDocumentDiscoveryEntityResolution(unittest.TestCase):
     def tearDown(self) -> None:
         self.get_config_patcher.stop()
 
-    def _run_discovery(self, collection_name: str) -> None:
+    def _run_discovery(
+        self, collection_name: str, source_sandbox_prefix: str | None = None
+    ) -> None:
         NewDocumentDiscoverer(
             state_code=StateCode.US_XX,
             collection_name=collection_name,
             project_id="recidiviz-testing",
             big_query_client=self.bq_client,
             run_id="test_run_id",
+            source_sandbox_prefix=source_sandbox_prefix,
         ).run()
 
     def _write_table_ids(self) -> list[str]:
@@ -263,7 +281,9 @@ class TestNewDocumentDiscoveryEntityResolution(unittest.TestCase):
         self.assertEqual(
             [
                 generation_output_table_id,
-                er_collection.entry_source_map_table_address.table_id,
+                er_collection.entry_source_map_table_address(
+                    sandbox_dataset_prefix=None
+                ).table_id,
                 er_collection.temp_document_metadata_updates_table_address(
                     "test_run_id"
                 ).table_id,
@@ -293,3 +313,44 @@ class TestNewDocumentDiscoveryEntityResolution(unittest.TestCase):
             ],
             self._write_table_ids(),
         )
+
+    def test_source_sandbox_prefix_flows_to_map_hydrator(self) -> None:
+        mock_row_iterator = MagicMock()
+        mock_row_iterator.total_rows = 0
+        self.bq_client.create_table_from_query.return_value = mock_row_iterator
+
+        with patch(
+            "recidiviz.documents.store.new_document_discovery."
+            "EntityResolutionEntrySourceMapHydrator"
+        ) as mock_hydrator:
+            self._run_discovery(
+                FAKE_ASSIGNMENT_ER_COLLECTION_NAME, source_sandbox_prefix="sb"
+            )
+
+        # The single source prefix is reused as the hydrator's output prefix, so
+        # the map is written to the sandbox metadata dataset.
+        self.assertEqual("sb", mock_hydrator.call_args.kwargs["output_sandbox_prefix"])
+
+    def test_source_sandbox_prefix_scopes_reads(self) -> None:
+        # An ER collection run under a sandbox prefix reads the sandbox-scoped
+        # tables: the metadata table the diff reads and the document_contents table
+        # the new-documents step reads.
+        def create_table_side_effect(**_kwargs: object) -> MagicMock:
+            mock = MagicMock()
+            # Force a non-empty diff so the new-documents step runs and reads the
+            # document_contents table.
+            mock.total_rows = 1
+            return mock
+
+        self.bq_client.create_table_from_query.side_effect = create_table_side_effect
+
+        self._run_discovery(
+            FAKE_ASSIGNMENT_ER_COLLECTION_NAME, source_sandbox_prefix="sb"
+        )
+
+        queries = [
+            call.kwargs["query"]
+            for call in self.bq_client.create_table_from_query.call_args_list
+        ]
+        self.assertTrue(any("sb_us_xx_document_store_metadata" in q for q in queries))
+        self.assertTrue(any("sb_us_xx_document_contents" in q for q in queries))

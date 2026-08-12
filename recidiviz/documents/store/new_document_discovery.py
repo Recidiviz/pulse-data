@@ -17,8 +17,8 @@
 """Discovers new documents for a single document collection and writes them
 to temporary BQ tables for downstream processing.
 
-+TODO(OBT-42680) During a sandbox run for a first order document collection, the sandbox
-+will fail for a brand new collection because the metadata table will not exist yet.
+TODO(OBT-42680) During a sandbox run for a first order document collection, the sandbox
+will fail for a brand new collection because the metadata table will not exist yet.
 """
 
 import logging
@@ -84,18 +84,33 @@ class NewDocumentDiscoverer:
         init=False,
         validator=attr.validators.instance_of(DocumentCollectionGenerationQueryBuilder),
     )
+    source_sandbox_prefix: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     diff_query_builder: DocumentCollectionDiffQueryBuilder = attr.ib(
         init=False,
         validator=attr.validators.instance_of(DocumentCollectionDiffQueryBuilder),
     )
 
     def __attrs_post_init__(self) -> None:
+        # An entity-resolution collection reads other document-store tables (the
+        # first-order `__pre_resolution` table and source contents), so its reads
+        # must be re-scoped for a sandbox run. A first-order collection reads real
+        # source data whose address is prefix-invariant, so a prefix would have
+        # nothing to scope and is only ever a mistake.
+        if self.source_sandbox_prefix is not None and not isinstance(
+            self.config, EntityResolutionDocumentCollectionConfig
+        ):
+            raise ValueError(
+                f"source_sandbox_prefix is only supported for entity-resolution "
+                f"collections, but collection [{self.collection_name}] is a "
+                f"[{type(self.config).__name__}]."
+            )
         self.generation_query_builder = DocumentCollectionGenerationQueryBuilder(
-            project_id=self.project_id
+            project_id=self.project_id,
+            source_sandbox_prefix=self.source_sandbox_prefix,
         )
-        self.diff_query_builder = DocumentCollectionDiffQueryBuilder(
-            project_id=self.project_id
-        )
+        self.diff_query_builder = DocumentCollectionDiffQueryBuilder()
 
     @cached_property
     def config(self) -> DocumentCollectionConfig:
@@ -169,10 +184,16 @@ class NewDocumentDiscoverer:
         )
 
         if isinstance(self.config, EntityResolutionDocumentCollectionConfig):
+            # TODO(OBT-42680) I was trying to separate the ideas of source sandbox prefix
+            # (sandbox results from the first order collection that we are reading from) and
+            # output sandbox prefix (sandbox datasets we are writing results to), but here we are using
+            # the same prefix for both. This works because we only write these results for ER collections,
+            # but it is still confusing and we should think if there's a different approach we can use here.
             EntityResolutionEntrySourceMapHydrator(
                 project_id=self.project_id,
                 big_query_client=self.big_query_client,
                 config=self.config,
+                output_sandbox_prefix=self.source_sandbox_prefix,
             ).run(document_generation_output_address)
 
         temp_metadata_address = (
@@ -180,9 +201,13 @@ class NewDocumentDiscoverer:
                 self.run_id
             ).to_project_specific_address(self.project_id)
         )
+        metadata_table_address = self.config.metadata_table_address(
+            sandbox_dataset_prefix=self.source_sandbox_prefix
+        ).to_project_specific_address(self.project_id)
         diff_query = self.diff_query_builder.build_document_diff_query(
             config=self.config,
             document_generation_output_address=document_generation_output_address,
+            metadata_table_address=metadata_table_address,
         )
 
         logging.info(
@@ -213,9 +238,8 @@ class NewDocumentDiscoverer:
         ).to_project_specific_address(self.project_id)
         new_documents_query = DocumentMetadataUpdatesQueryBuilder().build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,
-            # TODO(OBT-42680) Thread sandbox prefix through
             document_contents_table_address=self.config.document_contents_table_address(
-                sandbox_dataset_prefix=None
+                sandbox_dataset_prefix=self.source_sandbox_prefix
             ).to_project_specific_address(self.project_id),
             target_batch_bytes=self.target_upload_batch_bytes,
         )

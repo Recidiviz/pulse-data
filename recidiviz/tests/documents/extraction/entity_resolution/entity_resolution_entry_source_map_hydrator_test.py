@@ -88,6 +88,7 @@ class TestEntrySourceMapHydratorWriteArgs(unittest.TestCase):
             project_id="recidiviz-testing",
             big_query_client=bq_client,
             config=er_collection,
+            output_sandbox_prefix=None,
         ).run(
             ProjectSpecificBigQueryAddress(
                 project_id="recidiviz-testing",
@@ -99,7 +100,8 @@ class TestEntrySourceMapHydratorWriteArgs(unittest.TestCase):
         bq_client.create_table_from_query.assert_called_once()
         call_kwargs = bq_client.create_table_from_query.call_args.kwargs
         self.assertEqual(
-            er_collection.entry_source_map_table_address, call_kwargs["address"]
+            er_collection.entry_source_map_table_address(sandbox_dataset_prefix=None),
+            call_kwargs["address"],
         )
         self.assertTrue(call_kwargs["overwrite"])
         self.assertEqual(["person_id"], call_kwargs["clustering_fields"])
@@ -133,9 +135,12 @@ class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
             project_id=self.project_id,
             big_query_client=self.bq_client,
             config=self.er_collection,
+            output_sandbox_prefix=None,
         )
         self.bq_client.create_dataset_if_necessary(
-            self.er_collection.entry_source_map_table_address.dataset_id
+            self.er_collection.entry_source_map_table_address(
+                sandbox_dataset_prefix=None
+            ).dataset_id
         )
 
     def _seed_generation_output(
@@ -152,9 +157,9 @@ class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
         return address
 
     def _map_rows(self) -> list[dict[str, Any]]:
-        address = self.er_collection.entry_source_map_table_address.to_project_specific_address(
-            self.project_id
-        )
+        address = self.er_collection.entry_source_map_table_address(
+            sandbox_dataset_prefix=None
+        ).to_project_specific_address(self.project_id)
         return self.query(
             f"SELECT * FROM {address.format_address_for_query()} "
             "ORDER BY person_id, entry_num"
@@ -383,11 +388,12 @@ class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
             ],
         )
 
-        diff_query = DocumentCollectionDiffQueryBuilder(
-            project_id=self.project_id
-        ).build_document_diff_query(
+        diff_query = DocumentCollectionDiffQueryBuilder().build_document_diff_query(
             config=self.er_collection,
             document_generation_output_address=v2_address,
+            metadata_table_address=self.er_collection.metadata_table_address(
+                sandbox_dataset_prefix=None
+            ).to_project_specific_address(self.project_id),
         )
         num_diff_rows = self.query(
             f"SELECT COUNT(*) AS num_rows FROM ({diff_query})"

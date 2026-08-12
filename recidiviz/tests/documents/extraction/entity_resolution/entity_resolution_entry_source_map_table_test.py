@@ -105,6 +105,7 @@ class EntityResolutionEntrySourceMapBQTableTest(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 first_order_extractor_collection_name=FAKE_COLLECTION_NAME,
                 entity_group_name=_ASSIGNMENT_GROUP_NAME,
+                sandbox_prefix=None,
             ),
         )
 

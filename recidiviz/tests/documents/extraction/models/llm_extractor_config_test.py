@@ -118,7 +118,7 @@ def _input_document_collection(
             bigquery.SchemaField("note_id", "STRING"),
         ],
         other_metadata_columns=[],
-        document_generation_query_template="SELECT 1",
+        authored_document_generation_query_template="SELECT 1",
         other_document_generation_output_columns=[],
         document_descriptor=Descriptor(singular="case note", plural="case notes"),
     )

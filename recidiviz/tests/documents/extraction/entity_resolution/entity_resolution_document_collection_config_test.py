@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for entity_resolution_document_collection_config.py."""
+
 import datetime
 import unittest
 from typing import Any
@@ -125,7 +126,8 @@ class EntityResolutionDocumentCollectionConfigTest(unittest.TestCase):
             config.other_document_generation_output_columns,
         )
         self.assertEqual(
-            expected_query_template, config.document_generation_query_template
+            expected_query_template,
+            config.build_document_generation_query_template(source_sandbox_prefix=None),
         )
         # An ER collection's documents are composite documents, so it derives this
         # fixed descriptor rather than reading one from YAML.
@@ -330,7 +332,9 @@ JOIN composite_entry_source_map USING (person_id)"""
                     for field in built.build_bq_document_generation_output_schema()
                 } - {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
                 query = StrictStringFormatter().format(
-                    built.document_generation_query_template,
+                    built.build_document_generation_query_template(
+                        source_sandbox_prefix=None
+                    ),
                     project_id="recidiviz-test",
                 )
                 check_query_selects_output_columns(query, expected_columns)
@@ -342,10 +346,38 @@ JOIN composite_entry_source_map USING (person_id)"""
                 query = StrictStringFormatter().format(
                     EntityResolutionDocumentCollectionConfig(
                         first_order_config=config, entity_group=entity_group
-                    ).document_generation_query_template,
+                    ).build_document_generation_query_template(
+                        source_sandbox_prefix=None
+                    ),
                     project_id="recidiviz-test",
                 )
                 check_query_is_not_ordered_outside_of_windows(query)
+
+    def test_generation_query_template_sandbox_prefixing(self) -> None:
+        config = fake_first_order_extractor_config()
+        for entity_group in config.extractor_collection.entity_groups:
+            with self.subTest(group=entity_group.name):
+                built = EntityResolutionDocumentCollectionConfig(
+                    first_order_config=config, entity_group=entity_group
+                )
+                # The un-prefixed template reads the production first-order layer.
+                unprefixed = built.build_document_generation_query_template(
+                    source_sandbox_prefix=None
+                )
+                self.assertIn(
+                    "us_xx_document_extraction_results__pre_resolution", unprefixed
+                )
+                self.assertNotIn("sb_us_xx", unprefixed)
+
+                # The prefixed template reads the sandbox first-order
+                # `__pre_resolution` materialized table and source contents.
+                prefixed = built.build_document_generation_query_template(
+                    source_sandbox_prefix="sb"
+                )
+                self.assertIn(
+                    "sb_us_xx_document_extraction_results__pre_resolution", prefixed
+                )
+                self.assertIn("sb_us_xx_document_contents", prefixed)
 
     def test_entry_source_map_table_address(self) -> None:
         for group_name, expected_address in [
@@ -365,8 +397,34 @@ JOIN composite_entry_source_map USING (person_id)"""
                     BigQueryAddress.from_str(expected_address),
                     fake_entity_resolution_document_collection_config(
                         group_name
-                    ).entry_source_map_table_address,
+                    ).entry_source_map_table_address(sandbox_dataset_prefix=None),
                 )
+
+    def test_sandbox_prefix_scopes_addresses(self) -> None:
+        config = fake_entity_resolution_document_collection_config("assignment")
+
+        # Passing a prefix scopes each address's dataset; omitting it (production)
+        # leaves them un-prefixed.
+        self.assertTrue(
+            config.metadata_table_address(
+                sandbox_dataset_prefix="sb"
+            ).dataset_id.startswith("sb_us_xx_document_store_metadata")
+        )
+        self.assertTrue(
+            config.document_contents_table_address(
+                sandbox_dataset_prefix="sb"
+            ).dataset_id.startswith("sb_us_xx_document_contents")
+        )
+        self.assertTrue(
+            config.entry_source_map_table_address(
+                sandbox_dataset_prefix="sb"
+            ).dataset_id.startswith("sb_us_xx_document_store_metadata")
+        )
+        self.assertFalse(
+            config.metadata_table_address(
+                sandbox_dataset_prefix=None
+            ).dataset_id.startswith("sb_")
+        )
 
     def test_entry_source_map_table_description(self) -> None:
         description = fake_entity_resolution_document_collection_config(
@@ -527,11 +585,16 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
         rows: list[dict[str, Any]],
     ) -> None:
         self.create_mock_table(
-            collection.pre_resolution_view_materialized_address,
+            collection.pre_resolution_view_materialized_address(
+                sandbox_dataset_prefix=None
+            ),
             schema=_pre_resolution_schema(entity_group),
         )
         self.load_rows_into_table(
-            collection.pre_resolution_view_materialized_address, rows
+            collection.pre_resolution_view_materialized_address(
+                sandbox_dataset_prefix=None
+            ),
+            rows,
         )
 
     def _composite_documents_query(
@@ -541,7 +604,9 @@ class EntityResolutionCompositeDocumentQueryTest(BigQueryEmulatorTestCase):
         (the generation query itself has no top-level ORDER BY — one row per root
         entity) so the result rows can be compared exactly."""
         query = StrictStringFormatter().format(
-            collection.document_generation_query_template,
+            collection.build_document_generation_query_template(
+                source_sandbox_prefix=None
+            ),
             project_id=self.project_id,
         )
         return f"SELECT * FROM ({query}) ORDER BY {PERSON_ID_COLUMN_NAME}"

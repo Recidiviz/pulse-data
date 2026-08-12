@@ -25,10 +25,10 @@ entity's first-order mentions rendered into a single numbered text blob.
 
 Rather than a bespoke composite-document builder, we reuse the document store:
 the composite documents are an ordinary document collection (see
-`EntityResolutionDocumentCollectionConfig`, which derives its
-`document_generation_query_template` from this module), so the standard document
-upload flow generates, content-addresses, and uploads them like any other
-collection.
+`EntityResolutionDocumentCollectionConfig`, whose
+`build_document_generation_query_template` builds its generation query from this
+module), so the standard document upload flow generates, content-addresses, and
+uploads them like any other collection.
 
 The composite renders the person's mentions as a *timeline*: one block per
 source-note occurrence — a `(source document, update datetime)` pair — so an

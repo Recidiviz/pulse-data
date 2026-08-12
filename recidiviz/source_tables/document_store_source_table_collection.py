@@ -112,7 +112,9 @@ def collect_document_store_source_tables(
                 # Clustered on the root entity ID: the key the map is written and
                 # replaced by, and its consumers' leading join key.
                 metadata_collection.add_source_table(
-                    table_id=config.entry_source_map_table_address.table_id,
+                    table_id=config.entry_source_map_table_address(
+                        sandbox_dataset_prefix=None
+                    ).table_id,
                     description=config.entry_source_map_table_description,
                     schema_fields=EntityResolutionEntrySourceMapBQTable.schema(
                         root_entity_id_type=config.root_entity_id_type

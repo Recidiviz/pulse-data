@@ -16,6 +16,7 @@
 # =============================================================================
 """Replaces one entity-resolution collection's entry→source map table from a
 run's full composite-document generation output."""
+
 import logging
 
 import attr
@@ -50,6 +51,9 @@ class EntityResolutionEntrySourceMapHydrator:
     )
     """The entity-resolution composite-document collection whose map this hydrates."""
 
+    output_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Sandbox-only prefix scoping the map table written; None in production."""
+
     def run(
         self, document_generation_output_address: ProjectSpecificBigQueryAddress
     ) -> None:
@@ -64,7 +68,9 @@ class EntityResolutionEntrySourceMapHydrator:
             config=self.config,
         )
 
-        map_table_address = self.config.entry_source_map_table_address
+        map_table_address = self.config.entry_source_map_table_address(
+            sandbox_dataset_prefix=self.output_sandbox_prefix
+        )
         logging.info(
             "Replacing entry→source map table [%s] for collection [%s] from [%s]",
             map_table_address.to_str(),

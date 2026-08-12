@@ -49,6 +49,7 @@ whenever the map changes. Two things make the composite hash the wrong key:
 Because exactly one current version is stored per root entity, consumers (the ER
 validator, the enriched parsed views) need no generation filtering.
 """
+
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
@@ -104,13 +105,16 @@ class EntityResolutionEntrySourceMapBQTable:
         state_code: StateCode,
         first_order_extractor_collection_name: str,
         entity_group_name: str,
+        sandbox_prefix: str | None,
     ) -> BigQueryAddress:
         """Returns the project-agnostic address of the map table, which lives in
         the state's document store metadata dataset alongside the composite
         documents' own metadata table.
         """
         return BigQueryAddress(
-            dataset_id=document_store_metadata_dataset_for_region(state_code),
+            dataset_id=document_store_metadata_dataset_for_region(
+                state_code, sandbox_prefix
+            ),
             table_id=cls.table_id(
                 first_order_extractor_collection_name=first_order_extractor_collection_name,
                 entity_group_name=entity_group_name,

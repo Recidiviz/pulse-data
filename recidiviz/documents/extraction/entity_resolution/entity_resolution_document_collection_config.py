@@ -29,6 +29,7 @@ group) pair it resolves, so those are its only two inputs and every
 `DocumentCollectionConfig` field — down to the composite-document generation
 query — is derived from them.
 """
+
 import attr
 from google.cloud import bigquery
 
@@ -121,13 +122,35 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         init=False, validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
-    document_generation_query_template: str = attr.ib(
-        init=False, validator=attr_validators.is_str
+    # An ER collection builds its generation template from other document-store
+    # tables (see build_document_generation_query_template), so it has no single
+    # authored template — this stays None and the override is the source of truth.
+    _authored_document_generation_query_template: str | None = attr.ib(
+        init=False, default=None, validator=attr_validators.is_opt_str
     )
 
     document_descriptor: Descriptor = attr.ib(
         init=False, validator=attr.validators.instance_of(Descriptor)
     )
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        # TODO(OBT-42680) This is kind of hacky and we should think if there is a
+        # better approach we can take here.
+        if self._authored_document_generation_query_template is not None:
+            raise ValueError(
+                "ER composite-document collections are generated, not authored, "
+                "so they have no authored document-generation query template."
+            )
+        if (
+            self.entity_group
+            not in self.first_order_config.extractor_collection.entity_groups
+        ):
+            raise ValueError(
+                f"Entity group [{self.entity_group.name}] is not declared on "
+                f"first-order collection "
+                f"[{self.first_order_extractor_collection_name}]."
+            )
 
     @state_code.default
     def _state_code(self) -> StateCode:
@@ -188,33 +211,28 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         """
         return [entry_source_map_schema_field()]
 
-    @document_generation_query_template.default
-    def _document_generation_query_template(self) -> str:
-        """The composite-document generation query. A composite is always produced
-        — length is not a generation concern (the per-document size guardrail skips
-        oversized documents at extraction time).
+    def build_document_generation_query_template(
+        self, *, source_sandbox_prefix: str | None
+    ) -> str:
+        """Returns the composite-document generation query, reading the first-order
+        `__pre_resolution` materialized table and source document_contents scoped to
+        |source_sandbox_prefix| when the generation query should read from a
+        sandbox (None in production). Unlike a base collection's authored template,
+        this one reads other document-store tables and so must be re-scoped for a
+        sandbox run. A composite is always produced — length is not a generation
+        concern (the per-document size guardrail skips oversized documents at
+        extraction time).
         """
         return EntityResolutionCompositeDocumentQueryTemplateBuilder(
             root_entity_id_type=self.root_entity_id_type,
             entity_group=self.entity_group,
-            pre_resolution_view_materialized_address=self.pre_resolution_view_materialized_address,
-            # TODO(OBT-42680) Thread sandbox prefix through
+            pre_resolution_view_materialized_address=self.pre_resolution_view_materialized_address(
+                sandbox_dataset_prefix=source_sandbox_prefix
+            ),
             source_document_contents_address=self.first_order_config.input_document_collection.document_contents_table_address(
-                sandbox_dataset_prefix=None
+                sandbox_dataset_prefix=source_sandbox_prefix
             ),
         ).build_query_template()
-
-    def __attrs_post_init__(self) -> None:
-        super().__attrs_post_init__()
-        if (
-            self.entity_group
-            not in self.first_order_config.extractor_collection.entity_groups
-        ):
-            raise ValueError(
-                f"Entity group [{self.entity_group.name}] is not declared on "
-                f"first-order collection "
-                f"[{self.first_order_extractor_collection_name}]."
-            )
 
     @property
     def first_order_extractor_collection_name(self) -> str:
@@ -225,34 +243,43 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         """
         return self.first_order_config.extractor_collection.name
 
-    @property
-    def pre_resolution_view_materialized_address(self) -> BigQueryAddress:
+    def pre_resolution_view_materialized_address(
+        self, *, sandbox_dataset_prefix: str | None
+    ) -> BigQueryAddress:
         """Returns the address the composite documents are built from: the
         materialized table behind the first-order "__pre_resolution" parsed view — the
         array-level view for an array entity group, the doc-level view for a top-level
         one. Reading the materialized table means composite-document generation reads an
-        already-computed table instead of re-running the whole parse.
+        already-computed table instead of re-running the whole parse. Scoped to
+        |sandbox_dataset_prefix| when the first-order views were deployed under
+        a sandbox (None in production).
         """
         if (source_array_field := self.entity_group.source_array_field) is not None:
             return LLMExtractorPreResolutionArrayFieldResultsViewBuilder.materialized_address_for_array_field(
-                self.first_order_config, source_array_field
+                config=self.first_order_config,
+                array_field=source_array_field,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
             )
         return (
             LLMExtractorPreResolutionResultsViewBuilder.materialized_address_for_config(
-                self.first_order_config
+                config=self.first_order_config,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
             )
         )
 
-    @property
-    def entry_source_map_table_address(self) -> BigQueryAddress:
+    def entry_source_map_table_address(
+        self, *, sandbox_dataset_prefix: str | None
+    ) -> BigQueryAddress:
         """Returns the project-agnostic address of this collection's entry→source
         map table, which maps each composite-document entry back to the first-order
-        mention occurrence it was rendered from.
+        mention occurrence it was rendered from, scoped to |sandbox_dataset_prefix|
+        when running under a sandbox (None in production).
         """
         return EntityResolutionEntrySourceMapBQTable.address(
             state_code=self.state_code,
             first_order_extractor_collection_name=self.first_order_extractor_collection_name,
             entity_group_name=self.entity_group.name,
+            sandbox_prefix=sandbox_dataset_prefix,
         )
 
     @property
