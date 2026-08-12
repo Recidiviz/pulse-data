@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     oras_community_supervision_completed,
+    within_3_months_of_oras_assessment_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
@@ -83,8 +84,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_has_substance_use_issues.VIEW_BUILDER,
         # Not in a Halfway House or New Freedom (in service of 1.4)
         not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
-        # Internal Criteria, created solely for configuring Maybe Eligible accurately
+        # Internal Criteria for validation purposes
         oras_community_supervision_completed.VIEW_BUILDER,
+        # Internal Criteria added b/c ADM v1 Audit suggested ORAS staleness as a factor in denials
+        within_3_months_of_oras_assessment_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     policy_start_date=date(2026, 6, 27),
