@@ -89,16 +89,17 @@ def _sub_field_value(
     field: LLMRequestOutputSchemaField,
     container: dict[str, Any] | None,
 ) -> Any:
-    """Returns the value |container| holds for ARRAY_OF_STRUCT sub-field |field|:
-    the unwrapped scalar for a scalar-valued sub-field, or the bare integer list
-    for an ARRAY_OF_INTEGER sub-field (an ER entity's `entry_nums`).
+    """Returns the value |container| holds for non-ARRAY_OF_STRUCT |field| — an
+    ARRAY_OF_STRUCT element's sub-field, or a top-level field: the unwrapped
+    scalar for a scalar-valued field, or the bare integer list for an
+    ARRAY_OF_INTEGER field (an ER entity's `entry_nums`).
     """
     if isinstance(field, ScalarValuedLLMRequestOutputSchemaField):
         return _scalar_field_value(field=field, container=container)
     if isinstance(field, ArrayOfIntegerLLMRequestOutputSchemaField):
         return _integer_array_field_value(field=field, container=container)
     raise ValueError(
-        f"Cannot read a value for sub-field [{field.name}] of type "
+        f"Cannot read a value for field [{field.name}] of type "
         f"[{field.field_type.value}]."
     )
 
@@ -300,6 +301,32 @@ class LLMRequestOutputValues:
                 f"[{type(is_relevant)}]."
             )
         return is_relevant
+
+    @property
+    def values_dict(self) -> dict[str, Any]:
+        """Returns the value the extractor produced for every field the schema
+        declares — the framework-injected `is_relevant` included — keyed by
+        field name. A scalar-valued field maps to its unwrapped scalar value, an
+        ARRAY_OF_INTEGER field to its bare integer list, and an ARRAY_OF_STRUCT
+        field to its list of per-element dicts (see `array_elements`). A `None`
+        value means the output omits the field (or, for a scalar, that an
+        INFERRED field took its null branch).
+
+        This is the actual-output counterpart to a golden eval document's
+        `expected_values`, and has the same shape.
+        """
+        return {
+            field.name: self._field_value(field=field)
+            for field in self.output_schema.all_fields
+        }
+
+    def _field_value(self, *, field: LLMRequestOutputSchemaField) -> Any:
+        """Returns the value the extractor produced for top-level |field|,
+        whatever its type.
+        """
+        if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
+            return self.array_elements(field=field)
+        return _sub_field_value(field=field, container=self._extracted_fields_json)
 
     def array_elements(
         self, *, field: ArrayOfStructLLMRequestOutputSchemaField

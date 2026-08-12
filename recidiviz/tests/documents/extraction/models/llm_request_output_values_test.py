@@ -18,6 +18,8 @@
 from typing import Any, Callable
 from unittest import TestCase
 
+import attr
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (
     build_entity_resolution_output_schema,
@@ -33,6 +35,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfIntegerLLMRequestOutputSchemaField,
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     LLMOutputFieldType,
@@ -276,6 +279,7 @@ class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
             "array_elements": lambda values: values.array_elements(
                 field=self.assignments_field
             ),
+            "values_dict": lambda values: values.values_dict,
         }
         for case, output_json in (
             ("missing envelope", {IS_RELEVANT_FIELD_NAME: True}),
@@ -327,6 +331,76 @@ class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
     def test_array_elements_empty_field_is_empty_list(self) -> None:
         output_values = self._full_output_values(assignments=[])
         self.assertEqual([], output_values.array_elements(field=self.assignments_field))
+
+    def test_values_dict_carries_every_schema_field(self) -> None:
+        output_values = self._full_output_values()
+        self.assertEqual(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "primary_status": "active",
+                "status_note": "Currently active.",
+                "location": "Kitchen",
+                "assignments": [
+                    {
+                        "assignment_name": "Dish duty",
+                        "assignment_type": "internal",
+                        "rate_amount": 12.5,
+                        "rate_period": "hourly",
+                    }
+                ],
+            },
+            output_values.values_dict,
+        )
+
+    def test_values_dict_absent_fields_are_none(self) -> None:
+        # Every field the schema declares appears in the dict, whether or not
+        # the output carries it.
+        output_values = self._output_values(
+            wrap_in_result_key(
+                {
+                    IS_RELEVANT_FIELD_NAME: True,
+                    "status_note": "Currently active.",
+                }
+            )
+        )
+        self.assertEqual(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "primary_status": None,
+                "status_note": "Currently active.",
+                "location": None,
+                "assignments": None,
+            },
+            output_values.values_dict,
+        )
+
+    def test_values_dict_for_schema_without_is_relevant(self) -> None:
+        schema = _schema_without_is_relevant()
+        output_values = LLMRequestOutputValues(
+            output_schema=schema, output_json={"status_note": "Currently active."}
+        )
+        self.assertEqual(
+            {"status_note": "Currently active."}, output_values.values_dict
+        )
+
+    def test_values_dict_reads_integer_array_field(self) -> None:
+        # A top-level ARRAY_OF_INTEGER field reads as its bare integer list,
+        # same as an ARRAY_OF_INTEGER sub-field of an ARRAY_OF_STRUCT element.
+        schema = attr.evolve(
+            _schema_without_is_relevant(),
+            user_defined_fields=[
+                ArrayOfIntegerLLMRequestOutputSchemaField(
+                    name="entry_nums",
+                    description="The entry numbers this entity was resolved from.",
+                    required=True,
+                    inferred_field_config=None,
+                )
+            ],
+        )
+        output_values = LLMRequestOutputValues(
+            output_schema=schema, output_json={"entry_nums": [1, 2]}
+        )
+        self.assertEqual({"entry_nums": [1, 2]}, output_values.values_dict)
 
     def test_missing_result_envelope_raises(self) -> None:
         output_values = self._output_values(
@@ -710,6 +784,27 @@ class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
             output_values.array_elements(field=self.entities_field), list
         )
         self.assertIsNone(element[ENTRY_NUMS_FIELD_NAME])
+
+    def test_values_dict_carries_entities(self) -> None:
+        output_values = self._output_values(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1, entry_nums=[1, 3], location="HQ"
+                )
+            ]
+        )
+        self.assertEqual(
+            {
+                ENTITIES_FIELD_NAME: [
+                    {
+                        ENTITY_ID_FIELD_NAME: 1,
+                        "location": "HQ",
+                        ENTRY_NUMS_FIELD_NAME: [1, 3],
+                    }
+                ]
+            },
+            output_values.values_dict,
+        )
 
     def test_non_list_entry_nums_raises(self) -> None:
         output_values = self._output_values(

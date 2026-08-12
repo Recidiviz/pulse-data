@@ -222,7 +222,7 @@ class ReservedFieldNamesTest(TestCase):
 
 class ConstraintResolutionTest(TestCase):
     """Constraint references hold resolved field objects; value conditions are
-    enum-only and single-field.
+    enum-only and single-field, and nonnull conditions are scalar-only.
     """
 
     def test_value_condition_builds_correct_subclass_holding_enum_field(self) -> None:
@@ -273,6 +273,44 @@ class ConstraintResolutionTest(TestCase):
                     values=_enum_values("employed", "unemployed"),
                 ),
                 _field("employer", applicable_when_value={"status": ["retired"]}),
+            )
+
+    def test_nonnull_condition_builds_holding_scalar_field(self) -> None:
+        rate_amount, rate_period = _build(
+            _field("rate_amount", field_type="FLOAT"),
+            _field(
+                "rate_period",
+                applicable_when_nonnull="rate_amount",
+                required_when_nonnull="rate_amount",
+            ),
+        )
+        applicable, required = rate_period.semantic_consistency_constraints
+        assert isinstance(applicable, ApplicableWhenNonnullConstraint)
+        assert isinstance(required, RequiredWhenNonnullConstraint)
+
+        self.assertIs(rate_amount, applicable.condition_field)
+        self.assertIs(rate_amount, required.condition_field)
+
+    def test_nonnull_condition_on_array_field_raises(self) -> None:
+        # An array has no null branch to be non-null against, and the prompt
+        # renders a nonnull condition as a bare "is set" with no emptiness
+        # wording — so the model would never learn that `[]` means not-set.
+        # Conditioning on an array needs its own emptiness-based constraint.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Expected field [assignments] to be scalar-valued, but it has "
+                "type [ARRAY_OF_STRUCT]."
+            ),
+        ):
+            _build(
+                _field(
+                    "assignments",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["assignment_name"],
+                    fields=[_field("assignment_name")],
+                ),
+                _field("assignment_note", applicable_when_nonnull="assignments"),
             )
 
     def test_value_condition_referencing_multiple_fields_raises(self) -> None:

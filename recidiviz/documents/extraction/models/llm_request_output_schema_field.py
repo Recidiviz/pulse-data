@@ -666,10 +666,8 @@ class LLMRequestOutputSchemaField(abc.ABC):
             )
         ) is not None:
             constraints.append(
-                ApplicableWhenNonnullConstraint(
-                    condition_field=already_built_fields_by_name[
-                        nonnull_condition_field
-                    ]
+                ApplicableWhenNonnullConstraint.from_condition_field_name(
+                    nonnull_condition_field, already_built_fields_by_name
                 )
             )
         if (
@@ -678,10 +676,8 @@ class LLMRequestOutputSchemaField(abc.ABC):
             )
         ) is not None:
             constraints.append(
-                RequiredWhenNonnullConstraint(
-                    condition_field=already_built_fields_by_name[
-                        required_nonnull_condition_field
-                    ]
+                RequiredWhenNonnullConstraint.from_condition_field_name(
+                    required_nonnull_condition_field, already_built_fields_by_name
                 )
             )
         if (
@@ -993,8 +989,10 @@ class _NonnullConditionConstraint(LLMOutputSemanticConsistencyConstraint):
     non-null.
     """
 
-    condition_field: LLMRequestOutputSchemaField = attr.ib()
-    """The sibling field whose non-null presence this constraint conditions on."""
+    condition_field: ScalarValuedLLMRequestOutputSchemaField = attr.ib()
+    """The scalar-valued sibling field whose non-null presence this constraint
+    conditions on. An array-typed field may not be a nonnull condition.
+    """
 
     @condition_field.validator
     def _check_condition_field(
@@ -1007,6 +1005,23 @@ class _NonnullConditionConstraint(LLMOutputSemanticConsistencyConstraint):
                 f"condition_field must be an output schema field, received "
                 f"[{type(value)}]."
             )
+        assert_scalar_valued_field(value)
+
+    @classmethod
+    def from_condition_field_name(
+        cls,
+        condition_field_name: str,
+        already_built_fields_by_name: dict[str, "LLMRequestOutputSchemaField"],
+    ) -> Self:
+        """Returns the constraint conditioned on |condition_field_name|,
+        resolving it against |already_built_fields_by_name| and requiring it to
+        be scalar-valued. Builds whichever concrete subclass it is called on.
+        """
+        return cls(
+            condition_field=assert_scalar_valued_field(
+                already_built_fields_by_name[condition_field_name]
+            )
+        )
 
 
 @attr.define(frozen=True, kw_only=True)

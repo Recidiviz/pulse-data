@@ -20,9 +20,10 @@ Exercises the validator against the fake extractor collection: structural
 conformance against the JSON Schema generated from its output schema (a
 conforming result passes, each way a result can violate the schema is flagged,
 and a field absent from the JSON is treated as null (forward-compat)), plus the
-wiring of the checks layered on top of it — a required-field-confidence or
-relevant-but-all-null violation downgrades the result the same way a structural
-one does, and a structurally-broken result skips them both. Each check itself
+wiring of the checks layered on top of it — a semantic-consistency,
+required-field-confidence, or relevant-but-all-null violation downgrades the
+result the same way a structural one does, a structurally-broken result skips
+them all, and findings from several checks land in one audit. Each check itself
 is tested directly in its own test file.
 
 These all use the relevance-bearing fake collection (a `result`-wrapped result
@@ -304,6 +305,41 @@ class LLMExtractionResultValidatorTest(TestCase):
             {issue.field_name for issue in validation.audit_issues},
         )
 
+    def test_semantic_violation_downgrades_result(self) -> None:
+        # Structurally conforming, but `location` is set while `primary_status`
+        # is `inactive` — forbidden by location's not_applicable_when_value
+        # constraint.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"]["value"] = "inactive"
+        result_json["result"]["location"] = build_inferred_field_result_json("Kitchen")
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.SEMANTIC_CONSISTENCY, issue.check_type)
+        self.assertEqual("location", issue.field_name)
+
+    def test_structurally_broken_result_skips_later_checks(self) -> None:
+        # A bare string where an INFERRED field's dict belongs is a structural
+        # violation, and one the semantic check's value readers cannot even
+        # read — the validator must report only the structural issues rather
+        # than crash reading values for the later checks.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["location"] = "Kitchen"
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertTrue(validation.audit_issues)
+        self.assertEqual(
+            {ValidationCheckType.SCHEMA_CONFORMANCE},
+            {issue.check_type for issue in validation.audit_issues},
+        )
+
     def test_relevant_but_all_null_downgrades_result(self) -> None:
         # Structurally conforming — primary_status is present, on its null
         # branch — but the model called the document relevant while extracting
@@ -348,3 +384,25 @@ class LLMExtractionResultValidatorTest(TestCase):
             issue.check_type,
         )
         self.assertEqual("primary_status", issue.field_name)
+
+    def test_findings_from_several_checks_land_in_one_audit(self) -> None:
+        # Every extraction-error check past structural conformance runs even
+        # once one has failed, so the audit row records everything wrong with
+        # the document rather than only the first thing found.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"] = build_inferred_field_result_json(
+            "inactive", "speculative"
+        )
+        result_json["result"]["location"] = build_inferred_field_result_json("Kitchen")
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertEqual(
+            {
+                # location set while primary_status is inactive.
+                ValidationCheckType.SEMANTIC_CONSISTENCY,
+                # primary_status is required and speculative.
+                ValidationCheckType.REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            },
+            {issue.check_type for issue in validation.audit_issues},
+        )

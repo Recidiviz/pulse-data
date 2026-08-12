@@ -42,6 +42,9 @@ from recidiviz.documents.extraction.validation.relevant_but_all_null_check impor
 from recidiviz.documents.extraction.validation.required_field_confidence_check import (
     RequiredFieldConfidenceCheck,
 )
+from recidiviz.documents.extraction.validation.semantic_consistency_check import (
+    SemanticConsistencyCheck,
+)
 from recidiviz.documents.extraction.validation.structural_conformance_check import (
     StructuralConformanceCheck,
 )
@@ -107,6 +110,7 @@ class LLMExtractionResultValidator:
         if structural_issues:
             return structural_issues
         return [
+            *SemanticConsistencyCheck.issues(output=raw_output),
             *RequiredFieldConfidenceCheck.issues(output=raw_output),
             *RelevantButAllNullCheck.issues(output=raw_output),
         ]

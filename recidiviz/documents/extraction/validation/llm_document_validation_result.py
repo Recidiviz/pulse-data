@@ -43,6 +43,7 @@ class ValidationCheckType(StrEnum):
     `ValidationIssue` so findings can be grouped by the check that raised them."""
 
     SCHEMA_CONFORMANCE = "SCHEMA_CONFORMANCE"
+    SEMANTIC_CONSISTENCY = "SEMANTIC_CONSISTENCY"
     REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL = (
         "REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL"
     )
