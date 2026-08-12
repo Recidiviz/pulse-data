@@ -26,7 +26,7 @@ from typing import List, Optional, Sequence
 
 import attr
 
-from recidiviz.common import attr_utils, attr_validators
+from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -218,8 +218,6 @@ class StatePersonAddressPeriod(
     address_line_2: Optional[str] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_str,
-        # TODO(#37668) Remove converter when parsers can return None
-        converter=attr_utils.convert_empty_string_to_none,
     )
 
     address_city: Optional[str] = attr.ib(

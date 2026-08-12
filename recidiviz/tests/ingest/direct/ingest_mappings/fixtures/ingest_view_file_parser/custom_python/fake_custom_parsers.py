@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Custom parser functions for use in ingest_view_file_parser_test.py."""
+from typing import Optional
 
 
 def ssn_from_parts(ssn_first_three: str, ssn_next_two: str, ssn_last_four: str) -> str:
@@ -34,3 +35,22 @@ def normalize_address_roads(full_address: str, is_valid_address: bool) -> str:
 
 def should_include_ssn(ssn: str) -> bool:
     return ssn.startswith("123") or ssn.startswith("987")
+
+
+def normalized_ssn_or_null(ssn: str) -> str | None:
+    """Exercises a PEP 604 (str | None) optional return annotation in the
+    custom-function registry."""
+    return ssn.strip() or None
+
+
+def normalized_ssn_or_null_typing_optional(ssn: str) -> Optional[str]:
+    """Exercises a typing.Optional[str] optional return annotation in the
+    custom-function registry."""
+    return ssn.strip() or None
+
+
+def ssn_str_or_int(ssn: str) -> str | int:
+    """Exercises a non-Optional union return annotation, which the
+    custom-function registry rejects."""
+    stripped = ssn.strip()
+    return stripped or int(ssn)

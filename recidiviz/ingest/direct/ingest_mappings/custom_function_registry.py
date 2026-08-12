@@ -19,7 +19,7 @@ descriptors.
 """
 
 import inspect
-from types import ModuleType
+from types import ModuleType, UnionType
 from typing import (
     Any,
     Callable,
@@ -147,7 +147,9 @@ class CustomFunctionRegistry(ModuleCollectorMixin):
         """
         function = self.function_from_reference(function_reference)
         function_signature = inspect.signature(function)
-        if get_origin(function_signature.return_annotation) is not Union:
+        # typing.Union covers the typing.Optional / Union[...] form; types.UnionType
+        # covers the PEP 604 pipe form (str | None). get_args works identically on both.
+        if get_origin(function_signature.return_annotation) not in (Union, UnionType):
             return_type_non_optional = function_signature.return_annotation
         else:
             type_args = get_args(function_signature.return_annotation)
