@@ -1,0 +1,57 @@
+address:
+  dataset_id: meetings_dashboards_db_us_tn
+  table_id: Staff
+description:
+  Staff members (e.g. supervision or facility officers) who conduct meetings
+  in the meetings dashboard app, synced from the meetings backend database. One row
+  per staff member; staff are linked to Meeting rows via staffEmail.
+schema:
+  - name: stateCode
+    description: State code of the agency this staff member belongs to.
+    type: STRING
+    mode: NULLABLE
+  - name: staffId
+    description:
+      Unique identifier for the staff member in the system. This is not necessarily
+      stable over time.
+    type: BIGNUMERIC
+    mode: NULLABLE
+  - name: stableStaffExternalId
+    description:
+      A stable identifier that is an external identifier for the staff member,
+      such as an employee ID.
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymizedId
+    description:
+      A unique identifier used to anonymize the staff member's identity in
+      the system. It is a hash of the stableStaffExternalId.
+    type: STRING
+    mode: NULLABLE
+  - name: givenNames
+    description: The staff member's given (first) names.
+    type: STRING
+    mode: NULLABLE
+  - name: middleNames
+    description: The staff member's middle name(s), if any.
+    type: STRING
+    mode: NULLABLE
+  - name: surname
+    description: The staff member's surname (last name).
+    type: STRING
+    mode: NULLABLE
+  - name: suffix
+    description: The staff member's name suffix (e.g. Jr., III), if any.
+    type: STRING
+    mode: NULLABLE
+  - name: email
+    description: The staff member's email address.
+    type: STRING
+    mode: NULLABLE
+  - name: isActive
+    description:
+      Whether or not the staff member appeared in the most recent export.
+      Needed to ensure meetings aren't deleted when staff are removed.
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: []

@@ -33,7 +33,13 @@ from recidiviz.source_tables.externally_managed.datasets import (
     EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
     JII_TEXTING_DASHBOARDS_DB_US_IX,
     JII_TEXTING_DASHBOARDS_DB_US_TX,
+    MEETINGS_DASHBOARDS_DB_US_AZ,
+    MEETINGS_DASHBOARDS_DB_US_CO,
+    MEETINGS_DASHBOARDS_DB_US_IX,
+    MEETINGS_DASHBOARDS_DB_US_NC,
+    MEETINGS_DASHBOARDS_DB_US_ND,
     MEETINGS_DASHBOARDS_DB_US_NE,
+    MEETINGS_DASHBOARDS_DB_US_TN,
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
@@ -90,7 +96,25 @@ def collect_externally_managed_source_table_collections(
         JII_TEXTING_DASHBOARDS_DB_US_IX: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
+        MEETINGS_DASHBOARDS_DB_US_AZ: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_CO: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_IX: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_NC: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_ND: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
         MEETINGS_DASHBOARDS_DB_US_NE: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_DASHBOARDS_DB_US_TN: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
     }

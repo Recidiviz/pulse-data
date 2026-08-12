@@ -1,0 +1,49 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ix
+  table_id: OutputVote
+description:
+  Staff up/down votes on the AI-generated meeting outputs (draft case notes,
+  action items, staff feedback), synced from the meetings backend database. Each vote
+  is scoped to a specific output tab and can include a written message.
+schema:
+  - name: id
+    description: Unique identifier for this vote.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when the vote was cast.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: voterEmail
+    description: Email of the staff member who cast the vote.
+    type: STRING
+    mode: NULLABLE
+  - name: vote
+    description: The vote value (UP or DOWN).
+    type: STRING
+    mode: NULLABLE
+  - name: pipelineRunId
+    description:
+      NotetakingPipelineRun.id whose output this vote was cast against. Not
+      a foreign key; votes are kept for analytics even if the run is deleted. When a
+      meeting is reprocessed, Meeting.outputsPipelineRunId advances to the new run and
+      prior votes no longer match the current output content.
+    type: STRING
+    mode: NULLABLE
+  - name: meetingId
+    description:
+      Meeting.id of the meeting this vote pertains to. Not a foreign key;
+      votes are kept for analytics even if the meeting is later deleted.
+    type: STRING
+    mode: NULLABLE
+  - name: message
+    description: Optional written feedback message the voter included with their vote.
+    type: STRING
+    mode: NULLABLE
+  - name: tab
+    description:
+      Which output tab this vote was cast on (DRAFT_CASE_NOTES, ACTION_ITEMS,
+      or STAFF_FEEDBACK).
+    type: STRING
+    mode: NULLABLE
+clustering_fields: []

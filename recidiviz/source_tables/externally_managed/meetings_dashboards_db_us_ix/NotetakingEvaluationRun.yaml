@@ -1,0 +1,35 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ix
+  table_id: NotetakingEvaluationRun
+description:
+  LLMAJ (LLM-as-judge) evaluation runs for the notetaking module. One row
+  per evaluation run. The scores column contains a JSON object with per-component
+  grades, rationales, omissions, and hallucinations produced by the evaluator model.
+schema:
+  - name: id
+    description: Unique identifier for this evaluation run.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when the evaluation run was created.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: pipelineRunId
+    description: Identifier of the notetaking pipeline run this evaluation covers.
+    type: STRING
+    mode: NULLABLE
+  - name: evaluatorVersion
+    description: Version string of the LLMAJ evaluator that produced this run.
+    type: STRING
+    mode: NULLABLE
+  - name: scores
+    description:
+      Raw JSON object containing per-component evaluation scores. Top-level
+      keys are overall, caseNote, actionItems, criticalUpdates, and transcriptComparison.
+    type: STRING
+    mode: NULLABLE
+  - name: langsmithTraceId
+    description: LangSmith trace ID for debugging the evaluator run.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: []

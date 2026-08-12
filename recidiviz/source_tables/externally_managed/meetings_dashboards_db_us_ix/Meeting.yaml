@@ -1,0 +1,142 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ix
+  table_id: Meeting
+description:
+  Meetings recorded and processed through the meetings dashboard app, synced
+  from the meetings backend database. One row per meeting between a staff member and
+  either a client or a resident; the recording is transcribed and run through a notetaking
+  pipeline to produce draft case notes, action items, and staff feedback.
+schema:
+  - name: id
+    description: Unique identifier for this meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: startTime
+    description: Timestamp when the meeting started.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: endTime
+    description: Timestamp when the meeting ended.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: clientId
+    description:
+      Client.personId of the client this meeting was with, if the meeting
+      was with a client rather than a resident.
+    type: BIGNUMERIC
+    mode: NULLABLE
+  - name: postMeetingProcessingStatus
+    description:
+      Status of the post-meeting processing pipeline (e.g. stitching the
+      recording, transcription, notetaking), tracking progress from NOT_STARTED through
+      COMPLETED.
+    type: STRING
+    mode: NULLABLE
+  - name: recordingsFolderPath
+    description:
+      Path within recordingsGCSBucket where this meeting's recordings are
+      stored.
+    type: STRING
+    mode: NULLABLE
+  - name: recordingsGCSBucket
+    description: GCS bucket where this meeting's raw recordings are stored.
+    type: STRING
+    mode: NULLABLE
+  - name: finalRecordingGCSPath
+    description: GCS path of the final stitched recording, once processing has completed.
+    type: STRING
+    mode: NULLABLE
+  - name: userNotepadNotes
+    description: Free-form notes the staff member typed during the meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: residentId
+    description:
+      Resident.personId of the resident this meeting was with, if the meeting
+      was with a resident rather than a client.
+    type: BIGNUMERIC
+    mode: NULLABLE
+  - name: caseNote
+    description:
+      LLM-drafted case note produced by the notetaking pipeline for this
+      meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: actionItems
+    description:
+      JSON-encoded list of LLM-drafted action items produced by the notetaking
+      pipeline for this meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: staffEmail
+    description: Staff.email of the staff member who conducted this meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: audioDeletedAt
+    description:
+      Timestamp when the meeting's audio recording was deleted, or null if
+      it has not yet been deleted.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: transcriptDeletedAt
+    description:
+      Timestamp when the meeting's transcript was deleted, or null if it
+      has not yet been deleted.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: durationMs
+    description: Duration of the meeting recording, in milliseconds.
+    type: INTEGER
+    mode: NULLABLE
+  - name: structuredActionItems
+    description:
+      JSON-encoded structured (machine-parseable) version of the action items
+      produced by the notetaking pipeline for this meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: staffFeedback
+    description:
+      JSON-encoded LLM-generated feedback for the staff member on how they
+      conducted the meeting.
+    type: STRING
+    mode: NULLABLE
+  - name: staffFeedbackGeneratedAt
+    description: Timestamp when staffFeedback was generated.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: outputsPipelineRunId
+    description:
+      NotetakingPipelineRun.id that produced the current output (caseNote,
+      staffFeedback, etc.). Used to bind OutputVote rows to the exact output content
+      version, so prior votes are invalidated when the meeting is reprocessed.
+    type: STRING
+    mode: NULLABLE
+  - name: meetingType
+    description: Type of meeting (e.g. supervision check-in, collateral contact).
+    type: STRING
+    mode: NULLABLE
+  - name: meetingTypeCategory
+    description:
+      Additional category for meetingType, if the agency's configuration
+      defines one.
+    type: STRING
+    mode: NULLABLE
+  - name: notetakingPipelineRunId
+    description:
+      NotetakingPipelineRun.id of the run that produced the current notes.
+      Advances on regenerate, invalidating prior NoteApproval rows.
+    type: STRING
+    mode: NULLABLE
+  - name: caseNoteEditedAt
+    description:
+      Timestamp of the most recent user edit to caseNote, or null if it is
+      untouched LLM output (cleared on regenerate).
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: actionItemsEditedAt
+    description:
+      Timestamp of the most recent user edit to actionItems, or null if it
+      is untouched LLM output (cleared on regenerate).
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: []

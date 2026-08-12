@@ -51,7 +51,19 @@ JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
 
 JII_TEXTING_DASHBOARDS_DB_US_IX: str = "jii_texting_dashboards_db_us_ix"
 
+MEETINGS_DASHBOARDS_DB_US_AZ: str = "meetings_dashboards_db_us_az"
+
+MEETINGS_DASHBOARDS_DB_US_CO: str = "meetings_dashboards_db_us_co"
+
+MEETINGS_DASHBOARDS_DB_US_IX: str = "meetings_dashboards_db_us_ix"
+
+MEETINGS_DASHBOARDS_DB_US_NC: str = "meetings_dashboards_db_us_nc"
+
+MEETINGS_DASHBOARDS_DB_US_ND: str = "meetings_dashboards_db_us_nd"
+
 MEETINGS_DASHBOARDS_DB_US_NE: str = "meetings_dashboards_db_us_ne"
+
+MEETINGS_DASHBOARDS_DB_US_TN: str = "meetings_dashboards_db_us_tn"
 
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
@@ -102,5 +114,11 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data exported from Intercom",
     JII_TEXTING_DASHBOARDS_DB_US_TX: "Stores JII Texting dashboard data for Texas.",
     JII_TEXTING_DASHBOARDS_DB_US_IX: "Stores JII Texting dashboard data for Idaho.",
-    MEETINGS_DASHBOARDS_DB_US_NE: "Stores LLMAJ evaluation run data for the Nebraska notetaking module.",
+    MEETINGS_DASHBOARDS_DB_US_AZ: "Stores Meetings product data for Arizona.",
+    MEETINGS_DASHBOARDS_DB_US_CO: "Stores Meetings product data for Colorado.",
+    MEETINGS_DASHBOARDS_DB_US_IX: "Stores Meetings product data for Idaho.",
+    MEETINGS_DASHBOARDS_DB_US_NC: "Stores Meetings product data for North Carolina.",
+    MEETINGS_DASHBOARDS_DB_US_ND: "Stores Meetings product data for North Dakota.",
+    MEETINGS_DASHBOARDS_DB_US_NE: "Stores Meetings product data for Nebraska.",
+    MEETINGS_DASHBOARDS_DB_US_TN: "Stores Meetings product data for Tennessee.",
 }

@@ -1,0 +1,46 @@
+address:
+  dataset_id: meetings_dashboards_db_us_co
+  table_id: NotetakingAgentExecution
+description:
+  Individual LLM agent executions (e.g. extraction, drafting, verification)
+  within a notetaking pipeline run. One row per attempt by a single agent step; a
+  step may be retried multiple times within the same pipeline run.
+schema:
+  - name: id
+    description: Unique identifier for this agent execution.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when this agent execution was recorded.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: pipelineRunId
+    description:
+      NotetakingPipelineRun.id of the pipeline run this execution belongs
+      to.
+    type: STRING
+    mode: NULLABLE
+  - name: agentType
+    description:
+      Which notetaking pipeline step this execution corresponds to (EXTRACTION,
+      DRAFTING, or VERIFICATION).
+    type: STRING
+    mode: NULLABLE
+  - name: attemptNumber
+    description:
+      1-indexed attempt number of this execution within its agentType and
+      pipeline run.
+    type: INTEGER
+    mode: NULLABLE
+  - name: outputData
+    description: JSON-encoded output produced by the agent for this execution.
+    type: STRING
+    mode: NULLABLE
+  - name: validationResult
+    description:
+      JSON-encoded result of validating outputData, including whether it
+      passed (valid), the kind of validation error if it did not (errorKind), and a
+      human-readable message.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: []

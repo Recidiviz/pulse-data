@@ -1,0 +1,38 @@
+address:
+  dataset_id: meetings_dashboards_db_us_tn
+  table_id: Utterance
+description:
+  Individual speaker utterances parsed out of a meeting transcription,
+  synced from the meetings backend database. One row per utterance within a Transcription.
+schema:
+  - name: id
+    description: Unique identifier for this utterance.
+    type: STRING
+    mode: NULLABLE
+  - name: text
+    description: Transcribed text of the utterance.
+    type: STRING
+    mode: NULLABLE
+  - name: speaker
+    description:
+      Identifier of the speaker who produced this utterance, as labeled by
+      the transcription provider.
+    type: STRING
+    mode: NULLABLE
+  - name: startTimeMs
+    description: Start time of the utterance within the recording, in milliseconds.
+    type: INTEGER
+    mode: NULLABLE
+  - name: endTimeMs
+    description: End time of the utterance within the recording, in milliseconds.
+    type: INTEGER
+    mode: NULLABLE
+  - name: confidence
+    description: Confidence score reported by the transcription provider for this utterance.
+    type: FLOAT
+    mode: NULLABLE
+  - name: transcriptionId
+    description: Transcription.id of the transcription this utterance belongs to.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: []

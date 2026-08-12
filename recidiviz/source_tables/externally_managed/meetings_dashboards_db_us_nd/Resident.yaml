@@ -1,0 +1,76 @@
+address:
+  dataset_id: meetings_dashboards_db_us_nd
+  table_id: Resident
+description:
+  Residents (people who are incarcerated) who can be the subject of a meeting
+  in the meetings dashboard app, synced from the meetings backend database. One row
+  per resident; residents are linked to Meeting rows via residentId.
+schema:
+  - name: stateCode
+    description: State code of the agency this resident belongs to.
+    type: STRING
+    mode: NULLABLE
+  - name: personId
+    description:
+      Unique identifier for the resident in the system. This is not necessarily
+      stable over time.
+    type: BIGNUMERIC
+    mode: NULLABLE
+  - name: stablePersonExternalId
+    description:
+      A mostly-stable identifier that is an external identifier for the resident.
+      In rare circumstances this can change within a stablePersonExternalIdType, but
+      it can be considered "stable enough".
+    type: STRING
+    mode: NULLABLE
+  - name: stablePersonExternalIdType
+    description:
+      The type of the stable external identifier. Typically there will be
+      only one per state at any given time, but there can be multiple if, for example,
+      the state is doing an OMS migration.
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymizedId
+    description:
+      An identifier used to anonymize the resident's identity in the system.
+      It is a hash of the stablePersonExternalId and is unique within a stablePersonExternalIdType.
+    type: STRING
+    mode: NULLABLE
+  - name: displayPersonExternalId
+    description:
+      An identifier that staff are used to using to refer to the resident,
+      which may be different from the stablePersonExternalId. Used for display purposes
+      in the UI.
+    type: STRING
+    mode: NULLABLE
+  - name: givenNames
+    description: The resident's given (first) names.
+    type: STRING
+    mode: NULLABLE
+  - name: middleNames
+    description: The resident's middle name(s), if any.
+    type: STRING
+    mode: NULLABLE
+  - name: surname
+    description: The resident's surname (last name).
+    type: STRING
+    mode: NULLABLE
+  - name: suffix
+    description: The resident's name suffix (e.g. Jr., III), if any.
+    type: STRING
+    mode: NULLABLE
+  - name: facilityId
+    description: Identifier of the facility where the resident is housed.
+    type: STRING
+    mode: NULLABLE
+  - name: isActive
+    description:
+      Whether or not the resident appeared in the most recent export. Needed
+      to ensure meetings aren't deleted when residents are removed.
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: lastImportedAt
+    description: Timestamp when this resident was last synced from the source system.
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: []
