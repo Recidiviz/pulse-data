@@ -42,7 +42,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
 )
-from recidiviz.documents.extraction.llm_document_validation_result import (
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
 )
 from recidiviz.persistence.database.schema.operations import schema

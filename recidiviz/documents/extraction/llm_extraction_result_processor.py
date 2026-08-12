@@ -32,11 +32,11 @@ from recidiviz.documents.extraction.llm_client.types import (
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMJobDocumentExtractionResult,
 )
-from recidiviz.documents.extraction.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
-)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
+    LLMExtractionResultValidator,
 )
 
 

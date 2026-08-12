@@ -25,6 +25,7 @@ from recidiviz.documents.extraction.eval.golden_eval_result import (
     array_sub_field_score_name,
     render_array_element_count,
 )
+from recidiviz.documents.extraction.exceptions import LLMOutputParsingError
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
@@ -35,7 +36,6 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
-    LLMOutputParsingError,
     LLMRequestOutputValues,
 )
 

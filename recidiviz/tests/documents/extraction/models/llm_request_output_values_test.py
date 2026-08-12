@@ -19,14 +19,22 @@ from typing import Any, Callable
 from unittest import TestCase
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_output_schema_builder import (
+    build_entity_resolution_output_schema,
+)
+from recidiviz.documents.extraction.exceptions import LLMOutputParsingError
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
+)
+from recidiviz.documents.extraction.models.llm_inferred_field_output import (
+    InferredFieldOutput,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
+    ConfidenceLevel,
     LLMOutputFieldType,
     PrimitiveScalarLLMRequestOutputSchemaField,
     ScalarValuedLLMRequestOutputSchemaField,
@@ -34,17 +42,26 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     CONFIDENCE_LEVEL_FIELD_NAME,
+    ENTITIES_FIELD_NAME,
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     RESULT_KEY,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
-    LLMOutputParsingError,
     LLMRequestOutputValues,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_collection,
+    get_entity_group_by_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_fake_entity_resolution_entity_result_json,
+    build_fake_entity_resolution_result_content,
     build_fake_extractor_assignment_result_json,
     build_fake_extractor_result_content,
+    build_inferred_field_result_json,
     build_null_inferred_field_result_json,
     wrap_in_result_key,
 )
@@ -81,8 +98,9 @@ def _scalar_field(
     return assert_scalar_valued_field(schema.get_field(field_name))
 
 
-class LLMRequestOutputValuesTest(TestCase):
-    """Tests for LLMRequestOutputValues."""
+class _LLMRequestOutputValuesTestBase(TestCase):
+    """Shared setup for the LLMRequestOutputValues tests: the fake collection's
+    output schema, and builders for result JSON read against it."""
 
     def setUp(self) -> None:
         self.output_schema = get_first_order_llm_extractor_config(
@@ -127,6 +145,10 @@ class LLMRequestOutputValuesTest(TestCase):
         output_json = assert_type(self._full_output_values().output_json, dict)
         output_json[RESULT_KEY].update(field_overrides)
         return self._output_values(output_json)
+
+
+class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
+    """Tests the value readers of LLMRequestOutputValues."""
 
     def test_value_for_inferred_field_unwraps_value(self) -> None:
         output_values = self._full_output_values()
@@ -391,3 +413,315 @@ class LLMRequestOutputValuesTest(TestCase):
                 output_values.array_elements(field=self.assignments_field), list
             )[1],
         )
+
+
+class LLMRequestOutputValuesPresenceTest(_LLMRequestOutputValuesTestBase):
+    """Tests LLMRequestOutputValues.is_value_present, which reports whether a
+    top-level field carries a value without reading into an array's elements."""
+
+    def _is_present(
+        self, output_values: LLMRequestOutputValues, field_name: str
+    ) -> bool:
+        return output_values.is_value_present(
+            field=self.output_schema.get_field(field_name)
+        )
+
+    def test_populated_fields_are_present(self) -> None:
+        output_values = self._full_output_values()
+        for field_name in ("primary_status", "status_note", "location", "assignments"):
+            with self.subTest(field_name=field_name):
+                self.assertTrue(self._is_present(output_values, field_name))
+
+    def test_empty_scalar_is_present(self) -> None:
+        # Emptiness and falsiness are not nullness for anything but an array: an
+        # empty string is a value the model returned.
+        self.assertTrue(
+            self._is_present(self._full_output_values(status_note=""), "status_note")
+        )
+
+    def test_null_branch_field_is_absent(self) -> None:
+        self.assertFalse(
+            self._is_present(self._full_output_values(location=None), "location")
+        )
+
+    def test_empty_array_is_present(self) -> None:
+        # An empty array is the extractor's affirmative statement that there are
+        # no values for the field — unlike an omitted key, which says nothing.
+        self.assertTrue(
+            self._is_present(self._full_output_values(assignments=[]), "assignments")
+        )
+
+    def test_field_omitted_from_json_is_absent(self) -> None:
+        output_json = assert_type(self._full_output_values().output_json, dict)
+        del output_json[RESULT_KEY]["location"]
+        del output_json[RESULT_KEY]["assignments"]
+        output_values = self._output_values(output_json)
+        self.assertFalse(self._is_present(output_values, "location"))
+        self.assertFalse(self._is_present(output_values, "assignments"))
+
+    def test_array_of_all_null_elements_is_present(self) -> None:
+        # Presence is about the array itself, not what its elements hold — the
+        # accessor never reads into them, which is what makes it safe for arrays
+        # whose sub-fields the scalar readers cannot unwrap.
+        self.assertTrue(
+            self._is_present(
+                self._full_output_values(assignments=[None]), "assignments"
+            )
+        )
+
+    def test_non_list_array_field_raises(self) -> None:
+        output_values = self._malformed_output_values(assignments={"not": "a list"})
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected array field \[assignments\] to hold a list, found "
+            r"\[<class 'dict'>\]\.$",
+        ):
+            self._is_present(output_values, "assignments")
+
+
+class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTestBase):
+    """Tests LLMRequestOutputValues.inferred_field_outputs, the walk over the
+    companion-metadata wrappers the validation checks read."""
+
+    def _display_names(self, output_values: LLMRequestOutputValues) -> list[str]:
+        return [
+            field_output.display_name
+            for field_output in output_values.inferred_field_outputs()
+        ]
+
+    def test_walks_top_level_and_array_sub_fields(self) -> None:
+        # `status_note` is STRUCTURAL and `assignments` is an ARRAY_OF_STRUCT
+        # emitted as a bare array, so neither carries a wrapper of its own —
+        # only the array's sub-fields do, named by element index.
+        self.assertEqual(
+            [
+                "primary_status",
+                "location",
+                "assignments[0].assignment_name",
+                "assignments[0].assignment_type",
+                "assignments[0].rate_amount",
+                "assignments[0].rate_period",
+            ],
+            self._display_names(self._full_output_values()),
+        )
+
+    def test_absent_fields_skipped(self) -> None:
+        output_json = assert_type(self._full_output_values().output_json, dict)
+        del output_json[RESULT_KEY]["location"]
+        del output_json[RESULT_KEY]["assignments"]
+        self.assertEqual(
+            ["primary_status"], self._display_names(self._output_values(output_json))
+        )
+
+    def test_every_array_element_walked(self) -> None:
+        output_values = self._full_output_values(
+            assignments=[
+                build_fake_extractor_assignment_result_json(
+                    "Dish duty", "internal", 12.5, "hourly"
+                ),
+                build_fake_extractor_assignment_result_json(
+                    "Laundry", "external", 20.0, "monthly"
+                ),
+            ]
+        )
+        self.assertEqual(
+            [
+                "assignments[0].assignment_name",
+                "assignments[1].assignment_name",
+            ],
+            [
+                display_name
+                for display_name in self._display_names(output_values)
+                if display_name.endswith("assignment_name")
+            ],
+        )
+
+    def _field_output(
+        self, output_values: LLMRequestOutputValues, display_name: str
+    ) -> InferredFieldOutput:
+        [field_output] = [
+            candidate
+            for candidate in output_values.inferred_field_outputs()
+            if candidate.display_name == display_name
+        ]
+        return field_output
+
+    def test_value_branch_output_read(self) -> None:
+        field_output = self._field_output(self._full_output_values(), "location")
+        self.assertTrue(field_output.has_value)
+        self.assertEqual("Kitchen", field_output.value)
+        self.assertEqual(ConfidenceLevel.INFERRED, field_output.confidence_level)
+
+    def test_null_branch_output_read(self) -> None:
+        field_output = self._field_output(
+            self._full_output_values(location=None), "location"
+        )
+        self.assertFalse(field_output.has_value)
+        self.assertIsNone(field_output.value)
+        self.assertEqual(ConfidenceLevel.EXPLICIT, field_output.confidence_level)
+
+    def test_structural_field_rejected(self) -> None:
+        # `status_note` is STRUCTURAL, so it carries none of the companion
+        # metadata this view exists to read — building one over it is a caller
+        # bug, not a malformed result.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^field \[status_note\] is STRUCTURAL, but this view reads the "
+            r"companion metadata only an INFERRED field carries\.$",
+        ):
+            InferredFieldOutput(
+                field=self.output_schema.get_field("status_note"),
+                display_name="status_note",
+                field_json={},
+            )
+
+    def test_wrapper_with_neither_branch_raises(self) -> None:
+        # A wrapper carrying neither key matches neither branch of the field's
+        # anyOf, so it must not read as the null branch — that would pass the
+        # field off as "nothing to extract" when the extractor never said so.
+        field_output = self._field_output(
+            self._malformed_output_values(
+                location={CONFIDENCE_LEVEL_FIELD_NAME: "explicit"}
+            ),
+            "location",
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^INFERRED field \[location\] holds neither a \[value\] nor a "
+            r"\[null_reason\]\. Found keys: \['confidence_level'\]\.$",
+        ):
+            _ = field_output.has_value
+
+    def test_wrapper_missing_confidence_level_raises(self) -> None:
+        wrapper = build_inferred_field_result_json("Kitchen")
+        del wrapper[CONFIDENCE_LEVEL_FIELD_NAME]
+        field_output = self._field_output(
+            self._malformed_output_values(location=wrapper), "location"
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^INFERRED field \[location\] holds no \[confidence_level\]\. Found "
+            r"keys: \['adversarial_interpretation', 'citations', 'value'\]\.$",
+        ):
+            _ = field_output.confidence_level
+
+    def test_wrapper_with_unrecognized_confidence_level_raises(self) -> None:
+        field_output = self._field_output(
+            self._malformed_output_values(
+                location=build_inferred_field_result_json(
+                    "Kitchen", confidence_level="pretty_sure"
+                )
+            ),
+            "location",
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^INFERRED field \[location\] holds an unrecognized "
+            r"\[confidence_level\] of \[pretty_sure\]\.$",
+        ):
+            _ = field_output.confidence_level
+
+    def test_non_dict_inferred_field_wrapper_raises(self) -> None:
+        output_values = self._malformed_output_values(location="Kitchen")
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected INFERRED field \[location\] to hold a dict, found "
+            r"\[<class 'str'>\]\.$",
+        ):
+            output_values.inferred_field_outputs()
+
+    def test_non_list_array_field_raises(self) -> None:
+        output_values = self._malformed_output_values(assignments={"not": "a list"})
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected ARRAY_OF_STRUCT field \[assignments\] to hold a list, found "
+            r"\[<class 'dict'>\]\.$",
+        ):
+            output_values.inferred_field_outputs()
+
+    def test_non_dict_array_element_raises(self) -> None:
+        output_values = self._full_output_values(assignments=["not a dict"])
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected element \[0\] of ARRAY_OF_STRUCT field \[assignments\] to "
+            r"hold a dict, found \[<class 'str'>\]\.$",
+        ):
+            output_values.inferred_field_outputs()
+
+
+class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
+    """Tests reads against a synthesized entity-resolution schema, whose
+    `entities` elements carry an ARRAY_OF_INTEGER `entry_nums` sub-field that the
+    scalar readers cannot unwrap. The ER schema declares no is_relevant, so its
+    result JSON carries the extracted fields directly with no `result` envelope.
+    """
+
+    def setUp(self) -> None:
+        self.output_schema = build_entity_resolution_output_schema(
+            entity_group=get_entity_group_by_name(
+                fake_first_order_collection(), "location"
+            )
+        )
+        self.entities_field = assert_type(
+            self.output_schema.get_field(ENTITIES_FIELD_NAME),
+            ArrayOfStructLLMRequestOutputSchemaField,
+        )
+
+    def _output_values(self, entities: list[dict[str, Any]]) -> LLMRequestOutputValues:
+        return LLMRequestOutputValues(
+            output_schema=self.output_schema,
+            output_json=build_fake_entity_resolution_result_content(entities),
+        )
+
+    def test_array_elements_reads_entry_nums_list(self) -> None:
+        output_values = self._output_values(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1, entry_nums=[1, 3], location="HQ"
+                ),
+                build_fake_entity_resolution_entity_result_json(
+                    2, entry_nums=[2], location="Annex"
+                ),
+            ]
+        )
+        self.assertEqual(
+            [
+                {
+                    ENTITY_ID_FIELD_NAME: 1,
+                    "location": "HQ",
+                    ENTRY_NUMS_FIELD_NAME: [1, 3],
+                },
+                {
+                    ENTITY_ID_FIELD_NAME: 2,
+                    "location": "Annex",
+                    ENTRY_NUMS_FIELD_NAME: [2],
+                },
+            ],
+            output_values.array_elements(field=self.entities_field),
+        )
+
+    def test_omitted_entry_nums_is_none(self) -> None:
+        # An element omitting the field (as an older extractor version's output
+        # would) reads as None, same as an omitted scalar sub-field.
+        output_values = self._output_values(
+            [{ENTITY_ID_FIELD_NAME: 1, "location": "HQ"}]
+        )
+        [element] = assert_type(
+            output_values.array_elements(field=self.entities_field), list
+        )
+        self.assertIsNone(element[ENTRY_NUMS_FIELD_NAME])
+
+    def test_non_list_entry_nums_raises(self) -> None:
+        output_values = self._output_values(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1, entry_nums=5, location="HQ"  # type: ignore[arg-type]
+                )
+            ]
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Expected ARRAY_OF_INTEGER field \[entry_nums\] to hold a list, "
+            r"found \[<class 'int'>\]\.$",
+        ):
+            output_values.array_elements(field=self.entities_field)

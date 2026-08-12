@@ -38,14 +38,14 @@ from recidiviz.documents.extraction.llm_extraction_result_processor import (
     error_type_for_request_error,
     result_type_for_request_error,
 )
-from recidiviz.documents.extraction.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
-)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     RESULT_KEY,
+)
+from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
+    LLMExtractionResultValidator,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (

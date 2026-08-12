@@ -22,9 +22,6 @@ import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators
-from recidiviz.documents.extraction.llm_document_validation_result import (
-    LLMDocumentValidationResult,
-)
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMJobDocumentExtractionResult,
 )
@@ -38,6 +35,9 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
+)
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
 )
 from recidiviz.utils.types import assert_type
 

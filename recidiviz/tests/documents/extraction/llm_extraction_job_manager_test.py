@@ -34,11 +34,6 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionTokenCounts,
     LLMRequestErrorType,
 )
-from recidiviz.documents.extraction.llm_document_validation_result import (
-    LLMDocumentValidationResult,
-    ValidationCheckType,
-    ValidationIssue,
-)
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionEligibleDocumentRecord,
     LLMExtractionJobManager,
@@ -53,6 +48,11 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
+)
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+    ValidationCheckType,
+    ValidationIssue,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (

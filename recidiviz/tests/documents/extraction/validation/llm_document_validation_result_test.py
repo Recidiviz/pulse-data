@@ -23,11 +23,6 @@ import pytz
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
 )
-from recidiviz.documents.extraction.llm_document_validation_result import (
-    LLMDocumentValidationResult,
-    ValidationCheckType,
-    ValidationIssue,
-)
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
@@ -41,6 +36,11 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
+)
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+    ValidationCheckType,
+    ValidationIssue,
 )
 
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)

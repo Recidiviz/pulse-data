@@ -16,10 +16,14 @@
 # =============================================================================
 """Tests for LLMExtractionResultValidator.
 
-Exercises the single structural check against the JSON Schema generated from the
-fake extractor collection's output schema: a conforming result passes, each way a
-result can violate the schema is flagged, and a field absent from the JSON is
-treated as null (forward-compat).
+Exercises the validator against the fake extractor collection: structural
+conformance against the JSON Schema generated from its output schema (a
+conforming result passes, each way a result can violate the schema is flagged,
+and a field absent from the JSON is treated as null (forward-compat)), plus the
+wiring of the checks layered on top of it — a required-field-confidence or
+relevant-but-all-null violation downgrades the result the same way a structural
+one does, and a structurally-broken result skips them both. Each check itself
+is tested directly in its own test file.
 
 These all use the relevance-bearing fake collection (a `result`-wrapped result
 with `is_relevant`). The validator also handles a relevance-free (ER) collection,
@@ -43,23 +47,29 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionTokenCounts,
 )
-from recidiviz.documents.extraction.llm_document_validation_result import (
-    LLMDocumentValidationResult,
-    ValidationCheckType,
-)
-from recidiviz.documents.extraction.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
-)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+    ValidationCheckType,
+)
+from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
+    LLMExtractionResultValidator,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_inferred_field_result_json,
+    build_null_inferred_field_result_json,
     fake_all_fields_result_json,
     fake_minimal_relevant_result_json,
+    wrap_in_result_key,
 )
 
 _STATE_CODE = StateCode.US_XX
@@ -70,7 +80,7 @@ _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 
 
 class LLMExtractionResultValidatorTest(TestCase):
-    """Tests the structural check of LLMExtractionResultValidator."""
+    """Tests LLMExtractionResultValidator."""
 
     def setUp(self) -> None:
         self.config = get_first_order_llm_extractor_config(
@@ -293,3 +303,48 @@ class LLMExtractionResultValidatorTest(TestCase):
             {"result.primary_status.value", "result.status_note"},
             {issue.field_name for issue in validation.audit_issues},
         )
+
+    def test_relevant_but_all_null_downgrades_result(self) -> None:
+        # Structurally conforming — primary_status is present, on its null
+        # branch — but the model called the document relevant while extracting
+        # nothing from it.
+        result_json = wrap_in_result_key(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "primary_status": build_null_inferred_field_result_json(),
+            }
+        )
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.RELEVANT_BUT_ALL_NULL, issue.check_type)
+        # The finding is about the document as a whole, so it names no field.
+        self.assertIsNone(issue.field_name)
+
+    def test_required_field_below_minimum_confidence_downgrades_result(self) -> None:
+        # Structurally conforming, but the required `primary_status` was
+        # extracted at `speculative`, below the collection's `inferred` minimum.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"] = build_inferred_field_result_json(
+            "active", "speculative"
+        )
+        validation = self._validate(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(
+            ValidationCheckType.REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            issue.check_type,
+        )
+        self.assertEqual("primary_status", issue.field_name)

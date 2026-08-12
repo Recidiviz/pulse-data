@@ -129,9 +129,6 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
 from recidiviz.documents.extraction.llm_extraction_result_processor import (
     LLMExtractionResultProcessor,
 )
-from recidiviz.documents.extraction.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
-)
 from recidiviz.documents.extraction.llm_extraction_results_persister import (
     LLMExtractionResultsPersister,
 )
@@ -143,6 +140,9 @@ from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
+    LLMExtractionResultValidator,
 )
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,

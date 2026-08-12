@@ -36,9 +36,6 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionTokenCounts,
     LLMRequestErrorType,
 )
-from recidiviz.documents.extraction.llm_document_validation_result import (
-    LLMDocumentValidationResult,
-)
 from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
     LLMExtractionEligibleDocumentQueryBuilder,
 )
@@ -57,6 +54,9 @@ from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
+)
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,

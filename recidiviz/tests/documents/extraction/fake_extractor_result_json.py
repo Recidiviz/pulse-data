@@ -68,13 +68,14 @@ def build_inferred_field_result_json(
 
 def build_null_inferred_field_result_json(
     null_reason: str = "no_info_found",
+    confidence_level: str = "explicit",
 ) -> dict[str, Any]:
     """Returns the JSON the extractor emits for one INFERRED field on the null
     branch: no value, just the null reason and the other companion-metadata keys.
     """
     return {
         NULL_REASON_FIELD_NAME: null_reason,
-        CONFIDENCE_LEVEL_FIELD_NAME: "explicit",
+        CONFIDENCE_LEVEL_FIELD_NAME: confidence_level,
         ADVERSARIAL_INTERPRETATION_FIELD_NAME: "adv-null",
         CITATIONS_FIELD_NAME: [],
     }
