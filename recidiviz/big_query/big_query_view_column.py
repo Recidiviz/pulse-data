@@ -188,6 +188,13 @@ class Numeric(BigQueryViewColumn):
 
 
 @attrs.define(kw_only=True)
+class BigNumeric(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a BIGNUMERIC."""
+
+    field_type: bigquery.StandardSqlTypeNames = bigquery.StandardSqlTypeNames.BIGNUMERIC
+
+
+@attrs.define(kw_only=True)
 class Record(BigQueryViewColumn):
     """A BigQueryViewColumn representing a RECORD (STRUCT) with subfields."""
 
@@ -227,4 +234,5 @@ ConcreteBigQueryColumnType = (
     | type[Time]
     | type[Json]
     | type[Numeric]
+    | type[BigNumeric]
 )

@@ -21,6 +21,7 @@ import unittest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view_column import (
+    BigNumeric,
     Bool,
     Date,
     Float,
@@ -65,6 +66,7 @@ class BigQueryViewColumnTest(unittest.TestCase):
             (Timestamp, "TIMESTAMP"),
             (Date, "DATE"),
             (Numeric, "NUMERIC"),
+            (BigNumeric, "BIGNUMERIC"),
             (Json, "JSON"),
         ]
         for column_cls, expected_cast_type in cases:

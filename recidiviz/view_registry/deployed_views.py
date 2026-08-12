@@ -159,6 +159,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "llm_eval__label_studio",
     "llm_eval__llmaj",
     "meetings",
+    "meetings_dashboards_db_export",
     "normalized_state",
     "normalized_state_views",
     "outliers_views",

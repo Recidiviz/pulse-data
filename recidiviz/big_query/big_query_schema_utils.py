@@ -24,6 +24,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.big_query.big_query_view_column import (
     COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    BigNumeric,
     BigQueryViewColumn,
     Bool,
     ConcreteBigQueryColumnType,
@@ -87,6 +88,7 @@ _FIELD_TYPE_TO_COLUMN_CLASS: dict[str, ConcreteBigQueryColumnType] = {
     "TIME": Time,
     "JSON": Json,
     "NUMERIC": Numeric,
+    "BIGNUMERIC": BigNumeric,
 }
 
 

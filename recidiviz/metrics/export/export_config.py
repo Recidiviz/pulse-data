@@ -46,7 +46,7 @@ from recidiviz.calculator.query.state.views.lantern_revocations_matrix.dashboard
     LANTERN_REVOCATIONS_MATRIX_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.meetings.meetings_views import (
-    MEETINGS_VIEW_BUILDERS,
+    MEETINGS_VIEWS_TO_EXPORT,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
@@ -466,7 +466,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Meeting Assistant views
     ExportViewCollectionConfig(
-        view_builders_to_export=MEETINGS_VIEW_BUILDERS,
+        view_builders_to_export=MEETINGS_VIEWS_TO_EXPORT,
         output_directory_uri_template=MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="MEETINGS",
         allow_empty=True,

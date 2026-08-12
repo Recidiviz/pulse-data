@@ -83,6 +83,9 @@ from recidiviz.calculator.query.state.views.classification.classification_score_
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.meetings.meetings_source_table_view_collector import (
+    collect_meetings_source_table_view_builders,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
 )
@@ -643,6 +646,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "New LLMAJ eval scores view. Will be referenced by a calibration view joining "
         "LLMAJ scores to human Label Studio annotations (mayukas, 2026-07-08)"
     ),
+    **{
+        view_builder.address: (
+            "Cross-state union view over meetings dashboards source tables. Not yet "
+            "referenced downstream; a stacked follow-up PR will consume "
+            "NotetakingEvaluationRun (an LLMAJ eval view) and eventually the "
+            "remaining tables here. (Dana Hoffman, 2026-08-11)"
+        )
+        for view_builder in collect_meetings_source_table_view_builders()
+    },
     BigQueryAddress.from_str("analyst_data.us_ar_education_records_preprocessed"): (
         "Preprocessed staging view for AR education records. Used by the FDE process to "
         "determine downstream writeback logic for Arkansas GED AET reconciliation. "

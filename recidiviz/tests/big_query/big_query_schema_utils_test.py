@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_schema_utils import (
 )
 from recidiviz.big_query.big_query_view_column import (
     COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    BigNumeric,
     BigQueryViewColumn,
     Bool,
     Date,
@@ -338,6 +339,7 @@ class SchemaFieldToViewColumnTest(unittest.TestCase):
             ("TIME", Time, bigquery.SqlTypeNames.TIME),
             ("JSON", Json, bigquery.StandardSqlTypeNames.JSON),
             ("NUMERIC", Numeric, bigquery.SqlTypeNames.NUMERIC),
+            ("BIGNUMERIC", BigNumeric, bigquery.SqlTypeNames.BIGNUMERIC),
             # Aliases
             ("INT64", Integer, bigquery.SqlTypeNames.INTEGER),
             ("FLOAT64", Float, bigquery.SqlTypeNames.FLOAT),
