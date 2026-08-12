@@ -608,6 +608,9 @@ class SandboxExtractionRunner:
             eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
                 document_filter=self.config.document_filter,
                 input_document_collection=self.config.input_document_collection,
+                # TODO(OBT-42680) Since we currently only support extractions against the real document store,
+                # this is always None. When sandbox documents are supported, this will need to be updated.
+                source_sandbox_prefix=None,
             ),
             job_manager=self.job_manager,
             bq_client=self.bq_client,
@@ -672,6 +675,9 @@ class SandboxExtractionRunner:
             request_parameters=LLMDocumentExtractionRequestBuilder.build_request_parameters(
                 model_config=self.config.model_config, labels=self.labels
             ),
+            # TODO(OBT-42680) Since we currently only support extractions against the real document store,
+            # this is always None. When sandbox documents are supported, this will need to be updated.
+            source_sandbox_prefix=None,
         )
         runner = SyncLLMDocumentExtractionRequestRunner(client=self.sync_client)
 

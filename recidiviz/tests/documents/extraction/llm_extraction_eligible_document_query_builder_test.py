@@ -93,16 +93,21 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
         *,
         metadata_fixture: str,
         contents_fixture: str,
+        source_sandbox_prefix: str | None = None,
     ) -> None:
         self.load_fixture_into_table(
-            address=config.metadata_table_address(sandbox_dataset_prefix=None),
+            address=config.metadata_table_address(
+                sandbox_dataset_prefix=source_sandbox_prefix
+            ),
             schema=config.build_bq_metadata_schema(),
             fixture_path=self._fixture_path(metadata_fixture),
             fixture_columns=None,
             allow_comments=False,
         )
         self.load_fixture_into_table(
-            address=config.document_contents_table_address(sandbox_dataset_prefix=None),
+            address=config.document_contents_table_address(
+                sandbox_dataset_prefix=source_sandbox_prefix
+            ),
             schema=config.build_bq_document_contents_schema(),
             fixture_path=self._fixture_path(contents_fixture),
             fixture_columns=None,
@@ -116,6 +121,7 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
         document_limit: int | None = None,
         root_entity_ids: list[str] | None = None,
         filter_template: str | None = None,
+        source_sandbox_prefix: str | None = None,
     ) -> str:
         # The production-shaped filter selects every live document in the
         # collection; individual tests override it to prove the filter narrows.
@@ -136,6 +142,7 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
                 root_entity_narrowing=narrowing,
             ),
             input_document_collection=config,
+            source_sandbox_prefix=source_sandbox_prefix,
         ).build_query(project_id=self.project_id)
 
     def _assert_matches_fixture(self, query: str, expected_fixture: str) -> None:
@@ -178,6 +185,23 @@ class LLMExtractionEligibleDocumentQueryBuilderTest(BigQueryEmulatorTestCase):
         #   excluded.
         self._assert_matches_fixture(
             self._run_case_notes_query(),
+            "case_notes_unnarrowed_output.csv",
+        )
+
+    def test_sandbox_prefix_reads_from_prefixed_datasets(self) -> None:
+        # With a source sandbox prefix set, the query reads the metadata and
+        # contents from the prefixed sandbox datasets. The fixtures are loaded
+        # only into the prefixed datasets, so a matching non-empty result proves
+        # the prefix is threaded through to both addresses — an unthreaded prefix
+        # would read the empty unprefixed datasets and return nothing.
+        self._load_collection_tables(
+            self.case_notes_config,
+            metadata_fixture="case_notes_metadata_input.csv",
+            contents_fixture="case_notes_contents_input.csv",
+            source_sandbox_prefix="my_prefix",
+        )
+        self._assert_matches_fixture(
+            self._run_query(self.case_notes_config, source_sandbox_prefix="my_prefix"),
             "case_notes_unnarrowed_output.csv",
         )
 

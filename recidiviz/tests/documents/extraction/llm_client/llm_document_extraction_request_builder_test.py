@@ -35,6 +35,7 @@ from recidiviz.documents.store.document_store_gcs_path_utils import (
 from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
+from recidiviz.utils.types import assert_type
 
 _PROJECT_ID = "recidiviz-testing"
 _STATE_CODE = StateCode.US_XX
@@ -66,7 +67,12 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
 
     def setUp(self) -> None:
         self.fs = FakeGCSFileSystem()
-        self.builder = LLMDocumentExtractionRequestBuilder(
+        self.builder = self._builder(source_sandbox_prefix=None)
+
+    def _builder(
+        self, *, source_sandbox_prefix: str | None
+    ) -> LLMDocumentExtractionRequestBuilder:
+        return LLMDocumentExtractionRequestBuilder(
             fs=self.fs,
             project_id=_PROJECT_ID,
             state_code=_STATE_CODE,
@@ -74,16 +80,23 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
             instructions_prompt=_INSTRUCTIONS_PROMPT,
             response_json_schema=_RESPONSE_JSON_SCHEMA,
             request_parameters=_REQUEST_PARAMETERS,
+            source_sandbox_prefix=source_sandbox_prefix,
         )
 
-    def _upload_document(self, document_contents_id: str, contents: str) -> None:
+    def _upload_document(
+        self,
+        document_contents_id: str,
+        contents: str,
+        *,
+        sandbox_prefix: str | None = None,
+    ) -> None:
         self.fs.upload_from_string(
             path=gcs_path_for_document(
                 project_id=_PROJECT_ID,
                 state_code=_STATE_CODE,
                 collection_name=_COLLECTION_NAME,
                 document_contents_id=document_contents_id,
-                sandbox_prefix=None,
+                sandbox_prefix=sandbox_prefix,
             ),
             contents=contents,
             content_type="text/plain",
@@ -106,6 +119,29 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
             ),
             request,
         )
+
+    def test_build_request_with_sandbox_prefix_reads_from_sandbox_path(self) -> None:
+        # A builder with a source sandbox prefix reads from the sandbox path.
+        # The same document text uploaded to the production path is not found,
+        # proving the prefix is threaded through rather than ignored.
+        builder = self._builder(source_sandbox_prefix="my_prefix")
+        self._upload_document(
+            _DOCUMENT_CONTENTS_ID, "Sandbox note.", sandbox_prefix="my_prefix"
+        )
+
+        request = builder.build_request(
+            job_document=_job_document(_DOCUMENT_CONTENTS_ID)
+        )
+        self.assertEqual(
+            "Sandbox note.",
+            assert_type(request, LLMDocumentExtractionRequest).document_text,
+        )
+
+        # The default (prod-path) builder can't see the sandbox-only document.
+        with self.assertRaises(LLMDocumentExtractionRequestError):
+            self.builder.build_request(
+                job_document=_job_document(_DOCUMENT_CONTENTS_ID)
+            )
 
     def test_build_request_missing_document_raises_typed_error(self) -> None:
         # No document uploaded, so the GCS read misses. It must surface as a

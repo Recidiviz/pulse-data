@@ -114,6 +114,7 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
             eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
                 document_filter=self.config.document_filter,
                 input_document_collection=self.config.input_document_collection,
+                source_sandbox_prefix=None,
             ),
             job_manager=self.job_manager,
             bq_client=self.bq_client,

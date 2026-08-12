@@ -77,6 +77,10 @@ class LLMDocumentExtractionRequestBuilder:
     """The generation parameters — temperature, thinking budget, caching, billing
     labels — keyed by parameter name."""
 
+    source_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """When set, document text is read from the state's sandbox blob-storage bucket,
+    namespaced by this prefix. None in production."""
+
     @staticmethod
     def build_request_parameters(
         *, model_config: LLMModelConfig, labels: dict[str, str]
@@ -107,9 +111,7 @@ class LLMDocumentExtractionRequestBuilder:
             state_code=self.state_code,
             collection_name=self.collection_name,
             document_contents_id=document_contents_id,
-            # TODO(OBT-42680) Thread the sandbox prefix through from the sandbox
-            # extraction script so runs can read from the sandbox bucket.
-            sandbox_prefix=None,
+            sandbox_prefix=self.source_sandbox_prefix,
         )
         try:
             document_text = self.fs.download_as_string(path)

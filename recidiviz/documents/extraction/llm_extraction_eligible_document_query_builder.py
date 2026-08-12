@@ -18,6 +18,7 @@
 
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorDocumentFilterConfig,
 )
@@ -57,6 +58,9 @@ class LLMExtractionEligibleDocumentQueryBuilder:
     input_document_collection: DocumentCollectionConfig = attr.ib(
         validator=attr.validators.instance_of(DocumentCollectionConfig)
     )
+    # Sandbox-only prefix scoping the input collection's metadata/contents
+    # datasets this query reads; None in production.
+    source_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
     def build_query(self, *, project_id: str) -> str:
         """Returns the SQL that selects this extractor's eligible documents, one
@@ -64,18 +68,16 @@ class LLMExtractionEligibleDocumentQueryBuilder:
         document_update_datetime. Identical text shared across root entities maps
         to one document_contents_id; the query keeps the oldest such document.
         """
-        # TODO(OBT-42680) Thread sandbox prefix through
         metadata_address = self.input_document_collection.metadata_table_address(
-            sandbox_dataset_prefix=None
+            sandbox_dataset_prefix=self.source_sandbox_prefix
         ).to_project_specific_address(project_id)
         filter_query = self.document_filter.build_document_metadata_filter_query(
             input_document_collection_metadata_address=metadata_address,
         )
 
-        # TODO(OBT-42680) Thread sandbox prefix through
         contents_address = (
             self.input_document_collection.document_contents_table_address(
-                sandbox_dataset_prefix=None
+                sandbox_dataset_prefix=self.source_sandbox_prefix
             ).to_project_specific_address(project_id)
         )
 
