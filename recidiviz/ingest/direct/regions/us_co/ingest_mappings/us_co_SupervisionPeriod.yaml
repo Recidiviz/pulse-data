@@ -226,14 +226,20 @@ output:
                   $enum_mapping:
                     $raw_text: RISKCLASSCODE
                     $mappings:
+                      StateSupervisionLevel.LIMITED:
+                        - "0 // Administrative Caseload"
                       StateSupervisionLevel.MINIMUM:
                         - "1 // Low"
                       StateSupervisionLevel.LOW_MEDIUM:
-                        - "2 // Moderate"
+                        - "2 // Low/Moderate" # Code 2 appeared as "Low/Moderate" in raw data on 2026-08-13 (was "Moderate"; source LASTUPDATEDATE 2026-06-25)
                       StateSupervisionLevel.MEDIUM:
-                        - "3 // High"
+                        - "3 // Moderate" # Code 3 appeared as "Moderate" in raw data on 2026-08-13 (was "High"; source LASTUPDATEDATE 2026-06-25)
                       StateSupervisionLevel.HIGH:
-                        - "4 // Very High"
+                        - "4 // High" # Code 4 appeared as "High" in raw data on 2026-08-13 (was "Very High"; source LASTUPDATEDATE 2026-06-25)
+                      StateSupervisionLevel.MAXIMUM:
+                        - "5 // Intensive Supervision Program (ISP)"
+                      StateSupervisionLevel.UNASSIGNED:
+                        - "9 // Unassigned"
           supervising_officer_staff_external_id: PPOFFICERID
           supervising_officer_staff_external_id_type:
             $conditional:
