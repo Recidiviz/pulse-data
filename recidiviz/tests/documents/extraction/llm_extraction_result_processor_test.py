@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for LLMExtractionResultProcessor."""
 
+import copy
 import datetime
 from typing import Any
 from unittest import TestCase
@@ -50,13 +51,20 @@ from recidiviz.documents.extraction.validation.llm_extraction_result_validator i
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     fake_minimal_relevant_result_json,
+    ground_citations_in_fake_source_text,
 )
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _JOB_ID = "job1"
-_SOURCE_TEXT = "The record is active. Assigned to the kitchen."
+# A relevant result paired with source document text that grounds its citations,
+# so validation's citation checks pass and the result reaches the processor's
+# success path.
+_GROUNDED_RELEVANT_RESULT = ground_citations_in_fake_source_text(
+    fake_minimal_relevant_result_json()
+)
+_SOURCE_TEXT = _GROUNDED_RELEVANT_RESULT.source_document_text
 _NOW = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _TOKEN_COUNTS = LLMDocumentExtractionTokenCounts(
     input_token_count=100,
@@ -81,8 +89,8 @@ class LLMExtractionResultProcessorTest(TestCase):
 
     def build_fake_collection_relevant_result_json(self) -> dict[str, Any]:
         """Returns a relevant result conforming to FAKE_EXTRACTOR_COLLECTION's output
-        schema."""
-        return fake_minimal_relevant_result_json()
+        schema, whose citations are grounded in _SOURCE_TEXT."""
+        return copy.deepcopy(_GROUNDED_RELEVANT_RESULT.result_json)
 
     def test_conforming_relevant_result_is_success(self) -> None:
         result_json = self.build_fake_collection_relevant_result_json()

@@ -25,6 +25,10 @@ violation downgrades the result the same way a structural one does, a
 structurally-broken result skips them all, and findings from several checks land
 in one audit. Each check itself is tested directly in its own test file.
 
+Every case but the hallucinated-citation one validates its result against a
+source document built to ground the result's citations, so that the citation
+checks pass and the case under test is the only thing failing.
+
 These all use the relevance-bearing fake collection (a `result`-wrapped result
 with `is_relevant`). The validator also handles a relevance-free (ER) collection,
 whose result is a flat root object with no `result` wrapper.
@@ -51,6 +55,7 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    CITATIONS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
@@ -69,13 +74,13 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_null_inferred_field_result_json,
     fake_all_fields_result_json,
     fake_minimal_relevant_result_json,
+    ground_citations_in_fake_source_text,
     wrap_in_result_key,
 )
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _DOCUMENT_CONTENTS_ID = "doc1"
-_SOURCE_TEXT = "The record is active. Assigned to the kitchen."
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ADVERSARIAL = "The record might describe a closed matter."
 
@@ -90,7 +95,9 @@ class LLMExtractionResultValidatorTest(TestCase):
         self.validator = LLMExtractionResultValidator()
         self.version_id = self.config.extractor_collection.validation_config_version_id
 
-    def _validate(self, result_json: dict[str, Any]) -> LLMDocumentValidationResult:
+    def _validate(
+        self, result_json: dict[str, Any], *, source_document_text: str
+    ) -> LLMDocumentValidationResult:
         return self.validator.validate(
             config=self.config,
             raw_result=LLMClientDocumentExtractionResult.from_success(
@@ -98,9 +105,22 @@ class LLMExtractionResultValidatorTest(TestCase):
                 result_json=result_json,
                 token_counts=LLMDocumentExtractionTokenCounts.empty(),
             ),
-            _source_document_text=_SOURCE_TEXT,
+            source_document_text=source_document_text,
             validation_datetime_utc=_VALIDATION_DATETIME,
         )
+
+    def _validate_grounded(
+        self, result_json: dict[str, Any]
+    ) -> tuple[LLMDocumentValidationResult, dict[str, Any]]:
+        """Validates |result_json| against a source document that grounds every
+        citation it carries, returning the outcome paired with the grounded
+        result JSON that was actually validated.
+        """
+        grounded = ground_citations_in_fake_source_text(result_json)
+        validation = self._validate(
+            grounded.result_json, source_document_text=grounded.source_document_text
+        )
+        return validation, grounded.result_json
 
     def _passing_result(
         self, validated_output_json: dict[str, Any]
@@ -117,17 +137,22 @@ class LLMExtractionResultValidatorTest(TestCase):
         )
 
     def test_minimal_conforming_result_passes(self) -> None:
-        result_json = fake_minimal_relevant_result_json()
-        self.assertEqual(self._passing_result(result_json), self._validate(result_json))
+        validation, result_json = self._validate_grounded(
+            fake_minimal_relevant_result_json()
+        )
+        self.assertEqual(self._passing_result(result_json), validation)
 
     def test_all_fields_conforming_result_passes(self) -> None:
-        result_json = fake_all_fields_result_json()
-        self.assertEqual(self._passing_result(result_json), self._validate(result_json))
+        validation, result_json = self._validate_grounded(fake_all_fields_result_json())
+        self.assertEqual(self._passing_result(result_json), validation)
 
     def test_irrelevant_result_passes(self) -> None:
         # The irrelevant branch of the anyOf carries only is_relevant.
-        result_json = {"result": {"is_relevant": False}}
-        self.assertEqual(self._passing_result(result_json), self._validate(result_json))
+        result_json = wrap_in_result_key({IS_RELEVANT_FIELD_NAME: False})
+        self.assertEqual(
+            self._passing_result(result_json),
+            self._validate(result_json, source_document_text="Some note text."),
+        )
 
     def test_absent_optional_fields_treated_as_null(self) -> None:
         # location and assignments are optional; a result omitting them (as an
@@ -135,20 +160,25 @@ class LLMExtractionResultValidatorTest(TestCase):
         result_json = fake_minimal_relevant_result_json()
         self.assertNotIn("location", result_json["result"])
         self.assertNotIn("assignments", result_json["result"])
-        self.assertEqual(self._passing_result(result_json), self._validate(result_json))
+        validation, grounded_json = self._validate_grounded(result_json)
+        self.assertEqual(self._passing_result(grounded_json), validation)
 
     def test_unknown_field_does_not_fail_validation(self) -> None:
         # A field the current schema does not declare (e.g. one dropped in a newer
         # version) is tolerated — the schema does not forbid extra properties.
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["a_field_not_in_the_schema"] = "x"
-        self.assertEqual(self._passing_result(result_json), self._validate(result_json))
+        validation, grounded_json = self._validate_grounded(result_json)
+        self.assertEqual(self._passing_result(grounded_json), validation)
 
     def test_validate_does_not_mutate_input(self) -> None:
-        result_json = fake_all_fields_result_json()
-        before = copy.deepcopy(result_json)
-        self._validate(result_json)
-        self.assertEqual(before, result_json)
+        grounded = ground_citations_in_fake_source_text(fake_all_fields_result_json())
+        before = copy.deepcopy(grounded.result_json)
+        self._validate(
+            grounded.result_json,
+            source_document_text=grounded.source_document_text,
+        )
+        self.assertEqual(before, grounded.result_json)
 
     def _assert_single_flagged_field(
         self,
@@ -161,7 +191,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         (nothing usable persisted, document retried), and that its single audit
         issue is the expected SCHEMA_CONFORMANCE finding on |expected_field_name|.
         """
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -194,7 +224,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         # allows them but the object carries a `value` key, so the value branch
         # is the intended one.
         result_json = fake_minimal_relevant_result_json()
-        result_json["result"]["primary_status"]["citations"] = []
+        result_json["result"]["primary_status"][CITATIONS_FIELD_NAME] = []
         self._assert_single_flagged_field(
             result_json,
             expected_field_name="result.primary_status.citations",
@@ -281,8 +311,8 @@ class LLMExtractionResultValidatorTest(TestCase):
         # discriminators equally; the relevant branch wins on property overlap
         # and its is_relevant failures surface at the exact field.
         result_json = fake_minimal_relevant_result_json()
-        result_json["result"]["is_relevant"] = "yes"
-        validation = self._validate(result_json)
+        result_json["result"][IS_RELEVANT_FIELD_NAME] = "yes"
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertEqual(
@@ -297,7 +327,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["primary_status"]["value"] = "not_a_status"
         result_json["result"]["status_note"] = 123
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertEqual(
@@ -312,7 +342,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["primary_status"]["value"] = "inactive"
         result_json["result"]["location"] = build_inferred_field_result_json("Kitchen")
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -331,7 +361,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         # than crash reading values for the later checks.
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["location"] = "Kitchen"
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertTrue(validation.audit_issues)
@@ -350,7 +380,7 @@ class LLMExtractionResultValidatorTest(TestCase):
                 "primary_status": build_null_inferred_field_result_json(),
             }
         )
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -370,7 +400,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         result_json["result"]["primary_status"] = build_inferred_field_result_json(
             "active", "speculative", adversarial_interpretation=_ADVERSARIAL
         )
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -392,7 +422,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         result_json["result"]["primary_status"] = build_inferred_field_result_json(
             "active", "explicit", adversarial_interpretation=_ADVERSARIAL
         )
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -407,6 +437,24 @@ class LLMExtractionResultValidatorTest(TestCase):
         )
         self.assertEqual("primary_status", issue.field_name)
 
+    def test_hallucinated_citation_downgrades_result(self) -> None:
+        # Validated against a document that grounds none of the result's quotes,
+        # rather than the grounded pairing every other case here uses.
+        validation = self._validate(
+            fake_minimal_relevant_result_json(),
+            source_document_text="A note quoting none of that.",
+        )
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.HALLUCINATED_CITATION, issue.check_type)
+        self.assertEqual("primary_status", issue.field_name)
+
     def test_findings_from_several_checks_land_in_one_audit(self) -> None:
         # Every extraction-error check past structural conformance runs even
         # once one has failed, so the audit row records everything wrong with
@@ -416,7 +464,7 @@ class LLMExtractionResultValidatorTest(TestCase):
             "inactive", "speculative"
         )
         result_json["result"]["location"] = build_inferred_field_result_json("Kitchen")
-        validation = self._validate(result_json)
+        validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
         self.assertEqual(

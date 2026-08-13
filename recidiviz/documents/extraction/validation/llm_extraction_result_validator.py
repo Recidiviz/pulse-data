@@ -35,6 +35,12 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
 from recidiviz.documents.extraction.validation.adversarial_interpretation_consistency_check import (
     AdversarialInterpretationConsistencyCheck,
 )
+from recidiviz.documents.extraction.validation.citation_grounding_check import (
+    CitationGroundingCheck,
+)
+from recidiviz.documents.extraction.validation.citation_matching import (
+    SourceDocumentText,
+)
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
     ValidationIssue,
@@ -64,24 +70,27 @@ class LLMExtractionResultValidator:
         *,
         config: LLMExtractorConfig,
         raw_result: LLMClientDocumentExtractionResult,
-        # Unused by the structural check, but in the signature now because the
-        # later semantic citation-grounding and offset-drift checks need it.
-        # TODO(OBT-32169): Remove the leading underscore once a check uses it.
-        _source_document_text: str,
+        source_document_text: str,
         validation_datetime_utc: datetime.datetime,
     ) -> LLMDocumentValidationResult:
-        """Returns the validation outcome for |raw_result| against |config|."""
+        """Returns the validation outcome for |raw_result| against |config|,
+        matching its citations against |source_document_text| — the text of the
+        document the result was extracted from, exactly as the model saw it.
+        """
         output_schema = config.extractor_collection.output_schema
         raw_output = LLMRequestOutputValues(
             output_schema=output_schema,
             output_json=assert_type(raw_result.result_json, dict),
         )
 
-        issues = self._extraction_error_issues(raw_output=raw_output)
+        audit_issues = self._extraction_error_issues(
+            raw_output=raw_output,
+            document_text=SourceDocumentText(text=source_document_text),
+        )
 
         validated_output: LLMRequestOutputValues | None
         result_type_override: LLMExtractionJobDocumentResultType | None
-        if issues:
+        if audit_issues:
             validated_output = None
             result_type_override = (
                 LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
@@ -94,13 +103,13 @@ class LLMExtractionResultValidator:
             validation_config_version_id=config.extractor_collection.validation_config_version_id,
             validation_datetime_utc=validation_datetime_utc,
             validated_output=validated_output,
-            audit_issues=issues,
+            audit_issues=audit_issues,
             result_type_override=result_type_override,
         )
 
     @staticmethod
     def _extraction_error_issues(
-        *, raw_output: LLMRequestOutputValues
+        *, raw_output: LLMRequestOutputValues, document_text: SourceDocumentText
     ) -> list[ValidationIssue]:
         """Returns every extraction-error finding against |raw_output|, or an
         empty list when it clears them all.
@@ -117,4 +126,7 @@ class LLMExtractionResultValidator:
             *RequiredFieldConfidenceCheck.issues(output=raw_output),
             *RelevantButAllNullCheck.issues(output=raw_output),
             *AdversarialInterpretationConsistencyCheck.issues(output=raw_output),
+            *CitationGroundingCheck.issues(
+                output=raw_output, source_document_text=document_text
+            ),
         ]

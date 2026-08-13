@@ -145,7 +145,7 @@ class LLMExtractionResultProcessor:
         validation_results = self._validator.validate(
             config=config,
             raw_result=raw_result,
-            _source_document_text=source_document_text,
+            source_document_text=source_document_text,
             validation_datetime_utc=now,
         )
 

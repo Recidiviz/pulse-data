@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the run_sandbox_extraction orchestration script"""
 
+import copy
 import threading
 from pathlib import Path
 from typing import Any
@@ -83,6 +84,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     fake_minimal_relevant_result_json,
+    ground_citations_in_fake_source_text,
 )
 from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import (
     FakeSyncLLMClient,
@@ -105,6 +107,15 @@ _SANDBOX_PREFIX = "test_prefix"
 _DOC_A = "CID_A"
 _DOC_B = "CID_B"
 
+# The canned success the fake LLM client returns, paired with the document text
+# seeded into GCS for the documents it is returned for. Validation checks a
+# result's citations against the document it was extracted from, so the two have
+# to be built together for a result to pass as usable.
+_GROUNDED_SUCCESS_RESULT = ground_citations_in_fake_source_text(
+    fake_minimal_relevant_result_json()
+)
+_DOCUMENT_TEXT = _GROUNDED_SUCCESS_RESULT.source_document_text
+
 
 def _token_counts() -> LLMDocumentExtractionTokenCounts:
     return LLMDocumentExtractionTokenCounts(
@@ -122,7 +133,7 @@ def _success_result_fn(
     schema, so the real validator passes it as a usable relevant result."""
     return LLMClientDocumentExtractionResult.from_success(
         document_contents_id=request.document_contents_id,
-        result_json=fake_minimal_relevant_result_json(),
+        result_json=copy.deepcopy(_GROUNDED_SUCCESS_RESULT.result_json),
         token_counts=_token_counts(),
     )
 
@@ -378,8 +389,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             )
 
     def test_happy_path_persists_bq_rows_and_marks_postgres(self) -> None:
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         summary = self._run(self._fake_client())
 
@@ -438,8 +449,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             both_reads_in_flight.wait()
             return real_download_as_string(path, encoding)
 
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         with mock.patch.object(self.fs, "download_as_string", download_as_string):
             summary = self._run(self._fake_client(), request_build_concurrency=2)
@@ -457,8 +468,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         )
 
     def test_failed_request_counts_as_llm_request_failure(self) -> None:
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         def result_fn(
             request: LLMDocumentExtractionRequest,
@@ -509,8 +520,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         )
 
     def test_failed_validations(self) -> None:
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         def result_fn(
             request: LLMDocumentExtractionRequest,
@@ -573,7 +584,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
     def test_missing_gcs_document_left_unmarked(self) -> None:
         # doc-a has GCS text; doc-b was never uploaded to GCS, so its request
         # cannot be built.
-        self._seed_gcs(_DOC_A, "some case note text")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
 
         summary = self._run(self._fake_client())
 
@@ -622,7 +633,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
 
     def test_empty_document_skipped(self) -> None:
         self._seed_gcs(_DOC_A, "")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         summary = self._run(self._fake_client())
 
@@ -692,8 +703,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # mark_job_completed is stubbed out, leaving an open job. The next run
         # resumes that job, finds nothing pending, and must complete it rather
         # than leave it open forever.
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         with mock.patch.object(LLMExtractionJobManager, "mark_job_completed"):
             first_summary = self._run(self._fake_client())
@@ -727,8 +738,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         )
 
     def test_job_failure_marks_job_failed(self) -> None:
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         with mock.patch.object(
             LLMExtractionResultsPersister,
@@ -750,8 +761,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # Two eligible documents but a ceiling of one, so the run refuses to do
         # any LLM work. The ceiling check runs inside the job lifecycle, so the
         # job is marked failed (not left open) and its documents stay unmarked.
-        self._seed_gcs(_DOC_A, "some case note text")
-        self._seed_gcs(_DOC_B, "another case note")
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         with (
             mock.patch.object(run_sandbox_extraction, "MAX_DOCUMENTS", 1),

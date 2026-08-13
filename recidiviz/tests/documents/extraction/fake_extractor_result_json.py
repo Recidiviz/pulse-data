@@ -27,8 +27,12 @@ envelope the raw model response carries and the validator consumes.
 Kept dependency-light (no BQ table or entity imports) so both the view builder
 tests and the validator/processor tests can share it.
 """
-from typing import Any
+import copy
+from typing import Any, Iterator
 
+import attr
+
+from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     ADVERSARIAL_INTERPRETATION_FIELD_NAME,
     CITATION_END_FIELD_NAME,
@@ -231,3 +235,70 @@ def fake_irrelevant_result_json() -> dict[str, Any]:
     of the anyOf carries only is_relevant.
     """
     return wrap_in_result_key(build_fake_extractor_irrelevant_result_content())
+
+
+FAKE_DOCUMENT_PREAMBLE = "Case note for the fake extractor collection.\n\n"
+"""Lead-in text every grounded fake source document starts with, so the citations
+that follow it sit at nonzero offsets and an off-by-anything offset bug can't pass
+unnoticed."""
+
+_GROUNDED_CITATION_SEPARATOR = "\n"
+
+
+@attr.define(frozen=True, kw_only=True)
+class GroundedFakeResult:
+    """A fake result JSON paired with source document text that grounds it: every
+    citation's quoted text appears in the document, at exactly the offsets that
+    citation reports. Validation's citation checks pass such a pair cleanly, so
+    it is the starting point for any test that needs a result that survives them.
+    """
+
+    source_document_text: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Document text containing every citation of `result_json`."""
+
+    result_json: dict[str, Any] = attr.ib(validator=attr_validators.is_dict)
+    """The result JSON, with each citation's offsets rewritten to point at its
+    text within `source_document_text`."""
+
+
+def ground_citations_in_fake_source_text(
+    result_json: dict[str, Any]
+) -> GroundedFakeResult:
+    """Returns |result_json| paired with source document text that grounds it:
+    the text of every citation the result carries, laid end to end after a fixed
+    preamble, with each citation's reported offsets rewritten to where its text
+    landed.
+
+    Building the document from the result (rather than hand-writing a document
+    and matching citations to it) keeps the pair consistent no matter which
+    fields a test's result populates — a citation can never drift out of sync
+    with the document that is supposed to contain it.
+    """
+    grounded_json = copy.deepcopy(result_json)
+    document_parts = [FAKE_DOCUMENT_PREAMBLE]
+    next_offset = len(FAKE_DOCUMENT_PREAMBLE)
+    for citation_json in _all_citation_jsons(grounded_json):
+        citation_text = citation_json[CITATION_TEXT_FIELD_NAME]
+        citation_json[CITATION_START_FIELD_NAME] = next_offset
+        citation_json[CITATION_END_FIELD_NAME] = next_offset + len(citation_text)
+        document_parts.append(f"{citation_text}{_GROUNDED_CITATION_SEPARATOR}")
+        next_offset += len(citation_text) + len(_GROUNDED_CITATION_SEPARATOR)
+    return GroundedFakeResult(
+        source_document_text="".join(document_parts), result_json=grounded_json
+    )
+
+
+def _all_citation_jsons(node: Any) -> Iterator[dict[str, Any]]:
+    """Yields every citation object anywhere within |node|, in the order the JSON
+    declares them.
+    """
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == CITATIONS_FIELD_NAME:
+                yield from value
+            else:
+                yield from _all_citation_jsons(value)
+        return
+    if isinstance(node, list):
+        for element in node:
+            yield from _all_citation_jsons(element)
