@@ -276,6 +276,11 @@ class LabelStudioTaskConfig:
         """Returns the BQ view ID for the parsed annotations view."""
         return f"{self.task_name}_annotations_parsed"
 
+    @property
+    def overrides_view_id(self) -> str:
+        """Returns the BQ view ID for the parsed reviewer-overrides view."""
+        return f"{self.task_name}_annotation_overrides"
+
     @classmethod
     def from_yaml(cls, yaml_path: str | Path) -> "LabelStudioTaskConfig":
         """Returns a LabelStudioTaskConfig parsed from a YAML file."""
