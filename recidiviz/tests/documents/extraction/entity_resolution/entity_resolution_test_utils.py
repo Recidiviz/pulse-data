@@ -130,3 +130,18 @@ def fake_entity_resolution_extractor_config_pairs() -> (
         first_order_configs=[fake_first_order_extractor_config()],
         config_module=fake_config,
     )
+
+
+def fake_entity_resolution_extractor_config(group_name: str) -> LLMExtractorConfig:
+    """Returns the generated ER extractor config for the fake US_XX first-order
+    collection's |group_name| entity group. Callers must have entered
+    patch_fake_entity_resolution_model_config_name.
+    """
+    entity_group = get_entity_group_by_name(fake_first_order_collection(), group_name)
+    for _, entity_resolution_config in fake_entity_resolution_extractor_config_pairs():
+        if entity_resolution_config.entity_group == entity_group:
+            return entity_resolution_config
+    raise ValueError(
+        f"Found no generated entity-resolution config for entity group "
+        f"[{group_name}]."
+    )

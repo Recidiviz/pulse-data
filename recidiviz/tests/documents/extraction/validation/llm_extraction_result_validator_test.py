@@ -33,11 +33,13 @@ Every case but the hallucinated-citation one validates its result against a
 source document built to ground the result's citations, so that the citation
 checks pass and the case under test is the only thing failing.
 
-These all use the relevance-bearing fake collection (a `result`-wrapped result
-with `is_relevant`). The validator also handles a relevance-free (ER) collection,
-whose result is a flat root object with no `result` wrapper.
-TODO(OBT-41146): Cover the relevance-free path once a relevance-free fake
-collection YAML fixture exists to load.
+Most of those use the relevance-bearing fake collection (a `result`-wrapped result
+with `is_relevant`). The relevance-free path — a flat root object with no `result`
+wrapper — is covered separately against the ER extractor collection synthesized
+from the fake collection's `assignment` entity group, whose entity fields cover a
+required non-nullable field (`assignment_name`), an optional field the synthesized
+schema makes nullable (`assignment_type`), an integer (`entity_id`), and an
+integer array (`entry_nums`).
 """
 
 import copy
@@ -58,11 +60,18 @@ from recidiviz.documents.extraction.llm_client.types import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
+from recidiviz.documents.extraction.models.llm_extractor_config import (
+    LLMExtractorConfig,
+)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     CITATION_START_FIELD_NAME,
     CITATION_TEXT_FIELD_NAME,
     CITATIONS_FIELD_NAME,
+    ENTITIES_FIELD_NAME,
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
+    RESULT_KEY,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
@@ -75,7 +84,13 @@ from recidiviz.documents.extraction.validation.llm_extraction_result_validator i
     LLMExtractionResultValidator,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_extractor_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_fake_entity_resolution_entity_result_json,
+    build_fake_entity_resolution_result_content,
     build_inferred_field_result_json,
     build_null_inferred_field_result_json,
     fake_all_fields_result_json,
@@ -87,6 +102,7 @@ from recidiviz.utils.types import assert_type
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
+_ASSIGNMENT_GROUP_NAME = "assignment"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ADVERSARIAL = "The record might describe a closed matter."
@@ -97,15 +113,19 @@ _ADVERSARIAL = "The record might describe a closed matter."
 _CITATION_OFFSET_DRIFT_CHARS = 3
 
 
-class LLMExtractionResultValidatorTest(TestCase):
-    """Tests LLMExtractionResultValidator."""
+class _ValidatorTestBase(TestCase):
+    """Harness shared by the relevance-bearing and relevance-free test cases.
+    Subclasses set `self.config` to the extractor config under test.
+    """
+
+    config: LLMExtractorConfig
 
     def setUp(self) -> None:
-        self.config = get_first_order_llm_extractor_config(
-            _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
-        )
         self.validator = LLMExtractionResultValidator()
-        self.version_id = self.config.extractor_collection.validation_config_version_id
+
+    @property
+    def version_id(self) -> str:
+        return self.config.extractor_collection.validation_config_version_id
 
     def _validate(
         self, result_json: dict[str, Any], *, source_document_text: str
@@ -137,6 +157,7 @@ class LLMExtractionResultValidatorTest(TestCase):
     def _passing_result(
         self, validated_output_json: dict[str, Any]
     ) -> LLMDocumentValidationResult:
+        """Returns an LLMDocumentValidationResult representing a passing result"""
         return LLMDocumentValidationResult(
             validated_output=LLMRequestOutputValues(
                 output_schema=self.config.extractor_collection.output_schema,
@@ -146,6 +167,42 @@ class LLMExtractionResultValidatorTest(TestCase):
             result_type_override=None,
             validation_config_version_id=self.version_id,
             validation_datetime_utc=_VALIDATION_DATETIME,
+        )
+
+    def _assert_single_flagged_field(
+        self,
+        result_json: dict[str, Any],
+        *,
+        expected_field_name: str | None,
+        expected_detail_substring: str,
+    ) -> None:
+        """Validates |result_json|, asserts it fails the SCHEMA_CONFORMANCE check on
+        |expected_field_name|, indicating the extraction should be retried.
+        """
+        validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+
+        self.assertEqual(1, len(validation.audit_issues))
+        issue = validation.audit_issues[0]
+        self.assertEqual(ValidationCheckType.SCHEMA_CONFORMANCE, issue.check_type)
+        self.assertEqual(expected_field_name, issue.field_name)
+        self.assertIn(expected_detail_substring, issue.detail)
+
+
+class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
+    """Tests LLMExtractionResultValidator against a relevance-bearing collection."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.config = get_first_order_llm_extractor_config(
+            _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
         )
 
     def test_minimal_conforming_result_passes(self) -> None:
@@ -191,33 +248,6 @@ class LLMExtractionResultValidatorTest(TestCase):
             source_document_text=grounded.source_document_text,
         )
         self.assertEqual(before, grounded.result_json)
-
-    def _assert_single_flagged_field(
-        self,
-        result_json: dict[str, Any],
-        *,
-        expected_field_name: str | None,
-        expected_detail_substring: str,
-    ) -> None:
-        """Validates |result_json|, asserts it failed with a transient override
-        (nothing usable persisted, document retried), and that its single audit
-        issue is the expected SCHEMA_CONFORMANCE finding on |expected_field_name|.
-        """
-        validation, _ = self._validate_grounded(result_json)
-
-        self.assertFalse(validation.passed_validation)
-        self.assertIsNone(validation.validated_output)
-        self.assertEqual(
-            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
-            validation.result_type_override,
-        )
-        self.assertTrue(validation.will_retry)
-
-        self.assertEqual(1, len(validation.audit_issues))
-        issue = validation.audit_issues[0]
-        self.assertEqual(ValidationCheckType.SCHEMA_CONFORMANCE, issue.check_type)
-        self.assertEqual(expected_field_name, issue.field_name)
-        self.assertIn(expected_detail_substring, issue.detail)
 
     def test_bad_enum_value_flagged_on_field(self) -> None:
         # The bad value lives on the field's value branch; the branch is resolved
@@ -616,3 +646,148 @@ class LLMExtractionResultValidatorTest(TestCase):
             {ValidationCheckType.HALLUCINATED_CITATION},
             {issue.check_type for issue in validation.audit_issues},
         )
+
+
+class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
+    """Tests LLMExtractionResultValidator against a relevance-free (entity
+    resolution) collection, whose result is a flat root object: no `result`
+    wrapper and no `is_relevant` field.
+
+    The synthesized ER schema declares a single `entities` ARRAY_OF_STRUCT
+    (required, minimum one element) at the root, so every field path a finding
+    names is rooted at `entities` rather than at a `result` wrapper. The schema is
+    also entirely free of `anyOf` — every field is STRUCTURAL, there is no
+    relevance branch, and nullability is expressed as a type union — so each way
+    of violating it produces exactly one finding at the offending field.
+
+    Being all-STRUCTURAL, an ER result carries no confidence metadata and no
+    citations, so grounding it is a no-op and the INFERRED-field checks and
+    quality filters have nothing to act on.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.config = fake_entity_resolution_extractor_config(_ASSIGNMENT_GROUP_NAME)
+
+    @staticmethod
+    def _result_json(*entities: dict[str, Any]) -> dict[str, Any]:
+        """Returns the flat result JSON holding |entities| — deliberately not run
+        through wrap_in_result_key, which is what distinguishes this shape.
+        """
+        return build_fake_entity_resolution_result_content(list(entities))
+
+    @staticmethod
+    def _entity(
+        entity_id: int,
+        *,
+        assignment_name: str = "Kitchen",
+        assignment_type: str | None = "internal",
+        entry_nums: list[int] | None = None,
+    ) -> dict[str, Any]:
+        """Returns a JSON object representing an entity"""
+        return build_fake_entity_resolution_entity_result_json(
+            entity_id,
+            entry_nums=entry_nums if entry_nums is not None else [entity_id],
+            assignment_name=assignment_name,
+            assignment_type=assignment_type,
+        )
+
+    def test_conforming_flat_result_passes(self) -> None:
+        # The second entity leaves assignment_type null, which the synthesized
+        # schema allows because the field is optional in the first-order
+        # collection — no mention of that entity filled it in.
+        result_json = self._result_json(
+            self._entity(1),
+            self._entity(2, assignment_name="Laundry", assignment_type=None),
+        )
+        self.assertNotIn(RESULT_KEY, result_json)
+        validation, validated_json = self._validate_grounded(result_json)
+        self.assertEqual(self._passing_result(validated_json), validation)
+        # Grounding had nothing to rewrite, so the validated result is the
+        # flat result verbatim.
+        self.assertEqual(result_json, validated_json)
+
+    def test_wrong_scalar_type_flagged_on_flat_field(self) -> None:
+        # The path is rooted at `entities`, with no `result.` prefix — the
+        # relevance-bearing counterparts all carry one.
+        result_json = self._result_json(self._entity(1))
+        result_json[ENTITIES_FIELD_NAME][0][ENTITY_ID_FIELD_NAME] = "1"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities[0].entity_id",
+            expected_detail_substring="is not of type 'integer'",
+        )
+
+    def test_bad_enum_inside_entity_flagged_with_indexed_path(self) -> None:
+        # Compare test_bad_enum_inside_array_element_flagged_with_indexed_path,
+        # which expects `result.assignments[0].assignment_type.value`: this path
+        # loses both the `result.` prefix (flat root) and the `.value` suffix (a
+        # STRUCTURAL entity field carries a bare value, not the INFERRED wrapper).
+        result_json = self._result_json(self._entity(1))
+        result_json[ENTITIES_FIELD_NAME][0]["assignment_type"] = "not_a_type"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities[0].assignment_type",
+            expected_detail_substring="'not_a_type' is not one of",
+        )
+
+    def test_missing_required_field_flagged_on_entity(self) -> None:
+        # assignment_name is required within each entity; a second entity missing
+        # it is reported on that entity, so the field name carries the index.
+        result_json = self._result_json(self._entity(1), self._entity(2))
+        del result_json[ENTITIES_FIELD_NAME][1]["assignment_name"]
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities[1]",
+            expected_detail_substring="'assignment_name' is a required property",
+        )
+
+    def test_missing_entities_key_flagged_at_root(self) -> None:
+        # The counterpart to test_missing_result_key_flagged_at_root: both report
+        # against the root object, but here it is the `entities` field that is
+        # missing rather than the wrapper. Asserting a *single* issue also pins
+        # that the validator returned after structural conformance failed —
+        # RelevantButAllNullCheck would otherwise flag this same result, since a
+        # relevance-free output reads as relevant by construction and no
+        # user-defined field carries a value.
+        self._assert_single_flagged_field(
+            {},
+            expected_field_name=None,
+            expected_detail_substring="'entities' is a required property",
+        )
+
+    def test_empty_entities_flagged_as_schema_conformance(self) -> None:
+        # `entities` requires at least one element, so an empty array is a
+        # structural failure and not a relevant-but-all-null one. Two independent
+        # things keep that check quiet: the validator returns as soon as
+        # structural conformance fails, and an empty array counts as a present
+        # value anyway.
+        result_json = self._result_json()
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities",
+            expected_detail_substring="should be non-empty",
+        )
+        validation, _ = self._validate_grounded(result_json)
+        self.assertNotIn(
+            ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+            [issue.check_type for issue in validation.audit_issues],
+        )
+
+    def test_empty_entry_nums_flagged_on_flat_field(self) -> None:
+        # entry_nums is an integer array that must name at least one entry: an
+        # entity clustered from no entries describes nothing.
+        result_json = self._result_json(self._entity(1, entry_nums=[]))
+        self.assertEqual([], result_json[ENTITIES_FIELD_NAME][0][ENTRY_NUMS_FIELD_NAME])
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities[0].entry_nums",
+            expected_detail_substring="should be non-empty",
+        )
+
+    def test_validate_does_not_mutate_input(self) -> None:
+        result_json = self._result_json(self._entity(1), self._entity(2))
+        before = copy.deepcopy(result_json)
+        self._validate_grounded(result_json)
+        self.assertEqual(before, result_json)
