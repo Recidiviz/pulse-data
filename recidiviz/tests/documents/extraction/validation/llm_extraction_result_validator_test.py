@@ -25,6 +25,10 @@ violation downgrades the result the same way a structural one does, a
 structurally-broken result skips them all, and findings from several checks land
 in one audit. Each check itself is tested directly in its own test file.
 
+The quality adjustments are exercised alongside them: they are applied to the
+validated copy of a result that cleared every extraction-error check, and
+audited without costing the document a retry.
+
 Every case but the hallucinated-citation one validates its result against a
 source document built to ground the result's citations, so that the citation
 checks pass and the case under test is the only thing failing.
@@ -55,6 +59,8 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    CITATION_START_FIELD_NAME,
+    CITATION_TEXT_FIELD_NAME,
     CITATIONS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
 )
@@ -84,6 +90,11 @@ _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ADVERSARIAL = "The record might describe a closed matter."
+# How far off a citation's reported start offset is put in the tests that
+# exercise offset drift — close enough to its quoted text that the grounding
+# check still counts it as grounded, so `CitationOffsetDriftAdjustment` is what
+# acts on it.
+_CITATION_OFFSET_DRIFT_CHARS = 3
 
 
 class LLMExtractionResultValidatorTest(TestCase):
@@ -480,6 +491,20 @@ class LLMExtractionResultValidatorTest(TestCase):
             {issue.check_type for issue in validation.audit_issues},
         )
 
+    def _assert_kept(
+        self, validation: LLMDocumentValidationResult
+    ) -> LLMRequestOutputValues:
+        """Asserts |validation| kept the document — something usable was
+        persisted, the raw SUCCESS classification stands, and no retry was queued
+        — and returns the validated copy the adjustments produced."""
+        self.assertTrue(validation.passed_validation)
+        self.assertIsNone(validation.result_type_override)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.SUCCESS, validation.result_type
+        )
+        self.assertFalse(validation.will_retry)
+        return assert_type(validation.validated_output, LLMRequestOutputValues)
+
     def test_low_confidence_optional_field_adjusted_without_retry(self) -> None:
         # `location` is optional, so falling below its minimum is a quality
         # shortfall rather than a contradiction: the document is kept, the value
@@ -490,10 +515,7 @@ class LLMExtractionResultValidatorTest(TestCase):
         )
         validation, grounded_json = self._validate_grounded(result_json)
 
-        self.assertTrue(validation.passed_validation)
-        self.assertIsNone(validation.result_type_override)
-        self.assertFalse(validation.will_retry)
-
+        validated_output = self._assert_kept(validation)
         [issue] = validation.audit_issues
         self.assertEqual(
             ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL, issue.check_type
@@ -501,14 +523,11 @@ class LLMExtractionResultValidatorTest(TestCase):
         self.assertEqual("location", issue.field_name)
         self.assertFalse(issue.will_retry)
 
-        validated_output = assert_type(
-            validation.validated_output, LLMRequestOutputValues
-        )
         self.assertIsNone(validated_output.output_json["result"]["location"]["value"])
         # The raw result the extractor returned is left exactly as it was.
         self.assertEqual("Kitchen", grounded_json["result"]["location"]["value"])
 
-    def test_extraction_error_suppresses_the_adjustments(self) -> None:
+    def test_extraction_error_suppresses_the_confidence_adjustment(self) -> None:
         # The document has a low-confidence optional field the adjustment would
         # normally withhold, but its required field is speculative — nothing is
         # persisted, so there is no validated copy to adjust and no adjustment
@@ -523,7 +542,77 @@ class LLMExtractionResultValidatorTest(TestCase):
         validation, _ = self._validate_grounded(result_json)
 
         self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
         self.assertNotIn(
             ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            {issue.check_type for issue in validation.audit_issues},
+        )
+
+    def test_drifted_citation_corrected_without_retry(self) -> None:
+        # The reported offset lands near the quote rather than on it, which is
+        # drift the grounding check tolerates and this adjustment corrects.
+        # Drift past that tolerance is a hallucinated citation instead, covered
+        # by test_hallucinated_citation_downgrades_result.
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        raw_citation = grounded.result_json["result"]["primary_status"][
+            CITATIONS_FIELD_NAME
+        ][0]
+        correct_start = raw_citation[CITATION_START_FIELD_NAME]
+        drifted_start = correct_start - _CITATION_OFFSET_DRIFT_CHARS
+        raw_citation[CITATION_START_FIELD_NAME] = drifted_start
+
+        validation = self._validate(
+            grounded.result_json,
+            source_document_text=grounded.source_document_text,
+        )
+
+        validated_output = self._assert_kept(validation)
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.CITATION_OFFSET_DRIFT, issue.check_type)
+        self.assertEqual("primary_status", issue.field_name)
+        self.assertFalse(issue.will_retry)
+
+        validated_citation = validated_output.output_json["result"]["primary_status"][
+            CITATIONS_FIELD_NAME
+        ][0]
+        self.assertEqual(correct_start, validated_citation[CITATION_START_FIELD_NAME])
+        self.assertEqual(
+            validated_citation[CITATION_TEXT_FIELD_NAME],
+            grounded.source_document_text[
+                validated_citation[CITATION_START_FIELD_NAME] : validated_citation[
+                    "end"
+                ]
+            ],
+        )
+        # The raw result keeps the offsets the model reported.
+        self.assertEqual(drifted_start, raw_citation[CITATION_START_FIELD_NAME])
+
+    def test_extraction_error_suppresses_the_citation_drift_adjustment(self) -> None:
+        # The document has a citation the drift adjustment would normally
+        # correct, but another of its citations is fabricated — nothing is
+        # persisted, so there is no validated copy to adjust and no adjustment
+        # finding to audit.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["location"] = build_inferred_field_result_json("Kitchen")
+        grounded = ground_citations_in_fake_source_text(result_json)
+        grounded.result_json["result"]["location"][CITATIONS_FIELD_NAME][0][
+            CITATION_START_FIELD_NAME
+        ] = _CITATION_OFFSET_DRIFT_CHARS
+        grounded.result_json["result"]["primary_status"][CITATIONS_FIELD_NAME][0][
+            CITATION_TEXT_FIELD_NAME
+        ] = "a quote the document never contained"
+
+        validation = self._validate(
+            grounded.result_json,
+            # Grounds `location`'s citation but not the fabricated one.
+            source_document_text="citation for Kitchen",
+        )
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            {ValidationCheckType.HALLUCINATED_CITATION},
             {issue.check_type for issue in validation.audit_issues},
         )

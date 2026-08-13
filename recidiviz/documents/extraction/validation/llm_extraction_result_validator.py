@@ -56,6 +56,9 @@ from recidiviz.documents.extraction.validation.citation_grounding_check import (
 from recidiviz.documents.extraction.validation.citation_matching import (
     SourceDocumentText,
 )
+from recidiviz.documents.extraction.validation.citation_offset_drift_adjustment import (
+    CitationOffsetDriftAdjustment,
+)
 from recidiviz.documents.extraction.validation.confidence_threshold_adjustment import (
     ConfidenceThresholdAdjustment,
 )
@@ -101,9 +104,10 @@ class LLMExtractionResultValidator:
             output_json=assert_type(raw_result.result_json, dict),
         )
 
+        document_text = SourceDocumentText(text=source_document_text)
+
         extraction_error_issues = self._extraction_error_issues(
-            raw_output=raw_output,
-            document_text=SourceDocumentText(text=source_document_text),
+            raw_output=raw_output, document_text=document_text
         )
         if extraction_error_issues:
             return self._result(
@@ -120,6 +124,11 @@ class LLMExtractionResultValidator:
             output=raw_output
         )
         adjustment_issues.extend(new_issues)
+
+        validated_output, citation_drift_issues = CitationOffsetDriftAdjustment.apply(
+            output=validated_output, source_document_text=document_text
+        )
+        adjustment_issues.extend(citation_drift_issues)
 
         return self._result(
             config=config,

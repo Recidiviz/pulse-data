@@ -17,7 +17,7 @@
 """Tests for SourceDocumentText, the citation-locating primitive both citation
 checks are built on: whether a quote is grounded in the document at all (the
 hallucination check) and, when it is, where it actually sits (the offset-drift
-filter).
+adjustment).
 """
 
 from unittest import TestCase
@@ -28,6 +28,11 @@ from recidiviz.documents.extraction.validation.citation_matching import (
 )
 
 _DOCUMENT = "Client reported starting work at the Kitchen on Monday."
+# Larger than any offset gap exercised below, so the matching-behavior tests
+# that use `_find` exercise find_citation_span without its window ever
+# constraining the result; the allowed-drift tests further down call
+# find_citation_span directly with a realistic window instead.
+_FIND_WINDOW = 10_000
 
 
 class CitationSpanTest(TestCase):
@@ -60,7 +65,9 @@ class SourceDocumentTextTest(TestCase):
         self, citation_text: str, *, document: str = _DOCUMENT, reported_start: int = 0
     ) -> CitationSpan | None:
         return SourceDocumentText(text=document).find_citation_span(
-            citation_text=citation_text, reported_start=reported_start
+            citation_text=citation_text,
+            reported_start=reported_start,
+            allowed_actual_start_drift=_FIND_WINDOW,
         )
 
     def test_exact_quote_found(self) -> None:

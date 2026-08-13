@@ -19,7 +19,7 @@ collection paired with source document text built to ground its citations (see
 `ground_citations_in_fake_source_text`).
 
 Where a grounded quote sits — as opposed to whether it is grounded at all — is
-CitationOffsetDriftFilter's business; the matching primitive both share is
+CitationOffsetDriftAdjustment's business; the matching primitive both share is
 tested in citation_matching_test.py, and this check's wiring into the validator
 in llm_extraction_result_validator_test.py.
 """
@@ -144,7 +144,7 @@ class CitationGroundingCheckTest(TestCase):
 
     def test_grounded_at_slightly_wrong_offset_not_flagged(self) -> None:
         # The quote is in the document, within 10 characters of its reported
-        # offset — small drift CitationOffsetDriftFilter corrects rather than
+        # offset — small drift CitationOffsetDriftAdjustment corrects rather than
         # this check failing the document over.
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
@@ -162,7 +162,7 @@ class CitationGroundingCheckTest(TestCase):
 
     def test_grounded_far_from_reported_offset_flagged(self) -> None:
         # The quote does appear in the document, but nowhere near where the
-        # model said — too far for CitationOffsetDriftFilter to be trusted to
+        # model said — too far for CitationOffsetDriftAdjustment to be trusted to
         # correct, so it is failed here instead.
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()

@@ -69,6 +69,7 @@ class ValidationCheckType(StrEnum):
     )
     HALLUCINATED_CITATION = "HALLUCINATED_CITATION"
     BELOW_MINIMUM_CONFIDENCE_LEVEL = "BELOW_MINIMUM_CONFIDENCE_LEVEL"
+    CITATION_OFFSET_DRIFT = "CITATION_OFFSET_DRIFT"
 
     @property
     def category(self) -> ValidationCheckCategory:
@@ -82,7 +83,10 @@ class ValidationCheckType(StrEnum):
             ValidationCheckType.HALLUCINATED_CITATION,
         ):
             return ValidationCheckCategory.EXTRACTION_ERROR
-        if self in (ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,):
+        if self in (
+            ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            ValidationCheckType.CITATION_OFFSET_DRIFT,
+        ):
             return ValidationCheckCategory.QUALITY_ADJUSTMENT
         raise ValueError(f"Unexpected ValidationCheckType [{self}]")
 

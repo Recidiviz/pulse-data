@@ -26,6 +26,7 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
 from recidiviz.documents.extraction.validation.citation_matching import (
+    MAX_CITATION_OFFSET_DRIFT,
     SourceDocumentText,
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
@@ -37,14 +38,6 @@ from recidiviz.utils.string_formatting import truncate_string_if_necessary
 # How much of a hallucinated quote to echo in the audit finding, so a long
 # fabricated passage does not bloat every audit row that carries it.
 _MAX_QUOTED_TEXT_CHARS = 100
-
-# How far a citation's reported start offset may sit from where its quoted text
-# actually starts and still count as grounded. Counting characters is not
-# something a language model does reliably, so small drift is expected and left
-# to `CitationOffsetDriftFilter` to correct; drift beyond this is treated as a
-# sign the citation names the wrong occurrence (or was invented) rather than as
-# a correctable offset error.
-_MAX_CITATION_OFFSET_DRIFT = 10
 
 
 class CitationGroundingCheck:
@@ -58,7 +51,7 @@ class CitationGroundingCheck:
     more trustworthy than one that appears nowhere — the model may have latched
     onto an unrelated occurrence — so it is failed here too. A quote grounded
     close to its reported offset is a correctable defect, handled by
-    `CitationOffsetDriftFilter` rather than treated as an error.
+    `CitationOffsetDriftAdjustment` rather than treated as an error.
 
     Every citation is checked, on both branches of an INFERRED field: the null
     branch's citations are quotes offered as evidence that no value was there to
@@ -74,7 +67,7 @@ class CitationGroundingCheck:
         source_document_text: SourceDocumentText,
     ) -> list[ValidationIssue]:
         """Returns one `ValidationIssue` per citation in |output| whose quoted
-        text cannot be found within `_MAX_CITATION_OFFSET_DRIFT` characters of its
+        text cannot be found within `MAX_CITATION_OFFSET_DRIFT` characters of its
         reported start offset in |source_document_text|, or an empty list when
         every citation is grounded.
         """
@@ -84,7 +77,7 @@ class CitationGroundingCheck:
                 span = source_document_text.find_citation_span(
                     citation_text=citation.text,
                     reported_start=citation.start,
-                    allowed_actual_start_drift=_MAX_CITATION_OFFSET_DRIFT,
+                    allowed_actual_start_drift=MAX_CITATION_OFFSET_DRIFT,
                 )
                 if span is not None:
                     continue
@@ -106,6 +99,6 @@ class CitationGroundingCheck:
         return (
             f"Citation [{citation.index}] on field [{citation.field_display_name}] "
             f"quotes text that is not grounded within "
-            f"{_MAX_CITATION_OFFSET_DRIFT} characters of its reported offset "
+            f"{MAX_CITATION_OFFSET_DRIFT} characters of its reported offset "
             f"[{citation.start}]: [{quoted_text}]."
         )

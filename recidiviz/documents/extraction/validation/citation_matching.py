@@ -16,12 +16,20 @@
 # =============================================================================
 """Locates an extracted field's cited quote within the document it was extracted
 from — the shared machinery behind both citation checks: the extraction-error
-check that a quote is grounded in the document at all, and the quality filter
-that corrects the offsets a grounded quote was reported at.
+check that a quote is grounded in the document at all, and the quality
+adjustment that corrects the offsets a grounded quote was reported at.
 """
 import attr
 
 from recidiviz.common import attr_validators
+
+# How far a citation's reported start offset may sit from where its quoted text
+# actually starts and still count as grounded. Counting characters is not
+# something a language model does reliably, so small drift is expected; shared
+# by both citation checks so the window CitationGroundingCheck fails a citation
+# outside of is exactly the window CitationOffsetDriftAdjustment corrects a
+# citation inside of.
+MAX_CITATION_OFFSET_DRIFT = 10
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -62,35 +70,27 @@ class SourceDocumentText:
         *,
         citation_text: str,
         reported_start: int,
-        allowed_actual_start_drift: int | None = None,
+        allowed_actual_start_drift: int,
     ) -> CitationSpan | None:
-        """Returns where |citation_text| appears in this document, or None when it
-        appears nowhere (the quote is not grounded in the document).
+        """Returns where |citation_text| appears within |allowed_actual_start_drift|
+        characters of |reported_start| in this document, or None when it appears
+        nowhere in that window (the quote is not grounded near where it was
+        reported).
 
-        When the quote appears more than once, the occurrence whose start is
-        nearest |reported_start| — the offset the model reported — wins, so a
-        model that quotes a repeated phrase but drifts on its offsets is
+        When the quote appears more than once in the window, the occurrence whose
+        start is nearest |reported_start| — the offset the model reported — wins,
+        so a model that quotes a repeated phrase but drifts on its offsets is
         corrected toward the occurrence it most plausibly meant, and a model
         whose offsets are already right is left alone.
 
         A quote that is empty (or nothing but whitespace) matches nothing: there
         is no span of the document it could be grounded in.
-
-        |allowed_actual_start_drift|, when given, restricts the search to
-        occurrences whose start lies within that many characters of
-        |reported_start|, so a caller that only cares whether the quote is
-        grounded near where it was reported does not pay for a full-document
-        scan. Leave it None to search the whole document, e.g. when the caller
-        wants the nearest occurrence regardless of how far it drifted.
         """
         if not citation_text.strip():
             return None
 
-        search_from = 0
-        search_to = None
-        if allowed_actual_start_drift is not None:
-            search_from = max(0, reported_start - allowed_actual_start_drift)
-            search_to = reported_start + allowed_actual_start_drift + len(citation_text)
+        search_from = max(0, reported_start - allowed_actual_start_drift)
+        search_to = reported_start + allowed_actual_start_drift + len(citation_text)
 
         spans = [
             CitationSpan(start=start, end=start + len(citation_text))
