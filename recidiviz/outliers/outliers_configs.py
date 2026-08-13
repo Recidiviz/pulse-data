@@ -29,6 +29,8 @@ from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
     ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE,
     ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION,
+    ASSESSMENT_COMPLETION_RATE,
+    CONTACT_COMPLETION_RATE_DUE_DATE_BASED,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
     INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE,
@@ -479,8 +481,8 @@ Denominator is the average daily caseload for the agent over the given time peri
             ),
         ],
         vitals_metrics=[
-            TIMELY_RISK_ASSESSMENT,
-            TIMELY_CONTACT_DUE_DATE_BASED,
+            ASSESSMENT_COMPLETION_RATE,
+            CONTACT_COMPLETION_RATE_DUE_DATE_BASED,
         ],
     ),
     StateCode.US_UT: OutliersBackendConfig(

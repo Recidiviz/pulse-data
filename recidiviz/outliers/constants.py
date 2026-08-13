@@ -177,6 +177,16 @@ TIMELY_CONTACT_DUE_DATE_BASED = OutliersVitalsMetricConfig(
     metric_time_period=MetricTimePeriod.MONTH,
 )
 
+# "Completion rate" copy variants of the vitals metrics above, for states whose staff
+# read "timely" as a measure of how quickly data is entered into their OMS rather than
+# whether the assessment or contact happened at all.
+ASSESSMENT_COMPLETION_RATE = TIMELY_RISK_ASSESSMENT.with_title_display_name(
+    "Assessment Completion Rate"
+)
+CONTACT_COMPLETION_RATE_DUE_DATE_BASED = (
+    TIMELY_CONTACT_DUE_DATE_BASED.with_title_display_name("Contact Completion Rate")
+)
+
 # Lantern Events
 VIOLATIONS = OutliersClientEvent(aggregated_metric=metric_config.VIOLATIONS)
 VIOLATION_RESPONSES = OutliersClientEvent(metric_config.VIOLATION_RESPONSES)

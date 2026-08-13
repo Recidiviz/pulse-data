@@ -170,6 +170,14 @@ class OutliersVitalsMetricConfig:
     # Metric time period for which this metric is expected to be calculated
     metric_time_period: MetricTimePeriod = attr.ib()
 
+    def with_title_display_name(
+        self, title_display_name: str
+    ) -> "OutliersVitalsMetricConfig":
+        """Returns a copy of this metric config with a different title display name, for
+        states that want different copy for the same underlying calculation.
+        """
+        return attr.evolve(self, title_display_name=title_display_name)
+
 
 @attr.s(frozen=True, kw_only=True)
 class OutliersMetricConfig:
