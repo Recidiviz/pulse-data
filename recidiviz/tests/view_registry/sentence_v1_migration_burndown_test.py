@@ -18,9 +18,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ar_sentences_v1_burndown import (
-    US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_az_sentences_v1_burndown import (
     US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
@@ -60,7 +57,6 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode,
     dict[str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]],
 ] = {
-    StateCode.US_AR: US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_AZ: US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_IX: US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MI: US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
