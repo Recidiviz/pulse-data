@@ -27,13 +27,17 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from recidiviz.intercom.types import (
     IntercomExportJobResponse,
     IntercomJobStatus,
-    IntercomSearchTicketsResponse,
+    IntercomSearchEndpointResponse,
+    IntercomSearchEndpointType,
     IntercomTicket,
     IntercomTicketResponse,
 )
 from recidiviz.utils.secrets import get_secret
 
 DEFAULT_API_REQUEST_TIMEOUT = 10.0
+# Number of tickets to fetch per page (max 150, per the Intercom API)
+DEFAULT_PER_PAGE = 50
+# Constants for querying the search endpoints
 QUERY = "query"
 OPERATOR = "operator"
 AND = "AND"
@@ -46,6 +50,9 @@ PAGES = "pages"
 NEXT = "next"
 UPDATED_AT = "updated_at"
 FIELD = "field"
+CONTACTS = "contacts"
+DATA = "data"
+CREATED_AT = "created_at"
 
 
 @attr.define
@@ -199,16 +206,28 @@ class IntercomAPIClient:
         response.raise_for_status()
         return response.content
 
-    def get_search_tickets_response(
+    def get_search_endpoint_response(
         self,
+        endpoint_type: IntercomSearchEndpointType,
         query_filters: list[dict[str, str]],
-        per_page: int,
+        response_data_key: str,
         next_cursor: str | None = None,
-    ) -> IntercomSearchTicketsResponse:
-        """Queries the Intercom API Search Tickets endpoint and returns an
-        IntercomSearchTicketsResponse object with a list of inbound support tickets."""
+    ) -> IntercomSearchEndpointResponse:
+        """Queries an Intercom API Search endpoint and returns an
+        IntercomSearchEndpointResponse object with a list of JSON from the given search endpoint.
 
-        url = f"{self._BASE_URL}/tickets/search"
+        Args:
+            endpoint_type: The search endpoint to be queried (https://api.intercom.io/<endpoint_type>/search)
+            query_filters: Filters to query the endpoint on
+            response_data_key: Key that contains the data from the requested endpoint in the Intercom API response
+            per_page: Number of tickets to fetch per page (max 150, per the Intercom API)
+            next_cursor: The cursor to use in the next request to get the next page of results
+
+        Returns:
+            List of JSON from the given endpoint
+        """
+
+        url = f"{self._BASE_URL}/{endpoint_type.value}/search"
 
         payload: dict = {
             QUERY: {
@@ -216,7 +235,7 @@ class IntercomAPIClient:
                 VALUE: query_filters,
             },
             PAGINATION: {
-                PER_PAGE: per_page,
+                PER_PAGE: DEFAULT_PER_PAGE,
             },
         }
 
@@ -229,23 +248,62 @@ class IntercomAPIClient:
         response.raise_for_status()
         data = response.json()
 
-        tickets = data[TICKETS]
+        # The tickets/search enpoint and contacts/search endpoints return different JSON structure
+        data_list = data[response_data_key]
+
         pages = data[PAGES]
         # If there are no more pages, the data["pages"]["next"] key does not exist
         next_page = pages.get(NEXT, None)
         next_cursor = next_page[STARTING_AFTER] if next_page else None
 
-        return IntercomSearchTicketsResponse(tickets=tickets, next_cursor=next_cursor)
+        return IntercomSearchEndpointResponse(
+            endpoint_type=endpoint_type, data=data_list, next_cursor=next_cursor
+        )
 
-    def search_tickets(
-        self, updated_before: datetime, updated_after: datetime, per_page: int = 50
+    def search_endpoint(
+        self,
+        endpoint_type: IntercomSearchEndpointType,
+        query_filters: list[dict[str, str]],
+        response_data_key: str,
     ) -> list[dict[str, Any]]:
-        """Fetches tickets from Intercom using the search endpoint.
+        """Fetches data from Intercom using a search endpoint, exhausting the cursor to get all of the data.
 
         Args:
-            updated_before: Deatetime to filter tickets updated before this time
-            updated_after: Datetime to filter tickets updated after this time
+            endpoint_type: The search endpoint to be queried (https://api.intercom.io/<endpoint_type>/search)
+            query_filters: Filters to query the endpoint on
+            response_data_key: Key that contains the data from the requested endpoint in the Intercom API response
             per_page: Number of tickets to fetch per page (max 150, per the Intercom API)
+
+        Returns:
+            List of Intercom inbound support tickets JSON
+        """
+
+        search_endpoint_response = self.get_search_endpoint_response(
+            endpoint_type=endpoint_type,
+            query_filters=query_filters,
+            response_data_key=response_data_key,
+        )
+        returned_data = search_endpoint_response.data
+
+        while search_endpoint_response.next_cursor is not None:
+            search_endpoint_response = self.get_search_endpoint_response(
+                endpoint_type=endpoint_type,
+                query_filters=query_filters,
+                response_data_key=response_data_key,
+                next_cursor=search_endpoint_response.next_cursor,
+            )
+            returned_data.extend(search_endpoint_response.data)
+
+        return returned_data
+
+    def get_tickets(
+        self, updated_before: datetime, updated_after: datetime
+    ) -> list[dict[str, Any]]:
+        """Fetches tickets from Intercom using the search tickets endpoint.
+
+        Args:
+            updated_before: Datetime to filter tickets updated before this time
+            updated_after: Datetime to filter tickets updated after this time
 
         Returns:
             List of Intercom inbound support tickets JSON
@@ -264,17 +322,42 @@ class IntercomAPIClient:
             },
         ]
 
-        search_tickets_response = self.get_search_tickets_response(
-            query_filters=query_filters, per_page=per_page
+        tickets = self.search_endpoint(
+            query_filters=query_filters,
+            endpoint_type=IntercomSearchEndpointType.TICKETS,
+            response_data_key=TICKETS,
         )
-        tickets = search_tickets_response.tickets
-
-        while search_tickets_response.next_cursor is not None:
-            search_tickets_response = self.get_search_tickets_response(
-                query_filters=query_filters,
-                per_page=per_page,
-                next_cursor=search_tickets_response.next_cursor,
-            )
-            tickets.extend(search_tickets_response.tickets)
-
         return tickets
+
+    def get_contacts(
+        self, created_before: datetime, created_after: datetime
+    ) -> list[dict[str, Any]]:
+        """Fetches contacts from Intercom using the search contacts endpoint.
+
+        Args:
+            created_before: Datetime to filter contacts created before this time
+            created_after: Datetime to filter contacts created after this time
+
+        Returns:
+            List of Intercom contacts JSON
+        """
+
+        query_filters = [
+            {
+                FIELD: CREATED_AT,
+                OPERATOR: ">",
+                VALUE: str(created_after.timestamp()),
+            },
+            {
+                FIELD: CREATED_AT,
+                OPERATOR: "<",
+                VALUE: str(created_before.timestamp()),
+            },
+        ]
+
+        contacts = self.search_endpoint(
+            query_filters=query_filters,
+            endpoint_type=IntercomSearchEndpointType.CONTACTS,
+            response_data_key=DATA,
+        )
+        return contacts

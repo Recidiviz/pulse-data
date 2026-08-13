@@ -120,12 +120,21 @@ class IntercomCloudRunJobInfo:
         }
 
 
-@attr.frozen
-class IntercomSearchTicketsResponse:
-    """Represents an Intercom search tickets endpoint response."""
+class IntercomSearchEndpointType(Enum):
+    """Represents an Intercom API search endpoint type."""
 
-    # The returned tickets
-    tickets: list[dict[str, Any]]
+    TICKETS = "tickets"
+    CONTACTS = "contacts"
+
+
+@attr.frozen
+class IntercomSearchEndpointResponse:
+    """Represents an Intercom search endpoint response."""
+
+    # The type of endpoint that was queried to gather the data
+    endpoint_type: IntercomSearchEndpointType
+    # The data returned from the endpoint
+    data: list[dict[str, Any]]
     # The cursor to use in the next request to get the next page of results.
     # None if the last page of the response has been reached.
     next_cursor: str | None
