@@ -238,6 +238,12 @@ resource "google_cloud_run_v2_job" "workflows_configuration_data_pull" {
   }
 }
 
+resource "google_storage_bucket_iam_member" "cloud_run_intercom_export_creator" {
+  bucket = module.intercom-export.name
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 resource "google_cloud_run_v2_job" "intercom_outbound_data_export" {
   name     = "intercom-outbound-data-export"
   location = var.us_central_region
