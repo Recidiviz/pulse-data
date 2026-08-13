@@ -21,8 +21,136 @@ import unittest
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils import (
     _ticket_header_key,
+    extract_pii_doc_id,
     find_issue_section,
+    parse_doc,
+    section_has_content,
 )
+
+
+def _paragraph(text: str) -> dict:
+    return {"paragraph": {"elements": [{"textRun": {"content": f"{text}\n"}}]}}
+
+
+class TestExtractPiiDocId(unittest.TestCase):
+    """Tests for extract_pii_doc_id — finding the per-ticket doc in a ticket body."""
+
+    # The banner as it appears on the GitHub side of a synced Linear ticket.
+    GITHUB_BANNER = (
+        "> 🔒 **Private PII doc for this issue → [Open PII doc]"
+        "(https://docs.google.com/document/d/16Oce011Zebihlmas8xMKmzj6FQEuDg2JtX6vceALeJU/edit)**"
+        " · Put officer/client details and screenshots here, not in this issue.\n"
+        "\n<!-- pii-doc-linked -->\n\n#### What is the issue?\n"
+    )
+    DOC_ID = "16Oce011Zebihlmas8xMKmzj6FQEuDg2JtX6vceALeJU"
+
+    def test_github_banner(self) -> None:
+        self.assertEqual(extract_pii_doc_id(self.GITHUB_BANNER), self.DOC_ID)
+
+    def test_angle_bracketed_link(self) -> None:
+        # Linear wraps URLs in angle brackets in its own description markdown.
+        body = (
+            "> 🔒 **Private PII doc for this issue → [Open PII doc]"
+            f"(<https://docs.google.com/document/d/{self.DOC_ID}/edit>)** · Put "
+            "officer/client details here."
+        )
+        self.assertEqual(extract_pii_doc_id(body), self.DOC_ID)
+
+    def test_link_without_edit_suffix(self) -> None:
+        self.assertEqual(
+            extract_pii_doc_id(f"https://docs.google.com/document/d/{self.DOC_ID}"),
+            self.DOC_ID,
+        )
+
+    def test_no_link_returns_none(self) -> None:
+        # A pre-cutover ticket: no banner, so the caller falls back to the
+        # shared go/github-pii doc.
+        self.assertIsNone(
+            extract_pii_doc_id("#### What is the issue?\n\nThe task never cleared.")
+        )
+
+    def test_first_link_wins(self) -> None:
+        body = (
+            f"https://docs.google.com/document/d/{self.DOC_ID}/edit\n"
+            "https://docs.google.com/document/d/someOtherDocId/edit"
+        )
+        self.assertEqual(extract_pii_doc_id(body), self.DOC_ID)
+
+
+class TestParseDoc(unittest.TestCase):
+    """Tests for parse_doc — flattening Docs API JSON into lines."""
+
+    def test_inline_images_become_placeholders(self) -> None:
+        doc = {
+            "body": {
+                "content": [
+                    {
+                        "paragraph": {
+                            "elements": [
+                                {"textRun": {"content": "SID: "}},
+                                {"inlineObjectElement": {"inlineObjectId": "kix.abc"}},
+                                {"textRun": {"content": "\n"}},
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        self.assertEqual(parse_doc(doc), ["SID: [IMAGE]"])
+
+    def test_table_cell_text_is_extracted(self) -> None:
+        # A filled-in doc may lay its PII out in a table; ignoring tables would
+        # make such a doc look empty.
+        doc = {
+            "body": {
+                "content": [
+                    _paragraph("Client / Resident (PII)"),
+                    {
+                        "table": {
+                            "tableRows": [
+                                {
+                                    "tableCells": [
+                                        {"content": [_paragraph("Name")]},
+                                        {"content": [_paragraph("TDCJ")]},
+                                    ]
+                                },
+                                {
+                                    "tableCells": [
+                                        {"content": [_paragraph("Lastname, First")]},
+                                        {"content": [_paragraph("TEST-CLIENT-ID-1")]},
+                                    ]
+                                },
+                            ]
+                        }
+                    },
+                ]
+            }
+        }
+        self.assertEqual(
+            parse_doc(doc),
+            [
+                "Client / Resident (PII)",
+                "Name",
+                "TDCJ",
+                "Lastname, First",
+                "TEST-CLIENT-ID-1",
+            ],
+        )
+
+
+class TestSectionHasContent(unittest.TestCase):
+    """Tests for section_has_content — legacy sections that are header-only.
+
+    TODO(OBT-44025): delete this class, TestTicketHeaderKey, TestFindIssueSection
+    and TestTicketHeaderRegexAgreement with the shared-doc path they cover.
+    """
+
+    def test_header_only_section_has_no_content(self) -> None:
+        self.assertFalse(section_has_content(["#88494"]))
+        self.assertFalse(section_has_content(["#88494", "", "   "]))
+
+    def test_section_with_body_has_content(self) -> None:
+        self.assertTrue(section_has_content(["#88494", "SID: 12345"]))
 
 
 class TestTicketHeaderKey(unittest.TestCase):
@@ -150,6 +278,40 @@ class TestFindIssueSection(unittest.TestCase):
     def test_no_match_returns_empty(self) -> None:
         lines = ["#88494", "Client: [name]"]
         self.assertEqual(find_issue_section(lines, ["99999"]), [])
+
+    def test_stacked_identifiers_for_one_ticket_are_one_section(self) -> None:
+        # The real go/github-pii doc stacks a ticket's GitHub number and Linear
+        # ID on consecutive heading lines. Treating the second as the next
+        # entry's header returned a header-only section and lost the PII below
+        # it — the bug behind issue #95175's bogus diagnosis.
+        lines = [
+            "#95175",
+            "OBT-42969",
+            "User: test-officer",
+            "Resident/Client: TEST-CLIENT-ID-1",
+            "#95146",
+            "Resident/Client: other ticket",
+        ]
+        self.assertEqual(
+            find_issue_section(lines, ["95175", "OBT-42969"]),
+            [
+                "#95175",
+                "OBT-42969",
+                "User: test-officer",
+                "Resident/Client: TEST-CLIENT-ID-1",
+            ],
+        )
+
+    def test_another_tickets_header_still_ends_the_section(self) -> None:
+        # Only identifiers belonging to THIS ticket are absorbed. An empty entry
+        # followed by a different ticket must not swallow that ticket's PII —
+        # returning another client's data is far worse than returning none.
+        lines = [
+            "#95175",
+            "#95146",
+            "Resident/Client: someone else entirely",
+        ]
+        self.assertEqual(find_issue_section(lines, ["95175", "OBT-42969"]), ["#95175"])
 
 
 class TestTicketHeaderRegexAgreement(unittest.TestCase):

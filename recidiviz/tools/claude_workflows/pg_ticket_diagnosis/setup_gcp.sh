@@ -85,6 +85,16 @@ grant_role "$SA_EMAIL" "roles/artifactregistry.writer"
 # self-impersonates to get a token scoped to documents.readonly, which the
 # default Cloud Build credentials don't have. `add-iam-policy-binding` is
 # naturally idempotent so no skip-guard is needed.
+#
+# NOTE: the IAM binding below only gets the SA a scoped token — it does not grant
+# access to any document. Per-ticket PII docs are created across SEVERAL Drive
+# folders (e.g. 1alKihL5iNsXtG62NyKT6IfJC4k08whN5 and
+# 1kjTBfySzQ5ZZkMV1Kn5emhe81K-GQo8j), and $SA_EMAIL must hold at least Viewer on
+# each one for fetch_pii to work; per-doc access is inherited from the folder.
+# Drive ACLs are managed neither here nor in Terraform, so when the doc
+# automation starts writing to a folder the SA isn't shared on, every diagnosis
+# of a ticket landing there fails with PIIFetchError. Granting the SA access at
+# the shared-drive level is the durable fix.
 echo "==> Granting self-impersonation binding..."
 if gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --project="$PROJECT_ID" \

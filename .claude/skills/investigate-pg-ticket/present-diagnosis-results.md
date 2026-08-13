@@ -23,10 +23,10 @@ Then present the full details in the following format:
 - **Officer/user**
 - **Affected clients**
 - **Problem description**
-- **Screenshots** — note if the PII doc contains screenshots or image references
-  related to this ticket (the Google Docs API text extraction won't include
-  images, so mention that there may be screenshots in the doc and suggest the
-  user check the doc directly if visual context would help)
+- **Screenshots** — note if the ticket's private PII doc contains screenshots or
+  image references (the Google Docs API text extraction won't include images, so
+  mention that there may be screenshots in the doc and suggest opening the doc
+  linked at the top of the ticket if visual context would help)
 
 - **Diagnosis** — include findings in order and with all relevant details.
   **For EACH key finding, include SQL evidence:**

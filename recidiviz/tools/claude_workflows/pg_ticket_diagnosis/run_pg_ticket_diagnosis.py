@@ -20,6 +20,10 @@ Intended to run as a Cloud Build step. Reads issue metadata and secrets
 from environment variables, runs the agent, and posts the diagnosis to GitHub.
 
 Features:
+- Reads the ticket's PII from the private Google Doc linked in its body, falling
+  back to the shared go/github-pii doc for tickets filed before per-ticket docs
+  existed (TODO(OBT-44025): drop that fallback). Refuses to post a diagnosis if
+  it never resolved that PII to a person.
 - Conditionally loads diagnosis prompts based on product area labels
   (workflows, tasks, insights). Falls back to all three if none specified.
 - Deduplication: skips issues that already have a diagnosis comment
@@ -65,6 +69,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import islice
@@ -87,16 +92,20 @@ sys.path.insert(0, os.environ.get("REPO_PATH", "."))
 from claude_agent import (  # type: ignore[import-not-found]  # noqa: E402
     AgentConfig,
     AgentFailure,
+    AgentResult,
     run_agent_loop,
 )
 from pii_doc_parser_utils import (  # type: ignore[import-not-found]  # noqa: E402
+    extract_pii_doc_id,
     find_issue_section,
     parse_doc,
+    section_has_content,
 )
 
 from recidiviz.github.github_client import (  # noqa: E402
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
+    github_helperbot_client,
     helperbot_issue_has_comment_with_prefix,
     upsert_helperbot_comment,
 )
@@ -164,7 +173,7 @@ def _load_runtime_config() -> RuntimeConfig:
 
 
 class DiagnosisContext:
-    """Per-run mutable state: BQ client and external ID tracker.
+    """Per-run mutable state: BQ client, external ID tracker, and PII progress.
 
     Created once in main() and threaded through tool handlers so that
     separate runs (e.g. in tests) don't share state.
@@ -173,6 +182,11 @@ class DiagnosisContext:
     def __init__(self) -> None:
         self._bq_client: bigquery.Client | None = None
         self.known_external_ids: set[str] = set()
+        # Whether fetch_pii ever returned usable PII text.
+        self.pii_fetched: bool = False
+        # Whether look_up_person_ids ever resolved a person. main() refuses to
+        # post a diagnosis without this — see the guard in main().
+        self.person_ids_resolved: bool = False
 
     def get_bq_client(self) -> bigquery.Client:
         if self._bq_client is None:
@@ -253,6 +267,10 @@ def resolve_linear_id_for_issue(issue: GithubIssue) -> str | None:
     API error — degrades to None (logged) rather than aborting the diagnosis.
     The go/github-pii lookup still succeeds by GitHub number for pre-Linear
     tickets, so a Linear outage must not block those.
+
+    TODO(OBT-44025): remove this function and the linear_id threading through
+    run_agent/_build_tool_handlers with the shared-doc fallback — keying that doc
+    is the only thing the identifier is used for.
     """
     try:
         issue_group = (
@@ -286,7 +304,24 @@ def _post_marked_comment(
 
 # ── PII doc lookup ───────────────────────────────────────────────────────────
 
+# The legacy shared doc, used for tickets filed before every ticket got its own
+# private PII doc. New tickets link theirs from a banner in the issue body.
+# TODO(OBT-44025): drop this and the whole shared-doc fallback once every ticket
+# we might still diagnose has its own PII doc.
 GITHUB_PII_DOC_ID = "1hYq--Xw6D5Lu96pSFVGeNu9AuxMNtB5F4ltI2VE9FZs"
+
+# The per-ticket doc is created a few seconds after the issue itself and the
+# banner linking it is added afterwards, so the `issues.opened` webhook payload
+# never carries the link. Re-read the live body a few times before concluding a
+# ticket has no per-ticket doc.
+PII_DOC_LOOKUP_ATTEMPTS = 3
+PII_DOC_LOOKUP_DELAY_SECONDS = 10
+
+# Headers labelling each source in the text handed to the agent, so it can tell
+# where a given ID came from and report on a partial fetch sensibly.
+TICKET_PII_DOC_LABEL = "=== From this ticket's own private PII doc ==="
+# TODO(OBT-44025): remove with the shared doc.
+SHARED_PII_DOC_LABEL = "=== From the shared go/github-pii doc (legacy) ==="
 
 
 class DiagnosisFailure(AgentFailure):
@@ -312,26 +347,58 @@ class PIIFetchError(DiagnosisFailure):
     """Raised when PII doc lookup fails due to auth or API errors."""
 
     HEADLINE = (
-        "**failed to fetch the PII document** from go/github-pii. The agent "
-        "never got as far as reading any PII for this issue."
+        "**failed to fetch the PII document**. The agent never got as far as "
+        "reading any PII for this issue."
     )
     GUIDANCE = (
-        "Likely causes: the Cloud Build service account is missing Google Docs "
-        "API access, the document was moved/renamed, or the Docs API returned a "
-        "transient error. Investigate the service account permissions and re-run."
+        "Likely causes: the diagnosis service account is not shared on the PII "
+        "docs Drive folder (it needs at least Viewer — Drive ACLs are not "
+        "managed by our Terraform, so a moved folder breaks this silently), the "
+        "service account is missing Google Docs API access, the document was "
+        "moved/deleted, or the Docs API returned a transient error. Investigate "
+        "the service account permissions and re-run."
     )
 
 
 class PIINotFoundError(DiagnosisFailure):
-    """Raised when the PII doc has no entry for the given issue."""
+    """Raised when the legacy shared PII doc has no entry for the given issue.
+
+    TODO(OBT-44025): remove with the shared-doc fallback — a ticket with its own
+    PII doc can only fail with PIIFetchError.
+    """
 
     HEADLINE = (
         "the PII document was **fetched successfully**, but it has **no entry "
         "for this issue**."
     )
     GUIDANCE = (
-        "Please add an entry for this issue to go/github-pii (including "
-        "external IDs) and then re-run the diagnosis."
+        "This ticket has no private PII doc linked in its body, so the agent "
+        "fell back to the shared go/github-pii doc and found nothing there "
+        "either. Newly filed tickets should get their own PII doc "
+        "automatically — if the banner is missing from the top of this ticket, "
+        "that automation didn't run. Otherwise, add an entry for this issue to "
+        "go/github-pii (including external IDs) and re-run the diagnosis."
+    )
+
+
+class PIIUnusableError(DiagnosisFailure):
+    """Raised after the loop when the agent never resolved PII to a person.
+
+    This is the single enforcement point for "did we actually get PII?". The
+    per-tool failures above only fire when a tool is actually called, so they
+    can't catch an agent that reads a doc, finds nothing it can use, and presses
+    on to write a pipeline-level diagnosis anyway. A speculative diagnosis reads
+    as an answer, which is worse than saying we're blocked.
+    """
+
+    HEADLINE = (
+        "the agent **never resolved this ticket's PII to a person**, so any "
+        "diagnosis it produced would not be about the reported client."
+    )
+    GUIDANCE = (
+        "Please open the PII doc linked at the top of this ticket and make sure "
+        "the affected client's state-issued ID(s) are written there as text — "
+        "screenshots can't be read — then re-run the diagnosis."
     )
 
 
@@ -350,13 +417,8 @@ class PersonIDLookupError(DiagnosisFailure):
     )
 
 
-def fetch_pii_for_issue(issue_number: str, linear_id: str | None, sa_email: str) -> str:
-    """Fetch the PII section for the given issue from the go/github-pii doc.
-
-    Looks up the section by the GitHub issue number and, when available, the
-    Linear identifier — entries are keyed by either, depending on when the
-    ticket was filed. Raises PIINotFoundError only if neither matches.
-    """
+def _fetch_doc(*, doc_id: str, sa_email: str) -> dict:
+    """Returns the Docs API JSON for `doc_id`. Raises PIIFetchError on failure."""
     try:
         scopes = ["https://www.googleapis.com/auth/documents.readonly"]
         credentials, _ = google.auth.default()
@@ -367,7 +429,7 @@ def fetch_pii_for_issue(issue_number: str, linear_id: str | None, sa_email: str)
             target_scopes=scopes,
         )
         credentials.refresh(google.auth.transport.requests.Request())
-        url = f"https://docs.googleapis.com/v1/documents/{GITHUB_PII_DOC_ID}"
+        url = f"https://docs.googleapis.com/v1/documents/{doc_id}"
         resp = requests.get(
             url,
             headers={"Authorization": f"Bearer {credentials.token}"},
@@ -376,24 +438,162 @@ def fetch_pii_for_issue(issue_number: str, linear_id: str | None, sa_email: str)
         doc = resp.json()
         if "error" in doc:
             raise PIIFetchError(
-                f"Google Docs API error: {doc['error'].get('message', 'unknown')}"
+                f"Google Docs API error for doc [{doc_id}]: "
+                f"{doc['error'].get('message', 'unknown')}"
             )
-        lines = parse_doc(doc)
-        identifiers = [issue_number] + ([linear_id] if linear_id else [])
-        section = find_issue_section(lines, identifiers)
-        if section:
-            return "\n".join(section)
-        linear_detail = f" (Linear {linear_id})" if linear_id else ""
-        raise PIINotFoundError(
-            f"Could not find issue {issue_number}{linear_detail} in the PII document."
-        )
-    except (PIIFetchError, PIINotFoundError):  # pylint: disable=try-except-raise
-        # Re-raise so the specific failure type isn't swallowed and re-wrapped
-        # as PIIFetchError by the broader except below.
+        return doc
+    except PIIFetchError:  # pylint: disable=try-except-raise
+        # Re-raise so it isn't swallowed and re-wrapped by the broader except.
         raise
     except Exception as e:
-        logger.exception("Failed to fetch PII doc")
-        raise PIIFetchError(f"Error fetching PII doc: {e}") from e
+        logger.exception("Failed to fetch PII doc [%s]", doc_id)
+        raise PIIFetchError(f"Error fetching PII doc [{doc_id}]: {e}") from e
+
+
+def resolve_pii_doc_id(
+    issue: GithubIssue, fallback_body: str
+) -> tuple[str | None, str]:
+    """Returns the ticket's private PII doc ID (if any) and the issue body to use.
+
+    Re-reads the body from GitHub rather than trusting `fallback_body` (which
+    comes from the webhook payload): the doc is created — and the banner linking
+    it prepended — a few seconds after the issue itself, so the payload body
+    predates the link. Retries a few times before giving up, since the agent can
+    start before the automation finishes.
+
+    A None doc ID means this is a pre-cutover ticket whose PII lives in the
+    shared go/github-pii doc.
+    """
+    body = fallback_body
+    for attempt in range(1, PII_DOC_LOOKUP_ATTEMPTS + 1):
+        try:
+            live_issue = (
+                github_helperbot_client().get_repo(issue.repo).get_issue(issue.number)
+            )
+            body = live_issue.body or ""
+        except Exception:
+            logger.warning(
+                "Could not read live body for %s; using the webhook payload body",
+                issue,
+                exc_info=True,
+            )
+            break
+        if doc_id := extract_pii_doc_id(body):
+            logger.info("Resolved per-ticket PII doc %s for %s", doc_id, issue)
+            return doc_id, body
+        if attempt < PII_DOC_LOOKUP_ATTEMPTS:
+            logger.info(
+                "No PII doc link in %s yet (attempt %d/%d); waiting %ds",
+                issue,
+                attempt,
+                PII_DOC_LOOKUP_ATTEMPTS,
+                PII_DOC_LOOKUP_DELAY_SECONDS,
+            )
+            time.sleep(PII_DOC_LOOKUP_DELAY_SECONDS)
+
+    # Reached either by exhausting the retries or by breaking out on a GitHub
+    # read failure, in which case `body` is the webhook payload body — which for
+    # a manual workflow_dispatch run may well carry the banner.
+    doc_id = extract_pii_doc_id(body)
+    if doc_id:
+        logger.info("Resolved per-ticket PII doc %s for %s", doc_id, issue)
+    else:
+        logger.info(
+            "No per-ticket PII doc for %s; falling back to go/github-pii", issue
+        )
+    return doc_id, body
+
+
+def fetch_pii_for_issue(
+    *,
+    issue_number: str,
+    linear_id: str | None,
+    pii_doc_id: str | None,
+    sa_email: str,
+    ctx: DiagnosisContext,
+) -> str:
+    """Fetch every scrap of PII we hold for the given issue.
+
+    Reads BOTH the ticket's own private PII doc (when one is linked from its
+    body) and the legacy shared go/github-pii section, and returns whatever it
+    found, labelled. Reading both matters during the transition: reporters still
+    write into the shared doc out of habit, so a ticket can have an untouched
+    per-ticket doc and a perfectly good entry in the shared one. Picking one
+    source would silently drop the other.
+
+    Raises only when neither source produced anything.
+
+    TODO(OBT-44025): once the shared doc goes, this collapses into
+    _fetch_ticket_pii_doc and pii_doc_id stops being optional. That cleanup is
+    blocked on reporters no longer filing PII in the shared doc — deleting this
+    while they still do would drop PII on the floor.
+    """
+    parts: list[str] = []
+    fetch_errors: list[str] = []
+
+    # Both reads are best-effort: one source failing must not hide the other.
+    if pii_doc_id:
+        try:
+            if text := _fetch_ticket_pii_doc(doc_id=pii_doc_id, sa_email=sa_email):
+                parts.append(f"{TICKET_PII_DOC_LABEL}\n{text}")
+        except PIIFetchError as e:
+            logger.warning("Could not read the per-ticket PII doc: %s", e)
+            fetch_errors.append(str(e))
+
+    try:
+        if section := _fetch_shared_pii_doc_section(
+            issue_number=issue_number, linear_id=linear_id, sa_email=sa_email
+        ):
+            parts.append(f"{SHARED_PII_DOC_LABEL}\n{section}")
+    except PIIFetchError as e:
+        logger.warning("Could not read the shared PII doc: %s", e)
+        fetch_errors.append(str(e))
+
+    if not parts:
+        if fetch_errors:
+            raise PIIFetchError("; ".join(fetch_errors))
+        linear_detail = f" (Linear {linear_id})" if linear_id else ""
+        raise PIINotFoundError(
+            f"No PII found for issue {issue_number}{linear_detail} in either the "
+            f"ticket's own PII doc or the shared go/github-pii doc."
+        )
+
+    logger.info("Fetched PII from %d source(s) for issue %s", len(parts), issue_number)
+    ctx.pii_fetched = True
+    return "\n\n".join(parts)
+
+
+def _fetch_ticket_pii_doc(*, doc_id: str, sa_email: str) -> str:
+    """Returns the full text of a ticket's own private PII doc.
+
+    Returns the doc verbatim rather than trying to locate the client IDs within
+    it: the agent is better at reading a free-form doc than any parser we'd write,
+    and matching on the doc's template would break silently whenever that
+    template — which lives outside this repo — was reworded. Whether the run
+    actually got usable PII is enforced in main(), which refuses to post a
+    diagnosis unless a person_id was resolved.
+    """
+    doc = _fetch_doc(doc_id=doc_id, sa_email=sa_email)
+    return "\n".join(parse_doc(doc))
+
+
+def _fetch_shared_pii_doc_section(
+    *, issue_number: str, linear_id: str | None, sa_email: str
+) -> str:
+    """Returns this issue's section of the legacy shared go/github-pii doc.
+
+    Returns "" when the doc has no section for this issue, or when the section it
+    has is just a header with nothing under it — both are misses the caller
+    treats as "this source had nothing", not as failures.
+
+    TODO(OBT-44025): remove — the per-ticket doc replaces this.
+    """
+    doc = _fetch_doc(doc_id=GITHUB_PII_DOC_ID, sa_email=sa_email)
+    identifiers = [issue_number] + ([linear_id] if linear_id else [])
+    section = find_issue_section(parse_doc(doc), identifiers)
+    if not section or not section_has_content(section):
+        return ""
+    return "\n".join(section)
 
 
 # ── tool implementations ────────────────────────────────────────────────────
@@ -561,6 +761,7 @@ def look_up_person_ids(
             f"state_code={state_code}"
         )
     ctx.register_external_ids([str(r["external_id"]) for r in rows])
+    ctx.person_ids_resolved = True
     return _format_rows_as_table(rows)
 
 
@@ -568,6 +769,7 @@ def _build_tool_handlers(
     config: RuntimeConfig,
     ctx: DiagnosisContext,
     linear_id: str | None,
+    pii_doc_id: str | None,
 ) -> dict[str, Callable[[dict[str, Any]], str]]:
     """Build the tool-name → handler dict, closing over runtime config and context."""
     return {
@@ -576,7 +778,11 @@ def _build_tool_handlers(
             args["dataset"], args["table"], ctx
         ),
         "fetch_pii": lambda args: fetch_pii_for_issue(
-            args["issue_number"], linear_id, config.sa_email
+            issue_number=args["issue_number"],
+            linear_id=linear_id,
+            pii_doc_id=pii_doc_id,
+            sa_email=config.sa_email,
+            ctx=ctx,
         ),
         "look_up_person_ids": lambda args: look_up_person_ids(
             args["external_ids"], args["state_code"], config.bq_project, ctx
@@ -623,7 +829,7 @@ TOOLS = [
     },
     {
         "name": "fetch_pii",
-        "description": "Fetch PII details (names, external IDs) for a GitHub issue from the go/github-pii Google Doc. Returns the relevant section of the doc for the given issue number.",
+        "description": "Fetch PII details (names, external IDs) for a GitHub issue. Reads both the ticket's own private PII Google Doc and the legacy shared go/github-pii doc, and returns whatever either holds, labelled by source — so check both sections for client IDs.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -741,7 +947,7 @@ this date — the most recent row in a table is not necessarily today.
 
 1. run_bq_query — Run SQL queries against BigQuery.
 2. get_table_schema — Get column names and types for a BQ table.
-3. fetch_pii — Fetch PII (names, external IDs) for a GitHub issue from go/github-pii.
+3. fetch_pii — Fetch PII (names, external IDs) for a GitHub issue from every doc we hold for it.
 4. look_up_person_ids — Convert external IDs from PII to internal person_ids via BigQuery.
 5. search_codebase — Grep the local pulse-data repo checkout. Returns file paths and matching lines.
 6. read_repo_file — Read a file from the local repo checkout by path.
@@ -760,6 +966,10 @@ this date — the most recent row in a table is not necessarily today.
 ### Step 1: Fetch PII
 
 Use fetch_pii to get external IDs for the affected people. You need these to look up person_ids.
+It reads every doc we hold for the ticket — its own private PII doc, and the legacy shared
+go/github-pii doc — and returns them labelled by source, so you never need to open any link
+yourself. **Read every section it returns before concluding there are no IDs**: reporters are
+mid-migration between the two docs, so the client's ID is often in only one of them.
 
 ### Step 2: Extract key details from the ticket
 
@@ -803,6 +1013,11 @@ recommends that a human investigate manually.
   output you will echo back in the diagnosis.** Project only person_id when identifying individuals.
   If you need the external_id to join on, do the join in a subquery / CTE and project person_id out
   of the outer SELECT.
+- **If you cannot get usable client IDs, STOP.** If fetch_pii returns no external IDs (e.g.
+  the doc holds only screenshots), say plainly that the ticket's PII doc has no usable client
+  IDs and that a human needs to fill it in. Do NOT substitute a pipeline-level or
+  state-wide diagnosis — an answer about the state's data in general reads as an answer about
+  this client, which is worse than reporting that you were blocked.
 - Follow the output format in "Present diagnosis results" exactly.
 - Only include queries you actually ran and got results for. Never guess SQL syntax.
 - Always use `{bq_project}` as the GCP project in all SQL queries.
@@ -819,9 +1034,14 @@ def run_agent(
     anthropic_api_key: str,
     ctx: DiagnosisContext,
     linear_id: str | None,
-) -> str:
-    """Run the diagnosis agentic loop and return the final diagnosis text."""
-    result = run_agent_loop(
+    pii_doc_id: str | None,
+) -> AgentResult:
+    """Run the diagnosis agentic loop and return its result.
+
+    Returns the whole AgentResult, not just the text, so main() can tell an
+    already-reported failure apart from a run that finished normally.
+    """
+    return run_agent_loop(
         api_key=anthropic_api_key,
         system_prompt=_build_system_prompt(config, product_areas),
         user_message=(
@@ -830,7 +1050,7 @@ def run_agent(
             f"**Issue body:**\n{issue_body}"
         ),
         tools=TOOLS,
-        tool_handlers=_build_tool_handlers(config, ctx, linear_id),
+        tool_handlers=_build_tool_handlers(config, ctx, linear_id, pii_doc_id),
         config=AgentConfig(model=MODEL, max_iterations=MAX_AGENT_ITERATIONS),
         summary_instruction=(
             "You've reached the maximum number of investigation steps. "
@@ -840,7 +1060,6 @@ def run_agent(
         ),
         failure_types=(DiagnosisFailure,),
     )
-    return f"{result.text}{result.footer()}"
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -948,6 +1167,10 @@ def main() -> None:
         logger.info("Posted/updated follow-up notice for %s", issue)
         return
 
+    pii_doc_id, issue_body = resolve_pii_doc_id(issue, issue_body)
+
+    # Needed to key the shared doc, which is read even when the ticket has its
+    # own PII doc — see fetch_pii_for_issue.
     linear_id = resolve_linear_id_for_issue(issue)
     logger.info("Linear ID for %s: %s", issue, linear_id)
 
@@ -955,7 +1178,7 @@ def main() -> None:
     ctx = DiagnosisContext()
     try:
         logger.info("Starting diagnosis for %s", issue)
-        comment = run_agent(
+        result = run_agent(
             issue,
             issue_title,
             issue_body,
@@ -964,7 +1187,31 @@ def main() -> None:
             anthropic_api_key,
             ctx,
             linear_id,
+            pii_doc_id,
         )
+        # A run that finished normally but never resolved the ticket's PII to a
+        # person didn't diagnose this client's problem, whatever it wrote — post
+        # the blocker instead of the speculation. `failed` runs already carry a
+        # more specific message (e.g. which doc was empty), so leave those be.
+        if not result.failed and not ctx.person_ids_resolved:
+            logger.warning(
+                "Discarding diagnosis for %s: person IDs were never resolved "
+                "(pii_fetched=%s)",
+                issue,
+                ctx.pii_fetched,
+            )
+            detail = (
+                "The agent read PII for this ticket but never resolved it to a "
+                "person in BigQuery."
+                if ctx.pii_fetched
+                else "The agent never successfully read any PII for this ticket."
+            )
+            _post_marked_comment(
+                issue, PIIUnusableError(detail).user_message() + logs_footer
+            )
+            return
+
+        comment = f"{result.text}{result.footer()}"
         logger.info("Scrubbing PII from comment before posting...")
         scrubbed = scrub_pii_from_comment(comment, anthropic_api_key)
         scrubbed = ctx.scrub_known_external_ids(scrubbed)
