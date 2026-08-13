@@ -17,6 +17,7 @@
 """Wraps the raw JSON output returned by an extractor, paired with the output schema
 needed to interpret it.
 """
+import copy
 from typing import Any
 
 import attr
@@ -142,6 +143,15 @@ class LLMRequestOutputValues:
                 f"[{type(envelope_json)}]."
             )
         return envelope_json
+
+    def deep_copy(self) -> "LLMRequestOutputValues":
+        """Returns a copy of these values over a deep copy of the output JSON, so
+        the copy can be edited without touching the output these values wrap.
+        """
+        return LLMRequestOutputValues(
+            output_schema=self.output_schema,
+            output_json=copy.deepcopy(self.output_json),
+        )
 
     def value_for_field(self, *, field: ScalarValuedLLMRequestOutputSchemaField) -> Any:
         """Returns the scalar value the extractor produced for top-level

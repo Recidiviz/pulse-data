@@ -16,6 +16,21 @@
 # =============================================================================
 """Validator that decides whether one raw LLM extraction result is usable,
 returning an `LLMDocumentValidationResult`.
+
+It runs the checks in three stages, because each stage depends on the one before
+it holding:
+
+1. **Structural conformance** against the JSON Schema generated from the
+   extractor's output schema. Nothing downstream can read a result the schema
+   rejects, so a structural failure short-circuits the rest.
+2. **The remaining extraction-error checks.** Each reads values through the
+   output schema, which is only safe once the result is structurally conformant.
+   Any finding here means the model violated its instructions and we should retry the
+   document with another LLM call.
+3. **The quality adjustments**, each returning an adjusted copy of the output it
+   is given, chained to produce the validated output and leaving the raw output
+   the extractor returned untouched. Findings here do not trigger a retry: the
+   model followed its instructions, and a retry would produce the same output.
 """
 
 import datetime
@@ -40,6 +55,9 @@ from recidiviz.documents.extraction.validation.citation_grounding_check import (
 )
 from recidiviz.documents.extraction.validation.citation_matching import (
     SourceDocumentText,
+)
+from recidiviz.documents.extraction.validation.confidence_threshold_adjustment import (
+    ConfidenceThresholdAdjustment,
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
@@ -83,28 +101,32 @@ class LLMExtractionResultValidator:
             output_json=assert_type(raw_result.result_json, dict),
         )
 
-        audit_issues = self._extraction_error_issues(
+        extraction_error_issues = self._extraction_error_issues(
             raw_output=raw_output,
             document_text=SourceDocumentText(text=source_document_text),
         )
-
-        validated_output: LLMRequestOutputValues | None
-        result_type_override: LLMExtractionJobDocumentResultType | None
-        if audit_issues:
-            validated_output = None
-            result_type_override = (
-                LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+        if extraction_error_issues:
+            return self._result(
+                config=config,
+                validation_datetime_utc=validation_datetime_utc,
+                validated_output=None,
+                audit_issues=extraction_error_issues,
+                result_type_override=(
+                    LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+                ),
             )
-        else:
-            validated_output = raw_output
-            result_type_override = None
+        adjustment_issues: list[ValidationIssue] = []
+        validated_output, new_issues = ConfidenceThresholdAdjustment.apply(
+            output=raw_output
+        )
+        adjustment_issues.extend(new_issues)
 
-        return LLMDocumentValidationResult(
-            validation_config_version_id=config.extractor_collection.validation_config_version_id,
+        return self._result(
+            config=config,
             validation_datetime_utc=validation_datetime_utc,
             validated_output=validated_output,
-            audit_issues=audit_issues,
-            result_type_override=result_type_override,
+            audit_issues=adjustment_issues,
+            result_type_override=None,
         )
 
     @staticmethod
@@ -130,3 +152,24 @@ class LLMExtractionResultValidator:
                 output=raw_output, source_document_text=document_text
             ),
         ]
+
+    @staticmethod
+    def _result(
+        *,
+        config: LLMExtractorConfig,
+        validation_datetime_utc: datetime.datetime,
+        validated_output: LLMRequestOutputValues | None,
+        audit_issues: list[ValidationIssue],
+        result_type_override: LLMExtractionJobDocumentResultType | None,
+    ) -> LLMDocumentValidationResult:
+        """Returns the validation result stamped with the config version and time
+        validation ran."""
+        return LLMDocumentValidationResult(
+            validation_config_version_id=(
+                config.extractor_collection.validation_config_version_id
+            ),
+            validation_datetime_utc=validation_datetime_utc,
+            validated_output=validated_output,
+            audit_issues=audit_issues,
+            result_type_override=result_type_override,
+        )

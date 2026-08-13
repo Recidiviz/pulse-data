@@ -32,10 +32,26 @@ from recidiviz.documents.extraction.extraction_results_columns import (
     VALIDATION_ISSUE_CHECK_TYPE_FIELD,
     VALIDATION_ISSUE_DETAIL_FIELD,
     VALIDATION_ISSUE_FIELD_NAME_FIELD,
+    VALIDATION_ISSUE_WILL_RETRY_FIELD,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
+
+
+class ValidationCheckCategory(StrEnum):
+    """What a validation finding means, and therefore what the pipeline does with
+    the document that produced it."""
+
+    EXTRACTION_ERROR = "EXTRACTION_ERROR"
+    """The model violated its prompt instructions. Nothing is persisted for the
+    document and it is queued for another LLM call, because a subsequent attempt
+    may produce a conforming result."""
+
+    QUALITY_ADJUSTMENT = "QUALITY_ADJUSTMENT"
+    """The model followed its instructions but the output does not meet our
+    quality bar. The document is kept, with the adjustment applied to the
+    validated copy, and is not retried."""
 
 
 class ValidationCheckType(StrEnum):
@@ -52,6 +68,29 @@ class ValidationCheckType(StrEnum):
         "ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY"
     )
     HALLUCINATED_CITATION = "HALLUCINATED_CITATION"
+    BELOW_MINIMUM_CONFIDENCE_LEVEL = "BELOW_MINIMUM_CONFIDENCE_LEVEL"
+
+    @property
+    def category(self) -> ValidationCheckCategory:
+        """Returns the ValidationCheckCategory for this check type."""
+        if self in (
+            ValidationCheckType.SCHEMA_CONFORMANCE,
+            ValidationCheckType.SEMANTIC_CONSISTENCY,
+            ValidationCheckType.REQUIRED_FIELD_BELOW_MINIMUM_CONFIDENCE_LEVEL,
+            ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+            ValidationCheckType.ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY,
+            ValidationCheckType.HALLUCINATED_CITATION,
+        ):
+            return ValidationCheckCategory.EXTRACTION_ERROR
+        if self in (ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,):
+            return ValidationCheckCategory.QUALITY_ADJUSTMENT
+        raise ValueError(f"Unexpected ValidationCheckType [{self}]")
+
+    @property
+    def will_retry(self) -> bool:
+        """Returns whether a finding from this check queues the document for
+        another LLM call."""
+        return self.category is ValidationCheckCategory.EXTRACTION_ERROR
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -70,12 +109,19 @@ class ValidationIssue:
     detail: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """A human-readable description of what the check found."""
 
+    @property
+    def will_retry(self) -> bool:
+        """Returns True if this finding queues the document for another LLM
+        call, False otherwise."""
+        return self.check_type.will_retry
+
     def to_dict(self) -> dict[str, Any]:
         """Returns a dict representation of the issue, suitable for JSON
         serialization."""
         return {
             VALIDATION_ISSUE_CHECK_TYPE_FIELD: self.check_type,
             VALIDATION_ISSUE_FIELD_NAME_FIELD: self.field_name,
+            VALIDATION_ISSUE_WILL_RETRY_FIELD: self.will_retry,
             VALIDATION_ISSUE_DETAIL_FIELD: self.detail,
         }
 
@@ -87,9 +133,9 @@ class LLMDocumentValidationResult:
     validated_output: LLMRequestOutputValues | None = attr.ib(
         validator=attr_validators.is_opt(LLMRequestOutputValues)
     )
-    """The validated output, wrapping the JSON with quality filters applied, or
-    None when the document failed an extraction-error check (nothing usable to
-    persist)."""
+    """The validated output, wrapping the JSON with quality adjustments applied,
+    or None when the document failed an extraction-error check (nothing usable
+    to persist)."""
 
     audit_issues: list[ValidationIssue] = attr.ib(
         validator=attr_validators.is_list_of(ValidationIssue)
@@ -106,7 +152,7 @@ class LLMDocumentValidationResult:
     validation_config_version_id: str = attr.ib(
         validator=attr_validators.is_non_empty_str
     )
-    """The version of the threshold/quality-filter config the validator ran
+    """The version of the threshold/quality-adjustment config the validator ran
     against, persisted alongside the outcome so a result can be tied back to the
     rules that produced it."""
 

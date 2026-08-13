@@ -129,8 +129,7 @@ class RequiredFieldConfidenceCheckTest(TestCase):
 
     def test_optional_field_below_minimum_not_flagged(self) -> None:
         # `location` is optional, so falling short is a quality shortfall for
-        # the confidence-threshold quality filter to withhold, not an
-        # extraction error.
+        # ConfidenceThresholdAdjustment to withhold, not an extraction error.
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["location"] = build_inferred_field_result_json(
             "Kitchen", "speculative"
@@ -196,8 +195,8 @@ class RequiredFieldConfidenceCheckTest(TestCase):
 
     def test_optional_array_sub_field_below_its_override_not_flagged(self) -> None:
         # `rate_amount` overrides the collection minimum up to `explicit` and is
-        # emitted below it, but it is optional — the filter withholds it rather
-        # than this check failing the document.
+        # emitted below it, but it is optional — the adjustment withholds it
+        # rather than this check failing the document.
         result_json = fake_all_fields_result_json()
         result_json["result"]["assignments"][0][
             "rate_amount"

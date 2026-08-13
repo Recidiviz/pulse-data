@@ -19,10 +19,8 @@ field: its extracted value (or null branch) plus the companion metadata —
 confidence level, adversarial interpretation, and citations — that the
 validation checks read.
 
-Each class here is a *live view* over a node of a result's output JSON: the
+Each class here is a live view over a node of a result's output JSON: the
 accessors read through to that JSON, and `null_out_value` writes through to it.
-Validation relies on that: the quality filters walk a deep copy of the raw output
-and edit it in place to produce the validated copy.
 """
 from typing import Any
 
@@ -226,3 +224,14 @@ class InferredFieldOutput:
             )
             for index, citation_json in enumerate(self.field_json[CITATIONS_FIELD_NAME])
         ]
+
+    def null_out_value(self) -> None:
+        """Nulls this field's extracted value in the output JSON this view reads
+        from, leaving every companion-metadata key in place.
+        """
+        if not self.has_value:
+            raise ValueError(
+                f"Cannot null out field [{self.display_name}], which took its "
+                f"null branch and has no value to null out."
+            )
+        self.field_json[VALUE_FIELD_NAME] = None

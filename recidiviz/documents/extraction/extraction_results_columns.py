@@ -33,6 +33,7 @@ VALIDATION_ISSUES_JSON_COLUMN_NAME = "validation_issues_json"
 # Keys within each object of the VALIDATION_ISSUES_JSON_COLUMN_NAME JSON array
 VALIDATION_ISSUE_CHECK_TYPE_FIELD = "check_type"
 VALIDATION_ISSUE_FIELD_NAME_FIELD = "field_name"
+VALIDATION_ISSUE_WILL_RETRY_FIELD = "will_retry"
 VALIDATION_ISSUE_DETAIL_FIELD = "detail"
 
 # Output column on the parsed array-level result views that records each array

@@ -77,6 +77,7 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     ground_citations_in_fake_source_text,
     wrap_in_result_key,
 )
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -476,5 +477,53 @@ class LLMExtractionResultValidatorTest(TestCase):
                 # primary_status is speculative with no adversarial interpretation.
                 ValidationCheckType.ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY,
             },
+            {issue.check_type for issue in validation.audit_issues},
+        )
+
+    def test_low_confidence_optional_field_adjusted_without_retry(self) -> None:
+        # `location` is optional, so falling below its minimum is a quality
+        # shortfall rather than a contradiction: the document is kept, the value
+        # is withheld from the validated copy, and nothing is retried.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["location"] = build_inferred_field_result_json(
+            "Kitchen", "speculative", adversarial_interpretation=_ADVERSARIAL
+        )
+        validation, grounded_json = self._validate_grounded(result_json)
+
+        self.assertTrue(validation.passed_validation)
+        self.assertIsNone(validation.result_type_override)
+        self.assertFalse(validation.will_retry)
+
+        [issue] = validation.audit_issues
+        self.assertEqual(
+            ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL, issue.check_type
+        )
+        self.assertEqual("location", issue.field_name)
+        self.assertFalse(issue.will_retry)
+
+        validated_output = assert_type(
+            validation.validated_output, LLMRequestOutputValues
+        )
+        self.assertIsNone(validated_output.output_json["result"]["location"]["value"])
+        # The raw result the extractor returned is left exactly as it was.
+        self.assertEqual("Kitchen", grounded_json["result"]["location"]["value"])
+
+    def test_extraction_error_suppresses_the_adjustments(self) -> None:
+        # The document has a low-confidence optional field the adjustment would
+        # normally withhold, but its required field is speculative — nothing is
+        # persisted, so there is no validated copy to adjust and no adjustment
+        # finding to audit.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"] = build_inferred_field_result_json(
+            "active", "speculative", adversarial_interpretation=_ADVERSARIAL
+        )
+        result_json["result"]["location"] = build_inferred_field_result_json(
+            "Kitchen", "speculative", adversarial_interpretation=_ADVERSARIAL
+        )
+        validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertNotIn(
+            ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
             {issue.check_type for issue in validation.audit_issues},
         )

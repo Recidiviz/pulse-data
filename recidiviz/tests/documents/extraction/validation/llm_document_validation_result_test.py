@@ -39,6 +39,7 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
+    ValidationCheckCategory,
     ValidationCheckType,
     ValidationIssue,
 )
@@ -84,6 +85,70 @@ def _validation_result(
         validation_config_version_id="vc1",
         validation_datetime_utc=_VALIDATION_DATETIME,
     )
+
+
+class ValidationCheckTypeTest(unittest.TestCase):
+    """Tests the extraction-error / quality-adjustment split every check type is
+    classified by, which is what decides whether a finding costs the document an
+    LLM retry."""
+
+    def test_only_extraction_errors_retry(self) -> None:
+        for check_type in ValidationCheckType:
+            with self.subTest(check_type=check_type):
+                self.assertEqual(
+                    check_type.category is ValidationCheckCategory.EXTRACTION_ERROR,
+                    check_type.will_retry,
+                )
+
+
+class ValidationIssueTest(unittest.TestCase):
+    """Tests the audit-row form of a single finding."""
+
+    def test_to_dict_carries_retry_disposition(self) -> None:
+        # will_retry is written into the audit JSON rather than left for a reader
+        # to derive, so an audit query can separate the findings that cost a
+        # retry from the ones that only adjusted output.
+        self.assertEqual(
+            {
+                "check_type": ValidationCheckType.SCHEMA_CONFORMANCE,
+                "field_name": "location",
+                "will_retry": True,
+                "detail": "missing required field",
+            },
+            _ISSUE.to_dict(),
+        )
+
+    def test_to_dict_for_quality_adjustment_finding(self) -> None:
+        self.assertEqual(
+            {
+                "check_type": ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
+                "field_name": "location",
+                "will_retry": False,
+                "detail": "confidence below minimum",
+            },
+            ValidationIssue(
+                check_type=ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
+                field_name="location",
+                detail="confidence below minimum",
+            ).to_dict(),
+        )
+
+    def test_to_dict_for_document_level_finding(self) -> None:
+        # A finding tied to no single field still carries the field_name key,
+        # holding null.
+        self.assertEqual(
+            {
+                "check_type": ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+                "field_name": None,
+                "will_retry": True,
+                "detail": "every field is null",
+            },
+            ValidationIssue(
+                check_type=ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+                field_name=None,
+                detail="every field is null",
+            ).to_dict(),
+        )
 
 
 class LLMDocumentValidationResultTest(unittest.TestCase):
