@@ -34,6 +34,9 @@ from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionTokenCounts,
     LLMRequestErrorType,
 )
+from recidiviz.documents.extraction.llm_extraction_job_manager import (
+    LLMJobDocumentExtractionResult,
+)
 from recidiviz.documents.extraction.llm_extraction_result_processor import (
     LLMExtractionResultProcessor,
     error_type_for_request_error,
@@ -43,21 +46,36 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ENTITIES_FIELD_NAME,
+    IS_RELEVANT_FIELD_NAME,
     RESULT_KEY,
 )
 from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
     LLMExtractionResultValidator,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_extractor_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_fake_entity_resolution_entity_result_json,
+    build_fake_entity_resolution_result_content,
+    fake_irrelevant_result_json,
     fake_minimal_relevant_result_json,
     ground_citations_in_fake_source_text,
 )
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
+_ASSIGNMENT_GROUP_NAME = "assignment"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _JOB_ID = "job1"
+# A composite document's text. ER results carry no citations, so nothing in an
+# ER result is matched against it.
+_COMPOSITE_SOURCE_TEXT = (
+    "[Entry 1]\nassignment_name: Kitchen\n\n[Entry 2]\nassignment_name: Laundry"
+)
 # A relevant result paired with source document text that grounds its citations,
 # so validation's citation checks pass and the result reaches the processor's
 # success path.
@@ -104,6 +122,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=raw_result,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            expected_entry_nums=None,
             prior_transient_failure_count=0,
         )
 
@@ -120,6 +139,30 @@ class LLMExtractionResultProcessorTest(TestCase):
         self.assertEqual(_DOCUMENT_CONTENTS_ID, result.document_contents_id)
         self.assertEqual(_NOW, result.result_datetime_utc)
         self.assertEqual(_NOW, result.validation_results.validation_datetime_utc)
+
+    def test_irrelevant_result_relevance_read_from_result_json(self) -> None:
+        # A first-order collection's relevance comes from the model: an
+        # irrelevant result is still a SUCCESS, with is_relevant read straight
+        # from the result JSON rather than stamped by the framework.
+        result_json = fake_irrelevant_result_json()
+        self.assertIs(False, result_json[RESULT_KEY][IS_RELEVANT_FIELD_NAME])
+
+        raw_result = LLMClientDocumentExtractionResult.from_success(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            result_json=result_json,
+            token_counts=_TOKEN_COUNTS,
+        )
+        result = self.processor.validate_and_classify(
+            config=self.config,
+            raw_result=raw_result,
+            job_id=_JOB_ID,
+            source_document_text="A note about nothing in particular.",
+            expected_entry_nums=None,
+            prior_transient_failure_count=0,
+        )
+
+        self.assertEqual(LLMExtractionJobDocumentResultType.SUCCESS, result.result_type)
+        self.assertIs(False, result.is_relevant)
 
     def test_structurally_invalid_result_downgraded_to_transient(self) -> None:
         # A schema violation (a required field removed) is an extraction-error
@@ -140,6 +183,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=raw_result,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            expected_entry_nums=None,
             prior_transient_failure_count=0,
         )
 
@@ -213,6 +257,7 @@ class LLMExtractionResultProcessorTest(TestCase):
                         raw_result=raw_result,
                         job_id=_JOB_ID,
                         source_document_text=_SOURCE_TEXT,
+                        expected_entry_nums=None,
                         prior_transient_failure_count=prior_count,
                     )
                     self.assertEqual(expected_result_type, result.result_type)
@@ -245,6 +290,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=permanent,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            expected_entry_nums=None,
             prior_transient_failure_count=beyond_budget,
         )
         self.assertEqual(
@@ -262,6 +308,7 @@ class LLMExtractionResultProcessorTest(TestCase):
             raw_result=success,
             job_id=_JOB_ID,
             source_document_text=_SOURCE_TEXT,
+            expected_entry_nums=None,
             prior_transient_failure_count=beyond_budget,
         )
         self.assertEqual(
@@ -325,6 +372,7 @@ class LLMExtractionResultProcessorTest(TestCase):
                     raw_result=raw_result,
                     job_id=_JOB_ID,
                     source_document_text=_SOURCE_TEXT,
+                    expected_entry_nums=None,
                     prior_transient_failure_count=0,
                 )
 
@@ -334,3 +382,87 @@ class LLMExtractionResultProcessorTest(TestCase):
                 self.assertIsNone(result.is_relevant)
                 self.assertIsNone(result.validation_results)
                 self.assertEqual(_NOW, result.result_datetime_utc)
+
+
+@freeze_time(_NOW)
+class LLMEntityResolutionExtractionResultProcessorTest(TestCase):
+    """Tests LLMExtractionResultProcessor against an entity-resolution extractor,
+    whose result JSON carries no `is_relevant` field at all (every composite
+    document is relevant by construction). The framework stamps the denormalized
+    `is_relevant` with a constant True on every ER SUCCESS row — True rather than
+    NULL, so the validated views' `WHERE is_relevant = TRUE` filter is a harmless
+    no-op for ER — instead of reading it from the result JSON.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.config = fake_entity_resolution_extractor_config(_ASSIGNMENT_GROUP_NAME)
+        self.processor = LLMExtractionResultProcessor(
+            validator=LLMExtractionResultValidator()
+        )
+
+    @staticmethod
+    def build_entity_resolution_result_json() -> dict[str, Any]:
+        """Returns a conforming ER result: two resolved entities partitioning a
+        two-entry composite document."""
+        return build_fake_entity_resolution_result_content(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1,
+                    entry_nums=[1],
+                    assignment_name="Kitchen",
+                    assignment_type="internal",
+                ),
+                build_fake_entity_resolution_entity_result_json(
+                    2,
+                    entry_nums=[2],
+                    assignment_name="Laundry",
+                    assignment_type=None,
+                ),
+            ]
+        )
+
+    def _process(self, result_json: dict[str, Any]) -> LLMJobDocumentExtractionResult:
+        return self.processor.validate_and_classify(
+            config=self.config,
+            raw_result=LLMClientDocumentExtractionResult.from_success(
+                document_contents_id=_DOCUMENT_CONTENTS_ID,
+                result_json=result_json,
+                token_counts=_TOKEN_COUNTS,
+            ),
+            job_id=_JOB_ID,
+            source_document_text=_COMPOSITE_SOURCE_TEXT,
+            expected_entry_nums={1, 2},
+            prior_transient_failure_count=0,
+        )
+
+    def test_success_row_stamped_relevant(self) -> None:
+        # The ER result carries no relevance field anywhere, so True cannot have
+        # been read from it — it is the framework constant.
+        result_json = self.build_entity_resolution_result_json()
+        self.assertNotIn(IS_RELEVANT_FIELD_NAME, result_json)
+        self.assertNotIn(RESULT_KEY, result_json)
+
+        result = self._process(result_json)
+
+        self.assertEqual(LLMExtractionJobDocumentResultType.SUCCESS, result.result_type)
+        self.assertIs(True, result.is_relevant)
+        assert result.validation_results is not None
+        self.assertIs(True, result.validation_results.is_relevant)
+        self.assertTrue(result.is_validated_result)
+
+    def test_validation_failure_leaves_relevance_unset(self) -> None:
+        # The constant True is stamped only on SUCCESS rows: an ER result that
+        # fails validation persists nothing usable, so relevance stays unset just
+        # as it does on the first-order failure path.
+        result_json = self.build_entity_resolution_result_json()
+        del result_json[ENTITIES_FIELD_NAME][0]["assignment_name"]
+
+        result = self._process(result_json)
+
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            result.result_type,
+        )
+        self.assertIsNone(result.is_relevant)
+        self.assertFalse(result.is_validated_result)

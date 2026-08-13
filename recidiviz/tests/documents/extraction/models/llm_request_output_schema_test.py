@@ -28,6 +28,7 @@ from unittest import TestCase
 import attr
 
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
+    ENTITIES_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     LLMRequestOutputSchema,
 )
@@ -157,6 +158,52 @@ class LLMRequestOutputSchemaTest(TestCase):
             [field.name for field in schema.user_defined_fields],
             [field.name for field in schema.all_fields],
         )
+
+    def test_entities_field_returned_for_entity_resolution_shape(self) -> None:
+        # The entity-resolution shape: relevance-free, declaring an `entities`
+        # ARRAY_OF_STRUCT holding the resolved entities.
+        schema = attr.evolve(
+            _build_schema(
+                _field(
+                    ENTITIES_FIELD_NAME,
+                    field_type="ARRAY_OF_STRUCT",
+                    field_mode="STRUCTURAL",
+                    fields=[_field("employer_name", field_mode="STRUCTURAL")],
+                    primary_keys=["employer_name"],
+                )
+            ),
+            relevance_criteria=None,
+        )
+        entities_field = schema.entities_field
+        self.assertEqual(ENTITIES_FIELD_NAME, entities_field.name)
+        self.assertEqual(["employer_name"], entities_field.primary_keys)
+
+    def test_entities_field_on_relevance_bearing_schema_raises(self) -> None:
+        # A first-order schema is relevance-bearing, so reading resolved
+        # entities off it is a caller bug even if it happened to declare a
+        # field named `entities`.
+        schema = _build_schema(_field("a"))
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema is not an entity-resolution schema — it declares "
+                "relevance criteria — so it has no [entities] field to read."
+            ),
+        ):
+            _ = schema.entities_field
+
+    def test_entities_field_on_relevance_free_schema_without_entities_raises(
+        self,
+    ) -> None:
+        schema = attr.evolve(_build_schema(_field("a")), relevance_criteria=None)
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema has no top-level field named [entities]. Declared "
+                "fields: ['a']."
+            ),
+        ):
+            _ = schema.entities_field
 
     def test_reserved_is_relevant_name_raises_even_when_relevance_free(self) -> None:
         # The reserved-name check is independent of relevance_criteria — a

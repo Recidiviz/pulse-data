@@ -37,6 +37,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ENTITIES_FIELD_NAME,
     RESULT_KEY,
 )
 
@@ -361,6 +362,26 @@ class LLMRequestOutputValues:
             self._array_element(field=field, element_json=element_json, index=index)
             for index, element_json in enumerate(elements_json)
         ]
+
+    def resolved_entities(self) -> list[dict[str, Any]]:
+        """Returns the resolved entities an entity-resolution clustering output
+        carries: one dict per emitted entity, mapping every sub-field the
+        `entities` field declares (`entity_id`, the entity fields, `entry_nums`)
+        to its bare value.
+
+        Raises when these values are not an entity-resolution extraction's
+        output (the schema declares no `entities` field), or when the output
+        omits the array. Only safe to call on a structurally conformant result,
+        which carries a non-empty `entities` array.
+        """
+        entities = self.array_elements(field=self.output_schema.entities_field)
+        if entities is None:
+            raise LLMOutputParsingError(
+                f"Output JSON for an entity-resolution schema does not carry "
+                f"its [{ENTITIES_FIELD_NAME}] field. Found keys: "
+                f"{sorted(self._extracted_fields_json)}."
+            )
+        return entities
 
     @staticmethod
     def _array_element(

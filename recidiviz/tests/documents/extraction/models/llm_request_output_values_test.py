@@ -69,6 +69,7 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_fake_extractor_result_content,
     build_inferred_field_result_json,
     build_null_inferred_field_result_json,
+    fake_minimal_relevant_result_json,
     wrap_in_result_key,
 )
 from recidiviz.utils.types import assert_type
@@ -793,10 +794,7 @@ class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
                 fake_first_order_collection(), "location"
             )
         )
-        self.entities_field = assert_type(
-            self.output_schema.get_field(ENTITIES_FIELD_NAME),
-            ArrayOfStructLLMRequestOutputSchemaField,
-        )
+        self.entities_field = self.output_schema.entities_field
 
     def _output_values(self, entities: list[dict[str, Any]]) -> LLMRequestOutputValues:
         return LLMRequestOutputValues(
@@ -862,6 +860,60 @@ class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
             },
             output_values.values_dict,
         )
+
+    def test_resolved_entities_unwraps_entities(self) -> None:
+        output_values = self._output_values(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1, entry_nums=[1, 3], location="HQ"
+                ),
+                build_fake_entity_resolution_entity_result_json(
+                    2, entry_nums=[2], location="Annex"
+                ),
+            ]
+        )
+        self.assertEqual(
+            [
+                {
+                    ENTITY_ID_FIELD_NAME: 1,
+                    "location": "HQ",
+                    ENTRY_NUMS_FIELD_NAME: [1, 3],
+                },
+                {
+                    ENTITY_ID_FIELD_NAME: 2,
+                    "location": "Annex",
+                    ENTRY_NUMS_FIELD_NAME: [2],
+                },
+            ],
+            output_values.resolved_entities(),
+        )
+
+    def test_resolved_entities_missing_entities_key_raises(self) -> None:
+        output_values = LLMRequestOutputValues(
+            output_schema=self.output_schema, output_json={}
+        )
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Output JSON for an entity-resolution schema does not carry its "
+            r"\[entities\] field\. Found keys: \[\]\.$",
+        ):
+            output_values.resolved_entities()
+
+    def test_resolved_entities_on_relevance_bearing_output_raises(self) -> None:
+        # Resolved entities only exist on an entity-resolution extraction's
+        # output; reading them off a first-order result is a caller bug.
+        first_order_values = LLMRequestOutputValues(
+            output_schema=get_first_order_llm_extractor_config(
+                _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
+            ).extractor_collection.output_schema,
+            output_json=fake_minimal_relevant_result_json(),
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Output schema is not an entity-resolution schema — it declares "
+            r"relevance criteria — so it has no \[entities\] field to read\.$",
+        ):
+            first_order_values.resolved_entities()
 
     def test_non_list_entry_nums_raises(self) -> None:
         output_values = self._output_values(

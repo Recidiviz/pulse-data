@@ -103,6 +103,7 @@ from recidiviz.utils.types import assert_type
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _ASSIGNMENT_GROUP_NAME = "assignment"
+_LOCATION_GROUP_NAME = "location"
 _DOCUMENT_CONTENTS_ID = "doc1"
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ADVERSARIAL = "The record might describe a closed matter."
@@ -128,7 +129,11 @@ class _ValidatorTestBase(TestCase):
         return self.config.extractor_collection.validation_config_version_id
 
     def _validate(
-        self, result_json: dict[str, Any], *, source_document_text: str
+        self,
+        result_json: dict[str, Any],
+        *,
+        source_document_text: str,
+        expected_entry_nums: set[int] | None = None,
     ) -> LLMDocumentValidationResult:
         return self.validator.validate(
             config=self.config,
@@ -138,11 +143,15 @@ class _ValidatorTestBase(TestCase):
                 token_counts=LLMDocumentExtractionTokenCounts.empty(),
             ),
             source_document_text=source_document_text,
+            expected_entry_nums=expected_entry_nums,
             validation_datetime_utc=_VALIDATION_DATETIME,
         )
 
     def _validate_grounded(
-        self, result_json: dict[str, Any]
+        self,
+        result_json: dict[str, Any],
+        *,
+        expected_entry_nums: set[int] | None = None,
     ) -> tuple[LLMDocumentValidationResult, dict[str, Any]]:
         """Validates |result_json| against a source document that grounds every
         citation it carries, returning the outcome paired with the grounded
@@ -150,7 +159,9 @@ class _ValidatorTestBase(TestCase):
         """
         grounded = ground_citations_in_fake_source_text(result_json)
         validation = self._validate(
-            grounded.result_json, source_document_text=grounded.source_document_text
+            grounded.result_json,
+            source_document_text=grounded.source_document_text,
+            expected_entry_nums=expected_entry_nums,
         )
         return validation, grounded.result_json
 
@@ -175,11 +186,14 @@ class _ValidatorTestBase(TestCase):
         *,
         expected_field_name: str | None,
         expected_detail_substring: str,
+        expected_entry_nums: set[int] | None = None,
     ) -> None:
         """Validates |result_json|, asserts it fails the SCHEMA_CONFORMANCE check on
         |expected_field_name|, indicating the extraction should be retried.
         """
-        validation, _ = self._validate_grounded(result_json)
+        validation, _ = self._validate_grounded(
+            result_json, expected_entry_nums=expected_entry_nums
+        )
 
         self.assertFalse(validation.passed_validation)
         self.assertIsNone(validation.validated_output)
@@ -210,6 +224,21 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             fake_minimal_relevant_result_json()
         )
         self.assertEqual(self._passing_result(result_json), validation)
+
+    def test_expected_entry_nums_rejected_for_first_order(self) -> None:
+        # Only an entity-resolution extractor's composite documents have
+        # numbered entries, so supplying an entry set for a first-order
+        # extractor is a caller bug.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Extractor \[US_XX_FAKE_EXTRACTOR_COLLECTION\] is first-order, but "
+            r"validation received expected entry nums \[\[1, 2\]\]\.",
+        ):
+            self._validate(
+                fake_minimal_relevant_result_json(),
+                source_document_text="Some note text.",
+                expected_entry_nums={1, 2},
+            )
 
     def test_all_fields_conforming_result_passes(self) -> None:
         validation, result_json = self._validate_grounded(fake_all_fields_result_json())
@@ -702,7 +731,9 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             self._entity(2, assignment_name="Laundry", assignment_type=None),
         )
         self.assertNotIn(RESULT_KEY, result_json)
-        validation, validated_json = self._validate_grounded(result_json)
+        validation, validated_json = self._validate_grounded(
+            result_json, expected_entry_nums={1, 2}
+        )
         self.assertEqual(self._passing_result(validated_json), validation)
         # Grounding had nothing to rewrite, so the validated result is the
         # flat result verbatim.
@@ -717,6 +748,7 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="entities[0].entity_id",
             expected_detail_substring="is not of type 'integer'",
+            expected_entry_nums={1},
         )
 
     def test_bad_enum_inside_entity_flagged_with_indexed_path(self) -> None:
@@ -730,6 +762,7 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="entities[0].assignment_type",
             expected_detail_substring="'not_a_type' is not one of",
+            expected_entry_nums={1},
         )
 
     def test_missing_required_field_flagged_on_entity(self) -> None:
@@ -741,6 +774,7 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="entities[1]",
             expected_detail_substring="'assignment_name' is a required property",
+            expected_entry_nums={1, 2},
         )
 
     def test_missing_entities_key_flagged_at_root(self) -> None:
@@ -755,6 +789,7 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             {},
             expected_field_name=None,
             expected_detail_substring="'entities' is a required property",
+            expected_entry_nums={1},
         )
 
     def test_empty_entities_flagged_as_schema_conformance(self) -> None:
@@ -768,8 +803,9 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="entities",
             expected_detail_substring="should be non-empty",
+            expected_entry_nums={1},
         )
-        validation, _ = self._validate_grounded(result_json)
+        validation, _ = self._validate_grounded(result_json, expected_entry_nums={1})
         self.assertNotIn(
             ValidationCheckType.RELEVANT_BUT_ALL_NULL,
             [issue.check_type for issue in validation.audit_issues],
@@ -784,10 +820,111 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="entities[0].entry_nums",
             expected_detail_substring="should be non-empty",
+            expected_entry_nums={1},
         )
 
     def test_validate_does_not_mutate_input(self) -> None:
         result_json = self._result_json(self._entity(1), self._entity(2))
         before = copy.deepcopy(result_json)
-        self._validate_grounded(result_json)
+        self._validate_grounded(result_json, expected_entry_nums={1, 2})
         self.assertEqual(before, result_json)
+
+    def test_entry_partition_violation_downgrades_result(self) -> None:
+        # Structurally conforming, but the composite document has three entries
+        # and the entities only account for two of them.
+        result_json = self._result_json(
+            self._entity(1), self._entity(2, assignment_name="Laundry")
+        )
+        validation, _ = self._validate_grounded(
+            result_json, expected_entry_nums={1, 2, 3}
+        )
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+        [issue] = validation.audit_issues
+        self.assertEqual(
+            ValidationCheckType.ENTRY_PARTITION_VIOLATION, issue.check_type
+        )
+        self.assertEqual(ENTITIES_FIELD_NAME, issue.field_name)
+
+    def test_duplicate_entity_downgrades_result(self) -> None:
+        # Structurally conforming and an exact entry partition, but the two
+        # entities carry identical canonical entity-field values — the model
+        # split one real-world assignment across two elements.
+        result_json = self._result_json(
+            self._entity(1, entry_nums=[1]),
+            self._entity(2, entry_nums=[2]),
+        )
+        validation, _ = self._validate_grounded(result_json, expected_entry_nums={1, 2})
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.DUPLICATE_ENTITY, issue.check_type)
+        self.assertEqual(ENTITIES_FIELD_NAME, issue.field_name)
+
+    def test_missing_expected_entry_nums_rejected(self) -> None:
+        # An ER extractor's partition check is meaningless without the composite
+        # document's entry set, and every composite document has at least one
+        # entry — so both an omitted and an empty entry set are caller bugs, not
+        # model errors.
+        result_json = self._result_json(self._entity(1))
+        empty_cases: tuple[set[int] | None, ...] = (None, set())
+        for empty_entry_nums in empty_cases:
+            with self.subTest(expected_entry_nums=empty_entry_nums):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"^Extractor \[US_XX_FAKE_EXTRACTOR_COLLECTION_ASSIGNMENT"
+                    r"_ENTITY_RESOLUTION\] is an entity-resolution extractor, but "
+                    r"validation received expected entry nums \[(None|set\(\))\]\.",
+                ):
+                    self._validate(
+                        result_json,
+                        source_document_text="[Entry 1] text",
+                        expected_entry_nums=empty_entry_nums,
+                    )
+
+
+class LLMAllNullEntityValidatorWiringTest(_ValidatorTestBase):
+    """Wires AllNullEntityCheck through the validator against the ER collection
+    synthesized from the fake collection's `location` entity group. Its single
+    entity field is optional, so an all-null entity is structurally conformant —
+    under the `assignment` group the required `assignment_name` would fail
+    structural conformance first, and the check would never be reached.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.config = fake_entity_resolution_extractor_config(_LOCATION_GROUP_NAME)
+
+    def test_all_null_entity_downgrades_result(self) -> None:
+        result_json = build_fake_entity_resolution_result_content(
+            [
+                build_fake_entity_resolution_entity_result_json(
+                    1, entry_nums=[1], location=None
+                )
+            ]
+        )
+        validation, _ = self._validate_grounded(result_json, expected_entry_nums={1})
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.ALL_NULL_ENTITY, issue.check_type)
+        self.assertEqual("entities[0]", issue.field_name)

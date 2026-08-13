@@ -70,6 +70,9 @@ class ValidationCheckType(StrEnum):
     HALLUCINATED_CITATION = "HALLUCINATED_CITATION"
     BELOW_MINIMUM_CONFIDENCE_LEVEL = "BELOW_MINIMUM_CONFIDENCE_LEVEL"
     CITATION_OFFSET_DRIFT = "CITATION_OFFSET_DRIFT"
+    ENTRY_PARTITION_VIOLATION = "ENTRY_PARTITION_VIOLATION"
+    DUPLICATE_ENTITY = "DUPLICATE_ENTITY"
+    ALL_NULL_ENTITY = "ALL_NULL_ENTITY"
 
     @property
     def category(self) -> ValidationCheckCategory:
@@ -81,6 +84,9 @@ class ValidationCheckType(StrEnum):
             ValidationCheckType.RELEVANT_BUT_ALL_NULL,
             ValidationCheckType.ADVERSARIAL_INTERPRETATION_CONFIDENCE_LEVEL_INCONSISTENCY,
             ValidationCheckType.HALLUCINATED_CITATION,
+            ValidationCheckType.ENTRY_PARTITION_VIOLATION,
+            ValidationCheckType.DUPLICATE_ENTITY,
+            ValidationCheckType.ALL_NULL_ENTITY,
         ):
             return ValidationCheckCategory.EXTRACTION_ERROR
         if self in (

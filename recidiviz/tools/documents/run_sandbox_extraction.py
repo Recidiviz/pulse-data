@@ -814,6 +814,11 @@ class SandboxExtractionRunner:
             raw_result=raw_result,
             job_id=job_id,
             source_document_text=source_document_text,
+            # This runner only loads first-order extractor configs, whose
+            # documents have no numbered entries. An entity-resolution runner
+            # must read each composite document's entry set from the
+            # entry→source map table.
+            expected_entry_nums=None,
             # TODO(OBT-41779) since we are allowing postgres to persist across runs,
             # we should properly pass in the prior transient failure count from the postgres table here
             prior_transient_failure_count=0,

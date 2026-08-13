@@ -33,8 +33,10 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ENTITIES_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
 )
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -186,6 +188,25 @@ class LLMRequestOutputSchema:
             for field in self.user_defined_fields
             if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField)
         ]
+
+    @property
+    def entities_field(self) -> ArrayOfStructLLMRequestOutputSchemaField:
+        """Returns the `entities` ARRAY_OF_STRUCT field holding a clustering
+        output's resolved entities, which only a synthesized entity-resolution
+        schema declares (see `entity_resolution_output_schema_builder`). Raises
+        when this schema is not an entity-resolution schema — a first-order
+        schema is relevance-bearing and declares no `entities` field.
+        """
+        if self.relevance_criteria is not None:
+            raise ValueError(
+                f"Output schema is not an entity-resolution schema — it "
+                f"declares relevance criteria — so it has no "
+                f"[{ENTITIES_FIELD_NAME}] field to read."
+            )
+        return assert_type(
+            self.get_field(ENTITIES_FIELD_NAME),
+            ArrayOfStructLLMRequestOutputSchemaField,
+        )
 
     @classmethod
     def from_yaml_dict(

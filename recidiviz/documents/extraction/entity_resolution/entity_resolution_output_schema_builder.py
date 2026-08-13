@@ -158,10 +158,6 @@ def build_entity_resolution_output_schema(
     # Each entity field key is always present, but its value is nullable unless
     # it was required in the first-order collection; forcing a value on a field no
     # mention filled (the [not provided] case) would make the model invent one.
-    # TODO(OBT-32174): The ER result validator must reject an entity with *no*
-    #  non-null entity_field value — an entity identified by none of its fields is
-    #  meaningless. This schema can't express "at least one of these fields is
-    #  non-null", so it is a validation-time check over the parsed output.
     entity_fields = entity_field_schema_fields(entity_group)
     entry_nums_field = ArrayOfIntegerLLMRequestOutputSchemaField(
         name=ENTRY_NUMS_FIELD_NAME,

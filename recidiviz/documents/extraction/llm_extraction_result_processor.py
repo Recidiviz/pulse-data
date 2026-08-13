@@ -113,6 +113,10 @@ class LLMExtractionResultProcessor:
         # synthetic per-run id.
         job_id: str,
         source_document_text: str,
+        # The complete entry set E = {1..N} of the composite document, read from
+        # the entry→source map table. Required for an entity-resolution
+        # extractor; must be None for a first-order extractor.
+        expected_entry_nums: set[int] | None,
         # How many times this document has already failed transiently across prior
         # completed jobs (0 on its first attempt). Determines whether a transient
         # failure here escalates to retries-exhausted.
@@ -146,6 +150,7 @@ class LLMExtractionResultProcessor:
             config=config,
             raw_result=raw_result,
             source_document_text=source_document_text,
+            expected_entry_nums=expected_entry_nums,
             validation_datetime_utc=now,
         )
 
