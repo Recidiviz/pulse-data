@@ -684,6 +684,8 @@ def test_admin_panel_server_dependencies() -> None:
                 "recidiviz.validation",
                 "recidiviz.view_registry",
                 "recidiviz.workflows",
+                # Thin eomis module; no imports, so safe to allow here.
+                "recidiviz.eomis.us_ar.constants",
             }
         ),
     )
@@ -727,6 +729,10 @@ def test_application_data_import_server_dependencies() -> None:
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.workflows",
+                # Thin eomis module; no imports, so safe to allow here.
+                "recidiviz.eomis.us_ar.constants",
+                # Pulled in transitively by yaml_managed.datasets.
+                "recidiviz.datasets.static_data.terraform_managed.config",
             }
         ),
     )
@@ -771,6 +777,8 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.issue_tracking.issue",
                 "recidiviz.issue_tracking.labels",
                 "recidiviz.segment",
+                # Thin eomis module; no imports, so safe to allow here.
+                "recidiviz.eomis.us_ar.constants",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
                 "recidiviz.utils",
@@ -838,6 +846,10 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
                 "recidiviz.segment.product_type",
                 "recidiviz.datasets.static_data.views.data",
                 "recidiviz.datasets.static_data.views.dataset_config",
+                # Thin eomis module; no imports, so safe to allow here.
+                "recidiviz.eomis.us_ar.constants",
+                # Pulled in transitively by yaml_managed.datasets.
+                "recidiviz.datasets.static_data.terraform_managed.config",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
@@ -913,6 +925,8 @@ def test_view_registry_deployed_views_dependencies() -> None:
                 "recidiviz.pipelines.metrics",
                 "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration",
                 "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration",
+                # Thin eomis module; no imports, so safe to allow here.
+                "recidiviz.eomis.us_ar.constants",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],

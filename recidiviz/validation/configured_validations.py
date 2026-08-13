@@ -344,6 +344,30 @@ from recidiviz.validation.views.state.supervision_termination_reason_no_date imp
 from recidiviz.validation.views.state.tasks.configured_validations import (
     get_all_tasks_validations,
 )
+from recidiviz.validation.views.state.us_ar_ged_completions_flag_date_consistency import (
+    US_AR_GED_COMPLETIONS_FLAG_DATE_CONSISTENCY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_completions_no_duplicate_persons import (
+    US_AR_GED_COMPLETIONS_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_completions_no_future_completion_dates import (
+    US_AR_GED_COMPLETIONS_NO_FUTURE_COMPLETION_DATES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_completions_no_null_completion_date import (
+    US_AR_GED_COMPLETIONS_NO_NULL_COMPLETION_DATE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_writeback_action_reason_consistency import (
+    US_AR_GED_WRITEBACK_ACTION_REASON_CONSISTENCY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_writeback_expected_vs_actual_action import (
+    US_AR_GED_WRITEBACK_EXPECTED_VS_ACTUAL_ACTION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_writeback_no_double_writes import (
+    US_AR_GED_WRITEBACK_NO_DOUBLE_WRITES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_ged_writeback_no_failed_actions import (
+    US_AR_GED_WRITEBACK_NO_FAILED_ACTIONS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
     US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
@@ -1235,6 +1259,38 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=JII_TEXTING_TEXTS_MISSING_SCHEDULED_CONTACT_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_COMPLETIONS_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_COMPLETIONS_NO_FUTURE_COMPLETION_DATES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_COMPLETIONS_FLAG_DATE_CONSISTENCY_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_COMPLETIONS_NO_NULL_COMPLETION_DATE_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_WRITEBACK_NO_FAILED_ACTIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_WRITEBACK_NO_DOUBLE_WRITES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_WRITEBACK_ACTION_REASON_CONSISTENCY_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_GED_WRITEBACK_EXPECTED_VS_ACTUAL_ACTION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
             view_builder=PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
