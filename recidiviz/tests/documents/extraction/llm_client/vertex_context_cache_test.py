@@ -41,7 +41,7 @@ def _too_small_error() -> errors.ClientError:
                 "code": 400,
                 "message": (
                     "The cached content is of 94 tokens. The minimum token count "
-                    "to start caching is 1024."
+                    "to start explicit caching is 1024."
                 ),
                 "status": "INVALID_ARGUMENT",
             }

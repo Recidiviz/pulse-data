@@ -19,6 +19,7 @@ system prompt, used by the Vertex document-extraction client to avoid
 re-uploading a shared system prompt on every call."""
 
 import logging
+import re
 import threading
 
 from google import genai
@@ -29,11 +30,13 @@ from google.genai import errors, types
 # if it expires.
 CONTEXT_CACHE_TTL_SECONDS = 60 * 60
 
-# HTTP status and message substring Vertex returns when a system prompt is too
-# small to cache explicitly. Matched to fall back to inline prompting rather than
-# failing the request.
+# HTTP status and message pattern Vertex returns when a system prompt is too
+# small to cache explicitly (e.g. "The minimum token count to start explicit
+# caching is 1024."). Matched to fall back to inline prompting rather than failing
+# the request. The pattern allows an arbitrary qualifier (like "explicit") between
+# "to start" and "caching" so a reworded variant still matches.
 _BAD_REQUEST_CODE = 400
-_MINIMUM_CACHE_TOKENS_MESSAGE = "minimum token count to start caching"
+_MINIMUM_CACHE_TOKENS_PATTERN = re.compile(r"minimum token count to start .*caching")
 
 # (HTTP status, message substring) pairs Vertex returns when a `generate_content`
 # call references an explicit context cache that no longer exists server-side —
@@ -123,7 +126,7 @@ class VertexContextCacheManager:
                 ),
             )
         except errors.ClientError as e:
-            if e.code == _BAD_REQUEST_CODE and _MINIMUM_CACHE_TOKENS_MESSAGE in (
+            if e.code == _BAD_REQUEST_CODE and _MINIMUM_CACHE_TOKENS_PATTERN.search(
                 e.message or ""
             ):
                 logging.info(
