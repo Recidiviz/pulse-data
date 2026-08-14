@@ -682,6 +682,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "when reviewing what a run did. Not referenced by downstream views. "
         "(Josh Leichty, 07/31/2026)"
     ),
+    BigQueryAddress.from_str(
+        "task_eligibility_criteria_us_tx.electronic_monitoring_for_at_least_60_days"
+    ): "View not yet referenced, to be included in TES criteria for EM removal (Feona Dong 2026-08-11)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
