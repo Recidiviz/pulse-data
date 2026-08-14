@@ -25,7 +25,7 @@ import attr
 from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.exceptions import LLMOutputParsingError
 from recidiviz.documents.extraction.models.llm_inferred_field_output import (
-    InferredFieldOutput,
+    LLMInferredFieldOutput,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
@@ -61,8 +61,11 @@ def _scalar_field_value(
             f"Expected INFERRED field [{field.name}] to hold a dict, found "
             f"[{type(field_json)}]."
         )
-    return InferredFieldOutput(
-        field=field, display_name=field.name, field_json=field_json
+    return LLMInferredFieldOutput(
+        field=field,
+        array_field_name=None,
+        source_array_index=None,
+        field_json=field_json,
     ).value
 
 
@@ -195,8 +198,8 @@ class LLMRequestOutputValues:
 
         raise ValueError(f"Unexpected type for field [{field.name}]: {type(field)}")
 
-    def inferred_field_outputs(self) -> list[InferredFieldOutput]:
-        """Returns one `InferredFieldOutput` per INFERRED field the output
+    def inferred_field_outputs(self) -> list[LLMInferredFieldOutput]:
+        """Returns one LLMInferredFieldOutput per INFERRED field the output
         actually carries a companion-metadata wrapper for — the top-level
         INFERRED fields, plus the INFERRED sub-fields of every element of every
         ARRAY_OF_STRUCT field.
@@ -212,7 +215,7 @@ class LLMRequestOutputValues:
         and the confidence level is parsed straight into `ConfidenceLevel`.
         """
         extracted_fields_json = self._extracted_fields_json
-        outputs: list[InferredFieldOutput] = []
+        outputs: list[LLMInferredFieldOutput] = []
         for field in self.output_schema.all_fields:
             if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
                 outputs.extend(self._array_element_inferred_field_outputs(field=field))
@@ -222,7 +225,8 @@ class LLMRequestOutputValues:
             outputs.append(
                 self._inferred_field_output(
                     field=field,
-                    display_name=field.name,
+                    array_field_name=None,
+                    source_array_index=None,
                     container=extracted_fields_json,
                 )
             )
@@ -230,9 +234,10 @@ class LLMRequestOutputValues:
 
     def _array_element_inferred_field_outputs(
         self, *, field: ArrayOfStructLLMRequestOutputSchemaField
-    ) -> list[InferredFieldOutput]:
-        """Returns one `InferredFieldOutput` per INFERRED sub-field of each
-        element of ARRAY_OF_STRUCT |field|, named `<field>[<index>].<sub_field>`.
+    ) -> list[LLMInferredFieldOutput]:
+        """Returns one LLMInferredFieldOutput per INFERRED sub-field of each
+        element of ARRAY_OF_STRUCT |field|, each carrying the field's name and the
+        element's position.
         """
         extracted_fields_json = self._extracted_fields_json
         if field.name not in extracted_fields_json:
@@ -243,7 +248,7 @@ class LLMRequestOutputValues:
                 f"Expected ARRAY_OF_STRUCT field [{field.name}] to hold a list, "
                 f"found [{type(elements_json)}]."
             )
-        outputs: list[InferredFieldOutput] = []
+        outputs: list[LLMInferredFieldOutput] = []
         for index, element_json in enumerate(elements_json):
             if not isinstance(element_json, dict):
                 raise LLMOutputParsingError(
@@ -259,7 +264,8 @@ class LLMRequestOutputValues:
                 outputs.append(
                     self._inferred_field_output(
                         field=sub_field,
-                        display_name=f"{field.name}[{index}].{sub_field.name}",
+                        array_field_name=field.name,
+                        source_array_index=index,
                         container=element_json,
                     )
                 )
@@ -269,20 +275,24 @@ class LLMRequestOutputValues:
     def _inferred_field_output(
         *,
         field: LLMRequestOutputSchemaField,
-        display_name: str,
+        array_field_name: str | None,
+        source_array_index: int | None,
         container: dict[str, Any],
-    ) -> InferredFieldOutput:
+    ) -> LLMInferredFieldOutput:
         """Returns the view over the companion-metadata wrapper |container| holds
         for INFERRED |field|.
         """
         field_json = container[field.name]
         if not isinstance(field_json, dict):
             raise LLMOutputParsingError(
-                f"Expected INFERRED field [{display_name}] to hold a dict, found "
+                f"Expected INFERRED field [{field.name}] to hold a dict, found "
                 f"[{type(field_json)}]."
             )
-        return InferredFieldOutput(
-            field=field, display_name=display_name, field_json=field_json
+        return LLMInferredFieldOutput(
+            field=field,
+            array_field_name=array_field_name,
+            source_array_index=source_array_index,
+            field_json=field_json,
         )
 
     @property

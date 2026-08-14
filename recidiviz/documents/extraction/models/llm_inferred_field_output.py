@@ -109,7 +109,7 @@ class FieldCitation:
 
 
 @attr.define(frozen=True, kw_only=True)
-class InferredFieldOutput:
+class LLMInferredFieldOutput:
     """What one INFERRED field's JSON wrapper carries in one extraction result:
     which branch it took (a value, or a null reason), and the companion metadata
     the model emitted alongside.
@@ -132,14 +132,40 @@ class InferredFieldOutput:
                 f"companion metadata only an INFERRED field carries."
             )
 
-    display_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    """How the field is named in an audit finding: its own name at the top level,
-    or `<array_field>[<index>].<name>` within an ARRAY_OF_STRUCT element."""
+    array_field_name: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Name of the ARRAY_OF_STRUCT field whose element this output came from, or None
+    when the field sits at the document's top level."""
+
+    source_array_index: int | None = attr.ib(
+        validator=attr_validators.is_opt_non_negative_int
+    )
+    """0-indexed position of the element within its array, or None at the top level."""
 
     field_json: dict[str, Any] = attr.ib(validator=attr_validators.is_dict)
     """The field's companion-metadata wrapper exactly as it sits in the output
     JSON, which may or may not have been through validation.
     """
+
+    def __attrs_post_init__(self) -> None:
+        if (self.array_field_name is None) != (self.source_array_index is None):
+            raise ValueError(
+                f"Output for field [{self.field.name}] sets exactly one of "
+                f"array_field_name [{self.array_field_name}] and source_array_index "
+                f"[{self.source_array_index}]. A value from an array element carries "
+                f"both; a top-level one carries neither."
+            )
+
+    @property
+    def display_name(self) -> str:
+        """Returns how the field is named in an audit finding, which is its own name at the
+        top level and "employers[0].job_title" within an ARRAY_OF_STRUCT element.
+
+        Derived from the stored coordinates, so a reader that needs to know which element a
+        value came from reads those rather than parsing this apart.
+        """
+        if self.array_field_name is None:
+            return self.field.name
+        return f"{self.array_field_name}[{self.source_array_index}].{self.field.name}"
 
     @property
     def has_value(self) -> bool:

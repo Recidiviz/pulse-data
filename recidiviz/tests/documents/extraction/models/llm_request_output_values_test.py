@@ -30,7 +30,7 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_inferred_field_output import (
-    InferredFieldOutput,
+    LLMInferredFieldOutput,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
@@ -614,9 +614,50 @@ class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTest
             ],
         )
 
+    def test_walk_records_array_coordinates(self) -> None:
+        # Consumers read these coordinates rather than parsing display_name apart.
+        self.assertEqual(
+            [
+                ("primary_status", None, None),
+                ("location", None, None),
+                ("assignments[0].assignment_name", "assignments", 0),
+                ("assignments[0].assignment_type", "assignments", 0),
+                ("assignments[0].rate_amount", "assignments", 0),
+                ("assignments[0].rate_period", "assignments", 0),
+            ],
+            [
+                (
+                    field_output.display_name,
+                    field_output.array_field_name,
+                    field_output.source_array_index,
+                )
+                for field_output in self._full_output_values().inferred_field_outputs()
+            ],
+        )
+
+    def test_walk_numbers_each_element(self) -> None:
+        output_values = self._full_output_values(
+            assignments=[
+                build_fake_extractor_assignment_result_json(
+                    "Dish duty", "internal", 12.5, "hourly"
+                ),
+                build_fake_extractor_assignment_result_json(
+                    "Laundry", "external", 20.0, "monthly"
+                ),
+            ]
+        )
+        self.assertEqual(
+            [("assignments", 0), ("assignments", 1)],
+            [
+                (field_output.array_field_name, field_output.source_array_index)
+                for field_output in output_values.inferred_field_outputs()
+                if field_output.field.name == "assignment_name"
+            ],
+        )
+
     def _field_output(
         self, output_values: LLMRequestOutputValues, display_name: str
-    ) -> InferredFieldOutput:
+    ) -> LLMInferredFieldOutput:
         [field_output] = [
             candidate
             for candidate in output_values.inferred_field_outputs()
@@ -674,9 +715,10 @@ class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTest
             r"^field \[status_note\] is STRUCTURAL, but this view reads the "
             r"companion metadata only an INFERRED field carries\.$",
         ):
-            InferredFieldOutput(
+            LLMInferredFieldOutput(
                 field=self.output_schema.get_field("status_note"),
-                display_name="status_note",
+                array_field_name=None,
+                source_array_index=None,
                 field_json={},
             )
 

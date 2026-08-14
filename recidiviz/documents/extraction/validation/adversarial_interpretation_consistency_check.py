@@ -19,7 +19,7 @@ whose `adversarial_interpretation` and `confidence_level` contradict each other.
 """
 
 from recidiviz.documents.extraction.models.llm_inferred_field_output import (
-    InferredFieldOutput,
+    LLMInferredFieldOutput,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ConfidenceLevel,
@@ -65,7 +65,7 @@ class AdversarialInterpretationConsistencyCheck:
 
     @staticmethod
     def _issue_for_field(
-        field_output: InferredFieldOutput,
+        field_output: LLMInferredFieldOutput,
     ) -> ValidationIssue | None:
         """Returns the finding for |field_output|'s adversarial/confidence pair,
         or None when the two are consistent.
