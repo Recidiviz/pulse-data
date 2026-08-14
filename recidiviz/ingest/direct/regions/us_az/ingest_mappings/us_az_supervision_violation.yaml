@@ -74,11 +74,18 @@ output:
                         # the charges dismissed, or many other things. This checks that the only
                         # responses being marked as drafts are those that are actively in progress,
                         # not those that were intentionally never completed.
+                        # Many warrants resulting in a revocation are also never formally marked as complete.
+                        # To match ADCRR's standard of reporting, this logic marks all violations that led
+                        # to revocations as final.
                         $and:
                           - $not_null: response_is_completed
                           - $equal:
                               - response_is_completed
                               - $literal("N")
+                          - $not_in:
+                              $value: violation_result
+                              $options:
+                                - $literal("Revocation")
                           - $not_in:
                               $value: violation_result_status
                               $options:
@@ -90,7 +97,6 @@ output:
                                 - $literal("Waived")
                                 - $literal("Deceased")
                                 - $literal("Waived at PC Hearing")
-                                # These are final statuses but are almost never marked as complete.
                                 - $literal("Revoked")
                                 - $literal("Revoked with Time Credit")
                       $then: $literal_bool(True)

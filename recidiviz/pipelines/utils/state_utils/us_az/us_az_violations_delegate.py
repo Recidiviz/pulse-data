@@ -17,6 +17,9 @@
 """Contains US_AZ implementation of the StateSpecificViolationDelegate."""
 
 
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
@@ -27,9 +30,40 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
     StateSpecificViolationDelegate,
 )
 
+# The default order ranks ABSCONDED above TECHNICAL. In US_AZ that ordering decides
+# which *source* wins rather than which violation is genuinely worse, because two
+# sources describe the same revocation: the warrant recorded when it was issued, and
+# the movement reason recorded when the person was actually readmitted. ADCRR bases its
+# own published recidivism reporting on the movement reason, and the two disagree
+# heavily in one direction -- ~2,100 revocations since FY2022 carry an "Absconder
+# Warrant" but a "Technical Violator" movement reason, against only ~260 the other way.
+# Ranking TECHNICAL above ABSCONDED makes the movement reason win those cases, which
+# reproduces the absconding/technical split ADCRR publishes (p.49 of the One Year Return
+# to Incarceration report) to within ~0.6pp.
+#
+# NB: this is a source preference expressed as an ordering, not a claim that a technical
+# violation is more serious than an absconsion in Arizona. If the balance of those
+# disagreements ever shifts, revisit this rather than assuming it still holds.
+_US_AZ_VIOLATION_TYPE_SEVERITY_ORDER = [
+    StateSupervisionViolationType.FELONY,
+    StateSupervisionViolationType.MISDEMEANOR,
+    StateSupervisionViolationType.LAW,
+    StateSupervisionViolationType.TECHNICAL,
+    StateSupervisionViolationType.ABSCONDED,
+    StateSupervisionViolationType.MUNICIPAL,
+    StateSupervisionViolationType.ESCAPED,
+    StateSupervisionViolationType.INTERNAL_UNKNOWN,
+    StateSupervisionViolationType.EXTERNAL_UNKNOWN,
+]
+
 
 class UsAzViolationDelegate(StateSpecificViolationDelegate):
     """US_AZ implementation of the StateSpecificViolationDelegate."""
+
+    violation_type_and_subtype_shorthand_ordered_map = [
+        (violation_type, violation_type.value, violation_type.value.lower())
+        for violation_type in _US_AZ_VIOLATION_TYPE_SEVERITY_ORDER
+    ]
 
     def should_include_response_in_violation_history(
         self,

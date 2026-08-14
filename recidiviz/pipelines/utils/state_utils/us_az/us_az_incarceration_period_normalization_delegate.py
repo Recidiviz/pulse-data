@@ -23,6 +23,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.ingest.direct.regions.us_az.us_az_custom_enum_parsers import (
+    MOVEMENT_REASON_DELIMITER,
+)
 from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.incarceration_period_normalization_manager import (
@@ -46,11 +49,48 @@ from recidiviz.pipelines.utils.supervision_period_utils import (
 
 _NEW_CRIME_RECOMMITMENT_RAW_TEXTS = frozenset({"RECOMMITMENT", "NEW COMMITMENT"})
 
+# ADCRR bases its published recidivism reporting on the movement reason recorded
+# when a person is readmitted (AZ_DOC_INMATE_TRAFFIC_HISTORY.MOVEMENT_REASON_ID),
+# not on the warrant that preceded the readmission.
+_MOVEMENT_REASON_TO_VIOLATION_TYPE = {
+    "TECHNICAL VIOLATOR": StateSupervisionViolationType.TECHNICAL,
+    "ABSCOND SUPERVISION": StateSupervisionViolationType.ABSCONDED,
+    "NEW FELONY CONVICTION": StateSupervisionViolationType.FELONY,
+    # ADCRR records someone returned with charges filed but not yet adjudicated as
+    # a technical violator, and updates the reason to "New Felony Conviction" only
+    # once they are convicted and sentenced.
+    "NEW CHARGES PENDING": StateSupervisionViolationType.TECHNICAL,
+}
+
 
 class UsAzIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_AZ implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    @staticmethod
+    def _movement_description(
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> str | None:
+        """Returns the uppercased ADCRR movement description from the period's
+        admission reason raw text, with any movement reason suffix removed.
+        """
+        raw_text = incarceration_period.admission_reason_raw_text
+        if not raw_text:
+            return None
+        return raw_text.split(MOVEMENT_REASON_DELIMITER)[0].upper()
+
+    @staticmethod
+    def _movement_reason(
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> str | None:
+        """Returns the uppercased ADCRR movement reason encoded in the period's
+        admission reason raw text, or None if the movement carries no reason.
+        """
+        raw_text = incarceration_period.admission_reason_raw_text
+        if not raw_text or MOVEMENT_REASON_DELIMITER not in raw_text:
+            return None
+        return raw_text.split(MOVEMENT_REASON_DELIMITER, maxsplit=1)[1].upper()
 
     def standardize_purpose_for_incarceration_values(
         self,
@@ -79,8 +119,8 @@ class UsAzIncarcerationNormalizationDelegate(
             incarceration_period_list_index
         ]
 
-        raw_text = incarceration_period.admission_reason_raw_text
-        if not raw_text or raw_text.upper() not in _NEW_CRIME_RECOMMITMENT_RAW_TEXTS:
+        movement_description = self._movement_description(incarceration_period)
+        if movement_description not in _NEW_CRIME_RECOMMITMENT_RAW_TEXTS:
             return incarceration_period
 
         if not incarceration_period.admission_date:
@@ -110,17 +150,26 @@ class UsAzIncarcerationNormalizationDelegate(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> StateSupervisionViolationType | None:
-        """Returns FELONY for new-crime recommitments during supervision (AZ DOC only
-        houses felons, so any new-crime recommitment is a felony violation).
+        """Returns the violation type indicated by the movement that admitted this
+        person to incarceration, or None if the movement indicates no violation.
+
+        Prefers the ADCRR movement reason, which is what ADCRR itself uses for its
+        published recidivism reporting. Falls back to treating a new-crime
+        recommitment as a felony violation (AZ DOC only houses felons, so any
+        new-crime recommitment is a felony violation).
         """
-        raw_text = incarceration_period.admission_reason_raw_text
         if (
-            raw_text
-            and raw_text.upper() in _NEW_CRIME_RECOMMITMENT_RAW_TEXTS
-            and (
-                incarceration_period.admission_reason
-                == StateIncarcerationPeriodAdmissionReason.REVOCATION
-            )
+            incarceration_period.admission_reason
+            != StateIncarcerationPeriodAdmissionReason.REVOCATION
+        ):
+            return None
+
+        movement_reason = self._movement_reason(incarceration_period)
+        if movement_reason in _MOVEMENT_REASON_TO_VIOLATION_TYPE:
+            return _MOVEMENT_REASON_TO_VIOLATION_TYPE[movement_reason]
+
+        if self._movement_description(incarceration_period) in (
+            _NEW_CRIME_RECOMMITMENT_RAW_TEXTS
         ):
             return StateSupervisionViolationType.FELONY
         return None

@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
@@ -58,6 +59,13 @@ from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_
     RECIDIVIZ_MARKED_COMPLETED,
     RECIDIVIZ_MARKED_STARTED,
 )
+
+# Separates the ADCRR movement description from the movement reason within an
+# incarceration period's admission_reason_raw_text. Only movements that can represent a
+# return to incarceration from community supervision carry a reason suffix; see
+# view_incarceration_periods.
+MOVEMENT_REASON_DELIMITER = "@@"
+
 
 new_condition_identifier_strings = [
     "INCREASED",
@@ -406,6 +414,28 @@ def parse_custody_level(
     return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
 
 
+def parse_incarceration_admission_reason_from_movement_reason(
+    raw_text: str,
+) -> StateIncarcerationPeriodAdmissionReason:
+    """Returns REVOCATION for an admission whose raw text carries an ADCRR movement
+    reason.
+
+    view_incarceration_periods only appends a movement reason to movement codes that
+    represent a return to incarceration from community supervision, and every one of
+    those already maps to REVOCATION on its own. That gate in the SQL is the single
+    source of truth for which admissions qualify, so this does not re-enumerate the
+    codes -- it only asserts that the caller routed here correctly.
+    """
+    if MOVEMENT_REASON_DELIMITER not in raw_text:
+        raise ValueError(
+            f"Expected a movement reason delimited by "
+            f"[{MOVEMENT_REASON_DELIMITER}] in admission reason raw text "
+            f"[{raw_text}]. This parser should only be reached for admissions whose "
+            f"movement reason is non-null."
+        )
+    return StateIncarcerationPeriodAdmissionReason.REVOCATION
+
+
 def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolationType:
     (
         violation_type_description,
@@ -415,8 +445,6 @@ def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolation
         intervention_type,
     ) = raw_text.split("@@")
 
-    if violation_type_felony == "Y":
-        return StateSupervisionViolationType.FELONY
     if (
         "Technical Violation Warrant" in violation_type_description
         or "1071" in violation_type_description
@@ -424,6 +452,8 @@ def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolation
         return StateSupervisionViolationType.TECHNICAL
     if violation_type_description == "Absconder Warrant":
         return StateSupervisionViolationType.ABSCONDED
+    if violation_type_felony == "Y":
+        return StateSupervisionViolationType.FELONY
     if violation_type_misdemeanor == "Y":
         return StateSupervisionViolationType.MISDEMEANOR
     if sanction_type or intervention_type:
