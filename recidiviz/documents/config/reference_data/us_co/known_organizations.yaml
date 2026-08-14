@@ -1,2 +1,248 @@
 reference_data_type: known_organizations
-entries: []
+entries:
+  - name: "Larimer County Community Corrections"
+    organization_type: community_corrections
+    aliases: ["LCCC"]
+  - name: "Mesa County Community Corrections"
+    organization_type: community_corrections
+    aliases: ["MCCC"]
+  - name: "ComCor, Inc."
+    organization_type: community_corrections
+    aliases: ["Embrave", "ComCor"]
+  - name: "Intervention Community Corrections Services"
+    organization_type: community_corrections
+    aliases: ["ICCS"]
+  - name: "Community Alternatives of El Paso County"
+    organization_type: community_corrections
+    aliases: ["CAE"]
+  - name: "Arapahoe Community Treatment Center"
+    organization_type: community_corrections
+    aliases: ["ACTC"]
+  - name: "Independence House"
+    organization_type: community_corrections
+  - name: "Advantage Treatment Center - Sterling"
+    organization_type: community_corrections
+    aliases: ["ATC Sterling"]
+  - name: "Advantage Treatment Center - Alamosa"
+    organization_type: community_corrections
+    aliases: ["ATC Alamosa"]
+  - name: "Advantage Treatment Center - Lamar"
+    organization_type: community_corrections
+    aliases: ["ATC Lamar"]
+  - name: "Advantage Treatment Center - Montrose"
+    organization_type: residential_treatment
+    aliases: ["ATC Montrose"]
+  - name: "Arapahoe County Residential Center"
+    organization_type: community_corrections
+    aliases: ["ACRC"]
+  - name: "CCTC"
+    organization_type: community_corrections
+  - name: "Mind Springs Health"
+    organization_type: residential_treatment
+    aliases: ["Mind Springs", "Health Solutions West", "Health Solutions"]
+  - name: "North Range Behavioral Health"
+    organization_type: residential_treatment
+    aliases: ["NRBH"]
+  - name: "Crossroads Turning Points"
+    organization_type: residential_treatment
+  - name: "Mile High Behavioral Health"
+    organization_type: residential_treatment
+  - name: "Whitian House"
+    organization_type: residential_treatment
+  - name: "Denver Cares"
+    organization_type: residential_treatment
+  - name: "Stout Street Foundation"
+    organization_type: residential_treatment
+  - name: "The Freedom Institute"
+    organization_type: residential_treatment
+    aliases: ["TFI", "TFI Housing"]
+  - name: "Narconon"
+    organization_type: residential_treatment
+  - name: "CMHIP"
+    organization_type: residential_treatment
+  - name: "State of Grace"
+    organization_type: nonresidential_program
+  - name: "Achieve Whole Recovery"
+    organization_type: nonresidential_program
+    aliases: ["AWR"]
+  - name: "San Luis Valley Behavioral Health Group"
+    organization_type: nonresidential_program
+    aliases: ["SLVBHG"]
+  - name: "Thrivur Health"
+    organization_type: nonresidential_program
+    aliases: ["Thrivur"]
+  - name: "Ascent Health"
+    organization_type: nonresidential_program
+    aliases: ["Accent"]
+  - name: "Wisdom Works Counseling Services"
+    organization_type: nonresidential_program
+    aliases: ["Wisdom Works"]
+  - name: "Recovery Unlimited"
+    organization_type: nonresidential_program
+  - name: "RSA, Inc."
+    organization_type: nonresidential_program
+    aliases: ["RSA"]
+  - name: "Progressive Therapy Systems"
+    organization_type: nonresidential_program
+    aliases: ["Progressive", "PTS"]
+  - name: "Creative Treatment Options"
+    organization_type: nonresidential_program
+    aliases: ["CTO"]
+  - name: "Foundations 4 Life"
+    organization_type: nonresidential_program
+    aliases: ["Foundations"]
+  - name: "Sunrise Counseling"
+    organization_type: nonresidential_program
+  - name: "Dove Counseling"
+    organization_type: nonresidential_program
+    aliases: ["DOVE"]
+  - name: "Servicios de La Raza"
+    organization_type: nonresidential_program
+    aliases: ["SDLR", "Servicios"]
+  - name: "Gateway to Success"
+    organization_type: nonresidential_program
+    aliases: ["G2S"]
+  - name: "Alpine Springs Counseling"
+    organization_type: nonresidential_program
+    aliases: ["ASC"]
+  - name: "Correctional Psychology Associates"
+    organization_type: nonresidential_program
+    aliases: ["CPA"]
+  - name: "Ascend Recovery"
+    organization_type: nonresidential_program
+  - name: "Balanced Mental Wellness"
+    organization_type: nonresidential_program
+  - name: "Porchlight Health"
+    organization_type: nonresidential_program
+    aliases: ["Porch Light Health", "Porchlight"]
+  - name: "WellPower"
+    organization_type: nonresidential_program
+  - name: "Aurora Mental Health"
+    organization_type: nonresidential_program
+    aliases: ["Aurora Mental Health and Recovery"]
+  - name: "Transformations Counseling"
+    organization_type: nonresidential_program
+  - name: "Creative Counseling"
+    organization_type: nonresidential_program
+  - name: "Stout Street Clinic"
+    organization_type: nonresidential_program
+  - name: "Spanish Clinic, LLC"
+    organization_type: nonresidential_program
+  - name: "Northern Horizon Behavioral Health"
+    organization_type: nonresidential_program
+  - name: "Second Chance Center"
+    organization_type: nonresidential_program
+    aliases: ["SCC"]
+  - name: "WAGEES"
+    organization_type: nonresidential_program
+  - name: "Homeward Alliance"
+    organization_type: nonresidential_program
+  - name: "Oxford House"
+    organization_type: sober_living
+  - name: "Aurora Sober Living"
+    organization_type: sober_living
+  - name: "Tribe Recovery Homes"
+    organization_type: sober_living
+    aliases: ["Tribe Recovery Services", "Tribe"]
+  - name: "Hazelbrook Sober Living"
+    organization_type: sober_living
+    aliases: ["Hazelbrook"]
+  - name: "Ananeo"
+    organization_type: sober_living
+  - name: "Dogstar Recovery"
+    organization_type: sober_living
+  - name: "Hope Homes"
+    organization_type: sober_living
+  - name: "Stride"
+    organization_type: sober_living
+  - name: "The Lighthouse"
+    organization_type: sober_living
+    aliases: ["Lighthouse"]
+  - name: "Elevate"
+    organization_type: sober_living
+    aliases:
+      [
+        "Project Elevate",
+        "Elevate Recovery Homes",
+        "Elevate Sober Living",
+        "Elevate Recovery",
+      ]
+  - name: "Empower Sober Living"
+    organization_type: sober_living
+    aliases: ["Empower Recovery", "Empower Recovery Homes"]
+  - name: "Mariposa House"
+    organization_type: sober_living
+  - name: "Grit Grounds"
+    organization_type: sober_living
+  - name: "Garcia House"
+    organization_type: sober_living
+  - name: "Mountain West Recovery"
+    organization_type: sober_living
+    aliases: ["Mountain West Sober Living"]
+  - name: "Transitions Sober Living"
+    organization_type: sober_living
+  - name: "Crew House"
+    organization_type: sober_living
+  - name: "Avenues Recovery"
+    organization_type: sober_living
+  - name: "Monarch Sober Living"
+    organization_type: sober_living
+  - name: "New Hope Sober Living"
+    organization_type: sober_living
+  - name: "The Rock Transitional House"
+    organization_type: halfway_house
+    aliases: ["The Rock Foundation"]
+  - name: "My Father's House"
+    organization_type: halfway_house
+  - name: "Denver Rescue Mission"
+    organization_type: shelter
+  - name: "Springs Rescue Mission"
+    organization_type: shelter
+    aliases: ["SRM", "5 W. Las Vegas Shelter"]
+  - name: "Boulder Bridge House"
+    organization_type: shelter
+    aliases: ["Bridge House"]
+  - name: "Crossroads Shelter"
+    organization_type: shelter
+  - name: "Fort Collins Rescue Mission"
+    organization_type: shelter
+  - name: "The Delores Project"
+    organization_type: shelter
+  - name: "Boulder Shelter"
+    organization_type: shelter
+  - name: "Harbor Lights"
+    organization_type: shelter
+  - name: "Christ Body Ministries"
+    organization_type: shelter
+  - name: "Christ Life Ministries"
+    organization_type: shelter
+    aliases: ["Christlife Ministries"]
+  - name: "Volunteers of America"
+    organization_type: shelter
+    aliases: ["VOA"]
+  - name: "Econo Lodge"
+    organization_type: hotel_motel
+  - name: "Motel 6"
+    organization_type: hotel_motel
+  - name: "Riviera Motel"
+    organization_type: hotel_motel
+    aliases: ["Rivera Motel", "Riveria Motel"]
+  - name: "Comfort Inn"
+    organization_type: hotel_motel
+  - name: "Capri Motel"
+    organization_type: hotel_motel
+  - name: "La Quinta"
+    organization_type: hotel_motel
+  - name: "Home Towne Studios"
+    organization_type: hotel_motel
+    aliases: ["Hometown Suites"]
+  - name: "Days Inn"
+    organization_type: hotel_motel
+  - name: "Super 8 Motel"
+    organization_type: hotel_motel
+  - name: "Montclair Motel"
+    organization_type: hotel_motel
+  - name: "Driftwood Motel"
+    organization_type: hotel_motel
+  - name: "Quality Inn"
+    organization_type: hotel_motel
