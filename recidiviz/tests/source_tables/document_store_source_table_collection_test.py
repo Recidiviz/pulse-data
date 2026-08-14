@@ -25,11 +25,24 @@ from recidiviz.common.constants.states_utils import find_state_codes_in_str
 from recidiviz.documents.dataset_config import (
     document_store_metadata_dataset_for_region,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
     ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX,
 )
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
+)
+from recidiviz.documents.store.document_collection_config import (
+    DocumentCollectionConfig,
+)
+from recidiviz.documents.store.document_upload_status_table import (
+    DocumentUploadStatusTable,
+)
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables,
+    collect_document_store_source_tables_for_configs,
 )
 from recidiviz.source_tables.source_table_config import (
     DocumentStoreSourceTableLabel,
@@ -133,3 +146,66 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
                 )
                 # Clustered on the key the map is written and replaced by.
                 self.assertEqual(["person_id"], table.clustering_fields)
+
+
+class CollectDocumentStoreSourceTablesForConfigsTest(unittest.TestCase):
+    """Tests for collect_document_store_source_tables_for_configs, which narrows to
+    a given set of configs rather than scanning a whole module."""
+
+    def _first_order_config(self) -> DocumentCollectionConfig:
+        return get_first_order_llm_extractor_config(
+            StateCode.US_XX, "FAKE_EXTRACTOR_COLLECTION", config_module=fake_config
+        ).input_document_collection
+
+    def _entity_resolution_config(self) -> EntityResolutionDocumentCollectionConfig:
+        first_order = get_first_order_llm_extractor_config(
+            StateCode.US_XX, "FAKE_EXTRACTOR_COLLECTION", config_module=fake_config
+        )
+        return EntityResolutionDocumentCollectionConfig(
+            first_order_config=first_order,
+            entity_group=first_order.extractor_collection.entity_groups[0],
+        )
+
+    def _produced_addresses(
+        self, configs: list[DocumentCollectionConfig]
+    ) -> set[BigQueryAddress]:
+        return {
+            table.address
+            for collection in collect_document_store_source_tables_for_configs(configs)
+            for table in collection.source_tables
+        }
+
+    def test_first_order_config_produces_only_its_own_tables(self) -> None:
+        # Just the one collection's metadata + contents tables, plus the always-on
+        # upload-status table — none of the module's other collections.
+        self.assertEqual(
+            {
+                BigQueryAddress.from_str(
+                    "us_xx_document_store_metadata.fake_input_notes"
+                ),
+                BigQueryAddress.from_str(
+                    "us_xx_document_contents.fake_input_notes_document_contents"
+                ),
+                BigQueryAddress.from_str(
+                    f"us_xx_document_store_metadata.{DocumentUploadStatusTable.table_id}"
+                ),
+            },
+            self._produced_addresses([self._first_order_config()]),
+        )
+
+    def test_entity_resolution_config_additionally_emits_map_table(self) -> None:
+        er_config = self._entity_resolution_config()
+        produced = self._produced_addresses([er_config])
+
+        map_addresses = {
+            address
+            for address in produced
+            if address.table_id.endswith(ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX)
+        }
+        self.assertEqual(
+            {er_config.entry_source_map_table_address(sandbox_dataset_prefix=None)},
+            map_addresses,
+        )
+
+    def test_empty_configs_produce_no_collections(self) -> None:
+        self.assertEqual([], collect_document_store_source_tables_for_configs([]))

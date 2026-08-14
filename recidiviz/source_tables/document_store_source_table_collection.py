@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains source table definitions for document store metadata and contents tables."""
 
+from collections import defaultdict
 from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
@@ -31,6 +32,7 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
     EntityResolutionEntrySourceMapBQTable,
 )
 from recidiviz.documents.store.document_collection_config import (
+    DocumentCollectionConfig,
     get_states_with_document_collections,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
@@ -61,10 +63,41 @@ def collect_document_store_source_tables(
     default). Each entity-resolution collection additionally gets its
     entry→source map table.
     """
+    configs_by_state = {
+        state_code: list(
+            collect_all_document_collection_configs(state_code, config_module).values()
+        )
+        for state_code in get_states_with_document_collections(config_module)
+    }
+    return _collect_document_store_source_tables(configs_by_state)
+
+
+def collect_document_store_source_tables_for_configs(
+    configs: list[DocumentCollectionConfig],
+) -> list[SourceTableCollection]:
+    """Collects source table definitions for the document store metadata and
+    contents tables of just the given |configs|, rather than every collection in a
+    config module. Each entity-resolution collection additionally gets its
+    entry→source map table. The emitted collections are un-prefixed.
+    """
+    configs_by_state: dict[StateCode, list[DocumentCollectionConfig]] = defaultdict(
+        list
+    )
+    for config in configs:
+        configs_by_state[config.state_code].append(config)
+    return _collect_document_store_source_tables(configs_by_state)
+
+
+def _collect_document_store_source_tables(
+    configs_by_state: dict[StateCode, list[DocumentCollectionConfig]],
+) -> list[SourceTableCollection]:
+    """Collects source table definitions for the document store metadata and
+    contents tables of every document collection in |configs_by_state|. Each
+    entity-resolution collection additionally gets its entry→source map table.
+    """
     collections: list[SourceTableCollection] = []
 
-    for state_code in get_states_with_document_collections(config_module):
-        configs = collect_all_document_collection_configs(state_code, config_module)
+    for state_code, configs in configs_by_state.items():
         if not configs:
             continue
 
@@ -87,7 +120,7 @@ def collect_document_store_source_tables(
             description=f"Document contents tables for {StateCode.get_state(state_code)}",
         )
 
-        for config in configs.values():
+        for config in configs:
             metadata_collection.add_source_table(
                 table_id=config.metadata_table_address(
                     sandbox_dataset_prefix=None
