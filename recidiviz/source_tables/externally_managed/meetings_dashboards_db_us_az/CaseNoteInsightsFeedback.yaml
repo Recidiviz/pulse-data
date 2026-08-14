@@ -1,0 +1,42 @@
+address:
+  dataset_id: meetings_dashboards_db_us_az
+  table_id: CaseNoteInsightsFeedback
+description: >
+  Staff up/down votes on AI-generated Case Note Insights summaries, synced
+  from the meetings backend database.
+schema:
+  - name: id
+    description: Unique identifier for this feedback row.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when the vote was cast.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: clientId
+    description: >
+      Client.personId of the client this summary feedback pertains to. Not a
+      foreign key; feedback is kept for analytics even if the client is later
+      deleted.
+    type: BIGNUMERIC
+    mode: NULLABLE
+  - name: authorEmail
+    description: Email of the staff member who cast the vote.
+    type: STRING
+    mode: NULLABLE
+  - name: vote
+    description: The vote value (UP or DOWN).
+    type: STRING
+    mode: NULLABLE
+  - name: message
+    description: Optional written feedback message the voter included with their vote.
+    type: STRING
+    mode: NULLABLE
+  - name: summariesSnapshot
+    description: >
+      Snapshot of the summary content shown to the voter at the time the vote
+      was cast, kept so the feedback stays interpretable after the underlying
+      summary is regenerated or edited.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
