@@ -38,6 +38,9 @@
     "zod": "^3.25.76",
     "zod-validation-error": "^2.1.0"
   },
+  "resolutions": {
+    "tar": ">=7.5.19"
+  },
   "devDependencies": {
     "@recidiviz/eslint-config": "^3.0.0",
     "@storybook/react": "^7.0.6",
