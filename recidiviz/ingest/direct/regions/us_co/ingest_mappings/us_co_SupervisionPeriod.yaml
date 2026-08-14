@@ -230,12 +230,11 @@ output:
                         - "0 // Administrative Caseload"
                       StateSupervisionLevel.MINIMUM:
                         - "1 // Low"
-                      StateSupervisionLevel.LOW_MEDIUM:
-                        - "2 // Low/Moderate" # Code 2 appeared as "Low/Moderate" in raw data on 2026-08-13 (was "Moderate"; source LASTUPDATEDATE 2026-06-25)
                       StateSupervisionLevel.MEDIUM:
-                        - "3 // Moderate" # Code 3 appeared as "Moderate" in raw data on 2026-08-13 (was "High"; source LASTUPDATEDATE 2026-06-25)
+                        - "2 // Moderate"
                       StateSupervisionLevel.HIGH:
-                        - "4 // High" # Code 4 appeared as "High" in raw data on 2026-08-13 (was "Very High"; source LASTUPDATEDATE 2026-06-25)
+                        - "3 // High"
+                        - "4 // Very High" # High and Very High are grouped together for contact standards purposes - see CDOC policy AR Form 250-80A
                       StateSupervisionLevel.MAXIMUM:
                         - "5 // Intensive Supervision Program (ISP)"
                       StateSupervisionLevel.UNASSIGNED:
