@@ -684,7 +684,16 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     BigQueryAddress.from_str(
         "task_eligibility_criteria_us_tx.electronic_monitoring_for_at_least_60_days"
-    ): "View not yet referenced, to be included in TES criteria for EM removal (Feona Dong 2026-08-11)",
+    ): (
+        "View not yet referenced, to be included in TES criteria for EM removal. "
+        "(Feona Dong 2026-08-11)"
+    ),
+    BigQueryAddress.from_str(
+        "task_eligibility_criteria_general.no_supervision_violation_within_30_days"
+    ): (
+        "View not yet referenced, to be included in TES criteria for EM removal. "
+        "(Feona Dong 2026-08-14)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

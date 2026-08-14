@@ -916,8 +916,7 @@ def supervision_violations_within_time_interval_criteria_builder(
             Defaults to "".
         violation_date_name_in_reason_blob (str, optional): Name of the `violation_date`
             field in the reason blob. Defaults to "latest_violations".
-        exclude_violation_unfounded_decisions (bool, optional): Whether to exclude violations where the LATEST
-            violation response DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
+        exclude_violation_unfounded_decisions (bool, optional): Whether to exclude violations where the LATEST violation response DOES contain a VIOLATION_UNFOUNDED decision, i.e. only include violations that are not unfounded. Defaults to False
         use_response_date (bool, optional): Whether to use the response date rather than the violation date when determining
             eligibility. Defaults to False
     Returns:
