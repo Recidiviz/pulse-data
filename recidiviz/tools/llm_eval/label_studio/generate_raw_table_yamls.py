@@ -26,10 +26,12 @@ import os
 import yaml
 
 import recidiviz.source_tables.yaml_managed as _yaml_managed_pkg
-from recidiviz.llm_eval.label_studio.labelstudio_task_config import (
-    LabelStudioTaskConfig,
+from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
+    LabelStudioProjectConfig,
+    collect_label_studio_project_configs,
+)
+from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
     LabelStudioTaskDataField,
-    collect_label_studio_task_configs,
 )
 
 _OUTPUT_DIR = os.path.join(
@@ -165,7 +167,7 @@ def _data_fields_for_config(
     ]
 
 
-def build_raw_table_yaml_dict(config: LabelStudioTaskConfig) -> dict:
+def build_raw_table_yaml_dict(config: LabelStudioProjectConfig) -> dict:
     """Returns the YAML dict for the raw annotations external table for |config|."""
     task_field: dict = {
         "name": "task",
@@ -220,7 +222,7 @@ def build_raw_table_yaml_dict(config: LabelStudioTaskConfig) -> dict:
 
 def generate_raw_table_yamls(output_dir: str = _OUTPUT_DIR) -> None:
     """Writes one raw table YAML per task config into |output_dir|."""
-    configs = collect_label_studio_task_configs()
+    configs = collect_label_studio_project_configs()
     for config in configs.values():
         output_path = os.path.join(output_dir, f"{config.raw_table_id}.yaml")
         with open(output_path, "w", encoding="utf-8") as f:

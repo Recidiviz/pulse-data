@@ -22,8 +22,8 @@ import unittest
 import yaml
 
 import recidiviz.source_tables.yaml_managed as _yaml_managed_pkg
-from recidiviz.llm_eval.label_studio.labelstudio_task_config import (
-    collect_label_studio_task_configs,
+from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
+    collect_label_studio_project_configs,
 )
 from recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls import (
     generate_raw_table_yamls,
@@ -46,7 +46,7 @@ class GenerateRawTableYamlsTest(unittest.TestCase):
             python -m recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls
         and commit the updated files.
         """
-        configs = collect_label_studio_task_configs()
+        configs = collect_label_studio_project_configs()
         with tempfile.TemporaryDirectory() as tmpdir:
             generate_raw_table_yamls(output_dir=tmpdir)
             for config in configs.values():
@@ -78,7 +78,7 @@ class GenerateRawTableYamlsTest(unittest.TestCase):
 
     def test_no_extra_committed_yamls(self) -> None:
         """Fails if there are committed raw table YAMLs with no corresponding task config."""
-        configs = collect_label_studio_task_configs()
+        configs = collect_label_studio_project_configs()
         expected_filenames = {
             f"{config.raw_table_id}.yaml" for config in configs.values()
         }
