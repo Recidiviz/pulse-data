@@ -21,4 +21,11 @@ exclusions:
       Because the incarceration data we receive for NY is limited to population
       snapshots, admission dates are generally inferred and are not expected to be accurate.
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: public_pathways_mismatch_with_raw_data
+    hard_num_allowed_rows_override: 2
+    override_reason:
+      There are 2 rows that are expected to fail for this validation, because 8 people in
+      Sing Sing had NULL in the facil7 column in May 2024 despite unmistakably being housed there.
+      This may have something to do with the irregularity that caused this file to be generated
+      3 days late on 2024-05-04 (other files are all from the first day of the month).

@@ -222,6 +222,9 @@ from recidiviz.validation.views.state.product_roster_blocked_30_days import (
 from recidiviz.validation.views.state.product_roster_upcoming_blocks import (
     PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.public_pathways.public_pathways_mismatch_with_raw_data import (
+    PUBLIC_PATHWAYS_MISMATCH_WITH_RAW_DATA_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
@@ -850,6 +853,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             hard_num_allowed_rows=0,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PUBLIC_PATHWAYS_MISMATCH_WITH_RAW_DATA_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
