@@ -1,0 +1,22 @@
+{
+  "displayName": "Deny catastrophic data deletes to humans",
+  "rules": [
+    {
+      "denyRule": {
+        "deniedPrincipals": [
+          "principalSet://goog/cloudIdentityCustomerId/CUSTOMER_ID_PLACEHOLDER"
+        ],
+        "exceptionPrincipals": [
+          "principalSet://goog/group/BREAKGLASS_GROUP_PLACEHOLDER"
+        ],
+        "deniedPermissions": [
+          "bigquery.googleapis.com/datasets.delete"
+        ],
+        "denialCondition": {
+          "title": "only-protection-tagged",
+          "expression": "resource.matchTagId('TAG_KEY_ID_PLACEHOLDER', 'TAG_VALUE_ID_PLACEHOLDER')"
+        }
+      }
+    }
+  ]
+}
