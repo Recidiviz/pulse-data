@@ -25,6 +25,13 @@ from recidiviz.common.demographics import Ethnicity, Gender, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
 )
+from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.alias_explanation import (
+    aliases_explain_name_component_conflict,
+)
+from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.name import (
+    Name,
+    NameComponent,
+)
 from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.signals import (
     are_dobs_in_conflict,
     are_given_names_in_conflict,
@@ -60,6 +67,16 @@ class _FragmentValues:
     gender: Gender | None = attr.ib(validator=attr_validators.is_opt(Gender))
     ethnicity: Ethnicity | None = attr.ib(validator=attr_validators.is_opt(Ethnicity))
 
+    @property
+    def name(self) -> Name:
+        """Returns the primary name components as one whole Name."""
+        return Name(
+            surname=self.surname,
+            given_name=self.given_name,
+            middle_name=self.middle_name,
+            name_suffix=self.name_suffix,
+        )
+
     @classmethod
     def from_fragment(cls, fragment: IdentityFragment) -> "_FragmentValues":
         """Pulls the conflict-checked values off a fragment, tolerating a
@@ -84,6 +101,34 @@ class _FragmentValues:
         )
 
 
+@attr.define(frozen=True, kw_only=True)
+class _FragmentAliases:
+    """The alias names pulled off one fragment, each kept whole as a
+    Name. Keeping the row together is what lets an alias be matched as a
+    name rather than as a bag of interchangeable components, so aliases of
+    "MARIA GONZALEZ" and "JOHN SMITH" never combine into a "MARIA SMITH" the
+    source never recorded. Empty for a fragment that records no aliases."""
+
+    names: tuple[Name, ...] = attr.ib(validator=attr_validators.is_tuple_of(Name))
+
+    @classmethod
+    def from_fragment(cls, fragment: IdentityFragment) -> "_FragmentAliases":
+        """Pulls the alias names off a fragment, tolerating a fragment that
+        records no aliases."""
+        aliases = fragment.attributes.aliases if fragment.attributes else []
+        return cls(
+            names=tuple(
+                Name(
+                    surname=alias.surname,
+                    given_name=alias.given_name,
+                    middle_name=alias.middle_name,
+                    name_suffix=alias.name_suffix,
+                )
+                for alias in aliases
+            )
+        )
+
+
 def find_fragment_attribute_conflicts(
     fragments: list[IdentityFragment],
     conflict_checked_attributes_config: ConflictCheckedAttributesConfig,
@@ -101,9 +146,12 @@ def find_fragment_attribute_conflicts(
             gender, ethnicity) is conflict-checked for this tenant.
     """
     fragment_values = [_FragmentValues.from_fragment(f) for f in fragments]
+    fragment_aliases = [_FragmentAliases.from_fragment(f) for f in fragments]
 
     fields_in_conflict: set[ConflictCheckedAttribute] = set()
-    for a, b in combinations(fragment_values, 2):
+    for (a, aliases_a), (b, aliases_b) in combinations(
+        zip(fragment_values, fragment_aliases), 2
+    ):
         surnames_match_exactly = names_match_exactly(a.surname, b.surname)
         given_names_match_exactly = names_match_exactly(a.given_name, b.given_name)
         given_names_match_loosely = names_match_loosely(a.given_name, b.given_name)
@@ -114,6 +162,12 @@ def find_fragment_attribute_conflicts(
             b.surname,
             given_names_match_loosely=given_names_match_loosely,
             dobs_match_exactly=dobs_match_exactly,
+        ) and not aliases_explain_name_component_conflict(
+            name_a=a.name,
+            name_b=b.name,
+            conflicting_component=NameComponent.SURNAME,
+            aliases_a=aliases_a.names,
+            aliases_b=aliases_b.names,
         ):
             fields_in_conflict.add(ConflictCheckedAttribute.SURNAME)
         if are_given_names_in_conflict(
@@ -121,6 +175,12 @@ def find_fragment_attribute_conflicts(
             b.given_name,
             surnames_match_exactly=surnames_match_exactly,
             dobs_match_exactly=dobs_match_exactly,
+        ) and not aliases_explain_name_component_conflict(
+            name_a=a.name,
+            name_b=b.name,
+            conflicting_component=NameComponent.GIVEN_NAME,
+            aliases_a=aliases_a.names,
+            aliases_b=aliases_b.names,
         ):
             fields_in_conflict.add(ConflictCheckedAttribute.GIVEN_NAME)
         if are_middle_names_in_conflict(
@@ -128,6 +188,12 @@ def find_fragment_attribute_conflicts(
             b.middle_name,
             surnames_match_exactly=surnames_match_exactly,
             dobs_match_exactly=dobs_match_exactly,
+        ) and not aliases_explain_name_component_conflict(
+            name_a=a.name,
+            name_b=b.name,
+            conflicting_component=NameComponent.MIDDLE_NAME,
+            aliases_a=aliases_a.names,
+            aliases_b=aliases_b.names,
         ):
             fields_in_conflict.add(ConflictCheckedAttribute.MIDDLE_NAME)
         if are_name_suffixes_in_conflict(a.name_suffix, b.name_suffix):

@@ -20,10 +20,11 @@ import unittest
 
 import attr
 
-from recidiviz.common.constants.identity import PersonType
+from recidiviz.common.constants.identity import NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Sex
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
+    IdentityAlias,
     IdentityAttributes,
     IdentityEthnicity,
     IdentityExternalId,
@@ -50,6 +51,22 @@ _SEX_OFF_CONFIG = {**_DEFAULT_CONFIG, OptionalConflictCheckedAttribute.SEX: Fals
 _GENDER_ON_CONFIG = {**_DEFAULT_CONFIG, OptionalConflictCheckedAttribute.GENDER: True}
 
 
+def _alias(
+    *,
+    surname: str | None = None,
+    given_name: str | None = None,
+    middle_name: str | None = None,
+) -> IdentityAlias:
+    """Builds an alias name record carrying the given components."""
+    return IdentityAlias(
+        tenant=_TENANT,
+        surname=surname,
+        given_name=given_name,
+        middle_name=middle_name,
+        name_use=NameUse.ALIAS,
+    )
+
+
 def _fragment(
     *,
     external_id: str = "A",
@@ -61,9 +78,11 @@ def _fragment(
     sex: Sex | None = None,
     gender: Gender | None = None,
     ethnicity: Ethnicity | None = None,
+    aliases: list[IdentityAlias] | None = None,
 ) -> IdentityFragment:
     """Builds a JII fragment carrying the given attributes; an all-None call
     yields an external-id-only fragment with no attributes."""
+    aliases = aliases or []
     name = (
         IdentityName(
             tenant=_TENANT,
@@ -87,8 +106,9 @@ def _fragment(
                 if ethnicity
                 else None
             ),
+            aliases=aliases,
         )
-        if (name or birthdate or sex or gender or ethnicity)
+        if (name or birthdate or sex or gender or ethnicity or aliases)
         else None
     )
     return IdentityFragment(
@@ -155,7 +175,7 @@ class TestFindFragmentAttributeConflicts(unittest.TestCase):
             (),
         )
 
-    def test_surname_name_change_hatch(self) -> None:
+    def test_likely_name_change_excuses_surname_conflict(self) -> None:
         # Different surnames, but same given name and exact DOB: a name change.
         birthdate = datetime.date(1990, 1, 1)
         self.assertEqual(
@@ -166,6 +186,176 @@ class TestFindFragmentAttributeConflicts(unittest.TestCase):
                     ),
                     _fragment(
                         surname="JOHNSON", given_name="JANE", birthdate=birthdate
+                    ),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_maiden_name_alias_excuses_surname_conflict(self) -> None:
+        # The surnames diverge, but one fragment records the other's surname as
+        # an alias (a maiden name), so the pair stays together.
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(surname="WILLIAMS"),
+                    _fragment(surname="JOHNSON", aliases=[_alias(surname="WILLIAMS")]),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_surname_alias_match_is_abbreviation_aware(self) -> None:
+        # normalize_name expands ST to SAINT, so the recorded alias
+        # "SAINT CLAIRE" excuses the primary "ST CLAIRE".
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(surname="ST CLAIRE"),
+                    _fragment(
+                        surname="JOHNSON", aliases=[_alias(surname="SAINT CLAIRE")]
+                    ),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_nickname_alias_excuses_given_name_conflict(self) -> None:
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(surname="SMITH", given_name="WILLIAM"),
+                    _fragment(
+                        surname="SMITH",
+                        given_name="THEODORE",
+                        aliases=[_alias(given_name="WILLIAM")],
+                    ),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_alias_excuses_middle_name_conflict(self) -> None:
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(surname="SMITH", middle_name="MARIE"),
+                    _fragment(
+                        surname="SMITH",
+                        middle_name="LOUISE",
+                        aliases=[_alias(middle_name="MARIE")],
+                    ),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_alias_of_wrong_component_does_not_excuse(self) -> None:
+        # The alias matches the conflicting surname, but the fragment records
+        # it as a given name, so it does not excuse the surname conflict.
+        conflicts = find_fragment_attribute_conflicts(
+            [
+                _fragment(surname="WILLIAMS"),
+                _fragment(surname="JOHNSON", aliases=[_alias(given_name="WILLIAMS")]),
+            ],
+            _DEFAULT_CONFIG,
+        )
+        self.assertEqual(
+            conflicts,
+            (AttributeConflict(field="surname", values=("WILLIAMS", "JOHNSON")),),
+        )
+
+    def test_unrelated_alias_does_not_excuse_conflict(self) -> None:
+        conflicts = find_fragment_attribute_conflicts(
+            [
+                _fragment(surname="WILLIAMS"),
+                _fragment(surname="JOHNSON", aliases=[_alias(surname="BROWN")]),
+            ],
+            _DEFAULT_CONFIG,
+        )
+        self.assertEqual(
+            conflicts,
+            (AttributeConflict(field="surname", values=("WILLIAMS", "JOHNSON")),),
+        )
+
+    def test_components_of_separate_aliases_do_not_combine(self) -> None:
+        """ROBERT WILLIAMS records two aliases, MARIA GONZALEZ and JOHN SMITH,
+        and never claimed to be MARIA SMITH. Matching each alias as a whole
+        name keeps both conflicts: MARIA GONZALEZ contradicts on surname and
+        JOHN SMITH contradicts on given name, so neither vouches for MARIA
+        SMITH. Pooling the components instead would have handed MARIA to the
+        given-name check and SMITH to the surname check and excused both.
+        """
+        conflicts = find_fragment_attribute_conflicts(
+            [
+                _fragment(
+                    given_name="ROBERT",
+                    surname="WILLIAMS",
+                    aliases=[
+                        _alias(given_name="MARIA", surname="GONZALEZ"),
+                        _alias(given_name="JOHN", surname="SMITH"),
+                    ],
+                ),
+                _fragment(given_name="MARIA", surname="SMITH"),
+            ],
+            _DEFAULT_CONFIG,
+        )
+        self.assertEqual(
+            conflicts,
+            (
+                AttributeConflict(field="surname", values=("WILLIAMS", "SMITH")),
+                AttributeConflict(field="given_name", values=("ROBERT", "MARIA")),
+            ),
+        )
+
+    def test_whole_alias_row_matching_the_other_name_excuses(self) -> None:
+        """The same fragments as above, except MARIA SMITH is recorded as one
+        whole alias row rather than assembled from two. That is a name the
+        source actually asserted, so it excuses both conflicts.
+        """
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(
+                        given_name="ROBERT",
+                        surname="WILLIAMS",
+                        aliases=[_alias(given_name="MARIA", surname="SMITH")],
+                    ),
+                    _fragment(given_name="MARIA", surname="SMITH"),
+                ],
+                _DEFAULT_CONFIG,
+            ),
+            (),
+        )
+
+    def test_alias_with_middle_initial_excuses(self) -> None:
+        """The alias abbreviates the other primary's middle name to its
+        initial. A lone initial does not contradict a name it abbreviates, so
+        the alias still excuses the given-name conflict.
+        """
+        self.assertEqual(
+            find_fragment_attribute_conflicts(
+                [
+                    _fragment(
+                        given_name="KIMBERLY",
+                        middle_name="LEE",
+                        surname="JOHNSON",
+                    ),
+                    _fragment(
+                        given_name="TAMMY",
+                        surname="JOHNSON",
+                        aliases=[
+                            _alias(
+                                given_name="KIMBERLY",
+                                middle_name="L",
+                                surname="JOHNSON",
+                            )
+                        ],
                     ),
                 ],
                 _DEFAULT_CONFIG,
@@ -370,6 +560,8 @@ class TestConflictCheckFieldCoverage(unittest.TestCase):
             "races",
             "phone_numbers",
             "emails",
+            # Aliases only excuse name conflicts; they never signal a conflict
+            # in their own right.
             "aliases",
         }
         entity_fields = {f.name for f in attr.fields(IdentityAttributes)} | {

@@ -95,8 +95,8 @@ class TestAreSurnamesInConflict(unittest.TestCase):
 
     def test_short_surname_gets_one_edit_budget(self) -> None:
         """Two edits on a surname of five letters or fewer is a different
-        name, not spelling drift: MILLER/MILLS and JONES/JAMES conflict (the
-        name-change hatch can still excuse them). A single edit stays
+        name, not spelling drift: MILLER/MILLS and JONES/JAMES conflict (a
+        corroborated name change can still excuse them). A single edit stays
         forgiven whatever the length, so OLSON/OLSEN merges — and so does
         HALL/HILL, an accepted cost of tolerating one-letter typos."""
         self.assertTrue(
@@ -152,7 +152,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
             )
         )
 
-    def test_name_change_escape_hatch(self) -> None:
+    def test_likely_name_change_excuses_surname_conflict(self) -> None:
         """Different surnames are not a conflict when given name and date of
         birth both corroborate: a name change, not a different person."""
         self.assertFalse(
@@ -186,7 +186,7 @@ class TestAreSurnamesInConflict(unittest.TestCase):
 class TestAreGivenNamesInConflict(unittest.TestCase):
     """Tests for are_given_names_in_conflict."""
 
-    def test_ungated_escapes_need_no_corroboration(self) -> None:
+    def test_token_subset_and_one_edit_need_no_corroboration(self) -> None:
         """Token-subset and one-character drift can only equate forms of the
         same name, so they are trusted on the strings alone."""
         for name_a, name_b in [
@@ -260,7 +260,7 @@ class TestAreGivenNamesInConflict(unittest.TestCase):
         )
 
     def test_corroborated_drift_forgives_twins(self) -> None:
-        """Accepted cost of the corroborated two-character escape: twins always
+        """Accepted cost of the corroborated two-character rule: twins always
         share surname and exact birthdate, so they supply the corroboration the
         gate asks for, and a two-edit name difference like BRAD/CHAD is forgiven
         as spelling drift. Sex discrimination catches the opposite-sex pairs
@@ -576,20 +576,20 @@ class TestSignalSymmetry(unittest.TestCase):
             (None, "MILLER"),
         ]
         for surname_a, surname_b in pairs:
-            for hatch_open in (False, True):
-                with self.subTest(a=surname_a, b=surname_b, hatch=hatch_open):
+            for corroborated in (False, True):
+                with self.subTest(a=surname_a, b=surname_b, corroborated=corroborated):
                     self.assertEqual(
                         are_surnames_in_conflict(
                             surname_a,
                             surname_b,
-                            given_names_match_loosely=hatch_open,
-                            dobs_match_exactly=hatch_open,
+                            given_names_match_loosely=corroborated,
+                            dobs_match_exactly=corroborated,
                         ),
                         are_surnames_in_conflict(
                             surname_b,
                             surname_a,
-                            given_names_match_loosely=hatch_open,
-                            dobs_match_exactly=hatch_open,
+                            given_names_match_loosely=corroborated,
+                            dobs_match_exactly=corroborated,
                         ),
                     )
 

@@ -103,6 +103,19 @@ def names_match_loosely(name_a: str | None, name_b: str | None) -> bool:
     return _is_token_subset(normalized_a, normalized_b)
 
 
+def is_initial_match(normalized_a: str, normalized_b: str) -> bool:
+    """Returns whether one normalized name is a lone initial matching the
+    other's first letter (L or L. vs LEE). normalize_name strips the period,
+    so a bare initial and one written with a trailing period compare alike."""
+    if not normalized_a or not normalized_b:
+        return False
+    if len(normalized_a) == 1:
+        return normalized_b.startswith(normalized_a)
+    if len(normalized_b) == 1:
+        return normalized_a.startswith(normalized_b)
+    return False
+
+
 def are_surnames_in_conflict(
     surname_a: str | None,
     surname_b: str | None,
@@ -117,7 +130,7 @@ def are_surnames_in_conflict(
       like "GUSTAFSON" and "GUSTAFSEN"; a surname of five letters or fewer
       gets a one-edit budget instead of two, so "MILLER" and "MILLS" conflict,
     - are not a token-subset of one another, like "LOPEZ" and "LOPEZ SMITH"
-    - are not excused by the name-change hatch, where the given name loosely
+    - are not excused as a likely name change, when the given name loosely
       matches and the date of birth matches exactly.
     """
     normalized_a, normalized_b = normalize_name(surname_a), normalize_name(surname_b)
@@ -221,7 +234,7 @@ def are_dobs_in_conflict(
     - differ by more than a small edit distance on the ISO YYYY-MM-DD strings,
       not a recognized data-entry typo like a wrong digit, an adjacent-digit
       transposition or an off-by-one day, and
-    - are not excused by the year-slip escape: a difference within the edit
+    - are not excused as a year slip: a difference within the edit
       distance but with years more than one apart is a single mistyped year
       digit that moves the birthdate a decade or a century ("1990-01-01" and
       "1980-01-01"), so it is trusted only when the surname and given name
@@ -312,7 +325,7 @@ def _are_given_or_middle_names_in_conflict(
         return False
     if _is_token_subset(normalized_a, normalized_b):
         return False
-    if allow_initial_match and _is_initial_match(normalized_a, normalized_b):
+    if allow_initial_match and is_initial_match(normalized_a, normalized_b):
         return False
 
     # Same person, different form of the name: trusted only when other
@@ -358,16 +371,3 @@ def _strip_non_alpha(name: str) -> str:
     """Returns the name with every non-letter collapsed to single spaces and
     the result trimmed."""
     return _WHITESPACE_PATTERN.sub(" ", _NON_ALPHA_PATTERN.sub(" ", name)).strip()
-
-
-def _is_initial_match(normalized_a: str, normalized_b: str) -> bool:
-    """Returns whether one normalized name is a lone initial matching the
-    other's first letter (L or L. vs LEE). normalize_name strips the period,
-    so a bare initial and one written with a trailing period compare alike."""
-    if not normalized_a or not normalized_b:
-        return False
-    if len(normalized_a) == 1:
-        return normalized_b.startswith(normalized_a)
-    if len(normalized_b) == 1:
-        return normalized_a.startswith(normalized_b)
-    return False
