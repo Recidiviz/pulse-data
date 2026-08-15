@@ -110,6 +110,25 @@ def _fragment(
     )
 
 
+def _name_and_alias_fragment(
+    *,
+    external_id: str = "A",
+    name: IdentityName | None = None,
+    aliases: list[IdentityAlias] | None = None,
+) -> IdentityFragment:
+    """Builds a JII fragment carrying the given primary name and aliases."""
+    return IdentityFragment(
+        tenant=_TENANT,
+        external_ids=[
+            IdentityExternalId(
+                tenant=_TENANT, external_id=external_id, id_type="US_OZ_T1"
+            )
+        ],
+        person_type=PersonType.JII,
+        attributes=IdentityAttributes(tenant=_TENANT, name=name, aliases=aliases or []),
+    )
+
+
 class TestResolveClusterAttributes(unittest.TestCase):
     """Tests for resolve_cluster_attributes."""
 
@@ -314,35 +333,23 @@ class TestResolveClusterAttributes(unittest.TestCase):
     def test_aliases_dedup_ignoring_name_use_raw_text(self) -> None:
         # Two fragments record the same alias name with different raw use text.
         # They collapse to one alias carrying the latest fragment's raw text.
-        def _alias_fragment(
-            external_id: str, name_use_raw_text: str
-        ) -> IdentityFragment:
-            return IdentityFragment(
+        def _alias_with_use_raw_text(name_use_raw_text: str) -> IdentityAlias:
+            return IdentityAlias(
                 tenant=_TENANT,
-                external_ids=[
-                    IdentityExternalId(
-                        tenant=_TENANT, external_id=external_id, id_type="US_OZ_T1"
-                    )
-                ],
-                person_type=PersonType.JII,
-                attributes=IdentityAttributes(
-                    tenant=_TENANT,
-                    aliases=[
-                        IdentityAlias(
-                            tenant=_TENANT,
-                            surname="JONES",
-                            name_use=NameUse.ALIAS,
-                            name_use_raw_text=name_use_raw_text,
-                        )
-                    ],
-                ),
+                surname="JONES",
+                name_use=NameUse.ALIAS,
+                name_use_raw_text=name_use_raw_text,
             )
 
         resolved = resolve_cluster_attributes(
             tenant=_TENANT,
             sorted_fragments=[
-                _alias_fragment("A", "AKA"),
-                _alias_fragment("B", "ALIAS"),
+                _name_and_alias_fragment(
+                    external_id="A", aliases=[_alias_with_use_raw_text("AKA")]
+                ),
+                _name_and_alias_fragment(
+                    external_id="B", aliases=[_alias_with_use_raw_text("ALIAS")]
+                ),
             ],
             resolution_strategy_config=_DEFAULT_CONFIG,
         )
@@ -350,6 +357,168 @@ class TestResolveClusterAttributes(unittest.TestCase):
         self.assertEqual(len(resolved.aliases), 1)
         self.assertEqual(resolved.aliases[0].surname, "JONES")
         self.assertEqual(resolved.aliases[0].name_use_raw_text, "ALIAS")
+
+    def test_aliases_dedup_on_normalized_components(self) -> None:
+        # Two fragments record spelling variants of the same alias. They
+        # collapse to one alias carrying the latest fragment's spelling.
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    external_id="A",
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="ST. CLAIRE",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                ),
+                _name_and_alias_fragment(
+                    external_id="B",
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="SAINT CLAIRE",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                ),
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual(len(resolved.aliases), 1)
+        self.assertEqual("SAINT CLAIRE", resolved.aliases[0].surname)
+
+    def test_alias_identical_to_resolved_name_dropped(self) -> None:
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    name=IdentityName(tenant=_TENANT, given_name="JANE", surname="DOE"),
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="DOE",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                )
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual([], resolved.aliases)
+
+    def test_alias_matching_name_after_normalization_dropped(self) -> None:
+        # The surname spellings and the suffix spellings differ but normalize
+        # to the same values, so the alias adds no name information.
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    name=IdentityName(
+                        tenant=_TENANT,
+                        given_name="JANE",
+                        surname="SAINT CLAIRE",
+                        name_suffix="JR",
+                    ),
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="ST. CLAIRE",
+                            name_suffix="JR.",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                )
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual([], resolved.aliases)
+
+    def test_alias_differing_from_resolved_name_kept(self) -> None:
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    name=IdentityName(tenant=_TENANT, given_name="JANE", surname="DOE"),
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANIE",
+                            surname="DOE",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                )
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual(len(resolved.aliases), 1)
+        self.assertEqual("JANIE", resolved.aliases[0].given_name)
+
+    def test_alias_missing_a_name_component_kept(self) -> None:
+        # The alias matches the name's given name and surname but records no
+        # middle name where the name has one, so it is a distinct name form.
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    name=IdentityName(
+                        tenant=_TENANT,
+                        given_name="JANE",
+                        middle_name="MARIE",
+                        surname="DOE",
+                    ),
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="DOE",
+                            name_use=NameUse.ALIAS,
+                        )
+                    ],
+                )
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual(len(resolved.aliases), 1)
+
+    def test_alias_duplicating_name_from_other_fragment_dropped(self) -> None:
+        # Fragment A resolves the primary name; fragment B records the same
+        # name only as an alias. Per-fragment SQL cannot see this duplicate.
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _name_and_alias_fragment(
+                    external_id="A",
+                    name=IdentityName(tenant=_TENANT, given_name="JANE", surname="DOE"),
+                ),
+                _name_and_alias_fragment(
+                    external_id="B",
+                    aliases=[
+                        IdentityAlias(
+                            tenant=_TENANT,
+                            given_name="JANE",
+                            surname="DOE",
+                            name_use=NameUse.FORMER,
+                        )
+                    ],
+                ),
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual([], resolved.aliases)
 
     def test_all_fields_null_resolved_returns_none(self) -> None:
         # The only attribute is a divergent optional attribute that nulls out,

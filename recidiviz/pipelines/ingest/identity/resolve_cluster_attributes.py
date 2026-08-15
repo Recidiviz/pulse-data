@@ -21,6 +21,8 @@ remaining scalar divergence is benign. Each conflict-checked scalar resolves per
 the tenant's resolution strategy, either keeping the latest value or storing
 nothing when its fragments diverge. preferred_name is not conflict-checked and
 always takes the latest value. List-valued attributes union across fragments.
+Aliases dedupe on their normalized name components, and any alias that
+duplicates the resolved primary name is dropped as redundant.
 Fragments must be sorted oldest-first by (upper_bound_date, ingest view) so the
 latest value is last.
 """
@@ -29,6 +31,7 @@ from typing import TypeVar
 
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
+    IdentityAlias,
     IdentityAttributes,
     IdentityFragment,
     IdentityName,
@@ -92,13 +95,21 @@ def resolve_cluster_attributes(
         attributes,
         lambda a: a.aliases,
         key=lambda al: (
-            al.given_name,
-            al.surname,
-            al.middle_name,
-            al.name_suffix,
+            normalize_name(al.given_name),
+            normalize_name(al.surname),
+            normalize_name(al.middle_name),
+            canonical_suffix(al.name_suffix),
             al.name_use,
         ),
     )
+    if name is not None:
+        # An alias that records exactly the resolved primary name is redundant.
+        # Filtering after resolution lets the comparison see normalized values
+        # and catch an alias that duplicates a name resolved from a different
+        # fragment.
+        aliases = [
+            alias for alias in aliases if not _alias_duplicates_name(alias, name)
+        ]
 
     if not any(
         [
@@ -225,6 +236,23 @@ def _union(
         for item in getter(attribute):
             latest_by_key[key(item)] = item
     return list(latest_by_key.values())
+
+
+def _alias_duplicates_name(alias: IdentityAlias, name: IdentityName) -> bool:
+    """Returns whether the alias records exactly the resolved primary name,
+    component by component, compared under the same normalization the
+    resolution uses (normalize_name for the name parts, canonical_suffix for
+    the suffix). Both normalizers map a missing component to the empty string,
+    so a missing component matches only a missing component. The alias name_use
+    does not enter the comparison: a MAIDEN or FORMER alias whose components
+    duplicate the primary name adds no name information and is dropped too.
+    """
+    return (
+        normalize_name(alias.given_name) == normalize_name(name.given_name)
+        and normalize_name(alias.middle_name) == normalize_name(name.middle_name)
+        and normalize_name(alias.surname) == normalize_name(name.surname)
+        and canonical_suffix(alias.name_suffix) == canonical_suffix(name.name_suffix)
+    )
 
 
 def _latest(
