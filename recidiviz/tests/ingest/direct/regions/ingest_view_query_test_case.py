@@ -22,7 +22,6 @@ import csv
 import datetime
 import io
 import logging
-from typing import Any
 
 import pandas as pd
 
@@ -68,6 +67,7 @@ from recidiviz.tests.ingest.direct.regions.base_ingest_test_cases import (
 from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
     THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
 )
+from recidiviz.tests.utils.discovery_guard import DiscoveryGuardMeta
 from recidiviz.utils.environment import in_ci
 
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
@@ -132,29 +132,13 @@ def check_ingest_view_ctes_are_documented(
             )
 
 
-class StateIngestViewAndMappingTestCaseMeta(abc.ABCMeta):
-    def __new__(
-        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
-    ) -> Any:
-        # A class that explicitly sets __test__ in its own body has made a
-        # deliberate choice about discovery: True to run, False to opt out (as
-        # the abstract base classes and intermediate per-state bases do). Only a
-        # concrete subclass that forgot to set it at all is an error, since it
-        # would silently fail to run.
-        if "__test__" not in attributes:
-            raise TypeError(
-                f"Class {cls_name} must explicitly set `__test__` "
-                f"(True to run, False to opt out of discovery)."
-            )
-        return super().__new__(mcs, cls_name, bases, attributes)
-
-
 class StateIngestViewAndMappingTestCase(
     BigQueryEmulatorTestCase,
     BaseStateIngestTestCase,
-    # Enforce at class collection time that all subclasses of StateIngestViewTestCase
-    # set __test__ back to True.
-    metaclass=StateIngestViewAndMappingTestCaseMeta,
+    # Enforce at class creation time that every subclass declares __test__
+    # explicitly and that only still-abstract base classes opt out of
+    # discovery.
+    metaclass=DiscoveryGuardMeta,
 ):
     """
     This is the base test class for ingest testing, where we
@@ -164,20 +148,19 @@ class StateIngestViewAndMappingTestCase(
     To use this test, subclass it and add a state code and ingest view builder.
     """
 
-    # Prevent test discovery so we only run
-    # test_validate_view_output_schema for subclasses. All subclasses
-    # are required to set __test__ = True
+    # Opt this abstract base out of discovery; concrete subclasses set
+    # __test__ = True to run.
     __test__ = False
 
     @classmethod
+    @abc.abstractmethod
     def state_code(cls) -> StateCode:
-        raise NotImplementedError("Ingest tests must have a StateCode!")
+        """Returns the state whose ingest view this test covers."""
 
     @classmethod
+    @abc.abstractmethod
     def ingest_view_builder(cls) -> DirectIngestViewQueryBuilder:
-        raise NotImplementedError(
-            "Ingest view tests must declare their DirectIngestViewQueryBuilder!"
-        )
+        """Returns the ingest view builder this test covers."""
 
     def setUp(self) -> None:
         super().setUp()

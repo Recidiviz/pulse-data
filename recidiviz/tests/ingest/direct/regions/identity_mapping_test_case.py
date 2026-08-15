@@ -38,13 +38,21 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
 )
+from recidiviz.tests.utils.discovery_guard import DiscoveryGuardMeta
 from recidiviz.utils.types import assert_type
 
 
-class IdentityMappingTestCase(unittest.TestCase, abc.ABC):
+class IdentityMappingTestCase(
+    unittest.TestCase,
+    # Enforce at class creation time that every subclass declares __test__
+    # explicitly and that only still-abstract base classes opt out of
+    # discovery.
+    metaclass=DiscoveryGuardMeta,
+):
     """Base class for compiler-only tests of identity mapping YAMLs."""
 
-    # Prevent pytest from collecting this abstract base class as a test class.
+    # Opt this abstract base out of discovery; concrete subclasses set
+    # __test__ = True to run.
     __test__ = False
 
     @classmethod
