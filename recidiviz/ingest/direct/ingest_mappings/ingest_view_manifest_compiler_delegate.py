@@ -22,7 +22,7 @@ delegate.
 import abc
 import os
 from enum import Enum
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Type
 
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
@@ -79,9 +79,11 @@ class IngestViewManifestCompilerDelegate:
         """
 
     @abc.abstractmethod
-    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
-        """Returns a field (if there is one) where, if for any entity this field's value
-        evaluates to None, that entity should be filtered out of the result.
+    def get_filter_if_all_null_fields(self, entity_cls: Type[EntityT]) -> list[str]:
+        """Returns the fields that control filtering for the given entity class. If
+        all of them evaluate to null for a given entity, the compiler filters that
+        entity out of the result. An empty list means the compiler never filters
+        entities of this class.
         """
 
     @abc.abstractmethod

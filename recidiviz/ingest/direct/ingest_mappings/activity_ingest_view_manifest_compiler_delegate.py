@@ -144,10 +144,10 @@ class ActivityIngestViewManifestCompilerDelegate(
             )
         )
 
-    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> str | None:
+    def get_filter_if_all_null_fields(self, entity_cls: Type[EntityT]) -> list[str]:
         if issubclass(entity_cls, state_entities.StatePersonAlias):
-            return "full_name"
-        return None
+            return ["full_name"]
+        return []
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
         """Returns whether a string field is expected to contain JSON. Whenever we add

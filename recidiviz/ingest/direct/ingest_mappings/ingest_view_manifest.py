@@ -46,6 +46,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_attribute_for_field_name,
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
+    attribute_field_type_reference_for_class,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError, EnumT
@@ -209,13 +210,14 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # context when an enum field encounters an unmapped raw text value.
     ingest_view_name: str = attr.ib()
 
-    # If any of the fields in this set has a null value, build_for_row() will return
-    # null instead of this entity, and this entity (and any children entities) will
-    # be excluded entirely from the result.
+    # If ALL of the fields in this list have a null value, build_from_row() returns
+    # None instead of this entity, excluding the entity (and any children entities)
+    # entirely from the result. An empty list means build_from_row() never filters
+    # this entity.
     #
-    # Currently, this is primarily used for enum entities. If the enum value is null or
-    # ignored by the mappings, the entire enum entity will be filtered out.
-    filter_if_null_field: Optional[str] = attr.ib(default=None)
+    # Enum entities are the most common use: when the enum value is null or ignored
+    # by the mappings, build_from_row() drops the whole enum entity.
+    filter_if_all_null_fields: list[str] = attr.ib()
 
     def __attrs_post_init__(self) -> None:
         common_args_defined_in_manifest = set(self.common_args).intersection(
@@ -226,6 +228,16 @@ class EntityTreeManifest(ManifestNode[EntityT]):
                 f"Found fields defined in the manifest which are set automatically by "
                 f"the parse: {common_args_defined_in_manifest}"
             )
+
+        entity_field_names = attribute_field_type_reference_for_class(
+            self.entity_cls
+        ).fields
+        for field_name in self.filter_if_all_null_fields:
+            if field_name not in entity_field_names:
+                raise ValueError(
+                    f"Field [{field_name}] in filter_if_all_null_fields is not a "
+                    f"field on entity [{self.entity_cls.__name__}]."
+                )
 
     @property
     def result_type(self) -> Type[EntityT]:
@@ -246,12 +258,17 @@ class EntityTreeManifest(ManifestNode[EntityT]):
             except EnumParsingError as e:
                 field_value = self._handle_enum_parsing_error(e, field_name, context)
 
-            if field_value is None and field_name == self.filter_if_null_field:
-                # If there is a null value in this field, filter out the whole entity.
-                return None
-
             if field_value is not None:
                 args[field_name] = field_value
+
+        if self.filter_if_all_null_fields and all(
+            # Empty and whitespace-only strings count as null because deserialize()
+            # below converts them to None on the built entity.
+            (value := args.get(field_name)) is None
+            or (isinstance(value, str) and not value.strip())
+            for field_name in self.filter_if_all_null_fields
+        ):
+            return None
 
         entity = self.entity_factory_cls.deserialize(**args)
 
@@ -475,31 +492,32 @@ class EntityTreeManifestFactory:
             common_args=delegate.get_common_args(),
             field_manifests=field_manifests,
             ingest_view_name=ingest_view_name,
-            filter_if_null_field=cls._get_filter_if_null_field(
+            filter_if_all_null_fields=cls._get_filter_if_all_null_fields(
                 entity_cls=entity_cls, delegate=delegate
             ),
         )
 
     @staticmethod
-    def _get_filter_if_null_field(
+    def _get_filter_if_all_null_fields(
         *,
         entity_cls: Type[EntityT],
         delegate: IngestViewManifestCompilerDelegate,
-    ) -> Optional[str]:
-        filter_if_null_field = None
+    ) -> list[str]:
+        filter_if_all_null_fields = []
         if issubclass(entity_cls, EnumEntity):
-            filter_if_null_field = entity_cls.get_enum_field_name()
+            filter_if_all_null_fields = [entity_cls.get_enum_field_name()]
 
-        if delegate_filter_field := delegate.get_filter_if_null_field(entity_cls):
-            if filter_if_null_field:
+        if delegate_filter_fields := delegate.get_filter_if_all_null_fields(entity_cls):
+            if filter_if_all_null_fields:
                 raise ValueError(
-                    f"Found filter_if_null_field [{delegate_filter_field}] defined in "
-                    f"delegate for entity [{entity_cls.__name__}] with default "
-                    f"filter_if_null_field [{filter_if_null_field}] already defined."
+                    f"Found filter_if_all_null_fields [{delegate_filter_fields}] "
+                    f"defined in delegate for entity [{entity_cls.__name__}] with "
+                    f"default filter_if_all_null_fields "
+                    f"[{filter_if_all_null_fields}] already defined."
                 )
-            return delegate_filter_field
+            return delegate_filter_fields
 
-        return filter_if_null_field
+        return filter_if_all_null_fields
 
     @staticmethod
     def _validate_additional_field_manifest(

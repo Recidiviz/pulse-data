@@ -108,17 +108,16 @@ class IdentityIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDeleg
             custom_functions_root_module=recidiviz.pipelines.ingest.identity
         )
 
-    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> str | None:
-        """Returns a field (if there is one) where, if for any entity this field's value
-        evaluates to None, that entity should be filtered out of the result.
-        """
+    def get_filter_if_all_null_fields(self, entity_cls: Type[EntityT]) -> list[str]:
         if issubclass(entity_cls, identity_fragment_entities_module.IdentityEmail):
-            return "address"
+            return ["address"]
         if issubclass(
             entity_cls, identity_fragment_entities_module.IdentityPhoneNumber
         ):
-            return "number"
-        return None
+            return ["number"]
+        if issubclass(entity_cls, identity_fragment_entities_module.IdentityAlias):
+            return ["given_name", "middle_name", "surname", "name_suffix"]
+        return []
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
         return False

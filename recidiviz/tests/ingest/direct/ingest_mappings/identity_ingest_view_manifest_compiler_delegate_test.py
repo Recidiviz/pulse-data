@@ -24,6 +24,7 @@ from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compi
     IdentityIngestViewManifestCompilerDelegate,
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
+    IdentityAlias,
     IdentityAttributes,
     IdentityEmail,
     IdentityExternalId,
@@ -101,18 +102,26 @@ class TestGetEnumCls(_IdentityDelegateTestBase):
             self.delegate.get_enum_cls("NonexistentEnum")
 
 
-class TestGetFilterIfNullField(_IdentityDelegateTestBase):
-    def test_returns_none_for_non_contact_entity(self) -> None:
-        self.assertIsNone(self.delegate.get_filter_if_null_field(IdentityFragment))
+class TestGetFilterIfAllNullFields(_IdentityDelegateTestBase):
+    def test_returns_empty_for_unfiltered_entity(self) -> None:
+        self.assertEqual(
+            [], self.delegate.get_filter_if_all_null_fields(IdentityFragment)
+        )
 
     def test_filters_identity_email_on_address(self) -> None:
         self.assertEqual(
-            "address", self.delegate.get_filter_if_null_field(IdentityEmail)
+            ["address"], self.delegate.get_filter_if_all_null_fields(IdentityEmail)
         )
 
     def test_filters_identity_phone_number_on_number(self) -> None:
         self.assertEqual(
-            "number", self.delegate.get_filter_if_null_field(IdentityPhoneNumber)
+            ["number"], self.delegate.get_filter_if_all_null_fields(IdentityPhoneNumber)
+        )
+
+    def test_filters_identity_alias_on_name_parts(self) -> None:
+        self.assertEqual(
+            ["given_name", "middle_name", "surname", "name_suffix"],
+            self.delegate.get_filter_if_all_null_fields(IdentityAlias),
         )
 
 

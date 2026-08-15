@@ -21,7 +21,7 @@ import os
 import re
 import unittest
 from enum import Enum
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Type
 from unittest.mock import patch
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
@@ -197,10 +197,12 @@ class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDel
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
-    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
+    def get_filter_if_all_null_fields(self, entity_cls: Type[EntityT]) -> list[str]:
         if issubclass(entity_cls, FakePersonAlias):
-            return "full_name"
-        return None
+            return ["full_name"]
+        if issubclass(entity_cls, FakeAgent):
+            return ["external_id", "name"]
+        return []
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
         # NOTE: The 'name' field is explicitly excluded here - we use that field as a
@@ -2310,7 +2312,12 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    def test_filter_if_null_field(self) -> None:
+    def test_filter_if_all_null_fields(self) -> None:
+        """Tests that the parser drops an entity only when all of its
+        delegate-defined filter_if_all_null_fields are null, where empty and
+        whitespace-only strings count as null. FakePersonAlias filters on the
+        single field full_name, FakeAgent on both external_id and name.
+        """
         # Arrange
         expected_output = [
             FakePerson(
@@ -2323,6 +2330,11 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                         ),
                     )
                 ],
+                current_officer=FakeAgent(
+                    fake_state_code="US_XX",
+                    external_id="A123",
+                    name="NEWMAN",
+                ),
             ),
             FakePerson(
                 fake_state_code="US_XX",
@@ -2334,7 +2346,27 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                         ),
                     )
                 ],
+                # Kept because one of the two filter fields (external_id) is nonnull.
+                current_officer=FakeAgent(
+                    fake_state_code="US_XX",
+                    external_id="B456",
+                ),
             ),
+            # The officer's external_id is whitespace-only and its name is empty,
+            # both of which count as null, so the parser drops the officer.
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"given_names": "GEORGE", "middle_names": "", "name_suffix": "", "surname": "COSTANZA"}'
+                        ),
+                    )
+                ],
+            ),
+            # Both the alias and the officer have all their filter fields null, so
+            # the parser drops both.
             FakePerson(
                 fake_state_code="US_XX",
                 aliases=[],
@@ -2353,10 +2385,27 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_ingest_view("filter_if_null_field")
+        parsed_output = self._run_parse_for_ingest_view("filter_if_all_null_fields")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_filter_if_all_null_fields_not_on_entity_raises(self) -> None:
+        class _BadFilterFieldDelegate(FakeSchemaIngestViewManifestCompilerDelegate):
+            def get_filter_if_all_null_fields(
+                self, entity_cls: Type[EntityT]
+            ) -> list[str]:
+                if issubclass(entity_cls, FakeAgent):
+                    return ["agent_id"]
+                return []
+
+        compiler = IngestViewManifestCompiler(_BadFilterFieldDelegate())
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[agent_id\] in filter_if_all_null_fields is not a field on "
+            r"entity \[FakeAgent\]\.$",
+        ):
+            compiler.compile_manifest(ingest_view_name="filter_if_all_null_fields")
 
     def test_simple_variables(self) -> None:
         # Arrange
