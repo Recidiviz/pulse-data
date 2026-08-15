@@ -104,7 +104,9 @@ class IngestViewDeterminismResult:
     dataset_id: str = attr.ib()
 
     # The set of views that are nondeterministic, along with the number of rows that
-    # were different between the two runs.
+    # were different between the two runs. Keys are pipeline-type-qualified view
+    # names (see _pipeline_qualified_view_name) because the activity and identity
+    # pipelines may define same-named views.
     nondeterministic_views: Dict[str, int] = attr.ib()
 
 
@@ -194,9 +196,20 @@ def verify_raw_data_primary_keys(
         return bad_key_file_tags
 
 
+def _pipeline_qualified_view_name(
+    ingest_pipeline_type: IngestPipelineType, ingest_view_name: str
+) -> str:
+    """Returns the ingest view name qualified by its pipeline type. The
+    qualification is necessary because the activity and identity pipelines may
+    define same-named views."""
+    return f"{ingest_pipeline_type.value.lower()}_{ingest_view_name}"
+
+
 def _materialize_twice_and_return_num_different_rows(
+    *,
     bq_client: BigQueryClient,
     temp_results_dataset_id: str,
+    ingest_pipeline_type: IngestPipelineType,
     ingest_view_query_builder: DirectIngestViewQueryBuilder,
 ) -> int:
     """Materializes the ingest view query for the given query builder two separate
@@ -214,13 +227,16 @@ def _materialize_twice_and_return_num_different_rows(
         )
     )
 
+    table_prefix = _pipeline_qualified_view_name(
+        ingest_pipeline_type, ingest_view_query_builder.ingest_view_name
+    )
     address_1 = BigQueryAddress(
         dataset_id=temp_results_dataset_id,
-        table_id=f"{ingest_view_query_builder.ingest_view_name}__1",
+        table_id=f"{table_prefix}__1",
     ).to_project_specific_address(metadata.project_id())
     address_2 = BigQueryAddress(
         dataset_id=temp_results_dataset_id,
-        table_id=f"{ingest_view_query_builder.ingest_view_name}__2",
+        table_id=f"{table_prefix}__2",
     ).to_project_specific_address(metadata.project_id())
 
     bq_client.insert_into_table_from_query(
@@ -240,7 +256,7 @@ def _materialize_twice_and_return_num_different_rows(
 
     diff_address = BigQueryAddress(
         dataset_id=temp_results_dataset_id,
-        table_id=f"{ingest_view_query_builder.ingest_view_name}__diff",
+        table_id=f"{table_prefix}__diff",
     ).to_project_specific_address(metadata.project_id())
     diff_query = (
         f"{address_1.select_query()} EXCEPT DISTINCT ({address_2.select_query()});"
@@ -284,8 +300,9 @@ def verify_ingest_view_determinism(
         is_sandbox=False,
         state_code=state_code,
     )
-    launched_ingest_views: list[str] = []
-    view_query_builders: list[DirectIngestViewQueryBuilder] = []
+    query_builders_by_pipeline_type: list[
+        tuple[IngestPipelineType, DirectIngestViewQueryBuilder]
+    ] = []
     for ingest_pipeline_type in IngestPipelineType:
         launched_for_type = IngestViewManifestCollector(
             region=region,
@@ -294,9 +311,9 @@ def verify_ingest_view_determinism(
             ),
             ingest_pipeline_type=ingest_pipeline_type,
         ).launchable_ingest_views(context)
-        launched_ingest_views.extend(launched_for_type)
-        view_query_builders.extend(
-            DirectIngestViewQueryBuilderCollector(
+        query_builders_by_pipeline_type.extend(
+            (ingest_pipeline_type, query_builder)
+            for query_builder in DirectIngestViewQueryBuilderCollector(
                 region=region,
                 ingest_pipeline_type=ingest_pipeline_type,
                 expected_ingest_views=launched_for_type,
@@ -304,7 +321,7 @@ def verify_ingest_view_determinism(
         )
 
     progress = tqdm(
-        total=len(launched_ingest_views),
+        total=len(query_builders_by_pipeline_type),
         desc="Verifying ingest view determinism",
     )
 
@@ -317,29 +334,33 @@ def verify_ingest_view_determinism(
     ) as executor:
 
         def materialize_ingest_view(
+            ingest_pipeline_type: IngestPipelineType,
             ingest_view_query_builder: DirectIngestViewQueryBuilder,
         ) -> int:
             with on_exit(progress.update):
                 return _materialize_twice_and_return_num_different_rows(
                     bq_client=bq_client,
                     temp_results_dataset_id=temp_results_dataset_id,
+                    ingest_pipeline_type=ingest_pipeline_type,
                     ingest_view_query_builder=ingest_view_query_builder,
                 )
 
         num_diff_rows_futures = {
             executor.submit(
-                materialize_ingest_view, query_builder
-            ): query_builder.ingest_view_name
-            for query_builder in view_query_builders
+                materialize_ingest_view, ingest_pipeline_type, query_builder
+            ): _pipeline_qualified_view_name(
+                ingest_pipeline_type, query_builder.ingest_view_name
+            )
+            for ingest_pipeline_type, query_builder in query_builders_by_pipeline_type
         }
 
     nondeterministic_views = {}
     for f in futures.as_completed(num_diff_rows_futures):
-        ingest_view_name = num_diff_rows_futures[f]
+        qualified_view_name = num_diff_rows_futures[f]
         different_rows_count = assert_type(f.result(), int)
 
         if different_rows_count:
-            nondeterministic_views[ingest_view_name] = different_rows_count
+            nondeterministic_views[qualified_view_name] = different_rows_count
 
     progress.close()
     return IngestViewDeterminismResult(
@@ -392,10 +413,10 @@ def _run_stability_checks(
         print(
             f"\nFound {len(determinism_result.nondeterministic_views)} non deterministic ingest views:"
         )
-        for ingest_view_name in sorted(determinism_result.nondeterministic_views):
+        for qualified_view_name in sorted(determinism_result.nondeterministic_views):
             print(
-                f"- {ingest_view_name}: "
-                f"{determinism_result.nondeterministic_views[ingest_view_name]} rows "
+                f"- {qualified_view_name}: "
+                f"{determinism_result.nondeterministic_views[qualified_view_name]} rows "
                 "were different"
             )
         print(
