@@ -1,0 +1,44 @@
+# Identity mapping for the US_ND elite_staff (facilities) data source. Each row
+# produces one STAFF IdentityFragment. Program-referral placeholder rows carry
+# only a STAFF_ID and no name; the identity delegate drops an IdentityName whose
+# parts all clean away, and an IdentityAttributes left with nothing in it (see
+# get_filter_if_all_null_fields), so their fragment has no attributes.
+manifest_language: 1.0.0
+input_columns:
+  STAFF_ID: STRING
+  FIRST_NAME: STRING
+  MIDDLE_NAME: STRING
+  LAST_NAME: STRING
+  NAME_SUFFIX: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: STAFF_ID
+          id_type: $literal("US_ND_ELITE_OFFICER")
+    person_type: $literal_enum(PersonType.STAFF)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            middle_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: MIDDLE_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX

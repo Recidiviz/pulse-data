@@ -1,0 +1,156 @@
+# Identity mapping for the US_ND docstars_offenders (supervision) data source.
+# Each row produces one JII IdentityFragment. Ethnicity is asserted only when the
+# race code affirmatively indicates Hispanic (RACE='5'); otherwise it is left null
+# (we never assert NOT_HISPANIC).
+manifest_language: 1.0.0
+input_columns:
+  SID: STRING
+  ITAGROOT_ID: STRING
+  FIRST_NAME: STRING
+  MIDDLE_NAME: STRING
+  LAST_NAME: STRING
+  NAME_SUFFIX: STRING
+  DOB: DATE
+  SEX: STRING
+  RACE: STRING
+  EMAIL: STRING
+  PHONE: STRING
+  PHONE2: STRING
+  ALIAS_LIST: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+      - $conditional:
+          - $if:
+              $not_null: ITAGROOT_ID
+            $then:
+              IdentityExternalId:
+                external_id: ITAGROOT_ID
+                id_type: $literal("US_ND_ELITE")
+    person_type: $literal_enum(PersonType.JII)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            middle_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: MIDDLE_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX
+        birthdate: DOB
+        sex:
+          IdentitySex:
+            sex:
+              $enum_mapping:
+                $raw_text: SEX
+                $mappings:
+                  Sex.MALE: "1"
+                  Sex.FEMALE: "2"
+        races:
+          - IdentityRace:
+              race:
+                $enum_mapping:
+                  $raw_text: RACE
+                  $mappings:
+                    Race.WHITE: "1"
+                    Race.BLACK: "2"
+                    Race.AMERICAN_INDIAN_ALASKAN_NATIVE: "3"
+                    Race.ASIAN: "4"
+                    Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "6"
+                  $ignore:
+                    - "5" # Hispanic - captured as ethnicity below, not race.
+        # There are no separate ethnicity fields in DOCR files; a Hispanic
+        # ethnicity is encoded as RACE='5'. Assert HISPANIC only in that case,
+        # otherwise leave ethnicity null.
+        ethnicity:
+          $conditional:
+            - $if:
+                $equal:
+                  - RACE
+                  - $literal("5")
+              $then:
+                IdentityEthnicity:
+                  ethnicity:
+                    $enum_mapping:
+                      $raw_text: RACE
+                      $mappings:
+                        Ethnicity.HISPANIC: "5"
+        # A shared parser validates phone and email against the same entity
+        # validators and returns null for junk values. The compiler drops a
+        # contact entity whose key field resolves to null, so junk values are
+        # omitted rather than crashing the strict IdentityEmail/IdentityPhoneNumber
+        # validators.
+        emails:
+          - IdentityEmail:
+              address:
+                $custom:
+                  $function: contact_info_custom_parsers.validate_email_or_null
+                  $args:
+                    email: EMAIL
+        phone_numbers:
+          - IdentityPhoneNumber:
+              number:
+                $custom:
+                  $function: contact_info_custom_parsers.normalize_phone_or_null
+                  $args:
+                    phone: PHONE
+          - IdentityPhoneNumber:
+              number:
+                $custom:
+                  $function: contact_info_custom_parsers.normalize_phone_or_null
+                  $args:
+                    phone: PHONE2
+        # Alternate names pulled out of the raw name columns (parenthetical or
+        # quoted nicknames, slash-alternates) by the view, one partial alias
+        # per column that had one. All are alias-typed; docstars has no source
+        # designation distinguishing former/preferred names.
+        aliases:
+          - $foreach:
+              $iterable:
+                $split_json: ALIAS_LIST
+              $result:
+                IdentityAlias:
+                  given_name:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: given_name
+                            $json: $iter_item
+                  middle_name:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: middle_name
+                            $json: $iter_item
+                  surname:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: surname
+                            $json: $iter_item
+                  name_use: $literal_enum(NameUse.ALIAS)

@@ -117,6 +117,31 @@ class IdentityIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDeleg
             return ["number"]
         if issubclass(entity_cls, identity_fragment_entities_module.IdentityAlias):
             return ["given_name", "middle_name", "surname", "name_suffix"]
+        # A name whose parts all cleaned away carries no information; drop it
+        # rather than emit an empty name entity.
+        if issubclass(entity_cls, identity_fragment_entities_module.IdentityName):
+            return [
+                "given_name",
+                "preferred_name",
+                "middle_name",
+                "surname",
+                "name_suffix",
+            ]
+        # IdentityAttributes requires at least one attribute set (see its
+        # __attrs_post_init__), so when every attribute filtered away the
+        # object must be dropped, not built empty.
+        if issubclass(entity_cls, identity_fragment_entities_module.IdentityAttributes):
+            return [
+                "name",
+                "birthdate",
+                "gender",
+                "sex",
+                "races",
+                "ethnicity",
+                "phone_numbers",
+                "emails",
+                "aliases",
+            ]
         return []
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:

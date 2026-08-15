@@ -3,6 +3,18 @@
 # details on allowed configuration, see the schema file referenced above; for
 # the code defaults, see identity_ingest_pipeline_config.py.
 jii:
-  max_ids_per_type_overrides: {}
+  # US_ND_ELITE and US_ND_SID legitimately appear on up to 2 fragments each via
+  # the Elite<->SID crosswalk (elite_offenderidentifier): a person can hold two
+  # SIDs, or two Elite IDs can map to one SID. Raising the threshold to 2 keeps
+  # those real crosswalk IDs from being stripped as sentinels.
+  #
+  # Residual risk: a person with 3+ SIDs would still exceed the threshold and
+  # have their real Elite ID stripped with only a log warning. No such person
+  # exists in the data as of 2026-07; TODO(OBT-42063) removes the ELITE case
+  # structurally by aggregating the crosswalk to one row per person. The SID
+  # override stays regardless (a SID shared by two Elite roots is real data).
+  max_ids_per_type_overrides:
+    US_ND_ELITE: 2
+    US_ND_SID: 2
 staff:
   max_ids_per_type_overrides: {}

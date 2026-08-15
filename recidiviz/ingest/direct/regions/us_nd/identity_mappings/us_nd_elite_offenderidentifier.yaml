@@ -1,0 +1,18 @@
+# Identity mapping for the US_ND elite_offenderidentifier Elite<->SID crosswalk.
+# Each row produces one external-id-only JII IdentityFragment (no attributes) that
+# links an Elite ROOT_OFFENDER_ID to a Docstars SID.
+manifest_language: 1.0.0
+input_columns:
+  ROOT_OFFENDER_ID: STRING
+  IDENTIFIER: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+      - IdentityExternalId:
+          external_id: IDENTIFIER
+          id_type: $literal("US_ND_SID")
+    person_type: $literal_enum(PersonType.JII)

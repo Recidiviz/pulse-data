@@ -263,9 +263,12 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         if self.filter_if_all_null_fields and all(
             # Empty and whitespace-only strings count as null because deserialize()
-            # below converts them to None on the built entity.
+            # below converts them to None on the built entity. Empty lists count
+            # as null so a list field whose children were all filtered away does
+            # not keep an otherwise-empty entity alive.
             (value := args.get(field_name)) is None
             or (isinstance(value, str) and not value.strip())
+            or (isinstance(value, list) and not value)
             for field_name in self.filter_if_all_null_fields
         ):
             return None

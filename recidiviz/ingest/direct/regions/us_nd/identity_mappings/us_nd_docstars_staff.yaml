@@ -1,0 +1,86 @@
+# Identity mapping for the US_ND docstars_staff (supervision) data source. Each
+# row produces one STAFF IdentityFragment carrying an officer id, an optional
+# email id, and name/email attributes.
+manifest_language: 1.0.0
+input_columns:
+  OFFICER: STRING
+  LAST_NAME: STRING
+  FIRST_NAME: STRING
+  NAME_SUFFIX: STRING
+  EMAIL: STRING
+  ALIAS_LIST: STRING
+unused_columns: []
+# validate_email_or_null returns EMAIL only if it passes the IdentityEmail
+# validator, so a junk email leaves this variable null.
+variables:
+  - valid_email:
+      $custom:
+        $function: contact_info_custom_parsers.validate_email_or_null
+        $args:
+          email: EMAIL
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: OFFICER
+          id_type: $literal("US_ND_DOCSTARS_OFFICER")
+      # A null valid_email omits the email id rather than crashing entity
+      # construction.
+      - $conditional:
+          - $if:
+              $not_null: $variable(valid_email)
+            $then:
+              IdentityExternalId:
+                external_id: $variable(valid_email)
+                id_type: $literal("US_ND_DOCSTARS_EMAIL")
+    person_type: $literal_enum(PersonType.STAFF)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX
+        # The compiler drops a contact entity whose key field is null, so a
+        # junk email is omitted rather than crashing the strict IdentityEmail
+        # validator.
+        emails:
+          - IdentityEmail:
+              address: $variable(valid_email)
+        # Alternate names pulled out of the raw name columns (e.g. a
+        # parenthetical nickname in an officer's first name) by the view.
+        aliases:
+          - $foreach:
+              $iterable:
+                $split_json: ALIAS_LIST
+              $result:
+                IdentityAlias:
+                  given_name:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: given_name
+                            $json: $iter_item
+                  surname:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: surname
+                            $json: $iter_item
+                  name_use: $literal_enum(NameUse.ALIAS)

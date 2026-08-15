@@ -18,6 +18,8 @@
 
 import unittest
 
+import attr
+
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
@@ -103,6 +105,8 @@ class TestGetEnumCls(_IdentityDelegateTestBase):
 
 
 class TestGetFilterIfAllNullFields(_IdentityDelegateTestBase):
+    """Tests get_filter_if_all_null_fields for each identity entity type."""
+
     def test_returns_empty_for_unfiltered_entity(self) -> None:
         self.assertEqual(
             [], self.delegate.get_filter_if_all_null_fields(IdentityFragment)
@@ -122,6 +126,25 @@ class TestGetFilterIfAllNullFields(_IdentityDelegateTestBase):
         self.assertEqual(
             ["given_name", "middle_name", "surname", "name_suffix"],
             self.delegate.get_filter_if_all_null_fields(IdentityAlias),
+        )
+
+    def test_filters_identity_name_on_name_parts(self) -> None:
+        self.assertEqual(
+            ["given_name", "preferred_name", "middle_name", "surname", "name_suffix"],
+            self.delegate.get_filter_if_all_null_fields(IdentityName),
+        )
+
+    def test_identity_attributes_filter_covers_every_attribute_field(self) -> None:
+        """A newly added attribute field must join the filter list; a field the
+        list misses would wrongly drop an attributes object carrying only that
+        field."""
+        expected_fields = {field.name for field in attr.fields(IdentityAttributes)} - {
+            "tenant",
+            "fragment",
+        }
+        self.assertEqual(
+            expected_fields,
+            set(self.delegate.get_filter_if_all_null_fields(IdentityAttributes)),
         )
 
 

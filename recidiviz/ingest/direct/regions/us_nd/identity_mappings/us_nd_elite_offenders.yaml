@@ -1,0 +1,140 @@
+# Identity mapping for the US_ND elite_offenders (facilities) data source.
+# Each row produces one JII IdentityFragment. Ethnicity is asserted only when the
+# Elite race codes affirmatively indicate Hispanic; otherwise it is left null.
+manifest_language: 1.0.0
+input_columns:
+  ROOT_OFFENDER_ID: STRING
+  FIRST_NAME: STRING
+  LAST_NAME: STRING
+  NAME_SUFFIX: STRING
+  BIRTH_DATE: DATE
+  SEX_CODE: STRING
+  RACE_CODE_LIST: STRING
+  HISPANIC_INDICATOR: STRING
+  ALIAS_LIST: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+    person_type: $literal_enum(PersonType.JII)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX
+        birthdate: BIRTH_DATE
+        sex:
+          IdentitySex:
+            sex:
+              $enum_mapping:
+                $raw_text: SEX_CODE
+                $mappings:
+                  Sex.MALE: "M"
+                  Sex.FEMALE: "F"
+        races:
+          - $foreach:
+              $iterable: RACE_CODE_LIST
+              $result:
+                IdentityRace:
+                  race:
+                    $enum_mapping:
+                      $raw_text: $iter_item
+                      $mappings:
+                        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: NAT
+                        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAW
+                        Race.ASIAN: ASIAN
+                        Race.BLACK:
+                          - BLACK
+                          - AFRICAN_AMER
+                        Race.WHITE: CAUCASIAN
+                        Race.OTHER: MUL
+                      $ignore:
+                        - HIS # Hispanic - captured as ethnicity below, not race.
+        ethnicity:
+          $conditional:
+            - $if:
+                $equal:
+                  - HISPANIC_INDICATOR
+                  - $literal("HISPANIC")
+              $then:
+                IdentityEthnicity:
+                  ethnicity:
+                    $enum_mapping:
+                      $raw_text: HISPANIC_INDICATOR
+                      $mappings:
+                        Ethnicity.HISPANIC: HISPANIC
+        # Alternate names from two sources: elite_alias rows, which carry their
+        # raw ALIAS_NAME_TYPE, and alternates the view pulls out of the primary
+        # name, which get a synthesized 'A' type. Each type resolves to a
+        # NameUse; a missing type maps to ALIAS and unmapped types fall back to
+        # INTERNAL_UNKNOWN.
+        aliases:
+          - $foreach:
+              $iterable:
+                $split_json: ALIAS_LIST
+              $result:
+                IdentityAlias:
+                  given_name:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: given_name
+                            $json: $iter_item
+                  middle_name:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: middle_name
+                            $json: $iter_item
+                  surname:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_part_or_null
+                      $args:
+                        name:
+                          $json_extract:
+                            $key: surname
+                            $json: $iter_item
+                  name_suffix:
+                    $custom:
+                      $function: name_custom_parsers.clean_name_suffix_or_null
+                      $args:
+                        suffix:
+                          $json_extract:
+                            $key: name_suffix
+                            $json: $iter_item
+                  name_use:
+                    $enum_mapping:
+                      $raw_text:
+                        $json_extract:
+                          $key: alias_type
+                          $json: $iter_item
+                      $mappings:
+                        NameUse.FORMER: M
+                        NameUse.ALIAS:
+                          - A
+                          - O
+                          - N
+                          - G
+                          - CN
+                      $map_null_to: $literal_enum(NameUse.ALIAS)
