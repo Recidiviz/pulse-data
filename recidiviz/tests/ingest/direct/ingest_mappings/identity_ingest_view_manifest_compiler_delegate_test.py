@@ -25,9 +25,11 @@ from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compi
 )
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
+    IdentityEmail,
     IdentityExternalId,
     IdentityFragment,
     IdentityName,
+    IdentityPhoneNumber,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
@@ -44,6 +46,11 @@ class _IdentityDelegateTestBase(unittest.TestCase):
                 region_module=fake_regions,
             )
         )
+
+
+class TestGetCommonArgs(_IdentityDelegateTestBase):
+    def test_returns_tenant(self) -> None:
+        self.assertEqual({"tenant": Tenant.US_XX}, self.delegate.get_common_args())
 
 
 class TestGetEntityCls(_IdentityDelegateTestBase):
@@ -94,14 +101,19 @@ class TestGetEnumCls(_IdentityDelegateTestBase):
             self.delegate.get_enum_cls("NonexistentEnum")
 
 
-class TestGetCommonArgs(_IdentityDelegateTestBase):
-    def test_returns_tenant(self) -> None:
-        self.assertEqual({"tenant": Tenant.US_XX}, self.delegate.get_common_args())
-
-
 class TestGetFilterIfNullField(_IdentityDelegateTestBase):
-    def test_returns_none(self) -> None:
+    def test_returns_none_for_non_contact_entity(self) -> None:
         self.assertIsNone(self.delegate.get_filter_if_null_field(IdentityFragment))
+
+    def test_filters_identity_email_on_address(self) -> None:
+        self.assertEqual(
+            "address", self.delegate.get_filter_if_null_field(IdentityEmail)
+        )
+
+    def test_filters_identity_phone_number_on_number(self) -> None:
+        self.assertEqual(
+            "number", self.delegate.get_filter_if_null_field(IdentityPhoneNumber)
+        )
 
 
 class TestIsJsonField(_IdentityDelegateTestBase):

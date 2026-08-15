@@ -73,19 +73,6 @@ from recidiviz.utils.environment import in_ci
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
 
-class StateIngestViewAndMappingTestCaseMeta(abc.ABCMeta):
-    def __new__(
-        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
-    ) -> Any:
-        # Don't enforce the rule on the StateIngestViewTestCase itself
-        if cls_name not in ("StateIngestViewAndMappingTestCase",):
-            if attributes.get("__test__", False) is not True:
-                raise TypeError(
-                    f"Class {cls_name} must explicitly set `__test__ = True`."
-                )
-        return super().__new__(mcs, cls_name, bases, attributes)
-
-
 def lint_ingest_view_query(
     ingest_view: DirectIngestViewQueryBuilder,
     query_run_dt: datetime.datetime,
@@ -143,6 +130,23 @@ def check_ingest_view_ctes_are_documented(
                 f"Query {ingest_view_name} has all CTEs documented - please remove "
                 f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
             )
+
+
+class StateIngestViewAndMappingTestCaseMeta(abc.ABCMeta):
+    def __new__(
+        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
+    ) -> Any:
+        # A class that explicitly sets __test__ in its own body has made a
+        # deliberate choice about discovery: True to run, False to opt out (as
+        # the abstract base classes and intermediate per-state bases do). Only a
+        # concrete subclass that forgot to set it at all is an error, since it
+        # would silently fail to run.
+        if "__test__" not in attributes:
+            raise TypeError(
+                f"Class {cls_name} must explicitly set `__test__` "
+                f"(True to run, False to opt out of discovery)."
+            )
+        return super().__new__(mcs, cls_name, bases, attributes)
 
 
 class StateIngestViewAndMappingTestCase(

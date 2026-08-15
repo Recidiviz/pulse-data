@@ -18,12 +18,17 @@
 import datetime
 import unittest
 
+from recidiviz.common.constants.name_suffixes import (
+    CANONICAL_NAME_SUFFIXES,
+    EMBEDDED_NAME_SUFFIX_TOKENS,
+)
 from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.signals import (
     are_dobs_in_conflict,
     are_given_names_in_conflict,
     are_middle_names_in_conflict,
     are_name_suffixes_in_conflict,
     are_surnames_in_conflict,
+    canonical_suffix,
     names_match_exactly,
     names_match_loosely,
     normalize_name,
@@ -644,6 +649,28 @@ class TestNormalizeName(unittest.TestCase):
     def test_collapses_apostrophe(self) -> None:
         self.assertEqual("O BRIEN", normalize_name("O'Brien"))
 
+    def test_canonicalizes_st_to_saint(self) -> None:
+        # "ST" as a whole token expands to SAINT, so abbreviated and spelled-out
+        # forms compare equal (ST CLAIRE == SAINT CLAIRE).
+        self.assertEqual("SAINT CLAIRE", normalize_name("St Claire"))
+        self.assertEqual("SAINT CLAIRE", normalize_name("St. Claire"))
+        self.assertEqual("SAINT CLAIRE", normalize_name("Saint Claire"))
+        self.assertEqual("MARY SAINT JOHN", normalize_name("Mary St John"))
+        # Only a whole "ST" token expands; letters that merely contain "st" are
+        # untouched, so no false expansion.
+        self.assertEqual("STANLEY", normalize_name("Stanley"))
+        self.assertEqual("FIRST", normalize_name("First"))
+
+    def test_unspaced_st_surname_does_not_expand(self) -> None:
+        # A known tradeoff of the ST expansion: the unspaced form of a
+        # SAINT-surname keeps its compact spelling, so "ST JOHN" (-> SAINT
+        # JOHN) and "STJOHN" compare as different surnames even when they name
+        # the same person. No current US_ND pair hits this; if one surfaces,
+        # the fix must compare the pre-expansion compact forms (compacting the
+        # expanded forms still leaves SAINTJOHN vs STJOHN in conflict).
+        self.assertEqual("STJOHN", normalize_name("StJohn"))
+        self.assertEqual("SAINT JOHN", normalize_name("St John"))
+
     def test_removes_accents(self) -> None:
         self.assertEqual("JOSE", normalize_name("José"))
         self.assertEqual("MUNOZ", normalize_name("Muñoz"))
@@ -659,3 +686,17 @@ class TestNormalizeName(unittest.TestCase):
 
     def test_none_normalizes_to_empty(self) -> None:
         self.assertEqual("", normalize_name(None))
+
+
+class TestSuffixVocabularyIsSingleSourced(unittest.TestCase):
+    """Proves that the shared name_suffixes constants drive the suffix
+    vocabulary signals.py reasons about, so the clustering pipeline and the
+    ingest-view name cleaning cannot drift apart."""
+
+    def test_canonical_suffix_uses_shared_map(self) -> None:
+        for raw, expected_canonical in CANONICAL_NAME_SUFFIXES.items():
+            self.assertEqual(expected_canonical, canonical_suffix(raw))
+
+    def test_every_shared_embedded_token_strips_out_of_a_name(self) -> None:
+        for token in EMBEDDED_NAME_SUFFIX_TOKENS:
+            self.assertEqual("SMITH", normalize_name(f"SMITH {token}"))

@@ -30,21 +30,24 @@ import unicodedata
 
 import Levenshtein
 
+from recidiviz.common.constants.name_suffixes import (
+    CANONICAL_NAME_SUFFIXES,
+    EMBEDDED_NAME_SUFFIX_TOKENS,
+)
 from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.nickname_equivalence import (
     are_names_nickname_equivalent,
 )
 
 _PARENTHETICAL_PATTERN = re.compile(r"\([^)]*\)")
-# Compact suffix tokens stripped when they appear embedded in a name field
-# ("JAMES JR" -> "JAMES"). Deliberately curated rather than derived from every
-# spelling in _CANONICAL_SUFFIXES below: forms like "FIRST" and "SENIOR" are
-# plausible surnames, and a bare "I" is too ambiguous to strip from a name. The
-# consistency check after _CANONICAL_SUFFIXES keeps this set from drifting out
-# of the recognized suffix vocabulary.
-_EMBEDDED_SUFFIX_TOKENS: tuple[str, ...] = ("JR", "SR", "II", "III", "IV", "V")
-_EMBEDDED_SUFFIX_PATTERN = re.compile(rf"\b(?:{'|'.join(_EMBEDDED_SUFFIX_TOKENS)})\b")
+_EMBEDDED_SUFFIX_PATTERN = re.compile(
+    rf"\b(?:{'|'.join(EMBEDDED_NAME_SUFFIX_TOKENS)})\b"
+)
 _NON_ALPHA_PATTERN = re.compile(r"[^A-Z ]")
 _WHITESPACE_PATTERN = re.compile(r"\s+")
+
+# Matches "ST" as a whole token; normalize_name expands it to "SAINT" so
+# "ST CLAIRE" and "SAINT CLAIRE" compare equal.
+_SAINT_ABBREVIATION_PATTERN = re.compile(r"\bST\b")
 
 # Levenshtein distance on the normalized surname above which surnames
 # genuinely conflict.
@@ -71,49 +74,6 @@ _DOB_LEVENSHTEIN_THRESHOLD = 2
 # means a mistyped year digit that moves the birthdate a decade or a century,
 # so it is excused only when the names vouch for the pair.
 _DOB_UNGATED_YEAR_GAP = 1
-
-# Canonical forms of free-form name suffixes: every way of writing "the
-# second holder of the name" (JR, Junior, II, 2nd) canonicalizes to II, and
-# every way of writing "the elder" (SR, Senior, I) to I, since sources use
-# them interchangeably for the same person. Genuinely different canonical
-# suffixes (II vs I, II vs III) stay in conflict; they usually mean two
-# generations sharing IDs.
-_CANONICAL_SUFFIXES: dict[str, str] = {
-    "SR": "I",
-    "SENIOR": "I",
-    "1": "I",
-    "1ST": "I",
-    "FIRST": "I",
-    "I": "I",
-    "JR": "II",
-    "JUNIOR": "II",
-    "2": "II",
-    "2ND": "II",
-    "SECOND": "II",
-    "II": "II",
-    "3": "III",
-    "3RD": "III",
-    "THIRD": "III",
-    "III": "III",
-    "4": "IV",
-    "4TH": "IV",
-    "FOURTH": "IV",
-    "IV": "IV",
-    "5": "V",
-    "5TH": "V",
-    "FIFTH": "V",
-    "V": "V",
-}
-
-# The embedded-suffix tokens must all be recognized suffixes, so the strip
-# pattern and the canonical map cannot drift apart (e.g. adding "V" to one but
-# not the other).
-if not set(_EMBEDDED_SUFFIX_TOKENS) <= _CANONICAL_SUFFIXES.keys():
-    raise ValueError(
-        f"Embedded suffix tokens "
-        f"{sorted(set(_EMBEDDED_SUFFIX_TOKENS) - _CANONICAL_SUFFIXES.keys())} are "
-        f"not recognized suffixes in _CANONICAL_SUFFIXES."
-    )
 
 
 def names_match_exactly(name_a: str | None, name_b: str | None) -> bool:
@@ -285,19 +245,28 @@ def are_dobs_in_conflict(
 
 
 def normalize_name(raw_name: str | None) -> str:
-    """Returns the normalized form used by every name comparison: uppercased,
-    accented letters replaced with their base letters (JOSE for JOSE with an
-    accented E), parenthetical aliases and embedded suffix tokens removed,
-    punctuation (hyphens included) collapsed to single spaces. Returns the
-    empty string for a missing name. An embedded suffix is not removed when it
-    is the whole name, so a name that is only a suffix token (a surname of just
-    "JR", say) does not normalize away to empty."""
+    """Returns the normalized form used by every name comparison. Specifically
+    it:
+
+    - uppercases the name;
+    - replaces accented letters with their base letters (JOSE for JOSE with an
+      accented E);
+    - removes parenthetical aliases and embedded suffix tokens;
+    - collapses punctuation (hyphens included) to single spaces;
+    - canonicalizes the whole token "ST" to "SAINT" (so "ST CLAIRE" and
+      "SAINT CLAIRE" compare equal).
+
+    Returns the empty string for a missing name. An embedded suffix is not
+    removed when it is the whole name, so a surname of just "JR" does not
+    normalize away to empty.
+    """
     if raw_name is None:
         return ""
     name = _remove_accents(raw_name.upper())
     name = _PARENTHETICAL_PATTERN.sub(" ", name)
     without_suffix = _strip_non_alpha(_EMBEDDED_SUFFIX_PATTERN.sub(" ", name))
-    return without_suffix or _strip_non_alpha(name)
+    result = without_suffix or _strip_non_alpha(name)
+    return _SAINT_ABBREVIATION_PATTERN.sub("SAINT", result)
 
 
 def canonical_suffix(raw_suffix: str | None) -> str:
@@ -309,7 +278,7 @@ def canonical_suffix(raw_suffix: str | None) -> str:
     stripped = re.sub(r"[^A-Z0-9]", "", raw_suffix.upper())
     # .get rather than []: unrecognized forms are expected in free-form data
     # and simply compare as themselves.
-    return _CANONICAL_SUFFIXES.get(stripped, stripped)
+    return CANONICAL_NAME_SUFFIXES.get(stripped, stripped)
 
 
 def _is_token_subset(normalized_a: str, normalized_b: str) -> bool:
