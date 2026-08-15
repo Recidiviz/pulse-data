@@ -469,9 +469,13 @@ def is_valid_email(instance: Any, attribute: attr.Attribute, value: str) -> None
         )
 
 
-# Unicode letters (via [^\W_], which is \w minus underscore) plus hyphen,
-# apostrophe, period, and whitespace.
-_NAME_PART_CHARS_PATTERN = re.compile(r"(?:[^\W\d_]|[\-'.\s])*")
+# A single character permitted in a name part: a Unicode letter (via [^\W\d_],
+# which is \w minus digits and underscore), hyphen, apostrophe, period, or
+# whitespace.
+NAME_PART_CHAR_PATTERN = re.compile(r"[^\W\d_]|[\-'.\s]")
+
+# A whole name part: any number of permitted characters.
+_WHOLE_NAME_PART_PATTERN = re.compile(rf"(?:{NAME_PART_CHAR_PATTERN.pattern})*")
 
 
 def is_opt_valid_name_part(
@@ -498,7 +502,7 @@ def is_valid_name_part(instance: Any, attribute: attr.Attribute, value: str) -> 
             f"Expected str for [{attribute.name}] on [{type(instance).__name__}], "
             f"found [{type(value).__name__}]."
         )
-    if not _NAME_PART_CHARS_PATTERN.fullmatch(value):
+    if not _WHOLE_NAME_PART_PATTERN.fullmatch(value):
         raise ValueError(
             f"Field [{attribute.name}] on [{type(instance).__name__}] must contain "
             f"only letters, hyphens, apostrophes, periods, and whitespace. "
@@ -510,9 +514,13 @@ def is_valid_name_part(instance: Any, attribute: attr.Attribute, value: str) -> 
 # like "Jr., MD") fit comfortably under 10 characters.)
 MAX_NAME_SUFFIX_LENGTH = 10
 
-# Unicode letters/digits (via [^\W_], which is \w minus underscore) plus
-# period, comma, hyphen, and whitespace.
-_NAME_SUFFIX_CHARS_PATTERN = re.compile(r"(?:[^\W_]|[.,\-\s])*")
+# A single character permitted in a name suffix: a Unicode letter or digit (via
+# [^\W_], which is \w minus underscore), period, comma, hyphen, or whitespace.
+# Digits are permitted here but not in a name part, so "3RD" and "2" survive.
+NAME_SUFFIX_CHAR_PATTERN = re.compile(r"[^\W_]|[.,\-\s]")
+
+# A whole name suffix: any number of permitted characters.
+_WHOLE_NAME_SUFFIX_PATTERN = re.compile(rf"(?:{NAME_SUFFIX_CHAR_PATTERN.pattern})*")
 
 
 def is_opt_valid_name_suffix(
@@ -542,7 +550,7 @@ def is_valid_name_suffix(instance: Any, attribute: attr.Attribute, value: str) -
             f"more than {MAX_NAME_SUFFIX_LENGTH} characters. Found [{value}] "
             f"({len(value)} chars)."
         )
-    if not _NAME_SUFFIX_CHARS_PATTERN.fullmatch(value):
+    if not _WHOLE_NAME_SUFFIX_PATTERN.fullmatch(value):
         raise ValueError(
             f"Field [{attribute.name}] on [{type(instance).__name__}] must contain "
             f"only letters, digits, periods, commas, hyphens, and whitespace. "
