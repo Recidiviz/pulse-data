@@ -26,16 +26,30 @@ import signal
 
 from gevent import config
 
-# Turn this off by default as it may block the cpu itself: gevent/gevent#1665
-config.monitor_thread = os.environ.get("MONITOR_THREAD", False)
+
+def _env_flag(name: str, *, default: bool) -> bool:
+    """Returns the boolean value of the |name| environment variable.
+
+    An unset variable resolves to |default|. Anything else is read as a boolean,
+    so that e.g. MONITOR_THREAD=0 turns the flag off rather than on (a bare
+    os.environ.get() would return the truthy string "0").
+    """
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in ("", "0", "false", "no")
+
+
+# The monitor thread logs a warning, with a greenlet stack, whenever the hub stays
+# blocked for longer than max_blocking_time. That is our only signal for a greenlet
+# stalling a whole worker on non-cooperative I/O, so it is on by default. It was
+# previously disabled over gevent/gevent#1665, which has since been resolved.
+config.monitor_thread = _env_flag("MONITOR_THREAD", default=True)
 config.max_blocking_time = 5  # 5 seconds
 config.max_memory_usage = 4 * 1024 * 1024 * 1024  # 4 GiB
 config.memory_monitor_period = 60  # 1 minute
 
-# TODO(#1467): remove
-os.environ["GRPC_DNS_RESOLVER"] = "native"
-
-MEMORY_DEBUG = os.environ.get("MEMORY_DEBUG", False)
+MEMORY_DEBUG = _env_flag("MEMORY_DEBUG", default=False)
 
 # pylint: disable=wrong-import-position
 from gunicorn.workers.ggevent import GeventWorker
