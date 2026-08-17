@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screens` to the
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  DRG_ID: STRING
+  DRG_SID_NO: STRING
+  collection_date: DATE
+  DRG_TEST_RESULT: STRING
+  medication_reported: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DRG_SID_NO
+          id_type: $literal("US_TX_SID")
+    drug_screens:
+      - StateDrugScreen:
+          external_id: DRG_ID
+          drug_screen_date: collection_date
+          # Codes from the DRUG_TEST_RESULTS category of DRUG_TEST_RESULTDescription.
+          drug_screen_result:
+            $enum_mapping:
+              $raw_text: DRG_TEST_RESULT
+              $mappings:
+                StateDrugScreenResult.POSITIVE:
+                  - "1" # Positive
+                StateDrugScreenResult.NEGATIVE:
+                  - "2" # Negative
+                StateDrugScreenResult.ADMITTED_POSITIVE:
+                  - "5" # Admitted
+                StateDrugScreenResult.NO_RESULT:
+                  - "3" # Not Collected
+                  - "4" # Not Tested
+                StateDrugScreenResult.INTERNAL_UNKNOWN:
+                  # Undocumented; only appears where DRG_TEST_CMPLT_FLG is 0.
+                  - "0"
+          # TDCJ does not tell us what specimen was collected or which substances were
+          # screened for, so sample_type is not hydrated.
+          drug_screen_metadata:
+            $normalized_values_json_dict:
+              medication_reported: medication_reported
