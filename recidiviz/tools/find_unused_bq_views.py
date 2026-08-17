@@ -53,6 +53,9 @@ from recidiviz.calculator.query.state.views.analyst_data.population_density_by_s
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_certificate_awards_to_sentence_credits import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
 )
@@ -299,6 +302,11 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New tasks snooze status archive view. "
         "Downstream work is tracked in OBT-39438. (Daniel McLaughlin, 2026-07-29)"
+    ),
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER.address: (
+        "New CO certificate-to-sentence-credit reconciliation view, consumed directly "
+        "by the AET retroactive-credit research notebook rather than a tracked "
+        "downstream BQ view. Tracked in OBT-29669. (Jessica Liu, 2026-08-04)"
     ),
     **{
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
