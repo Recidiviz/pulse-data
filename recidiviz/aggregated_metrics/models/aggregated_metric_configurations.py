@@ -3365,6 +3365,36 @@ DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS = [
 ]
 
 
+PERSON_DAYS_IN_SYSTEM = SumSpanDaysMetric(
+    name="person_days_in_system",
+    display_name="Person-Days in the System",
+    description="Total number of person-days spent in the population",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+PERSON_DAYS_INCARCERATED = SumSpanDaysMetric(
+    name="person_days_incarcerated",
+    display_name="Person-Days Incarcerated",
+    description="Total number of person-days spent incarcerated",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["INCARCERATION"]},
+    ),
+)
+
+PERSON_DAYS_SUPERVISED = SumSpanDaysMetric(
+    name="person_days_supervised",
+    display_name="Person-Days on Supervision",
+    description="Total number of person-days spent on supervision",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["SUPERVISION"]},
+    ),
+)
+
 PERSON_DAYS_TASK_ELIGIBLE = SumSpanDaysMetric(
     name="person_days_task_eligible",
     display_name="Person-Days Eligible for Opportunity",

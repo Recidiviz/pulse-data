@@ -62,6 +62,7 @@ INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
 
 INSIGHTS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION,
+    metric_config.PERSON_DAYS_SUPERVISED,
     metric_config.AVG_DAILY_POPULATION_PAROLE,
     metric_config.AVG_DAILY_POPULATION_PROBATION,
     # All outcome metrics reference in outliers configs
