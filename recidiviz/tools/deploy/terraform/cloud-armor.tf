@@ -198,6 +198,17 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     }
   }
 
+  rule {
+    description = "Allow Home Contact Route Planner to send parantheses via the email_user route which is currently triggering OWASP false positives"
+    action      = "allow"
+    priority    = "904"
+    match {
+      expr {
+        expression = "request.path.matches(\"/workflows/external_request/*/email_user\") && (request.body.contains('(') || request.body.contains(')'))"
+      }
+    }
+  }
+
   # ----------------------------------------------
   # Static hosts to block
   # ----------------------------------------------
