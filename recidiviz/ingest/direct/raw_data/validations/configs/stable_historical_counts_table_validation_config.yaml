@@ -113,6 +113,16 @@ custom:
 
   US_TN:
     file_tags:
+      PhotoIDRequest:
+        tolerance_override:
+          percent_change_tolerance: 0.3
+          reason:
+            "TN's export intermittently includes a machine-generated block of
+            ~19.4k pending photo ID request rows, one per person in a
+            currently-incarcerated subpopulation, which then drops back out of
+            the file a few days later. This has happened at least four times
+            since November 2025 (a +19.4k to +19.6k swing each time), so both
+            the jump (+26%) and the drop (-21%) are expected."
       VantagePointProgram:
         date_range_exclusions:
           - datetime_start_inclusive: "2022-03-22T00:00:00Z"
