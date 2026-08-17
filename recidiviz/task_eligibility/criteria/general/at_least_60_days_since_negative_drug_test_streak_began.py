@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when at least 2 months have passed since the start of
+"""Describes the spans of time when at least 60 days have passed since the start of
 a client's current negative-drug-test streak (i.e., since the first negative test
 following their most recent positive test).
 """
@@ -30,9 +30,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     on_negative_drug_screen_streak(
-        date_interval=2,
-        date_part="MONTH",
-        criteria_name="AT_LEAST_2_MONTHS_SINCE_NEGATIVE_DRUG_TEST_STREAK_BEGAN",
+        date_interval=60,
+        date_part="DAY",
+        criteria_name="AT_LEAST_60_DAYS_SINCE_NEGATIVE_DRUG_TEST_STREAK_BEGAN",
     )
 )
 
