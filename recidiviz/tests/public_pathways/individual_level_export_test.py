@@ -17,11 +17,17 @@
 """Tests for individual_level_export.py to ensure no PII columns are included and
 that raw internal codes are translated to display labels matching the dashboard."""
 
+import datetime
 import json
 import unittest
+from unittest import mock
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.public_pathways.individual_level_export import (
     INCLUDED_INDIVIDUAL_LEVEL_COLUMNS,
+    _append_sentence_length_months_suffix,
+    _cache_key,
+    _cache_key_revision,
     _translate_row,
     _translate_value,
     build_label_maps,
@@ -97,7 +103,7 @@ class TestTranslateValue(unittest.TestCase):
 class TestBuildLabelMaps(unittest.TestCase):
     """Tests for build_label_maps."""
 
-    def test_parses_dynamic_filter_options_and_includes_time_period(self) -> None:
+    def test_parses_dynamic_filter_options(self) -> None:
         dynamic_filter_options_json = json.dumps(
             {
                 "facility_id_name_map": json.dumps(
@@ -125,17 +131,9 @@ class TestBuildLabelMaps(unittest.TestCase):
 
         label_maps = build_label_maps(dynamic_filter_options_json)
 
-        self.assertEqual(
-            {
-                "months_0_6": "6 months",
-                "months_7_12": "1 year",
-                "months_13_24": "2 years",
-                "months_25_60": "5 years",
-            },
-            label_maps["time_period"],
-        )
         self.assertEqual({"FACILITY_A": "Facility A"}, label_maps["facility"])
         self.assertNotIn("ethnicity", label_maps)
+        self.assertNotIn("time_period", label_maps)
 
     def test_accepts_already_parsed_dict(self) -> None:
         """Local dev fixtures (tools/shared_pathways/load_fixtures.py) insert
@@ -176,7 +174,26 @@ class TestBuildLabelMaps(unittest.TestCase):
 
         self.assertNotIn("facility", label_maps)
         self.assertNotIn("race", label_maps)
-        self.assertEqual("6 months", label_maps["time_period"]["months_0_6"])
+
+
+class TestAppendSentenceLengthMonthsSuffix(unittest.TestCase):
+    """Tests for _append_sentence_length_months_suffix."""
+
+    def test_appends_suffix_to_duration_label(self) -> None:
+        self.assertEqual("12-17 months", _append_sentence_length_months_suffix("12-17"))
+        self.assertEqual("240+ months", _append_sentence_length_months_suffix("240+"))
+
+    def test_leaves_non_duration_labels_unchanged(self) -> None:
+        self.assertEqual("Life", _append_sentence_length_months_suffix("Life"))
+        self.assertEqual(
+            "Life, no parole", _append_sentence_length_months_suffix("Life, no parole")
+        )
+        self.assertEqual(
+            "Not Coded", _append_sentence_length_months_suffix("Not Coded")
+        )
+
+    def test_leaves_none_unchanged(self) -> None:
+        self.assertIsNone(_append_sentence_length_months_suffix(None))
 
 
 class TestTranslateRow(unittest.TestCase):
@@ -191,3 +208,101 @@ class TestTranslateRow(unittest.TestCase):
             ["US_NY", "Facility A", "25-29"],
             _translate_row(row, column_names=column_names, label_maps=label_maps),
         )
+
+    def test_appends_months_suffix_to_translated_sentence_length(self) -> None:
+        column_names = ["state_code", "sentence_length_min", "sentence_length_max"]
+        label_maps = {
+            "sentence_length_min": {"12-17 MONTHS": "12-17"},
+            "sentence_length_max": {"LIFE, NO PAROLE": "Life, no parole"},
+        }
+        row = ["US_NY", "12-17 MONTHS", "LIFE, NO PAROLE"]
+
+        self.assertEqual(
+            ["US_NY", "12-17 months", "Life, no parole"],
+            _translate_row(row, column_names=column_names, label_maps=label_maps),
+        )
+
+    def test_leaves_untranslated_sentence_length_unsuffixed(self) -> None:
+        """A raw sentence-length code with no entry in the label map (e.g. the map
+        is stale, or the column has no label map at all) falls back to the raw
+        value unchanged: no " months" suffix, to avoid producing something like
+        "48-71 MONTHS months" for a value that's already unit-bearing."""
+        column_names = ["state_code", "sentence_length_min"]
+        label_maps = {"sentence_length_min": {"12-17 MONTHS": "12-17"}}
+        row = ["US_NY", "48-71 MONTHS"]
+
+        self.assertEqual(
+            ["US_NY", "48-71 MONTHS"],
+            _translate_row(row, column_names=column_names, label_maps=label_maps),
+        )
+
+    def test_leaves_sentence_length_unsuffixed_when_no_label_map_at_all(self) -> None:
+        column_names = ["state_code", "sentence_length_max"]
+        label_maps: dict[str, dict[str, str]] = {}
+        row = ["US_NY", "72-95 MONTHS"]
+
+        self.assertEqual(
+            ["US_NY", "72-95 MONTHS"],
+            _translate_row(row, column_names=column_names, label_maps=label_maps),
+        )
+
+
+class TestCacheKeyRevision(unittest.TestCase):
+    """Tests for _cache_key_revision and its use in _cache_key."""
+
+    @mock.patch(
+        "recidiviz.public_pathways.individual_level_export.in_cloud_run",
+        return_value=False,
+    )
+    def test_returns_local_placeholder_outside_cloud_run(
+        self, _mock_in_cloud_run: mock.MagicMock
+    ) -> None:
+        self.assertEqual("local", _cache_key_revision())
+
+    @mock.patch("recidiviz.public_pathways.individual_level_export.CloudRunEnvironment")
+    @mock.patch(
+        "recidiviz.public_pathways.individual_level_export.in_cloud_run",
+        return_value=True,
+    )
+    def test_returns_revision_name_in_cloud_run(
+        self,
+        _mock_in_cloud_run: mock.MagicMock,
+        mock_cloud_run_environment: mock.MagicMock,
+    ) -> None:
+        mock_cloud_run_environment.get_revision_name.return_value = (
+            "public-pathways-server-00042-abc"
+        )
+
+        self.assertEqual("public-pathways-server-00042-abc", _cache_key_revision())
+
+    @mock.patch(
+        "recidiviz.public_pathways.individual_level_export._cache_key_revision",
+        return_value="rev-1",
+    )
+    def test_cache_key_includes_revision(
+        self, _mock_cache_key_revision: mock.MagicMock
+    ) -> None:
+        self.assertEqual(
+            "US_NY individual_level_export 2022-08-03 rev-1",
+            _cache_key(
+                state_code=StateCode.US_NY,
+                last_updated=datetime.date(2022, 8, 3),
+            ),
+        )
+
+    @mock.patch(
+        "recidiviz.public_pathways.individual_level_export._cache_key_revision",
+        return_value="rev-1",
+    )
+    def test_different_revisions_produce_different_keys(
+        self, mock_cache_key_revision: mock.MagicMock
+    ) -> None:
+        first_key = _cache_key(
+            state_code=StateCode.US_NY, last_updated=datetime.date(2022, 8, 3)
+        )
+        mock_cache_key_revision.return_value = "rev-2"
+        second_key = _cache_key(
+            state_code=StateCode.US_NY, last_updated=datetime.date(2022, 8, 3)
+        )
+
+        self.assertNotEqual(first_key, second_key)

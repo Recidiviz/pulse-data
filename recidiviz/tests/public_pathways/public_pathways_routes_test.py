@@ -367,15 +367,14 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                 {
                     "state_code": "US_XX",
                     "date_in_population": "2022-01-01",
-                    "time_period": "6 months",
                     "age_group": "25-29",
                     "facility": "F1",
                     "sex": "MALE",
                     "race": "WHITE",
                     "ethnicity": "NOT_HISPANIC",
                     "months_at_facility": "3_5_MONTHS",
-                    "sentence_length_min": "48-71 MONTHS",
-                    "sentence_length_max": "72-95 MONTHS",
+                    "sentence_length_min_in_months": "48-71 MONTHS",
+                    "sentence_length_max_in_months": "72-95 MONTHS",
                     "charge_county_code": "COUNTY_1",
                     "offense_type": "DRUG OFFENSES",
                     "charge_description": "ALL OTHER FELONIES",
@@ -384,15 +383,14 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                 {
                     "state_code": "US_XX",
                     "date_in_population": "2022-01-01",
-                    "time_period": "6 months",
                     "age_group": "60+",
                     "facility": "F1",
                     "sex": "MALE",
                     "race": "BLACK",
                     "ethnicity": "NOT_HISPANIC",
                     "months_at_facility": "3_5_MONTHS",
-                    "sentence_length_min": "48-71 MONTHS",
-                    "sentence_length_max": "72-95 MONTHS",
+                    "sentence_length_min_in_months": "48-71 MONTHS",
+                    "sentence_length_max_in_months": "72-95 MONTHS",
                     "charge_county_code": "COUNTY_1",
                     "offense_type": "DRUG OFFENSES",
                     "charge_description": "ALL OTHER FELONIES",
@@ -409,7 +407,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, first_response.status_code)
 
-        cache_key = "US_NY individual_level_export 2022-08-03"
+        cache_key = "US_NY individual_level_export 2022-08-03 local"
         self.assertIsNotNone(self.fake_redis.get(cache_key))
 
         # Deleting the underlying rows proves the second request is served from

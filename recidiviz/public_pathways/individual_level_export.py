@@ -37,6 +37,7 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
     PublicPrisonPopulationOverTime,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.environment import CloudRunEnvironment, in_cloud_run
 
 # The only columns ever surfaced in the individual-level export. A new dimension
 # column added to PublicPrisonPopulationOverTime is excluded from the export by
@@ -48,7 +49,6 @@ INCLUDED_INDIVIDUAL_LEVEL_COLUMNS = frozenset(
     {
         "state_code",
         "date_in_population",
-        "time_period",
         "age_group",
         "facility",
         "sex",
@@ -71,16 +71,6 @@ _UNKNOWN_RAW_VALUES = frozenset(
     {"EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN", "PRESENT_WITHOUT_INFO", ""}
 )
 
-# time_period (e.g. "months_0_6") has no server-side id/name map: the dashboard
-# formats it client-side via shared-pathways/src/utils.ts's timePeriodMap composed
-# with timePeriod.ts's formatTimePeriodLabel. Mirrored here for the CSV export.
-_TIME_PERIOD_LABELS: dict[str, str] = {
-    "months_0_6": "6 months",
-    "months_7_12": "1 year",
-    "months_13_24": "2 years",
-    "months_25_60": "5 years",
-}
-
 # Maps each translatable export column to its key within the JSON object stored in
 # MetricMetadata.dynamic_filter_options (see get_pathways_dynamic_filter_options() in
 # recidiviz.calculator.query.state.state_specific_query_strings). Columns not listed
@@ -98,11 +88,37 @@ _DYNAMIC_FILTER_OPTION_KEYS_BY_COLUMN: dict[str, str] = {
     "admission_reason": "admission_reason_id_name_map",
 }
 
+# sentence_length_min/max's translated labels (e.g. "12-17") are bare numeric
+# ranges. Excel and Sheets auto-parse a bare range like "12-17" as a date (it
+# displays as "17-Dec"), so the individual-level export appends " months" to
+# these labels. The shared BigQuery label maps that feed the live dashboard's
+# filter dropdowns (get_pathways_sentence_length_min/max_id_name_map in
+# state_specific_query_strings.py) are left unchanged.
+_SENTENCE_LENGTH_COLUMNS = frozenset({"sentence_length_min", "sentence_length_max"})
+
+# Translated sentence-length labels that describe a sentence type rather than a
+# span of months; these are left as-is instead of getting a " months" suffix.
+_SENTENCE_LENGTH_NON_DURATION_LABELS = frozenset(
+    {"Life", "Life, no parole", "Not Coded"}
+)
+
+# Renames the sentence-length columns' CSV headers to state their unit
+# explicitly (DOCCS found the bare "sentence_length_min"/"_max" ambiguous).
+_EXPORT_COLUMN_HEADER_OVERRIDES: dict[str, str] = {
+    "sentence_length_min": "sentence_length_min_in_months",
+    "sentence_length_max": "sentence_length_max_in_months",
+}
+
 # Number of rows buffered into the SQL cursor per fetch while building the CSV.
 _ROWS_PER_CHUNK = 1000
 
-# Bounds Redis growth from old dated cache keys (see _cache_key): a new import
-# always produces a fresh key, so this is not required for cache correctness.
+# _cache_key()'s revision component outside Cloud Run (local dev, tests, CI),
+# where there is no Cloud Run revision to key off of.
+_NON_CLOUD_RUN_CACHE_REVISION = "local"
+
+# Bounds Redis growth from old dated cache keys (see _cache_key): a new import or
+# a new deploy always produces a fresh key, so this is not required for cache
+# correctness.
 _CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 
 # How far a resolved month snapshot's date_in_population may drift from the 1st of
@@ -113,9 +129,8 @@ _MONTH_SNAPSHOT_WINDOW_DAYS = 15
 
 
 def individual_level_export_columns() -> list[Column]:
-    """Returns the PublicPrisonPopulationOverTime columns included in the
-    individual-level export: INCLUDED_INDIVIDUAL_LEVEL_COLUMNS, in the table's
-    column order.
+    """Returns the INCLUDED_INDIVIDUAL_LEVEL_COLUMNS columns of
+    PublicPrisonPopulationOverTime, in table column order.
     """
     return [
         getattr(PublicPrisonPopulationOverTime, column.name)
@@ -127,9 +142,8 @@ def individual_level_export_columns() -> list[Column]:
 def individual_level_export_filename(
     *, state_code: StateCode, last_updated: date
 ) -> str:
-    """Returns the filename for the individual-level export, stamped with the date
-    the export's snapshot represents for the given state (the most recently
-    received data, or a specific resolved month's snapshot date).
+    """Returns the individual-level export's filename, stamped with state_code and
+    the export's snapshot date.
     """
     return (
         f"{state_code.value.lower()}_individual_level_data_"
@@ -138,9 +152,8 @@ def individual_level_export_filename(
 
 
 def get_metric_metadata(session: Session) -> MetricMetadata:
-    """Returns the MetricMetadata row for PublicPrisonPopulationOverTime, which
-    carries both the last_updated date and the dynamic_filter_options id-to-label
-    maps used to translate the columns in the individual-level export.
+    """Returns the MetricMetadata row for PublicPrisonPopulationOverTime: its
+    last_updated date and dynamic_filter_options label maps.
     """
     return (
         Query(MetricMetadata)
@@ -153,22 +166,12 @@ def get_metric_metadata(session: Session) -> MetricMetadata:
 def build_label_maps(
     dynamic_filter_options: str | dict[str, str | None]
 ) -> dict[str, dict[str, str]]:
-    """Returns a value->label dict per translatable export column: time_period from
-    the static _TIME_PERIOD_LABELS, and the rest parsed out of dynamic_filter_options
-    (a MetricMetadata.dynamic_filter_options value, itself a JSON object whose values
-    are JSON-encoded arrays of {value, label} pairs; see
-    get_pathways_dynamic_filter_options() in state_specific_query_strings.py).
-
-    dynamic_filter_options may come back from SQLAlchemy already parsed into a dict
-    (local dev fixtures are written via tools/shared_pathways/load_fixtures.py's raw
-    SQL INSERT, which lets Postgres parse the JSON text directly into a jsonb object)
-    or as a JSON-encoded string (real state data is written via
-    application_data_import/server.py's SQLAlchemy ORM merge, whose JSONB bind
-    processor re-serializes the already-string value); both shapes are handled here.
-    A key may also be missing entirely rather than present with a null value, e.g. in
-    older or hand-written fixture data predating a since-added dimension.
+    """Returns a value->label dict per translatable export column, parsed out of
+    dynamic_filter_options (see get_pathways_dynamic_filter_options() in
+    state_specific_query_strings.py). Accepts dynamic_filter_options as either a
+    JSON string or an already-parsed dict, and tolerates missing keys.
     """
-    label_maps: dict[str, dict[str, str]] = {"time_period": _TIME_PERIOD_LABELS}
+    label_maps: dict[str, dict[str, str]] = {}
     parsed_dynamic_filter_options: dict[str, str | None] = (
         json.loads(dynamic_filter_options)
         if isinstance(dynamic_filter_options, str)
@@ -183,15 +186,29 @@ def build_label_maps(
     return label_maps
 
 
-def _translate_value(raw_value: str | None, label_map: dict[str, str]) -> str | None:
-    """Returns the display label for raw_value per label_map, treating None and the
-    Pathways "unknown" sentinel values (_UNKNOWN_RAW_VALUES) as the map's "UNKNOWN"
-    entry. Falls back to the raw value itself if it has no entry in the map (e.g. new
-    data ingested since the map was last generated) rather than dropping the row.
+def _label_map_lookup_key(raw_value: str | None) -> str:
+    """Returns the label-map lookup key for raw_value: "UNKNOWN" for
+    None/_UNKNOWN_RAW_VALUES, otherwise raw_value itself.
     """
     if raw_value is None or raw_value in _UNKNOWN_RAW_VALUES:
-        return label_map.get("UNKNOWN", raw_value)
-    return label_map.get(raw_value, raw_value)
+        return "UNKNOWN"
+    return raw_value
+
+
+def _translate_value(raw_value: str | None, label_map: dict[str, str]) -> str | None:
+    """Returns the display label for raw_value per label_map, falling back to
+    raw_value if it has no entry in the map.
+    """
+    return label_map.get(_label_map_lookup_key(raw_value), raw_value)
+
+
+def _append_sentence_length_months_suffix(value: str | None) -> str | None:
+    """Returns value with " months" appended, unless None or in
+    _SENTENCE_LENGTH_NON_DURATION_LABELS.
+    """
+    if value is None or value in _SENTENCE_LENGTH_NON_DURATION_LABELS:
+        return value
+    return f"{value} months"
 
 
 def _translate_row(
@@ -200,15 +217,25 @@ def _translate_row(
     column_names: list[str],
     label_maps: dict[str, dict[str, str]],
 ) -> list[str | None]:
-    """Returns row with each column translated per label_maps, leaving columns with
-    no entry in label_maps (state_code, date_in_population, age_group, sex) unchanged.
+    """Returns row with each column translated per label_maps; columns absent from
+    label_maps are left unchanged. sentence_length_min/max also get a " months"
+    suffix, but only when the value was actually resolved via label_maps, to avoid
+    double-labeling an untranslated fallback (e.g. "48-71 MONTHS").
     """
-    return [
-        _translate_value(value, label_maps[column_name])
-        if column_name in label_maps
-        else value
-        for column_name, value in zip(column_names, row)
-    ]
+    translated_row = []
+    for column_name, value in zip(column_names, row):
+        label_map = label_maps.get(column_name)
+        if label_map is None:
+            translated_row.append(value)
+            continue
+        translated_value = _translate_value(value, label_map)
+        if (
+            column_name in _SENTENCE_LENGTH_COLUMNS
+            and _label_map_lookup_key(value) in label_map
+        ):
+            translated_value = _append_sentence_length_months_suffix(translated_value)
+        translated_row.append(translated_value)
+    return translated_row
 
 
 def _build_latest_snapshot_query(columns: list[Column]) -> Query:
@@ -236,9 +263,7 @@ def resolve_snapshot_date_for_month(
     session: Session, *, year: int, month: int
 ) -> date | None:
     """Returns the date_in_population closest to the 1st of the given month, among
-    dates within _MONTH_SNAPSHOT_WINDOW_DAYS of it, or None if none fall in that
-    window (e.g. the month predates this state's earliest data, or is in the
-    future).
+    dates within _MONTH_SNAPSHOT_WINDOW_DAYS of it, or None if none qualify.
     """
     month_start = date(year, month, 1)
     window_start = month_start - timedelta(days=_MONTH_SNAPSHOT_WINDOW_DAYS)
@@ -262,21 +287,32 @@ def resolve_snapshot_date_for_month(
     )
 
 
+def _cache_key_revision() -> str:
+    """Returns the Cloud Run revision name, or _NON_CLOUD_RUN_CACHE_REVISION
+    outside Cloud Run. Included in _cache_key() so a new deploy (which always
+    gets a new Cloud Run revision) invalidates previously cached exports even
+    when neither the data nor the requested snapshot has changed.
+    """
+    if in_cloud_run():
+        return CloudRunEnvironment.get_revision_name()
+    return _NON_CLOUD_RUN_CACHE_REVISION
+
+
 def _cache_key(
     *,
     state_code: StateCode,
     last_updated: date,
     year_month: tuple[int, int] | None = None,
 ) -> str:
-    """Returns the individual-level export cache key for state_code, scoped to
-    last_updated so a new data import always produces a fresh key rather than
-    serving a stale cached export. When a specific month is requested, the key is
-    further scoped to that month so each requested month caches independently.
+    """Returns the individual-level export cache key, scoped to state_code,
+    last_updated, year_month (if given), and the current Cloud Run revision (see
+    _cache_key_revision()) so each snapshot caches independently and a new
+    deploy always produces a fresh key.
     """
     month_suffix = f" {year_month[0]}-{year_month[1]:02d}" if year_month else ""
     return (
         f"{state_code.value} individual_level_export "
-        f"{last_updated.isoformat()}{month_suffix}"
+        f"{last_updated.isoformat()}{month_suffix} {_cache_key_revision()}"
     )
 
 
@@ -287,11 +323,9 @@ def _build_csv(
     label_maps: dict[str, dict[str, str]],
     build_query: Callable[[], Query],
 ) -> str:
-    """Returns the individual-level export as a single CSV-encoded string: a
-    header row followed by one row per record matched by build_query(), fetched
-    from the database in batches of _ROWS_PER_CHUNK. Columns present in label_maps
-    are translated from their raw internal codes to display labels, matching what
-    the dashboard UI shows for the same values.
+    """Returns the individual-level export as a CSV string: a header row (column
+    names, overridden per _EXPORT_COLUMN_HEADER_OVERRIDES) followed by rows from
+    build_query(), translated per label_maps.
     """
     column_names = [column.name for column in columns]
     with session_factory() as session:
@@ -300,7 +334,12 @@ def _build_csv(
         buffer = io.StringIO()
         writer = csv.writer(buffer)
 
-        writer.writerow(column_names)
+        writer.writerow(
+            [
+                _EXPORT_COLUMN_HEADER_OVERRIDES.get(column_name, column_name)
+                for column_name in column_names
+            ]
+        )
         for row in query.yield_per(_ROWS_PER_CHUNK):
             writer.writerow(
                 _translate_row(row, column_names=column_names, label_maps=label_maps)
@@ -316,9 +355,8 @@ def build_csv_for_date(
     label_maps: dict[str, dict[str, str]],
     snapshot_date: date,
 ) -> str:
-    """Returns the individual-level export as a single CSV-encoded string, for
-    exactly the given date_in_population. Used by the bulk multi-month export,
-    which resolves and builds one CSV per month itself.
+    """Returns the individual-level export as a CSV string for exactly
+    snapshot_date. Used by the bulk multi-month export.
     """
     return _build_csv(
         session_factory=session_factory,
@@ -334,13 +372,9 @@ def build_individual_level_export_response(
     enabled_states: list[str],
     year_month: tuple[int, int] | None = None,
 ) -> Response:
-    """Returns a CSV response of individual-level Public Pathways data for the
-    given state, limited to INCLUDED_INDIVIDUAL_LEVEL_COLUMNS. With no year_month
-    given, returns the most recent snapshot; with one given, returns the snapshot
-    resolved by resolve_snapshot_date_for_month() for that (year, month), raising
-    BadRequest if none resolves. The export itself is cached in Redis per
-    state/last_updated date (and month, if given), so repeat requests for the same
-    snapshot skip the database query.
+    """Returns a CSV response of individual-level Public Pathways data for
+    state_code: the most recent snapshot, or the one resolved for year_month if
+    given (raising BadRequest if none resolves). Cached in Redis per snapshot.
     """
     database_manager = PathwaysDatabaseManager(
         enabled_states, SchemaType.PUBLIC_PATHWAYS
