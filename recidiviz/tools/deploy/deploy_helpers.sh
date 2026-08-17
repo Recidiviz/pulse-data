@@ -216,9 +216,16 @@ function request_pam_deploy_grant {
 
     echo "Requesting just-in-time Privileged Access Manager (PAM) deploy access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
 
-    if ! gcloud pam entitlements describe "${ENTITLEMENT_ID}" \
-            --project="${PROJECT_ID}" --location="${LOCATION}" >/dev/null 2>&1; then
-        echo "⚠️  PAM entitlement [${ENTITLEMENT_ID}] not reachable for [${GCLOUD_USER}] — skipping JIT elevation."
+    # Check reachability from the REQUESTER's view (privilegedaccessmanager.entitlements.search),
+    # not entitlements.describe. Eligible requesters hold grants.create and entitlements.search but
+    # NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin deployer
+    # and silently skips JIT elevation, falling back to standing access.
+    if ! gcloud pam entitlements search \
+            --project="${PROJECT_ID}" --location="${LOCATION}" \
+            --caller-access-type=grant-requester \
+            --format="value(name)" 2>/dev/null \
+            | grep -q "/entitlements/${ENTITLEMENT_ID}$"; then
+        echo "⚠️  Not eligible for PAM entitlement [${ENTITLEMENT_ID}] on [${PROJECT_ID}] as [${GCLOUD_USER}] — skipping JIT elevation."
         echo "    (Confirm you're in s-pam-deploy-app@.)"
         return 0
     fi
