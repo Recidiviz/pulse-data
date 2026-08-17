@@ -2363,6 +2363,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.OffenderName",
     "us_tn_ingest_view_results.ProgramAssignment",
     "us_tn_ingest_view_results.RCAFandDCAFAssessments",
+    "us_tn_ingest_view_results.STGAssessment",
     "us_tn_ingest_view_results.SentencesChargesAndCourtCases_v4",
     "us_tn_ingest_view_results.Staff",
     "us_tn_ingest_view_results.StaffCaseloadTypePeriod",

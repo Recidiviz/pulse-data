@@ -138,6 +138,7 @@ class StateAssessmentType(StateEntityEnum):
     UT_SECURITY_ASSESS = state_enum_strings.state_assessment_type_ut_security_assess
     IA_CUSTODY_CLASS = state_enum_strings.state_assessment_type_ia_custody_class
     AZ_CUSTODY_CLASS = state_enum_strings.state_assessment_type_az_custody_class
+    TN_STG = state_enum_strings.state_assessment_type_tn_stg
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -223,6 +224,8 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.UT_SECURITY_ASSESS: "Utah Security Assessment",
     StateAssessmentType.IA_CUSTODY_CLASS: "Iowa Custody Classification",
     StateAssessmentType.AZ_CUSTODY_CLASS: "Arizona Custody Classification",
+    StateAssessmentType.TN_STG: "Tennessee Security Threat Group (STG) Validation "
+    "Assessment, used to determine whether someone is affiliated with a gang.",
 }
 
 

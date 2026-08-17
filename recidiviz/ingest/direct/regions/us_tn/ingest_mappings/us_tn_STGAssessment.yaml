@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_STGAssessment` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  STGID: STRING
+  AssessmentScore: STRING
+  AssessmentDate: DATE
+  Status: STRING
+  StatusDate: DATE
+  Rank: STRING
+  AssessmentFlag1: STRING
+  AssessmentFlag2: STRING
+  AssessmentFlag3: STRING
+  AssessmentFlag4: STRING
+  AssessmentFlag5: STRING
+  AssessmentFlag6: STRING
+  AssessmentFlag7: STRING
+  AssessmentFlag8: STRING
+  AssessmentFlag9: STRING
+  AssessmentFlag10: STRING
+  AssessmentFlag11: STRING
+  AssessmentFlag12: STRING
+  AssessmentFlag13: STRING
+  AssessmentFlag14: STRING
+  AssessmentFlag15: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - AssessmentDate
+          assessment_type: $literal_enum(StateAssessmentType.TN_STG)
+          assessment_date: AssessmentDate
+          assessment_score: AssessmentScore
+          # The `ASSESSMENT_FLAG_*` values are the individual validation criteria
+          # that make up the score; each is `X` when the criterion was met.
+          assessment_metadata:
+            $normalized_values_json_dict:
+              STG_ID: STGID
+              STATUS: Status
+              STATUS_DATE: StatusDate
+              RANK: Rank
+              ASSESSMENT_FLAG_SELF_ADMITS_MEMBERSHIP: AssessmentFlag1
+              ASSESSMENT_FLAG_GANG_RELATED_TATTOOS: AssessmentFlag2
+              ASSESSMENT_FLAG_USES_GANG_SYMBOLS: AssessmentFlag3
+              ASSESSMENT_FLAG_WEARS_GANG_COLORS: AssessmentFlag4
+              ASSESSMENT_FLAG_POSSESSES_GANG_DOCUMENTS: AssessmentFlag5
+              ASSESSMENT_FLAG_POSSESSES_GANG_PUBLICATIONS: AssessmentFlag6
+              ASSESSMENT_FLAG_PARTICIPATES_IN_GANG_PUBLICATIONS: AssessmentFlag7
+              ASSESSMENT_FLAG_OBSERVED_CONTACT_WITH_MEMBERS: AssessmentFlag8
+              ASSESSMENT_FLAG_KNOWN_CONTACT_WITH_MEMBERS: AssessmentFlag9
+              ASSESSMENT_FLAG_PHOTO_WITH_MEMBERS: AssessmentFlag10
+              ASSESSMENT_FLAG_OUTSIDE_JURISDICTION_INFO: AssessmentFlag11
+              ASSESSMENT_FLAG_CORRESPONDENCE_WITH_MEMBERS: AssessmentFlag12
+              ASSESSMENT_FLAG_NAMED_IN_CORRESPONDENCE: AssessmentFlag13
+              ASSESSMENT_FLAG_CONFIRMED_BY_OUTSIDE_AGENCY: AssessmentFlag14
+              ASSESSMENT_FLAG_STG_RELATED_DISCIPLINARY: AssessmentFlag15
