@@ -136,9 +136,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
@@ -555,9 +552,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
     },
     # TODO(#33402): Delete `sentence_spans` once all states are migrated
     # to v2 infra
@@ -658,9 +652,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
     },

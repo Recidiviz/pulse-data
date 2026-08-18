@@ -20,6 +20,8 @@ test "Low-Compliant" (on the STRONG-R 2.0) and are eligible for Compliant Report
 following intake.
 """
 
+from datetime import date
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -128,6 +130,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_n_conditions_true=1,
     ),
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
+    # This is the date TN districts started being added to this new (2025)
+    # Compliant Reporting policy -- i.e. the earliest point someone could
+    # actually have become eligible under this policy in production, not just
+    # in TES's retroactive computation of historical spans. Districts were
+    # rolled onto the new policy at different times, so this is a lower bound
+    # rather than a precise per-district cutover date.
+    policy_start_date=date(2025, 4, 22),
 )
 
 if __name__ == "__main__":

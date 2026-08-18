@@ -73,7 +73,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
             self.assertEqual(
                 {
                     "address": "123 Fake st., Faketown, TN 12345",
-                    "allEligibleOpportunities": ["compliantReporting"],
+                    "allEligibleOpportunities": ["usTnCompliantReporting2025Policy"],
                     "allIneligibleOpportunities": ["usTnExpiration"],
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
@@ -117,7 +117,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                             "text": "12 months without a violation",
                         },
                     ],
-                    "emailAddress": "matilda@fake.net",
+                    "emailAddress": "matilda@testdomain.com",
                     "currentEmployers": [
                         {
                             "name": "Mouse House",

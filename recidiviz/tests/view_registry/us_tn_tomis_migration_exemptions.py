@@ -148,9 +148,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn.most_recent_fee_code_is_feep_in_last_90_days import (
     VIEW_BUILDER as MOST_RECENT_FEE_CODE_IS_FEEP_IN_LAST_90_DAYS_VIEW_BUILDER,
 )
@@ -255,7 +252,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-1983): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: "TODO(TN-1981): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1982): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: "TODO(TN-1982): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.ContactNoteComment_latest"
@@ -294,7 +290,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1999): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: "TODO(TN-1999): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
@@ -362,7 +357,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.JOVictim_latest"): {
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2015): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: "TODO(TN-2015): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.JobTerminationRequest_latest"
@@ -398,7 +392,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         "us_tn_raw_data_up_to_date_views.OffenderAttributes_latest"
     ): {
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2020): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: "TODO(TN-2020): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderExemptions_latest"

@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in TN may be eligible for compliant reporting.
+"""Shows the spans of time during which someone in TN may be eligible for compliant reporting,
+prior to the 2025 policy change.
 """
+from datetime import date
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -126,6 +128,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *_DISCRETION_CRITERIA,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    # This is the date the old (pre-2025-policy) Compliant Reporting tool is
+    # being fully removed from Workflows, chosen so that no one can ever be
+    # eligible under this old policy after that point. It is NOT the date TN
+    # actually cut over from the old policy to the new one -- districts had
+    # already been moved onto the new policy at different, earlier times (see
+    # policy_start_date on the *_2025_policy TES builders), so this date only
+    # bounds the tail end of the old policy's validity, not its real-world
+    # turning point.
+    policy_end_date=date(2026, 8, 26),
 )
 
 if __name__ == "__main__":

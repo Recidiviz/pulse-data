@@ -19,6 +19,8 @@ eligible for Compliant Reporting under the policy implemented in 2025, for those
 on the "Low" supervision level (which we map to 'MINIMUM').
 """
 
+from datetime import date
+
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -196,6 +198,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_n_conditions_true=2,
     ),
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
+    # This is the date TN districts started being added to this new (2025)
+    # Compliant Reporting policy -- i.e. the earliest point someone could
+    # actually have become eligible under this policy in production, not just
+    # in TES's retroactive computation of historical spans. Districts were
+    # rolled onto the new policy at different times, so this is a lower bound
+    # rather than a precise per-district cutover date.
+    policy_start_date=date(2025, 4, 22),
 )
 
 if __name__ == "__main__":

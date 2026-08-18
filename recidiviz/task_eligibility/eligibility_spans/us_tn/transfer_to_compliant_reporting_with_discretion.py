@@ -19,7 +19,11 @@ discretion related to:
 - missing/outdated sentencing information
 - zero tolerance codes suggesting outdated sentencing information
 - ineligible offense types for expired sentences (but not sentences that expired 10+ years ago)
+
+Prior to the 2025 policy change.
 """
+from datetime import date
+
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -137,6 +141,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # meet the AE condition for one of the criteria).
         at_least_n_conditions_true=1,
     ),
+    # This is the date the old (pre-2025-policy) Compliant Reporting tool is
+    # being fully removed from Workflows, chosen so that no one can ever be
+    # eligible under this old policy after that point. It is NOT the date TN
+    # actually cut over from the old policy to the new one -- districts had
+    # already been moved onto the new policy at different, earlier times (see
+    # policy_start_date on the *_2025_policy TES builders), so this date only
+    # bounds the tail end of the old policy's validity, not its real-world
+    # turning point.
+    policy_end_date=date(2026, 8, 26),
 )
 
 if __name__ == "__main__":
