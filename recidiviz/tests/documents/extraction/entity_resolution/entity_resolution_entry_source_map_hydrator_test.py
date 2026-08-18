@@ -35,7 +35,7 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
-from recidiviz.documents.store.document_collection_query_builders import (
+from recidiviz.documents.store.document_collection_diff_query_builder import (
     DocumentCollectionDiffQueryBuilder,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (

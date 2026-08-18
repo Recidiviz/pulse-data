@@ -16,9 +16,6 @@
 # =============================================================================
 """Discovers new documents for a single document collection and writes them
 to temporary BQ tables for downstream processing.
-
-TODO(OBT-42680) During a sandbox run for a first order document collection, the sandbox
-will fail for a brand new collection because the metadata table will not exist yet.
 """
 
 import logging
@@ -42,12 +39,18 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
-from recidiviz.documents.store.document_collection_query_builders import (
+from recidiviz.documents.store.document_collection_diff_query_builder import (
     DocumentCollectionDiffQueryBuilder,
-    DocumentCollectionGenerationQueryBuilder,
+)
+from recidiviz.documents.store.document_generation_query_builder import (
+    DocumentGenerationQueryBuilder,
+    build_document_generation_query_builder,
 )
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
     DocumentMetadataUpdatesQueryBuilder,
+)
+from recidiviz.documents.store.document_store_sandbox_context import (
+    DocumentStoreSandboxContext,
 )
 from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
@@ -80,35 +83,25 @@ class NewDocumentDiscoverer:
         validator=attr_validators.is_positive_int,
         default=DEFAULT_TARGET_UPLOAD_BATCH_BYTES,
     )
-    generation_query_builder: DocumentCollectionGenerationQueryBuilder = attr.ib(
+    generation_query_builder: DocumentGenerationQueryBuilder = attr.ib(
         init=False,
-        validator=attr.validators.instance_of(DocumentCollectionGenerationQueryBuilder),
+        validator=attr.validators.instance_of(DocumentGenerationQueryBuilder),
     )
-    source_sandbox_prefix: str | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+    sandbox_context: DocumentStoreSandboxContext | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(DocumentStoreSandboxContext),
     )
+
     diff_query_builder: DocumentCollectionDiffQueryBuilder = attr.ib(
         init=False,
         validator=attr.validators.instance_of(DocumentCollectionDiffQueryBuilder),
     )
 
     def __attrs_post_init__(self) -> None:
-        # An entity-resolution collection reads other document-store tables (the
-        # first-order `__pre_resolution` table and source contents), so its reads
-        # must be re-scoped for a sandbox run. A first-order collection reads real
-        # source data whose address is prefix-invariant, so a prefix would have
-        # nothing to scope and is only ever a mistake.
-        if self.source_sandbox_prefix is not None and not isinstance(
-            self.config, EntityResolutionDocumentCollectionConfig
-        ):
-            raise ValueError(
-                f"source_sandbox_prefix is only supported for entity-resolution "
-                f"collections, but collection [{self.collection_name}] is a "
-                f"[{type(self.config).__name__}]."
-            )
-        self.generation_query_builder = DocumentCollectionGenerationQueryBuilder(
+        self.generation_query_builder = build_document_generation_query_builder(
+            config=self.config,
             project_id=self.project_id,
-            source_sandbox_prefix=self.source_sandbox_prefix,
+            sandbox_context=self.sandbox_context,
         )
         self.diff_query_builder = DocumentCollectionDiffQueryBuilder()
 
@@ -129,9 +122,7 @@ class NewDocumentDiscoverer:
                 self.run_id
             ).to_project_specific_address(self.project_id)
         )
-        generation_query = (
-            self.generation_query_builder.build_document_generation_query(self.config)
-        )
+        generation_query = self.generation_query_builder.build_query()
 
         logging.info(
             "Materializing generation output for collection [%s] to [%s]",
@@ -182,18 +173,31 @@ class NewDocumentDiscoverer:
         document_generation_output_address = (
             self._materialize_document_generation_output()
         )
+        # The tables this run writes for the collection (the entry->source map, and the
+        # metadata/contents rows it records downstream) go under the output prefix; the
+        # existing state discovery diffs against — the metadata table below and the
+        # contents-existence check further down — is read from the read prefix, which is
+        # the production document store (None) for a first-order collection that already
+        # exists there.
+        output_prefix = (
+            self.sandbox_context.output_prefix_for_writing(self.config.name)
+            if self.sandbox_context is not None
+            else None
+        )
+        read_prefix = (
+            self.sandbox_context.diff_read_prefix_for_document_collection(
+                self.config.name
+            )
+            if self.sandbox_context is not None
+            else None
+        )
 
         if isinstance(self.config, EntityResolutionDocumentCollectionConfig):
-            # TODO(OBT-42680) I was trying to separate the ideas of source sandbox prefix
-            # (sandbox results from the first order collection that we are reading from) and
-            # output sandbox prefix (sandbox datasets we are writing results to), but here we are using
-            # the same prefix for both. This works because we only write these results for ER collections,
-            # but it is still confusing and we should think if there's a different approach we can use here.
             EntityResolutionEntrySourceMapHydrator(
                 project_id=self.project_id,
                 big_query_client=self.big_query_client,
                 config=self.config,
-                output_sandbox_prefix=self.source_sandbox_prefix,
+                output_sandbox_prefix=output_prefix,
             ).run(document_generation_output_address)
 
         temp_metadata_address = (
@@ -202,7 +206,7 @@ class NewDocumentDiscoverer:
             ).to_project_specific_address(self.project_id)
         )
         metadata_table_address = self.config.metadata_table_address(
-            sandbox_dataset_prefix=self.source_sandbox_prefix
+            sandbox_dataset_prefix=read_prefix
         ).to_project_specific_address(self.project_id)
         diff_query = self.diff_query_builder.build_document_diff_query(
             config=self.config,
@@ -239,7 +243,7 @@ class NewDocumentDiscoverer:
         new_documents_query = DocumentMetadataUpdatesQueryBuilder().build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,
             document_contents_table_address=self.config.document_contents_table_address(
-                sandbox_dataset_prefix=self.source_sandbox_prefix
+                sandbox_dataset_prefix=read_prefix
             ).to_project_specific_address(self.project_id),
             target_batch_bytes=self.target_upload_batch_bytes,
         )

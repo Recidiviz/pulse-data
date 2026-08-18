@@ -234,11 +234,8 @@ class DocumentCollectionConfig:
         validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
-    # The authored, un-scoped SQL template that generates this collection's
-    # documents. Private because it is production-scoped: callers must go through
-    # build_document_generation_query_template() and pass a sandbox prefix so a
-    # sandbox run cannot accidentally read production tables. None only for
-    # collections (e.g. entity-resolution) that build their template from other
+    # The authored SQL template that generates this collection's documents. None only for
+    # collections (e.g. entity-resolution) that build their generation query from other
     # document-store tables and so have no single authored template.
     _authored_document_generation_query_template: str | None = attr.ib(
         validator=attr_validators.is_opt_str
@@ -273,23 +270,20 @@ class DocumentCollectionConfig:
                 f"has duplicate column names: {duplicate_names}."
             )
 
-    def build_document_generation_query_template(
-        self, *, source_sandbox_prefix: str | None  # pylint: disable=unused-argument
-    ) -> str:
-        """Returns the SQL template that generates this collection's documents).
-        A base collection reads real source data, so its authored template is
-        prefix-invariant; collections whose generation query reads other
-        document-store tables override this to re-scope those reads.
-
-        TODO(OBT-42680) It's bad that this method takes a source_sandbox_prefix
-        arg that it just silently ignores for base collections.
-        We should think if there's a better approach we can take here.
+    @property
+    def authored_generation_query_template(self) -> str:
+        """Returns the authored SQL template that generates this collection's
+        documents, referencing real source data at prefix-invariant addresses. Raises
+        for a collection that has no authored template because it builds its generation
+        query from other document-store tables (e.g. entity resolution); such a
+        collection is served by its own generation query builder rather than an
+        authored template.
         """
         if self._authored_document_generation_query_template is None:
             raise ValueError(
                 f"Collection [{self.name}] has no authored generation query "
-                f"template; it must override "
-                f"build_document_generation_query_template."
+                f"template; it is generated from other document-store tables and is "
+                f"served by a dedicated generation query builder."
             )
 
         return self._authored_document_generation_query_template

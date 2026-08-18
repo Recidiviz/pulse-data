@@ -244,11 +244,11 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 document_descriptor=Descriptor(singular="document", plural="documents"),
             )
 
-    def test_build_generation_query_template_without_authored_template_raises(
+    def test_authored_generation_query_template_without_template_raises(
         self,
     ) -> None:
-        # A base collection with no authored template and no override cannot build
-        # a generation query.
+        # A collection with no authored template is generated from other tables and
+        # served by its own builder, so reading the authored template raises.
         config = DocumentCollectionConfig(
             state_code=StateCode.US_XX,
             name="TEST_COLLECTION",
@@ -263,9 +263,10 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"Collection \[TEST_COLLECTION\] has no authored generation query "
-            r"template; it must override build_document_generation_query_template\.",
+            r"template; it is generated from other document-store tables and is "
+            r"served by a dedicated generation query builder\.",
         ):
-            config.build_document_generation_query_template(source_sandbox_prefix=None)
+            _ = config.authored_generation_query_template
 
     def test_invalid_collection_name(self) -> None:
         with self.assertRaisesRegex(ValueError, "contains invalid characters"):

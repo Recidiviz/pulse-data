@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for document_collection_query_builders.py."""
+"""Tests for document_collection_diff_query_builder.py."""
 
-import unittest
 from pathlib import Path
 
 import pandas as pd
@@ -30,50 +29,23 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
-    collect_all_document_collection_configs,
     get_document_collection_config,
 )
-from recidiviz.documents.store.document_collection_query_builders import (
+from recidiviz.documents.store.document_collection_diff_query_builder import (
     DocumentCollectionDiffQueryBuilder,
-    DocumentCollectionGenerationQueryBuilder,
+)
+from recidiviz.documents.store.document_generation_query_builder import (
+    build_document_generation_query_builder,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
 from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tests.documents.store.fixtures import document_diff
-
-
-class TestBuildDocumentGenerationQuery(unittest.TestCase):
-    def test_generation_query_output_matches_temp_table_schema(self) -> None:
-        for state_code in StateCode:
-            configs = collect_all_document_collection_configs(state_code)
-            for config in configs.values():
-                expected_columns = {
-                    field.name
-                    for field in config.build_bq_document_generation_output_schema()
-                }
-                query = DocumentCollectionGenerationQueryBuilder(
-                    project_id="test-project",
-                    source_sandbox_prefix=None,
-                ).build_document_generation_query(
-                    config=config,
-                )
-                try:
-                    check_query_selects_output_columns(
-                        query=query,
-                        expected_output_columns=expected_columns,
-                    )
-                except ValueError as e:
-                    raise ValueError(
-                        f"Query output column mismatch for "
-                        f"[{state_code.value}/{config.name}]"
-                    ) from e
 
 
 class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
@@ -91,9 +63,10 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
             dataset_id="us_xx_raw_data",
             table_id="fake_notes",
         )
-        self.generation_query_builder = DocumentCollectionGenerationQueryBuilder(
+        self.generation_query_builder = build_document_generation_query_builder(
+            config=self.config,
             project_id=self.project_id,
-            source_sandbox_prefix=None,
+            sandbox_context=None,
         )
         self.query_builder = DocumentCollectionDiffQueryBuilder()
         self.fixture_dir = Path(document_diff.__file__).parent
@@ -148,11 +121,7 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
             ).to_project_specific_address(self.project_id)
         )
         with freeze_time("2026-03-15 12:00:00", tz_offset=0):
-            generation_query = (
-                self.generation_query_builder.build_document_generation_query(
-                    self.config
-                )
-            )
+            generation_query = self.generation_query_builder.build_query()
             query = self.query_builder.build_document_diff_query(
                 config=self.config,
                 document_generation_output_address=document_generation_output_address,
@@ -317,13 +286,11 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
                     "document_contents_id": None,
                     "document_text": None,
                     "document_update_datetime": pd.NaT,
-                    # The deleted stub's typed NULL-array cast reads as NULL
-                    # in-query (ARRAY_LENGTH(NULL) is NULL); it only becomes a
-                    # stored empty array when the diff is written to the temp
-                    # table, which the emulator cannot round-trip for
-                    # ARRAY<STRUCT<TIMESTAMP>> columns.
-                    # TODO(OBT-42814): Assert against the stored (empty array)
-                    # form once the emulator bug is fixed.
+                    # The deleted stub's typed NULL-array cast reads as NULL in-query
+                    # (ARRAY_LENGTH(NULL) is NULL), becoming a stored empty array only once
+                    # written to the temp table.
+                    # TODO(OBT-42814): Assert against the stored (empty array) form once
+                    # the emulator bug is fixed.
                     "num_entries": None,
                 },
             ],

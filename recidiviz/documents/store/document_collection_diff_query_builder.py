@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builds queries for document collections."""
+"""Builds the query that diffs a document collection's freshly generated documents
+against the latest state in its metadata table."""
 
 import attr
 from google.cloud import bigquery
@@ -25,8 +26,6 @@ from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     list_to_query_string,
 )
-from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -35,57 +34,7 @@ from recidiviz.documents.store.document_metadata_table_query_builder import (
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
-    DOCUMENT_TEXT_COLUMN_NAME,
 )
-from recidiviz.utils.string import StrictStringFormatter
-
-
-@attr.define
-class DocumentCollectionGenerationQueryBuilder:
-    """Builds the query that generates a document collection's documents."""
-
-    project_id: str = attr.ib(validator=attr_validators.is_str)
-    source_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
-
-    @staticmethod
-    def _document_contents_id_sql_clause(state_code: StateCode) -> str:
-        """Builds the sql to compute the document_contents_id for a given
-        |state_code|."""
-        return f"TO_HEX(SHA256(CONCAT('{state_code.value}', '|', {DOCUMENT_TEXT_COLUMN_NAME})))"
-
-    def build_document_generation_query(
-        self,
-        config: DocumentCollectionConfig,
-    ) -> str:
-        """Wraps the config's document generation query template to produce
-        a query that generates all columns needed for downstream processing. This
-        includes all output columns from that template, plus document_contents_id
-        computed from document_text. Any rows with null document_text are also
-        filtered out.
-
-        TODO(OBT-42680) This approach is confusing because we just silently ignore
-        sandbox prefix on first order collections. We should think of a different approach
-        here.
-        """
-        inner_query = StrictStringFormatter().format(
-            config.build_document_generation_query_template(
-                source_sandbox_prefix=self.source_sandbox_prefix
-            ),
-            project_id=self.project_id,
-        )
-
-        passthrough_columns = [
-            col.name
-            for col in config.build_bq_document_generation_output_schema()
-            if col.name != DOCUMENT_CONTENTS_ID_COLUMN_NAME
-        ]
-
-        return f"""
-SELECT
-    {self._document_contents_id_sql_clause(config.state_code)} AS {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
-    {list_to_query_string(passthrough_columns)}
-FROM ({inner_query})
-WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 
 
 @attr.define

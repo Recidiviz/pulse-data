@@ -44,7 +44,6 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_collecti
     entity_resolution_collection_name,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
-    EntityResolutionCompositeDocumentQueryTemplateBuilder,
     entry_source_map_schema_field,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
@@ -122,9 +121,9 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         init=False, validator=attr_validators.is_list_of(bigquery.SchemaField)
     )
 
-    # An ER collection builds its generation template from other document-store
-    # tables (see build_document_generation_query_template), so it has no single
-    # authored template — this stays None and the override is the source of truth.
+    # An ER collection's generation query is built from other document-store tables
+    # (see build_document_generation_query_builder), so it has no single authored
+    # template — this stays None.
     _authored_document_generation_query_template: str | None = attr.ib(
         init=False, default=None, validator=attr_validators.is_opt_str
     )
@@ -210,29 +209,6 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
         *entry_source_map_table as part of the document discovery flow.
         """
         return [entry_source_map_schema_field()]
-
-    def build_document_generation_query_template(
-        self, *, source_sandbox_prefix: str | None
-    ) -> str:
-        """Returns the composite-document generation query, reading the first-order
-        `__pre_resolution` materialized table and source document_contents scoped to
-        |source_sandbox_prefix| when the generation query should read from a
-        sandbox (None in production). Unlike a base collection's authored template,
-        this one reads other document-store tables and so must be re-scoped for a
-        sandbox run. A composite is always produced — length is not a generation
-        concern (the per-document size guardrail skips oversized documents at
-        extraction time).
-        """
-        return EntityResolutionCompositeDocumentQueryTemplateBuilder(
-            root_entity_id_type=self.root_entity_id_type,
-            entity_group=self.entity_group,
-            pre_resolution_view_materialized_address=self.pre_resolution_view_materialized_address(
-                sandbox_dataset_prefix=source_sandbox_prefix
-            ),
-            source_document_contents_address=self.first_order_config.input_document_collection.document_contents_table_address(
-                sandbox_dataset_prefix=source_sandbox_prefix
-            ),
-        ).build_query_template()
 
     @property
     def first_order_extractor_collection_name(self) -> str:
