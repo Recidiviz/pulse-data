@@ -4,6 +4,8 @@
 # parts all clean away, and an IdentityAttributes left with nothing in it (see
 # get_filter_if_all_null_fields), so their fragment has no attributes.
 manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
 input_columns:
   STAFF_ID: STRING
   FIRST_NAME: STRING

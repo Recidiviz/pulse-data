@@ -30,6 +30,7 @@ import yaml
 
 from recidiviz.common.attr_converters import str_to_lowercase_str
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
@@ -47,6 +48,10 @@ class DirectIngestRegion:
     Attributes:
         region_code: (string) Region code
         agency_name: (string) Human-readable agency name
+        has_launchable_activity_ingest_views_in_staging: (bool) Whether this region has activity ingest views that are launchable in staging.
+        has_launchable_activity_ingest_views_in_production: (bool) Whether this region has activity ingest views that are launchable in production.
+        has_launchable_identity_ingest_views_in_staging: (bool) Whether this region has identity ingest views that are launchable in staging.
+        has_launchable_identity_ingest_views_in_production: (bool) Whether this region has identity ingest views that are launchable in production.
         region_module: (ModuleType) The module where the ingest configuration for this region resides.
         environment: (string) The environment the region is allowed to run in.
         playground: (bool) If this is a playground region and should only exist in staging.
@@ -54,8 +59,10 @@ class DirectIngestRegion:
 
     region_code: str = attr.ib(converter=str_to_lowercase_str)
     agency_name: str = attr.ib()
-    has_launchable_ingest_views_in_staging: bool = attr.ib()
-    has_launchable_ingest_views_in_production: bool = attr.ib()
+    has_launchable_activity_ingest_views_in_staging: bool = attr.ib()
+    has_launchable_activity_ingest_views_in_production: bool = attr.ib()
+    has_launchable_identity_ingest_views_in_staging: bool = attr.ib()
+    has_launchable_identity_ingest_views_in_production: bool = attr.ib()
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     playground: Optional[bool] = attr.ib(default=False)
@@ -83,13 +90,33 @@ class DirectIngestRegion:
             or not self.playground
         )
 
-    def has_launchable_ingest_views(self, project_id: str) -> bool:
-        """Returns whether this region has any ingest views that are launchable
-        in the given project (staging or production).
+    def has_launchable_activity_ingest_views(self, project_id: str) -> bool:
+        """Returns whether this region has any activity ingest views that are
+        launchable in the given project (staging or production).
         """
         if project_id == GCP_PROJECT_PRODUCTION:
-            return self.has_launchable_ingest_views_in_production
-        return self.has_launchable_ingest_views_in_staging
+            return self.has_launchable_activity_ingest_views_in_production
+        return self.has_launchable_activity_ingest_views_in_staging
+
+    def has_launchable_identity_ingest_views(self, project_id: str) -> bool:
+        """Returns whether this region has any identity ingest views that are
+        launchable in the given project (staging or production).
+        """
+        if project_id == GCP_PROJECT_PRODUCTION:
+            return self.has_launchable_identity_ingest_views_in_production
+        return self.has_launchable_identity_ingest_views_in_staging
+
+    def has_launchable_ingest_views_for_pipeline(
+        self, pipeline_type: IngestPipelineType, project_id: str
+    ) -> bool:
+        """Returns whether this region has any views for the given pipeline type
+        that are launchable in the given project (staging or production).
+        """
+        if pipeline_type is IngestPipelineType.ACTIVITY:
+            return self.has_launchable_activity_ingest_views(project_id=project_id)
+        if pipeline_type is IngestPipelineType.IDENTITY:
+            return self.has_launchable_identity_ingest_views(project_id=project_id)
+        raise ValueError(f"Unexpected pipeline_type [{pipeline_type}]")
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current

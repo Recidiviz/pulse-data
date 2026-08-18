@@ -97,8 +97,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_region.side_effect = lambda key: DirectIngestRegion(
             region_code=key,
             agency_name=key,
-            has_launchable_ingest_views_in_staging=True,
-            has_launchable_ingest_views_in_production=True,
+            has_launchable_activity_ingest_views_in_staging=True,
+            has_launchable_activity_ingest_views_in_production=True,
+            has_launchable_identity_ingest_views_in_staging=False,
+            has_launchable_identity_ingest_views_in_production=False,
         )
 
         # Act

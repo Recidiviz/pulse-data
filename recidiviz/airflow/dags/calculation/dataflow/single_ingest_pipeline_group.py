@@ -78,27 +78,36 @@ class IngestPipelineDelegateClass(Protocol):
 # pylint: disable=W0106 expression-not-assigned
 
 
-def _has_launchable_ingest_views(state_code: StateCode) -> bool:
+def _has_launchable_ingest_views(
+    state_code: StateCode, pipeline_type: IngestPipelineType
+) -> bool:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
-    return region.has_launchable_ingest_views(project_id=metadata.project_id())
+    return region.has_launchable_ingest_views_for_pipeline(
+        pipeline_type=pipeline_type, project_id=metadata.project_id()
+    )
 
 
 @task.short_circuit(ignore_downstream_trigger_rules=False)
 # allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
-def check_region_has_launchable_ingest_views(state_code: StateCode) -> bool:
-    """Returns True if the state has launchable ingest views, otherwise short circuits."""
-    if not _has_launchable_ingest_views(state_code):
+def check_region_has_launchable_ingest_views(
+    state_code: StateCode, pipeline_type: IngestPipelineType
+) -> bool:
+    """Returns True if the state has launchable views for this pipeline type,
+    otherwise short circuits."""
+    if not _has_launchable_ingest_views(state_code, pipeline_type):
         logging.info(
-            "No launchable views found for [%s] - returning False",
+            "No launchable %s ingest views found for [%s]. Returning False",
+            pipeline_type.value,
             state_code.value,
         )
         return False
 
     logging.info(
-        "State [%s] has launchable ingest views, therefore the ingest pipeline is eligible to run - returning True",
+        "State [%s] has launchable %s ingest views, therefore the ingest pipeline is eligible to run. Returning True",
         state_code.value,
+        pipeline_type.value,
     )
     return True
 
@@ -184,7 +193,7 @@ def _initialize_ingest_pipeline(
 
     with TaskGroup("initialize_ingest_pipeline") as initialize_ingest_pipeline:
         check_ingest_pipeline_should_run_in_dag = (
-            check_region_has_launchable_ingest_views(state_code)
+            check_region_has_launchable_ingest_views(state_code, pipeline_type)
         )
 
         get_max_update_datetimes = CloudSqlQueryOperator(

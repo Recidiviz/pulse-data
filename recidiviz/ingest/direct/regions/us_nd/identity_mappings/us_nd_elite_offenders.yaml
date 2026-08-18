@@ -2,6 +2,8 @@
 # Each row produces one JII IdentityFragment. Ethnicity is asserted only when the
 # Elite race codes affirmatively indicate Hispanic; otherwise it is left null.
 manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
 input_columns:
   ROOT_OFFENDER_ID: STRING
   FIRST_NAME: STRING

@@ -31,14 +31,18 @@ from recidiviz.tests.utils.fake_region import fake_region
 BAD_ENV_BOOL_MANIFEST_CONTENTS = """
     agency_name: Corrections
     environment: true
-    has_launchable_ingest_views_in_staging: true
-    has_launchable_ingest_views_in_production: true
+    has_launchable_activity_ingest_views_in_staging: true
+    has_launchable_activity_ingest_views_in_production: true
+    has_launchable_identity_ingest_views_in_staging: false
+    has_launchable_identity_ingest_views_in_production: false
     """
 BAD_ENV_STR_MANIFEST_CONTENTS = """
     agency_name: Corrections
     environment: unknown
-    has_launchable_ingest_views_in_staging: true
-    has_launchable_ingest_views_in_production: true
+    has_launchable_activity_ingest_views_in_staging: true
+    has_launchable_activity_ingest_views_in_production: true
+    has_launchable_identity_ingest_views_in_staging: false
+    has_launchable_identity_ingest_views_in_production: false
     """
 
 REGION_TO_MANIFEST = {
@@ -74,8 +78,10 @@ class TestRegions(TestCase):
         assert manifest == {
             "agency_name": "North Dakota Department of Corrections and Rehabilitation",
             "environment": "production",
-            "has_launchable_ingest_views_in_staging": True,
-            "has_launchable_ingest_views_in_production": True,
+            "has_launchable_activity_ingest_views_in_staging": True,
+            "has_launchable_activity_ingest_views_in_production": True,
+            "has_launchable_identity_ingest_views_in_staging": True,
+            "has_launchable_identity_ingest_views_in_production": False,
         }
 
     def test_get_region_manifest_caching(self) -> None:

@@ -2,6 +2,8 @@
 # Each row produces one external-id-only JII IdentityFragment (no attributes) that
 # links an Elite ROOT_OFFENDER_ID to a Docstars SID.
 manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
 input_columns:
   ROOT_OFFENDER_ID: STRING
   IDENTIFIER: STRING

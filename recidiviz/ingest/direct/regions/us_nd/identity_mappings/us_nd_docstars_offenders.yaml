@@ -3,6 +3,8 @@
 # race code affirmatively indicates Hispanic (RACE='5'); otherwise it is left null
 # (we never assert NOT_HISPANIC).
 manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
 input_columns:
   SID: STRING
   ITAGROOT_ID: STRING

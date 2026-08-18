@@ -34,9 +34,14 @@ from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_dele
     IngestDataflowPipelineTaskGroupDelegate,
 )
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
+    IngestPipelineDelegateClass,
     _check_for_valid_watermarks_task,
+    _has_launchable_ingest_views,
     check_for_valid_watermarks,
     create_single_ingest_pipeline_group,
+)
+from recidiviz.airflow.dags.identity_ingest.identity_ingest_dataflow_pipeline_task_group_delegate import (
+    IdentityIngestDataflowPipelineTaskGroupDelegate,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
@@ -57,7 +62,7 @@ from recidiviz.pipelines.ingest.activity.pipeline_utils import (
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.types import assert_type
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -71,7 +76,20 @@ _TEST_DAG_ID = "test_single_ingest_pipeline_group"
 _DOWNSTREAM_TASK_ID = "downstream_task"
 
 
-def _create_test_single_ingest_pipeline_group_dag(state_code: StateCode) -> DAG:
+def _delegate_class_for_pipeline_type(
+    pipeline_type: IngestPipelineType,
+) -> IngestPipelineDelegateClass:
+    """Returns the production delegate class used for the given pipeline type."""
+    if pipeline_type is IngestPipelineType.ACTIVITY:
+        return IngestDataflowPipelineTaskGroupDelegate
+    if pipeline_type is IngestPipelineType.IDENTITY:
+        return IdentityIngestDataflowPipelineTaskGroupDelegate
+    raise ValueError(f"Unexpected pipeline_type [{pipeline_type}]")
+
+
+def _create_test_single_ingest_pipeline_group_dag(
+    state_code: StateCode, pipeline_type: IngestPipelineType
+) -> DAG:
     @dag(
         dag_id=_TEST_DAG_ID,
         start_date=datetime(2022, 1, 1),
@@ -81,8 +99,8 @@ def _create_test_single_ingest_pipeline_group_dag(state_code: StateCode) -> DAG:
     def test_single_ingest_pipeline_group_dag() -> None:
         create_single_ingest_pipeline_group(
             state_code=state_code,
-            pipeline_type=IngestPipelineType.ACTIVITY,
-            delegate_class=IngestDataflowPipelineTaskGroupDelegate,
+            pipeline_type=pipeline_type,
+            delegate_class=_delegate_class_for_pipeline_type(pipeline_type),
         ) >> EmptyOperator(task_id=_DOWNSTREAM_TASK_ID)
 
     return test_single_ingest_pipeline_group_dag()
@@ -157,6 +175,43 @@ class TestCheckForValidWatermarks(unittest.TestCase):
             )
 
 
+class TestHasLaunchableIngestViews(unittest.TestCase):
+    """Tests that _has_launchable_ingest_views reads the flag matching the
+    pipeline type, checking identity views for the identity pipeline and
+    activity views for the activity pipeline."""
+
+    def setUp(self) -> None:
+        self.project_id_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow."
+            "single_ingest_pipeline_group.metadata.project_id",
+            return_value=GCP_PROJECT_STAGING,
+        )
+        self.project_id_patcher.start()
+        self.get_region_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow."
+            "single_ingest_pipeline_group.direct_ingest_regions.get_direct_ingest_region",
+            return_value=fake_region(
+                has_launchable_activity_ingest_views_in_staging=True,
+                has_launchable_identity_ingest_views_in_staging=False,
+            ),
+        )
+        self.get_region_patcher.start()
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+        self.get_region_patcher.stop()
+
+    def test_reads_flag_for_pipeline_type(self) -> None:
+        # The fake region has activity views but no identity views in staging, so
+        # each pipeline type reads a different flag value.
+        self.assertTrue(
+            _has_launchable_ingest_views(StateCode.US_XX, IngestPipelineType.ACTIVITY)
+        )
+        self.assertFalse(
+            _has_launchable_ingest_views(StateCode.US_XX, IngestPipelineType.IDENTITY)
+        )
+
+
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1"},
@@ -196,7 +251,9 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
     def test_dataflow_pipeline_task_exists(self) -> None:
         """Tests that dataflow_pipeline triggers the proper script."""
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         task_group_id = "ingest.us-xx-ingest-pipeline"
         dataflow_pipeline_task = test_dag.get_task(f"{task_group_id}.run_pipeline")
@@ -212,7 +269,9 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
     def test_dataflow_pipeline_task(self) -> None:
         """Tests that dataflow_pipeline get the expected arguments."""
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
         task_group_id = "ingest.us-xx-ingest-pipeline"
         task: RecidivizDataflowFlexTemplateOperator = test_dag.get_task(  # type: ignore
             f"{task_group_id}.run_pipeline"
@@ -287,7 +346,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         super().tearDown()
 
     def test_single_ingest_pipeline_group(self) -> None:
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(test_dag, session)
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -296,11 +357,13 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
             lambda region_code: fake_region(
                 region_code=region_code,
-                has_launchable_ingest_views_in_staging=False,
-                has_launchable_ingest_views_in_production=False,
+                has_launchable_activity_ingest_views_in_staging=False,
+                has_launchable_activity_ingest_views_in_production=False,
             )
         )
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 test_dag,
@@ -318,6 +381,53 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
+    def test_identity_ingest_pipeline_should_run_in_dag_false(self) -> None:
+        # The fake region has launchable activity views, so a skip here shows the
+        # identity pipeline reads the identity flag, not the activity flag.
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: fake_region(
+                region_code=region_code,
+                has_launchable_activity_ingest_views_in_staging=True,
+                has_launchable_activity_ingest_views_in_production=True,
+                has_launchable_identity_ingest_views_in_staging=False,
+                has_launchable_identity_ingest_views_in_production=False,
+            )
+        )
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.IDENTITY
+        )
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_skipped_task_id_regexes=[
+                    r".*get_max_update_datetimes",
+                    r".*get_watermarks",
+                    r".*check_for_valid_watermarks",
+                    r".*verify_raw_data_flashing_not_in_progress",
+                    r"^ingest\.us-xx-identity-ingest-pipeline\.",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_identity_single_ingest_pipeline_group(self) -> None:
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: fake_region(
+                region_code=region_code,
+                has_launchable_identity_ingest_views_in_staging=True,
+                has_launchable_identity_ingest_views_in_production=True,
+            )
+        )
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.IDENTITY
+        )
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(test_dag, session)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
     @patch(
         "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks_task"
     )
@@ -332,7 +442,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             )
         )
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -361,7 +473,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             )
         )
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -391,7 +505,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             )
         )
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -403,7 +519,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
     def test_failed_dataflow_pipeline(self) -> None:
         self.mock_dataflow_operator.side_effect = FakeFailureOperator
 
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -422,14 +540,16 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         """
         Tests that if any task in the group fails, the entire group fails.
         """
-        test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, IngestPipelineType.ACTIVITY
+        )
 
         task_ids_to_fail = [task.task_id for task in test_dag.task_group_dict["ingest"]]
 
         with Session(bind=self.engine) as session:
             for task_id in task_ids_to_fail:
                 test_dag = _create_test_single_ingest_pipeline_group_dag(
-                    StateCode.US_XX
+                    StateCode.US_XX, IngestPipelineType.ACTIVITY
                 )
                 task = assert_type(test_dag.get_task(task_id), BaseOperator)
                 old_execute_function = task.execute
