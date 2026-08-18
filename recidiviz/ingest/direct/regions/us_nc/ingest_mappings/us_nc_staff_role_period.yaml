@@ -34,6 +34,8 @@ output:
               $raw_text: role_subtype_raw
               $mappings:
                 StateStaffRoleSubtype.CASE_MANAGER: "CASE_MANAGER"
+                # TODO(OBT-45294) Don't user "role" to ingest this -- see if they are
+                # actually supervising someone instead
                 StateStaffRoleSubtype.SUPERVISION_OFFICER:
                   - "PROB/PAROLE OFFICER"
                   - "PROB/PAR FIELD SPECIALIST"
@@ -57,3 +59,4 @@ output:
                   - "JUDICIAL SERVICES COORDINATOR"
                   - "CORR SERGEANT III"
                   - "HR TECHNICIAN I"
+                  - "CORR TRAINING INSTRUCTOR"
