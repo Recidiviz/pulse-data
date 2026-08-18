@@ -48,6 +48,8 @@ variables:
                       - "701"
                     StateChargeClassificationType.INTERNAL_UNKNOWN:
                       - "702"
+                    StateChargeClassificationType.EXTERNAL_UNKNOWN:
+                      - "703" # Unknown
         offense_type: OffenseTypeId # This is the id for a specific crime, not a crime category
         is_violent:
           $equal:
