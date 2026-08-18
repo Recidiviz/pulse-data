@@ -27,6 +27,7 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 )
 from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     RejectedIdentityCluster,
+    hash_of_conflicts,
     rejected_identity_cluster_schema_fields,
 )
 from recidiviz.pipelines.ingest.identity.types import AttributeConflict
@@ -71,6 +72,7 @@ class TestRejectedIdentityCluster(unittest.TestCase):
                     {"field": "birthdate", "values": ["1990-01-01", "1985-06-15"]},
                     {"field": "sex", "values": ["MALE", "FEMALE"]},
                 ],
+                "conflicts_hash": hash_of_conflicts(_REJECTED_CLUSTER.conflicts),
                 "contributing_fragment_ids": ["fragment_hash_1", "fragment_hash_2"],
             },
         )
@@ -104,6 +106,47 @@ class TestRejectedIdentityCluster(unittest.TestCase):
             _REJECTED_CLUSTER.to_bq_row(
                 rejected_at=datetime.datetime(2026, 7, 28, 12, 0, 0)
             )
+
+    def test_conflicts_hash_is_order_insensitive(self) -> None:
+        """The hash fingerprints the conflict evidence itself, so neither the
+        order of the conflicts nor the order of a conflict's values changes it."""
+        reordered = (
+            AttributeConflict(field="sex", values=(Sex.FEMALE, Sex.MALE)),
+            AttributeConflict(
+                field="birthdate",
+                values=(datetime.date(1985, 6, 15), datetime.date(1990, 1, 1)),
+            ),
+            AttributeConflict(field="surname", values=("JOHNSON", "WILLIAMS")),
+        )
+        self.assertEqual(
+            hash_of_conflicts(_REJECTED_CLUSTER.conflicts),
+            hash_of_conflicts(reordered),
+        )
+
+    def test_conflicts_hash_changes_with_values(self) -> None:
+        """A changed value under the same conflicting field is different
+        evidence, so it must produce a different hash."""
+        surname_conflict = (
+            AttributeConflict(field="surname", values=("WILLIAMS", "JOHNSON")),
+        )
+        drifted_value = (
+            AttributeConflict(field="surname", values=("WILLIAMS", "SMITH")),
+        )
+        self.assertNotEqual(
+            hash_of_conflicts(surname_conflict), hash_of_conflicts(drifted_value)
+        )
+
+    def test_conflicts_hash_changes_with_fields(self) -> None:
+        surname_conflict = (
+            AttributeConflict(field="surname", values=("WILLIAMS", "JOHNSON")),
+        )
+        with_added_conflict = surname_conflict + (
+            AttributeConflict(field="sex", values=(Sex.MALE, Sex.FEMALE)),
+        )
+        self.assertNotEqual(
+            hash_of_conflicts(surname_conflict),
+            hash_of_conflicts(with_added_conflict),
+        )
 
     def test_row_matches_schema(self) -> None:
         """Guards that to_bq_row and the table schema stay in sync: every

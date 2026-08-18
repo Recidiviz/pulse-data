@@ -26,6 +26,7 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.common import attr_validators
+from recidiviz.common.common_utils import get_hash_of_json
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
@@ -42,10 +43,11 @@ REJECTED_IDENTITY_CLUSTER_TABLE_ID = "rejected_identity_cluster"
 # test harness excludes it from fixture comparison.
 IDENTITY_CLUSTER_ID_COL = "identity_cluster_id"
 REJECTED_AT_COL = "rejected_at"
-_TENANT_COL = "tenant"
 _PERSON_TYPE_COL = "person_type"
 _EXTERNAL_IDS_COL = "external_ids"
 _RECORDED_CONFLICTS_COL = "recorded_conflicts"
+_CONFLICTS_HASH_COL = "conflicts_hash"
+_TENANT_COL = "tenant"
 _CONTRIBUTING_FRAGMENT_IDS_COL = "contributing_fragment_ids"
 
 # Members of the external_ids record column.
@@ -125,6 +127,17 @@ def rejected_identity_cluster_schema_fields() -> list[bigquery.SchemaField]:
                     mode="REPEATED",
                     description="The distinct values the fragments held for the field.",
                 ),
+            ),
+        ),
+        bigquery.SchemaField(
+            _CONFLICTS_HASH_COL,
+            "STRING",
+            mode="REQUIRED",
+            description=(
+                "Hash of the recorded conflicts, insensitive to their order. A "
+                "BLESS override copies this value and applies only while the "
+                "cluster's conflicts still hash to it, so a bless recorded "
+                "against different conflict evidence forces re-review."
             ),
         ),
         bigquery.SchemaField(
@@ -219,14 +232,42 @@ class RejectedIdentityCluster:
                 }
                 for conflict in self.conflicts
             ],
+            _CONFLICTS_HASH_COL: hash_of_conflicts(self.conflicts),
             _CONTRIBUTING_FRAGMENT_IDS_COL: list(self.contributing_fragment_ids),
         }
 
 
+def hash_of_conflicts(conflicts: tuple[AttributeConflict, ...]) -> str:
+    """Returns a hash of the given conflicts, insensitive to the order of the
+    conflicts and of each conflict's values.
+
+    This is the single derivation of a cluster's conflict fingerprint: the
+    pipeline writes it on each rejected cluster's row, the override recording
+    tool copies it onto a BLESS override, and the pipeline applies a bless only
+    while the cluster's current conflicts still hash to the copied value. A
+    change to this function or to _serialize_conflict_value invalidates every
+    recorded blessing, which fails safe: the blessed clusters fall back to
+    rejection for re-review rather than being kept on stale evidence.
+    """
+    return get_hash_of_json(
+        [
+            {
+                _CONFLICT_FIELD_FIELD: conflict.field,
+                _CONFLICT_VALUES_FIELD: sorted(
+                    _serialize_conflict_value(value) for value in conflict.values
+                ),
+            }
+            for conflict in sorted(conflicts, key=lambda conflict: conflict.field)
+        ]
+    )
+
+
 def _serialize_conflict_value(value: ConflictValue) -> str:
-    """Serializes a conflict value for the recorded_conflicts string column.
-    Enums render as their value (MALE, not Sex.MALE); dates render as ISO
-    strings; strings render as themselves.
+    """Serializes a conflict value for the recorded_conflicts string column and
+    for hash_of_conflicts. Enums render as their value (MALE, not Sex.MALE);
+    dates render as ISO strings; strings render as themselves. A change to this
+    format changes every cluster's conflicts hash, which invalidates every
+    recorded blessing toward re-review.
     """
     if isinstance(value, datetime.date):
         return value.isoformat()

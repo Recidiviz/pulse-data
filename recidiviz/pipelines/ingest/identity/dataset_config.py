@@ -74,3 +74,18 @@ def identity_rejections_dataset_for_tenant(
     return BigQueryAddressOverrides.format_sandbox_dataset(
         sandbox_dataset_prefix, base_dataset
     )
+
+
+def identity_overrides_dataset_for_tenant(
+    tenant: str, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Returns the BigQuery dataset holding the given tenant's identity cluster
+    overrides, the reviewer-recorded decisions to keep or drop specific clusters
+    that the identity ingest pipeline reads.
+    """
+    base_dataset = f"{tenant.lower()}_identity_overrides"
+    if not sandbox_dataset_prefix:
+        return base_dataset
+    return BigQueryAddressOverrides.format_sandbox_dataset(
+        sandbox_dataset_prefix, base_dataset
+    )

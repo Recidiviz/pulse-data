@@ -27,6 +27,9 @@ from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     REJECTED_AT_COL,
     REJECTED_IDENTITY_CLUSTER_TABLE_ID,
 )
+from recidiviz.source_tables.identity_pipeline_input_table_collector import (
+    build_identity_overrides_source_table_collection,
+)
 from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_cluster_output_source_table_collection,
     build_identity_fragment_output_source_table_collection,
@@ -73,6 +76,18 @@ class IdentityIngestPipelineTestCase(
             c.as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX)
             for c in collections
         ]
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        # The pipeline reads the identity_cluster_override table at construction,
+        # so it must exist in the emulator. It is a pipeline input rather than an
+        # output, so it is seeded unprefixed (matching overrides_input_dataset,
+        # which reads the unprefixed dataset) and is not compared against a
+        # fixture in expected_output_collections.
+        override_collection = build_identity_overrides_source_table_collection(
+            cls.tenant()
+        )
+        return [*super().get_source_tables(), override_collection]
 
     @classmethod
     def expected_clustering_output_dataset(cls) -> str:

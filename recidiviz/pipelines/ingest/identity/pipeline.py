@@ -79,6 +79,9 @@ from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
 from recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views import (
     ProcessAllIdentityIngestViews,
 )
+from recidiviz.pipelines.ingest.identity.read_identity_cluster_overrides import (
+    read_identity_cluster_overrides,
+)
 from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.identity.validate_identity_cluster_collection import (
     ValidateIdentityClusterCollection,
@@ -145,6 +148,14 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
 
         identity_config = IdentityIngestPipelineConfig.load_clustering_config()
 
+        # Load the reviewer-recorded overrides once, so every cluster the
+        # pipeline builds consults the same set.
+        overrides = read_identity_cluster_overrides(
+            project_id=self.pipeline_parameters.project,
+            dataset_id=self.pipeline_parameters.overrides_input_dataset,
+            tenant=tenant,
+        )
+
         # Assign each fragment its content-hash identity_fragment_id once, before
         # the fragments fan out to the clustering, cluster-build, and debug
         # branches, so every branch reads the same id.
@@ -196,6 +207,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             tenant=tenant,
             valid_id_types=valid_id_types,
             identity_config=identity_config,
+            overrides=overrides,
         )
 
         identity_clusters: beam.PCollection[IdentityCluster] = (

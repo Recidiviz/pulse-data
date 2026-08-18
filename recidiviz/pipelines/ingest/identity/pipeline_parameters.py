@@ -28,6 +28,7 @@ from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
     identity_fragment_dataset_for_tenant,
     identity_ingest_view_results_dataset_for_tenant,
+    identity_overrides_dataset_for_tenant,
     identity_rejections_dataset_for_tenant,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -107,6 +108,12 @@ class IdentityIngestPipelineParameters(PipelineParameters):
         )
 
     @property
+    def overrides_input_dataset(self) -> str:
+        return self.get_input_dataset(
+            identity_overrides_dataset_for_tenant(assert_type(self.tenant, str))
+        )
+
+    @property
     def flex_template_name(self) -> str:
         return "identity_ingest"
 
@@ -119,7 +126,7 @@ class IdentityIngestPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_input_dataset_property_names(cls) -> List[str]:
-        return ["raw_data_input_dataset"]
+        return ["raw_data_input_dataset", "overrides_input_dataset"]
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:

@@ -16,14 +16,24 @@
 # =============================================================================
 """PTransform that builds one IdentityCluster from each cluster of external IDs
 that clustering produced. Clusters whose fragments have conflicting attributes
-are rejected: they are emitted by the transform as RejectedIdentityClusters
-rather than as IdentityClusters.
+are rejected, and emitted as RejectedIdentityClusters rather than
+IdentityClusters.
+
+A recorded override can change the outcome for a specific cluster. A BLESS
+override keeps a conflicting cluster, emitting an IdentityCluster where the
+cluster would otherwise be rejected, but only while the cluster's conflicts
+still hash to the value recorded at review time. An EXCLUDE override drops a
+cluster whether or not it conflicts, so the transform emits nothing for it.
 """
+import logging
 from collections.abc import Iterable, Iterator
 
 import apache_beam as beam
+import attr
+from apache_beam.metrics import Metrics
 from more_itertools import one
 
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
@@ -33,17 +43,30 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityFragment,
 )
+from recidiviz.pipelines.ingest.identity.build_blessed_cluster_attributes import (
+    build_blessed_cluster_attributes,
+)
 from recidiviz.pipelines.ingest.identity.cluster_entity_conversion_utils import (
     convert_attributes_to_cluster_kwargs,
 )
 from recidiviz.pipelines.ingest.identity.fragment_attribute_conflict_checking.find_fragment_attribute_conflicts import (
     find_fragment_attribute_conflicts,
 )
+from recidiviz.pipelines.ingest.identity.identity_cluster_override import (
+    BlessedIdentityValues,
+    IdentityClusterOverride,
+    IdentityClusterOverrideDisposition,
+    IdentityClusterOverrides,
+)
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
+    ConflictCheckedAttribute,
     IdentityIngestPipelineConfig,
+    IdentityIngestPipelineTenantConfig,
+    ResolutionStrategyConfig,
 )
 from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     RejectedIdentityCluster,
+    hash_of_conflicts,
 )
 from recidiviz.pipelines.ingest.identity.resolve_cluster_attributes import (
     resolve_cluster_attributes,
@@ -67,10 +90,29 @@ FRAGMENTS_WITH_DATES = "fragments_with_dates"
 KEPT_CLUSTERS = "kept_clusters"
 REJECTED_CLUSTERS = "rejected_clusters"
 
+# Beam metrics namespace for the counts of clusters each override disposition
+# affected.
+_OVERRIDE_METRICS_NAMESPACE = "identity_cluster_overrides"
+
 # The candidate form of an identity cluster: the external-ID membership that
 # clustering produced, paired with the sourced fragments carrying those IDs,
 # before they are validated and merged into an IdentityCluster.
 IdentityClusterCandidate = tuple[ClusterKey, Iterable[SourcedIdentityFragment]]
+
+
+@attr.define(frozen=True, kw_only=True)
+class _ExcludedIdentityCluster:
+    """A cluster an EXCLUDE override dropped. The transform emits nothing for it,
+    so it reaches neither the kept-cluster tables nor the rejected-cluster table.
+    build_cluster returns one so the routing step can recognize and drop it."""
+
+    external_ids: ClusterKey = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_tuple,
+            attr_validators.is_tuple_of(tuple),
+        ]
+    )
+    """The dropped cluster's external ids."""
 
 
 class BuildIdentityClusters(beam.PTransform):
@@ -84,6 +126,7 @@ class BuildIdentityClusters(beam.PTransform):
         tenant: Tenant,
         valid_id_types: frozenset[str],
         identity_config: IdentityIngestPipelineConfig,
+        overrides: IdentityClusterOverrides,
     ) -> None:
         super().__init__()
         # Tenant the pipeline is running for; every cluster belongs to it.
@@ -94,6 +137,9 @@ class BuildIdentityClusters(beam.PTransform):
         # Loaded per-tenant config supplying each cluster's conflict-check and
         # resolution config (looked up by the cluster's person type).
         self.identity_config = identity_config
+        # Reviewer-recorded overrides that keep or drop specific clusters,
+        # matched by a cluster's exact set of external ids.
+        self.overrides = overrides
 
     def expand(
         self,
@@ -105,7 +151,8 @@ class BuildIdentityClusters(beam.PTransform):
     ) -> beam.pvalue.DoOutputsTuple:
         """Takes a dict with two keyed PCollections and produces one element
         per cluster, on one of two outputs: an IdentityCluster on KEPT_CLUSTERS,
-        or a RejectedIdentityCluster on REJECTED_CLUSTERS.
+        or a RejectedIdentityCluster on REJECTED_CLUSTERS. A cluster an EXCLUDE
+        override drops produces no element.
 
         Example input:
 
@@ -142,9 +189,10 @@ class BuildIdentityClusters(beam.PTransform):
              (a sorted tuple of all ExternalIdKeys in the cluster).
           3. GroupByKey groups all fragments sharing the same cluster key.
           4. build_cluster checks the candidate's structural invariants
-             (raising on violation), then either constructs an IdentityCluster
-             from the resolved attributes or, when the fragments have attribute
-             conflicts, a RejectedIdentityCluster.
+             (raising on violation), applies any recorded override, then either
+             constructs an IdentityCluster from the resolved attributes or,
+             when the fragments have attribute conflicts, a
+             RejectedIdentityCluster.
           5. route_cluster sends each element to the output matching its type.
         """
         return (
@@ -207,12 +255,19 @@ class BuildIdentityClusters(beam.PTransform):
 
     def build_cluster(
         self, candidate: IdentityClusterCandidate
-    ) -> IdentityCluster | RejectedIdentityCluster:
-        """Builds the cluster for a candidate: checks its structural invariants
-        (raising on violation), then returns either an IdentityCluster built
-        from the fragments' resolved attributes or, when the fragments have
-        attribute conflicts, a RejectedIdentityCluster recording those
-        conflicts."""
+    ) -> IdentityCluster | RejectedIdentityCluster | _ExcludedIdentityCluster:
+        """Builds one cluster from a candidate, first checking its structural
+        invariants and raising on any violation.
+
+        Returns an _ExcludedIdentityCluster when an EXCLUDE override drops
+        the cluster, whether or not its fragments conflict. Returns a
+        RejectedIdentityCluster when the fragments conflict and no recorded
+        blessing applies, either because none exists or because the cluster's
+        conflicts no longer hash to the value the blessing was recorded
+        against. Otherwise returns an IdentityCluster built from the
+        fragments' resolved attributes, with the reviewer's recorded value in
+        place of each conflicting attribute when a BLESS override keeps the
+        cluster."""
         cluster_key, sourced_fragments_iterable = candidate
         sourced_fragments = tuple(sourced_fragments_iterable)
         fragments = [fragment for _, _, fragment in sourced_fragments]
@@ -236,15 +291,35 @@ class BuildIdentityClusters(beam.PTransform):
             self.tenant, person_type
         )
 
+        override = self._override_for_cluster(cluster_key, person_type)
+
+        # An EXCLUDE override drops the cluster whether or not it conflicts, so it
+        # is applied before the conflict check.
+        if (
+            override is not None
+            and override.disposition is IdentityClusterOverrideDisposition.EXCLUDE
+        ):
+            return self._exclude_cluster(cluster_key, person_type)
+
         conflicts = find_fragment_attribute_conflicts(
             sorted_fragments, tenant_config.conflict_checked_attributes_config
         )
         if conflicts:
-            return self._build_rejected_cluster(
+            return self._resolve_conflicting_cluster(
                 cluster_key=cluster_key,
                 person_type=person_type,
                 sorted_fragments=sorted_fragments,
                 conflicts=conflicts,
+                tenant_config=tenant_config,
+                bless_override=override,
+            )
+
+        if override is not None:
+            Metrics.counter(_OVERRIDE_METRICS_NAMESPACE, "obsolete_blessings").inc()
+            logging.info(
+                "Cluster [%s] has a BLESS override but no longer conflicts; the "
+                "override had no effect and can be removed.",
+                self._would_be_identity_cluster_id(cluster_key, person_type),
             )
 
         attributes = resolve_cluster_attributes(
@@ -261,14 +336,20 @@ class BuildIdentityClusters(beam.PTransform):
 
     @staticmethod
     def route_cluster(
-        cluster: IdentityCluster | RejectedIdentityCluster,
+        cluster: IdentityCluster | RejectedIdentityCluster | _ExcludedIdentityCluster,
     ) -> Iterator[IdentityCluster | beam.pvalue.TaggedOutput]:
         """Routes each built element to the output matching its type: kept
         IdentityClusters to the main KEPT_CLUSTERS output,
-        RejectedIdentityClusters to REJECTED_CLUSTERS. Raises on any other
-        type: the main output feeds the cluster tables the Identity Service
-        imports, so an unrecognized element must fail the run rather than be
-        imported."""
+        RejectedIdentityClusters to REJECTED_CLUSTERS, and
+        _ExcludedIdentityClusters to neither, so an excluded cluster leaves no
+        trace in either table. Raises on any other type; the main output feeds
+        the cluster tables the Identity Service imports, so an unrecognized
+        element must fail the run rather than be imported."""
+        # TODO(OBT-45433): Emit excluded clusters to a dedicated output table
+        # instead of dropping them, so every cluster stays traceable to some
+        # table.
+        if isinstance(cluster, _ExcludedIdentityCluster):
+            return
         if isinstance(cluster, RejectedIdentityCluster):
             yield beam.pvalue.TaggedOutput(REJECTED_CLUSTERS, cluster)
         elif isinstance(cluster, IdentityCluster):
@@ -311,6 +392,117 @@ class BuildIdentityClusters(beam.PTransform):
                 f"every fragment in a cluster must share a single person type."
             ) from e
 
+    def _override_for_cluster(
+        self, cluster_key: ClusterKey, person_type: PersonType
+    ) -> IdentityClusterOverride | None:
+        """Returns the override matching the cluster's external ids, or None.
+        Raises if a matching override records a different person type, which
+        means the override was recorded against a different cluster."""
+        override = self.overrides.get_override(cluster_key)
+        if override is not None and override.person_type is not person_type:
+            raise ValueError(
+                f"Override for cluster [{cluster_key}] records person type "
+                f"[{override.person_type.value}], but the cluster's person type "
+                f"is [{person_type.value}]."
+            )
+        return override
+
+    def _exclude_cluster(
+        self, cluster_key: ClusterKey, person_type: PersonType
+    ) -> _ExcludedIdentityCluster:
+        """Drops the cluster per an EXCLUDE override, logging and counting the
+        firing."""
+        Metrics.counter(_OVERRIDE_METRICS_NAMESPACE, "excluded_clusters").inc()
+        logging.info(
+            "Excluding cluster [%s]; dropping it per a recorded override.",
+            self._would_be_identity_cluster_id(cluster_key, person_type),
+        )
+        return _ExcludedIdentityCluster(external_ids=cluster_key)
+
+    def _resolve_conflicting_cluster(
+        self,
+        *,
+        cluster_key: ClusterKey,
+        person_type: PersonType,
+        sorted_fragments: list[IdentityFragment],
+        conflicts: tuple[AttributeConflict, ...],
+        tenant_config: IdentityIngestPipelineTenantConfig,
+        bless_override: IdentityClusterOverride | None,
+    ) -> IdentityCluster | RejectedIdentityCluster:
+        """Returns an IdentityCluster when a BLESS override keeps the cluster,
+        otherwise a RejectedIdentityCluster. Only a BLESS override reaches here;
+        build_cluster applies EXCLUDE overrides before the conflict check. A
+        BLESS override sets each conflicting attribute to the value the reviewer
+        recorded for it, or to null when the reviewer recorded none, and applies
+        only while the cluster's conflicts still hash to the value recorded at
+        review time; a cluster whose conflict evidence has since changed is
+        rejected for re-review rather than kept on a stale blessing."""
+        if bless_override is not None:
+            blessed_values = assert_type(
+                bless_override.blessed_values, BlessedIdentityValues
+            )
+            if bless_override.conflicts_hash == hash_of_conflicts(conflicts):
+                return self._build_blessed_cluster(
+                    cluster_key=cluster_key,
+                    person_type=person_type,
+                    sorted_fragments=sorted_fragments,
+                    resolution_strategy_config=tenant_config.resolution_strategy_config,
+                    blessed_values=blessed_values,
+                    conflicting_attributes={
+                        ConflictCheckedAttribute(conflict.field)
+                        for conflict in conflicts
+                    },
+                )
+            Metrics.counter(_OVERRIDE_METRICS_NAMESPACE, "stale_blessings").inc()
+            logging.info(
+                "Cluster [%s] has a BLESS override recorded against different "
+                "conflicts than it has now; rejecting it for re-review.",
+                self._would_be_identity_cluster_id(cluster_key, person_type),
+            )
+        return self._build_rejected_cluster(
+            cluster_key=cluster_key,
+            person_type=person_type,
+            sorted_fragments=sorted_fragments,
+            conflicts=conflicts,
+        )
+
+    def _build_blessed_cluster(
+        self,
+        *,
+        cluster_key: ClusterKey,
+        person_type: PersonType,
+        sorted_fragments: list[IdentityFragment],
+        resolution_strategy_config: ResolutionStrategyConfig,
+        blessed_values: BlessedIdentityValues,
+        conflicting_attributes: set[ConflictCheckedAttribute],
+    ) -> IdentityCluster:
+        """Keeps a conflicting cluster per a BLESS override, using the recorded
+        value for each conflicting attribute (null when the reviewer left it
+        unset) and normal resolution for the rest."""
+        Metrics.counter(_OVERRIDE_METRICS_NAMESPACE, "blessed_clusters").inc()
+        logging.info(
+            "Blessing cluster [%s], keeping it despite conflicts on %s.",
+            self._would_be_identity_cluster_id(cluster_key, person_type),
+            sorted(attribute.value for attribute in conflicting_attributes),
+        )
+        resolved_attributes = resolve_cluster_attributes(
+            tenant=self.tenant,
+            sorted_fragments=sorted_fragments,
+            resolution_strategy_config=resolution_strategy_config,
+        )
+        attributes = build_blessed_cluster_attributes(
+            tenant=self.tenant,
+            resolved_attributes=resolved_attributes,
+            blessed_values=blessed_values,
+            conflicting_attributes=conflicting_attributes,
+        )
+        return IdentityCluster(
+            tenant=self.tenant,
+            external_ids=self._cluster_external_id_entities(cluster_key),
+            person_type=person_type,
+            **(convert_attributes_to_cluster_kwargs(attributes) if attributes else {}),
+        )
+
     def _build_rejected_cluster(
         self,
         *,
@@ -346,6 +538,17 @@ class BuildIdentityClusters(beam.PTransform):
                 tenant=self.tenant, external_id=external_id, id_type=id_type
             )
             for external_id, id_type in cluster_key
+        )
+
+    def _would_be_identity_cluster_id(
+        self, cluster_key: ClusterKey, person_type: PersonType
+    ) -> str:
+        """Returns the identity_cluster_id the cluster would carry if kept, used
+        to reference the cluster in logs without its external ids."""
+        return IdentityCluster.cluster_id_for_external_ids(
+            tenant=self.tenant,
+            external_ids=self._cluster_external_id_entities(cluster_key),
+            person_type=person_type,
         )
 
     def _check_id_types_are_valid(self, cluster_key: ClusterKey) -> list[str]:

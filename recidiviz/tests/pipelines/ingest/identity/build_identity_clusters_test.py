@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for build_identity_clusters."""
+import datetime
 import unittest
 from collections.abc import Iterable
 
@@ -43,6 +44,13 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
     KEPT_CLUSTERS,
     REJECTED_CLUSTERS,
     BuildIdentityClusters,
+    _ExcludedIdentityCluster,
+)
+from recidiviz.pipelines.ingest.identity.identity_cluster_override import (
+    BlessedIdentityValues,
+    IdentityClusterOverride,
+    IdentityClusterOverrideDisposition,
+    IdentityClusterOverrides,
 )
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
     IdentityIngestPipelineConfig,
@@ -50,6 +58,7 @@ from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import 
 )
 from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     RejectedIdentityCluster,
+    hash_of_conflicts,
 )
 from recidiviz.pipelines.ingest.identity.types import AttributeConflict
 from recidiviz.pipelines.ingest.types import ExternalIdKey
@@ -66,6 +75,7 @@ _VALID_ID_TYPES = frozenset({"T1", "T2"})
 _IDENTITY_CONFIG = IdentityIngestPipelineConfig(
     default_config=IdentityIngestPipelineTenantConfig(), tenant_configs={}
 )
+_NO_OVERRIDES = IdentityClusterOverrides.empty(_TENANT)
 
 
 def _fragment(
@@ -108,6 +118,7 @@ class TestRekeyFragmentsByCluster(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
     def test_eid_with_cluster_and_fragments(self) -> None:
@@ -213,6 +224,7 @@ class TestBuildCluster(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
     def test_single_eid_single_fragment(self) -> None:
@@ -554,6 +566,235 @@ class TestBuildCluster(unittest.TestCase):
         self.assertEqual(result.cluster_hash, rerun.cluster_hash)
 
 
+# The hash a reviewer's BLESS override carries when recorded against the
+# Williams-vs-Johnson surname conflict the tests below construct.
+_SURNAME_CONFLICT_HASH = hash_of_conflicts(
+    (AttributeConflict(field="surname", values=("Williams", "Johnson")),)
+)
+
+
+def _bless_override(
+    external_ids: tuple[tuple[str, str], ...],
+    blessed_values: BlessedIdentityValues,
+    person_type: PersonType = PersonType.JII,
+    conflicts_hash: str = _SURNAME_CONFLICT_HASH,
+) -> IdentityClusterOverride:
+    return IdentityClusterOverride(
+        tenant=_TENANT,
+        person_type=person_type,
+        external_ids=external_ids,
+        disposition=IdentityClusterOverrideDisposition.BLESS,
+        blessed_values=blessed_values,
+        conflicts_hash=conflicts_hash,
+        recorded_by="tester",
+        recorded_at=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
+        note="test",
+    )
+
+
+def _exclude_override(
+    external_ids: tuple[tuple[str, str], ...],
+    person_type: PersonType = PersonType.JII,
+) -> IdentityClusterOverride:
+    return IdentityClusterOverride(
+        tenant=_TENANT,
+        person_type=person_type,
+        external_ids=external_ids,
+        disposition=IdentityClusterOverrideDisposition.EXCLUDE,
+        blessed_values=None,
+        recorded_by="tester",
+        recorded_at=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
+        note="test",
+    )
+
+
+class TestBuildClusterWithOverrides(unittest.TestCase):
+    """Tests for build_cluster applying recorded overrides."""
+
+    def _transform(self, overrides: IdentityClusterOverrides) -> BuildIdentityClusters:
+        return BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+            overrides=overrides,
+        )
+
+    def test_exclude_drops_conflicting_cluster(self) -> None:
+        cluster_key = (("A", "T1"),)
+        fragment_a = _fragment([("A", "T1")], name_surname="Williams")
+        fragment_b = _fragment([("A", "T1")], name_surname="Johnson")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT, overrides=[_exclude_override(cluster_key)]
+        )
+
+        result = self._transform(overrides).build_cluster(
+            (
+                cluster_key,
+                [(100.0, "view_a", fragment_a), (200.0, "view_b", fragment_b)],
+            )
+        )
+
+        self.assertIsInstance(result, _ExcludedIdentityCluster)
+        assert isinstance(result, _ExcludedIdentityCluster)
+        self.assertEqual(result.external_ids, cluster_key)
+
+    def test_exclude_drops_clean_cluster(self) -> None:
+        """An EXCLUDE override drops even a cluster the pipeline would keep, so a
+        known-bad merge that trips no conflict never reaches the cluster
+        tables."""
+        cluster_key = (("A", "T1"),)
+        fragment = _fragment([("A", "T1")], name_given="Alice")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT, overrides=[_exclude_override(cluster_key)]
+        )
+
+        result = self._transform(overrides).build_cluster(
+            (cluster_key, [(100.0, "view_a", fragment)])
+        )
+
+        self.assertIsInstance(result, _ExcludedIdentityCluster)
+
+    def test_bless_keeps_conflicting_cluster_with_blessed_value(self) -> None:
+        cluster_key = (("A", "T1"),)
+        fragment_a = _fragment(
+            [("A", "T1")], name_given="John", name_surname="Williams"
+        )
+        fragment_b = _fragment([("A", "T1")], name_given="John", name_surname="Johnson")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT,
+            overrides=[
+                _bless_override(cluster_key, BlessedIdentityValues(surname="Rivera"))
+            ],
+        )
+
+        result = assert_type(
+            self._transform(overrides).build_cluster(
+                (
+                    cluster_key,
+                    [(100.0, "view_a", fragment_a), (200.0, "view_b", fragment_b)],
+                )
+            ),
+            IdentityCluster,
+        )
+
+        assert result.name is not None
+        self.assertEqual(result.name.surname, "Rivera")
+        self.assertEqual(result.name.given_name, "John")
+
+    def test_bless_leaves_unset_conflicting_attribute_null(self) -> None:
+        """A BLESS override keeps a conflicting cluster even when it supplies no
+        value for a conflicting attribute; that attribute is stored as null
+        rather than resolved to one of the fragments' values."""
+        cluster_key = (("A", "T1"),)
+        fragment_a = _fragment(
+            [("A", "T1")], name_given="John", name_surname="Williams"
+        )
+        fragment_b = _fragment([("A", "T1")], name_given="John", name_surname="Johnson")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT,
+            overrides=[_bless_override(cluster_key, BlessedIdentityValues())],
+        )
+
+        result = assert_type(
+            self._transform(overrides).build_cluster(
+                (
+                    cluster_key,
+                    [(100.0, "view_a", fragment_a), (200.0, "view_b", fragment_b)],
+                )
+            ),
+            IdentityCluster,
+        )
+
+        assert result.name is not None
+        self.assertEqual(result.name.given_name, "John")
+        self.assertIsNone(result.name.surname)
+
+    def test_bless_with_stale_conflicts_hash_rejects(self) -> None:
+        """A BLESS override applies only while the cluster's conflicts still
+        hash to the value recorded at review time; a cluster whose conflict
+        evidence has since changed is rejected for re-review."""
+        cluster_key = (("A", "T1"),)
+        fragment_a = _fragment(
+            [("A", "T1")], name_given="John", name_surname="Williams"
+        )
+        fragment_b = _fragment([("A", "T1")], name_given="John", name_surname="Smith")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT,
+            overrides=[
+                # Recorded when the surname conflict was Williams vs Johnson;
+                # the fragments now disagree Williams vs Smith instead.
+                _bless_override(cluster_key, BlessedIdentityValues(surname="Rivera"))
+            ],
+        )
+
+        result = self._transform(overrides).build_cluster(
+            (
+                cluster_key,
+                [(100.0, "view_a", fragment_a), (200.0, "view_b", fragment_b)],
+            )
+        )
+
+        self.assertIsInstance(result, RejectedIdentityCluster)
+
+    def test_bless_on_non_conflicting_cluster_keeps_normally(self) -> None:
+        """A BLESS override on a cluster that no longer conflicts is a no-op; the
+        cluster keeps its resolved values, not the blessed ones."""
+        cluster_key = (("A", "T1"),)
+        fragment = _fragment([("A", "T1")], name_given="Alice", name_surname="Smith")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT,
+            overrides=[
+                _bless_override(cluster_key, BlessedIdentityValues(surname="Rivera"))
+            ],
+        )
+
+        result = assert_type(
+            self._transform(overrides).build_cluster(
+                (cluster_key, [(100.0, "view_a", fragment)])
+            ),
+            IdentityCluster,
+        )
+
+        assert result.name is not None
+        self.assertEqual(result.name.surname, "Smith")
+
+    def test_override_person_type_mismatch_raises(self) -> None:
+        cluster_key = (("A", "T1"),)
+        fragment = _fragment(
+            [("A", "T1")], name_given="Alice", person_type=PersonType.JII
+        )
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT,
+            overrides=[_exclude_override(cluster_key, person_type=PersonType.STAFF)],
+        )
+
+        with self.assertRaisesRegex(ValueError, r"records person type \[STAFF\]"):
+            self._transform(overrides).build_cluster(
+                (cluster_key, [(100.0, "view_a", fragment)])
+            )
+
+    def test_override_requires_exact_external_id_match(self) -> None:
+        """An override matches only a cluster whose external ids equal its own; a
+        cluster that is a superset of the override's ids is decided normally."""
+        eid_a: ExternalIdKey = ("A", "T1")
+        eid_b: ExternalIdKey = ("B", "T2")
+        fragment_a = _fragment([("A", "T1")], name_surname="Williams")
+        fragment_b = _fragment([("B", "T2")], name_surname="Johnson")
+        cluster_key = tuple(sorted([eid_a, eid_b]))
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT, overrides=[_exclude_override((("A", "T1"),))]
+        )
+
+        result = self._transform(overrides).build_cluster(
+            (
+                cluster_key,
+                [(100.0, "view_a", fragment_a), (200.0, "view_b", fragment_b)],
+            )
+        )
+
+        self.assertIsInstance(result, RejectedIdentityCluster)
+
+
 class TestBuildIdentityClustersBeam(unittest.TestCase):
     """Beam pipeline tests for BuildIdentityClusters."""
 
@@ -579,6 +820,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
         expected_cluster = IdentityCluster(
@@ -634,6 +876,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
         summaries = output[KEPT_CLUSTERS] | "Summarize" >> beam.Map(_cluster_summary)
@@ -690,6 +933,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
         with self.assertRaisesRegex(
@@ -726,6 +970,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
         count = output[KEPT_CLUSTERS] | "Count" >> beam.combiners.Count.Globally()
@@ -764,6 +1009,7 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             tenant=_TENANT,
             valid_id_types=_VALID_ID_TYPES,
             identity_config=_IDENTITY_CONFIG,
+            overrides=_NO_OVERRIDES,
         )
 
         kept_eids = output[KEPT_CLUSTERS] | "Summarize kept" >> beam.Map(
@@ -786,4 +1032,51 @@ class TestBuildIdentityClustersBeam(unittest.TestCase):
             equal_to([(cluster_key_conflicted, ("surname",))]),
             label="rejected",
         )
+        self.test_pipeline.run()
+
+    def test_excluded_cluster_emits_nothing(self) -> None:
+        """A cluster an EXCLUDE override drops leaves through neither output,
+        even though its fragments conflict; other clusters are unaffected."""
+        eid_kept: ExternalIdKey = ("A", "T1")
+        eid_excluded: ExternalIdKey = ("B", "T1")
+        cluster_key_kept = (eid_kept,)
+        cluster_key_excluded = (eid_excluded,)
+        kept_fragment = _fragment([("A", "T1")], name_given="Alice")
+        excluded_fragment_a = _fragment([("B", "T1")], name_surname="Williams")
+        excluded_fragment_b = _fragment([("B", "T1")], name_surname="Johnson")
+        overrides = IdentityClusterOverrides.for_overrides(
+            tenant=_TENANT, overrides=[_exclude_override(cluster_key_excluded)]
+        )
+
+        cluster_memberships = self.test_pipeline | "Create memberships" >> beam.Create(
+            [
+                (eid_kept, cluster_key_kept),
+                (eid_excluded, cluster_key_excluded),
+            ]
+        )
+        fragments = self.test_pipeline | "Create fragments" >> beam.Create(
+            [
+                (eid_kept, (100.0, "view_a", kept_fragment)),
+                (eid_excluded, (100.0, "view_a", excluded_fragment_a)),
+                (eid_excluded, (200.0, "view_a", excluded_fragment_b)),
+            ]
+        )
+        output = {
+            CLUSTER_MEMBERSHIPS: cluster_memberships,
+            FRAGMENTS_WITH_DATES: fragments,
+        } | BuildIdentityClusters(
+            tenant=_TENANT,
+            valid_id_types=_VALID_ID_TYPES,
+            identity_config=_IDENTITY_CONFIG,
+            overrides=overrides,
+        )
+
+        kept_eids = output[KEPT_CLUSTERS] | "Summarize kept" >> beam.Map(
+            lambda cluster: tuple(
+                (e.external_id, e.id_type) for e in cluster.external_ids
+            )
+        )
+
+        assert_that(kept_eids, equal_to([cluster_key_kept]), label="kept")
+        assert_that(output[REJECTED_CLUSTERS], equal_to([]), label="rejected")
         self.test_pipeline.run()

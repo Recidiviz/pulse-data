@@ -159,8 +159,9 @@ def build_identity_rejections_source_table_collection(
     tenant: Tenant,
 ) -> SourceTableCollection:
     """Build the source table collection for the "{tenant}_identity_rejections"
-    dataset, the pipeline-written record of what it dropped from clustering and
-    why. Each run rewrites the tables, so the collection is regenerable."""
+    identity ingest pipeline output dataset, the per-tenant record of what the
+    pipeline dropped from clustering and why.
+    """
     collection = SourceTableCollection(
         dataset_id=identity_rejections_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
