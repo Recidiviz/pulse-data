@@ -49,7 +49,7 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     SourceTableCollection,
     StateSpecificSourceTableLabel,
 )
@@ -133,7 +133,7 @@ def create_or_update_dataflow_sandbox(
 
     for pipeline in pipelines:
         pipeline_collections = dataflow_source_tables.get_collections_with_labels(
-            labels=[DataflowPipelineSourceTableLabel(pipeline_name=pipeline)]
+            labels=[DataflowPipelineOutputSourceTableLabel(pipeline_name=pipeline)]
         )
 
         if pipeline == INGEST_PIPELINE_NAME:

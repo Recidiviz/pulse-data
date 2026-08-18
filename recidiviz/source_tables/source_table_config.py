@@ -469,7 +469,7 @@ class SourceTableLabel(typing.Generic[SourceTableLabelT]):
 
 
 @attr.define
-class DataflowPipelineSourceTableLabel(SourceTableLabel[str]):
+class DataflowPipelineOutputSourceTableLabel(SourceTableLabel[str]):
     pipeline_name: str = attr.ib(validator=attr_validators.is_str)
 
     @property

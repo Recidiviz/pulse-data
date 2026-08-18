@@ -30,7 +30,7 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -59,7 +59,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         supplemental_collection = (
             self.source_table_repository.get_collection_with_labels(
                 labels=[
-                    DataflowPipelineSourceTableLabel(
+                    DataflowPipelineOutputSourceTableLabel(
                         pipeline_name=SUPPLEMENTAL_PIPELINE_NAME
                     )
                 ]
@@ -78,7 +78,9 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         """Tests the expected output schema of metrics pipelines."""
         metric_collection = self.source_table_repository.get_collection_with_labels(
             labels=[
-                DataflowPipelineSourceTableLabel(pipeline_name=METRICS_PIPELINE_NAME)
+                DataflowPipelineOutputSourceTableLabel(
+                    pipeline_name=METRICS_PIPELINE_NAME
+                )
             ]
         )
 
@@ -111,7 +113,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
             collection
             for collection in self.source_table_repository.get_collections_with_labels(
                 labels=[
-                    DataflowPipelineSourceTableLabel(
+                    DataflowPipelineOutputSourceTableLabel(
                         pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
                     )
                 ]
@@ -228,7 +230,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         ingest-view-results debug output, one collection per tenant."""
         identity_collections = self.source_table_repository.get_collections_with_labels(
             labels=[
-                DataflowPipelineSourceTableLabel(
+                DataflowPipelineOutputSourceTableLabel(
                     pipeline_name=IDENTITY_INGEST_PIPELINE_NAME
                 )
             ]

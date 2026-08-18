@@ -33,7 +33,7 @@ from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_rejections_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     SourceTableCollectionUpdateConfig,
     StateSpecificSourceTableLabel,
 )
@@ -87,7 +87,7 @@ class TestBuildIdentityFragmentOutputSourceTableCollection(unittest.TestCase):
     def test_carries_identity_ingest_pipeline_label(self) -> None:
         collection = build_identity_fragment_output_source_table_collection(_TENANT)
         self.assertIn(
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             collection.labels,
         )
         self.assertIn(
@@ -146,7 +146,7 @@ class TestBuildIdentityClusterOutputSourceTableCollection(unittest.TestCase):
     def test_carries_identity_ingest_pipeline_label(self) -> None:
         collection = build_identity_cluster_output_source_table_collection(_TENANT)
         self.assertIn(
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             collection.labels,
         )
         self.assertIn(
@@ -206,7 +206,7 @@ class TestBuildIdentityRejectionsSourceTableCollection(unittest.TestCase):
     def test_carries_identity_ingest_pipeline_label(self) -> None:
         collection = build_identity_rejections_source_table_collection(_TENANT)
         self.assertIn(
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             collection.labels,
         )
         self.assertIn(

@@ -52,7 +52,7 @@ from recidiviz.source_tables.ingest_pipeline_output_helpers import (
     build_ingest_view_results_source_table_collection_from_manifests,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     StateSpecificSourceTableLabel,
@@ -84,7 +84,7 @@ def build_identity_ingest_view_results_source_table_collection(
             f"identity ingest pipeline for tenant {tenant.value}."
         ),
         labels=[
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
         manifest_collector=IngestViewManifestCollector(
@@ -107,7 +107,7 @@ def build_identity_fragment_output_source_table_collection(
         dataset_id=identity_fragment_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
         ],
         description=(
@@ -136,7 +136,7 @@ def build_identity_cluster_output_source_table_collection(
         dataset_id=identity_cluster_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
         ],
         description=(
@@ -165,7 +165,7 @@ def build_identity_rejections_source_table_collection(
         dataset_id=identity_rejections_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
-            DataflowPipelineSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(IDENTITY_INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=tenant.to_state_code()),
         ],
         description=(

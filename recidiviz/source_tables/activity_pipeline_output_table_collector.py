@@ -43,7 +43,7 @@ from recidiviz.source_tables.ingest_pipeline_output_helpers import (
     build_ingest_view_results_source_table_collection_from_manifests,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     IngestViewResultsSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -68,7 +68,7 @@ def build_ingest_view_results_source_table_collection(
         ),
         labels=[
             IngestViewResultsSourceTableLabel(state_code=state_code),
-            DataflowPipelineSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
         manifest_collector=IngestViewManifestCollector(
@@ -89,7 +89,7 @@ def build_state_output_source_table_collection(
         dataset_id=state_dataset_for_state_code(state_code),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
-            DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
         description=(
@@ -112,7 +112,7 @@ def build_normalized_state_output_source_table_collection(
         dataset_id=normalized_state_dataset_for_state_code(state_code),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
-            DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+            DataflowPipelineOutputSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
         description=(

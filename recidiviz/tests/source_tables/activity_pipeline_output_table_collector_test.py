@@ -29,7 +29,7 @@ from recidiviz.source_tables.activity_pipeline_output_table_collector import (
     build_state_output_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    DataflowPipelineOutputSourceTableLabel,
     StateSpecificSourceTableLabel,
 )
 
@@ -56,7 +56,7 @@ class TestBuildStateOutputSourceTableCollection(unittest.TestCase):
         collection = build_state_output_source_table_collection(_STATE_CODE)
         self.assertEqual(
             [
-                DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+                DataflowPipelineOutputSourceTableLabel(INGEST_PIPELINE_NAME),
                 StateSpecificSourceTableLabel(state_code=_STATE_CODE),
             ],
             collection.labels,
@@ -92,7 +92,7 @@ class TestBuildNormalizedStateOutputSourceTableCollection(unittest.TestCase):
         collection = build_normalized_state_output_source_table_collection(_STATE_CODE)
         self.assertEqual(
             [
-                DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+                DataflowPipelineOutputSourceTableLabel(INGEST_PIPELINE_NAME),
                 StateSpecificSourceTableLabel(state_code=_STATE_CODE),
             ],
             collection.labels,
