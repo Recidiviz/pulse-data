@@ -256,6 +256,35 @@ class ApplyProtectionTagsTest(unittest.TestCase):
             [call.args[0] for call in client.client.update_dataset.call_args_list],
         )
 
+    def test_tag_failure_is_non_fatal(
+        self,
+        mock_client_cls: MagicMock,
+        mock_metadata: MagicMock,
+        mock_build: MagicMock,
+    ) -> None:
+        client, datasets = self._wire(
+            mock_client_cls,
+            mock_metadata,
+            mock_build,
+            protect={"boom", "ok"},
+            live={"boom": None, "ok": None},
+        )
+
+        # Tagging "boom" raises (e.g. a missing permission); "ok" still succeeds.
+        def _update(dataset: object, _fields: list[str]) -> None:
+            if dataset is datasets["boom"]:
+                raise RuntimeError("permission denied")
+
+        client.client.update_dataset.side_effect = _update
+
+        with self.assertLogs(level="WARNING") as logs:
+            apply_protection_tags(dry_run=False)  # must not raise
+
+        self.assertTrue(any("boom" in line for line in logs.output))
+        self.assertEqual(
+            {PROTECTION_TAG_KEY: PROTECTION_TAG_VALUE}, datasets["ok"].resource_tags
+        )
+
 
 class EntrypointWiringTest(unittest.TestCase):
     """Tests the argparse + run_entrypoint plumbing."""

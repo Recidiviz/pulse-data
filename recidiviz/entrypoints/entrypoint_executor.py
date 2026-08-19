@@ -44,6 +44,9 @@ from opentelemetry import trace
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.trace import set_tracer_provider
 
+from recidiviz.entrypoints.bigquery.apply_dataset_protection_tags_entrypoint import (
+    ApplyDatasetProtectionTagsEntrypoint,
+)
 from recidiviz.entrypoints.bigquery.apply_row_level_permissions_entrypoint import (
     ApplyRowLevelPermissionsEntrypoint,
 )
@@ -100,6 +103,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 
 ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
+    ApplyDatasetProtectionTagsEntrypoint,
     ApplyRowLevelPermissionsEntrypoint,
     BigQueryRefreshEntrypoint,
     DataflowMetricPruningEntrypoint,

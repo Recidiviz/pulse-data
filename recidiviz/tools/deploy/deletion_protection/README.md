@@ -69,6 +69,22 @@ re-run the script (they are **blanket** — no tag condition — so they take ef
 }
 ```
 
+## Deleting a protected dataset
+The deny only blocks `bigquery.datasets.delete`, and only for workforce humans — service accounts
+are exempt (see "What it creates"). So a protected dataset is retired by emptying it by hand and
+letting the deploy service account drop the empty shell:
+
+1. **In a PR**, remove the dataset from the protect set — from `datasets_to_protect()` (its
+   source-table registry tier, or the `INFRA_PROTECT_ALLOWLIST`) and from the Terraform-managed
+   dataset registry. The reconcile job stops re-tagging it; once Terraform owns the tag it also
+   clears `protection` on the next apply. (The lingering tag doesn't block the delete either way —
+   the deploy SA is exempt from the deny — but clearing it keeps the tag set honest.)
+2. **Empty the dataset by hand** — delete its tables and views in BigQuery. The deny covers only
+   `datasets.delete`, not table deletes, so this is allowed; the dataset itself still can't be
+   deleted by a human while it's tagged.
+3. **Deploy the PR.** `terraform apply` runs as the deploy/Compute service account, which the deny
+   policy does not target, so it deletes the now-empty dataset.
+
 ## Status
 Design validated end-to-end in `recidiviz-terraform-sandbox` (2026-08-14): a tag-conditioned
 `datasets.delete` deny fired on a tagged BQ dataset and overrode `bigquery.admin`. **Not applied

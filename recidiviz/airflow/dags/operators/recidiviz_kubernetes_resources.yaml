@@ -132,3 +132,12 @@ DocumentUploadEntrypoint:
     limits:
       cpu: 1000m
       memory: 2Gi
+
+# Reconciles the `protection` Resource Manager tag onto protected-tier datasets.
+# I/O-bound: lists datasets and issues per-dataset metadata reads/updates through a
+# thread pool, so it is light on CPU and holds only dataset metadata in memory.
+ApplyDatasetProtectionTagsEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi

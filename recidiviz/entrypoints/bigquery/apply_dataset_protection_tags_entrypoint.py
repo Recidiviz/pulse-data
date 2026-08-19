@@ -29,10 +29,15 @@ Design:
     (tagged but no longer in the protect set) is logged for a human, never auto-corrected.
   - Idempotent, with a ``--dry-run`` that prints exactly which datasets would be tagged.
 
-Intended to run as a per-project deploy step under the deploy service account, right after
-the source-table update, so the tags track the registry automatically.
+Runs as the ``apply_dataset_protection_tags`` task in the calculation DAG, right after the
+source-table schema update, so the tags track the registry automatically on every run. The
+task executes in a Kubernetes pod under the Composer environment's service account (the
+project's Compute Engine default service account), which must hold ``bigquery.datasets.update``
+on the datasets (via ``roles/bigquery.dataOwner``/``admin``) and ``roles/resourcemanager.tagUser``
+on the ``protection`` tag value to write the tag; both are granted in staging and prod.
 """
 import argparse
+import enum
 import logging
 from concurrent import futures
 
@@ -66,6 +71,14 @@ INFRA_PROTECT_ALLOWLIST: set[str] = {
     "on_call_logs",
     "gcp_logs",
 }
+
+
+class _TagOutcome(enum.Enum):
+    """Outcome of ensuring the protection tag on a single dataset."""
+
+    NEWLY_TAGGED = "newly_tagged"
+    ALREADY_TAGGED = "already_tagged"
+    FAILED = "failed"
 
 
 class ApplyDatasetProtectionTagsEntrypoint(EntrypointInterface):
@@ -105,7 +118,12 @@ def datasets_to_protect(project_id: str) -> set[str]:
 
 
 def apply_protection_tags(*, dry_run: bool) -> None:
-    """Ensures every dataset in the protect set carries the protection tag. Add-only."""
+    """Ensures every dataset in the protect set carries the protection tag. Add-only.
+
+    Non-fatal: a failure to tag any single dataset is logged and counted, never raised -- this
+    runs inside the calculation DAG and must not fail it. A non-zero failure count is the signal
+    to alert on.
+    """
     bq_client = BigQueryClientImpl()
     project_id = metadata.project_id()
     to_protect = datasets_to_protect(project_id)
@@ -115,8 +133,7 @@ def apply_protection_tags(*, dry_run: bool) -> None:
     target_dataset_ids = sorted(to_protect & live_dataset_ids)
     not_yet_created = sorted(to_protect - live_dataset_ids)
 
-    newly_tagged: list[str] = []
-    already_tagged: list[str] = []
+    by_outcome: dict[_TagOutcome, list[str]] = {outcome: [] for outcome in _TagOutcome}
     with futures.ThreadPoolExecutor(
         max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
     ) as executor:
@@ -130,68 +147,101 @@ def apply_protection_tags(*, dry_run: bool) -> None:
             for dataset_id in target_dataset_ids
         }
         for future in futures.as_completed(future_to_id):
-            dataset_id = future_to_id[future]
-            (newly_tagged if future.result() else already_tagged).append(dataset_id)
+            by_outcome[future.result()].append(future_to_id[future])
 
     prefix = "[DRY RUN] " if dry_run else ""
     logging.info(
-        "%sProtection tags reconciled: %d newly tagged, %d already tagged, "
+        "%sProtection tags reconciled: %d newly tagged, %d already tagged, %d failed, "
         "%d in registry but not yet created.",
         prefix,
-        len(newly_tagged),
-        len(already_tagged),
+        len(by_outcome[_TagOutcome.NEWLY_TAGGED]),
+        len(by_outcome[_TagOutcome.ALREADY_TAGGED]),
+        len(by_outcome[_TagOutcome.FAILED]),
         len(not_yet_created),
     )
+    failed = by_outcome[_TagOutcome.FAILED]
+    if failed:
+        logging.warning(
+            "Protection tagging FAILED (non-fatal) for %d dataset(s): %s",
+            len(failed),
+            sorted(failed),
+        )
 
     _log_protection_drift(bq_client=bq_client, expected=to_protect)
 
 
 def _ensure_protection_tag(
     *, bq_client: BigQueryClientImpl, dataset_id: str, dry_run: bool
-) -> bool:
+) -> _TagOutcome:
     """Adds the protection tag to a dataset if missing (merging, not clobbering other tags).
 
-    Returns True if the tag was added (or would be, in a dry run), False if already present.
+    Never raises -- a failure is logged and reported as ``_TagOutcome.FAILED`` so a single
+    dataset cannot fail the calculation DAG.
     """
-    dataset = bq_client.get_dataset(dataset_id)
-    resource_tags = dict(dataset.resource_tags or {})
-    if resource_tags.get(PROTECTION_TAG_KEY) == PROTECTION_TAG_VALUE:
-        return False
+    try:
+        dataset = bq_client.get_dataset(dataset_id)
+        resource_tags = dict(dataset.resource_tags or {})
+        if resource_tags.get(PROTECTION_TAG_KEY) == PROTECTION_TAG_VALUE:
+            return _TagOutcome.ALREADY_TAGGED
 
-    if not dry_run:
-        resource_tags[PROTECTION_TAG_KEY] = PROTECTION_TAG_VALUE
-        dataset.resource_tags = resource_tags
-        bq_client.client.update_dataset(dataset, ["resource_tags"])
+        if not dry_run:
+            resource_tags[PROTECTION_TAG_KEY] = PROTECTION_TAG_VALUE
+            dataset.resource_tags = resource_tags
+            bq_client.client.update_dataset(dataset, ["resource_tags"])
 
-    logging.info(
-        "%sTagged dataset [%s] with [%s=%s]",
-        "[DRY RUN] " if dry_run else "",
-        dataset_id,
-        PROTECTION_TAG_KEY,
-        PROTECTION_TAG_VALUE,
-    )
-    return True
+        logging.info(
+            "%sTagged dataset [%s] with [%s=%s]",
+            "[DRY RUN] " if dry_run else "",
+            dataset_id,
+            PROTECTION_TAG_KEY,
+            PROTECTION_TAG_VALUE,
+        )
+        return _TagOutcome.NEWLY_TAGGED
+    except Exception as e:  # pylint: disable=broad-except
+        logging.warning(
+            "Failed to apply protection tag to dataset [%s]: %s", dataset_id, e
+        )
+        return _TagOutcome.FAILED
 
 
 def _log_protection_drift(*, bq_client: BigQueryClientImpl, expected: set[str]) -> None:
     """Logs datasets carrying the protection tag but no longer in the protect set.
 
     Never auto-removes the tag -- removing protection is the dangerous direction, so drift is
-    surfaced for a human to resolve.
+    surfaced for a human to resolve. Runs in parallel and is non-fatal (per-dataset failures are
+    logged, not raised).
     """
-    drift = []
-    for item in bq_client.list_datasets():
-        if item.dataset_id in expected:
-            continue
-        dataset = bq_client.get_dataset(item.dataset_id)
-        if (dataset.resource_tags or {}).get(
-            PROTECTION_TAG_KEY
-        ) == PROTECTION_TAG_VALUE:
-            drift.append(item.dataset_id)
+    candidate_ids = [
+        item.dataset_id
+        for item in bq_client.list_datasets()
+        if item.dataset_id not in expected
+    ]
+
+    def _drifted_dataset_id(dataset_id: str) -> str | None:
+        try:
+            dataset = bq_client.get_dataset(dataset_id)
+            if (dataset.resource_tags or {}).get(
+                PROTECTION_TAG_KEY
+            ) == PROTECTION_TAG_VALUE:
+                return dataset_id
+        except Exception as e:  # pylint: disable=broad-except
+            logging.warning(
+                "Failed to check protection drift for dataset [%s]: %s", dataset_id, e
+            )
+        return None
+
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        drift = sorted(
+            dataset_id
+            for dataset_id in executor.map(_drifted_dataset_id, candidate_ids)
+            if dataset_id is not None
+        )
 
     if drift:
         logging.warning(
             "PROTECTION DRIFT: these datasets carry the protection tag but are NOT in the "
             "protect set. NOT auto-removing -- review and untag manually if intended: %s",
-            sorted(drift),
+            drift,
         )

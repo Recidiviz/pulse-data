@@ -111,6 +111,18 @@ def execute_update_big_query_table_schemata() -> RecidivizKubernetesPodOperator:
     )
 
 
+def execute_apply_dataset_protection_tags() -> RecidivizKubernetesPodOperator:
+    task_id = "apply_dataset_protection_tags"
+    return build_kubernetes_pod_task(
+        task_id=task_id,
+        container_name=task_id,
+        arguments=[
+            "--entrypoint=ApplyDatasetProtectionTagsEntrypoint",
+        ],
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+
 def refresh_bq_dataset_operator(
     schema_type: SchemaType,
 ) -> RecidivizKubernetesPodOperator:
@@ -286,6 +298,7 @@ def create_calculation_dag() -> None:
     # If the schema update is not successful, we do not want to continue
     # with the rest of the DAG.
     update_big_query_table_schemata = execute_update_big_query_table_schemata()
+    apply_dataset_protection_tags = execute_apply_dataset_protection_tags()
 
     with TaskGroup("bq_refresh") as bq_refresh:
         operations_bq_refresh_completion = refresh_bq_dataset_operator(
@@ -307,6 +320,11 @@ def create_calculation_dag() -> None:
 
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
+
+    # Once the source-table datasets exist, tag the protect-tier ones so the catastrophic-delete
+    # deny policy protects them. Runs off to the side (non-fatal in the entrypoint) so it never
+    # blocks the critical path.
+    update_big_query_table_schemata >> apply_dataset_protection_tags
 
     # --- step 2: dataflow_pipelines -----------------------------------
     with TaskGroup(group_id="dataflow_pipelines") as dataflow_pipelines_task_group:

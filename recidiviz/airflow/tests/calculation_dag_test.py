@@ -620,6 +620,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup_and_validation",
                     r"^apply_row_access_policies",
+                    r"^apply_dataset_protection_tags",
                 ],
             )
 
@@ -674,6 +675,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup_and_validation",
                     r"^apply_row_access_policies",
+                    r"^apply_dataset_protection_tags",
                 ],
             )
 
@@ -726,6 +728,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup_and_validation",
                     r"^apply_row_access_policies",
+                    r"^apply_dataset_protection_tags",
                 ],
             )
 
@@ -776,6 +779,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup_and_validation",
                     r"^apply_row_access_policies",
+                    # Directly downstream of the failed schema update, but ALL_DONE fires
+                    # on a failed upstream, so it still runs.
+                    r"^apply_dataset_protection_tags",
                 ],
             )
 
@@ -848,6 +854,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup_and_validation",
                     r"^apply_row_access_policies",
+                    r"^apply_dataset_protection_tags",
                 ],
             )
             self.assertIn(

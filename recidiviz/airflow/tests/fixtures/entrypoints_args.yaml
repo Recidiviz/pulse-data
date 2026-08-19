@@ -25,3 +25,7 @@ test_monitoring_dag_args:
 
 test_update_big_query_schemata_args:
   - --entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint
+
+test_apply_dataset_protection_tags_args:
+  - --entrypoint=ApplyDatasetProtectionTagsEntrypoint
+  - --dry-run
