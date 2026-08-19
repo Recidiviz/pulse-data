@@ -204,7 +204,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     priority    = "904"
     match {
       expr {
-        expression = "request.path.matches(\"workflows/external_request/US_(ID|TX)/email_user\") && (request.body.contains('(') || request.body.contains(')'))"
+        expression = "request.path.matches(\"workflows/external_request/US_(?:ID|TX)/email_user\") && (request.body.contains('(') || request.body.contains(')'))"
       }
     }
   }
