@@ -86,12 +86,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         latest_drug_test_is_negative.VIEW_BUILDER,
         no_supervision_violation_report_within_2_years.VIEW_BUILDER,
-        # TODO(#33627): Update/change time-served criterion to account for the fact that
-        # if individuals are "removed from compliant reporting due to the imposition of
-        # a sanction," then that time on compliant reporting does not count towards the
-        # two-years-on-supervision requirement for SDS. May need to shift to using a
-        # state-specific criterion, then? (If so, check that nobody has starting using
-        # the general criterion before deleting it.)
         on_supervision_at_least_2_years_and_assessed_risk_low_while_on_supervision_at_least_2_years.VIEW_BUILDER,
         no_arrests_in_past_2_years.VIEW_BUILDER,
         no_supervision_sanction_within_1_year.VIEW_BUILDER,
