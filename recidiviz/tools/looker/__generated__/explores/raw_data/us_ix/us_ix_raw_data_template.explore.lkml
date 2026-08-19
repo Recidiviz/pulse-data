@@ -122,6 +122,13 @@ explore: us_ix_raw_data_template {
     view_label: "us_ix_ind_OffenderBenefitsDocument"
   }
 
+  join: us_ix_ind_OffenderHlthCodeStatus {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_ind_OffenderHlthCodeStatus.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_ind_OffenderHlthCodeStatus"
+  }
+
   join: us_ix_ind_OffenderInternalStatus {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_ind_OffenderInternalStatus.OffenderId};;
     type: full_outer
