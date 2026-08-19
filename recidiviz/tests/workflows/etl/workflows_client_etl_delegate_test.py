@@ -292,7 +292,10 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                 with patch.object(
                     WorkflowsClientETLDelegate, "transform_row"
                 ) as mock_transform:
-                    mock_transform.return_value = (123, {"personExternalId": 123})
+                    mock_transform.return_value = (
+                        123,
+                        {"personExternalId": 123, "stateCode": "US_XX"},
+                    )
                     delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
                     await delegate.run_etl("client_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
@@ -300,6 +303,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                         mock_document_ref,
                         {
                             "personExternalId": 123,
+                            "stateCode": "US_XX",
                             "__loadedAt": mock_now,
                         },
                     )

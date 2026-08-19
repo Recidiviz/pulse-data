@@ -43,6 +43,10 @@ from recidiviz.utils.string import StrictStringFormatter
 MAX_FIRESTORE_RECORDS_PER_BATCH = 20
 # to prevent memory overruns we don't want to stream in too much input all at once
 INPUT_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
+# Key identifying the state a document belongs to. Every document we write must carry it:
+# the composite index below and the prune in step 3 both filter on it, so a document
+# missing it would never be cleaned up and would linger in Firestore indefinitely.
+STATE_CODE_KEY = "stateCode"
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -179,6 +183,16 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
                         if row_id is None or document_fields is None:
                             continue
+
+                        if not document_fields.get(STATE_CODE_KEY):
+                            logging.error(
+                                "Skipping row [%s] in [%s]: document has no [%s]",
+                                row_id,
+                                filename,
+                                STATE_CODE_KEY,
+                            )
+                            continue
+
                         document_id = self.doc_id_for_row_id(row_id)
                         new_document = {
                             **document_fields,
@@ -213,7 +227,10 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                                 "name": collection_name,
                                 "query_scope": "COLLECTION",
                                 "fields": [
-                                    {"field_path": "stateCode", "order": "ASCENDING"},
+                                    {
+                                        "field_path": STATE_CODE_KEY,
+                                        "order": "ASCENDING",
+                                    },
                                     {"field_path": "__loadedAt", "order": "ASCENDING"},
                                 ],
                             }

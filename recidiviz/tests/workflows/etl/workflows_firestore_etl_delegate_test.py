@@ -40,7 +40,7 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
         return ["test_export.json"]
 
     def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        return row, {"data": row}
+        return row, {"data": row, "stateCode": StateCode.US_XX.value}
 
 
 class FakeBatchWriter(IsolatedAsyncioTestCase):
@@ -193,12 +193,54 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
                 ) as mock_transform:
                     with patch("logging.Logger.error") as mock_logger:
                         mock_transform.side_effect = [
-                            (123, {"personExternalId": 123}),
+                            (
+                                123,
+                                {
+                                    "personExternalId": 123,
+                                    "stateCode": StateCode.US_XX.value,
+                                },
+                            ),
                             Exception,
                         ]
                         await delegate.run_etl("test_export.json")
                         mock_logger.assert_called_once()
                         assert mock_transform.call_count == 2
+
+    async def test_run_etl_skips_row_with_missing_state_code(
+        self,
+        mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
+        _mock_firestore_async_client: mock.MagicMock,
+    ) -> None:
+        """Tests that a document with no stateCode is skipped rather than written.
+
+        Documents without one are invisible to the prune and the composite index, so
+        they would linger in Firestore forever.
+        """
+        batch_writer = FakeBatchWriter()
+        mock_batch_writer.side_effect = lambda: batch_writer
+        mock_get_file_stream.return_value = [FakeFileStream(3)]
+
+        with local_project_id_override("test-project"):
+            delegate = TestETLDelegate(StateCode.US_XX)
+            with mock.patch.object(TestETLDelegate, "transform_row") as mock_transform:
+                with patch("logging.Logger.error") as mock_logger:
+                    mock_transform.side_effect = [
+                        ("row-1", {"data": 1, "stateCode": StateCode.US_XX.value}),
+                        # Missing the key entirely.
+                        ("row-2", {"data": 2}),
+                        # Present but empty, which is just as unusable.
+                        ("row-3", {"data": 3, "stateCode": ""}),
+                    ]
+                    await delegate.run_etl("test_export.json")
+
+        self.assertEqual(2, mock_logger.call_count)
+        for mock_call in mock_logger.call_args_list:
+            self.assertIn("has no [%s]", mock_call.args[0])
 
     @patch(
         "recidiviz.firestore.firestore_client.FirestoreClientImpl.index_exists_for_collection"
@@ -321,7 +363,10 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"), patch.object(
             TestETLDelegate, "transform_row"
         ) as mock_transform:
-            mock_transform.return_value = (raw_row_id, {})
+            mock_transform.return_value = (
+                raw_row_id,
+                {"stateCode": StateCode.US_XX.value},
+            )
             delegate = TestETLDelegate(StateCode.US_XX)
             await delegate.run_etl("test_export.json")
             mock_collection.document.assert_called_once_with(document_id)

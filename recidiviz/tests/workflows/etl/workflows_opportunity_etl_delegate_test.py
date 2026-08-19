@@ -35,6 +35,7 @@ TEST_OPPORTUNITY_TYPE = "earlyTermination"
 
 TEST_DATA = {
     "external_id": "123",
+    "state_code": "US_ND",
     "form_information_crime_names": [
         "Class (A) Misdemeanor",
         "Class (A) Misdemeanor",
@@ -93,6 +94,7 @@ TEST_DATA = {
 EXPECTED_DOCUMENT = {
     "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "123",
+    "stateCode": "US_ND",
     "formInformation": {
         "crimeNames": ["Class (A) Misdemeanor", "Class (A) Misdemeanor"]
     },
@@ -128,6 +130,7 @@ EXPECTED_DOCUMENT = {
 
 TEST_DATA_WITH_PREFIX_TO_STRIP = {
     "external_id": "456",
+    "state_code": "US_XX",
     "reasons": [
         {
             "criteria_name": "US_XX_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
@@ -136,8 +139,11 @@ TEST_DATA_WITH_PREFIX_TO_STRIP = {
     ],
 }
 
+# US_IX records are exported with their state_code remapped to US_ID, so that is what
+# the delegate sees on the row.
 TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP = {
     "external_id": "456",
+    "state_code": "US_ID",
     "reasons": [
         {
             "criteria_name": "US_IX_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
@@ -149,6 +155,7 @@ TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP = {
 EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "456",
+    "stateCode": "US_XX",
     "eligibleCriteria": {
         "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
     },
@@ -158,9 +165,15 @@ EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "caseNotes": {},
 }
 
+EXPECTED_IX_DOCUMENT_WITH_PREFIX_STRIPPED = {
+    **EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED,
+    "stateCode": "US_ID",
+}
+
 # Test data specific to IX for the ATLAS migration
 TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
     "external_id": "456",
+    "state_code": "US_ID",
     "reasons": [
         {
             "criteria_name": "US_IX_LSIR_LEVEL_LOW_MODERATE_FOR_X_DAYS",
@@ -177,6 +190,7 @@ TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
 EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "456",
+    "stateCode": "US_ID",
     "eligibleCriteria": {
         "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}
     },
@@ -190,6 +204,7 @@ EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
 
 TEST_DATA_WITH_NESTED_CRITERIA = {
     "external_id": "234",
+    "state_code": "US_TN",
     "reasons": [
         {
             "criteria_name": "US_TN_FINES_FEES_ELIGIBLE",
@@ -210,6 +225,7 @@ TEST_DATA_WITH_NESTED_CRITERIA = {
 EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
     "opportunityType": TEST_OPPORTUNITY_TYPE,
     "externalId": "234",
+    "stateCode": "US_TN",
     "eligibleCriteria": {
         "usTnFinesFeesEligible": {
             "hasFinesFeesBalanceBelow500": {"amountOwed": 100},
@@ -298,7 +314,7 @@ class TestWorkflowsETLDelegate(TestCase):
         result = delegate.transform_row(
             json.dumps(TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP), TEST_OPPORTUNITY_FILENAME
         )
-        self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
+        self.assertEqual(("456", EXPECTED_IX_DOCUMENT_WITH_PREFIX_STRIPPED), result)
 
     def test_transform_row_with_ix_non_prefixed_state_keys(self) -> None:
         """Test that transform_row replaces IX with ID for the ATLAS migration."""

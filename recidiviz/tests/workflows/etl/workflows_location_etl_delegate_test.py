@@ -168,7 +168,10 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                 with patch.object(
                     WorkflowsLocationETLDelegate, "transform_row"
                 ) as mock_transform:
-                    mock_transform.return_value = ("facility_1", {"id": "facility 1"})
+                    mock_transform.return_value = (
+                        "facility_1",
+                        {"id": "facility 1", "stateCode": "US_XX"},
+                    )
                     delegate = WorkflowsLocationETLDelegate(StateCode.US_TN)
                     await delegate.run_etl("location_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
@@ -176,6 +179,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                         mock_document_ref,
                         {
                             "id": "facility 1",
+                            "stateCode": "US_XX",
                             "__loadedAt": mock_now,
                         },
                     )
