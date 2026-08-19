@@ -2840,16 +2840,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     BigQueryAddress.from_str(
         "observations__person_event.early_discharge_request_decision"
     ): ["decision"],
-    BigQueryAddress.from_str("observations__person_event.earned_credit"): [
-        "credit_month",
-        "credit_observation_number",
-        "credit_type",
-        "credits_earned",
-        "credits_earned_is_positive",
-        "is_after_full_state_launch",
-        "is_maxed_out",
-        "is_registered_jii_app_user",
-    ],
     BigQueryAddress.from_str("observations__person_event.employment_period_start"): [
         "employer_name"
     ],
