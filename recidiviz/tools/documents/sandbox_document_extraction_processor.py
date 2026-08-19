@@ -29,6 +29,12 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
+    ENTRY_NUM_FIELD_NAME,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
     LLMDocumentExtractionRequestBuilder,
 )
@@ -55,6 +61,9 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
     LLMExtractionResultValidator,
+)
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentStoreSandboxContext,
@@ -250,6 +259,59 @@ class SandboxExtractionSummary:
         logging.info("  Thinking: %d", self.thinking_tokens)
 
 
+def read_expected_entry_nums_by_document(
+    *,
+    config: LLMExtractorConfig,
+    document_store_sandbox: DocumentStoreSandboxContext | None,
+    bq_client: BigQueryClient,
+) -> dict[str, set[int]] | None:
+    """Returns the complete entry set of each composite document, keyed by
+    document_contents_id, read from the entry→source map table — or None for a
+    first-order extractor, whose documents have no numbered entries.
+
+    The validator requires the entry set for every entity-resolution result so
+    the entry-partition check can validate the clustering against it. The map
+    table is read from wherever the run wrote the ER collection's document store
+    (the production document store when the run has no sandbox one), which the
+    document store process hydrated before this extraction runs.
+    """
+    if config.entity_group is None:
+        return None
+    er_collection = config.input_document_collection
+    if not isinstance(er_collection, EntityResolutionDocumentCollectionConfig):
+        raise ValueError(
+            f"Extractor [{config.extractor_id}] is an entity-resolution "
+            f"extractor, but its input document collection "
+            f"[{er_collection.name}] is not an "
+            f"EntityResolutionDocumentCollectionConfig."
+        )
+    source_read_prefix = (
+        document_store_sandbox.source_read_prefix_for_document_collection(
+            er_collection.name
+        )
+        if document_store_sandbox is not None
+        else None
+    )
+    map_table_address = er_collection.entry_source_map_table_address(
+        sandbox_dataset_prefix=source_read_prefix
+    ).to_project_specific_address(bq_client.project_id)
+
+    expected_entry_nums_by_document: dict[str, set[int]] = {}
+    query_job = bq_client.run_query_async(
+        query_str=map_table_address.select_query(
+            select_statement=(
+                f"SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}, {ENTRY_NUM_FIELD_NAME}"
+            )
+        ),
+        use_query_cache=False,
+    )
+    for row in query_job:
+        expected_entry_nums_by_document.setdefault(
+            row[DOCUMENT_CONTENTS_ID_COLUMN_NAME], set()
+        ).add(row[ENTRY_NUM_FIELD_NAME])
+    return expected_entry_nums_by_document
+
+
 class DocumentExtractionProcessor:
     """Runs a job's pending documents through the LLM for one extractor and
     sandbox: builds a request per document, runs them, classifies each result, and
@@ -324,6 +386,11 @@ class DocumentExtractionProcessor:
             if self.document_store_sandbox is not None
             else None
         )
+        expected_entry_nums_by_document = read_expected_entry_nums_by_document(
+            config=self.config,
+            document_store_sandbox=self.document_store_sandbox,
+            bq_client=self.bq_client,
+        )
         request_builder = LLMDocumentExtractionRequestBuilder(
             fs=self.fs,
             project_id=self.bq_client.project_id,
@@ -384,6 +451,13 @@ class DocumentExtractionProcessor:
                         job_id=job_id,
                         source_document_text=source_text_by_document.pop(
                             raw_result.document_contents_id
+                        ),
+                        expected_entry_nums=(
+                            None
+                            if expected_entry_nums_by_document is None
+                            else expected_entry_nums_by_document[
+                                raw_result.document_contents_id
+                            ]
                         ),
                     )
                 )
@@ -473,6 +547,9 @@ class DocumentExtractionProcessor:
         raw_result: LLMClientDocumentExtractionResult,
         job_id: str,
         source_document_text: str,
+        # This document's complete composite-document entry set, or None for a
+        # first-order extractor whose documents have no numbered entries.
+        expected_entry_nums: set[int] | None,
     ) -> LLMJobDocumentExtractionResult:
         """Returns the processed result for one raw extraction result, classified
         and validated, and folds its counts and token usage into the summary.
@@ -482,11 +559,7 @@ class DocumentExtractionProcessor:
             raw_result=raw_result,
             job_id=job_id,
             source_document_text=source_document_text,
-            # This runner only loads first-order extractor configs, whose
-            # documents have no numbered entries. An entity-resolution runner
-            # must read each composite document's entry set from the
-            # entry→source map table.
-            expected_entry_nums=None,
+            expected_entry_nums=expected_entry_nums,
             # TODO(OBT-41779) since we are allowing postgres to persist across runs,
             # we should properly pass in the prior transient failure count from the postgres table here
             prior_transient_failure_count=0,
