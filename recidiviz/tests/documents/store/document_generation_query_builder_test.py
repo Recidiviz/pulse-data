@@ -405,12 +405,12 @@ class TestERGenerationQuerySandboxScoping(unittest.TestCase):
         ).build_query()
 
     def _sandbox_context(
-        self, *, first_order_source_output_prefix: str | None
+        self, *, first_order_source_in_sandbox: bool
     ) -> DocumentStoreSandboxContext:
         """Builds a context for the fake ER collection: its first-order
         `__pre_resolution` results always live under prefix "sb", while the first-order
-        document collection's source contents live wherever
-        |first_order_source_output_prefix| points (None for production)."""
+        document collection's source contents live under that same prefix when
+        |first_order_source_in_sandbox|, else in production."""
         with patch_fake_entity_resolution_model_config_name():
             er_collection = get_document_collection_config(
                 StateCode.US_XX, FAKE_ASSIGNMENT_ER_COLLECTION_NAME, fake_config_module
@@ -420,9 +420,10 @@ class TestERGenerationQuerySandboxScoping(unittest.TestCase):
             document_collection_locations={
                 er_collection.first_order_config.input_document_collection.name: (
                     DocumentCollectionSandboxLocation(
-                        output_prefix=first_order_source_output_prefix,
-                        diff_read_prefix=None,
+                        output_prefix="sb", diff_read_prefix=None
                     )
+                    if first_order_source_in_sandbox
+                    else None
                 )
             },
             extractor_collection_read_prefixes={
@@ -445,7 +446,7 @@ class TestERGenerationQuerySandboxScoping(unittest.TestCase):
         # first-order `__pre_resolution` results and the first-order source contents are
         # read from the run's sandbox tables.
         query = self._er_generation_query(
-            self._sandbox_context(first_order_source_output_prefix="sb")
+            self._sandbox_context(first_order_source_in_sandbox=True)
         )
         self.assertIn("sb_us_xx_document_extraction_results__pre_resolution", query)
         self.assertIn(
@@ -458,7 +459,7 @@ class TestERGenerationQuerySandboxScoping(unittest.TestCase):
         # read from the sandbox; the first-order source contents are read from the
         # production table that actually holds them.
         query = self._er_generation_query(
-            self._sandbox_context(first_order_source_output_prefix=None)
+            self._sandbox_context(first_order_source_in_sandbox=False)
         )
         self.assertIn("sb_us_xx_document_extraction_results__pre_resolution", query)
         self.assertIn(

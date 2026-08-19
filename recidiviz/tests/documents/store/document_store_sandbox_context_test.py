@@ -38,10 +38,8 @@ class TestDocumentStoreSandboxContext(unittest.TestCase):
                 _SEEDED: DocumentCollectionSandboxLocation(
                     output_prefix="pfx", diff_read_prefix="pfx"
                 ),
-                # Mapped to production: not written this run, diffed against production.
-                _PRODUCTION: DocumentCollectionSandboxLocation(
-                    output_prefix=None, diff_read_prefix=None
-                ),
+                # Not sandboxed: not written this run, diffed against production.
+                _PRODUCTION: None,
             },
             extractor_collection_read_prefixes={
                 _EXTRACTOR: "pfx",
@@ -51,11 +49,11 @@ class TestDocumentStoreSandboxContext(unittest.TestCase):
 
     def test_output_prefix_for_writing(self) -> None:
         self.assertEqual("pfx", self.context.output_prefix_for_writing(_SEEDED))
-        # A production-mapped collection has no sandbox output to write to.
+        # An unsandboxed collection has no sandbox output to write to.
         with self.assertRaisesRegex(
             ValueError,
-            r"Document collection \[production_collection\] is mapped to the "
-            r"production document store",
+            r"Document collection \[production_collection\] is not sandboxed by this "
+            r"run",
         ):
             self.context.output_prefix_for_writing(_PRODUCTION)
 
@@ -66,7 +64,7 @@ class TestDocumentStoreSandboxContext(unittest.TestCase):
         self.assertEqual(
             "pfx", self.context.diff_read_prefix_for_document_collection(_SEEDED)
         )
-        # A production-mapped collection reads and diffs against production (None).
+        # An unsandboxed collection reads and diffs against production (None).
         self.assertIsNone(
             self.context.source_read_prefix_for_document_collection(_PRODUCTION)
         )

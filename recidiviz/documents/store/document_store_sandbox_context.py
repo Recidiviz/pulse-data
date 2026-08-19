@@ -27,13 +27,14 @@ from recidiviz.common import attr_validators
 class DocumentCollectionSandboxLocation:
     """Where one document collection's document-store tables live for a sandbox run."""
 
-    output_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
-    """Sandbox dataset prefix the run writes this collection's tables under. None means
-    this run does not produce the collection, so it lives in the production document store."""
+    output_prefix: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Sandbox dataset prefix the run writes this collection's tables under."""
 
     diff_read_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
     """Sandbox dataset prefix discovery diffs this collection's freshly generated
-    documents against, or None to diff against the production document store."""
+    documents against, or None to diff against the production document store. Independent
+    of output_prefix: a run writes to its own sandbox but commonly diffs against the
+    production store (diff_read_prefix=None) to discover what is new relative to prod."""
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -44,17 +45,16 @@ class DocumentStoreSandboxContext:
     whose extraction results it reads."""
 
     document_collection_locations: dict[
-        str, DocumentCollectionSandboxLocation
+        str, DocumentCollectionSandboxLocation | None
     ] = attr.ib(
         validator=attr_validators.is_dict_where_each(
             key_validator=attr_validators.is_str,
-            value_validator=attr.validators.instance_of(
-                DocumentCollectionSandboxLocation
-            ),
+            value_validator=attr_validators.is_opt(DocumentCollectionSandboxLocation),
         )
     )
     """Read/write locations for each document collection the run touches, keyed by
-    document collection name."""
+    document collection name. None means this run does not sandbox the collection: it
+    lives in the production document store."""
 
     extractor_collection_read_prefixes: dict[str, str | None] = attr.ib(
         validator=attr_validators.is_dict_where_each(
@@ -68,13 +68,14 @@ class DocumentStoreSandboxContext:
 
     def output_prefix_for_writing(self, document_collection_name: str) -> str:
         """Returns the sandbox dataset prefix the run writes |document_collection_name|'s
-        tables under. Raises if the collection is mapped to production, since a run never
-        writes to the production document store."""
+        tables under. Raises if the collection is not sandboxed, since a run never writes
+        to the production document store."""
         location = self._document_collection_location(document_collection_name)
-        if location.output_prefix is None:
+        if location is None:
             raise ValueError(
-                f"Document collection [{document_collection_name}] is mapped to the "
-                f"production document store, so a sandbox run cannot write its tables."
+                f"Document collection [{document_collection_name}] is not sandboxed by "
+                f"this run, so it lives in the production document store, which a "
+                f"sandbox run cannot write to."
             )
         return location.output_prefix
 
@@ -84,10 +85,9 @@ class DocumentStoreSandboxContext:
         """Returns the sandbox dataset prefix a downstream reader reads
         |document_collection_name|'s written contents from, or None to read the production
         document store. This is the collection's output location, tolerating the
-        production (unwritten) case."""
-        return self._document_collection_location(
-            document_collection_name
-        ).output_prefix
+        production (unsandboxed) case."""
+        location = self._document_collection_location(document_collection_name)
+        return location.output_prefix if location is not None else None
 
     def diff_read_prefix_for_document_collection(
         self, document_collection_name: str
@@ -95,9 +95,8 @@ class DocumentStoreSandboxContext:
         """Returns the sandbox dataset prefix discovery diffs |document_collection_name|'s
         freshly generated documents against, or None to diff against the production
         document store."""
-        return self._document_collection_location(
-            document_collection_name
-        ).diff_read_prefix
+        location = self._document_collection_location(document_collection_name)
+        return location.diff_read_prefix if location is not None else None
 
     def read_prefix_for_extractor_collection(
         self, extractor_collection_name: str
@@ -115,9 +114,11 @@ class DocumentStoreSandboxContext:
 
     def _document_collection_location(
         self, document_collection_name: str
-    ) -> DocumentCollectionSandboxLocation:
-        """Returns the sandbox location for |document_collection_name|, raising if the run
-        declared none."""
+    ) -> DocumentCollectionSandboxLocation | None:
+        """Returns the sandbox location for |document_collection_name|, or None if the
+        collection is not sandboxed by this run. Raises if the run declared no entry at
+        all: a collection explicitly declared as unsandboxed (None) is different from one
+        the run forgot to declare."""
         if document_collection_name not in self.document_collection_locations:
             raise ValueError(
                 f"No sandbox location declared for document collection "

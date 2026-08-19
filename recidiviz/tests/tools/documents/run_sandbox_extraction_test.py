@@ -92,8 +92,8 @@ from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.tools.documents import fixtures
 from recidiviz.tools.documents import run_sandbox_extraction
-from recidiviz.tools.documents.run_sandbox_extraction import (
-    SandboxExtractionRunner,
+from recidiviz.tools.documents.run_sandbox_extraction import SandboxExtractionRunner
+from recidiviz.tools.documents.sandbox_document_extraction_processor import (
     SandboxExtractionSummary,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -397,6 +397,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # Both documents succeed, so their token counts are summed across the run.
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=2,
                 succeeded=2,
                 input_tokens=20,
@@ -457,6 +458,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
 
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=2,
                 succeeded=2,
                 input_tokens=20,
@@ -485,7 +487,11 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # An LLM-request-level error is counted separately from a validation
         # failure. The error result carries no usage, so no tokens are summed.
         self.assertEqual(
-            SandboxExtractionSummary(processed=2, failed_llm_request=2),
+            SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                processed=2,
+                failed_llm_request=2,
+            ),
             summary,
         )
 
@@ -541,6 +547,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # token counts are still summed across the run.
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=2,
                 failed_validation=2,
                 input_tokens=20,
@@ -592,6 +599,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # could not be assembled into a request.
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=1,
                 succeeded=1,
                 failed_to_build=1,
@@ -641,6 +649,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # succeeds, contributing its token counts.
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=1,
                 succeeded=1,
                 skipped_empty=1,
@@ -693,7 +702,9 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
 
         summary = self._run(self._fake_client())
 
-        self.assertEqual(SandboxExtractionSummary(), summary)
+        self.assertEqual(
+            SandboxExtractionSummary(extractor_config_name=_COLLECTION_NAME), summary
+        )
         with SessionFactory.using_database(self.database_key) as session:
             self.assertEqual(0, session.query(schema.LLMExtractionJob).count())
 
@@ -710,6 +721,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             first_summary = self._run(self._fake_client())
         self.assertEqual(
             SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
                 processed=2,
                 succeeded=2,
                 input_tokens=20,
@@ -728,7 +740,10 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         second_summary = self._run(self._fake_client())
 
         # Nothing left to process, but the resumed job is now completed.
-        self.assertEqual(SandboxExtractionSummary(), second_summary)
+        self.assertEqual(
+            SandboxExtractionSummary(extractor_config_name=_COLLECTION_NAME),
+            second_summary,
+        )
         self.assertEqual(
             _ExtractionJobSnapshot(
                 result_type=LLMExtractionJobResultType.SUCCESS.value,

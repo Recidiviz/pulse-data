@@ -279,9 +279,12 @@ class TestNewDocumentDiscoverySandboxScoping(unittest.TestCase):
                 collection.name: DocumentCollectionSandboxLocation(
                     output_prefix="sb", diff_read_prefix="sb"
                 ),
-                first_order_collection.name: DocumentCollectionSandboxLocation(
-                    output_prefix="sb" if first_order_source_in_sandbox else None,
-                    diff_read_prefix=None,
+                first_order_collection.name: (
+                    DocumentCollectionSandboxLocation(
+                        output_prefix="sb", diff_read_prefix=None
+                    )
+                    if first_order_source_in_sandbox
+                    else None
                 ),
             },
             extractor_collection_read_prefixes={
