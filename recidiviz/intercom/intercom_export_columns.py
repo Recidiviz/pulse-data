@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Column name constants and schema definitions for BQ tables that tracks Intercom export cloud run job and Intercom tickets."""
+"""Column name constants and schema definitions for BQ tables that tracks Intercom export cloud run job, Intercom tickets, and Intercom contacts."""
 
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
@@ -29,15 +29,19 @@ TICKET_ID_COLUMN_NAME = "ticket_id"
 TICKET_CATEGORY_COLUMN_NAME = "ticket_category"
 TICKET_NAME_COLUMN_NAME = "ticket_name"
 DESCRIPTION_COLUMN_NAME = "description"
-AUTHOR_NAME_COLUMN_NAME = "author_name"
-AUTHOR_EMAIL_COLUMN_NAME = "author_email"
 CREATED_AT_COLUMN_NAME = "created_at"
 UPDATED_AT_COLUMN_NAME = "updated_at"
 TICKET_STATE_COLUMN_NAME = "ticket_state"
 RAW_TICKET_JSON_COLUMN_NAME = "raw_ticket_json"
+# contacts table constants
+CONTACT_ID_COLUMN_NAME = "contact_id"
+INTERCOM_EXTERNAL_ID_COLUMN_NAME = "intercom_external_id"
+STATE_CODE_COLUMN_NAME = "state_code"
+NAME_COLUMN_NAME = "name"
+EMAIL_COLUMN_NAME = "email"
 
 
-def build_intercom_export_tracker_schema() -> list[SchemaField]:
+def build_intercom_export_metadata_export_tracker_schema() -> list[SchemaField]:
     """Returns the schema for BQ table that tracks Intercom export cloud run job."""
 
     return [
@@ -97,18 +101,6 @@ def build_intercom_export_tickets_schema() -> list[SchemaField]:
             description="The ticket's description",
         ),
         SchemaField(
-            name=AUTHOR_NAME_COLUMN_NAME,
-            field_type=SqlTypeNames.STRING,
-            mode="REQUIRED",
-            description="The name of the author of the ticket",
-        ),
-        SchemaField(
-            name=AUTHOR_EMAIL_COLUMN_NAME,
-            field_type=SqlTypeNames.STRING,
-            mode="REQUIRED",
-            description="The email of the author of the ticket",
-        ),
-        SchemaField(
             name=CREATED_AT_COLUMN_NAME,
             field_type=SqlTypeNames.TIMESTAMP,
             mode="REQUIRED",
@@ -127,9 +119,52 @@ def build_intercom_export_tickets_schema() -> list[SchemaField]:
             description="The state of the ticket",
         ),
         SchemaField(
+            name=CONTACT_ID_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="REQUIRED",
+            description="The ID of the contact",
+        ),
+        SchemaField(
             name=RAW_TICKET_JSON_COLUMN_NAME,
             field_type=SqlTypeNames.STRING,
             mode="REQUIRED",
             description="The raw JSON of the original ticket response",
+        ),
+    ]
+
+
+def build_intercom_export_contacts_schema() -> list[SchemaField]:
+    """Returns the schema for BQ table for Intercom contacts."""
+
+    return [
+        SchemaField(
+            name=CONTACT_ID_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="REQUIRED",
+            description="The ID of the contact",
+        ),
+        SchemaField(
+            name=INTERCOM_EXTERNAL_ID_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="REQUIRED",
+            description="The external ID of the contact",
+        ),
+        SchemaField(
+            name=STATE_CODE_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="NULLABLE",
+            description="The state code of the contact",
+        ),
+        SchemaField(
+            name=NAME_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="REQUIRED",
+            description="The contact's name",
+        ),
+        SchemaField(
+            name=EMAIL_COLUMN_NAME,
+            field_type=SqlTypeNames.STRING,
+            mode="REQUIRED",
+            description="The contact's email address",
         ),
     ]

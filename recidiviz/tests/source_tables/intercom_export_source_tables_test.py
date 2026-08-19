@@ -14,32 +14,47 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for build_intercom_source_tables()"""
+"""Tests for build_intercom_export_source_tables() and build_intercom_export_metadata_source_tables()"""
 
 import unittest
 
+from more_itertools import one
+
 from recidiviz.source_tables.intercom_export_source_tables import (
+    INTERCOM_EXPORT_CONTACTS_TABLE_ID,
+    INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
     INTERCOM_EXPORT_TICKETS_TABLE_ID,
-    INTERCOM_EXPORT_TRACKER_TABLE_ID,
-    build_intercom_source_tables,
+    build_intercom_export_metadata_source_tables,
+    build_intercom_export_source_tables,
 )
 
 
 class IntercomExportsSourceTablesTests(unittest.TestCase):
-    """Tests for build_intercom_source_tables()"""
+    """Tests for build_intercom_export_source_tables() and build_intercom_export_metadata_source_tables()"""
 
-    def test_build_intercom_source_tables(self) -> None:
-        """Tests that build_intercom_source_tables() adds export_tracker and tickets tables
+    def test_build_intercom_export_source_tables(self) -> None:
+        """Tests that build_intercom_export_source_tables() adds tickets and contacts tables
         to the intercom_export SourceTableCollection"""
 
-        intercom_collection = build_intercom_source_tables()
+        intercom_export_collection = build_intercom_export_source_tables()
 
         expected_table_ids = {
-            INTERCOM_EXPORT_TRACKER_TABLE_ID,
             INTERCOM_EXPORT_TICKETS_TABLE_ID,
+            INTERCOM_EXPORT_CONTACTS_TABLE_ID,
         }
         produced_table_ids = {
-            table.address.table_id for table in intercom_collection.source_tables
+            table.address.table_id for table in intercom_export_collection.source_tables
         }
 
         self.assertEqual(expected_table_ids, produced_table_ids)
+
+    def test_build_intercom_export_metadata_source_tables(self) -> None:
+        """Tests that build_intercom_export_metadata_source_tables() adds export_tracker table
+        to the intercom_export_metadata SourceTableCollection"""
+
+        intercom_metadata_collection = build_intercom_export_metadata_source_tables()
+
+        table = one(intercom_metadata_collection.source_tables)
+        self.assertEqual(
+            INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID, table.address.table_id
+        )

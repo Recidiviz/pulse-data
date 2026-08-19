@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Write to and read from the intercom_export.export_table BQ table"""
+"""Write to and read from the intercom_export_metadata.export_tracker BQ table"""
 
 from datetime import datetime
 
@@ -22,14 +22,14 @@ import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
 from recidiviz.intercom.intercom_export_columns import (
     EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME,
     STATUS_COLUMN_NAME,
 )
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
 from recidiviz.source_tables.intercom_export_source_tables import (
-    INTERCOM_EXPORT_TRACKER_TABLE_ID,
+    INTERCOM_EXPORT_METADATA_DATASET,
+    INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
 )
 
 DEFAULT_TIMEOUT = 60  # seconds
@@ -37,7 +37,7 @@ DEFAULT_TIMEOUT = 60  # seconds
 
 @attr.define(frozen=True, kw_only=True)
 class IntercomExportBigQueryTableManager:
-    """Write to and read from the intercom_export.export_table BQ table"""
+    """Write to and read from the intercom_export_metadata.export_tracker BQ table"""
 
     client: BigQueryClientImpl = attr.ib(
         validator=attr.validators.instance_of(BigQueryClientImpl)
@@ -46,15 +46,15 @@ class IntercomExportBigQueryTableManager:
     @property
     def intercom_export_tracker_address(self) -> BigQueryAddress:
         return BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_DATASET,
-            table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
+            dataset_id=INTERCOM_EXPORT_METADATA_DATASET,
+            table_id=INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
         )
 
     def write_to_table(
         self,
         cloud_run_job_info: IntercomCloudRunJobInfo,
     ) -> None:
-        """Write to the intercom_export.export_table BQ table."""
+        """Write to the intercom_export_metadata.export_tracker BQ table."""
 
         tracker_table_row = cloud_run_job_info.to_json()
 
@@ -67,7 +67,7 @@ class IntercomExportBigQueryTableManager:
     def get_latest_export_window_end(self) -> datetime:
         """
         Returns the export_window_end_inclusive timestamp for the most recent
-        successful export job on the intercom_export.export_table BQ table.
+        successful export job on the intercom_export_metadata.export_tracker BQ table.
         """
 
         query = f"""

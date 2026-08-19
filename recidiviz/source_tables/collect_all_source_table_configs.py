@@ -60,7 +60,8 @@ from recidiviz.source_tables.identity_pipeline_input_table_collector import (
     build_identity_pipeline_input_source_table_collections,
 )
 from recidiviz.source_tables.intercom_export_source_tables import (
-    build_intercom_source_tables,
+    build_intercom_export_metadata_source_tables,
+    build_intercom_export_source_tables,
 )
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
@@ -244,7 +245,8 @@ def build_source_table_repository_for_collected_schemata(
                 configs=extractor_configs_by_state
             ),
             collect_golden_eval_results_source_table_collection(),
-            build_intercom_source_tables(),
+            build_intercom_export_source_tables(),
+            build_intercom_export_metadata_source_tables(),
         ],
     )
 

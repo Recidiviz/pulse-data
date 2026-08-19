@@ -25,7 +25,6 @@ from google.cloud.bigquery import LoadJob, QueryJob
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import INTERCOM_EXPORT_DATASET
 from recidiviz.intercom.intercom_export_bq_table_manager import (
     IntercomExportBigQueryTableManager,
 )
@@ -34,11 +33,12 @@ from recidiviz.intercom.intercom_export_columns import (
     EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME,
     EXPORT_WINDOW_START_INCLUSIVE_COLUMN_NAME,
     STATUS_COLUMN_NAME,
-    build_intercom_export_tracker_schema,
+    build_intercom_export_metadata_export_tracker_schema,
 )
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
 from recidiviz.source_tables.intercom_export_source_tables import (
-    INTERCOM_EXPORT_TRACKER_TABLE_ID,
+    INTERCOM_EXPORT_METADATA_DATASET,
+    INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -70,8 +70,8 @@ class TestIntercomExportBigQueryTableManager(unittest.TestCase):
 
         self.bq_table_manager.write_to_table(self.cloud_run_job_info)
         big_query_address = BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_DATASET,
-            table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
+            dataset_id=INTERCOM_EXPORT_METADATA_DATASET,
+            table_id=INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
         )
 
         self.mock_client.load_into_table_async.assert_called_once_with(
@@ -125,12 +125,12 @@ class TestIntercomExportBigQueryTableManagerWithEmulator(BigQueryEmulatorTestCas
     def setUp(self) -> None:
         super().setUp()
         self.tracker_address = BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_DATASET,
-            table_id=INTERCOM_EXPORT_TRACKER_TABLE_ID,
+            dataset_id=INTERCOM_EXPORT_METADATA_DATASET,
+            table_id=INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
         )
         self.create_mock_table(
             address=self.tracker_address,
-            schema=build_intercom_export_tracker_schema(),
+            schema=build_intercom_export_metadata_export_tracker_schema(),
         )
         self.bq_table_manager = IntercomExportBigQueryTableManager(
             client=self.bq_client
