@@ -160,6 +160,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_az_gen_risk_lvl,
     state_enum_strings.state_assessment_type_az_vlnc_risk_lvl,
     state_enum_strings.state_assessment_type_az_custody_class,
+    state_enum_strings.state_assessment_type_az_internal_risk_class,
     state_enum_strings.state_assessment_type_mo_classification_e,
     state_enum_strings.state_assessment_type_mo_classification_mh,
     state_enum_strings.state_assessment_type_mo_classification_m,

@@ -12,6 +12,7 @@ input_columns:
   IS_OVERRIDE: STRING
   CUSTODY_REDUCTION_FLAG: STRING
   SCORE_TYPE: STRING
+  IS_RECLASSIFICATION: STRING
   MST_SERIOUS_SCORE: STRING
   PR_MST_SERIOUS_SCORE: STRING
   ESCAPE_HISTORY_SCORE: STRING
@@ -36,10 +37,19 @@ output:
             $concat:
               $values:
                 - CLASSIFICATION_ID
-                - $literal("CUSTODY_CLASS")
+                - SCORE_TYPE
           assessment_date: START_DTM
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
-          assessment_type: $literal_enum(StateAssessmentType.AZ_CUSTODY_CLASS)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: SCORE_TYPE
+              $mappings:
+                StateAssessmentType.AZ_CUSTODY_CLASS:
+                  - CU Classification
+                  - CU Reclassification
+                StateAssessmentType.AZ_INTERNAL_RISK_CLASS:
+                  - IR Classification
+                  - IR Reclassification
           assessment_score: TOTAL_SCORE
           assessment_level:
             $enum_mapping:
@@ -47,10 +57,18 @@ output:
               $mappings:
                 StateAssessmentLevel.MINIMUM:
                   - Minimum
+                  - Lowest
+                StateAssessmentLevel.LOW:
+                  - Low
                 StateAssessmentLevel.MEDIUM:
                   - Medium
+                StateAssessmentLevel.MODERATE:
+                  - Moderate
                 StateAssessmentLevel.HIGH:
                   - Close
+                  - High
+                StateAssessmentLevel.VERY_HIGH:
+                  - Highest
                 StateAssessmentLevel.MAXIMUM:
                   - Maximum
           assessment_metadata:
@@ -59,6 +77,7 @@ output:
               IS_OVERRIDE: IS_OVERRIDE
               CUSTODY_REDUCTION_FLAG: CUSTODY_REDUCTION_FLAG
               SCORE_TYPE: SCORE_TYPE
+              IS_RECLASSIFICATION: IS_RECLASSIFICATION
               MST_SERIOUS_SCORE: MST_SERIOUS_SCORE
               PR_MST_SERIOUS_SCORE: PR_MST_SERIOUS_SCORE
               ESCAPE_HISTORY_SCORE: ESCAPE_HISTORY_SCORE
