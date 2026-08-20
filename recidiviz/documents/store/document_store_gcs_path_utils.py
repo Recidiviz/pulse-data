@@ -96,17 +96,22 @@ def gcs_directory_for_task_output(
 
 
 def gcs_path_for_task_output(
+    *,
     project_id: str,
     state_code: StateCode,
     run_id: str,
     collection_name: str,
     task_index: int,
     batch_index: int,
+    part_index: int,
 ) -> GcsfsFilePath:
-    """Returns the GCS path for a CSV output file produced by a document upload task."""
+    """Returns the GCS path for one CSV part file of upload statuses produced
+    by a document upload task. A task flushes statuses to successive part files
+    as a batch's uploads complete, so a single batch may produce multiple
+    parts."""
     return GcsfsFilePath.from_directory_and_file_name(
         dir_path=gcs_directory_for_task_output(
             project_id, state_code, run_id, collection_name
         ),
-        file_name=f"task_{task_index}_{batch_index}.csv",
+        file_name=f"task_{task_index}_{batch_index}_{part_index}.csv",
     )

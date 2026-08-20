@@ -220,12 +220,24 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         )
 
     def test_load_upload_status_not_found_raises(self) -> None:
+        """A NotFound from the CSV load job (the wildcard URI matched zero
+        files) is re-raised with context explaining the likely cause, chained
+        to the original error."""
         load_job_mock = MagicMock()
         load_job_mock.result.side_effect = NotFound("Not found: Uris gs://...")
         self.bq_client.load_table_from_cloud_storage.return_value = load_job_mock
 
-        with self.assertRaises(NotFound):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Loading upload status CSVs from "
+            r"\[gs://recidiviz-testing-us-xx-temp-document-store-output/"
+            r"test_run_123/fake_input_notes/\*\.csv\] "
+            r"failed with 'not found'\. This usually means no status CSVs exist "
+            r"for collection \[FAKE_INPUT_NOTES\] \(e\.g\. every upload task "
+            r"batch failed before flushing any statuses\)\.$",
+        ) as caught:
             self.recorder.run(self.discovery_result)
+        self.assertIsInstance(caught.exception.__cause__, NotFound)
 
         self.bq_client.load_table_from_cloud_storage.assert_called_once()
         self.bq_client.run_query_async.assert_not_called()

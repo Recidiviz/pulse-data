@@ -21,6 +21,7 @@ import logging
 from datetime import datetime
 
 import attr
+from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
@@ -110,7 +111,15 @@ class DocumentUploadResultRecorder:
             destination_table_schema=DocumentUploadStatusTable.schema(),
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
-        load_job.result()
+        try:
+            load_job.result()
+        except NotFound as e:
+            raise ValueError(
+                f"Loading upload status CSVs from [{source_uri}] failed with "
+                f"'not found'. This usually means no status CSVs exist for "
+                f"collection [{collection_name}] (e.g. every upload task batch "
+                f"failed before flushing any statuses)."
+            ) from e
 
     def _record_for_collection(
         self,

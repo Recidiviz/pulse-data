@@ -61,7 +61,13 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
 
     def test_gcs_path_for_task_output(self) -> None:
         path = gcs_path_for_task_output(
-            self.project_id, self.state_code, self.run_id, "case_notes", 2, 5
+            project_id=self.project_id,
+            state_code=self.state_code,
+            run_id=self.run_id,
+            collection_name="case_notes",
+            task_index=2,
+            batch_index=5,
+            part_index=1,
         )
         self.assertEqual(
             path.bucket_name,
@@ -69,5 +75,5 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
         )
         self.assertEqual(
             path.blob_name,
-            "manual__2026-05-12T17:21:11_122491+00:00/case_notes/task_2_5.csv",
+            "manual__2026-05-12T17:21:11_122491+00:00/case_notes/task_2_5_1.csv",
         )

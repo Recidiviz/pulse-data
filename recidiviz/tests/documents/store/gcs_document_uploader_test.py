@@ -17,15 +17,19 @@
 """Tests for gcs_document_uploader.py."""
 import csv
 import io
-import threading
 import unittest
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
-from recidiviz.cloud_storage.gcs_file_system import CSV_CONTENT_TYPE, TEXT_CONTENT_TYPE
+from recidiviz.cloud_storage.gcs_file_system import (
+    CSV_CONTENT_TYPE,
+    TEXT_CONTENT_TYPE,
+    GCSFileSystem,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
@@ -45,7 +49,21 @@ from recidiviz.documents.store.document_upload_status_table import (
     STATUS,
     DocumentUploadStatusTable,
 )
-from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
+from recidiviz.documents.store.gcs_document_uploader import (
+    MAX_UPLOAD_WORKERS,
+    GcsDocumentUploader,
+)
+
+
+def _raise_for_text_uploads(
+    path: GcsfsFilePath,
+    contents: str,  # pylint: disable=unused-argument
+    content_type: str,
+) -> None:
+    """upload_from_string side effect that fails every document text upload
+    while letting status CSV uploads through."""
+    if content_type == TEXT_CONTENT_TYPE:
+        raise RuntimeError(f"upload failed for {path.blob_name}")
 
 
 def _make_new_document_contents_row(
@@ -75,7 +93,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             table_id="temp_document_test_collection_test_run_123",
         )
         self.bq_client = MagicMock()
-        self.fs = MagicMock()
+        self.fs = MagicMock(spec=GCSFileSystem)
         self.upload_datetime = datetime(2026, 4, 20, 12, 0, 0, tzinfo=timezone.utc)
         self.uploader = GcsDocumentUploader(
             state_code=self.state_code,
@@ -141,7 +159,13 @@ class TestGcsDocumentUploader(unittest.TestCase):
         csv_paths = [c.kwargs["path"] for c in csv_calls]
         expected_paths = [
             gcs_path_for_task_output(
-                self.project_id, self.state_code, self.run_id, "test_collection", 0, i
+                project_id=self.project_id,
+                state_code=self.state_code,
+                run_id=self.run_id,
+                collection_name="test_collection",
+                task_index=0,
+                batch_index=i,
+                part_index=0,
             )
             for i in range(2)
         ]
@@ -310,47 +334,72 @@ class TestGcsDocumentUploader(unittest.TestCase):
         self.assertEqual(len(upload_calls), 2)
 
     @patch(
-        "recidiviz.documents.store.gcs_document_uploader.BATCH_UPLOAD_TIMEOUT_SECONDS",
-        0.1,
+        "recidiviz.documents.store.gcs_document_uploader.STATUS_CSV_ROWS_PER_PART", 2
     )
-    def test_batch_timeout_preserves_completed_uploads(self) -> None:
-        """When a batch times out, documents that finished uploading before the
-        timeout are recorded as SUCCESS; incomplete ones are FAILURE."""
-        hang_event = threading.Event()
-
+    def test_status_csv_flushed_in_parts(self) -> None:
+        """Status rows are flushed to successive part files every
+        STATUS_CSV_ROWS_PER_PART rows, with every document's status present
+        across the parts."""
         query_job = MagicMock()
         query_job.result.return_value = [
-            _make_new_document_contents_row("doc_fast", "fast text"),
-            _make_new_document_contents_row("doc_slow", "slow text"),
+            _make_new_document_contents_row(f"doc_{i}", f"text {i}") for i in range(5)
         ]
         self.bq_client.run_query_async.return_value = query_job
 
-        def upload_side_effect(
-            path: GcsfsFilePath,
-            contents: str,  # pylint: disable=unused-argument
-            content_type: str,
-        ) -> None:
-            if (
-                content_type == TEXT_CONTENT_TYPE
-                and path.blob_name == "test_collection/doc_slow.txt"
-            ):
-                # Block long enough to exceed the 0.1s batch timeout, but
-                # not so long that the test is slow.
-                hang_event.wait(timeout=2)
+        self.uploader.run([self._make_upload_batch(batch_number=0)])
 
-        self.fs.upload_from_string.side_effect = upload_side_effect
+        csv_calls = [
+            c
+            for c in self.fs.upload_from_string.call_args_list
+            if c.kwargs.get("content_type") == CSV_CONTENT_TYPE
+        ]
+        # 5 rows with 2 rows per part -> parts of 2, 2, and 1 rows.
+        self.assertEqual(len(csv_calls), 3)
+        self.assertEqual(
+            [c.kwargs["path"].blob_name for c in csv_calls],
+            [
+                "test_run_123/test_collection/task_0_0_0.csv",
+                "test_run_123/test_collection/task_0_0_1.csv",
+                "test_run_123/test_collection/task_0_0_2.csv",
+            ],
+        )
+        statuses = {}
+        for csv_call in csv_calls:
+            reader = csv.DictReader(
+                io.StringIO(csv_call.kwargs["contents"]),
+                fieldnames=DocumentUploadStatusTable.column_names(),
+            )
+            for row in reader:
+                statuses[row[DOCUMENT_CONTENTS_ID]] = row[STATUS]
+        self.assertEqual(
+            statuses,
+            {f"doc_{i}": DOCUMENT_UPLOAD_SUCCESS for i in range(5)},
+        )
 
-        upload_batch = self._make_upload_batch(batch_number=0)
+    @patch(
+        "recidiviz.documents.store.gcs_document_uploader.MAX_FAILED_UPLOADS_REPORTED", 2
+    )
+    def test_failure_details_truncated_beyond_reporting_cap(self) -> None:
+        """When more uploads fail than MAX_FAILED_UPLOADS_REPORTED, the raised
+        error reports the true failure count but only retains details for the
+        first few failures."""
+        query_job = MagicMock()
+        query_job.result.return_value = [
+            _make_new_document_contents_row(f"doc_{i}", f"text {i}") for i in range(4)
+        ]
+        self.bq_client.run_query_async.return_value = query_job
+        self.fs.upload_from_string.side_effect = _raise_for_text_uploads
+
         with self.assertRaisesRegex(
             RuntimeError,
             r"Document upload completed with 1 error\(s\):\n"
-            r"\[US_XX\] Collection \[test_collection\]: 1 documents failed to upload:\n"
-            r"DocumentUploadResult\(document_contents_id='doc_slow', "
-            r"document_length_bytes=9, error_message='Batch timed out after 0\.1s'\)",
+            r"\[US_XX\] Collection \[test_collection\]: 4 documents failed to upload:\n"
+            r"(.|\n)*\.\.\. and 2 more",
         ):
-            self.uploader.run([upload_batch])
-        hang_event.set()
+            self.uploader.run([self._make_upload_batch(batch_number=0)])
 
+        # All statuses are still recorded in the CSV, regardless of the
+        # reporting cap.
         csv_calls = [
             c
             for c in self.fs.upload_from_string.call_args_list
@@ -362,5 +411,81 @@ class TestGcsDocumentUploader(unittest.TestCase):
             fieldnames=DocumentUploadStatusTable.column_names(),
         )
         statuses = {row[DOCUMENT_CONTENTS_ID]: row[STATUS] for row in reader}
-        self.assertEqual(statuses["doc_fast"], DOCUMENT_UPLOAD_SUCCESS)
-        self.assertEqual(statuses["doc_slow"], DOCUMENT_UPLOAD_FAILURE)
+        self.assertEqual(
+            statuses,
+            {f"doc_{i}": DOCUMENT_UPLOAD_FAILURE for i in range(4)},
+        )
+
+    def test_batch_failing_before_first_flush_writes_no_status_csvs(self) -> None:
+        """A batch whose document row stream raises before the first status CSV
+        flush writes no status CSVs at all — any statuses already collected for
+        the batch are discarded rather than flushed as a final part.
+
+        This pins the case where a collection can end up with zero status CSVs
+        even though document uploads may have started. The record step still
+        runs after upload task failures (the DAG sequences it behind an
+        ALL_DONE trigger rule to capture partial results), and its `*.csv`
+        wildcard load of the collection's output directory has zero files to
+        match in this case.
+        """
+
+        def rows_then_stream_failure() -> Iterator[bigquery.table.Row]:
+            yield _make_new_document_contents_row("doc_a", "text a")
+            yield _make_new_document_contents_row("doc_b", "text b")
+            raise RuntimeError("BQ stream failed mid-batch")
+
+        query_job = MagicMock()
+        query_job.result.return_value = rows_then_stream_failure()
+        self.bq_client.run_query_async.return_value = query_job
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"Document upload completed with 1 error\(s\):\n"
+            r"\[US_XX\] Collection \[test_collection\]: BQ stream failed mid-batch",
+        ):
+            self.uploader.run([self._make_upload_batch(batch_number=0)])
+
+        csv_calls = [
+            c
+            for c in self.fs.upload_from_string.call_args_list
+            if c.kwargs.get("content_type") == CSV_CONTENT_TYPE
+        ]
+        self.assertEqual(csv_calls, [])
+
+    def test_documents_streamed_not_materialized(self) -> None:
+        """The uploader pulls document rows from the BQ result iterator lazily
+        as upload slots free up, never draining it up front."""
+        pulled = 0
+
+        def row_generator() -> Iterator[bigquery.table.Row]:
+            nonlocal pulled
+            for i in range(500):
+                pulled += 1
+                yield _make_new_document_contents_row(f"doc_{i}", f"text {i}")
+
+        query_job = MagicMock()
+        query_job.result.return_value = row_generator()
+        self.bq_client.run_query_async.return_value = query_job
+
+        pulled_at_first_upload: int | None = None
+
+        def upload_side_effect(
+            path: GcsfsFilePath,  # pylint: disable=unused-argument
+            contents: str,  # pylint: disable=unused-argument
+            content_type: str,  # pylint: disable=unused-argument
+        ) -> None:
+            nonlocal pulled_at_first_upload
+            if pulled_at_first_upload is None:
+                pulled_at_first_upload = pulled
+
+        self.fs.upload_from_string.side_effect = upload_side_effect
+
+        self.uploader.run([self._make_upload_batch(batch_number=0)])
+
+        self.assertEqual(pulled, 500)
+        # The first upload must have started while most of the 500 rows were
+        # still unread (only up to the initial in-flight window is pulled
+        # before work begins); a materializing implementation would read all
+        # 500 rows before any upload runs.
+        assert pulled_at_first_upload is not None
+        self.assertLessEqual(pulled_at_first_upload, MAX_UPLOAD_WORKERS + 1)

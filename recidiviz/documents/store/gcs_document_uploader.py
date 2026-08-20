@@ -16,21 +16,18 @@
 # =============================================================================
 """Uploads documents from BQ temp tables to GCS, writing upload successes and failures to CSV."""
 
-import csv
-import io
 import logging
-from concurrent import futures
+from collections.abc import Iterator
 from datetime import datetime
+from functools import partial
 
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.cloud_storage.gcs_file_system import (
-    CSV_CONTENT_TYPE,
-    TEXT_CONTENT_TYPE,
-    GCSFileSystem,
-)
+from recidiviz.cloud_storage.gcs_csv_part_writer import GcsCsvPartWriter
+from recidiviz.cloud_storage.gcs_file_system import TEXT_CONTENT_TYPE, GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import POOL_MAXSIZE as GCSFS_POOL_MAXSIZE
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
@@ -49,10 +46,20 @@ from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_SUCCESS,
     DocumentUploadStatusTable,
 )
+from recidiviz.utils.future_executor import map_with_bounded_concurrency
+from recidiviz.utils.types import assert_type
 
 MAX_UPLOAD_WORKERS = int(GCSFS_POOL_MAXSIZE / 2)
-# TODO(#73430) Compute a more precise timeout
-BATCH_UPLOAD_TIMEOUT_SECONDS = 60 * 60
+
+# Number of upload status rows buffered in memory before being flushed to a
+# status CSV part file in GCS. Bounds the status CSV's contribution to peak
+# memory regardless of how many documents a batch contains.
+STATUS_CSV_ROWS_PER_PART = 100_000
+
+# Maximum number of failed upload results retained (and included in the raised
+# error message) per batch, so a batch where every upload fails cannot itself
+# exhaust memory accumulating failure details.
+MAX_FAILED_UPLOADS_REPORTED = 25
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -102,17 +109,16 @@ class GcsDocumentUploader:
         table to process:
          1. query the `document_contents_id`s and `document_text`s from BQ
          2. upload `document_text`s to GCS concurrently
-         3. write a CSV file with the document upload statuses to be subsequently uploaded to the `document_upload_status` BQ table.
+         3. write CSV part files with the document upload statuses to be subsequently uploaded to the `document_upload_status` BQ table.
+
+        Documents are streamed from the BQ result with a bounded number of
+        uploads in flight, so peak memory is independent of batch size.
         """
         errors: list[str] = []
 
         for batch_index, upload_batch in enumerate(upload_batches):
             try:
-                self._process_batch(
-                    upload_batch,
-                    batch_index,
-                    batch_timeout_seconds=BATCH_UPLOAD_TIMEOUT_SECONDS,
-                )
+                self._process_batch(upload_batch, batch_index)
             except Exception as e:
                 errors.append(f"{self._log_prefix(upload_batch.collection_name)} {e}")
 
@@ -129,37 +135,72 @@ class GcsDocumentUploader:
         self,
         upload_batch: DocumentUploadBatch,
         batch_index: int,
-        batch_timeout_seconds: int,
     ) -> None:
+        """Queries the batch's document rows from BQ and uploads each document
+        text to GCS with bounded concurrency, streaming upload status rows to
+        CSV part files as uploads complete. Peak memory is proportional to
+        `MAX_UPLOAD_WORKERS` plus one CSV part buffer, independent of how many
+        documents the batch contains."""
+        collection_name = upload_batch.collection_name
         document_contents_rows = self._query_documents(upload_batch)
 
-        results = self._upload_documents(
-            upload_batch.collection_name,
-            document_contents_rows,
-            timeout_seconds=batch_timeout_seconds,
-        )
+        num_succeeded = 0
+        num_failed = 0
+        failed_upload_samples: list[DocumentUploadResult] = []
 
-        self._write_status_csv(results, batch_index, upload_batch.collection_name)
+        with GcsCsvPartWriter(
+            fs=self.fs,
+            path_for_part=partial(
+                self._gcs_path_for_batch_part,
+                collection_name=collection_name,
+                batch_index=batch_index,
+            ),
+            rows_per_part=STATUS_CSV_ROWS_PER_PART,
+        ) as status_csv_writer:
+            with map_with_bounded_concurrency(
+                work_fn=partial(self._upload_document, collection_name),
+                items=document_contents_rows,
+                max_concurrency=MAX_UPLOAD_WORKERS,
+            ) as completed_items:
+                for completed in completed_items:
+                    result = assert_type(completed.result, DocumentUploadResult)
+                    status_csv_writer.write_row(
+                        self._status_csv_row_for_upload_result(
+                            collection_name=collection_name, result=result
+                        )
+                    )
+                    if result.error_message is None:
+                        num_succeeded += 1
+                    else:
+                        num_failed += 1
+                        if len(failed_upload_samples) < MAX_FAILED_UPLOADS_REPORTED:
+                            failed_upload_samples.append(result)
 
-        failed_uploads = [r for r in results if r.error_message]
         logging.info(
             "%s successfully uploaded %d documents. %d documents failed to upload.",
-            self._log_prefix(upload_batch.collection_name),
-            len(results) - len(failed_uploads),
-            len(failed_uploads),
+            self._log_prefix(collection_name),
+            num_succeeded,
+            num_failed,
         )
-        if failed_uploads:
+        if num_failed:
+            failure_details = "\n -".join(str(f) for f in failed_upload_samples)
+            if num_failed > len(failed_upload_samples):
+                failure_details += (
+                    f"\n ... and {num_failed - len(failed_upload_samples)} more"
+                )
             raise RuntimeError(
-                f"{len(failed_uploads)} documents failed to upload:\n"
-                + "\n -".join(str(f) for f in failed_uploads)
+                f"{num_failed} documents failed to upload:\n" + failure_details
             )
 
     def _query_documents(
         self,
         upload_batch: DocumentUploadBatch,
-    ) -> list[NewDocumentContentsRow]:
+    ) -> Iterator[NewDocumentContentsRow]:
         """Queries `document_contents_id` and `document_text` from the
-        `temp_new_document_contents_` table for the given batch number."""
+        `temp_new_document_contents_` table for the given batch number.
+        Returns a lazy iterator over the batch's rows — the underlying BQ row
+        iterator fetches pages as they are consumed, so the full batch is never
+        materialized in memory."""
         query = f"""
             SELECT
                 {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
@@ -172,56 +213,17 @@ class GcsDocumentUploader:
             query_str=query,
             use_query_cache=False,
         )
-        return [
+        # The outermost iterable of a generator expression is evaluated when the
+        # expression is created, so a query failure raises here — before any
+        # uploads or status CSV writes start — not mid-iteration.
+        return (
             NewDocumentContentsRow(
                 document_contents_id=row[DOCUMENT_CONTENTS_ID_COLUMN_NAME],
                 document_text=row[DOCUMENT_TEXT_COLUMN_NAME],
                 document_length_bytes=row[DOCUMENT_LENGTH_BYTES_COLUMN_NAME],
             )
             for row in query_job.result()
-        ]
-
-    def _upload_documents(
-        self,
-        collection_name: str,
-        document_content_rows: list[NewDocumentContentsRow],
-        timeout_seconds: int,
-    ) -> list[DocumentUploadResult]:
-        """Uploads documents concurrently, returning a list of upload results.
-        If the batch upload process exceeds the specified timeout, any remaining uploads that have not
-        completed will be marked as failed."""
-        # Not using `with` because its __exit__ calls shutdown(wait=True),
-        # which would block on still-running futures after a timeout.
-        executor = futures.ThreadPoolExecutor(max_workers=MAX_UPLOAD_WORKERS)
-        upload_futures = [
-            executor.submit(self._upload_document, collection_name, row)
-            for row in document_content_rows
-        ]
-
-        results: list[DocumentUploadResult] = []
-        try:
-            for future in futures.as_completed(upload_futures, timeout=timeout_seconds):
-                results.append(future.result())
-        except futures.TimeoutError:
-            logging.error(
-                "%s Batch upload timed out after %ds; "
-                "marking incomplete uploads as failed",
-                self._log_prefix(collection_name),
-                timeout_seconds,
-            )
-            completed = {r.document_contents_id for r in results}
-            for row in document_content_rows:
-                if row.document_contents_id not in completed:
-                    results.append(
-                        DocumentUploadResult(
-                            document_contents_id=row.document_contents_id,
-                            document_length_bytes=row.document_length_bytes,
-                            error_message=f"Batch timed out after {timeout_seconds}s",
-                        )
-                    )
-
-        executor.shutdown(wait=False, cancel_futures=True)
-        return results
+        )
 
     def _upload_document(
         self, collection_name: str, document_contents_row: NewDocumentContentsRow
@@ -255,37 +257,32 @@ class GcsDocumentUploader:
             error_message=error_msg,
         )
 
-    def _write_status_csv(
-        self,
-        results: list[DocumentUploadResult],
-        batch_index: int,
-        collection_name: str,
-    ) -> None:
-        """Writes a CSV file to GCS containing upload status for a batch of documents.
-        CSV file matches `document_upload_status` table schema."""
-        buf = io.StringIO()
-        writer = csv.writer(buf)
-        for result in results:
-            writer.writerow(
-                DocumentUploadStatusTable.to_csv_row(
-                    document_contents_id=result.document_contents_id,
-                    collection_name=collection_name,
-                    run_id=self.run_id,
-                    upload_datetime=self.upload_datetime,
-                    status=result.status,
-                    document_length_bytes=result.document_length_bytes,
-                    error_message=result.error_message,
-                )
-            )
+    def _status_csv_row_for_upload_result(
+        self, *, collection_name: str, result: DocumentUploadResult
+    ) -> tuple[str, str, str, str, str, int, str | None]:
+        """Returns a tuple containing datat that can be written to a document
+        upload status table CSV.
+        """
+        return DocumentUploadStatusTable.to_csv_row(
+            document_contents_id=result.document_contents_id,
+            collection_name=collection_name,
+            run_id=self.run_id,
+            upload_datetime=self.upload_datetime,
+            status=result.status,
+            document_length_bytes=result.document_length_bytes,
+            error_message=result.error_message,
+        )
 
-        output_path = gcs_path_for_task_output(
+    def _gcs_path_for_batch_part(
+        self, part_index: int, *, collection_name: str, batch_index: int
+    ) -> GcsfsFilePath:
+        """Returns the GCS path for one status CSV part file of a batch."""
+        return gcs_path_for_task_output(
             project_id=self.project_id,
             state_code=self.state_code,
             run_id=self.run_id,
             collection_name=collection_name,
             task_index=self.task_index,
             batch_index=batch_index,
-        )
-        self.fs.upload_from_string(
-            path=output_path, contents=buf.getvalue(), content_type=CSV_CONTENT_TYPE
+            part_index=part_index,
         )
