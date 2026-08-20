@@ -61,9 +61,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision_level_raw_text_sessions_inferred import (
-    US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
@@ -488,11 +485,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Site_latest"): {
         US_TN_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(TN-2040): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: "TODO(TN-2041): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str(
-        "us_tn_raw_data_up_to_date_views.SupervisionPlan_latest"
-    ): {
-        US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_BUILDER.address: "TODO(TN-2044): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.TDPOP_latest"): {
         US_TN_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2046): Migrate this reference off of legacy TOMIS 1.0 raw data",

@@ -1432,22 +1432,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str(
-        "analyst_data.us_tn_supervision_level_raw_text_sessions_inferred"
-    ): [
-        "case_type",
-        "date_gap_id",
-        "end_date",
-        "end_date_exclusive",
-        "person_id",
-        "previous_supervision_level",
-        "previous_supervision_level_raw_text",
-        "start_date",
-        "state_code",
-        "supervision_level",
-        "supervision_level_raw_text",
-        "supervision_level_session_id",
-    ],
     BigQueryAddress.from_str("analyst_data.us_tn_trustee_checklist"): [
         "has_10_years_or_less_remaining",
         "meets_all_trustee_criteria",

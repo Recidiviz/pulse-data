@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,8 +75,6 @@ FINES_FEES_CRITERIA_GROUP = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
     allowed_duplicate_reasons_keys=[],
 )
 
-# TODO(#40144): Make SDS opportunity internally consistent with respect to backdating
-# (for criteria, eligibility spans, and completion event).
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="SUSPENSION_OF_DIRECT_SUPERVISION",
