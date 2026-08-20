@@ -95,6 +95,17 @@ resource "google_bigquery_dataset" "oncall_logs_dataset" {
     role          = "WRITER"
     special_group = "projectWriters"
   }
+
+  lifecycle {
+    # The `protection` Resource Manager tag is stamped on this dataset out-of-band by
+    # the calc DAG's ApplyDatasetProtectionTagsEntrypoint (it gates the catastrophic-
+    # delete deny policy; see recidiviz/tools/deploy/deletion_protection/). Without
+    # this, Terraform would try to delete the tag on every apply and 403 -- the deploy
+    # SA has no resourcemanager.tagValueBindings.delete on the tag value. The reconcile
+    # job is the sole owner of resource_tags. Same rationale as the shared
+    # big_query_dataset module; on_call_logs is a standalone dataset, not that module.
+    ignore_changes = [resource_tags]
+  }
 }
 
 module "user_mgmt_logs_dataset" {
