@@ -246,3 +246,26 @@ entries:
     organization_type: hotel_motel
   - name: "Quality Inn"
     organization_type: hotel_motel
+  - name: "Goodwill"
+    organization_type: employer
+  - name: "ARC Thrift Store"
+    organization_type: employer
+    aliases: ["ARC Thrift"]
+  - name: "JBS"
+    organization_type: employer
+  - name: "Center for Employment Opportunities"
+    organization_type: staffing_agency
+    aliases: ["CEO"]
+  - name: "DoorDash"
+    organization_type: employer
+  - name: "Micro Metals"
+    organization_type: employer
+  - name: "Advanced Pathways"
+    organization_type: employer
+  - name: "DNR Preservations"
+    organization_type: employer
+    aliases: ["DNR"]
+  - name: "Harvest Distribution"
+    organization_type: employer
+  - name: "BLS Trucking"
+    organization_type: employer

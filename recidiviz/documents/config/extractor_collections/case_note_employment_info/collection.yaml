@@ -17,8 +17,10 @@ reference_data:
     header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
     groups:
       - label: >
-          The following are NOT employers (do not extract as employment, even if
-          mentioned in the note):
+          The following are primarily known for non-employment purposes (housing,
+          treatment, supervision). They may still be a legitimate employer for a
+          specific person — use the note's context, not just the entity's typical
+          purpose, to decide:
         types:
           [
             nonresidential_program,
