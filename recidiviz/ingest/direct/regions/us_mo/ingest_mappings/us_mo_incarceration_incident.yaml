@@ -80,6 +80,7 @@ output:
                         - "D7" # PROGRAM SANCTIONS
                         - "D8" # PROGRAM ATTENDANCE OR COMPLETION REQUIREMENT
                         - "D16" # Unknown: not in handbook, possibly entered in error
+                        - "D17" # Unknown: not in handbook, possibly entered in error
                         - "M1" # Abuse of Judicial Proceedings Sanctions:
                           # Option 1: If the court order is issued prior to the offender’s first parole consideration hearing date,
                           # the parole consideration hearing date will be delayed 60 days
