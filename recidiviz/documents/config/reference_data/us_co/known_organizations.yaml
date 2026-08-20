@@ -6,9 +6,9 @@ entries:
   - name: "Mesa County Community Corrections"
     organization_type: community_corrections
     aliases: ["MCCC"]
-  - name: "ComCor, Inc."
+  - name: "Embrave"
     organization_type: community_corrections
-    aliases: ["Embrave", "ComCor"]
+    aliases: ["ComCor, Inc.", "ComCor"]
   - name: "Intervention Community Corrections Services"
     organization_type: community_corrections
     aliases: ["ICCS"]
