@@ -1324,6 +1324,12 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="task_eligibility_completion_events_us_tx",
                 table_id="supervision_level_review",
             ),
+            # TODO(OBT-43358): zero-row placeholder until EM rejections data is
+            # ingested.
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_tx",
+                table_id="at_least_30_days_since_last_rejection_for_em_removal",
+            ),
         }
         if node.view.address in known_empty_parent_view_addresss:
             return
