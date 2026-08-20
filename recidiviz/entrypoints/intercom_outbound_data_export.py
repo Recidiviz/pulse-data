@@ -34,6 +34,7 @@ from recidiviz.intercom.intercom_gcs_upload import (
     generate_intercom_outbound_content_gcs_path,
     intercom_gcs_upload,
 )
+from recidiviz.intercom.json_to_csv_converter import IntercomJsonToCsvConverter
 from recidiviz.intercom.manager import IntercomAPIManager
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
 from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
@@ -102,9 +103,11 @@ def export_and_upload_intercom_data(
 ) -> None:
     """Runs the full Intercom outbound data export process."""
 
-    intercom_api_manager = IntercomAPIManager(client=IntercomAPIClient())
+    intercom_api_client = IntercomAPIClient()
+    intercom_api_manager = IntercomAPIManager(client=intercom_api_client)
+    json_to_csv_converter = IntercomJsonToCsvConverter()
 
-    # Download the data and export the CSVs to the GCS bucket
+    # Export the Intercom outbound data
     export_job = intercom_api_manager.export_intercom_data(
         start_datetime_inclusive=start_datetime_inclusive,
         end_datetime_inclusive=end_datetime_inclusive,
@@ -112,13 +115,42 @@ def export_and_upload_intercom_data(
 
     intercom_api_manager.poll_export_status(job_identifier=export_job.job_identifier)
 
+    # Export the Intercom inbound data
+    intercom_tickets = intercom_api_client.get_tickets(
+        updated_before_inclusive=end_datetime_inclusive,
+        updated_after_inclusive=start_datetime_inclusive,
+    )
+    # We are filtering on created at/after dates here to only export newly created contacts,
+    # as previously created contacts are backfilled.
+    intercom_contacts = intercom_api_client.get_contacts(
+        created_before_inclusive=end_datetime_inclusive,
+        created_after_inclusive=start_datetime_inclusive,
+    )
+
     with tempfile.TemporaryDirectory() as temp_output_dir:
         file_paths = intercom_api_manager.download_and_process_export(
             job_identifier=export_job.job_identifier,
             output_dir=temp_output_dir,
             update_datetime=update_datetime,
         )
+        # Only the headers from the outbound data need to be verified, since the data is unaltered
         verify_headers(file_paths)
+
+        inbound_data_file_paths = json_to_csv_converter.create_inbound_data_csvs(
+            tickets=intercom_tickets,
+            contacts=intercom_contacts,
+            output_dir=temp_output_dir,
+        )
+        if any(
+            inbound_data_name in file_paths
+            for inbound_data_name in inbound_data_file_paths
+        ):
+            raise ValueError(
+                f"File name collision between Intercom outbound and inbound data CSVs. "
+                f"Outbound data CSVs: {list(file_paths.keys())}. "
+                f"Inbound data CSVs: {list(inbound_data_file_paths.keys())}."
+            )
+        file_paths.update(inbound_data_file_paths)
 
         current_project_id = metadata.project_id()
         for base_name, source_path in file_paths.items():

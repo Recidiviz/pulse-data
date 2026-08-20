@@ -220,7 +220,6 @@ class IntercomAPIClient:
             endpoint_type: The search endpoint to be queried (https://api.intercom.io/<endpoint_type>/search)
             query_filters: Filters to query the endpoint on
             response_data_key: Key that contains the data from the requested endpoint in the Intercom API response
-            per_page: Number of tickets to fetch per page (max 150, per the Intercom API)
             next_cursor: The cursor to use in the next request to get the next page of results
 
         Returns:
@@ -272,7 +271,6 @@ class IntercomAPIClient:
             endpoint_type: The search endpoint to be queried (https://api.intercom.io/<endpoint_type>/search)
             query_filters: Filters to query the endpoint on
             response_data_key: Key that contains the data from the requested endpoint in the Intercom API response
-            per_page: Number of tickets to fetch per page (max 150, per the Intercom API)
 
         Returns:
             List of Intercom inbound support tickets JSON
@@ -297,28 +295,31 @@ class IntercomAPIClient:
         return returned_data
 
     def get_tickets(
-        self, updated_before: datetime, updated_after: datetime
+        self, updated_before_inclusive: datetime, updated_after_inclusive: datetime
     ) -> list[dict[str, Any]]:
         """Fetches tickets from Intercom using the search tickets endpoint.
 
         Args:
-            updated_before: Datetime to filter tickets updated before this time
-            updated_after: Datetime to filter tickets updated after this time
+            updated_before_inclusive: Datetime to filter tickets updated before this time
+            updated_after_inclusive: Datetime to filter tickets updated after this time
 
         Returns:
             List of Intercom inbound support tickets JSON
         """
 
+        # For Intercom queries, the > operator means greater (or equal) than
+        # and the < operator means lower (or equal) than, according to
+        # https://developers.intercom.com/docs/references/rest-api/api.intercom.io/tickets/searchtickets
         query_filters = [
             {
                 FIELD: UPDATED_AT,
                 OPERATOR: ">",
-                VALUE: str(updated_after.timestamp()),
+                VALUE: str(updated_after_inclusive.timestamp()),
             },
             {
                 FIELD: UPDATED_AT,
                 OPERATOR: "<",
-                VALUE: str(updated_before.timestamp()),
+                VALUE: str(updated_before_inclusive.timestamp()),
             },
         ]
 
@@ -330,13 +331,13 @@ class IntercomAPIClient:
         return tickets
 
     def get_contacts(
-        self, created_before: datetime, created_after: datetime
+        self, created_before_inclusive: datetime, created_after_inclusive: datetime
     ) -> list[dict[str, Any]]:
         """Fetches contacts from Intercom using the search contacts endpoint.
 
         Args:
-            created_before: Datetime to filter contacts created before this time
-            created_after: Datetime to filter contacts created after this time
+            created_before_inclusive: Datetime to filter contacts created before this time
+            created_after_inclusive: Datetime to filter contacts created after this time
 
         Returns:
             List of Intercom contacts JSON
@@ -346,12 +347,12 @@ class IntercomAPIClient:
             {
                 FIELD: CREATED_AT,
                 OPERATOR: ">",
-                VALUE: str(created_after.timestamp()),
+                VALUE: str(created_after_inclusive.timestamp()),
             },
             {
                 FIELD: CREATED_AT,
                 OPERATOR: "<",
-                VALUE: str(created_before.timestamp()),
+                VALUE: str(created_before_inclusive.timestamp()),
             },
         ]
 

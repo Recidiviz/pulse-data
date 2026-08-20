@@ -23,6 +23,8 @@ from typing import Any
 import attr
 import cattrs
 
+from recidiviz.common.constants.states import StateCode
+
 
 @attr.frozen
 class IntercomTicket:
@@ -138,6 +140,70 @@ class IntercomSearchEndpointResponse:
     # The cursor to use in the next request to get the next page of results.
     # None if the last page of the response has been reached.
     next_cursor: str | None
+
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+class IntercomTicketState(Enum):
+    """Represents an Intercom ticket state."""
+
+    SUBMITTED = "submitted"
+    IN_PROGRESS = "in_progress"
+    WAITING_ON_CUSTOMER = "waiting_on_customer"
+    RESOLVED = "resolved"
+
+
+class IntercomTicketCategory(Enum):
+    """Represents an Intercom ticket state."""
+
+    CUSTOMER = "Customer"
+    BACK_OFFICE = "Back-office"
+    TRACKER = "Tracker"
+
+
+@attr.frozen
+class IntercomSearchTicket:
+    """Represents and Intercom inbound support ticket."""
+
+    # The ticket's ID
+    ticket_id: str
+    # The ticket's category
+    ticket_category: IntercomTicketCategory
+    # The ticket's name
+    ticket_name: str
+    # The ticket's description
+    description: str
+    # The timestamp of when the ticket was created
+    created_at: datetime
+    # The timestamp of when the ticket was last updated
+    updated_at: datetime
+    # The state of the ticket
+    ticket_state: IntercomTicketState
+    # The ticket's raw JSON from the Intercom API search tickets response
+    raw_ticket_json: dict
+
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.frozen
+class IntercomContact:
+    """Represents and Intercom contact. We should only store stable fields
+    here since contacts are only updated by their created_at date. If we
+    want to store a field that might change we will need to revisit the
+    export approach in recidiviz/intercom/client.py."""
+
+    # The contact's ID
+    contact_id: str
+    # The contact's external ID
+    intercom_external_id: str
+    # The contact's state code
+    state_code: StateCode | None
+    # The contact's name
+    name: str
+    # The contact's email
+    email: str
 
     def to_json(self) -> dict[str, Any]:
         return cattrs.unstructure(self)
