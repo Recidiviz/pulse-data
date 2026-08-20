@@ -29,7 +29,7 @@ from recidiviz.common import attr_validators
 # by both citation checks so the window CitationGroundingCheck fails a citation
 # outside of is exactly the window CitationOffsetDriftAdjustment corrects a
 # citation inside of.
-MAX_CITATION_OFFSET_DRIFT = 10
+MAX_CITATION_OFFSET_DRIFT = 500
 
 
 @attr.define(frozen=True, kw_only=True)
