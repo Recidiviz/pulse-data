@@ -89,11 +89,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_view_dag_walker import (
-    BigQueryViewDagWalkerProcessingFailureMode,
-)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
@@ -123,21 +119,23 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
 )
+from recidiviz.documents.store.document_store_sandbox_context import (
+    DocumentStoreSandboxContext,
+)
 from recidiviz.ingest.direct.external_id_type_helpers import (
     external_id_types_by_state_code,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.source_tables.extraction_results_source_table_collection import (
-    collect_extraction_results_source_table_collections,
-)
-from recidiviz.source_tables.source_table_config import SourceTableCollection
-from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.documents.sandbox_document_extraction_processor import (
     DocumentExtractionProcessor,
     SandboxExtractionSummary,
 )
-from recidiviz.tools.load_views_to_sandbox import load_collected_views_to_sandbox
+from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
+    create_extraction_results_tables,
+    deploy_extraction_results_views,
+    first_order_input_overrides,
+)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -259,91 +257,6 @@ def _local_operations_postgres(*, keep_postgres: bool) -> Generator[None, None, 
         yield
 
 
-def _extraction_results_source_table_collections(
-    config: LLMExtractorConfig,
-) -> list[SourceTableCollection]:
-    """Returns the (un-prefixed) source table collections holding the extractor's
-    raw / validated / audit result tables."""
-    return collect_extraction_results_source_table_collections(
-        configs={config.state_code: {config.extractor_collection.name: config}}
-    )
-
-
-def create_extraction_results_tables(
-    *,
-    config: LLMExtractorConfig,
-    sandbox_prefix: str,
-    table_expiration_ms: int,
-    bq_client: BigQueryClient,
-) -> None:
-    """Creates the raw / validated / audit result tables for the extractor in
-    the sandbox-prefixed datasets, with the given table expiration.
-
-    The datasets are created up front with the requested expiration; the
-    source table update manager's own create-if-necessary then finds them
-    already present and does not override it with its default sandbox
-    expiration.
-    """
-    logging.info("Creating sandbox result tables under prefix [%s].", sandbox_prefix)
-    update_manager = SourceTableUpdateManager(bq_client)
-    for collection in _extraction_results_source_table_collections(config):
-        sandbox_collection = collection.as_sandbox_collection(
-            sandbox_dataset_prefix=sandbox_prefix
-        )
-        bq_client.create_dataset_if_necessary(
-            sandbox_collection.dataset_id,
-            default_table_expiration_ms=table_expiration_ms,
-        )
-        update_manager.update(sandbox_collection)
-
-
-def create_extraction_results_views(
-    *,
-    config: LLMExtractorConfig,
-    sandbox_prefix: str,
-    table_expiration_ms: int,
-) -> None:
-    """Collects the extractor's parsed views and deploys them to the
-    sandbox-prefixed datasets, reading from the sandbox result tables the run
-    wrote.
-
-    Goes through the shared load_collected_views_to_sandbox wrapper (rather
-    than calling create_managed_dataset_and_deploy_views_for_view_builders
-    directly) so the sandbox deploy matches every other sandbox view load, and
-    so the state_code_filter installs the state-filtering parent-address
-    formatter the cross-state union views will need.
-    """
-    logging.info(
-        "Deploying parsed views over the sandbox result tables under prefix [%s].",
-        sandbox_prefix,
-    )
-    state_code = config.state_code
-    view_builders = collect_first_order_llm_extraction_results_view_builders([config])
-
-    def _sandbox_source_table_overrides() -> BigQueryAddressOverrides:
-        """Returns overrides pointing the parsed views' source tables at the
-        sandbox-prefixed result datasets the run wrote."""
-        builder = BigQueryAddressOverrides.Builder(sandbox_prefix=sandbox_prefix)
-        for collection in _extraction_results_source_table_collections(config):
-            builder.register_sandbox_override_for_entire_dataset(collection.dataset_id)
-        return builder.build()
-
-    load_collected_views_to_sandbox(
-        sandbox_dataset_prefix=sandbox_prefix,
-        state_code_filter=state_code,
-        collected_builders=view_builders,
-        input_source_table_dataset_overrides_dict=None,
-        # Point the views' source tables (the raw/validated result tables) at
-        # the sandbox-prefixed datasets the run wrote.
-        input_source_table_overrides=_sandbox_source_table_overrides(),
-        allow_slow_views=True,
-        rematerialize_changed_views_only=False,
-        failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
-        schemas_only=False,
-        default_table_expiration_ms=table_expiration_ms,
-    )
-
-
 class SandboxExtractionRunner:
     """Drives the first-order extraction thread end-to-end for one extractor and
     sandbox, holding the run's shared inputs so the per-stage steps don't have to
@@ -359,8 +272,11 @@ class SandboxExtractionRunner:
         *,
         # The narrowed extractor config every stage reads from.
         config: LLMExtractorConfig,
-        # Prefix applied to every BQ dataset this run writes.
-        sandbox_prefix: str,
+        # Sandbox dataset prefix the run writes its result tables under.
+        results_sandbox_prefix: str,
+        # Per-collection document store locations the run reads its input from, or None
+        # when it reads from the production document store.
+        document_store_sandbox: DocumentStoreSandboxContext | None,
         # Billing labels attached to each Vertex AI request.
         labels: dict[str, str],
         # Client for the sandbox result tables and eligible-document query.
@@ -377,7 +293,8 @@ class SandboxExtractionRunner:
         progress_log_interval_seconds: float,
     ) -> None:
         self.config = config
-        self.sandbox_prefix = sandbox_prefix
+        self.results_sandbox_prefix = results_sandbox_prefix
+        self.document_store_sandbox = document_store_sandbox
         self.labels = labels
         self.bq_client = bq_client
         self.fs = fs
@@ -475,15 +392,11 @@ class SandboxExtractionRunner:
     def _build_processor(self) -> DocumentExtractionProcessor:
         """Returns the processor that runs this job's pending documents through the
         LLM, wired to write results under the run's sandbox prefix and to read each
-        document's text from the production document store."""
+        document's text from the run's input document store."""
         return DocumentExtractionProcessor(
             config=self.config,
-            results_sandbox_prefix=self.sandbox_prefix,
-            # TODO(OBT-42680) This script only supports extractions against the real
-            # document store, so there is no sandbox document store to read from. When
-            # sandbox documents are supported, this will point at the sandbox copy the
-            # run seeded.
-            document_store_sandbox=None,
+            results_sandbox_prefix=self.results_sandbox_prefix,
+            document_store_sandbox=self.document_store_sandbox,
             labels=self.labels,
             bq_client=self.bq_client,
             fs=self.fs,
@@ -614,6 +527,14 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
     table_expiration_ms = args.table_expiration_days * 24 * 60 * 60 * 1000
     bq_client = BigQueryClientImpl(project_id=project_id())
 
+    # TODO(OBT-42680) This script currently only supports extractions against the real
+    # document store, so there is no sandbox document store to read from. When sandbox
+    # documents are supported, this will point at the sandbox copy the run seeded.
+    document_store_sandbox: DocumentStoreSandboxContext | None = None
+
+    logging.info(
+        "Creating sandbox result tables under prefix [%s].", args.sandbox_prefix
+    )
     create_extraction_results_tables(
         config=config,
         sandbox_prefix=args.sandbox_prefix,
@@ -623,7 +544,8 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
 
     summary = SandboxExtractionRunner(
         config=config,
-        sandbox_prefix=args.sandbox_prefix,
+        results_sandbox_prefix=args.sandbox_prefix,
+        document_store_sandbox=document_store_sandbox,
         labels=_build_labels(
             user_labels=args.labels, sandbox_prefix=args.sandbox_prefix
         ),
@@ -660,9 +582,21 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
         )
         time.sleep(delay_seconds)
 
-    create_extraction_results_views(
+    logging.info(
+        "Deploying parsed views over the sandbox result tables under prefix [%s].",
+        args.sandbox_prefix,
+    )
+    deploy_extraction_results_views(
         config=config,
-        sandbox_prefix=args.sandbox_prefix,
+        view_builders=collect_first_order_llm_extraction_results_view_builders(
+            [config]
+        ),
+        results_sandbox_prefix=args.sandbox_prefix,
+        input_source_table_overrides=first_order_input_overrides(
+            config=config,
+            results_sandbox_prefix=args.sandbox_prefix,
+            document_store_sandbox=document_store_sandbox,
+        ),
         table_expiration_ms=table_expiration_ms,
     )
     return summary

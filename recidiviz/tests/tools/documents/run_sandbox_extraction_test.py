@@ -298,13 +298,13 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         progress_log_interval_seconds: float = 0.0,
     ) -> SandboxExtractionSummary:
         # Drives just the extraction thread against the seeded result tables; the
-        # table-create and view-deploy steps live in run_sandbox_extraction and are
-        # covered by RunSandboxExtractionOrchestrationTest.
+        # table-create and view-deploy steps live in run_sandbox_extraction.
         return SandboxExtractionRunner(
             config=self.config.with_sandbox_narrowing(
                 document_limit=5, root_entity_ids=None, external_id_type=None
             ),
-            sandbox_prefix=_SANDBOX_PREFIX,
+            results_sandbox_prefix=_SANDBOX_PREFIX,
+            document_store_sandbox=None,
             labels={"reason": "test"},
             bq_client=self.bq_client,
             fs=self.fs,

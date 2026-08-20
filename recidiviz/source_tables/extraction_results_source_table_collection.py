@@ -142,6 +142,16 @@ def collect_extraction_results_source_table_collections(
     return collections
 
 
+def collect_extraction_results_source_table_collections_for_config(
+    config: LLMExtractorConfig,
+) -> list[SourceTableCollection]:
+    """Collects the extraction source table collections for a single
+    extractor config"""
+    return collect_extraction_results_source_table_collections(
+        configs={config.state_code: {config.extractor_collection.name: config}}
+    )
+
+
 def collect_golden_eval_results_source_table_collection(
     *, config_module: ModuleType | None = None
 ) -> SourceTableCollection:

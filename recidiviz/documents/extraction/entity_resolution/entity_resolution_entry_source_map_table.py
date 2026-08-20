@@ -62,6 +62,9 @@ from recidiviz.documents.dataset_config import (
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
     entry_source_map_schema_field,
 )
+from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
+    LLMExtractorCollectionConfig,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentRootEntityIdType,
 )
@@ -120,6 +123,26 @@ class EntityResolutionEntrySourceMapBQTable:
                 entity_group_name=entity_group_name,
             ),
         )
+
+    @classmethod
+    def addresses_for_collection(
+        cls,
+        *,
+        state_code: StateCode,
+        extractor_collection: LLMExtractorCollectionConfig,
+        sandbox_prefix: str | None,
+    ) -> list[BigQueryAddress]:
+        """Returns the map table addresses for a first-order extractor collection, one per
+        entity group it declares."""
+        return [
+            cls.address(
+                state_code=state_code,
+                first_order_extractor_collection_name=extractor_collection.name,
+                entity_group_name=entity_group.name,
+                sandbox_prefix=sandbox_prefix,
+            )
+            for entity_group in extractor_collection.entity_groups
+        ]
 
     @staticmethod
     def description(

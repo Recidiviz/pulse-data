@@ -420,6 +420,40 @@ class BigQueryAddressOverridesTest(unittest.TestCase):
         ):
             builder.register_sandbox_override_for_address(address)
 
+    def test_register_override_for_address_with_prefix(self) -> None:
+        # Works on a builder with no sandbox prefix, and different prefixes can
+        # coexist for addresses in different datasets.
+        address_1 = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        address_2 = BigQueryAddress(dataset_id=_DATASET_2, table_id=_TABLE_1)
+        overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix=None)
+            .register_sandbox_override_for_address_with_prefix(address_1, "prefix_a")
+            .register_sandbox_override_for_address_with_prefix(address_2, "prefix_b")
+            .build()
+        )
+        self.assertEqual(
+            BigQueryAddress(dataset_id=f"prefix_a_{_DATASET_1}", table_id=_TABLE_1),
+            overrides.get_sandbox_address(address_1),
+        )
+        self.assertEqual(
+            BigQueryAddress(dataset_id=f"prefix_b_{_DATASET_2}", table_id=_TABLE_1),
+            overrides.get_sandbox_address(address_2),
+        )
+
+    def test_register_override_for_address_with_prefix_conflicting(self) -> None:
+        address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix=None
+        ).register_sandbox_override_for_address_with_prefix(address, "prefix_a")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Address \[dataset_1.table_1\] already has conflicting override set",
+        ):
+            builder.register_sandbox_override_for_address_with_prefix(
+                address, "prefix_b"
+            )
+
     def test_merge_overrides(self) -> None:
         overrides_1 = (
             BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")

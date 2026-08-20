@@ -217,9 +217,19 @@ class BigQueryAddressOverrides:
             views being deployed, the sandbox address will be referenced instead of the
             original address.
             """
+            return self.register_sandbox_override_for_address_with_prefix(
+                address, self._sandbox_prefix
+            )
+
+        def register_sandbox_override_for_address_with_prefix(
+            self, address: BigQueryAddress, prefix: str
+        ) -> "BigQueryAddressOverrides.Builder":
+            """Registers an address override for the view/table at the provided |address|,
+            pointing to a sandbox dataset scoped to |prefix|.
+            """
             sandbox_address = BigQueryAddress(
                 dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
-                    self._sandbox_prefix, address.dataset_id
+                    prefix, address.dataset_id
                 ),
                 table_id=address.table_id,
             )
