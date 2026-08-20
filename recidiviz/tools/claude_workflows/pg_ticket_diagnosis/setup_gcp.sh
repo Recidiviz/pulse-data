@@ -56,31 +56,18 @@ else
   echo "    Created."
 fi
 
-# 3. Create Artifact Registry repo for Docker image caching (skip if exists)
-echo "==> Creating Artifact Registry repo..."
-if gcloud artifacts repositories describe pg-diagnosis \
-  --location=us-central1 --project="$PROJECT_ID" > /dev/null 2>&1; then
-  echo "    Already exists, skipping."
-else
-  gcloud artifacts repositories create pg-diagnosis \
-    --repository-format=docker \
-    --location=us-central1 \
-    --project="$PROJECT_ID" \
-    --description="Docker images for PG ticket diagnosis agent"
-  echo "    Created."
-fi
-
-# 4. Grant IAM roles to the service account.
+# 3. Grant IAM roles to the service account.
 # The Cloud Build trigger defined in pg-diagnosis-trigger.tf runs as this SA;
-# these are the runtime permissions it needs.
+# these are the runtime permissions it needs. artifactregistry.reader lets the
+# build pull the private appengine/default image its run step executes in.
 echo "==> Granting IAM roles..."
 grant_role "$SA_EMAIL" "roles/cloudbuild.builds.editor"
 grant_role "$SA_EMAIL" "roles/bigquery.dataViewer"
 grant_role "$SA_EMAIL" "roles/bigquery.jobUser"
 grant_role "$SA_EMAIL" "roles/logging.logWriter"
-grant_role "$SA_EMAIL" "roles/artifactregistry.writer"
+grant_role "$SA_EMAIL" "roles/artifactregistry.reader"
 
-# 5. Grant the SA permission to mint OAuth tokens for itself.
+# 4. Grant the SA permission to mint OAuth tokens for itself.
 # The agent's PII-doc fetch (fetch_pii_for_issue in run_pg_ticket_diagnosis.py)
 # self-impersonates to get a token scoped to documents.readonly, which the
 # default Cloud Build credentials don't have. `add-iam-policy-binding` is
@@ -106,7 +93,7 @@ else
   echo "    FAILED — you may need Service Account Admin permissions."
 fi
 
-# 6. Grant BigQuery row-access-policy group memberships.
+# 5. Grant BigQuery row-access-policy group memberships.
 # `normalized_state.state_person_external_id` and other downstream tables
 # have row-access policies that filter by state_code. Project-level
 # `bigquery.dataViewer` alone is not enough — the SA must also be a member of
@@ -148,7 +135,7 @@ for GROUP in \
   add_to_group "$GROUP" "$SA_EMAIL"
 done
 
-# 7. Create the Cloud Build webhook auth secret.
+# 6. Create the Cloud Build webhook auth secret.
 # Used by pg-diagnosis-trigger.tf to authenticate webhook calls. The value is
 # random and untyped — anything fits, as long as the same value is used in the
 # webhook URL that pg-diagnosis.yml POSTs to.
@@ -168,7 +155,7 @@ else
   fi
 fi
 
-# 8. Grant secret-level access.
+# 7. Grant secret-level access.
 # github_deploy_script_pat (helperbot comments) and linear_deploy_script_api_key
 # (Linear ID resolution) are both read directly from Secret Manager by the run
 # step via get_secret, so the SA needs secretAccessor on them. The Linear key
@@ -193,7 +180,7 @@ for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat linear_deploy
   fi
 done
 
-# 9. Store Anthropic API key (GitHub token uses existing github_deploy_script_pat secret)
+# 8. Store Anthropic API key (GitHub token uses existing github_deploy_script_pat secret)
 echo "==> Storing secrets..."
 SECRET_NAME="pg_diagnosis_claude_api_key"
 if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" > /dev/null 2>&1; then
@@ -220,7 +207,7 @@ else
   fi
 fi
 
-# 10. Summary
+# 9. Summary
 echo ""
 echo "============================================================"
 echo "Setup complete."

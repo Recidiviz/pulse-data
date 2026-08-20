@@ -55,7 +55,6 @@ resource "google_cloudbuild_trigger" "pg_diagnosis" {
   build {
     timeout       = local.pg_diagnosis_build.timeout
     substitutions = local.pg_diagnosis_build.substitutions
-    images        = local.pg_diagnosis_build.images
 
     options {
       substitution_option = local.pg_diagnosis_build.options.substitutionOption

@@ -14,15 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for pg_ticket_diagnosis/run_pg_ticket_diagnosis.py.
-
-The Cloud Build container ships run_pg_ticket_diagnosis.py flat alongside
-claude_agent.py and pii_doc_parser_utils.py, so the script imports those by
-bare module name. Reproduce that layout here by putting both directories on
-sys.path before importing the module under test.
-"""
+"""Tests for pg_ticket_diagnosis/run_pg_ticket_diagnosis.py."""
 import os
-import sys
 import unittest
 from unittest import mock
 
@@ -32,20 +25,11 @@ from recidiviz.issue_tracking.linear.linear_client import (
     LinearEquivalentIssueGroup,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
-from recidiviz.tools.claude_workflows import claude_agent as _claude_agent_pkg
 from recidiviz.tools.claude_workflows.pg_ticket_diagnosis import (
-    pii_doc_parser_utils as _pii_doc_parser_pkg,
+    run_pg_ticket_diagnosis as run_pg,
 )
 
-sys.path.insert(0, os.path.dirname(_claude_agent_pkg.__file__))
-sys.path.insert(0, os.path.dirname(_pii_doc_parser_pkg.__file__))
-
-# run_pg_ticket_diagnosis is a bare (non-recidiviz) module imported only after
-# the sys.path setup above, so it must sit below the first-party imports.
-# pylint: disable=wrong-import-position,wrong-import-order
-import run_pg_ticket_diagnosis as run_pg  # type: ignore[import-not-found]  # noqa: E402
-
-_MODULE = "run_pg_ticket_diagnosis"
+_MODULE = run_pg.__name__
 _ISSUE = GithubIssue(repo="Recidiviz/pulse-data", number=88494)
 
 _DOC_ID = "16Oce011Zebihlmas8xMKmzj6FQEuDg2JtX6vceALeJU"

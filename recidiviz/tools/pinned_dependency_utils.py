@@ -57,10 +57,6 @@ PINNED_REQUIREMENTS_PATHS = [
     # Installed into the Beam SDK harness worker venv on Dataflow workers, via
     # recidiviz/pipelines/dataflow_flex_setup.py's install_requires.
     _recidiviz_path("pipelines", "dataflow_flex_requirements.txt"),
-    # Installed into the PG ticket diagnosis Cloud Build Docker agent.
-    _recidiviz_path(
-        "tools", "claude_workflows", "pg_ticket_diagnosis", "requirements.txt"
-    ),
 ]
 
 

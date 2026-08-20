@@ -29,7 +29,6 @@ Features:
 - Deduplication: skips issues that already have a diagnosis comment
   (override with FORCE_RERUN=1).
 - Token usage logging per iteration and in the GitHub comment footer.
-- Docker image caching via Artifact Registry.
 
 To test end-to-end, fire the Cloud Build webhook trigger directly:
 
@@ -83,37 +82,28 @@ import requests
 from google.auth import impersonated_credentials
 from google.cloud import bigquery, secretmanager
 
-# The Cloud Build container only ships run_pg_ticket_diagnosis.py; the rest
-# of the recidiviz package lives in the cloned repo at REPO_PATH (set by
-# cloudbuild.yaml). Prepend it so we can import recidiviz.github.github_client.
-sys.path.insert(0, os.environ.get("REPO_PATH", "."))
-
-# pylint: disable=wrong-import-position
-from claude_agent import (  # type: ignore[import-not-found]  # noqa: E402
-    AgentConfig,
-    AgentFailure,
-    AgentResult,
-    run_agent_loop,
-)
-from pii_doc_parser_utils import (  # type: ignore[import-not-found]  # noqa: E402
-    extract_pii_doc_id,
-    find_issue_section,
-    parse_doc,
-    section_has_content,
-)
-
-from recidiviz.github.github_client import (  # noqa: E402
+from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
     github_helperbot_client,
     helperbot_issue_has_comment_with_prefix,
     upsert_helperbot_comment,
 )
-from recidiviz.github.github_issue import GithubIssue  # noqa: E402
-from recidiviz.issue_tracking.linear.linear_client import (  # noqa: E402
-    linear_client_from_secret,
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.linear.linear_client import linear_client_from_secret
+from recidiviz.tools.claude_workflows.claude_agent import (
+    AgentConfig,
+    AgentFailure,
+    AgentResult,
+    run_agent_loop,
 )
-from recidiviz.utils.string_formatting import truncate_string_if_necessary  # noqa: E402
+from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils import (
+    extract_pii_doc_id,
+    find_issue_section,
+    parse_doc,
+    section_has_content,
+)
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

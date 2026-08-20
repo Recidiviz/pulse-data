@@ -1,22 +1,6 @@
 steps:
-  # `source_to_build` checks the repo root out to /workspace, so `dir:` scopes
-  # the docker context to the same path as before (so the COPY lines in the
-  # Dockerfile resolve against `claude_workflows/`).
-  - name: gcr.io/cloud-builders/docker
-    dir: recidiviz/tools/claude_workflows
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        docker pull us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest || true
-        docker build \
-          --cache-from us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest \
-          -t pg-diagnosis-agent \
-          -t us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest \
-          -f pg_ticket_diagnosis/Dockerfile \
-          .
-    id: build
-
+  # The agent searches a checkout of the repo at ${_REPO_BRANCH}, which can
+  # differ from the `main` checkout that `source_to_build` puts in /workspace.
   - name: gcr.io/cloud-builders/git
     entrypoint: bash
     args:
@@ -25,8 +9,18 @@ steps:
     secretEnv: [GITHUB_TOKEN]
     id: clone
 
-  - name: pg-diagnosis-agent
+  # The agent runs inside the main application image, which already contains
+  # the recidiviz package and its dependencies. The staging release build
+  # trigger builds that image on every push to main; each staging deploy tags
+  # it `default:latest` (see tag_images.py).
+  - name: us-docker.pkg.dev/$PROJECT_ID/appengine/default:latest
+    dir: /app/
+    entrypoint: sh
+    args:
+      - -c
+      - uv run python -m recidiviz.tools.claude_workflows.pg_ticket_diagnosis.run_pg_ticket_diagnosis
     env:
+      - "HOME=/home/recidiviz"
       - "ISSUE_NUMBER=${_ISSUE_NUMBER}"
       - "ISSUE_TITLE=${_ISSUE_TITLE}"
       - "ISSUE_BODY=${_ISSUE_BODY}"
@@ -68,9 +62,6 @@ substitutions:
 # Specifying a service account in both the trigger and the build config is
 # rejected by Cloud Build. `logging: CLOUD_LOGGING_ONLY` below is still
 # required because the trigger runs the build as a custom service account.
-images:
-  - us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest
-
 options:
   substitutionOption: ALLOW_LOOSE
   logging: CLOUD_LOGGING_ONLY
