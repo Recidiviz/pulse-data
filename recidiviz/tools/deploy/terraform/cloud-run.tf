@@ -267,6 +267,12 @@ resource "google_cloud_run_service" "case-triage" {
         # in the default network (Redis, Cloud NAT, etc.)
         "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.id
         "run.googleapis.com/vpc-access-egress"    = "all-traffic"
+        # This service runs gunicorn with the gevent worker (see gunicorn.conf.py),
+        # which relies on background work -- the monitor thread, gRPC's completion
+        # queue polling, async DNS resolution -- continuing between requests. Cloud
+        # Run's default throttles CPU to (near) zero outside of request processing,
+        # which starves that background work.
+        "run.googleapis.com/cpu-throttling" = "false"
       }
 
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
@@ -526,6 +532,12 @@ resource "google_cloud_run_service" "public-pathways" {
         "run.googleapis.com/cloudsql-instances"   = local.public_pathways_connection_string
         "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.id
         "run.googleapis.com/vpc-access-egress"    = "all-traffic"
+        # This service runs gunicorn with the gevent worker (see gunicorn.conf.py),
+        # which relies on background work -- the monitor thread, gRPC's completion
+        # queue polling, async DNS resolution -- continuing between requests. Cloud
+        # Run's default throttles CPU to (near) zero outside of request processing,
+        # which starves that background work.
+        "run.googleapis.com/cpu-throttling" = "false"
       }
 
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
