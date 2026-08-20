@@ -68,12 +68,13 @@ from tenacity import (
 )
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.utils.google_drive_helpers import get_credentials
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
     in_gcp,
 )
-from recidiviz.utils.google_drive import get_credentials, get_sheets_service
+from recidiviz.utils.google_drive_services import get_sheets_service
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper

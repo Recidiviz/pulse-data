@@ -49,6 +49,19 @@ _ABSENT_COMPARISON_KEY = None
 _ElementPairingKey = tuple[Any, ...]
 
 
+def field_comparison_key(*, field: LLMRequestOutputSchemaField, value: Any) -> Any:
+    """Returns the key two values of |field| are compared by. String-valued fields
+    (STRING and ENUM) compare fuzzily — case-insensitive and whitespace-normalized;
+    every other type compares exactly. Also read by the golden eval sheet parser,
+    so it detects expected array elements that this scorer could not tell apart.
+    """
+    if value is None:
+        return _ABSENT_COMPARISON_KEY
+    if field.field_type.primitive_scalar_value_type() is LLMOutputFieldType.STRING:
+        return " ".join(str(value).split()).casefold()
+    return value
+
+
 class LLMDocumentExtractionGoldenEvalScorer:
     """Scores an extractor's actual output against a GoldenEvalDocument's expected
     output.
@@ -318,9 +331,9 @@ class LLMDocumentExtractionGoldenEvalScorer:
         """Returns whether |expected_value| and |actual_value| compare equal
         under |field|'s comparison key.
         """
-        return cls._comparison_key(
+        return field_comparison_key(
             field=field, value=expected_value
-        ) == cls._comparison_key(field=field, value=actual_value)
+        ) == field_comparison_key(field=field, value=actual_value)
 
     @classmethod
     def _element_pairs(
@@ -366,20 +379,8 @@ class LLMDocumentExtractionGoldenEvalScorer:
         both holding one plain scalar value per present sub-field name.
         """
         return tuple(
-            cls._comparison_key(
+            field_comparison_key(
                 field=field.get_field(primary_key), value=element.get(primary_key)
             )
             for primary_key in field.primary_keys
         )
-
-    @classmethod
-    def _comparison_key(cls, *, field: LLMRequestOutputSchemaField, value: Any) -> Any:
-        """Returns the key two values of |field| are compared by. String-valued fields
-        (STRING and ENUM) compare fuzzily — case-insensitive and whitespace-normalized;
-        every other type compares exactly.
-        """
-        if value is None:
-            return _ABSENT_COMPARISON_KEY
-        if field.field_type.primitive_scalar_value_type() is LLMOutputFieldType.STRING:
-            return " ".join(str(value).split()).casefold()
-        return value

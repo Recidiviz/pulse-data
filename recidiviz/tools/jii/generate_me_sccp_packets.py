@@ -46,12 +46,9 @@ from typing import Any, Dict, List, Set
 from googleapiclient.http import MediaIoBaseUpload
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.utils.google_drive_helpers import get_credentials
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
-from recidiviz.utils.google_drive import (
-    get_credentials,
-    get_docs_service,
-    get_drive_service,
-)
+from recidiviz.utils.google_drive_services import get_docs_service, get_drive_service
 from recidiviz.utils.metadata import local_project_id_override
 
 # https://drive.google.com/drive/folders/1DW1ICTq5XjXyz3jbcZ3hJR7h55-qHhOS
@@ -126,7 +123,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--credentials-directory",
         required=False,
         default=".",
-        help="Directory where the Google API 'credentials.json' files lives. See recidiviz.utils.google_drive for instructions on downloading and storing credentials.",
+        help="Directory where the Google API 'credentials.json' files lives. See recidiviz.tools.utils.google_drive_helpers for instructions on downloading and storing credentials.",
     )
     return parser
 

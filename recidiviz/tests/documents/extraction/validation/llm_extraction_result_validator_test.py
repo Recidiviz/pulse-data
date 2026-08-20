@@ -368,6 +368,21 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             expected_detail_substring="'assignment_name' is a required property",
         )
 
+    def test_integer_value_for_float_field_passes(self) -> None:
+        # A FLOAT field validates as JSON Schema `number`, which accepts an
+        # integer, so 12 is legal output for rate_amount. Nothing coerces it:
+        # the validated output carries the int 12, which Python compares equal
+        # to 12.0 everywhere the scorer and the golden evals compare values.
+        result_json = fake_all_fields_result_json()
+        result_json["result"]["assignments"][0]["rate_amount"]["value"] = 12
+
+        validation, validated_json = self._validate_grounded(result_json)
+
+        self.assertEqual(self._passing_result(validated_json), validation)
+        rate_amount = validated_json["result"]["assignments"][0]["rate_amount"]["value"]
+        self.assertIsInstance(rate_amount, int)
+        self.assertNotIsInstance(rate_amount, bool)
+
     def test_wrong_type_for_array_field_flagged_on_field(self) -> None:
         result_json = fake_all_fields_result_json()
         result_json["result"]["assignments"] = "not_an_array"
@@ -744,6 +759,34 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
         # relevance-bearing counterparts all carry one.
         result_json = self._result_json(self._entity(1))
         result_json[ENTITIES_FIELD_NAME][0][ENTITY_ID_FIELD_NAME] = "1"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="entities[0].entity_id",
+            expected_detail_substring="is not of type 'integer'",
+            expected_entry_nums={1},
+        )
+
+    def test_integral_float_for_integer_field_passes(self) -> None:
+        # An INTEGER field validates as JSON Schema `integer`, which accepts any
+        # number with a zero fractional part, so 1.0 is legal output for
+        # entity_id. Nothing coerces it: the validated output carries the float
+        # 1.0, which Python compares equal to 1 everywhere downstream code
+        # compares values.
+        result_json = self._result_json(self._entity(1))
+        result_json[ENTITIES_FIELD_NAME][0][ENTITY_ID_FIELD_NAME] = 1.0
+
+        validation, validated_json = self._validate_grounded(
+            result_json, expected_entry_nums={1}
+        )
+
+        self.assertEqual(self._passing_result(validated_json), validation)
+        self.assertIsInstance(
+            validated_json[ENTITIES_FIELD_NAME][0][ENTITY_ID_FIELD_NAME], float
+        )
+
+    def test_fractional_float_for_integer_field_flagged(self) -> None:
+        result_json = self._result_json(self._entity(1))
+        result_json[ENTITIES_FIELD_NAME][0][ENTITY_ID_FIELD_NAME] = 1.5
         self._assert_single_flagged_field(
             result_json,
             expected_field_name="entities[0].entity_id",

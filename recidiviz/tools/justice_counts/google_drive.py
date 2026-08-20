@@ -42,7 +42,7 @@ from googleapiclient.http import MediaIoBaseDownload
 
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.utils.google_drive import get_credentials
+from recidiviz.tools.utils.google_drive_helpers import get_credentials
 
 # If modifying these scopes, delete the file token.pickle from your credentials directory.
 JUSTICE_COUNTS_SCOPES = [
