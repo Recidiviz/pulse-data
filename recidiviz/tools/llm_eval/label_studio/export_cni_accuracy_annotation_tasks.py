@@ -36,8 +36,8 @@ Parameter enforcement:
       to one run; only that run's results are eligible.
     --sample_size: Hard LIMIT in SQL; you get at most this many documents.
     --required_fields: Named fields are always written for every sampled document,
-      regardless of the null/inferred mix. Only top-level fields can be named: pinning
-      an array sub-field would export it apart from the rest of its element.
+      regardless of the null/inferred mix. Only scalar top-level fields can be named,
+      since only those hold exactly one value in every document.
 
   Best-effort targets, honored when the data allows:
     --non_null_percent: The script caps how many null records it admits so that
@@ -109,7 +109,7 @@ from recidiviz.documents.store.document_store_columns import DOCUMENT_TEXT_COLUM
 from recidiviz.llm_eval.document_extraction.document_extraction_annotatable_field_utils import (
     annotatable_field_description,
     annotatable_field_names,
-    top_level_annotatable_field_names,
+    scalar_top_level_annotatable_field_names,
 )
 from recidiviz.llm_eval.document_extraction.document_extraction_annotatable_record import (
     DocumentExtractionAnnotatableRecord,
@@ -387,8 +387,8 @@ def export_accuracy_tasks(
 
     Fields named in required_fields are always written for every sampled document,
     regardless of the null/inferred mix, which is then applied to the remaining
-    fields. They have to be top-level fields, since pinning pulls a value out of the
-    record grouping and an array element's values only make sense read together.
+    fields. They have to be scalar top-level fields, since pinning pulls a value out of
+    the record grouping and only a scalar field holds one value in every document.
 
     Writes one JSON file per document-field pair to:
         {target_path}/accuracy_per_field/{extractor_version_id}/{document_id}__{field_index_str}__{field_id}.json
@@ -409,14 +409,17 @@ def export_accuracy_tasks(
             f"[{extractor_config.extractor_id}] does not annotate. Annotatable fields: "
             f"{sorted(annotatable_names)}."
         )
-    top_level_names = top_level_annotatable_field_names(output_schema)
-    if sub_field_pinned := sorted(pinned - top_level_names):
+    pinnable_names = scalar_top_level_annotatable_field_names(output_schema)
+    if array_pinned := sorted(pinned - pinnable_names):
         raise ValueError(
-            f"--required_fields names array sub-field(s) {sub_field_pinned}, which cannot "
-            f"be pinned. A pinned field is exported on its own for every sampled document, "
-            f"which would split an array element's values apart and export the null ones, "
-            f"and an element's values only make sense read together. Pinnable fields: "
-            f"{sorted(top_level_names)}."
+            f"--required_fields names array field(s) or array sub-field(s) {array_pinned}, "
+            f"which cannot be pinned. A pinned field is exported on its own for every "
+            f"sampled document, and only a scalar field holds one value in every document. "
+            f"An array sub-field holds one per element, so pinning it would split an "
+            f"element's values apart and export the null ones, and an element's values only "
+            f"make sense read together. An array field itself holds a value only for a "
+            f"document whose array came back empty. Pinnable fields: "
+            f"{sorted(pinnable_names)}."
         )
 
     query_builder = DocumentExtractionResultSampleQueryBuilder(

@@ -31,62 +31,59 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
 )
 
 
-def top_level_annotatable_field_names(
+def scalar_top_level_annotatable_field_names(
     output_schema: LLMRequestOutputSchema,
 ) -> set[str]:
-    """Returns every field name whose annotated value stands at the document's top level,
-    which is the INFERRED scalar fields plus each INFERRED array field itself. Validate
-    against this rather than annotatable_field_names when the caller is naming values that
-    have to be selectable one at a time.
+    """Returns every INFERRED scalar field the schema declares at the document's top level,
+    which excludes the array fields that also stand there. A document holds exactly one
+    annotated value under each of these names.
+
+    Validate against this rather than annotatable_field_names when every document must hold
+    the named value.
 
     For a collection declaring a primary_status ENUM, a status_note STRUCTURAL summary, and an
     employers array of employer_name and job_title, this returns
 
-        {"primary_status", "employers"}
+        {"primary_status"}
 
-    A document has exactly one value under each of these names, so naming one names a single
-    value. employers is here because a document whose array came back empty gets one value
-    annotated on the array field itself, asserting that the note names no employers; a
-    document that populated the array contributes nothing under that name.
+    status_note is absent because it is STRUCTURAL. employer_name and job_title are absent
+    because they sit inside array elements rather than at the top level. employers does stand
+    at the top level, but it is absent too: a document whose array came back empty holds one
+    value under that name, and a document that populated the array holds none.
     """
-    field_names = {
+    return {
         field.name
         for field in output_schema.scalar_valued_user_fields
         if field.is_inferred_field
     }
-    # An ARRAY_OF_STRUCT field is INFERRED exactly when it has an INFERRED sub-field, so this
-    # skips arrays with nothing to annotate.
-    field_names.update(
-        array_field.name
-        for array_field in output_schema.array_of_struct_user_fields
-        if array_field.is_inferred_field
-    )
-    return field_names
 
 
 def annotatable_field_names(output_schema: LLMRequestOutputSchema) -> set[str]:
-    """Returns every field name an annotated value can be about, which is the INFERRED
-    top-level fields, the INFERRED sub-fields of every array field, and each array field
-    itself. Validate a caller-supplied field name against this.
+    """Returns every field name an annotated value can be about, which is the INFERRED scalar
+    fields, the INFERRED sub-fields of every array field, and each array field itself.
+    Validate a caller-supplied field name against this.
 
     For a collection declaring a primary_status ENUM, a status_note STRUCTURAL summary, and an
     employers array of employer_name and job_title, this returns
 
         {"primary_status", "employers", "employer_name", "job_title"}
 
-    status_note is absent because it is STRUCTURAL. employers is present even though a
-    populated array is annotated one sub-field at a time, because a document whose array came
-    back empty gets one value annotated on the array field itself, asserting that the note
-    names no employers. Those array field names belong here only for that reason. Stop
-    emitting those values and drop these names too.
+    employers is present even though a populated array is annotated one sub-field at a time,
+    because a document whose array came back empty gets one value annotated on the array field
+    itself, asserting that the note names no employers. Those array field names belong here
+    only for that reason. Stop emitting those values and drop these names too.
 
-    A name in here but not in top_level_annotatable_field_names is an array sub-field, which
-    a document can hold many values under, one per element.
+    A name in here but not in scalar_top_level_annotatable_field_names came from an array
+    field, which a document holds either many values under (a sub-field, one per element) or
+    one (the array field itself, only when the array came back empty).
     """
-    field_names = top_level_annotatable_field_names(output_schema)
+    field_names = scalar_top_level_annotatable_field_names(output_schema)
     for array_field in output_schema.array_of_struct_user_fields:
+        # An ARRAY_OF_STRUCT field is INFERRED exactly when it has an
+        # INFERRED sub-field, so this skips arrays with nothing to annotate.
         if not array_field.is_inferred_field:
             continue
+        field_names.add(array_field.name)
         field_names.update(
             sub_field.name
             for sub_field in array_field.fields

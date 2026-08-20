@@ -58,6 +58,7 @@ from recidiviz.llm_eval.label_studio.models.document_extraction.cni_accuracy_per
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    build_fake_extractor_irrelevant_result_content,
     build_fake_extractor_result_content,
     wrap_in_result_key,
 )
@@ -524,9 +525,10 @@ class ExportAccuracyTasksTest(TestCase):
         }
 
     @staticmethod
-    def _result_content_without_assignments() -> dict[str, Any]:
-        """Returns a result naming a status but no location and no assignments, so the
-        document yields exactly two annotatable values.
+    def _result_content_omitting_assignments() -> dict[str, Any]:
+        """Returns a result naming a status but no location, with the assignments key left
+        out of the result entirely, so the document yields exactly two annotatable values.
+        Omitting the key says nothing about assignments, so there is nothing to annotate.
         """
         content = build_fake_extractor_result_content(
             primary_status="active",
@@ -536,6 +538,19 @@ class ExportAccuracyTasksTest(TestCase):
         )
         del content["assignments"]
         return content
+
+    @staticmethod
+    def _result_content_with_empty_assignments() -> dict[str, Any]:
+        """Returns a result naming a status but no location, with assignments present and
+        empty, so the document yields three annotatable values. An empty array claims the
+        document names no assignments, and that claim can be wrong.
+        """
+        return build_fake_extractor_result_content(
+            primary_status="active",
+            status_note="Currently on dish duty.",
+            location=None,
+            assignments=[],
+        )
 
     def _export(
         self,
@@ -565,7 +580,7 @@ class ExportAccuracyTasksTest(TestCase):
             [
                 self._result_row(
                     document_contents_id=_DOCUMENT_ID,
-                    result_content=self._result_content_without_assignments(),
+                    result_content=self._result_content_omitting_assignments(),
                 )
             ]
         )
@@ -582,12 +597,75 @@ class ExportAccuracyTasksTest(TestCase):
             sorted(path.uri() for path in self.fs.all_paths),
         )
 
+    def test_empty_array_is_annotated_on_the_array_field(self) -> None:
+        """An empty assignments array claims the document names no assignments, so it gets
+        a task of its own. Contrast test_writes_one_task_file_per_annotated_value, where the
+        result omits the key and no such task is written.
+        """
+        self._set_query_results(
+            [
+                self._result_row(
+                    document_contents_id=_DOCUMENT_ID,
+                    result_content=self._result_content_with_empty_assignments(),
+                )
+            ]
+        )
+        # location came back null, so pinning it keeps it out of the sampled pool. That
+        # leaves primary_status to anchor the non-null share and admit the null assignments
+        # record, so all three of the document's values are exported.
+        self._export(required_fields=["location"])
+        self.assertEqual(
+            [
+                "gs://my-bucket/cni-labeling/accuracy_per_field/v_sampled/"
+                "doc_a__001__location.json",
+                "gs://my-bucket/cni-labeling/accuracy_per_field/v_sampled/"
+                "doc_a__002__primary_status.json",
+                "gs://my-bucket/cni-labeling/accuracy_per_field/v_sampled/"
+                "doc_a__003__assignments.json",
+            ],
+            sorted(path.uri() for path in self.fs.all_paths),
+        )
+        [assignments_path] = [
+            assert_type(path, GcsfsFilePath)
+            for path in self.fs.all_paths
+            if "assignments" in path.abs_path()
+        ]
+        self.assertEqual(
+            [
+                {
+                    "data": {
+                        "state_code": "US_XX",
+                        "document_id": "doc_a",
+                        "document_text": _DOCUMENT_TEXT,
+                        "prompt_description": (
+                            "Extract fictional assignment information to exercise the "
+                            "parser."
+                        ),
+                        "field_name": "assignments",
+                        "field_description": "Assignments mentioned in the document.",
+                        "group": "",
+                        "extracted_value": NULL_VALUE_DISPLAY_TEXT,
+                        # An ARRAY_OF_STRUCT field carries no companion-metadata wrapper of
+                        # its own, so it reports no confidence.
+                        "confidence_level": None,
+                        "array_element_json": None,
+                        "extractor_version_id": _VERSION,
+                        "doc_index": 1,
+                        "field_index": 3,
+                        "total_fields": 3,
+                        "task_order": 3,
+                    }
+                }
+            ],
+            json.loads(self.fs.download_as_string(assignments_path)),
+        )
+
     def test_written_file_holds_the_task_payload(self) -> None:
         self._set_query_results(
             [
                 self._result_row(
                     document_contents_id=_DOCUMENT_ID,
-                    result_content=self._result_content_without_assignments(),
+                    result_content=self._result_content_omitting_assignments(),
                 )
             ]
         )
@@ -632,6 +710,22 @@ class ExportAccuracyTasksTest(TestCase):
         self._export()
         self.assertEqual([], self.fs.all_paths)
 
+    def test_irrelevant_document_writes_nothing(self) -> None:
+        """An irrelevant result is exactly `{"is_relevant": false}`. It carries none of the
+        fields the schema declares, so it holds no extracted value to annotate. is_relevant
+        itself is STRUCTURAL, so no task asks whether the relevance call was right either.
+        """
+        self._set_query_results(
+            [
+                self._result_row(
+                    document_contents_id=_DOCUMENT_ID,
+                    result_content=build_fake_extractor_irrelevant_result_content(),
+                )
+            ]
+        )
+        self._export()
+        self.assertEqual([], self.fs.all_paths)
+
     def test_unknown_required_field_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -644,11 +738,23 @@ class ExportAccuracyTasksTest(TestCase):
     def test_required_array_sub_field_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^--required_fields names array sub-field\(s\) \['rate_amount'\], which "
-            r"cannot be pinned\. .*Pinnable fields: \['assignments', 'location', "
-            r"'primary_status'\]\.$",
+            r"^--required_fields names array field\(s\) or array sub-field\(s\) "
+            r"\['rate_amount'\], which cannot be pinned\. .*Pinnable fields: "
+            r"\['location', 'primary_status'\]\.$",
         ):
             self._export(required_fields=["rate_amount"])
+
+    def test_required_array_field_raises(self) -> None:
+        """An array field itself is annotatable, but only for a document whose array came
+        back empty, so it cannot be pinned for every sampled document.
+        """
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^--required_fields names array field\(s\) or array sub-field\(s\) "
+            r"\['assignments'\], which cannot be pinned\. .*Pinnable fields: "
+            r"\['location', 'primary_status'\]\.$",
+        ):
+            self._export(required_fields=["assignments"])
 
     def test_extractor_with_no_inferred_fields_raises(self) -> None:
         structural_only_schema = LLMRequestOutputSchema(

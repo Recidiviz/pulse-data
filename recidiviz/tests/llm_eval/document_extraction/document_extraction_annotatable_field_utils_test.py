@@ -31,11 +31,16 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMOutputFieldType,
     PrimitiveScalarLLMRequestOutputSchemaField,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+)
 from recidiviz.llm_eval.document_extraction.document_extraction_annotatable_field_utils import (
     annotatable_field_description,
     annotatable_field_names,
+    scalar_top_level_annotatable_field_names,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -109,6 +114,47 @@ class AnnotatableFieldNamesTest(TestCase):
         self.assertEqual(
             {"primary_status"},
             annotatable_field_names(_schema_with_structural_only_array()),
+        )
+
+    def test_is_relevant_is_not_annotatable(self) -> None:
+        """The framework-injected is_relevant field is STRUCTURAL, so no task asks an
+        annotator whether the extractor was right to judge the document relevant.
+        """
+        is_relevant_field = assert_type(
+            self.output_schema.is_relevant_field,
+            PrimitiveScalarLLMRequestOutputSchemaField,
+        )
+        self.assertFalse(is_relevant_field.is_inferred_field)
+        self.assertNotIn(
+            IS_RELEVANT_FIELD_NAME, annotatable_field_names(self.output_schema)
+        )
+
+
+class ScalarTopLevelAnnotatableFieldNamesTest(TestCase):
+    """Tests the set of top-level scalar field names, which a document holds exactly one
+    annotated value under.
+    """
+
+    def setUp(self) -> None:
+        self.output_schema = get_first_order_llm_extractor_config(
+            _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
+        ).extractor_collection.output_schema
+
+    def test_names_from_schema(self) -> None:
+        # assignments stands at the top level but is absent, because a document that
+        # populated the array holds no value under the array's own name. Its sub-fields are
+        # absent because they sit inside array elements.
+        self.assertEqual(
+            {"primary_status", "location"},
+            scalar_top_level_annotatable_field_names(self.output_schema),
+        )
+
+    def test_array_with_no_inferred_sub_fields_is_excluded(self) -> None:
+        self.assertEqual(
+            {"primary_status"},
+            scalar_top_level_annotatable_field_names(
+                _schema_with_structural_only_array()
+            ),
         )
 
 
