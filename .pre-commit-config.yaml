@@ -1,4 +1,25 @@
 repos:
+  # Blocks a commit that contains a secret. Runs before every other hook so a
+  # credential never reaches the object store, not even in a local commit.
+  #
+  # This wraps ggshield rather than using the upstream hook. The upstream hook
+  # makes pre-commit install its own ggshield for everyone, and a contributor
+  # without a GitGuardian token then fails with exit 3 on EVERY commit, clean
+  # ones included. The wrapper checks for a token first and warns instead.
+  # See recidiviz/tools/ggshield_precommit.sh for the full reasoning.
+  #
+  # Recidiviz Macs receive a token from the ggshield configuration profile. If
+  # you see the warning, your machine is missing it - raise it in #security
+  # rather than ignoring it.
+  - repo: local
+    hooks:
+      - id: ggshield
+        name: ggshield secret scan
+        entry: recidiviz/tools/ggshield_precommit.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:

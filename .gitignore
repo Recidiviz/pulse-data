@@ -220,3 +220,9 @@ release.out
 # Don't accidentally commit data files that our notebooks depend on / produce
 recidiviz/research/notebooks/astromberg/input/*
 recidiviz/research/notebooks/astromberg/output/*
+
+# ggshield's local cache. Committed here deliberately rather than left to
+# ggshield: it appends this line itself on first run, and pre-commit fails any
+# hook that modifies a file, so without it every engineer's first commit is
+# rejected with "files were modified by this hook" and no secret involved.
+.cache_ggshield
