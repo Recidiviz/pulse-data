@@ -14,18 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the run_sandbox_extraction orchestration script"""
+"""Tests for sandbox_extraction_runners.py"""
 
 import copy
+import csv
+import io
 import threading
 from pathlib import Path
 from typing import Any
 from unittest import mock
 
 import attr
+from google.cloud import bigquery
+from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMDocumentExtractionErrorType,
@@ -64,8 +68,15 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
 )
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+)
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
+)
+from recidiviz.documents.store.document_store_sandbox_context import (
+    DocumentCollectionSandboxLocation,
+    DocumentStoreSandboxContext,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -76,12 +87,18 @@ from recidiviz.source_tables.document_store_source_table_collection import (
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
 )
-from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     fake_minimal_relevant_result_json,
     ground_citations_in_fake_source_text,
@@ -91,10 +108,14 @@ from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import
 )
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.tools.documents import fixtures
-from recidiviz.tools.documents import run_sandbox_extraction
-from recidiviz.tools.documents.run_sandbox_extraction import SandboxExtractionRunner
+from recidiviz.tools.documents import sandbox_extraction_runners
 from recidiviz.tools.documents.sandbox_document_extraction_processor import (
+    DocumentExtractionProcessor,
     SandboxExtractionSummary,
+)
+from recidiviz.tools.documents.sandbox_extraction_runners import (
+    SandboxDocumentStoreRunner,
+    SandboxExtractionRunner,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -106,6 +127,7 @@ _SANDBOX_PREFIX = "test_prefix"
 
 _DOC_A = "CID_A"
 _DOC_B = "CID_B"
+
 
 # The canned success the fake LLM client returns, paired with the document text
 # seeded into GCS for the documents it is returned for. Validation checks a
@@ -296,22 +318,36 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         persist_chunk_size: int = 1000,
         request_build_concurrency: int = 4,
         progress_log_interval_seconds: float = 0.0,
-    ) -> SandboxExtractionSummary:
-        # Drives just the extraction thread against the seeded result tables; the
-        # table-create and view-deploy steps live in run_sandbox_extraction.
+    ) -> SandboxExtractionSummary | None:
+        # Drives just the extraction thread against the seeded result and doc-store
+        # tables; the table-create, upload, and view-deploy steps live in
+        # run_sandbox_extraction and are not exercised here.
+        config = self.config.with_sandbox_narrowing(
+            document_limit=5, root_entity_ids=None, external_id_type=None
+        )
+        job_manager = LLMExtractionJobManager()
+        # A first-order run always reads its input from the production document store;
+        # there is no supported first-order sandbox document store yet
+        # (TODO(OBT-42680)). A None document store sandbox reads the input collection
+        # from production.
         return SandboxExtractionRunner(
-            config=self.config.with_sandbox_narrowing(
-                document_limit=5, root_entity_ids=None, external_id_type=None
-            ),
-            results_sandbox_prefix=_SANDBOX_PREFIX,
+            config=config,
             document_store_sandbox=None,
-            labels={"reason": "test"},
             bq_client=self.bq_client,
-            fs=self.fs,
-            sync_client=sync_client,
-            persist_chunk_size=persist_chunk_size,
-            request_build_concurrency=request_build_concurrency,
-            progress_log_interval_seconds=progress_log_interval_seconds,
+            job_manager=job_manager,
+            processor=DocumentExtractionProcessor(
+                config=config,
+                results_sandbox_prefix=_SANDBOX_PREFIX,
+                document_store_sandbox=None,
+                labels={"reason": "test"},
+                bq_client=self.bq_client,
+                fs=self.fs,
+                sync_client=sync_client,
+                job_manager=job_manager,
+                persist_chunk_size=persist_chunk_size,
+                request_build_concurrency=request_build_concurrency,
+                progress_log_interval_seconds=progress_log_interval_seconds,
+            ),
         ).run()
 
     def _fake_client(
@@ -702,9 +738,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
 
         summary = self._run(self._fake_client())
 
-        self.assertEqual(
-            SandboxExtractionSummary(extractor_config_name=_COLLECTION_NAME), summary
-        )
+        self.assertIsNone(summary)
         with SessionFactory.using_database(self.database_key) as session:
             self.assertEqual(0, session.query(schema.LLMExtractionJob).count())
 
@@ -740,10 +774,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         second_summary = self._run(self._fake_client())
 
         # Nothing left to process, but the resumed job is now completed.
-        self.assertEqual(
-            SandboxExtractionSummary(extractor_config_name=_COLLECTION_NAME),
-            second_summary,
-        )
+        self.assertIsNone(second_summary)
         self.assertEqual(
             _ExtractionJobSnapshot(
                 result_type=LLMExtractionJobResultType.SUCCESS.value,
@@ -780,7 +811,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
 
         with (
-            mock.patch.object(run_sandbox_extraction, "MAX_DOCUMENTS", 1),
+            mock.patch.object(sandbox_extraction_runners, "MAX_DOCUMENTS", 1),
             self.assertRaisesRegex(ValueError, r"above the MAX_DOCUMENTS ceiling"),
         ):
             self._run(self._fake_client())
@@ -797,3 +828,274 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             {_DOC_A: _UNMARKED_DOCUMENT, _DOC_B: _UNMARKED_DOCUMENT},
             self._extraction_job_document_by_id(),
         )
+
+
+_RAW_INPUT_NOTES_ADDRESS = BigQueryAddress(
+    dataset_id="us_xx_raw_data", table_id="fake_input_notes"
+)
+_RAW_INPUT_NOTES_SCHEMA = [
+    bigquery.SchemaField("person_id", SqlTypeNames.STRING.value),
+    bigquery.SchemaField("note_id", SqlTypeNames.STRING.value),
+    bigquery.SchemaField("note_body", SqlTypeNames.STRING.value),
+    bigquery.SchemaField("created_at", SqlTypeNames.STRING.value),
+]
+
+
+class _FakeGcsCsvLoader:
+    """Stand-in for BigQueryClientImpl.load_table_from_cloud_storage that reads the
+    upload-status CSVs the uploader wrote to a FakeGCSFileSystem and streams them into
+    the destination emulator table. The emulator cannot load from a gs:// URI backed by
+    the fake filesystem, so this replaces only that GCS→BQ transport step; every other
+    query in the recorder runs for real against the emulator."""
+
+    def __init__(self, *, fs: FakeGCSFileSystem, bq_client: Any) -> None:
+        self.fs = fs
+        self.bq_client = bq_client
+
+    def __call__(
+        self,
+        *,
+        source_uris: list[str],
+        destination_address: BigQueryAddress,
+        destination_table_schema: list[bigquery.SchemaField],
+        **_kwargs: Any,
+    ) -> mock.MagicMock:
+        column_names = [field.name for field in destination_table_schema]
+        rows = [
+            dict(zip(column_names, values))
+            for uri in source_uris
+            for values in self._read_csv_rows(uri)
+        ]
+        if rows:
+            self.bq_client.stream_into_table(destination_address, rows=rows)
+        return mock.MagicMock()
+
+    def _read_csv_rows(self, source_uri: str) -> list[list[str | None]]:
+        # source_uri is a "<directory>/*.csv" glob; read every CSV the uploader wrote
+        # under that directory out of the fake filesystem.
+        directory = GcsfsDirectoryPath.from_absolute_path(source_uri.rsplit("/", 1)[0])
+        rows: list[list[str | None]] = []
+        for path in self.fs.ls(
+            directory.bucket_name, blob_prefix=directory.relative_path
+        ):
+            if not isinstance(path, GcsfsFilePath) or not path.abs_path().endswith(
+                ".csv"
+            ):
+                continue
+            contents = self.fs.download_as_string(path)
+            rows.extend(
+                [value or None for value in row]
+                for row in csv.reader(io.StringIO(contents))
+            )
+        return rows
+
+
+class SandboxDocumentStoreRunnerTest(BigQueryEmulatorTestCase):
+    """Runs SandboxDocumentStoreRunner's discovery → batch → GCS upload → record
+    pipeline end-to-end against the BQ emulator and a fake GCS for a first-order
+    collection, asserting on the metadata/contents rows and GCS text it writes.
+
+    TODO(OBT-42814): there is no end-to-end entity-resolution case here. The ER
+    composite generation writes its entry→source map via a CREATE TABLE AS SELECT that
+    emits an ARRAY<STRUCT<...TIMESTAMP...>>, which the bigquery-emulator cannot
+    round-trip (it fails scanning the stored value). Add the ER case once that emulator
+    bug is fixed; the ER pass's control flow is covered meanwhile by
+    RunEntityResolutionPassTest.
+    """
+
+    # The source tables are created once in setUpClass; keep them across tests and only
+    # clear their rows between tests.
+    wipe_emulator_data_on_teardown = False
+
+    _RUN_ID = "sandbox_test_prefix"
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        # The ER model config patch is needed only so the ER composite collections'
+        # document-store tables can be collected; those tables are created but unused by
+        # the first-order test below.
+        with patch_fake_entity_resolution_model_config_name():
+            document_store_collections = collect_document_store_source_tables(
+                fake_config
+            )
+        # The runner writes every collection's document-store tables under the sandbox
+        # prefix; a first-order collection additionally diffs discovery against the
+        # production tables. Seed production + sandbox copies of the doc-store tables,
+        # plus the raw input table the first-order generation query reads.
+        raw_input = SourceTableCollection(
+            dataset_id=_RAW_INPUT_NOTES_ADDRESS.dataset_id,
+            update_config=SourceTableCollectionUpdateConfig.regenerable(),
+            description="Raw input table the fake first-order generation query reads.",
+        )
+        raw_input.add_source_table(
+            table_id=_RAW_INPUT_NOTES_ADDRESS.table_id,
+            schema_fields=_RAW_INPUT_NOTES_SCHEMA,
+        )
+        return [
+            *document_store_collections,
+            *[
+                collection.as_sandbox_collection(_SANDBOX_PREFIX)
+                for collection in document_store_collections
+            ],
+            raw_input,
+        ]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.fs = FakeGCSFileSystem()
+        # SandboxDocumentStoreRunner delegates to NewDocumentDiscoverer /
+        # DocumentUploadResultRecorder, which re-resolve the collection config from the
+        # production config module; point that resolution at the fake module.
+        self.config_module_patcher = mock.patch(
+            "recidiviz.documents.store.document_collection_config_collectors."
+            "default_config_module",
+            fake_config,
+        )
+        self.config_module_patcher.start()
+        # The recorder loads upload-status CSVs from GCS into BQ; the emulator can't read
+        # a gs:// URI backed by the fake filesystem, so replace only that transport step.
+        self.load_csvs_patcher = mock.patch.object(
+            self.bq_client,
+            "load_table_from_cloud_storage",
+            _FakeGcsCsvLoader(fs=self.fs, bq_client=self.bq_client),
+        )
+        self.load_csvs_patcher.start()
+
+    def tearDown(self) -> None:
+        self.load_csvs_patcher.stop()
+        self.config_module_patcher.stop()
+        self._clear_emulator_table_data()
+        super().tearDown()
+
+    def _first_order_collection(self) -> DocumentCollectionConfig:
+        return get_document_collection_config(
+            _STATE_CODE, _INPUT_COLLECTION_NAME, fake_config
+        )
+
+    def _first_order_sandbox(self) -> DocumentStoreSandboxContext:
+        # A first-order collection writes its outputs to the sandbox but diffs discovery
+        # against production (diff_read_prefix=None), so a brand-new document is
+        # discovered against the empty production store and seeded into the sandbox.
+        return DocumentStoreSandboxContext(
+            document_collection_locations={
+                _INPUT_COLLECTION_NAME: DocumentCollectionSandboxLocation(
+                    output_prefix=_SANDBOX_PREFIX, diff_read_prefix=None
+                )
+            },
+            extractor_collection_read_prefixes={},
+        )
+
+    def _run(
+        self,
+        *,
+        document_collection: DocumentCollectionConfig,
+        document_store_sandbox: DocumentStoreSandboxContext,
+    ) -> None:
+        SandboxDocumentStoreRunner(
+            document_collection=document_collection,
+            document_store_sandbox=document_store_sandbox,
+            bq_client=self.bq_client,
+            fs=self.fs,
+            run_id=self._RUN_ID,
+        ).run()
+
+    def _table_rows(
+        self, address: BigQueryAddress, columns: list[str]
+    ) -> list[dict[str, Any]]:
+        project_specific = address.to_project_specific_address(self.project_id)
+        df = self.query(
+            project_specific.select_query(
+                select_statement=f"SELECT {', '.join(columns)}"
+            )
+        )
+        return df.sort_values(by=columns).to_dict("records")
+
+    def _gcs_text_by_contents_id(
+        self, collection: DocumentCollectionConfig, contents_ids: list[str]
+    ) -> dict[str, str]:
+        return {
+            contents_id: self.fs.download_as_string(
+                gcs_path_for_document(
+                    project_id=self.project_id,
+                    state_code=_STATE_CODE,
+                    collection_name=collection.name,
+                    document_contents_id=contents_id,
+                    sandbox_prefix=_SANDBOX_PREFIX,
+                )
+            )
+            for contents_id in contents_ids
+        }
+
+    def _seed_raw_input_notes(self, rows: list[dict[str, Any]]) -> None:
+        self.load_rows_into_table(_RAW_INPUT_NOTES_ADDRESS, rows)
+
+    def test_first_order_generates_uploads_and_records(self) -> None:
+        collection = self._first_order_collection()
+        self._seed_raw_input_notes(
+            [
+                {
+                    "person_id": "111",
+                    "note_id": "N1",
+                    "note_body": "first note body",
+                    "created_at": "2026-01-01 10:00:00",
+                },
+                {
+                    "person_id": "222",
+                    "note_id": "N2",
+                    "note_body": "second note body",
+                    "created_at": "2026-02-01 10:00:00",
+                },
+            ]
+        )
+
+        self._run(
+            document_collection=collection,
+            document_store_sandbox=self._first_order_sandbox(),
+        )
+
+        # Both generated documents land in the sandbox metadata and contents tables under
+        # a content-addressed document_contents_id, and their text is uploaded to GCS at
+        # the sandbox path.
+        metadata_rows = self._table_rows(
+            collection.metadata_table_address(sandbox_dataset_prefix=_SANDBOX_PREFIX),
+            ["person_external_id", "note_id"],
+        )
+        self.assertEqual(
+            [
+                {"person_external_id": "111", "note_id": "N1"},
+                {"person_external_id": "222", "note_id": "N2"},
+            ],
+            metadata_rows,
+        )
+        contents_rows = self._table_rows(
+            collection.document_contents_table_address(
+                sandbox_dataset_prefix=_SANDBOX_PREFIX
+            ),
+            [DOCUMENT_CONTENTS_ID_COLUMN_NAME],
+        )
+        contents_ids = [row[DOCUMENT_CONTENTS_ID_COLUMN_NAME] for row in contents_rows]
+        self.assertEqual(2, len(contents_ids))
+        self.assertEqual(
+            {"first note body", "second note body"},
+            set(self._gcs_text_by_contents_id(collection, contents_ids).values()),
+        )
+
+    def test_no_documents_discovered_writes_nothing(self) -> None:
+        collection = self._first_order_collection()
+        # No raw rows, so the generation query produces nothing and discovery returns
+        # before uploading or recording.
+        self._run(
+            document_collection=collection,
+            document_store_sandbox=self._first_order_sandbox(),
+        )
+
+        self.assertEqual(
+            [],
+            self._table_rows(
+                collection.metadata_table_address(
+                    sandbox_dataset_prefix=_SANDBOX_PREFIX
+                ),
+                ["person_external_id", "note_id"],
+            ),
+        )
+        self.assertEqual([], self.fs.all_paths)

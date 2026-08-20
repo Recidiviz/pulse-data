@@ -89,32 +89,18 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
-from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
 from recidiviz.documents.extraction.llm_client.vertex_ai_sync_llm_client import (
     VertexAISyncLLMClient,
-)
-from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
-    LLMExtractionEligibleDocumentQueryBuilder,
-)
-from recidiviz.documents.extraction.llm_extraction_job_generator import (
-    LLMExtractionJobGenerator,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
-)
-from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
-    LLMExtractorMetadataManager,
-)
-from recidiviz.documents.extraction.models.llm_extractor_config import (
-    LLMExtractorConfig,
 )
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
@@ -136,6 +122,7 @@ from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
     deploy_extraction_results_views,
     first_order_input_overrides,
 )
+from recidiviz.tools.documents.sandbox_extraction_runners import SandboxExtractionRunner
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -143,11 +130,6 @@ from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import non_negative_int, parse_key_value_args, positive_int
 
 DEFAULT_TABLE_EXPIRATION_DAYS = 14
-
-# Refuse to start a run whose job holds more than this many documents.
-# TODO(OBT-42789) decrease this in the future since this script is intended
-# for bounded sandbox runs, not large-scale production runs.
-MAX_DOCUMENTS = 500_000
 
 # How many processed results to buffer before flushing them to BigQuery and then
 # marking their Postgres results. Bounds both the per-flush memory footprint and
@@ -257,157 +239,6 @@ def _local_operations_postgres(*, keep_postgres: bool) -> Generator[None, None, 
         yield
 
 
-class SandboxExtractionRunner:
-    """Drives the first-order extraction thread end-to-end for one extractor and
-    sandbox, holding the run's shared inputs so the per-stage steps don't have to
-    thread them through as arguments.
-
-    Owns the job lifecycle — generating the job, marking it started/completed/failed,
-    and guarding the MAX_DOCUMENTS ceiling — and hands each job's pending documents to
-    a DocumentExtractionProcessor for the per-document LLM work.
-    """
-
-    def __init__(
-        self,
-        *,
-        # The narrowed extractor config every stage reads from.
-        config: LLMExtractorConfig,
-        # Sandbox dataset prefix the run writes its result tables under.
-        results_sandbox_prefix: str,
-        # Per-collection document store locations the run reads its input from, or None
-        # when it reads from the production document store.
-        document_store_sandbox: DocumentStoreSandboxContext | None,
-        # Billing labels attached to each Vertex AI request.
-        labels: dict[str, str],
-        # Client for the sandbox result tables and eligible-document query.
-        bq_client: BigQueryClient,
-        # Filesystem the document text is read from.
-        fs: GCSFileSystem,
-        # Client that makes the live Vertex AI extraction calls.
-        sync_client: SyncLLMClient,
-        # How many results to buffer before flushing to BigQuery and Postgres.
-        persist_chunk_size: int,
-        # How many requests to build (reading their text from GCS) concurrently.
-        request_build_concurrency: int,
-        # Minimum seconds between progress lines while the LLM requests run.
-        progress_log_interval_seconds: float,
-    ) -> None:
-        self.config = config
-        self.results_sandbox_prefix = results_sandbox_prefix
-        self.document_store_sandbox = document_store_sandbox
-        self.labels = labels
-        self.bq_client = bq_client
-        self.fs = fs
-        self.sync_client = sync_client
-        self.persist_chunk_size = persist_chunk_size
-        self.request_build_concurrency = request_build_concurrency
-        self.progress_log_interval_seconds = progress_log_interval_seconds
-
-        self.job_manager = LLMExtractionJobManager()
-
-    @property
-    def state_code(self) -> StateCode:
-        return self.config.state_code
-
-    def run(self) -> SandboxExtractionSummary:
-        """Runs the extraction thread end-to-end and returns the run's summary.
-
-        Expects the sandbox result tables to already exist; deploying the parsed
-        views over the tables this writes is left to the caller.
-        """
-        summary = SandboxExtractionSummary(
-            extractor_config_name=self.config.extractor_collection.name
-        )
-        active_version = LLMExtractorMetadataManager().set_active_extractor_version(
-            config=self.config
-        )
-        logging.info(
-            "Running sandbox extraction for state [%s], collection [%s], "
-            "extractor version [%s].",
-            self.state_code.value,
-            self.config.extractor_collection.name,
-            active_version.extractor_version_id,
-        )
-        # A resumed job (with --keep-postgres) is keyed only on the extractor
-        # version, which excludes the --document-limit / --root-entity-ids
-        # narrowing. So a resume with different narrowing flags continues the
-        # original job's already-selected documents rather than the newly
-        # requested ones; the narrowing appears applied but is effectively
-        # ignored on resume. TODO(OBT-42806) surface or key on the narrowing.
-        job = LLMExtractionJobGenerator(
-            eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
-                document_filter=self.config.document_filter,
-                input_document_collection=self.config.input_document_collection,
-                # TODO(OBT-42680) Since we currently only support extractions against the real document store,
-                # this is always None. When sandbox documents are supported, this will need to be updated.
-                source_sandbox_prefix=None,
-            ),
-            job_manager=self.job_manager,
-            bq_client=self.bq_client,
-        ).generate_job(config=self.config, active_version=active_version)
-
-        if job is None:
-            logging.info("No documents need processing; nothing to do.")
-            return summary
-
-        # mark_job_started is a no-op on an already-started (resumed) job, so
-        # calling it before the pending-document read lets the try/except own the
-        # whole job lifecycle: any failure from here on marks the job failed
-        # rather than leaving it open, which under --keep-postgres would block
-        # every future run for this extractor version.
-        self.job_manager.mark_job_started(state_code=self.state_code, job_id=job.job_id)
-        try:
-            pending_documents = self.job_manager.get_pending_job_documents(
-                state_code=self.state_code, job_id=job.job_id
-            )
-            if len(pending_documents) > MAX_DOCUMENTS:
-                raise ValueError(
-                    f"Job [{job.job_id}] holds [{len(pending_documents)}] pending "
-                    f"documents, above the MAX_DOCUMENTS ceiling of "
-                    f"[{MAX_DOCUMENTS}]. This script's write path is not yet sized "
-                    f"for runs this large; narrow the run (e.g. --document-limit) "
-                    f"or raise MAX_DOCUMENTS deliberately."
-                )
-            if pending_documents:
-                summary = self._build_processor().process(
-                    job_id=job.job_id, pending_documents=pending_documents
-                )
-            else:
-                # A resumed job whose documents all finished before a crash still
-                # needs completing, or it stays open and blocks every future run.
-                logging.info(
-                    "Job [%s] has no pending documents; completing it.", job.job_id
-                )
-            self.job_manager.mark_job_completed(
-                state_code=self.state_code, job_id=job.job_id
-            )
-        except Exception as e:
-            self.job_manager.mark_job_failed(
-                state_code=self.state_code, job_id=job.job_id, error_message=str(e)
-            )
-            raise
-
-        return summary
-
-    def _build_processor(self) -> DocumentExtractionProcessor:
-        """Returns the processor that runs this job's pending documents through the
-        LLM, wired to write results under the run's sandbox prefix and to read each
-        document's text from the run's input document store."""
-        return DocumentExtractionProcessor(
-            config=self.config,
-            results_sandbox_prefix=self.results_sandbox_prefix,
-            document_store_sandbox=self.document_store_sandbox,
-            labels=self.labels,
-            bq_client=self.bq_client,
-            fs=self.fs,
-            sync_client=self.sync_client,
-            job_manager=self.job_manager,
-            persist_chunk_size=self.persist_chunk_size,
-            request_build_concurrency=self.request_build_concurrency,
-            progress_log_interval_seconds=self.progress_log_interval_seconds,
-        )
-
-
 def _validate_external_id_type(
     *, external_id_type: str | None, state_code: StateCode
 ) -> None:
@@ -514,9 +345,13 @@ def parse_arguments() -> argparse.Namespace:
     return args
 
 
-def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary:
+def run_sandbox_extraction(
+    args: argparse.Namespace,
+) -> SandboxExtractionSummary | None:
     """Runs one sandbox extraction end-to-end: creates the result tables, drives
-    the extraction thread, and deploys the parsed views over what it wrote."""
+    the extraction thread, and deploys the parsed views over what it wrote. Returns
+    None if there was no work to do (no eligible documents, or a resumed job whose
+    documents all finished before a crash)."""
     config = get_first_order_llm_extractor_config(
         args.state_code, args.collection
     ).with_sandbox_narrowing(
@@ -542,26 +377,34 @@ def run_sandbox_extraction(args: argparse.Namespace) -> SandboxExtractionSummary
         bq_client=bq_client,
     )
 
+    job_manager = LLMExtractionJobManager()
     summary = SandboxExtractionRunner(
         config=config,
-        results_sandbox_prefix=args.sandbox_prefix,
         document_store_sandbox=document_store_sandbox,
-        labels=_build_labels(
-            user_labels=args.labels, sandbox_prefix=args.sandbox_prefix
-        ),
         bq_client=bq_client,
-        fs=GcsfsFactory.build(),
-        sync_client=VertexAISyncLLMClient(model_config=config.model_config),
-        persist_chunk_size=DEFAULT_PERSIST_CHUNK_SIZE,
-        request_build_concurrency=DEFAULT_REQUEST_BUILD_CONCURRENCY,
-        progress_log_interval_seconds=DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS,
+        job_manager=job_manager,
+        processor=DocumentExtractionProcessor(
+            config=config,
+            results_sandbox_prefix=args.sandbox_prefix,
+            document_store_sandbox=document_store_sandbox,
+            labels=_build_labels(
+                user_labels=args.labels, sandbox_prefix=args.sandbox_prefix
+            ),
+            bq_client=bq_client,
+            fs=GcsfsFactory.build(),
+            sync_client=VertexAISyncLLMClient(model_config=config.model_config),
+            job_manager=job_manager,
+            persist_chunk_size=DEFAULT_PERSIST_CHUNK_SIZE,
+            request_build_concurrency=DEFAULT_REQUEST_BUILD_CONCURRENCY,
+            progress_log_interval_seconds=DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS,
+        ),
     ).run()
 
     # A run that processed nothing (no eligible documents, or a resumed job whose
-    # work was already done) wrote no new result rows, so there is nothing to wait
-    # for the streaming buffer on and nothing new for the views to reflect. Skip
-    # the delay and the view redeploy in that case.
-    if summary.processed == 0:
+    # work was already done) returns no summary: it wrote no new result rows, so
+    # there is nothing to wait for the streaming buffer on and nothing new for the
+    # views to reflect. Skip the delay and the view redeploy in that case.
+    if summary is None or summary.processed == 0:
         logging.info("No documents were processed; skipping view materialization.")
         return summary
 
@@ -616,6 +459,13 @@ def main() -> None:
         _local_operations_postgres(keep_postgres=args.keep_postgres),
     ):
         summary = run_sandbox_extraction(args)
+
+    if summary is None:
+        logging.info(
+            "=== Sandbox extraction complete: no work to do (no eligible documents, "
+            "or a resumed run whose documents all finished). ==="
+        )
+        return
     summary.log()
 
 
