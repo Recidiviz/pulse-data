@@ -18,37 +18,34 @@ recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_colum
 recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
 
 # Doppler
-#  For Doppler-owned files, files with a high volume of edits are assigned to the @Recidiviz/doppler-codeowners group,
-#  which assigns a single reviewer via round robin. For more critical files with a lower volume of edits, we assign the
-#  @Recidiviz/doppler group which is configured so all team members are added to each review.
-recidiviz/airflow/** @Recidiviz/doppler
-recidiviz/big_query/** @Recidiviz/doppler
-recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler
+recidiviz/airflow/** @Recidiviz/doppler-codeowners
+recidiviz/big_query/** @Recidiviz/doppler-codeowners
+recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/gating.py @Recidiviz/doppler-codeowners
-recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler
+recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/datetime_sql_parser_exemptions.py @Recidiviz/doppler-codeowners
-recidiviz/persistence/** @Recidiviz/doppler
-recidiviz/pipelines/** @Recidiviz/doppler
-recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler
+recidiviz/persistence/** @Recidiviz/doppler-codeowners
+recidiviz/pipelines/** @Recidiviz/doppler-codeowners
+recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler-codeowners
 # TODO(#44755): Once all exemptions have been removed from this test file, we can remove Doppler ownership
-recidiviz/tests/calculator/query/state/views/reference/workflows_opportunity_configs_test.py @Recidiviz/doppler
-recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler
+recidiviz/tests/calculator/query/state/views/reference/workflows_opportunity_configs_test.py @Recidiviz/doppler-codeowners
+recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler-codeowners
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/source_tables/untracked_source_table_exemptions.py @Recidiviz/doppler-codeowners
-recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
-recidiviz/tests/tools/validate_source_visibility_integration_test.py @Recidiviz/doppler
+recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler-codeowners
+recidiviz/tests/tools/validate_source_visibility_integration_test.py @Recidiviz/doppler-codeowners
 recidiviz/tests/big_query/known_undocumented_columns.py @Recidiviz/doppler-codeowners
-recidiviz/tests/view_registry/sentence_v1_migration_burndown_test.py @ageiduschek
-recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @ageiduschek
+recidiviz/tests/view_registry/sentence_v1_migration_burndown_test.py @klickyfan
+recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @klickyfan
 recidiviz/tests/view_registry/us_tn_tomis_migration_burndown_test.py @elisegonzal @gheidkamp11
 recidiviz/tests/view_registry/us_tn_tomis_migration_exemptions.py @elisegonzal @gheidkamp11
 recidiviz/ingest/direct/regions/us_tn/us_tn_tomis_migration_file_tags.py @elisegonzal @gheidkamp11
-recidiviz/view_registry/deprecated_view_reference_exemptions.py @ageiduschek
-recidiviz/view_registry/deployed_view_external_id_exemptions.py @ageiduschek @Recidiviz/doppler-codeowners
+recidiviz/view_registry/deprecated_view_reference_exemptions.py @klickyfan
+recidiviz/view_registry/deployed_view_external_id_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_table_reference_exemptions.py @Recidiviz/doppler-codeowners
 
-.claude/skills/** @Recidiviz/doppler
+.claude/skills/** @Recidiviz/doppler-codeowners
 
 # Aurora
 # Google Workflows are allowed for orchestration but cannot process DOC data
