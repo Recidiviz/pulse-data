@@ -79,8 +79,6 @@ output:
                         - "D6" # PROPERTY IMPOUNDMENT
                         - "D7" # PROGRAM SANCTIONS
                         - "D8" # PROGRAM ATTENDANCE OR COMPLETION REQUIREMENT
-                        - "D16" # Unknown: not in handbook, possibly entered in error
-                        - "D17" # Unknown: not in handbook, possibly entered in error
                         - "M1" # Abuse of Judicial Proceedings Sanctions:
                           # Option 1: If the court order is issued prior to the offender’s first parole consideration hearing date,
                           # the parole consideration hearing date will be delayed 60 days
@@ -100,6 +98,7 @@ output:
                         - "A5" # Request for Prosecution Consideration
                       StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
                         - "C3" # Removal from or Restriction from Consideration for Work Assignments, Work Release, etc.
+                        - "D17" # ERH Recreation Restriction
                         - "D2" # VISITING RESTRICTIONS
                         - "D2A" # VISITING RESTRICTIONS: No visits
                         - "D2B" # VISITING RESTRICTIONS: Modified visits
@@ -121,6 +120,7 @@ output:
                         - "D13" # Progressive Discipline 2 (Restrictive Housing: Placement in a RHU cell: 14 days)
                         - "D14" # Progressive Discipline 3 (Restrictive Housing: Placement in a RHU cell: 21 days)
                         - "D15" # Progressive Discipline 4 (Restrictive Housing: Placement in a RHU cell: 28 days)
+                        - "D16" # RH Assignment - Additional 7 days
                       StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
                         - "D10" # EXTRA DUTY: Work assignment under the supervision of a staff member in addition to regular duties.
                       StateIncarcerationIncidentOutcomeType.WARNING:
