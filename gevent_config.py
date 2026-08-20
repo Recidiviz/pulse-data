@@ -40,6 +40,18 @@ def _env_flag(name: str, *, default: bool) -> bool:
     return value.strip().lower() not in ("", "0", "false", "no")
 
 
+def _env_default(name: str, default: str) -> None:
+    """Sets the |name| environment variable to |default| unless it's already
+    set to a non-blank value.
+
+    Unlike os.environ.setdefault(), a present-but-blank value (e.g. an empty
+    string from a mounted secret) is treated the same as unset, rather than
+    passed through as-is.
+    """
+    if not os.environ.get(name, "").strip():
+        os.environ[name] = default
+
+
 # The monitor thread logs a warning, with a greenlet stack, whenever the hub stays
 # blocked for longer than max_blocking_time. That is our only signal for a greenlet
 # stalling a whole worker on non-cooperative I/O, so it is on by default. It was
@@ -48,6 +60,22 @@ config.monitor_thread = _env_flag("MONITOR_THREAD", default=True)
 config.max_blocking_time = 5  # 5 seconds
 config.max_memory_usage = 4 * 1024 * 1024 * 1024  # 4 GiB
 config.memory_monitor_period = 60  # 1 minute
+
+# gevent's default resolver runs getaddrinfo() on the hub's shared
+# threadpool -- the same pool grpc's gevent glue depends on for completion
+# queue polling (see grpc_gevent.pyx.pxi). Under load, ordinary DNS lookups
+# from any monkey-patched library can end up queued behind gRPC calls and
+# vice versa. The ares resolver does its own async I/O instead of borrowing
+# threadpool slots, so DNS stops competing for that pool entirely. An
+# explicit, non-blank GEVENT_RESOLVER in the environment still wins.
+_env_default("GEVENT_RESOLVER", "ares")
+
+# Pin the ares resolver to Google's public recursive resolvers rather than
+# whatever nameservers happen to be configured on the host (e.g. via
+# /etc/resolv.conf) -- #97088 hypothesized a known TN DNS resolution error as
+# a contributing cause of production DeadlineExceeded errors. An explicit,
+# non-blank GEVENT_RESOLVER_NAMESERVERS in the environment still wins.
+_env_default("GEVENT_RESOLVER_NAMESERVERS", "8.8.8.8,8.8.4.4")
 
 MEMORY_DEBUG = _env_flag("MEMORY_DEBUG", default=False)
 
