@@ -169,6 +169,9 @@ class TaskCompletionEventType(Enum):
     GOOD_TIME_REINSTATED = "GOOD_TIME_REINSTATED"
     FACE_TO_FACE_CONTACT = "FACE_TO_FACE_CONTACT"
     SUPERVISION_LEVEL_REVIEW = "SUPERVISION_LEVEL_REVIEW"
+    CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING = (
+        "CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING"
+    )
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -225,6 +228,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
             TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
+            TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -313,6 +317,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
+            TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
         ]:
             return DecarceralImpactType.DOWNGRADE_SUPERVISION_LEVEL
         if self in [
@@ -386,6 +391,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
+            TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
         ]:
             return True
         if self in [
@@ -468,6 +474,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
+            TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
         ]:
             return False
         raise ValueError(
