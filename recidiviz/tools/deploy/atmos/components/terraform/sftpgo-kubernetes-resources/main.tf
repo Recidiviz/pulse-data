@@ -1,6 +1,6 @@
 locals {
   sftpgo_namespace = "sftpgo"
-  sftpgo_version   = "0.37.0"
+  sftpgo_version   = "0.47.0"
   sftpgo_admin     = "recidiviz"
   lower_state_code = replace(lower(var.state_code), "_", "-")
   lower_state_abbr = split("_", lower(var.state_code))[1]
