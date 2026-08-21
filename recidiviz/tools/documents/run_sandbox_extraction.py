@@ -120,7 +120,7 @@ from recidiviz.tools.documents.sandbox_document_extraction_processor import (
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
     create_extraction_results_tables,
     deploy_extraction_results_views,
-    first_order_input_overrides,
+    first_order_view_input_overrides,
 )
 from recidiviz.tools.documents.sandbox_extraction_runners import SandboxExtractionRunner
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -435,7 +435,7 @@ def run_sandbox_extraction(
             [config]
         ),
         results_sandbox_prefix=args.sandbox_prefix,
-        input_source_table_overrides=first_order_input_overrides(
+        input_source_table_overrides=first_order_view_input_overrides(
             config=config,
             results_sandbox_prefix=args.sandbox_prefix,
             document_store_sandbox=document_store_sandbox,

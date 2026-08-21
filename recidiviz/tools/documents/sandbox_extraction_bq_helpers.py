@@ -171,7 +171,8 @@ def _register_input_document_store_overrides(
     tables at the sandbox copies the run wrote them to. Registers nothing when the run
     reads its input from the production document store (no sandbox context, or the input
     collection is declared unsandboxed in the context), so the views read production. The
-    context must declare the input collection either way — an undeclared collection raises."""
+    context must declare the input collection either way — an undeclared collection raises.
+    """
     if document_store_sandbox is None:
         return
     output_prefix = document_store_sandbox.source_read_prefix_for_document_collection(
@@ -190,7 +191,27 @@ def _register_input_document_store_overrides(
     )
 
 
-def first_order_input_overrides(
+def _register_deployed_view_overrides(
+    builder: BigQueryAddressOverrides.Builder,
+    *,
+    view_builders: list[BigQueryViewBuilder],
+    results_sandbox_prefix: str,
+) -> None:
+    """Registers overrides pointing every address |view_builders| deploy — each view
+    and, where materialized, its materialized table — at its |results_sandbox_prefix|-
+    scoped copy.
+    """
+    addresses: list[BigQueryAddress] = []
+    for view_builder in view_builders:
+        addresses.append(view_builder.address)
+        if view_builder.materialized_address is not None:
+            addresses.append(view_builder.materialized_address)
+    _register_addresses(
+        builder, addresses=addresses, sandbox_prefix=results_sandbox_prefix
+    )
+
+
+def first_order_view_input_overrides(
     *,
     config: LLMExtractorConfig,
     results_sandbox_prefix: str,
@@ -210,10 +231,11 @@ def first_order_input_overrides(
     return builder.build()
 
 
-def post_entity_resolution_input_overrides(
+def post_entity_resolution_view_input_overrides(
     *,
     config: LLMExtractorConfig,
     er_configs: list[LLMExtractorConfig],
+    first_order_view_builders: list[BigQueryViewBuilder],
     results_sandbox_prefix: str,
     document_store_sandbox: DocumentStoreSandboxContext | None,
 ) -> BigQueryAddressOverrides:
@@ -221,9 +243,11 @@ def post_entity_resolution_input_overrides(
 
     Covers everything the first-order overrides do — |config|'s first-order result tables
     and its input document store — plus the tables only the post-resolution views read: the
-    |er_configs|' result tables and each entity group's entry->source map, both
-    sandbox-prefixed since the run writes them. |er_configs| are the entity-resolution
-    configs generated from |config|, one per declared entity group.
+    |er_configs|' result tables, each entity group's entry->source map, and the tables the
+    first-order deploy of |first_order_view_builders| produced (the enriched public views
+    read the first-order `__pre_resolution` materialized table), all sandbox-prefixed since
+    the run writes them. |er_configs| are the entity-resolution configs generated from
+    |config|, one per declared entity group.
 
     The entry->source map lands in the document store metadata dataset but is a result the
     run writes, so it follows the results prefix rather than the document store prefix.
@@ -238,6 +262,11 @@ def post_entity_resolution_input_overrides(
     )
     _register_input_document_store_overrides(
         builder, config=config, document_store_sandbox=document_store_sandbox
+    )
+    _register_deployed_view_overrides(
+        builder,
+        view_builders=first_order_view_builders,
+        results_sandbox_prefix=results_sandbox_prefix,
     )
     for er_config in er_configs:
         _register_extraction_results_overrides(
