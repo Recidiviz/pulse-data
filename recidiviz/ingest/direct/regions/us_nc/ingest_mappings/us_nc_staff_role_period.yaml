@@ -29,6 +29,10 @@ output:
               $mappings:
                 StateStaffRoleType.SUPERVISION_OFFICER: "SUPERVISION_OFFICER"
                 StateStaffRoleType.CASE_MANAGER: "CASE_MANAGER"
+          # TODO(OBT-45740) This keeps breaking because we get new values. We should
+          # ask NC for a full list of what's possible here, and map them all. Probably
+          # most could simply go in internal_unknown since we should already have the
+          # main values mapped properly
           role_subtype:
             $enum_mapping:
               $raw_text: role_subtype_raw
@@ -60,3 +64,4 @@ output:
                   - "CORR SERGEANT III"
                   - "HR TECHNICIAN I"
                   - "CORR TRAINING INSTRUCTOR"
+                  - "JUDICIAL DIV ADMINISTRATOR"
