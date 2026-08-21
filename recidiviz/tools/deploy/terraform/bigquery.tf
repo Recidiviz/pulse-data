@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-locals {
-  source_tables = "${local.recidiviz_root}/source_tables/externally_managed/"
-}
-
 resource "google_project_service" "bigquery_connection_api" {
   service = "bigqueryconnection.googleapis.com"
 
@@ -33,13 +29,15 @@ module "validation_results_dataset" {
   description = "This dataset contains raw results from data validation runs as well as any views over them."
 }
 
-resource "google_bigquery_table" "validation_results" {
-  dataset_id          = module.validation_results_dataset.dataset_id
-  table_id            = "validation_results"
-  description         = "This table contains the results from data validation runs."
-  deletion_protection = false
-
-  schema = jsonencode(yamldecode(file("${local.source_tables}/validation_results/validation_results.yaml"))["schema"])
+# TODO(OBT-44639): remove this block once both projects have applied it.
+# The validation_results table is now managed by the source-table framework as a protected
+# table (see source_tables/yaml_managed/validation_results/). Deregister the Terraform table
+# resource without destroying it, so the framework adopts the existing table in place.
+removed {
+  from = google_bigquery_table.validation_results
+  lifecycle {
+    destroy = false
+  }
 }
 
 module "supplemental_generated_dataset" {
@@ -73,10 +71,14 @@ module "raw_data_comparison_output" {
   default_table_expiration_ms = 1000 * 60 * 60 * 24 * 7 # 7 days
 }
 
-resource "google_bigquery_table" "jii_texting_incoming_messages" {
-  dataset_id          = module.twilio_webhook_requests_dataset.dataset_id
-  table_id            = "jii_texting_incoming_messages"
-  description         = "This table contains information from Twilio's requests to our webhook that handles incoming text messages to our JII Texting Twilio phone numbers"
-  deletion_protection = false
-  schema              = jsonencode(yamldecode(file("${local.source_tables}/${module.twilio_webhook_requests_dataset.dataset_id}/jii_texting_incoming_messages.yaml"))["schema"])
+# TODO(OBT-44639): remove this block once both projects have applied it.
+# The jii_texting_incoming_messages table is now managed by the source-table framework as a
+# protected table (see source_tables/yaml_managed/twilio_webhook_requests/). Deregister the
+# Terraform table resource without destroying it, so the framework adopts the existing table
+# in place.
+removed {
+  from = google_bigquery_table.jii_texting_incoming_messages
+  lifecycle {
+    destroy = false
+  }
 }

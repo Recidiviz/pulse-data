@@ -39,11 +39,7 @@ from recidiviz.validation.views.dataset_config import (
 # Views that are updated manually
 MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"
 
-VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
-
 ALL_BILLING_DATA_DATASET: str = "all_billing_data"
-
-TWILIO_WEBHOOK_REQUESTS_DATASET_ID: str = "twilio_webhook_requests"
 
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
 JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
@@ -99,11 +95,7 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     SENDGRID_EMAIL_DATA_DATASET: (
         "Stores the output of email activity data from Sendgrid."
     ),
-    VALIDATION_RESULTS_DATASET_ID: (
-        "Stores results from our data validations framework."
-    ),
     ALL_BILLING_DATA_DATASET: "Stores information about our GCP cloud costs",
-    TWILIO_WEBHOOK_REQUESTS_DATASET_ID: "Stores requests from Twilio made to internal webhooks",
     JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS: "Stores backend usage events logged from JII Tablet App via Segment",
     JII_FRONTEND_PROD_SEGMENT_DATASET: "Stores frontend pageview events logged from JII Tablet App via Segment",

@@ -1,6 +1,7 @@
 address:
   dataset_id: validation_results
   table_id: validation_results
+description: This table contains the results from data validation runs.
 schema:
   - name: run_id
     type: STRING

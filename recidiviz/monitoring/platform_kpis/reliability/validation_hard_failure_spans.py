@@ -24,9 +24,7 @@ from recidiviz.big_query.big_query_view_column import (
     String,
 )
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
-from recidiviz.source_tables.externally_managed.datasets import (
-    VALIDATION_RESULTS_DATASET_ID,
-)
+from recidiviz.source_tables.yaml_managed.datasets import VALIDATION_RESULTS_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_models import ValidationResultStatus

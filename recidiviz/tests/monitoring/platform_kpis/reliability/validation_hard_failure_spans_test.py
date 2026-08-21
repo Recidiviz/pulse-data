@@ -27,7 +27,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
     VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.source_tables import externally_managed
+from recidiviz.source_tables import yaml_managed
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
@@ -39,7 +39,7 @@ from recidiviz.validation.validation_output_views import (
 )
 
 VALIDATION_RESULTS_DIRECTORY = (
-    f"{os.path.dirname(externally_managed.__file__)}/validation_results/"
+    f"{os.path.dirname(yaml_managed.__file__)}/validation_results/"
 )
 VALIDATION_RESULTS_SOURCE_TABLE_PATH = os.path.join(
     VALIDATION_RESULTS_DIRECTORY, "validation_results.yaml"

@@ -24,8 +24,8 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
 )
 from recidiviz.utils import environment, metadata
 from recidiviz.validation.validation_output_views import (
@@ -70,10 +70,8 @@ def store_validation_run_completion_in_big_query(
         logging.info("Skipping storing validation run completion in BigQuery for task.")
         return
 
-    source_table_repository = (
-        build_source_table_repository_for_externally_managed_tables(
-            metadata.project_id()
-        )
+    source_table_repository = build_source_table_repository_for_yaml_managed_tables(
+        metadata.project_id()
     )
 
     bq_client = BigQueryClientImpl()

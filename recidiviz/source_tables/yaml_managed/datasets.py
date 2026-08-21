@@ -46,6 +46,10 @@ GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
 
 LABEL_STUDIO_DATASET: str = "label_studio"
 
+VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
+
+TWILIO_WEBHOOK_REQUESTS_DATASET_ID: str = "twilio_webhook_requests"
+
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
     EOMIS_WRITEBACK_METADATA_DATASET: (
@@ -72,6 +76,10 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     SPARK_OUTPUT_DATASET: "Stores output of Spark simulations",
     STATIC_REFERENCE_TABLES_DATASET: (
         "Reference tables used by various views in BigQuery. May need to be updated manually for new states."
+    ),
+    TWILIO_WEBHOOK_REQUESTS_DATASET_ID: "Stores requests from Twilio made to internal webhooks",
+    VALIDATION_RESULTS_DATASET_ID: (
+        "Stores results from our data validations framework."
     ),
     VERA_DATASET: (
         "Stores data calculated outside of our codebase by Vera. Used only by Vera."

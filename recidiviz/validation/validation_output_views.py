@@ -16,9 +16,7 @@
 # =============================================================================
 """List of views that are written out to by validation outputs."""
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.source_tables.externally_managed.datasets import (
-    VALIDATION_RESULTS_DATASET_ID,
-)
+from recidiviz.source_tables.yaml_managed.datasets import VALIDATION_RESULTS_DATASET_ID
 
 VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
     dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validation_results"
