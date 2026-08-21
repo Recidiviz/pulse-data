@@ -2871,7 +2871,7 @@ DISTINCT_GLOBAL_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
     description="Number of distinct users who are provisioned to have tool access (regardless of role type) across all tools",
     span_selector=SpanSelector(
         span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
-        span_conditions_dict={},
+        span_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
 )
 DISTINCT_REGISTERED_GLOBAL_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
@@ -2883,7 +2883,10 @@ DISTINCT_REGISTERED_GLOBAL_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
     ),
     span_selector=SpanSelector(
         span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
-        span_conditions_dict={"is_registered": ["true"]},
+        span_conditions_dict={
+            "is_registered": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
     ),
 )
 DISTINCT_LOGGED_IN_GLOBAL_USERS = EventDistinctUnitCountMetric(
@@ -2892,7 +2895,7 @@ DISTINCT_LOGGED_IN_GLOBAL_USERS = EventDistinctUnitCountMetric(
     description="Number of distinct users who logged into any tool",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_LOGIN,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
 )
 LOGINS_GLOBAL_USER = EventCountMetric(
@@ -2901,7 +2904,16 @@ LOGINS_GLOBAL_USER = EventCountMetric(
     description="Number of logins performed by all users across all tools",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_LOGIN,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
+    ),
+)
+LOGINS_GLOBAL_USER_UNKNOWN_ROLE_TYPE = EventCountMetric(
+    name="logins_global_user_unknown_role_type",
+    display_name="Logins, Global Users With Unknown Role Type",
+    description="Number of logins performed by users whose prioritized role type is unknown across all tools",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_LOGIN,
+        event_conditions_dict={"is_user_role_type_unknown": ["true"]},
     ),
 )
 DISTINCT_ACTIVE_GLOBAL_USER_ALL_TOOLS = EventDistinctUnitCountMetric(
@@ -2910,7 +2922,7 @@ DISTINCT_ACTIVE_GLOBAL_USER_ALL_TOOLS = EventDistinctUnitCountMetric(
     description="Number of distinct users having at least one usage event in any tool",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
 )
 
@@ -2920,7 +2932,7 @@ ACTIVE_USAGE_EVENTS_GLOBAL_USER = EventCountMetric(
     description="Total number of actions by all users",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
     event_segmentation_columns=[
         "event",
@@ -2936,7 +2948,7 @@ DISTINCT_USERS_WITH_CSAT_RESPONSES = EventDistinctUnitCountMetric(
     description="Number of distinct users who submitted at least one CSAT survey response",
     event_selector=EventSelector(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
 )
 
@@ -2946,7 +2958,7 @@ CSAT_RESPONSES = EventCountMetric(
     description="Total number of Intercom CSAT responses submitted",
     event_selector=EventSelector(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
 )
 
@@ -2958,6 +2970,7 @@ CSAT_POSITIVE_RESPONSES = EventCountMetric(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
         event_conditions_dict={
             "feedback_type": ["POSITIVE"],
+            "is_user_role_type_unknown": ["false"],
         },
     ),
 )
@@ -2970,6 +2983,7 @@ CSAT_NEUTRAL_RESPONSES = EventCountMetric(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
         event_conditions_dict={
             "feedback_type": ["NEUTRAL"],
+            "is_user_role_type_unknown": ["false"],
         },
     ),
 )
@@ -2982,6 +2996,7 @@ CSAT_NEGATIVE_RESPONSES = EventCountMetric(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
         event_conditions_dict={
             "feedback_type": ["NEGATIVE"],
+            "is_user_role_type_unknown": ["false"],
         },
     ),
 )
@@ -2992,7 +3007,7 @@ AVG_CSAT_SCORE = EventValueMetric(
     description="Average customer satisfaction score (1-5) across all Intercom survey responses",
     event_selector=EventSelector(
         event_type=EventType.INTERCOM_CSAT_RESPONSE,
-        event_conditions_dict={},
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
     ),
     event_value_numeric="satisfaction_score",
     event_count_metric=CSAT_RESPONSES,
@@ -4102,7 +4117,10 @@ DISTINCT_PROVISIONED_CASE_PLANNING_ASSISTANT_USERS = SpanDistinctUnitCountMetric
     description="Number of distinct Case Planning Assistant users who are provisioned to have tool access",
     span_selector=SpanSelector(
         span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
-        span_conditions_dict={"is_provisioned_case_planning_assistant": ["true"]},
+        span_conditions_dict={
+            "is_provisioned_case_planning_assistant": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
     ),
 )
 
@@ -4112,7 +4130,10 @@ DISTINCT_REGISTERED_CASE_PLANNING_ASSISTANT_USERS = SpanDistinctUnitCountMetric(
     description="Number of distinct Case Planning Assistant users who have signed up/logged into the Case Planning Assistant tool at least once",
     span_selector=SpanSelector(
         span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
-        span_conditions_dict={"is_registered_case_planning_assistant": ["true"]},
+        span_conditions_dict={
+            "is_registered_case_planning_assistant": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
     ),
 )
 
@@ -4122,7 +4143,10 @@ DISTINCT_LOGGED_IN_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
     description="Number of distinct Case Planning Assistant users who logged into the Case Planning Assistant tool",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_LOGIN,
-        event_conditions_dict={"has_case_planning_assistant_access": ["true"]},
+        event_conditions_dict={
+            "has_case_planning_assistant_access": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
     ),
 )
 
@@ -4132,7 +4156,10 @@ DISTINCT_ACTIVE_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
     description="Number of distinct Case Planning Assistant users having at least one active usage event",
     event_selector=EventSelector(
         event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
-        event_conditions_dict={"product_type": ["CASE_PLANNING_ASSISTANT"]},
+        event_conditions_dict={
+            "product_type": ["CASE_PLANNING_ASSISTANT"],
+            "is_user_role_type_unknown": ["false"],
+        },
     ),
 )
 
