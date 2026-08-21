@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     INTERCOM_EXPORT_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SPARK_OUTPUT_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.datasets.static_data.terraform_managed.config import (
     GCS_BACKED_TABLES_DATASET,
@@ -69,6 +70,9 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores output of the population projection simulations."
     ),
     SPARK_OUTPUT_DATASET: "Stores output of Spark simulations",
+    STATIC_REFERENCE_TABLES_DATASET: (
+        "Reference tables used by various views in BigQuery. May need to be updated manually for new states."
+    ),
     VERA_DATASET: (
         "Stores data calculated outside of our codebase by Vera. Used only by Vera."
     ),

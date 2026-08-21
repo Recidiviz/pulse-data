@@ -30,7 +30,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.validation.views.dataset_config import (
@@ -99,9 +98,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     SENDGRID_EMAIL_DATA_DATASET: (
         "Stores the output of email activity data from Sendgrid."
-    ),
-    STATIC_REFERENCE_TABLES_DATASET: (
-        "Reference tables used by various views in BigQuery. May need to be updated manually for new states."
     ),
     VALIDATION_RESULTS_DATASET_ID: (
         "Stores results from our data validations framework."

@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This script writes BigQuery table schemas to YAML files in our recidiviz/source_tables/schema directory
+This script writes BigQuery table schemas to YAML files in the
+recidiviz/source_tables/externally_managed or recidiviz/source_tables/yaml_managed
+package, whichever already holds the schema directory for the given dataset.
 
 Example usage:
 
@@ -31,38 +33,56 @@ python -m recidiviz.tools.update_source_table_yaml \
     --project-id [project id]
 """
 import argparse
+import glob
 import logging
 import os.path
 
 import yaml
 
-import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.source_tables import externally_managed, yaml_managed
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_list
+from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 def update_source_file_yaml(table_address: BigQueryAddress) -> None:
-    dataset_path = os.path.join(
-        os.path.abspath(os.path.dirname(recidiviz.__file__)),
-        "source_tables/externally_managed",
-        table_address.dataset_id,
-    )
-
-    if not os.path.exists(dataset_path):
-        os.mkdir(dataset_path)
+    """Writes the given table's live BigQuery schema to its YAML file in the
+    dataset's schema directory."""
+    # The dataset's schema directory may live in either package, possibly nested
+    # (e.g. yaml_managed/gcs_backed_tables/intercom_export).
+    dataset_paths = [
+        path
+        for package in (externally_managed, yaml_managed)
+        for path in glob.glob(
+            os.path.join(
+                os.path.dirname(assert_type(package.__file__, str)),
+                "**",
+                table_address.dataset_id,
+            ),
+            recursive=True,
+        )
+        if os.path.isdir(path)
+    ]
+    if len(dataset_paths) != 1:
+        # TODO(OBT-45873): intercom_export matches two directories until its
+        # YAML files are consolidated into one package.
+        raise ValueError(
+            f"Expected exactly one directory named [{table_address.dataset_id}] under "
+            f"externally_managed/ or yaml_managed/; found {sorted(dataset_paths)}. If "
+            f"none exists, create one (and add the dataset's description entry in that "
+            f"package's datasets.py) before running this script."
+        )
 
     table_yaml_path = os.path.join(
-        dataset_path,
+        dataset_paths[0],
         f"{table_address.table_id}.yaml",
     )
-    logging.info(
-        "Updating %s for unmanaged source table %s", table_yaml_path, table_address
-    )
+    logging.info("Updating %s for source table %s", table_yaml_path, table_address)
 
     client = BigQueryClientImpl()
     source_table_config = SourceTableConfig.from_table(client.get_table(table_address))
