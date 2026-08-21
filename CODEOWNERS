@@ -18,6 +18,9 @@ recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_colum
 recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
 
 # Doppler
+#  For Doppler-owned files, which can tend to have a high volume of edits, review is assigned to the
+#  @Recidiviz/doppler-codeowners group, which assigns a single reviewer via round robin. That reviewer will loop in
+#  other team members as necessary.
 recidiviz/airflow/** @Recidiviz/doppler-codeowners
 recidiviz/big_query/** @Recidiviz/doppler-codeowners
 recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler-codeowners
