@@ -1,0 +1,67 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-nv project
+
+import:
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+settings:
+  context:
+    project_id: recidiviz-ingest-us-nv
+    state_code: US_NV
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+
+components:
+  terraform:
+    # Provisions the recidiviz-ingest-us-nyc project
+    vendor/core-project-factory:
+      vars:
+        name: "{{ .settings.context.project_id }}"
+        org_id: "{{ .settings.context.organization_id }}"
+        folder_id: "{{ .settings.context.hipaa_folder_id }}"
+        billing_account: "{{ .settings.context.billing_account }}"
+        # Grant the owner security group owner access (can be gained with go/jit)
+        group_name: "s-{{ .settings.context.project_id }}-owner"
+        group_role: roles/owner
+        default_service_account: deprivilege
+        deletion_policy: PREVENT
+        activate_apis:
+          - compute.googleapis.com # GCE
+          - container.googleapis.com # GKE
+          - logging.googleapis.com
+          - dns.googleapis.com
+          - secretmanager.googleapis.com
+          - storagetransfer.googleapis.com
+
+    isolated-direct-ingest-bucket-with-replication:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-west4
+        state_code: "{{ .settings.context.state_code }}"
+      providers:
+        google:
+          # Storage Transfer Service requires a quota project, set that explicitly
+          billing_project: "{{ .settings.context.project_id }}"
+          user_project_override: true
+
+    # Provision the cluster and resources separately so that the cluster can be recreated
+    # without the dependent helm resources preventing it if necessary
+    sftpgo-kubernetes-cluster:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-west4
+        zones:
+          - us-west4-a
+
+    sftpgo-kubernetes-resources:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        state_code: "{{ .settings.context.state_code }}"
+        region: !terraform.state sftpgo-kubernetes-cluster {{.stack}} region
+        zone: us-west4-a
+        config_file: configs/sftpgo-us-nv.enc.yaml
+        sftp_bucket_name: !terraform.state isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
+        kubernetes_endpoint: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
+        kubernetes_ca_certificate: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate
