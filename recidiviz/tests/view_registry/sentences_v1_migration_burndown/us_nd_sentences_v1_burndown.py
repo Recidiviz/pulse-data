@@ -20,9 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_summaries import (
     VITALS_SUMMARIES_VIEW_BUILDER,
 )
@@ -148,16 +145,6 @@ from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_bef
 US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
-    "PATHWAYS_EVENT_LEVEL": {
-        LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
-            },
-        },
-    },
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {

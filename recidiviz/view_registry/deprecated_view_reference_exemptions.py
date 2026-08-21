@@ -25,9 +25,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions_v1_states import (
     SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
 )
@@ -761,10 +758,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
         ),
-        LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -793,10 +786,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `compartment_sessions_closest_sentence_imposed_group` once
     # all states are migrated to v2 infra
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-        LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"

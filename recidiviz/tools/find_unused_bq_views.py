@@ -342,10 +342,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         if view_builder.dataset_id
         == classification_score_components_state_specific_dataset(StateCode.US_MI)
     },
-    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
-        "This is a new table in the sentence_sessions dataset which will soon be used in "
-        "partners summit analysis (Andrew Gaidus, 2025-07-02)"
-    ),
     **{
         VIEW_BUILDER.address: (
             "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
@@ -362,6 +358,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "current_person_prison_projected_dates",
         ]
     },
+    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
+        "This is a new table in the sentence_sessions dataset which will soon be used in partners summit analysis (Andrew Gaidus, 2025-07-02)"
+    ),
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
         "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
         "(Nick Tallant, 2024-09-11)"

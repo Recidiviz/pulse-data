@@ -27,14 +27,8 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ix_sentenc
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mi_sentences_v1_burndown import (
     US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mo_sentences_v1_burndown import (
-    US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nd_sentences_v1_burndown import (
     US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ny_sentences_v1_burndown import (
-    US_NY_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_pa_sentences_v1_burndown import (
     US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
@@ -60,9 +54,7 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode.US_AZ: US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_IX: US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MI: US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_MO: US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_ND: US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_NY: US_NY_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_PA: US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_TN: US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 }

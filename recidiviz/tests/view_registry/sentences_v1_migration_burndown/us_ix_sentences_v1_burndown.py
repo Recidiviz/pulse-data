@@ -20,9 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_discharge_sessions_preprocessing import (
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_summaries import (
     VITALS_SUMMARIES_VIEW_BUILDER,
 )
@@ -182,16 +179,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             ): {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "PATHWAYS_EVENT_LEVEL": {
-        LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
             },
         },
     },

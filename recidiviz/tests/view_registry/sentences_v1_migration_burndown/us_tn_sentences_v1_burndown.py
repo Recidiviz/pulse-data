@@ -17,9 +17,6 @@
 """US_TN exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
 )
@@ -31,12 +28,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
-    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
     SENTENCE_SPANS_VIEW_BUILDER,
@@ -96,16 +87,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "PATHWAYS_EVENT_LEVEL": {
-        LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
             },
         },
     },
