@@ -56,17 +56,15 @@ from recidiviz.documents.store.document_store_types import (
     SingleCollectionDocumentDiscoveryResult,
 )
 
-# The upload task holds every document in a batch in memory at once, with a
-# fixed per-document overhead (~2.5KB of row object and upload-future
-# machinery) that dwarfs the text itself for small documents — so peak memory
-# scales with document count more than with batch bytes. 50MB keeps the worst
-# observed profile (~275B/doc, i.e. ~180K docs per batch, ~500MB peak)
-# comfortably under the 2Gi limit on DocumentUploadEntrypoint pods (see
-# recidiviz_kubernetes_resources.yaml).
-# TODO(OBT-41816): Once GcsDocumentUploader bounds its in-flight upload memory,
-# revisit this value — batch size can then be raised for throughput without
-# OOM risk.
-DEFAULT_TARGET_UPLOAD_BATCH_BYTES = 50_000_000  # 50 MB
+# GcsDocumentUploader streams each batch (bounded upload concurrency, status
+# CSVs flushed in parts), so its peak memory does not scale with batch size.
+# Batch size instead trades per-batch overhead (each batch runs its own query
+# against the temp new-document-contents table) against load balancing: batches
+# are round-robined across UPLOAD_TASK_INSTANCE_COUNT upload pods, so a run
+# needs at least that many batches to keep every pod busy. 500MB keeps
+# multi-GB backfill runs (e.g. the ~3.5GB US_CO backfill) spread across all
+# pods while keeping the batch count, and thus repeated temp-table scans, low.
+DEFAULT_TARGET_UPLOAD_BATCH_BYTES = 500_000_000  # 500 MB
 
 
 @attr.define
