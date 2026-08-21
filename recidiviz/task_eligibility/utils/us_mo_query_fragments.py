@@ -150,13 +150,15 @@ MO_CHARGE_CODES_ROBBERY_FIRST_DEGREE = [
 ]
 
 # The following sanction codes are for progressive-discipline sanctions. MO is
-# transitioning from using D1 to using D12, D13, D14, and D15 in early 2026.
+# transitioning from using D1 to using D12, D13, D14, and D15 in early 2026. Update: as
+# of August 2026, D16 is also in use now.
 MO_PROGRESSIVE_DISCIPLINE_SANCTIONS = [
     "D1",
     "D12",
     "D13",
     "D14",
     "D15",
+    "D16",
 ]
 
 # This is the earliest due date we'll show for any task, even if it's overdue by more
