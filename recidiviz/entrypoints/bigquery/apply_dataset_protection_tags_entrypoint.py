@@ -70,6 +70,15 @@ INFRA_PROTECT_ALLOWLIST: set[str] = {
     "cloud_dlp_findings",
     "on_call_logs",
     "gcp_logs",
+    # The user-mgmt-logs-sink Cloud Logging sink (cloud-logging.tf) writes these
+    # tables and owns their schemas, so the source-table framework cannot manage
+    # them.
+    "user_mgmt_logs",
+    # Frozen snapshot of old jails data; it will never be updated again.
+    "census",
+    # Spark simulation inputs that Spark-team notebooks upload; the dataset
+    # exists in staging only.
+    "spark_public_input_data",
 }
 
 
