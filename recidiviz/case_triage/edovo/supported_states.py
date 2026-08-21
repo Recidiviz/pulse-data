@@ -20,7 +20,10 @@ This is the single source of truth for which states the endpoint accepts and the
 external-id type each state's ``person_external_id`` values are expected to match.
 Onboarding a new state is a one-line addition here.
 """
-from recidiviz.common.constants.state.external_id_types import US_CO_ADCNUMBER
+from recidiviz.common.constants.state.external_id_types import (
+    US_AR_ADCNUMBER,
+    US_CO_ADCNUMBER,
+)
 from recidiviz.common.constants.states import StateCode
 
 # Maps each supported state to the external-id type Edovo sends. For CO this is
@@ -29,5 +32,6 @@ from recidiviz.common.constants.states import StateCode
 # the authoritative per-person, per-course dedup happens downstream in
 # credit_calculator (OBT-23210).
 SUPPORTED_STATES: dict[StateCode, str] = {
+    StateCode.US_AR: US_AR_ADCNUMBER,
     StateCode.US_CO: US_CO_ADCNUMBER,
 }
