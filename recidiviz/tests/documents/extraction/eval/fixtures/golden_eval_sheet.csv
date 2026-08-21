@@ -1,0 +1,5 @@
+test_type,test_case,golden_document_id,document_text,notes,is_relevant__expected,primary_status__expected,status_note__expected,location__expected,assignments__expected
+unit,base_case,unit_1,"The record is active. Assigned to dish duty at $12.50/hour.",Straightforward base case,true,active,Currently active.,Kitchen,"[{""assignment_name"": ""Dish duty"", ""assignment_type"": ""internal"", ""rate_amount"": 12.5, ""rate_period"": ""hourly""}]"
+unit,missing_fields,unit_2,No fictional assignment record here.,Irrelevant document,false,,,,
+sample,realistic_note,sample_1,"Record active. Assignments: dish duty at $12.50/hour, and laundry.",Two assignments; one sparsely labeled,true,active,Currently active.,,"[{""assignment_name"": ""Dish duty"", ""assignment_type"": ""internal"", ""rate_amount"": 12.5, ""rate_period"": ""hourly""}, {""assignment_name"": ""Laundry""}]"
+unit,no_assignments,unit_3,The record is active with no assignments.,Empty array expectation,true,active,Currently active.,Kitchen,[]
