@@ -134,7 +134,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 ),
                 mock.call("operations_regional", default_table_expiration_ms=None),
                 mock.call("operations", default_table_expiration_ms=None),
-                mock.call("cloud_sql_to_bq_refresh"),
             ],
         )
 
@@ -200,7 +199,10 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                     "my_prefix_operations",
                     default_table_expiration_ms=expiration_ms,
                 ),
-                mock.call("my_prefix_cloud_sql_to_bq_refresh"),
+                mock.call(
+                    "my_prefix_cloud_sql_to_bq_refresh",
+                    default_table_expiration_ms=expiration_ms,
+                ),
             ],
         )
 

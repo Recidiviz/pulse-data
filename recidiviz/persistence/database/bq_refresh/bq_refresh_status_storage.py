@@ -16,22 +16,28 @@
 # =============================================================================
 """Handles storing BQ refresh results in BigQuery"""
 import datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, List, Optional, cast
 
 import attr
 import cattr
-from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common import serialization
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.utils import environment
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
+)
+from recidiviz.source_tables.yaml_managed.datasets import (
+    CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID,
+)
+from recidiviz.utils import environment, metadata
 
 CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS = BigQueryAddress(
-    dataset_id="cloud_sql_to_bq_refresh", table_id="refresh_status"
+    dataset_id=CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID, table_id="refresh_status"
 )
 
 
@@ -43,25 +49,6 @@ class CloudSqlToBqRefreshStatus:
     schema: SchemaType = attr.ib()
     last_refresh_datetime: datetime.datetime = attr.ib()
     region_code: Optional[str] = attr.ib()
-
-    @classmethod
-    def table_fields(cls) -> Dict[str, Type]:
-        return {
-            "refresh_run_id": str,
-            "schema": str,
-            "last_refresh_datetime": datetime.datetime,
-            "region_code": str,
-        }
-
-    @classmethod
-    def bq_schema_for_table(cls) -> List[bigquery.SchemaField]:
-        """Returns the necessary BigQuery schema for the table, which is a
-        list of SchemaField objects containing the column name and value type for
-        each field in |table_fields|."""
-        return [
-            schema_field_for_type(field_name=field_name, field_type=field_type)
-            for field_name, field_type in cls.table_fields().items()
-        ]
 
     def to_serializable(self) -> Dict[str, Any]:
         converter = serialization.with_datetime_hooks(cattr.Converter())
@@ -97,6 +84,13 @@ def store_bq_refresh_status_in_big_query(
                 "properly?"
             )
 
+    source_table_repository = build_source_table_repository_for_yaml_managed_tables(
+        project_id=metadata.project_id()
+    )
+    source_table_config = source_table_repository.get_config(
+        CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS
+    )
+
     if dataset_override_prefix:
         overrides = (
             BigQueryAddressOverrides.Builder(sandbox_prefix=dataset_override_prefix)
@@ -108,38 +102,27 @@ def store_bq_refresh_status_in_big_query(
         address = overrides.get_sandbox_address(CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS)
         if address is None:
             raise ValueError(
-                "Expected sandbox address for {CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS}"
+                f"Expected sandbox address for "
+                f"[{CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.to_str()}]"
+            )
+        # The standard source table update process only manages the unprefixed
+        # table, so sandbox runs create their prefixed copy here.
+        bq_client.create_dataset_if_necessary(
+            address.dataset_id,
+            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+        )
+        if not bq_client.table_exists(address):
+            bq_client.create_table_with_schema(
+                address=address, schema_fields=source_table_config.schema_fields
             )
     else:
         address = CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS
 
-    update_bq_refresh_status_table(
-        bq_client,
-        address,
-        CloudSqlToBqRefreshStatus.bq_schema_for_table(),
+    row_streamer = BigQueryRowStreamer(
+        bq_client=bq_client,
+        table_address=address,
+        expected_table_schema=source_table_config.schema_fields,
     )
-
-    bq_client.stream_into_table(
-        address, [result.to_serializable() for result in bq_refresh_statuses]
+    row_streamer.stream_rows(
+        [result.to_serializable() for result in bq_refresh_statuses]
     )
-
-
-def update_bq_refresh_status_table(
-    bq_client: BigQueryClient,
-    bq_refresh_status_address: BigQueryAddress,
-    table_schema: List[bigquery.SchemaField],
-) -> None:
-    bq_client.create_dataset_if_necessary(bq_refresh_status_address.dataset_id)
-
-    if bq_client.table_exists(bq_refresh_status_address):
-        # Compare schema derived from schema table to existing dataset and
-        # update if necessary.
-        bq_client.update_schema(
-            address=bq_refresh_status_address,
-            desired_schema_fields=table_schema,
-            allow_field_deletions=False,
-        )
-    else:
-        bq_client.create_table_with_schema(
-            address=bq_refresh_status_address, schema_fields=table_schema
-        )

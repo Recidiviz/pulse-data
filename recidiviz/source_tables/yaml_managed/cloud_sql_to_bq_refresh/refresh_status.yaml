@@ -1,0 +1,26 @@
+address:
+  dataset_id: cloud_sql_to_bq_refresh
+  table_id: refresh_status
+description: >-
+  Table that records when each Cloud SQL database was last refreshed into BigQuery. The
+  refresh appends one row per schema each time it completes.
+schema:
+  - name: refresh_run_id
+    type: STRING
+    mode: NULLABLE
+    description: "Unique id of the refresh run that wrote this row."
+  - name: schema
+    type: STRING
+    mode: NULLABLE
+    description: "SchemaType value of the Cloud SQL database that was refreshed."
+  - name: last_refresh_datetime
+    type: DATETIME
+    mode: NULLABLE
+    description: "UTC datetime at which the refresh completed."
+  - name: region_code
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      Always null in rows written since state-segmented refreshes were removed (2024);
+      on older rows, the state code the refreshed data belonged to.
+clustering_fields: null

@@ -29,6 +29,8 @@ from recidiviz.datasets.static_data.terraform_managed.config import (
     GCS_BACKED_TABLES_DATASET,
 )
 
+CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID: str = "cloud_sql_to_bq_refresh"
+
 VERA_DATASET: str = "vera_data"
 
 VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
@@ -52,6 +54,9 @@ TWILIO_WEBHOOK_REQUESTS_DATASET_ID: str = "twilio_webhook_requests"
 
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
+    CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID: (
+        "Stores metadata about Cloud SQL to BigQuery refresh runs."
+    ),
     EOMIS_WRITEBACK_METADATA_DATASET: (
         "Stores the append-only audit ledger for eOMIS writeback runs: run lifecycle "
         "events and per-candidate write events. Rows contain offender IDs."

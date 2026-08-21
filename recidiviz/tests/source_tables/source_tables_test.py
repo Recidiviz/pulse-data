@@ -49,6 +49,9 @@ COMMON_VESTIGES = [
     "view_update_metadata.rematerialization_tracker",
     "view_update_metadata.view_update_tracker",
     "view_update_metadata.per_view_update_stats",
+    # Run metadata that the Cloud SQL to BQ refresh appends to; no deployed view
+    # reads it.
+    "cloud_sql_to_bq_refresh.refresh_status",
     "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
     # This is a potentially useful general reference table for getting information about
     # a given zip code.

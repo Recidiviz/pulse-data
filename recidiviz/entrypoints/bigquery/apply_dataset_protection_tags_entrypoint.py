@@ -60,12 +60,11 @@ RECIDIVIZ_ORG_ID = "448885369991"
 PROTECTION_TAG_KEY = f"{RECIDIVIZ_ORG_ID}/protection"
 PROTECTION_TAG_VALUE = "managed-data"
 
-# Datasets holding platform-managed data created OUTSIDE the source-table registry (e.g. the
-# CloudSQL->BQ refresh mirror, ops logging). They still hold real data and must be protected.
+# Datasets holding platform-managed data created OUTSIDE the source-table registry (e.g.
+# ops logging). They still hold real data and must be protected.
 # TODO(AUR-1): finalize this list (the audit found ~20/project) and, preferably, bring
 # these collections into the source-table registry so this allowlist can be deleted.
 INFRA_PROTECT_ALLOWLIST: set[str] = {
-    "cloud_sql_to_bq_refresh",
     "aurora_waf_logs",
     "cloud_dlp_findings",
     "on_call_logs",
