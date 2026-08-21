@@ -843,6 +843,77 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
             )
 
     @patch(
+        "recidiviz.application_data_import.server.build_and_upload_bulk_individual_level_export",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.purge_individual_level_export_cache",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_public_pathways_purges_individual_level_export_cache(
+        self,
+        _mock_redis: MagicMock,
+        _mock_import_csv: MagicMock,
+        mock_purge_cache: MagicMock,
+        _mock_build_bulk_export: MagicMock,
+    ) -> None:
+        """The import is the only point where the export's contents change, so it
+        has to purge the per-snapshot cache."""
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_purge_cache.assert_called_once_with(StateCode.US_XX)
+
+    @patch(
+        "recidiviz.application_data_import.server.build_and_upload_bulk_individual_level_export",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.purge_individual_level_export_cache",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_public_pathways_purge_error_does_not_fail_import(
+        self,
+        _mock_redis: MagicMock,
+        _mock_import_csv: MagicMock,
+        mock_purge_cache: MagicMock,
+        mock_build_bulk_export: MagicMock,
+    ) -> None:
+        mock_purge_cache.side_effect = Exception("Redis connection failed")
+        with self.app.test_request_context():
+            with self.assertLogs(level="INFO") as log:
+                response = self.client.post(
+                    f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+                )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertTrue(
+                any(
+                    "Failed to purge cached individual-level exports for US_XX" in msg
+                    for msg in log.output
+                )
+            )
+            # A failed purge must not block the zip rebuild.
+            mock_build_bulk_export.assert_called_once()
+
+    @patch(
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )

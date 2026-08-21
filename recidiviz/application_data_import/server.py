@@ -94,6 +94,9 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.public_pathways.individual_level_bulk_export import (
     build_and_upload_bulk_individual_level_export,
 )
+from recidiviz.public_pathways.individual_level_export import (
+    purge_individual_level_export_cache,
+)
 from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -547,6 +550,23 @@ def _import_pathways_helper(
         schema_type is SchemaType.PUBLIC_PATHWAYS
         and db_entity is public_pathways_schema.PublicPrisonPopulationOverTime
     ):
+        # Purge first so a failure in the slower zip rebuild below cannot leave
+        # stale per-snapshot exports cached.
+        try:
+            keys_purged = purge_individual_level_export_cache(StateCode(state_code))
+            logging.info(
+                "Purged %d cached individual-level export(s) for %s",
+                keys_purged,
+                state_code,
+            )
+        except Exception as e:
+            logging.error(
+                "Failed to purge cached individual-level exports for %s: %s",
+                state_code,
+                e,
+                exc_info=True,
+            )
+
         try:
             build_and_upload_bulk_individual_level_export(
                 state_code=StateCode(state_code),

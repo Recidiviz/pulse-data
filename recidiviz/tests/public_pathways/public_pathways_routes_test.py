@@ -407,8 +407,12 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, first_response.status_code)
 
-        cache_key = "US_NY individual_level_export 2022-08-03 local"
-        self.assertIsNotNone(self.fake_redis.get(cache_key))
+        # The key ends in a hash of the label maps, so match the stable prefix
+        # rather than pinning the digest.
+        cached_keys = self.fake_redis.keys(
+            "US_NY individual_level_export 2022-08-03 local *"
+        )
+        self.assertEqual(1, len(cached_keys))
 
         # Deleting the underlying rows proves the second request is served from
         # the cache rather than re-querying: a fresh query would now return no

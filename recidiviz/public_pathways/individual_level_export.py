@@ -16,8 +16,10 @@
 # =============================================================================
 """Builds the cached CSV export of individual-level Public Pathways data."""
 import csv
+import hashlib
 import io
 import json
+import logging
 from datetime import date, timedelta
 from typing import Callable, Iterable
 
@@ -116,10 +118,18 @@ _ROWS_PER_CHUNK = 1000
 # where there is no Cloud Run revision to key off of.
 _NON_CLOUD_RUN_CACHE_REVISION = "local"
 
-# Bounds Redis growth from old dated cache keys (see _cache_key): a new import or
-# a new deploy always produces a fresh key, so this is not required for cache
-# correctness.
+# Bounds Redis growth from old cache keys (see _cache_key). Every input that
+# changes the CSV's contents is already part of the key, so this is not required
+# for cache correctness.
 _CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
+
+# Digest length kept in the cache key. A collision only risks serving a stale
+# export, so the full digest is unnecessary.
+_LABEL_MAPS_FINGERPRINT_LENGTH = 12
+
+# Namespaces this export's keys within the shared Public Pathways metric cache.
+# _cache_key() writes it; purge_individual_level_export_cache() scans for it.
+_CACHE_KEY_NAMESPACE = "individual_level_export"
 
 # How far a resolved month snapshot's date_in_population may drift from the 1st of
 # the requested month. Most months land exactly on the 1st, but ETL delays have
@@ -298,22 +308,55 @@ def _cache_key_revision() -> str:
     return _NON_CLOUD_RUN_CACHE_REVISION
 
 
+def _label_maps_fingerprint(label_maps: dict[str, dict[str, str]]) -> str:
+    """Returns a short stable hash of label_maps, for use in _cache_key().
+
+    The CSV's contents depend on the queried rows and on their labels.
+    last_updated covers the rows but not the labels: it tracks the source file's
+    date, so an import that only refreshes dynamic_filter_options leaves it
+    unchanged.
+    """
+    serialized_label_maps = json.dumps(label_maps, sort_keys=True)
+    return hashlib.sha256(serialized_label_maps.encode()).hexdigest()[
+        :_LABEL_MAPS_FINGERPRINT_LENGTH
+    ]
+
+
 def _cache_key(
     *,
     state_code: StateCode,
     last_updated: date,
+    label_maps_fingerprint: str,
     year_month: tuple[int, int] | None = None,
 ) -> str:
     """Returns the individual-level export cache key, scoped to state_code,
-    last_updated, year_month (if given), and the current Cloud Run revision (see
-    _cache_key_revision()) so each snapshot caches independently and a new
-    deploy always produces a fresh key.
+    last_updated, year_month (if given), the current Cloud Run revision, and
+    label_maps_fingerprint, so any change to the CSV's contents produces a fresh
+    key.
     """
     month_suffix = f" {year_month[0]}-{year_month[1]:02d}" if year_month else ""
     return (
-        f"{state_code.value} individual_level_export "
-        f"{last_updated.isoformat()}{month_suffix} {_cache_key_revision()}"
+        f"{state_code.value} {_CACHE_KEY_NAMESPACE} "
+        f"{last_updated.isoformat()}{month_suffix} {_cache_key_revision()} "
+        f"{label_maps_fingerprint}"
     )
+
+
+def purge_individual_level_export_cache(state_code: StateCode) -> int:
+    """Deletes every cached individual-level export for state_code and returns the
+    number of keys deleted. Called at data-import time, the only point where the
+    export's contents change.
+
+    Matches on a pattern because the caller cannot rebuild the exact keys: the
+    import runs in another service, so it does not know the serving Cloud Run
+    revision, and each requested month caches separately.
+    """
+    redis = get_public_pathways_metric_redis()
+    keys = list(redis.scan_iter(f"{state_code.value} {_CACHE_KEY_NAMESPACE} *"))
+    if not keys:
+        return 0
+    redis.delete(*keys)
+    return len(keys)
 
 
 def _build_csv(
@@ -417,17 +460,31 @@ def build_individual_level_export_response(
         else (lambda: _build_latest_snapshot_query(columns))
     )
 
-    csv_data = cloud_memorystore_utils.get_or_set_str(
-        get_public_pathways_metric_redis(),
-        _cache_key(
-            state_code=state_code, last_updated=last_updated, year_month=year_month
-        ),
-        lambda: _build_csv(
+    cache_key = _cache_key(
+        state_code=state_code,
+        last_updated=last_updated,
+        label_maps_fingerprint=_label_maps_fingerprint(label_maps),
+        year_month=year_month,
+    )
+
+    def build_csv_on_cache_miss() -> str:
+        # Only runs on a miss, so the absence of this line means the response came
+        # from the cache. That distinction is otherwise unrecoverable after the fact.
+        logging.info("Building individual-level export for key [%s]", cache_key)
+        return _build_csv(
             session_factory=session_factory,
             columns=columns,
             label_maps=label_maps,
             build_query=build_query,
-        ),
+        )
+
+    # The key names every input the CSV depends on, so this records what any given
+    # download was built from.
+    logging.info("Serving individual-level export for key [%s]", cache_key)
+    csv_data = cloud_memorystore_utils.get_or_set_str(
+        get_public_pathways_metric_redis(),
+        cache_key,
+        build_csv_on_cache_miss,
         ex=_CACHE_TTL_SECONDS,
     )
 

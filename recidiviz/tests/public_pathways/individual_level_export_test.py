@@ -22,15 +22,19 @@ import json
 import unittest
 from unittest import mock
 
+from fakeredis import FakeRedis
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.public_pathways.individual_level_export import (
     INCLUDED_INDIVIDUAL_LEVEL_COLUMNS,
     _append_sentence_length_months_suffix,
     _cache_key,
     _cache_key_revision,
+    _label_maps_fingerprint,
     _translate_row,
     _translate_value,
     build_label_maps,
+    purge_individual_level_export_cache,
 )
 
 
@@ -283,10 +287,11 @@ class TestCacheKeyRevision(unittest.TestCase):
         self, _mock_cache_key_revision: mock.MagicMock
     ) -> None:
         self.assertEqual(
-            "US_NY individual_level_export 2022-08-03 rev-1",
+            "US_NY individual_level_export 2022-08-03 rev-1 fingerprint-1",
             _cache_key(
                 state_code=StateCode.US_NY,
                 last_updated=datetime.date(2022, 8, 3),
+                label_maps_fingerprint="fingerprint-1",
             ),
         )
 
@@ -298,11 +303,130 @@ class TestCacheKeyRevision(unittest.TestCase):
         self, mock_cache_key_revision: mock.MagicMock
     ) -> None:
         first_key = _cache_key(
-            state_code=StateCode.US_NY, last_updated=datetime.date(2022, 8, 3)
+            state_code=StateCode.US_NY,
+            last_updated=datetime.date(2022, 8, 3),
+            label_maps_fingerprint="fingerprint-1",
         )
         mock_cache_key_revision.return_value = "rev-2"
         second_key = _cache_key(
-            state_code=StateCode.US_NY, last_updated=datetime.date(2022, 8, 3)
+            state_code=StateCode.US_NY,
+            last_updated=datetime.date(2022, 8, 3),
+            label_maps_fingerprint="fingerprint-1",
         )
 
         self.assertNotEqual(first_key, second_key)
+
+
+class TestLabelMapsFingerprint(unittest.TestCase):
+    """Tests for _label_maps_fingerprint and its use in _cache_key."""
+
+    # No UNKNOWN entry, as was the case before us_ny_under_custody_raw_dimension_
+    # sessions emitted EXTERNAL_UNKNOWN in place of NULL.
+    _LABEL_MAPS_WITHOUT_UNKNOWN = {"months_at_facility": {"0_2_MONTHS": "0-2 Months"}}
+
+    _LABEL_MAPS_WITH_UNKNOWN = {
+        "months_at_facility": {"0_2_MONTHS": "0-2 Months", "UNKNOWN": "Not Coded"}
+    }
+
+    def test_stable_across_calls(self) -> None:
+        self.assertEqual(
+            _label_maps_fingerprint(self._LABEL_MAPS_WITH_UNKNOWN),
+            _label_maps_fingerprint(self._LABEL_MAPS_WITH_UNKNOWN),
+        )
+
+    def test_insensitive_to_key_order(self) -> None:
+        self.assertEqual(
+            _label_maps_fingerprint(
+                {"months_at_facility": {"UNKNOWN": "Not Coded", "0_2_MONTHS": "0-2"}}
+            ),
+            _label_maps_fingerprint(
+                {"months_at_facility": {"0_2_MONTHS": "0-2", "UNKNOWN": "Not Coded"}}
+            ),
+        )
+
+    def test_changes_when_a_label_is_added(self) -> None:
+        self.assertNotEqual(
+            _label_maps_fingerprint(self._LABEL_MAPS_WITHOUT_UNKNOWN),
+            _label_maps_fingerprint(self._LABEL_MAPS_WITH_UNKNOWN),
+        )
+
+    @mock.patch(
+        "recidiviz.public_pathways.individual_level_export._cache_key_revision",
+        return_value="rev-1",
+    )
+    def test_new_label_busts_cache_key_with_unchanged_last_updated(
+        self, _mock_cache_key_revision: mock.MagicMock
+    ) -> None:
+        """A label-only import moves neither last_updated nor the revision, so the
+        fingerprint is the only component that can bust the key."""
+        unchanged_last_updated = datetime.date(2022, 8, 3)
+
+        self.assertNotEqual(
+            _cache_key(
+                state_code=StateCode.US_NY,
+                last_updated=unchanged_last_updated,
+                label_maps_fingerprint=_label_maps_fingerprint(
+                    self._LABEL_MAPS_WITHOUT_UNKNOWN
+                ),
+            ),
+            _cache_key(
+                state_code=StateCode.US_NY,
+                last_updated=unchanged_last_updated,
+                label_maps_fingerprint=_label_maps_fingerprint(
+                    self._LABEL_MAPS_WITH_UNKNOWN
+                ),
+            ),
+        )
+
+
+class TestPurgeIndividualLevelExportCache(unittest.TestCase):
+    """Tests for purge_individual_level_export_cache."""
+
+    def setUp(self) -> None:
+        self.fake_redis = FakeRedis()
+        self.redis_patcher = mock.patch(
+            "recidiviz.public_pathways.individual_level_export."
+            "get_public_pathways_metric_redis",
+            return_value=self.fake_redis,
+        )
+        self.redis_patcher.start()
+        self.addCleanup(self.redis_patcher.stop)
+
+    def _seed(self, *keys: str) -> None:
+        for key in keys:
+            self.fake_redis.set(key, "csv-data")
+
+    def test_purges_every_month_and_revision_for_the_state(self) -> None:
+        """The caller cannot rebuild the exact keys, so the pattern must span every
+        cached month and revision."""
+        self._seed(
+            "US_NY individual_level_export 2022-08-03 rev-1 fingerprint-1",
+            "US_NY individual_level_export 2022-08-03 2021-12 rev-1 fingerprint-1",
+            "US_NY individual_level_export 2022-08-03 rev-2 fingerprint-2",
+        )
+
+        self.assertEqual(3, purge_individual_level_export_cache(StateCode.US_NY))
+        self.assertEqual([], self.fake_redis.keys("*"))
+
+    def test_leaves_other_states_alone(self) -> None:
+        other_state_key = "US_XX individual_level_export 2022-08-03 rev-1 fp-1"
+        self._seed(
+            "US_NY individual_level_export 2022-08-03 rev-1 fp-1", other_state_key
+        )
+
+        self.assertEqual(1, purge_individual_level_export_cache(StateCode.US_NY))
+        self.assertEqual([other_state_key.encode()], self.fake_redis.keys("*"))
+
+    def test_leaves_chart_metric_keys_alone(self) -> None:
+        """The export shares a Redis instance with the chart metric cache, which
+        PathwaysMetricCache purges separately."""
+        chart_metric_key = "US_NY PrisonPopulationOverTime time_period=months_0_6"
+        self._seed(
+            "US_NY individual_level_export 2022-08-03 rev-1 fp-1", chart_metric_key
+        )
+
+        self.assertEqual(1, purge_individual_level_export_cache(StateCode.US_NY))
+        self.assertEqual([chart_metric_key.encode()], self.fake_redis.keys("*"))
+
+    def test_returns_zero_when_nothing_is_cached(self) -> None:
+        self.assertEqual(0, purge_individual_level_export_cache(StateCode.US_NY))
