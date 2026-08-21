@@ -230,6 +230,8 @@ output:
                         - "0 // Administrative Caseload"
                       StateSupervisionLevel.MINIMUM:
                         - "1 // Low"
+                      StateSupervisionLevel.LOW_MEDIUM:
+                        - "6 // Low/Moderate"
                       StateSupervisionLevel.MEDIUM:
                         - "2 // Moderate"
                       StateSupervisionLevel.HIGH:
