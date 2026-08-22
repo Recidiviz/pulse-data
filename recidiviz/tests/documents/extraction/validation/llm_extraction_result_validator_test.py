@@ -18,9 +18,8 @@
 
 Exercises the validator against the fake extractor collection: structural
 conformance against the JSON Schema generated from its output schema (a
-conforming result passes, each way a result can violate the schema is flagged,
-and a field absent from the JSON is treated as null (forward-compat)), plus the
-wiring of the checks layered on top of it — any extraction-error check's
+conforming result passes and each way a result can violate the schema is
+flagged), plus the wiring of the checks layered on top of it — any extraction-error check's
 violation downgrades the result the same way a structural one does, a
 structurally-broken result skips them all, and findings from several checks land
 in one audit. Each check itself is tested directly in its own test file.
@@ -40,6 +39,12 @@ from the fake collection's `assignment` entity group, whose entity fields cover 
 required non-nullable field (`assignment_name`), an optional field the synthesized
 schema makes nullable (`assignment_type`), an integer (`entity_id`), and an
 integer array (`entry_nums`).
+
+`RelevantButAllNullCheck`'s wiring needs its own collection: the fake collection
+declares `primary_status` required, and a required INFERRED field is generated
+with no null branch, so no result against it can hold a null for every
+user-defined field. `LLMRelevantButAllNullValidatorWiringTest` covers it against
+a schema that declares no required fields.
 """
 
 import copy
@@ -47,6 +52,7 @@ import datetime
 from typing import Any
 from unittest import TestCase
 
+import attr
 import pytz
 
 from recidiviz.common.constants.operations.llm_extraction_job import (
@@ -62,6 +68,13 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema import (
+    LLMRequestOutputSchema,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ConfidenceLevel,
+    LLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     CITATION_START_FIELD_NAME,
@@ -99,6 +112,7 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     wrap_in_result_key,
 )
 from recidiviz.utils.types import assert_type
+from recidiviz.utils.yaml_dict import YAMLDict
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -112,6 +126,47 @@ _ADVERSARIAL = "The record might describe a closed matter."
 # check still counts it as grounded, so `CitationOffsetDriftAdjustment` is what
 # acts on it.
 _CITATION_OFFSET_DRIFT_CHARS = 3
+_NO_REQUIRED_FIELDS_DESCRIPTION = "A description that is long enough to be meaningful."
+_NO_REQUIRED_FIELDS_RELEVANCE_CRITERIA = (
+    "Whether the document mentions a fictional record"
+)
+
+
+def _no_required_fields_config() -> LLMExtractorConfig:
+    """Returns the fake first-order config rebound to a relevance-bearing schema
+    that declares two optional INFERRED fields and nothing else, so a relevant
+    result can hold a null for every user-defined field.
+    """
+    output_schema = LLMRequestOutputSchema(
+        full_batch_description=_NO_REQUIRED_FIELDS_DESCRIPTION,
+        result_level_description=_NO_REQUIRED_FIELDS_DESCRIPTION,
+        relevance_criteria=_NO_REQUIRED_FIELDS_RELEVANCE_CRITERIA,
+        user_defined_fields=LLMRequestOutputSchemaField.build_output_schema_fields(
+            field_yamls=[
+                YAMLDict(
+                    {
+                        "name": field_name,
+                        "type": "STRING",
+                        "description": _NO_REQUIRED_FIELDS_DESCRIPTION,
+                    }
+                )
+                for field_name in ["first_note", "second_note"]
+            ],
+            default_minimum_confidence_level=ConfidenceLevel.INFERRED,
+        ),
+    )
+    config = get_first_order_llm_extractor_config(
+        _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
+    )
+    return attr.evolve(
+        config,
+        extractor_collection=attr.evolve(
+            config.extractor_collection,
+            output_schema=output_schema,
+            relevance_criteria=_NO_REQUIRED_FIELDS_RELEVANCE_CRITERIA,
+            entity_groups=[],
+        ),
+    )
 
 
 class _ValidatorTestBase(TestCase):
@@ -178,6 +233,34 @@ class _ValidatorTestBase(TestCase):
             result_type_override=None,
             validation_config_version_id=self.version_id,
             validation_datetime_utc=_VALIDATION_DATETIME,
+        )
+
+    def _assert_schema_conformance_issues(
+        self,
+        result_json: dict[str, Any],
+        *,
+        expected_issues: list[tuple[str | None, str]],
+    ) -> None:
+        """Validates |result_json|, asserts it fails structural conformance with
+        exactly |expected_issues| — one (field_name, detail) pair per issue, in the
+        order reported — indicating the extraction should be retried.
+        """
+        validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+        self.assertEqual(
+            {ValidationCheckType.SCHEMA_CONFORMANCE},
+            {issue.check_type for issue in validation.audit_issues},
+        )
+        self.assertEqual(
+            expected_issues,
+            [(issue.field_name, issue.detail) for issue in validation.audit_issues],
         )
 
     def _assert_single_flagged_field(
@@ -252,22 +335,23 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             self._validate(result_json, source_document_text="Some note text."),
         )
 
-    def test_absent_optional_fields_treated_as_null(self) -> None:
-        # location and assignments are optional; a result omitting them (as an
-        # older schema's output would) still validates — absent is treated as null.
-        result_json = fake_minimal_relevant_result_json()
-        self.assertNotIn("location", result_json["result"])
-        self.assertNotIn("assignments", result_json["result"])
-        validation, grounded_json = self._validate_grounded(result_json)
-        self.assertEqual(self._passing_result(grounded_json), validation)
-
-    def test_unknown_field_does_not_fail_validation(self) -> None:
-        # A field the current schema does not declare (e.g. one dropped in a newer
-        # version) is tolerated — the schema does not forbid extra properties.
+    def test_undeclared_result_level_field_flagged_at_result(self) -> None:
+        # Every object the generator emits is closed, so a field the schema does
+        # not declare is a structural violation wherever it appears — at the result
+        # level as much as inside a metadata wrapper. Re-validating a result stored
+        # under a different schema version, where a field may have been added or
+        # dropped since, needs a deliberately lenient schema variant that does not
+        # exist yet.
         result_json = fake_minimal_relevant_result_json()
         result_json["result"]["a_field_not_in_the_schema"] = "x"
-        validation, grounded_json = self._validate_grounded(result_json)
-        self.assertEqual(self._passing_result(grounded_json), validation)
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result",
+            expected_detail_substring=(
+                "Additional properties are not allowed "
+                "('a_field_not_in_the_schema' was unexpected)"
+            ),
+        )
 
     def test_validate_does_not_mutate_input(self) -> None:
         grounded = ground_citations_in_fake_source_text(fake_all_fields_result_json())
@@ -303,16 +387,123 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
         )
 
     def test_neither_value_nor_null_reason_flagged_on_field(self) -> None:
-        # Neither value nor null_reason present: the field's value/null anyOf
-        # matches neither branch (this is how the schema enforces value/null_reason
-        # mutual exclusivity), and nothing distinguishes which branch was intended,
-        # so the failure reports against the first (value) branch.
+        # An optional field's value/null anyOf matches neither branch when the
+        # wrapper carries neither key, and nothing distinguishes which branch was
+        # intended, so the failure reports against the first (value) branch. The
+        # opposite error — carrying both keys — is caught by the branches being
+        # closed to undeclared properties, below.
         result_json = fake_minimal_relevant_result_json()
-        del result_json["result"]["primary_status"]["value"]
+        del result_json["result"]["location"]["null_reason"]
+        result_json["result"]["location"]["citations"] = [
+            {"text": "no location stated", "start": 0, "end": 18}
+        ]
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result.location",
+            expected_detail_substring="'value' is a required property",
+        )
+
+    def test_value_branch_carrying_a_null_reason_flagged_on_field(self) -> None:
+        # A field claiming both an extracted value and a reason no value could be
+        # extracted takes neither branch cleanly: each branch forbids the key that
+        # distinguishes the other.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"]["null_reason"] = "no_info_found"
         self._assert_single_flagged_field(
             result_json,
             expected_field_name="result.primary_status",
-            expected_detail_substring="'value' is a required property",
+            expected_detail_substring=(
+                "Additional properties are not allowed ('null_reason' was unexpected)"
+            ),
+        )
+
+    def test_null_branch_carrying_a_value_flagged_on_field(self) -> None:
+        # The same contradiction from the other side. Branch resolution reads the
+        # `value` key as the intended branch, so the null branch's empty citations
+        # are flagged against the value branch's minItems alongside the stray
+        # null_reason.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["location"] = {
+            **build_null_inferred_field_result_json(),
+            "value": "Kitchen",
+        }
+        self._assert_schema_conformance_issues(
+            result_json,
+            expected_issues=[
+                ("result.location.citations", "[] should be non-empty"),
+                (
+                    "result.location",
+                    "Additional properties are not allowed "
+                    "('null_reason' was unexpected)",
+                ),
+            ],
+        )
+
+    def test_undeclared_key_inside_inferred_field_flagged_on_field(self) -> None:
+        # A hallucinated companion key inside a metadata wrapper is caught the same
+        # way an undeclared field at the result level is, and reported against the
+        # wrapper rather than the object holding it.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"]["hallucinated_key"] = "x"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result.primary_status",
+            expected_detail_substring=(
+                "Additional properties are not allowed "
+                "('hallucinated_key' was unexpected)"
+            ),
+        )
+
+    def test_both_branches_inside_array_element_flagged_with_indexed_path(self) -> None:
+        # The same enforcement applies to an ARRAY_OF_STRUCT sub-field, reported
+        # with its element index.
+        result_json = fake_all_fields_result_json()
+        result_json["result"]["assignments"][0]["assignment_type"][
+            "null_reason"
+        ] = "no_info_found"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result.assignments[0].assignment_type",
+            expected_detail_substring=(
+                "Additional properties are not allowed ('null_reason' was unexpected)"
+            ),
+        )
+
+    def test_undeclared_key_inside_citation_flagged_with_index(self) -> None:
+        # A citation object is framework-owned too, and a hallucinated key in one
+        # is reported against that citation's position in the array.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"]["citations"][0][
+            "hallucinated_key"
+        ] = "x"
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result.primary_status.citations[0]",
+            expected_detail_substring=(
+                "Additional properties are not allowed "
+                "('hallucinated_key' was unexpected)"
+            ),
+        )
+
+    def test_irrelevant_result_carrying_extracted_fields_flagged_at_result(
+        self,
+    ) -> None:
+        # Calling a document irrelevant and extracting from it anyway contradicts
+        # itself, and the extracted content would be dropped on the floor. The
+        # irrelevant branch declares the relevance field alone and is closed, so
+        # the extra field is flagged rather than silently discarded.
+        result_json = wrap_in_result_key(
+            {
+                IS_RELEVANT_FIELD_NAME: False,
+                "primary_status": build_inferred_field_result_json("active"),
+            }
+        )
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result",
+            expected_detail_substring=(
+                "Additional properties are not allowed ('primary_status' was unexpected)"
+            ),
         )
 
     def test_wrong_scalar_type_flagged_on_field(self) -> None:
@@ -333,6 +524,72 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             result_json,
             expected_field_name="result",
             expected_detail_substring="'primary_status' is a required property",
+        )
+
+    def test_omitted_optional_field_flagged_at_result(self) -> None:
+        # `location` declares no `required: true`, but the generated schema names
+        # every declared property required, so omitting it is a structural
+        # violation rather than a null the reader has to guess at.
+        result_json = fake_minimal_relevant_result_json()
+        del result_json["result"]["location"]
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result",
+            expected_detail_substring="'location' is a required property",
+        )
+
+    def test_omitted_optional_array_sub_field_flagged_with_index(self) -> None:
+        # The same rule inside an array element: `rate_period` is optional, and
+        # leaving it out of an element is flagged on that element.
+        result_json = fake_all_fields_result_json()
+        del result_json["result"]["assignments"][0]["rate_period"]
+        self._assert_single_flagged_field(
+            result_json,
+            expected_field_name="result.assignments[0]",
+            expected_detail_substring="'rate_period' is a required property",
+        )
+
+    def test_required_field_on_null_branch_flagged_on_field(self) -> None:
+        # `primary_status` is `required: true`, so its schema is the value branch
+        # alone with no null branch to take. A null branch put there is wrong twice
+        # over: it omits the `value` that branch requires, and carries a
+        # `null_reason` that branch does not declare.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["primary_status"] = build_null_inferred_field_result_json(
+            citation_text="no status stated"
+        )
+        self._assert_schema_conformance_issues(
+            result_json,
+            expected_issues=[
+                ("result.primary_status", "'value' is a required property"),
+                (
+                    "result.primary_status",
+                    "Additional properties are not allowed "
+                    "('null_reason' was unexpected)",
+                ),
+            ],
+        )
+
+    def test_required_array_sub_field_on_null_branch_flagged_with_index(self) -> None:
+        # The same rule inside an array element: `assignment_name` is required, so
+        # the element cannot report a null reason for it.
+        result_json = fake_all_fields_result_json()
+        result_json["result"]["assignments"][0][
+            "assignment_name"
+        ] = build_null_inferred_field_result_json(citation_text="no name stated")
+        self._assert_schema_conformance_issues(
+            result_json,
+            expected_issues=[
+                (
+                    "result.assignments[0].assignment_name",
+                    "'value' is a required property",
+                ),
+                (
+                    "result.assignments[0].assignment_name",
+                    "Additional properties are not allowed "
+                    "('null_reason' was unexpected)",
+                ),
+            ],
         )
 
     def test_missing_result_key_flagged_at_root(self) -> None:
@@ -455,29 +712,6 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             {ValidationCheckType.SCHEMA_CONFORMANCE},
             {issue.check_type for issue in validation.audit_issues},
         )
-
-    def test_relevant_but_all_null_downgrades_result(self) -> None:
-        # Structurally conforming — primary_status is present, on its null
-        # branch — but the model called the document relevant while extracting
-        # nothing from it.
-        result_json = wrap_in_result_key(
-            {
-                IS_RELEVANT_FIELD_NAME: True,
-                "primary_status": build_null_inferred_field_result_json(),
-            }
-        )
-        validation, _ = self._validate_grounded(result_json)
-
-        self.assertFalse(validation.passed_validation)
-        self.assertIsNone(validation.validated_output)
-        self.assertEqual(
-            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
-            validation.result_type_override,
-        )
-        [issue] = validation.audit_issues
-        self.assertEqual(ValidationCheckType.RELEVANT_BUT_ALL_NULL, issue.check_type)
-        # The finding is about the document as a whole, so it names no field.
-        self.assertIsNone(issue.field_name)
 
     def test_required_field_below_minimum_confidence_downgrades_result(self) -> None:
         # Structurally conforming, but the required `primary_status` was
@@ -971,3 +1205,51 @@ class LLMAllNullEntityValidatorWiringTest(_ValidatorTestBase):
         [issue] = validation.audit_issues
         self.assertEqual(ValidationCheckType.ALL_NULL_ENTITY, issue.check_type)
         self.assertEqual("entities[0]", issue.field_name)
+
+
+class LLMRelevantButAllNullValidatorWiringTest(_ValidatorTestBase):
+    """Tests RelevantButAllNullCheck's wiring into the validator, against a
+    collection that declares no required fields — the only kind whose relevant
+    result can hold a null for every user-defined field.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.config = _no_required_fields_config()
+
+    def test_conforming_result_with_a_value_passes(self) -> None:
+        # The counterpart to the case below: one field carrying a value is enough
+        # for the document to have extracted something.
+        result_json = wrap_in_result_key(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "first_note": build_inferred_field_result_json("Dish duty"),
+                "second_note": build_null_inferred_field_result_json(),
+            }
+        )
+        validation, grounded_json = self._validate_grounded(result_json)
+        self.assertEqual(self._passing_result(grounded_json), validation)
+
+    def test_relevant_but_all_null_downgrades_result(self) -> None:
+        # Structurally conforming — both fields are present, each on its null
+        # branch — but the model called the document relevant while extracting
+        # nothing from it.
+        result_json = wrap_in_result_key(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "first_note": build_null_inferred_field_result_json(),
+                "second_note": build_null_inferred_field_result_json(),
+            }
+        )
+        validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        [issue] = validation.audit_issues
+        self.assertEqual(ValidationCheckType.RELEVANT_BUT_ALL_NULL, issue.check_type)
+        # The finding is about the document as a whole, so it names no field.
+        self.assertIsNone(issue.field_name)

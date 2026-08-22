@@ -34,6 +34,7 @@ from recidiviz.llm_eval.document_extraction.document_extraction_field_value impo
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_fake_extractor_assignment_result_json,
+    build_fake_extractor_irrelevant_result_content,
     build_fake_extractor_result_content,
     build_inferred_field_result_json,
     build_null_inferred_field_result_json,
@@ -181,19 +182,12 @@ class FromExtractionResultTest(TestCase):
         self.assertIsNone(assignments_value.array_element_json)
         self.assertIsNone(assignments_value.array_field_name)
 
-    def test_omitted_array_field_yields_nothing(self) -> None:
-        """Returning an empty array asserts the document names no assignments, which is a
-        claim worth annotating. Omitting the field asserts nothing, as an older extractor
-        version's output would.
-        """
-        result_content = self._result_with_assignments([])
-        del result_content["assignments"]
+    def test_irrelevant_result_yields_nothing(self) -> None:
+        # An irrelevant result is exactly `{"is_relevant": false}`: it carries none
+        # of the fields the schema declares, so it holds nothing to annotate.
         self.assertEqual(
-            [
-                ("primary_status", None, None, "active"),
-                ("location", None, None, "Kitchen"),
-            ],
-            self._coordinates(self._field_values(result_content)),
+            [],
+            self._field_values(build_fake_extractor_irrelevant_result_content()),
         )
 
     def test_array_element_json_holds_every_sub_field_including_nulls(self) -> None:

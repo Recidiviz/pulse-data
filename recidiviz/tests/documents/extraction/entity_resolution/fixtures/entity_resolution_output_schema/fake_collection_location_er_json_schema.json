@@ -35,11 +35,13 @@
           "entity_id",
           "location",
           "entry_nums"
-        ]
+        ],
+        "additionalProperties": false
       }
     }
   },
   "required": [
     "entities"
-  ]
+  ],
+  "additionalProperties": false
 }

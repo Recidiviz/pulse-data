@@ -319,9 +319,10 @@ class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
             output_values.array_elements(field=self.assignments_field),
         )
 
-    def test_array_elements_absent_field_is_none(self) -> None:
-        # An omitted array field is distinguishable from one the extractor
-        # returned empty.
+    def test_array_elements_absent_field_raises(self) -> None:
+        # The generated schema names every array key required, so an array with
+        # nothing to report is emitted empty. An absent key is malformed output,
+        # not a third state to read.
         output_values = self._output_values(
             wrap_in_result_key(
                 {
@@ -330,7 +331,12 @@ class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
                 }
             )
         )
-        self.assertIsNone(output_values.array_elements(field=self.assignments_field))
+        with self.assertRaisesRegex(
+            LLMOutputParsingError,
+            r"^Output JSON does not carry ARRAY_OF_STRUCT field \[assignments\]\. "
+            r"Found keys: \['is_relevant', 'status_note'\]\.$",
+        ):
+            output_values.array_elements(field=self.assignments_field)
 
     def test_array_elements_empty_field_is_empty_list(self) -> None:
         output_values = self._full_output_values(assignments=[])
@@ -356,24 +362,29 @@ class LLMRequestOutputValuesTest(_LLMRequestOutputValuesTestBase):
             output_values.values_dict,
         )
 
-    def test_values_dict_absent_fields_are_none(self) -> None:
-        # Every field the schema declares appears in the dict, whether or not
-        # the output carries it.
+    def test_values_dict_field_with_nothing_extracted(self) -> None:
+        # Every field the schema declares appears in the dict, including the ones
+        # the extractor found nothing for: a scalar on its null branch reads as
+        # None, and an array it had nothing for reads as the empty list it
+        # emitted.
         output_values = self._output_values(
             wrap_in_result_key(
                 {
                     IS_RELEVANT_FIELD_NAME: True,
+                    "primary_status": build_inferred_field_result_json("active"),
                     "status_note": "Currently active.",
+                    "location": build_null_inferred_field_result_json(),
+                    "assignments": [],
                 }
             )
         )
         self.assertEqual(
             {
                 IS_RELEVANT_FIELD_NAME: True,
-                "primary_status": None,
+                "primary_status": "active",
                 "status_note": "Currently active.",
                 "location": None,
-                "assignments": None,
+                "assignments": [],
             },
             output_values.values_dict,
         )
@@ -936,8 +947,8 @@ class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
         )
         with self.assertRaisesRegex(
             LLMOutputParsingError,
-            r"^Output JSON for an entity-resolution schema does not carry its "
-            r"\[entities\] field\. Found keys: \[\]\.$",
+            r"^Output JSON does not carry ARRAY_OF_STRUCT field \[entities\]\. "
+            r"Found keys: \[\]\.$",
         ):
             output_values.resolved_entities()
 

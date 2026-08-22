@@ -129,6 +129,8 @@ When you cannot extract a value:
     ],  // Exact quotes from the document supporting why no value was extracted. Required, but may be empty — include a quote only when one shows the absence (e.g. for explicitly_unknown).
   }
 
+The null shape is not available for `primary_status`, `employers[].employer_name` — the schema requires a value for each, so always use the value shape.
+
 - When `adversarial_interpretation` is non-null, set
   `confidence_level` to "speculative".
 
@@ -202,6 +204,68 @@ Output fields:
 Each document produces exactly one extraction result object, conforming to the output schema supplied separately with this request."""
         self.assertEqual(
             expected, LLMExtractorOutputFormatInstructionsGenerator.generate(schema)
+        )
+
+
+class RequiredInferredFieldsSentenceTest(TestCase):
+    """`render_required_inferred_fields_sentence` — the fields the null shape is
+    not available for, because a `required: true` INFERRED field is generated with
+    its value branch alone.
+    """
+
+    @staticmethod
+    def _sentence(*user_fields: dict[str, Any]) -> str:
+        return LLMExtractorOutputFormatInstructionsGenerator.render_required_inferred_fields_sentence(
+            _build_schema(*user_fields)
+        )
+
+    def test_no_required_inferred_fields_renders_nothing(self) -> None:
+        self.assertEqual("", self._sentence(_field("summary"), _field("category")))
+
+    def test_no_required_inferred_fields_leaves_no_gap_in_the_prompt(self) -> None:
+        # The sentence is an empty slot in the middle of the wrapper section, so an
+        # all-optional schema must not render a blank line where it would have sat.
+        instructions = LLMExtractorOutputFormatInstructionsGenerator.generate(
+            _build_schema(_field("summary"), _field("category"))
+        )
+        self.assertNotIn("null shape is not available", instructions)
+        self.assertNotIn("\n\n\n", instructions)
+
+    def test_top_level_required_field_named(self) -> None:
+        self.assertEqual(
+            "The null shape is not available for `status` — the schema requires a "
+            "value for each, so always use the value shape.",
+            self._sentence(_field("summary"), _field("status", required=True)),
+        )
+
+    def test_array_sub_field_named_with_its_array(self) -> None:
+        # A sub-field is qualified by the array it sits in, so the model can tell
+        # which `employer_name` the sentence means.
+        self.assertEqual(
+            "The null shape is not available for `employers[].employer_name` — the "
+            "schema requires a value for each, so always use the value shape.",
+            self._sentence(
+                _field(
+                    "employers",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["employer_name"],
+                    fields=[
+                        _field("employer_name", required=True),
+                        _field("job_title"),
+                    ],
+                )
+            ),
+        )
+
+    def test_required_structural_field_excluded(self) -> None:
+        # A STRUCTURAL field is a bare value with no metadata wrapper, so it has no
+        # null shape to withhold and naming it here would be meaningless.
+        self.assertEqual(
+            "",
+            self._sentence(
+                _field("summary", field_mode="STRUCTURAL", required=True),
+                _field("category"),
+            ),
         )
 
 

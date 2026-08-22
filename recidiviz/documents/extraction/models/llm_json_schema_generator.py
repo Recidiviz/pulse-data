@@ -29,9 +29,16 @@ kept together here rather than spread across the model classes:
     A relevance-free schema (e.g. the all-STRUCTURAL entity-resolution
     clustering schema) has no `anyOf`: its output fields are the root object's
     properties directly.
-  - Each INFERRED scalar/enum field is itself an `anyOf` of a nonnull-value
-    branch and a null branch, structurally enforcing that exactly one of `value`
-    / `null_reason` is present.
+  - An optional INFERRED scalar/enum field is itself an `anyOf` of a
+    nonnull-value branch and a null branch, so it reports either a value or the
+    reason it has none. A `required: true` field gets the nonnull branch alone:
+    `required` means the field must carry a value, so there is no null branch
+    for it to take.
+  - Every declared property is named in its object's `required` list, so the
+    model may not omit a field. A field with nothing to report says so — an
+    optional INFERRED field on its null branch, an array as an empty array —
+    rather than going absent, which no reader can tell apart from a value the
+    model never looked for.
   - Within each INFERRED field the companion keys are emitted in a fixed,
     semantically meaningful order: `adversarial_interpretation` first (so the
     model weighs alternative readings before committing), then the
@@ -185,9 +192,7 @@ class LLMJsonSchemaGenerator:
         return ObjectJSONSchema(
             description=description,
             properties=properties,
-            required=[
-                field.name for field in output_schema.all_fields if field.required
-            ],
+            required=list(properties),
         )
 
     @classmethod
@@ -212,6 +217,8 @@ class LLMJsonSchemaGenerator:
             return cls._array_field_schema(field)
 
         if field.field_mode is LLMOutputFieldMode.INFERRED:
+            if field.required:
+                return cls._nonnull_value_inferred_field_schema(field)
             return AnyOfJSONSchema(
                 branches=[
                     cls._nonnull_value_inferred_field_schema(field),
@@ -232,17 +239,15 @@ class LLMJsonSchemaGenerator:
         """Returns the schema for an ARRAY_OF_STRUCT field, with properties that contain
         the schemas of each sub-field.
         """
+        properties: dict[str, JSONSchemaNode] = {
+            sub_field.name: cls._field_schema(sub_field) for sub_field in field.fields
+        }
         return ArrayJSONSchema(
             description=field.description,
             items=ObjectJSONSchema(
                 description="A single element of the array.",
-                properties={
-                    sub_field.name: cls._field_schema(sub_field)
-                    for sub_field in field.fields
-                },
-                required=[
-                    sub_field.name for sub_field in field.fields if sub_field.required
-                ],
+                properties=properties,
+                required=list(properties),
             ),
             min_items=field.min_items,
         )

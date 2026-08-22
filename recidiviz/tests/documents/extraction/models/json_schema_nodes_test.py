@@ -155,11 +155,32 @@ class NodeSerializationTest(TestCase):
                     "b": {"type": "integer", "description": b_description},
                 },
                 "required": ["a"],
+                # Closed by default: a key the object does not declare is rejected.
+                "additionalProperties": False,
             },
             schema,
         )
         # Property order follows insertion order.
         self.assertEqual(["a", "b"], list(schema["properties"]))
+
+    def test_object_allowing_additional_properties_omits_the_keyword(self) -> None:
+        # An object opened on purpose emits no `additionalProperties` at all,
+        # rather than `true`, so the schema stays as small as the constraint needs.
+        schema = ObjectJSONSchema(
+            description="Description of the object.",
+            properties={
+                "a": ScalarJSONSchema(
+                    description="Description of property a.",
+                    json_type=JSONScalarType.STRING,
+                )
+            },
+            required=["a"],
+            allow_additional_properties=True,
+        ).to_json_schema()
+        self.assertNotIn("additionalProperties", schema)
+        self.assertEqual(
+            ["type", "description", "properties", "required"], list(schema)
+        )
 
     def test_anyof_serialization(self) -> None:
         string_branch_description = "Description of the string branch."
@@ -209,10 +230,12 @@ class NodeSerializationTest(TestCase):
                                 }
                             },
                             "required": ["name"],
+                            "additionalProperties": False,
                         },
                     }
                 },
                 "required": ["items"],
+                "additionalProperties": False,
             },
             ObjectJSONSchema(
                 description=object_description,

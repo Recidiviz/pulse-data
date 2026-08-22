@@ -397,7 +397,7 @@ class SemanticConsistencyCheck:
                 continue
             if not any(f.semantic_consistency_constraints for f in field.fields):
                 continue
-            for index, element in enumerate(output.array_elements(field=field) or []):
+            for index, element in enumerate(output.array_elements(field=field)):
                 scopes.append(
                     _SiblingScope(
                         field_display_prefix=f"{field.name}[{index}].",

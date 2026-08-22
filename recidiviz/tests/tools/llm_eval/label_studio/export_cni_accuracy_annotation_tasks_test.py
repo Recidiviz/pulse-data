@@ -525,21 +525,6 @@ class ExportAccuracyTasksTest(TestCase):
         }
 
     @staticmethod
-    def _result_content_omitting_assignments() -> dict[str, Any]:
-        """Returns a result naming a status but no location, with the assignments key left
-        out of the result entirely, so the document yields exactly two annotatable values.
-        Omitting the key says nothing about assignments, so there is nothing to annotate.
-        """
-        content = build_fake_extractor_result_content(
-            primary_status="active",
-            status_note="Currently on dish duty.",
-            location=None,
-            assignments=[],
-        )
-        del content["assignments"]
-        return content
-
-    @staticmethod
     def _result_content_with_empty_assignments() -> dict[str, Any]:
         """Returns a result naming a status but no location, with assignments present and
         empty, so the document yields three annotatable values. An empty array claims the
@@ -575,32 +560,9 @@ class ExportAccuracyTasksTest(TestCase):
             random_seed=_SEED,
         )
 
-    def test_writes_one_task_file_per_annotated_value(self) -> None:
-        self._set_query_results(
-            [
-                self._result_row(
-                    document_contents_id=_DOCUMENT_ID,
-                    result_content=self._result_content_omitting_assignments(),
-                )
-            ]
-        )
-        # location came back null, so pinning it keeps it out of the sampled pool and makes
-        # both of the document's values exported.
-        self._export(required_fields=["location"])
-        self.assertEqual(
-            [
-                "gs://my-bucket/cni-labeling/accuracy_per_field/v_sampled/"
-                "doc_a__001__location.json",
-                "gs://my-bucket/cni-labeling/accuracy_per_field/v_sampled/"
-                "doc_a__002__primary_status.json",
-            ],
-            sorted(path.uri() for path in self.fs.all_paths),
-        )
-
     def test_empty_array_is_annotated_on_the_array_field(self) -> None:
         """An empty assignments array claims the document names no assignments, so it gets
-        a task of its own. Contrast test_writes_one_task_file_per_annotated_value, where the
-        result omits the key and no such task is written.
+        a task of its own alongside the two scalar fields. One file per annotated value.
         """
         self._set_query_results(
             [
@@ -665,7 +627,7 @@ class ExportAccuracyTasksTest(TestCase):
             [
                 self._result_row(
                     document_contents_id=_DOCUMENT_ID,
-                    result_content=self._result_content_omitting_assignments(),
+                    result_content=self._result_content_with_empty_assignments(),
                 )
             ]
         )
@@ -697,7 +659,7 @@ class ExportAccuracyTasksTest(TestCase):
                         "extractor_version_id": _VERSION,
                         "doc_index": 1,
                         "field_index": 1,
-                        "total_fields": 2,
+                        "total_fields": 3,
                         "task_order": 1,
                     }
                 }

@@ -147,18 +147,25 @@ class TopLevelStructureTest(TestCase):
         branch = _relevant_branch(_generate(_field("a"), _field("b"), _field("c")))
         self.assertEqual(["is_relevant", "a", "b", "c"], list(branch["properties"]))
 
-    def test_relevant_branch_required_lists_only_required_fields(self) -> None:
+    def test_relevant_branch_requires_every_declared_field(self) -> None:
+        # Presence is required of every field, `required: true` or not, so the
+        # model cannot omit one. `required: true` governs whether the field may
+        # take its null branch, not whether the key appears.
         branch = _relevant_branch(
             _generate(
                 _field("required_field", required=True),
                 _field("optional_field"),
             )
         )
-        self.assertEqual(["is_relevant", "required_field"], branch["required"])
+        self.assertEqual(
+            ["is_relevant", "required_field", "optional_field"], branch["required"]
+        )
 
 
 class InferredFieldSchemaTest(TestCase):
-    """Tests the per-field value/null `anyOf` emitted for INFERRED fields."""
+    """Tests the per-field schema emitted for INFERRED fields: the value/null
+    `anyOf` for an optional field, and the value branch alone for a required one.
+    """
 
     def test_inferred_scalar_field_is_value_null_anyof(self) -> None:
         field_schema = _relevant_branch(_generate(_field("note")))["properties"]["note"]
@@ -200,6 +207,26 @@ class InferredFieldSchemaTest(TestCase):
             null_branch["required"],
         )
         self.assertNotIn("minItems", null_branch["properties"]["citations"])
+
+    def test_required_inferred_scalar_field_is_value_branch_alone(self) -> None:
+        # The counterpart to the optional field above: `required: true` means the
+        # field must carry a value, so it gets no null branch to take and the node
+        # is the value branch itself rather than an `anyOf` over two.
+        field_schema = _relevant_branch(_generate(_field("note", required=True)))[
+            "properties"
+        ]["note"]
+
+        self.assertNotIn("anyOf", field_schema)
+        self.assertEqual("object", field_schema["type"])
+        self.assertEqual(
+            ["adversarial_interpretation", "value", "confidence_level", "citations"],
+            list(field_schema["properties"]),
+        )
+        self.assertEqual(
+            ["adversarial_interpretation", "value", "confidence_level", "citations"],
+            field_schema["required"],
+        )
+        self.assertEqual(1, field_schema["properties"]["citations"]["minItems"])
 
     def test_value_branch_value_is_enum_for_enum_field(self) -> None:
         field_schema = _relevant_branch(
@@ -391,13 +418,21 @@ class ArrayOfStructSchemaTest(TestCase):
         self.assertEqual(
             ["employer_name", "job_title", "kind"], list(items["properties"])
         )
-        # Only the required sub-field is listed.
-        self.assertEqual(["employer_name"], items["required"])
+        # Every sub-field is required to be present, not just the `required: true`
+        # one, so an element cannot omit a sub-field.
+        self.assertEqual(["employer_name", "job_title", "kind"], items["required"])
 
     def test_array_sub_fields_recurse_by_type_and_mode(self) -> None:
         items = self._array_field()["items"]["properties"]
-        # INFERRED sub-field -> value/null anyOf.
-        self.assertIn("anyOf", items["employer_name"])
+        # Optional INFERRED sub-field -> value/null anyOf.
+        self.assertIn("anyOf", items["job_title"])
+        # Required INFERRED sub-field -> the value branch alone, no anyOf to
+        # choose a null branch from.
+        self.assertNotIn("anyOf", items["employer_name"])
+        self.assertEqual(
+            ["adversarial_interpretation", "value", "confidence_level", "citations"],
+            list(items["employer_name"]["properties"]),
+        )
         # STRUCTURAL enum sub-field -> bare enum.
         self.assertEqual(
             {
@@ -451,10 +486,10 @@ class RelevanceFreeSchemaTest(TestCase):
         # properties directly.
         self.assertEqual(["a", "b"], list(result["properties"]))
         self.assertNotIn("is_relevant", result["properties"])
-        # Root description is the result-level description; required lists only
-        # the required user fields.
+        # Root description is the result-level description; every user field is
+        # required to be present.
         self.assertEqual(_DESCRIPTION, result["description"])
-        self.assertEqual(["b"], result["required"])
+        self.assertEqual(["a", "b"], result["required"])
 
     def test_relevance_free_and_relevant_branch_render_fields_identically(
         self,

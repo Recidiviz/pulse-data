@@ -37,7 +37,6 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
-    ENTITIES_FIELD_NAME,
     RESULT_KEY,
 )
 
@@ -330,8 +329,10 @@ class LLMRequestOutputValues:
         field name. A scalar-valued field maps to its unwrapped scalar value, an
         ARRAY_OF_INTEGER field to its bare integer list, and an ARRAY_OF_STRUCT
         field to its list of per-element dicts (see `array_elements`). A `None`
-        value means the output omits the field (or, for a scalar, that an
-        INFERRED field took its null branch).
+        value means an INFERRED scalar took its null branch, or a STRUCTURAL
+        scalar holds null.
+
+        Only safe to call on a relevant, structurally conformant result.
 
         This is the actual-output counterpart to a golden eval document's
         `expected_values`, and has the same shape.
@@ -351,17 +352,24 @@ class LLMRequestOutputValues:
 
     def array_elements(
         self, *, field: ArrayOfStructLLMRequestOutputSchemaField
-    ) -> list[dict[str, Any]] | None:
+    ) -> list[dict[str, Any]]:
         """Returns the elements the extractor produced for ARRAY_OF_STRUCT
         |field|, each mapping every sub-field |field| declares to its unwrapped
         scalar value — or its bare integer list, for an ARRAY_OF_INTEGER
-        sub-field (`None` for an omitted sub-field or an INFERRED null
-        branch, and for every sub-field of a literal-null element). Returns
-        `None` when the output omits the field entirely.
+        sub-field (`None` for an INFERRED null branch, and for every sub-field of
+        a literal-null element). An array the extractor had nothing to report for
+        is empty rather than absent, so that case returns `[]`.
+
+        Only safe to call on a relevant, structurally conformant result.
+
+        Raises an LLMOutputParsingError when the output omits the field.
         """
         extracted_fields_json = self._extracted_fields_json
         if field.name not in extracted_fields_json:
-            return None
+            raise LLMOutputParsingError(
+                f"Output JSON does not carry ARRAY_OF_STRUCT field "
+                f"[{field.name}]. Found keys: {sorted(extracted_fields_json)}."
+            )
         elements_json = extracted_fields_json[field.name]
         if not isinstance(elements_json, list):
             raise LLMOutputParsingError(
@@ -384,14 +392,7 @@ class LLMRequestOutputValues:
         omits the array. Only safe to call on a structurally conformant result,
         which carries a non-empty `entities` array.
         """
-        entities = self.array_elements(field=self.output_schema.entities_field)
-        if entities is None:
-            raise LLMOutputParsingError(
-                f"Output JSON for an entity-resolution schema does not carry "
-                f"its [{ENTITIES_FIELD_NAME}] field. Found keys: "
-                f"{sorted(self._extracted_fields_json)}."
-            )
-        return entities
+        return self.array_elements(field=self.output_schema.entities_field)
 
     @staticmethod
     def _array_element(

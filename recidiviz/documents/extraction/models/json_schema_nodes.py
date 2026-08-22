@@ -178,6 +178,14 @@ class ObjectJSONSchema(DescribedJSONSchemaNode):
     property.
     """
 
+    allow_additional_properties: bool = attr.ib(
+        default=False, validator=attr_validators.is_bool
+    )
+    """Whether the object tolerates properties it does not declare. False — the
+    default — emits `additionalProperties: false`, rejecting an undeclared
+    property. True emits no `additionalProperties` keyword, so one validates.
+    """
+
     def __attrs_post_init__(self) -> None:
         if unknown_required := [
             name for name in self.required if name not in self.properties
@@ -188,7 +196,7 @@ class ObjectJSONSchema(DescribedJSONSchemaNode):
             )
 
     def to_json_schema(self) -> JSONSchemaDict:
-        return {
+        schema: JSONSchemaDict = {
             "type": "object",
             "description": self.description,
             "properties": {
@@ -196,6 +204,9 @@ class ObjectJSONSchema(DescribedJSONSchemaNode):
             },
             "required": self.required,
         }
+        if not self.allow_additional_properties:
+            schema["additionalProperties"] = False
+        return schema
 
 
 @attr.define(frozen=True, kw_only=True)

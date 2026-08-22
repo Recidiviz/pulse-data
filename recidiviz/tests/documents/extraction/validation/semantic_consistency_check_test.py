@@ -203,13 +203,6 @@ class SemanticConsistencyCheckTest(TestCase):
     def test_clean_result_has_no_issues(self) -> None:
         self.assertEqual([], self._issues({RESULT_KEY: _sc_content()}))
 
-    def test_irrelevant_result_has_no_issues(self) -> None:
-        # An irrelevant document carries only the relevance determination, so
-        # every constrained field and every condition field reads as absent.
-        self.assertEqual(
-            [], self._issues({RESULT_KEY: {IS_RELEVANT_FIELD_NAME: False}})
-        )
-
     def test_nonnull_pair_satisfied_when_both_set(self) -> None:
         content = _sc_content(
             pay_rate_amount=build_inferred_field_result_json(12.5),
@@ -342,16 +335,6 @@ class SemanticConsistencyCheckTest(TestCase):
             employer_name=build_null_inferred_field_result_json(),
             assignments=[],
         )
-        self.assertEqual([], self._issues({RESULT_KEY: content}))
-
-    def test_omitted_array_is_absent_for_its_own_gate(self) -> None:
-        # The other way a list field can be absent: no key at all, which reads
-        # as None rather than as an empty list.
-        content = _sc_content(
-            employment_status=build_inferred_field_result_json("unemployed"),
-            employer_name=build_null_inferred_field_result_json(),
-        )
-        del content["assignments"]
         self.assertEqual([], self._issues({RESULT_KEY: content}))
 
     def test_populated_array_is_present_for_its_own_gate(self) -> None:

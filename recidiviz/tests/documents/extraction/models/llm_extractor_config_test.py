@@ -406,6 +406,8 @@ When you cannot extract a value:
     ],  // Exact quotes from the document supporting why no value was extracted. Required, but may be empty — include a quote only when one shows the absence (e.g. for explicitly_unknown).
   }
 
+The null shape is not available for `primary_status`, `assignments[].assignment_name` — the schema requires a value for each, so always use the value shape.
+
 - When `adversarial_interpretation` is non-null, set
   `confidence_level` to "speculative".
 
@@ -509,7 +511,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
         self.assertEqual(
-            "30d16f4b0668ae7553fe741b2d1ad02a010408152f89c218f5c425c12df34db4",
+            "9873183e65cd9b18e0b0737e23cda580b373cc5a845d7f8306239d90eafbe15d",
             config.extractor_version_id,
         )
 

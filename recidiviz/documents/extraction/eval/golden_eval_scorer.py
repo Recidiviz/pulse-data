@@ -35,6 +35,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMRequestOutputSchemaField,
     ScalarValuedLLMRequestOutputSchemaField,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+)
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
@@ -115,7 +118,11 @@ class LLMDocumentExtractionGoldenEvalScorer:
                 try:
                     scores.extend(
                         self._score_field(
-                            document=document, field=field, actual_output=actual_output
+                            document=document,
+                            field=field,
+                            actual_output=self._actual_output_for_field(
+                                field=field, actual_output=actual_output
+                            ),
                         )
                     )
                 except LLMOutputParsingError:
@@ -128,6 +135,27 @@ class LLMDocumentExtractionGoldenEvalScorer:
                         )
                     )
         return scores
+
+    @staticmethod
+    def _actual_output_for_field(
+        *,
+        field: LLMRequestOutputSchemaField,
+        actual_output: LLMRequestOutputValues | None,
+    ) -> LLMRequestOutputValues | None:
+        """Returns the output |field| is scored against: |actual_output| itself,
+        or None when the extractor called the document irrelevant and |field| is
+        not the relevance field.
+
+        An irrelevant result is exactly `{"is_relevant": false}`, so every other
+        field scores as though the extractor produced nothing for it. Resolving
+        that here lets everything below assume the output carries the fields the
+        schema declares.
+        """
+        if actual_output is None or actual_output.is_relevant:
+            return actual_output
+        if field.name == IS_RELEVANT_FIELD_NAME:
+            return actual_output
+        return None
 
     @classmethod
     def _score_field(

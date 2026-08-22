@@ -81,18 +81,34 @@ def build_null_inferred_field_result_json(
     null_reason: str = "no_info_found",
     confidence_level: str = "explicit",
     adversarial_interpretation: str | None = None,
+    citation_text: str | None = None,
 ) -> dict[str, Any]:
     """Returns the JSON the extractor emits for one INFERRED field on the null
     branch: no value, just the null reason and the other companion-metadata keys.
 
     |adversarial_interpretation| defaults to None for the same reason it does on
     the nonnull branch.
+
+    Citations default to empty, which is what the null branch usually carries. Pass
+    |citation_text| to build a one-quote branch instead — needed when a test puts
+    this wrapper where the schema allows only the value branch, whose `citations`
+    requires at least one quote, so the missing `value` is the only thing flagged.
     """
     return {
         NULL_REASON_FIELD_NAME: null_reason,
         CONFIDENCE_LEVEL_FIELD_NAME: confidence_level,
         ADVERSARIAL_INTERPRETATION_FIELD_NAME: adversarial_interpretation,
-        CITATIONS_FIELD_NAME: [],
+        CITATIONS_FIELD_NAME: (
+            []
+            if citation_text is None
+            else [
+                {
+                    CITATION_TEXT_FIELD_NAME: citation_text,
+                    CITATION_START_FIELD_NAME: 0,
+                    CITATION_END_FIELD_NAME: len(citation_text),
+                }
+            ]
+        ),
     }
 
 
@@ -189,15 +205,16 @@ def wrap_in_result_key(result_content: dict[str, Any]) -> dict[str, Any]:
 
 def fake_minimal_relevant_result_json() -> dict[str, Any]:
     """Returns a wrapped result that conforms to FAKE_EXTRACTOR_COLLECTION's schema
-    with only is_relevant and the two required/structural fields — the optional
-    `location` and `assignments` fields are absent (as an older schema's output
-    would be), so absent-is-null is exercised.
+    while reporting as little as it can: `primary_status` and `status_note` carry
+    values, `location` takes its null branch, and `assignments` is empty.
     """
     return wrap_in_result_key(
         {
             IS_RELEVANT_FIELD_NAME: True,
             "primary_status": build_inferred_field_result_json("active"),
             "status_note": "Currently active.",
+            "location": build_null_inferred_field_result_json(),
+            "assignments": [],
         }
     )
 

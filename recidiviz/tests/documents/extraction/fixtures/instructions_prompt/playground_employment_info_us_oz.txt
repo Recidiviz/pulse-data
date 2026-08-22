@@ -89,6 +89,8 @@ When you cannot extract a value:
     ],  // Exact quotes from the document supporting why no value was extracted. Required, but may be empty — include a quote only when one shows the absence (e.g. for explicitly_unknown).
   }
 
+The null shape is not available for `primary_status`, `search_status`, `employers[].employer_name`, `employment_changes[].employment_change_type` — the schema requires a value for each, so always use the value shape.
+
 - When `adversarial_interpretation` is non-null, set
   `confidence_level` to "speculative".
 

@@ -109,6 +109,8 @@ When you extract a value:
 When you cannot extract a value:
 {{null_inferred_field_result_branch_shape}}
 
+{{required_inferred_fields_sentence}}
+
 - When `{ADVERSARIAL_INTERPRETATION_FIELD_NAME}` is non-null, set
   `{CONFIDENCE_LEVEL_FIELD_NAME}` to "{ConfidenceLevel.SPECULATIVE.value}".
 
@@ -220,6 +222,9 @@ class LLMExtractorOutputFormatInstructionsGenerator:
             ),
             nonnull_inferred_field_result_branch_shape=cls.render_nonnull_inferred_field_result_branch_shape(),
             null_inferred_field_result_branch_shape=cls.render_null_inferred_field_result_branch_shape(),
+            required_inferred_fields_sentence=cls.render_required_inferred_fields_sentence(
+                output_schema
+            ),
             confidence_level_value_descriptions_list=cls.render_described_enum_values(
                 ConfidenceLevel
             ),
@@ -384,6 +389,46 @@ class LLMExtractorOutputFormatInstructionsGenerator:
                 f"`{constraint.condition_field.name}` is one of [{values}]."
             )
         raise ValueError(f"Unexpected constraint type: [{type(constraint)}].")
+
+    @classmethod
+    def render_required_inferred_fields_sentence(
+        cls, output_schema: LLMRequestOutputSchema
+    ) -> str:
+        """Returns the sentence naming the INFERRED fields the null shape is not
+        available for, or empty when |output_schema| declares none. A
+        `required: true` INFERRED field is generated with its value branch alone
+        (see `LLMJsonSchemaGenerator._field_schema`), so the null shape is not a
+        legal output for it.
+        """
+        field_names = cls._required_inferred_field_names(output_schema)
+        if not field_names:
+            return ""
+        rendered_names = ", ".join(f"`{name}`" for name in field_names)
+        return (
+            f"The null shape is not available for {rendered_names} — the schema "
+            f"requires a value for each, so always use the value shape."
+        )
+
+    @staticmethod
+    def _required_inferred_field_names(
+        output_schema: LLMRequestOutputSchema,
+    ) -> list[str]:
+        """Returns the name of every required INFERRED field in |output_schema|, an
+        ARRAY_OF_STRUCT sub-field qualified by its array (e.g.
+        `payments[].payment_type`).
+        """
+        field_names: list[str] = []
+        for field in output_schema.user_defined_fields:
+            if isinstance(field, ArrayOfStructLLMRequestOutputSchemaField):
+                field_names.extend(
+                    f"{field.name}[].{sub_field.name}"
+                    for sub_field in field.fields
+                    if sub_field.required and sub_field.is_inferred_field
+                )
+                continue
+            if field.required and field.is_inferred_field:
+                field_names.append(field.name)
+        return field_names
 
     @classmethod
     def render_metadata_wrapper_exceptions(

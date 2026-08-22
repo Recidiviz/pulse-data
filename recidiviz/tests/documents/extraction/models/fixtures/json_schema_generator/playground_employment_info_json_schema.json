@@ -16,7 +16,8 @@
           },
           "required": [
             "is_relevant"
-          ]
+          ],
+          "additionalProperties": false
         },
         {
           "type": "object",
@@ -28,274 +29,140 @@
               "const": true
             },
             "primary_status": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "description": "A value was extracted.",
-                  "properties": {
-                    "adversarial_interpretation": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The person's primary employment status as described in the case note. Allowed values:\n- employed: The person currently has a job, including self-employment, gig, day labor, or cash work.\n- unemployed: The person is explicitly not currently working.\n- other: A status that is neither clearly employed nor unemployed (e.g. receiving non-employment income).",
-                      "enum": [
-                        "employed",
-                        "unemployed",
-                        "other"
-                      ]
-                    },
-                    "confidence_level": {
-                      "type": "string",
-                      "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                      "enum": [
-                        "speculative",
-                        "inferred",
-                        "explicit",
-                        "verbatim"
-                      ]
-                    },
-                    "citations": {
-                      "type": "array",
-                      "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
-                      "minItems": 1,
-                      "items": {
-                        "type": "object",
-                        "description": "A single quote locating supporting text within the document.",
-                        "properties": {
-                          "text": {
-                            "type": "string",
-                            "description": "The exact quoted text from the document."
-                          },
-                          "start": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text begins."
-                          },
-                          "end": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text ends."
-                          }
-                        },
-                        "required": [
-                          "text",
-                          "start",
-                          "end"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "adversarial_interpretation",
-                    "value",
-                    "confidence_level",
-                    "citations"
+              "type": "object",
+              "description": "A value was extracted.",
+              "properties": {
+                "adversarial_interpretation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The person's primary employment status as described in the case note. Allowed values:\n- employed: The person currently has a job, including self-employment, gig, day labor, or cash work.\n- unemployed: The person is explicitly not currently working.\n- other: A status that is neither clearly employed nor unemployed (e.g. receiving non-employment income).",
+                  "enum": [
+                    "employed",
+                    "unemployed",
+                    "other"
                   ]
                 },
-                {
-                  "type": "object",
-                  "description": "No value could be extracted.",
-                  "properties": {
-                    "adversarial_interpretation": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                    },
-                    "null_reason": {
-                      "type": "string",
-                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
-                      "enum": [
-                        "not_applicable",
-                        "no_info_found",
-                        "explicitly_unknown"
-                      ]
-                    },
-                    "confidence_level": {
-                      "type": "string",
-                      "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                      "enum": [
-                        "speculative",
-                        "inferred",
-                        "explicit",
-                        "verbatim"
-                      ]
-                    },
-                    "citations": {
-                      "type": "array",
-                      "description": "Exact quotes from the document supporting why no value was extracted. Required, but may be empty \u2014 include a quote only when one shows the absence (e.g. for explicitly_unknown).",
-                      "items": {
-                        "type": "object",
-                        "description": "A single quote locating supporting text within the document.",
-                        "properties": {
-                          "text": {
-                            "type": "string",
-                            "description": "The exact quoted text from the document."
-                          },
-                          "start": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text begins."
-                          },
-                          "end": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text ends."
-                          }
-                        },
-                        "required": [
-                          "text",
-                          "start",
-                          "end"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "adversarial_interpretation",
-                    "null_reason",
-                    "confidence_level",
-                    "citations"
+                "confidence_level": {
+                  "type": "string",
+                  "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
+                  "enum": [
+                    "speculative",
+                    "inferred",
+                    "explicit",
+                    "verbatim"
                   ]
+                },
+                "citations": {
+                  "type": "array",
+                  "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "description": "A single quote locating supporting text within the document.",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "description": "The exact quoted text from the document."
+                      },
+                      "start": {
+                        "type": "integer",
+                        "description": "Character offset in the document where the quoted text begins."
+                      },
+                      "end": {
+                        "type": "integer",
+                        "description": "Character offset in the document where the quoted text ends."
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "start",
+                      "end"
+                    ],
+                    "additionalProperties": false
+                  }
                 }
-              ]
+              },
+              "required": [
+                "adversarial_interpretation",
+                "value",
+                "confidence_level",
+                "citations"
+              ],
+              "additionalProperties": false
             },
             "search_status": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "description": "A value was extracted.",
-                  "properties": {
-                    "adversarial_interpretation": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "Whether the person is actively searching for employment. Allowed values:\n- searching: The person is actively looking for work (applications, job fairs, workforce referrals).\n- not_searching: The person is explicitly not looking for work.\n- other: Search activity is mentioned but does not fit searching or not_searching.",
-                      "enum": [
-                        "searching",
-                        "not_searching",
-                        "other"
-                      ]
-                    },
-                    "confidence_level": {
-                      "type": "string",
-                      "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                      "enum": [
-                        "speculative",
-                        "inferred",
-                        "explicit",
-                        "verbatim"
-                      ]
-                    },
-                    "citations": {
-                      "type": "array",
-                      "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
-                      "minItems": 1,
-                      "items": {
-                        "type": "object",
-                        "description": "A single quote locating supporting text within the document.",
-                        "properties": {
-                          "text": {
-                            "type": "string",
-                            "description": "The exact quoted text from the document."
-                          },
-                          "start": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text begins."
-                          },
-                          "end": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text ends."
-                          }
-                        },
-                        "required": [
-                          "text",
-                          "start",
-                          "end"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "adversarial_interpretation",
-                    "value",
-                    "confidence_level",
-                    "citations"
+              "type": "object",
+              "description": "A value was extracted.",
+              "properties": {
+                "adversarial_interpretation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Whether the person is actively searching for employment. Allowed values:\n- searching: The person is actively looking for work (applications, job fairs, workforce referrals).\n- not_searching: The person is explicitly not looking for work.\n- other: Search activity is mentioned but does not fit searching or not_searching.",
+                  "enum": [
+                    "searching",
+                    "not_searching",
+                    "other"
                   ]
                 },
-                {
-                  "type": "object",
-                  "description": "No value could be extracted.",
-                  "properties": {
-                    "adversarial_interpretation": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                    },
-                    "null_reason": {
-                      "type": "string",
-                      "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
-                      "enum": [
-                        "not_applicable",
-                        "no_info_found",
-                        "explicitly_unknown"
-                      ]
-                    },
-                    "confidence_level": {
-                      "type": "string",
-                      "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                      "enum": [
-                        "speculative",
-                        "inferred",
-                        "explicit",
-                        "verbatim"
-                      ]
-                    },
-                    "citations": {
-                      "type": "array",
-                      "description": "Exact quotes from the document supporting why no value was extracted. Required, but may be empty \u2014 include a quote only when one shows the absence (e.g. for explicitly_unknown).",
-                      "items": {
-                        "type": "object",
-                        "description": "A single quote locating supporting text within the document.",
-                        "properties": {
-                          "text": {
-                            "type": "string",
-                            "description": "The exact quoted text from the document."
-                          },
-                          "start": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text begins."
-                          },
-                          "end": {
-                            "type": "integer",
-                            "description": "Character offset in the document where the quoted text ends."
-                          }
-                        },
-                        "required": [
-                          "text",
-                          "start",
-                          "end"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "adversarial_interpretation",
-                    "null_reason",
-                    "confidence_level",
-                    "citations"
+                "confidence_level": {
+                  "type": "string",
+                  "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
+                  "enum": [
+                    "speculative",
+                    "inferred",
+                    "explicit",
+                    "verbatim"
                   ]
+                },
+                "citations": {
+                  "type": "array",
+                  "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "description": "A single quote locating supporting text within the document.",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "description": "The exact quoted text from the document."
+                      },
+                      "start": {
+                        "type": "integer",
+                        "description": "Character offset in the document where the quoted text begins."
+                      },
+                      "end": {
+                        "type": "integer",
+                        "description": "Character offset in the document where the quoted text ends."
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "start",
+                      "end"
+                    ],
+                    "additionalProperties": false
+                  }
                 }
-              ]
+              },
+              "required": [
+                "adversarial_interpretation",
+                "value",
+                "confidence_level",
+                "citations"
+              ],
+              "additionalProperties": false
             },
             "unemployment_reason": {
               "anyOf": [
@@ -349,7 +216,8 @@
                           "text",
                           "start",
                           "end"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -358,7 +226,8 @@
                     "value",
                     "confidence_level",
                     "citations"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 {
                   "type": "object",
@@ -414,7 +283,8 @@
                           "text",
                           "start",
                           "end"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -423,7 +293,8 @@
                     "null_reason",
                     "confidence_level",
                     "citations"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               ]
             },
@@ -439,134 +310,67 @@
                 "description": "A single element of the array.",
                 "properties": {
                   "employer_name": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "description": "A value was extracted.",
-                        "properties": {
-                          "adversarial_interpretation": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                          },
-                          "value": {
-                            "type": "string",
-                            "description": "Name of the employer. If the note gives only a generic, unnamed description of the workplace (e.g. \"a restaurant\", \"the warehouse\"), use that description as the name.\n"
-                          },
-                          "confidence_level": {
-                            "type": "string",
-                            "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                            "enum": [
-                              "speculative",
-                              "inferred",
-                              "explicit",
-                              "verbatim"
-                            ]
-                          },
-                          "citations": {
-                            "type": "array",
-                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
-                            "minItems": 1,
-                            "items": {
-                              "type": "object",
-                              "description": "A single quote locating supporting text within the document.",
-                              "properties": {
-                                "text": {
-                                  "type": "string",
-                                  "description": "The exact quoted text from the document."
-                                },
-                                "start": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text begins."
-                                },
-                                "end": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text ends."
-                                }
-                              },
-                              "required": [
-                                "text",
-                                "start",
-                                "end"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "adversarial_interpretation",
-                          "value",
-                          "confidence_level",
-                          "citations"
+                    "type": "object",
+                    "description": "A value was extracted.",
+                    "properties": {
+                      "adversarial_interpretation": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Name of the employer. If the note gives only a generic, unnamed description of the workplace (e.g. \"a restaurant\", \"the warehouse\"), use that description as the name.\n"
+                      },
+                      "confidence_level": {
+                        "type": "string",
+                        "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
+                        "enum": [
+                          "speculative",
+                          "inferred",
+                          "explicit",
+                          "verbatim"
                         ]
                       },
-                      {
-                        "type": "object",
-                        "description": "No value could be extracted.",
-                        "properties": {
-                          "adversarial_interpretation": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                          },
-                          "null_reason": {
-                            "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
-                            "enum": [
-                              "not_applicable",
-                              "no_info_found",
-                              "explicitly_unknown"
-                            ]
-                          },
-                          "confidence_level": {
-                            "type": "string",
-                            "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                            "enum": [
-                              "speculative",
-                              "inferred",
-                              "explicit",
-                              "verbatim"
-                            ]
-                          },
-                          "citations": {
-                            "type": "array",
-                            "description": "Exact quotes from the document supporting why no value was extracted. Required, but may be empty \u2014 include a quote only when one shows the absence (e.g. for explicitly_unknown).",
-                            "items": {
-                              "type": "object",
-                              "description": "A single quote locating supporting text within the document.",
-                              "properties": {
-                                "text": {
-                                  "type": "string",
-                                  "description": "The exact quoted text from the document."
-                                },
-                                "start": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text begins."
-                                },
-                                "end": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text ends."
-                                }
-                              },
-                              "required": [
-                                "text",
-                                "start",
-                                "end"
-                              ]
+                      "citations": {
+                        "type": "array",
+                        "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                        "minItems": 1,
+                        "items": {
+                          "type": "object",
+                          "description": "A single quote locating supporting text within the document.",
+                          "properties": {
+                            "text": {
+                              "type": "string",
+                              "description": "The exact quoted text from the document."
+                            },
+                            "start": {
+                              "type": "integer",
+                              "description": "Character offset in the document where the quoted text begins."
+                            },
+                            "end": {
+                              "type": "integer",
+                              "description": "Character offset in the document where the quoted text ends."
                             }
-                          }
-                        },
-                        "required": [
-                          "adversarial_interpretation",
-                          "null_reason",
-                          "confidence_level",
-                          "citations"
-                        ]
+                          },
+                          "required": [
+                            "text",
+                            "start",
+                            "end"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
-                    ]
+                    },
+                    "required": [
+                      "adversarial_interpretation",
+                      "value",
+                      "confidence_level",
+                      "citations"
+                    ],
+                    "additionalProperties": false
                   },
                   "employment_type": {
                     "anyOf": [
@@ -628,7 +432,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -637,7 +442,8 @@
                           "value",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -693,7 +499,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -702,7 +509,8 @@
                           "null_reason",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   },
@@ -758,7 +566,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -767,7 +576,8 @@
                           "value",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -823,7 +633,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -832,7 +643,8 @@
                           "null_reason",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   },
@@ -888,7 +700,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -897,7 +710,8 @@
                           "value",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -953,7 +767,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -962,7 +777,8 @@
                           "null_reason",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   },
@@ -1025,7 +841,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -1034,7 +851,8 @@
                           "value",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -1090,7 +908,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -1099,14 +918,20 @@
                           "null_reason",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
                 },
                 "required": [
-                  "employer_name"
-                ]
+                  "employer_name",
+                  "employment_type",
+                  "job_title",
+                  "pay_rate_amount",
+                  "pay_rate_time_period"
+                ],
+                "additionalProperties": false
               }
             },
             "employment_changes": {
@@ -1117,140 +942,73 @@
                 "description": "A single element of the array.",
                 "properties": {
                   "employment_change_type": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "description": "A value was extracted.",
-                        "properties": {
-                          "adversarial_interpretation": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                          },
-                          "value": {
-                            "type": "string",
-                            "description": "Type of employment change. Allowed values:\n- started_job: The person started a new job.\n- lost_job: The person was fired, laid off, or otherwise lost a job.\n- suspended: The person was suspended from a job.\n- other: An employment change that does not fit any of the above.",
-                            "enum": [
-                              "started_job",
-                              "lost_job",
-                              "suspended",
-                              "other"
-                            ]
-                          },
-                          "confidence_level": {
-                            "type": "string",
-                            "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                            "enum": [
-                              "speculative",
-                              "inferred",
-                              "explicit",
-                              "verbatim"
-                            ]
-                          },
-                          "citations": {
-                            "type": "array",
-                            "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
-                            "minItems": 1,
-                            "items": {
-                              "type": "object",
-                              "description": "A single quote locating supporting text within the document.",
-                              "properties": {
-                                "text": {
-                                  "type": "string",
-                                  "description": "The exact quoted text from the document."
-                                },
-                                "start": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text begins."
-                                },
-                                "end": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text ends."
-                                }
-                              },
-                              "required": [
-                                "text",
-                                "start",
-                                "end"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "adversarial_interpretation",
-                          "value",
-                          "confidence_level",
-                          "citations"
+                    "type": "object",
+                    "description": "A value was extracted.",
+                    "properties": {
+                      "adversarial_interpretation": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Type of employment change. Allowed values:\n- started_job: The person started a new job.\n- lost_job: The person was fired, laid off, or otherwise lost a job.\n- suspended: The person was suspended from a job.\n- other: An employment change that does not fit any of the above.",
+                        "enum": [
+                          "started_job",
+                          "lost_job",
+                          "suspended",
+                          "other"
                         ]
                       },
-                      {
-                        "type": "object",
-                        "description": "No value could be extracted.",
-                        "properties": {
-                          "adversarial_interpretation": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "The strongest alternative reading of the source text \u2014 how one could reasonably arrive at a different value, or why a value might be present when none was extracted. Null when no reasonable alternative exists."
-                          },
-                          "null_reason": {
-                            "type": "string",
-                            "description": "Why no value could be extracted for this field. Allowed values:\n- not_applicable: The field does not apply given the values of the other fields it depends on \u2014 for example, a field that is only meaningful for a particular value of another field, when that value does not hold.\n- no_info_found: The document does not mention this information.\n- explicitly_unknown: The document acknowledges the information but states it is unknown.",
-                            "enum": [
-                              "not_applicable",
-                              "no_info_found",
-                              "explicitly_unknown"
-                            ]
-                          },
-                          "confidence_level": {
-                            "type": "string",
-                            "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
-                            "enum": [
-                              "speculative",
-                              "inferred",
-                              "explicit",
-                              "verbatim"
-                            ]
-                          },
-                          "citations": {
-                            "type": "array",
-                            "description": "Exact quotes from the document supporting why no value was extracted. Required, but may be empty \u2014 include a quote only when one shows the absence (e.g. for explicitly_unknown).",
-                            "items": {
-                              "type": "object",
-                              "description": "A single quote locating supporting text within the document.",
-                              "properties": {
-                                "text": {
-                                  "type": "string",
-                                  "description": "The exact quoted text from the document."
-                                },
-                                "start": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text begins."
-                                },
-                                "end": {
-                                  "type": "integer",
-                                  "description": "Character offset in the document where the quoted text ends."
-                                }
-                              },
-                              "required": [
-                                "text",
-                                "start",
-                                "end"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "adversarial_interpretation",
-                          "null_reason",
-                          "confidence_level",
-                          "citations"
+                      "confidence_level": {
+                        "type": "string",
+                        "description": "The evidence quality behind this field's value. Allowed values:\n- speculative: Lowest confidence: a plausible alternative reading of the document exists (i.e. the model recorded an adversarial interpretation), so there is genuine doubt about whether the extracted value is correct.\n- inferred: The value follows from one clear inferential step over direct evidence in the document; there is no adversarial interpretation.\n- explicit: The value is directly stated in the document, with at most minor normalization (synonym, abbreviation, or paraphrase).\n- verbatim: Highest confidence: the value appears exactly as-is in the document \u2014 the citation text IS the value, with zero rewording or substitution.",
+                        "enum": [
+                          "speculative",
+                          "inferred",
+                          "explicit",
+                          "verbatim"
                         ]
+                      },
+                      "citations": {
+                        "type": "array",
+                        "description": "Exact quotes from the document supporting the extracted value; at least one is required.",
+                        "minItems": 1,
+                        "items": {
+                          "type": "object",
+                          "description": "A single quote locating supporting text within the document.",
+                          "properties": {
+                            "text": {
+                              "type": "string",
+                              "description": "The exact quoted text from the document."
+                            },
+                            "start": {
+                              "type": "integer",
+                              "description": "Character offset in the document where the quoted text begins."
+                            },
+                            "end": {
+                              "type": "integer",
+                              "description": "Character offset in the document where the quoted text ends."
+                            }
+                          },
+                          "required": [
+                            "text",
+                            "start",
+                            "end"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
-                    ]
+                    },
+                    "required": [
+                      "adversarial_interpretation",
+                      "value",
+                      "confidence_level",
+                      "citations"
+                    ],
+                    "additionalProperties": false
                   },
                   "employment_change_date": {
                     "anyOf": [
@@ -1304,7 +1062,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -1313,7 +1072,8 @@
                           "value",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -1369,7 +1129,8 @@
                                 "text",
                                 "start",
                                 "end"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           }
                         },
@@ -1378,27 +1139,36 @@
                           "null_reason",
                           "confidence_level",
                           "citations"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
                 },
                 "required": [
-                  "employment_change_type"
-                ]
+                  "employment_change_type",
+                  "employment_change_date"
+                ],
+                "additionalProperties": false
               }
             }
           },
           "required": [
             "is_relevant",
             "primary_status",
-            "search_status"
-          ]
+            "search_status",
+            "unemployment_reason",
+            "employment_note_summary",
+            "employers",
+            "employment_changes"
+          ],
+          "additionalProperties": false
         }
       ]
     }
   },
   "required": [
     "result"
-  ]
+  ],
+  "additionalProperties": false
 }

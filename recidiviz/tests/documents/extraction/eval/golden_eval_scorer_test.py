@@ -364,6 +364,32 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
             ),
         )
 
+    def test_irrelevant_actual_output_misses_every_expected_value(self) -> None:
+        # The document had values to find, but the extractor called it irrelevant,
+        # so its output carries the relevance field alone. Relevance itself scores
+        # against what the extractor said; every other field scores as a miss,
+        # because there is nothing in the output to read for it.
+        scores = self._score_one(
+            actual_output_json=wrap_in_result_key(
+                build_fake_extractor_irrelevant_result_content()
+            )
+        )
+
+        self.assertEqual(
+            _scores(
+                (IS_RELEVANT_FIELD_NAME, None, "True", "False", False),
+                ("primary_status", None, "active", None, False),
+                ("status_note", None, "Currently active.", None, False),
+                ("location", None, "Kitchen", None, False),
+                ("assignments", None, "count:1", None, False),
+                ("assignments.assignment_name", 0, "Dish duty", None, False),
+                ("assignments.assignment_type", 0, "internal", None, False),
+                ("assignments.rate_amount", 0, "12.5", None, False),
+                ("assignments.rate_period", 0, "hourly", None, False),
+            ),
+            scores,
+        )
+
     def test_no_actual_output_scores_every_expected_field_as_a_miss(self) -> None:
         # A request error or a validation downgrade leaves nothing usable; every
         # expected field is a miss.

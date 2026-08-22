@@ -205,6 +205,13 @@ class LLMExtractionResultValidator:
         structural_issues = StructuralConformanceCheck.issues(output=raw_output)
         if structural_issues:
             return structural_issues
+
+        if not raw_output.is_relevant:
+            # A structurally conformant irrelevant result is exactly
+            # `{"is_relevant": false}`, so there is no value in running
+            # any other validations.
+            return []
+
         issues = [
             *SemanticConsistencyCheck.issues(output=raw_output),
             *RequiredFieldConfidenceCheck.issues(output=raw_output),

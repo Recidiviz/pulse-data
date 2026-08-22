@@ -128,11 +128,13 @@ class DocumentExtractionFieldValue:
     ) -> list["DocumentExtractionFieldValue"]:
         """Returns every annotatable value one document's extraction result holds, which is
         each INFERRED top-level field, each INFERRED sub-field of each array element, and one
-        value per array field the model returned empty.
+        value per array field the extractor returned empty.
 
-        An array field the result omits entirely, as an older extractor version's output
-        would, yields nothing. Omitting a field says nothing, whereas returning it empty
-        asserts that the document names none.
+        An empty array asserts that the document names no elements, and that assertion can be
+        wrong, so it gets a value of its own for an annotator to judge.
+
+        An irrelevant document holds no annotatable values at all: its output carries the
+        relevance determination alone, with none of the fields the schema declares.
 
         Args:
             output_values: The result to read, paired with the schema that interprets it.
@@ -142,6 +144,9 @@ class DocumentExtractionFieldValue:
             document_text: That document's full text, which an annotator reads.
             extractor_version_id: Version of the extractor config that produced the result.
         """
+        if not output_values.is_relevant:
+            return []
+
         element_json_by_coordinates = cls._element_json_by_coordinates(output_values)
         field_values = [
             cls(
@@ -177,7 +182,7 @@ class DocumentExtractionFieldValue:
             )
             for array_field in output_values.output_schema.array_of_struct_user_fields
             if array_field.is_inferred_field
-            and output_values.array_elements(field=array_field) == []
+            and not output_values.array_elements(field=array_field)
         ]
 
     @staticmethod

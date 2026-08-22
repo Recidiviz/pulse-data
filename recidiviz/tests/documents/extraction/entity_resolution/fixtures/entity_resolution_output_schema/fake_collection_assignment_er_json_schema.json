@@ -46,11 +46,13 @@
           "assignment_name",
           "assignment_type",
           "entry_nums"
-        ]
+        ],
+        "additionalProperties": false
       }
     }
   },
   "required": [
     "entities"
-  ]
+  ],
+  "additionalProperties": false
 }
