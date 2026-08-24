@@ -18,6 +18,7 @@
 import datetime
 from datetime import date
 
+import numpy
 import pandas as pd
 import pandas_gbq
 from google.api_core.exceptions import InternalServerError
@@ -942,3 +943,69 @@ FROM UNNEST([
             r"Table not found:.*INFORMATION_SCHEMA\.SCHEMATA",
         ):
             list(client.query(query).result())
+
+    def test_canonicalize_nested_columns(self) -> None:
+        """Nested columns (Python lists, the numpy arrays the emulator returns
+        REPEATED columns as, and STRUCT dicts) are rewritten to JSON strings with
+        dict keys sorted (list order preserved), wrapped numpy arrays and scalars
+        are unwrapped, and scalar and null columns are left untouched."""
+        df = pd.DataFrame(
+            {
+                "list_col": [[3, 1, 2], [1]],
+                "ndarray_col": [
+                    numpy.array([{"b": numpy.int64(2)}, {"a": 1}], dtype=object),
+                    numpy.array([], dtype=object),
+                ],
+                "dict_col": [{"z": 1, "a": 2}, {"a": 9}],
+                "scalar_col": [1, 2],
+                "nullable_col": ["present", None],
+            }
+        )
+
+        canonicalized = BigQueryEmulatorTestCase._canonicalize_nested_columns(df)
+
+        # List element order is preserved; only dict keys are sorted.
+        self.assertEqual(["[3, 1, 2]", "[1]"], canonicalized["list_col"].tolist())
+        self.assertEqual(
+            ['[{"b": 2}, {"a": 1}]', "[]"], canonicalized["ndarray_col"].tolist()
+        )
+        self.assertEqual(
+            ['{"a": 2, "z": 1}', '{"a": 9}'], canonicalized["dict_col"].tolist()
+        )
+        # Scalar and nullable columns pass through unchanged.
+        self.assertEqual([1, 2], canonicalized["scalar_col"].tolist())
+        self.assertEqual("present", canonicalized["nullable_col"].tolist()[0])
+        self.assertIsNone(canonicalized["nullable_col"].tolist()[1])
+
+    def test_compare_nested_columns_against_fixture(self) -> None:
+        """A REPEATED column read off the emulator compares equal to the
+        canonical JSON strings a CSV fixture would hold, and a mismatch raises."""
+        results = self.query(
+            """
+SELECT b, ARRAY_AGG(STRUCT(a AS a_val, a * 10 AS a_ten) ORDER BY a) AS structs
+FROM UNNEST([
+  STRUCT(1 AS a, 'x' AS b),
+  STRUCT(2 AS a, 'x' AS b),
+  STRUCT(3 AS a, 'y' AS b)
+])
+GROUP BY b
+"""
+        )
+
+        expected = pd.DataFrame(
+            {
+                "b": ["x", "y"],
+                "structs": [
+                    '[{"a_ten": 10, "a_val": 1}, {"a_ten": 20, "a_val": 2}]',
+                    '[{"a_ten": 30, "a_val": 3}]',
+                ],
+            }
+        )
+        self.compare_expected_and_result_dfs(expected=expected, results=results)
+
+        wrong_expected = expected.copy()
+        wrong_expected.loc[1, "structs"] = '[{"a_ten": 999, "a_val": 3}]'
+        with self.assertRaises(AssertionError):
+            self.compare_expected_and_result_dfs(
+                expected=wrong_expected, results=results
+            )

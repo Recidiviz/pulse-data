@@ -17,7 +17,9 @@
 """An implementation of TestCase that can be used for tests that talk to the BigQuery
 emulator.
 """
+
 import datetime
+import json
 import os
 import tempfile
 import unittest
@@ -414,6 +416,22 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     ) -> None:
         """Creates a table and populates it with data from a CSV fixture file."""
         self.create_mock_table(address, schema=schema)
+        self.load_fixture_into_existing_table(
+            address,
+            fixture_path,
+            fixture_columns=fixture_columns,
+            allow_comments=allow_comments,
+        )
+
+    def load_fixture_into_existing_table(
+        self,
+        address: BigQueryAddress,
+        fixture_path: Path | str,
+        *,
+        fixture_columns: list[str] | None = None,
+        allow_comments: bool = True,
+    ) -> None:
+        """Streams a CSV fixture's rows into an already-created table."""
         df = load_dataframe_from_path(
             fixture_path,
             fixture_columns=fixture_columns,
@@ -452,6 +470,49 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             expect_unique_output_rows=expect_unique_output_rows,
         )
 
+    @staticmethod
+    def _canonicalize_nested_value(value: Any) -> str:
+        """Serializes a nested BigQuery value (a REPEATED or STRUCT column, which the
+        emulator returns as a numpy array or Python dict, sometimes wrapping further
+        numpy arrays and scalars) into a stable JSON string.
+
+        Nested values are neither hashable (breaking the uniqueness check) nor
+        round-trippable through CSV in their default `str()` form (numpy array reprs
+        embed newlines and `dtype=` markers). A sorted-key JSON encoding gives one
+        canonical string that both compares and round-trips cleanly.
+        """
+
+        def _default(obj: Any) -> Any:
+            if isinstance(obj, numpy.ndarray):
+                return obj.tolist()
+            if isinstance(obj, numpy.generic):
+                return obj.item()
+            raise TypeError(f"Cannot canonicalize value of type [{type(obj)}]")
+
+        return json.dumps(value, sort_keys=True, default=_default)
+
+    @classmethod
+    def _canonicalize_nested_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """Returns a copy of |df| with every column holding nested values (lists,
+        dicts, or the numpy arrays the emulator returns REPEATED columns as)
+        rewritten to the canonical JSON string produced by
+        _canonicalize_nested_value, leaving nulls and scalar columns untouched."""
+        # A REPEATED column comes back from the emulator as a numpy.ndarray, not a
+        # list; a scalar column's cells are numpy scalars (numpy.generic), which are
+        # not ndarrays, so they are correctly left alone.
+        nested_types = (list, dict, numpy.ndarray)
+        df = df.copy()
+        for column in df.columns:
+            if any(isinstance(val, nested_types) for val in df[column]):
+                df[column] = df[column].map(
+                    lambda val: (
+                        val
+                        if not isinstance(val, nested_types)
+                        else cls._canonicalize_nested_value(val)
+                    )
+                )
+        return df
+
     @classmethod
     def compare_results_to_fixture(
         cls,
@@ -480,6 +541,8 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         fixture_should_not_exist = (
             results.empty and expect_missing_fixtures_on_empty_results
         )
+
+        results = cls._canonicalize_nested_columns(results)
 
         if create_expected:
             if environment.in_ci():
@@ -548,6 +611,8 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             expected: The expected dataframe from the fixture.
             results: The actual results dataframe.
         """
+        results = cls._canonicalize_nested_columns(results)
+
         if sorted(results.columns) != sorted(expected.columns):
             raise ValueError(
                 f"Columns in expected and actual results do not match (order "
