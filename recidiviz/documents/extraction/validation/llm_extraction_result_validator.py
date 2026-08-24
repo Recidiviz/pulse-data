@@ -77,8 +77,8 @@ from recidiviz.documents.extraction.validation.llm_document_validation_result im
     LLMDocumentValidationResult,
     ValidationIssue,
 )
-from recidiviz.documents.extraction.validation.relevant_but_all_null_check import (
-    RelevantButAllNullCheck,
+from recidiviz.documents.extraction.validation.relevant_but_no_values_present_check import (
+    RelevantButNoValuesPresentCheck,
 )
 from recidiviz.documents.extraction.validation.required_field_confidence_check import (
     RequiredFieldConfidenceCheck,
@@ -215,7 +215,7 @@ class LLMExtractionResultValidator:
         issues = [
             *SemanticConsistencyCheck.issues(output=raw_output),
             *RequiredFieldConfidenceCheck.issues(output=raw_output),
-            *RelevantButAllNullCheck.issues(output=raw_output),
+            *RelevantButNoValuesPresentCheck.issues(output=raw_output),
             *AdversarialInterpretationConsistencyCheck.issues(output=raw_output),
             *CitationGroundingCheck.issues(
                 output=raw_output, source_document_text=document_text

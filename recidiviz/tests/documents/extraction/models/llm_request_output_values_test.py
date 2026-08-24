@@ -533,10 +533,11 @@ class LLMRequestOutputValuesPresenceTest(_LLMRequestOutputValuesTestBase):
             self._is_present(self._full_output_values(location=None), "location")
         )
 
-    def test_empty_array_is_present(self) -> None:
-        # An empty array is the extractor's affirmative statement that there are
-        # no values for the field — unlike an omitted key, which says nothing.
-        self.assertTrue(
+    def test_empty_array_is_absent(self) -> None:
+        # An empty array reports nothing, the same as an omitted key: array
+        # fields are always required in the output schema, so `[]` is how the
+        # extractor says it found no values for the field.
+        self.assertFalse(
             self._is_present(self._full_output_values(assignments=[]), "assignments")
         )
 

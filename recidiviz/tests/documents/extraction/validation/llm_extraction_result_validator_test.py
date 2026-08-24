@@ -40,11 +40,11 @@ required non-nullable field (`assignment_name`), an optional field the synthesiz
 schema makes nullable (`assignment_type`), an integer (`entity_id`), and an
 integer array (`entry_nums`).
 
-`RelevantButAllNullCheck`'s wiring needs its own collection: the fake collection
-declares `primary_status` required, and a required INFERRED field is generated
-with no null branch, so no result against it can hold a null for every
-user-defined field. `LLMRelevantButAllNullValidatorWiringTest` covers it against
-a schema that declares no required fields.
+`RelevantButNoValuesPresentCheck`'s wiring needs its own collection: the fake
+collection declares `primary_status` required, and a required INFERRED field is
+generated with no null branch, so no result against it can hold a null for every
+user-defined field. `LLMRelevantButNoValuesPresentValidatorWiringTest` covers it
+against a schema that declares no required fields.
 """
 
 import copy
@@ -1059,8 +1059,8 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
         # against the root object, but here it is the `entities` field that is
         # missing rather than the wrapper. Asserting a *single* issue also pins
         # that the validator returned after structural conformance failed —
-        # RelevantButAllNullCheck would otherwise flag this same result, since a
-        # relevance-free output reads as relevant by construction and no
+        # RelevantButNoValuesPresentCheck would otherwise flag this same result,
+        # since a relevance-free output reads as relevant by construction and no
         # user-defined field carries a value.
         self._assert_single_flagged_field(
             {},
@@ -1071,10 +1071,9 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
 
     def test_empty_entities_flagged_as_schema_conformance(self) -> None:
         # `entities` requires at least one element, so an empty array is a
-        # structural failure and not a relevant-but-all-null one. Two independent
-        # things keep that check quiet: the validator returns as soon as
-        # structural conformance fails, and an empty array counts as a present
-        # value anyway.
+        # structural failure and not a relevant-but-no-values-present one: the
+        # validator returns as soon as structural conformance fails, so the
+        # presence check never sees this result.
         result_json = self._result_json()
         self._assert_single_flagged_field(
             result_json,
@@ -1084,7 +1083,7 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
         )
         validation, _ = self._validate_grounded(result_json, expected_entry_nums={1})
         self.assertNotIn(
-            ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+            ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT,
             [issue.check_type for issue in validation.audit_issues],
         )
 
@@ -1207,8 +1206,8 @@ class LLMAllNullEntityValidatorWiringTest(_ValidatorTestBase):
         self.assertEqual("entities[0]", issue.field_name)
 
 
-class LLMRelevantButAllNullValidatorWiringTest(_ValidatorTestBase):
-    """Tests RelevantButAllNullCheck's wiring into the validator, against a
+class LLMRelevantButNoValuesPresentValidatorWiringTest(_ValidatorTestBase):
+    """Tests RelevantButNoValuesPresentCheck's wiring into the validator, against a
     collection that declares no required fields — the only kind whose relevant
     result can hold a null for every user-defined field.
     """
@@ -1230,7 +1229,7 @@ class LLMRelevantButAllNullValidatorWiringTest(_ValidatorTestBase):
         validation, grounded_json = self._validate_grounded(result_json)
         self.assertEqual(self._passing_result(grounded_json), validation)
 
-    def test_relevant_but_all_null_downgrades_result(self) -> None:
+    def test_relevant_but_no_values_present_downgrades_result(self) -> None:
         # Structurally conforming — both fields are present, each on its null
         # branch — but the model called the document relevant while extracting
         # nothing from it.
@@ -1250,6 +1249,8 @@ class LLMRelevantButAllNullValidatorWiringTest(_ValidatorTestBase):
             validation.result_type_override,
         )
         [issue] = validation.audit_issues
-        self.assertEqual(ValidationCheckType.RELEVANT_BUT_ALL_NULL, issue.check_type)
+        self.assertEqual(
+            ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT, issue.check_type
+        )
         # The finding is about the document as a whole, so it names no field.
         self.assertIsNone(issue.field_name)

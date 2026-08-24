@@ -138,15 +138,15 @@ class ValidationIssueTest(unittest.TestCase):
         # holding null.
         self.assertEqual(
             {
-                "check_type": ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+                "check_type": ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT,
                 "field_name": None,
                 "will_retry": True,
-                "detail": "every field is null",
+                "detail": "no field carries a value",
             },
             ValidationIssue(
-                check_type=ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+                check_type=ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT,
                 field_name=None,
-                detail="every field is null",
+                detail="no field carries a value",
             ).to_dict(),
         )
 

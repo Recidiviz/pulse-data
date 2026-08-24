@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for RelevantButAllNullCheck, exercised against the fake extractor
+"""Tests for RelevantButNoValuesPresentCheck, exercised against the fake extractor
 collection, whose user-defined fields cover every shape a value can be carried
 in: INFERRED scalars (`primary_status`, `location`), a bare STRUCTURAL scalar
 (`status_note`), and an array (`assignments`).
@@ -41,8 +41,8 @@ from recidiviz.documents.extraction.validation.llm_document_validation_result im
     ValidationCheckType,
     ValidationIssue,
 )
-from recidiviz.documents.extraction.validation.relevant_but_all_null_check import (
-    RelevantButAllNullCheck,
+from recidiviz.documents.extraction.validation.relevant_but_no_values_present_check import (
+    RelevantButNoValuesPresentCheck,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
@@ -62,8 +62,8 @@ _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 def _all_null_content(**overrides: Any) -> dict[str, Any]:
     """Returns relevant result content whose every user-defined field is null,
     with |overrides| written over specific fields by name to populate one. The
-    `assignments` array is omitted entirely — emitting it, even empty, would be
-    an affirmative statement rather than a null.
+    `assignments` array is omitted entirely; an omitted array and an empty one
+    both read as no value present.
     """
     content: dict[str, Any] = {
         IS_RELEVANT_FIELD_NAME: True,
@@ -75,8 +75,8 @@ def _all_null_content(**overrides: Any) -> dict[str, Any]:
     return content
 
 
-class RelevantButAllNullCheckTest(TestCase):
-    """Tests for RelevantButAllNullCheck."""
+class RelevantButNoValuesPresentCheckTest(TestCase):
+    """Tests for RelevantButNoValuesPresentCheck."""
 
     def setUp(self) -> None:
         self.output_schema = get_first_order_llm_extractor_config(
@@ -84,7 +84,7 @@ class RelevantButAllNullCheckTest(TestCase):
         ).extractor_collection.output_schema
 
     def _issues(self, result_json: dict[str, Any]) -> list[ValidationIssue]:
-        return RelevantButAllNullCheck.issues(
+        return RelevantButNoValuesPresentCheck.issues(
             output=LLMRequestOutputValues(
                 output_schema=self.output_schema, output_json=result_json
             )
@@ -95,10 +95,12 @@ class RelevantButAllNullCheckTest(TestCase):
         issues = self._issues(result_json)
         self.assertEqual(1, len(issues))
         [issue] = issues
-        self.assertEqual(ValidationCheckType.RELEVANT_BUT_ALL_NULL, issue.check_type)
+        self.assertEqual(
+            ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT, issue.check_type
+        )
         # The finding is about the document as a whole, so it names no field.
         self.assertIsNone(issue.field_name)
-        self.assertIn("every extracted field is null", issue.detail)
+        self.assertIn("no extracted field carries a value", issue.detail)
         # It names the fields it looked at, so an audit reader can see what the
         # model was asked for and left empty.
         self.assertIn("'primary_status'", issue.detail)
@@ -151,13 +153,13 @@ class RelevantButAllNullCheckTest(TestCase):
             [], self._issues(wrap_in_result_key(_all_null_content(status_note="")))
         )
 
-    def test_empty_array_alone_passes(self) -> None:
-        # An empty array is not null: the extractor affirmatively said the
-        # document lists no assignments, unlike an omitted key, which says
-        # nothing about them.
-        self.assertEqual(
-            [], self._issues(wrap_in_result_key(_all_null_content(assignments=[])))
-        )
+    def test_empty_array_alone_flagged(self) -> None:
+        # An empty array reports nothing, the same as an omitted key: a document
+        # whose only "content" is an empty array extracted no values. This
+        # matters because array fields are always required in the output schema,
+        # so a relevant-but-empty document carries `[]` rather than omitting the
+        # key.
+        self._assert_flagged(wrap_in_result_key(_all_null_content(assignments=[])))
 
     def test_populated_array_alone_passes(self) -> None:
         self.assertEqual(

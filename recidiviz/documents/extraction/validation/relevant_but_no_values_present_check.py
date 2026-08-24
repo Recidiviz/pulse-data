@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The relevant-but-all-null check: flags a document the model called relevant
-while extracting nothing from it.
+"""A validation check that fails if the model labels a document "relevant"
+but returns no value (i.e. fields all null or empty arrays) for any
+user-defined field.
 """
 
 from recidiviz.documents.extraction.models.llm_request_output_values import (
@@ -27,19 +28,13 @@ from recidiviz.documents.extraction.validation.llm_document_validation_result im
 )
 
 
-class RelevantButAllNullCheck:
-    """The relevant-but-all-null check: flags a document the model labeled
-    relevant while leaving every user-defined field null.
+class RelevantButNoValuesPresentCheck:
+    """A validation check that fails if the model labels a document "relevant"
+    but returns no value (i.e. fields all null or empty arrays) for any
+    user-defined field.
 
     Calling a document relevant asserts it says something the extractor was
-    built to capture, so extracting nothing from it contradicts that assertion
-    and the document is retried.
-
-    A field counts as extracted whether it is INFERRED or STRUCTURAL, and
-    whenever it carries any non-null value: an empty array or empty string is
-    the extractor's affirmative statement about the field, unlike an omitted
-    field or a null branch, which extract nothing. The finding is about the
-    document as a whole rather than any one field, so it carries no field name.
+    built to capture, so extracting nothing from it contradicts that assertion.
     """
 
     @classmethod
@@ -54,11 +49,11 @@ class RelevantButAllNullCheck:
             return []
         return [
             ValidationIssue(
-                check_type=ValidationCheckType.RELEVANT_BUT_ALL_NULL,
+                check_type=ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT,
                 field_name=None,
                 detail=(
-                    f"Document was extracted as relevant, but every extracted "
-                    f"field is null: "
+                    f"Document was extracted as relevant, but no extracted "
+                    f"field carries a value: "
                     f"{sorted(field.name for field in user_defined_fields)}."
                 ),
             )

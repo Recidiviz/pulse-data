@@ -166,14 +166,24 @@ class LLMRequestOutputValues:
         """Returns whether the output carries top-level |field_name| at all."""
         return field_name in self._extracted_fields_json
 
+    @staticmethod
+    def unwrapped_value_is_present(value: Any) -> bool:
+        """Returns whether unwrapped |value| counts as a present value: an array
+        value (a list) is present when non-empty; any other value is present
+        when non-null. An empty scalar (e.g. an empty string) is a value the
+        model returned, but an empty array reports nothing.
+        """
+        if isinstance(value, list):
+            return bool(value)
+        return value is not None
+
     def is_value_present(self, *, field: LLMRequestOutputSchemaField) -> bool:
-        """Returns whether the output carries a value for top-level |field|: any
-        non-null value. Emptiness is not nullness — an empty string or an empty
-        array is a value the model returned; an omitted field or an INFERRED
-        null branch is not.
+        """Returns whether the output carries a value for top-level |field|, per
+        `unwrapped_value_is_present`. An omitted field and an INFERRED null
+        branch read as absent.
         """
         if isinstance(field, ScalarValuedLLMRequestOutputSchemaField):
-            return self.value_for_field(field=field) is not None
+            return self.unwrapped_value_is_present(self.value_for_field(field=field))
 
         if isinstance(
             field,
@@ -191,9 +201,7 @@ class LLMRequestOutputValues:
                     f"Expected array field [{field.name}] to hold a list, found "
                     f"[{type(field_json)}]."
                 )
-            # Any list — even an empty one — is a value: the extractor's affirmative
-            # statement about the field, unlike an omitted key, which says nothing.
-            return True
+            return self.unwrapped_value_is_present(field_json)
 
         raise ValueError(f"Unexpected type for field [{field.name}]: {type(field)}")
 

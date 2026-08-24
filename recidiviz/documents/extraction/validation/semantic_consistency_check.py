@@ -43,23 +43,6 @@ from recidiviz.documents.extraction.validation.llm_document_validation_result im
     ValidationIssue,
 )
 
-
-def _value_is_present(value: Any) -> bool:
-    """Returns whether |value| counts as present for semantic-consistency
-    purposes: an array value (a list) is present when non-empty; any other value
-    is present when non-null.
-
-    This deliberately diverges from `LLMRequestOutputValues.is_value_present`
-    (where an empty array is an affirmative value): constraints are rendered
-    into the prompt in emptiness terms for a list-typed field — "leave it
-    empty", "must be empty", "must have at least one entry" — so the check
-    holds the output to exactly what the prompt asked for.
-    """
-    if isinstance(value, list):
-        return bool(value)
-    return value is not None
-
-
 _ConstraintT = TypeVar("_ConstraintT", bound=LLMOutputSemanticConsistencyConstraint)
 
 
@@ -131,9 +114,11 @@ class _ApplicableWhenNonnullValidator(
         field_value: Any,
         sibling_values: dict[str, Any],
     ) -> bool:
-        if not _value_is_present(field_value):
+        if not LLMRequestOutputValues.unwrapped_value_is_present(field_value):
             return True
-        return _value_is_present(sibling_values[constraint.condition_field.name])
+        return LLMRequestOutputValues.unwrapped_value_is_present(
+            sibling_values[constraint.condition_field.name]
+        )
 
     def _violation_detail(
         self,
@@ -162,9 +147,11 @@ class _RequiredWhenNonnullValidator(
         field_value: Any,
         sibling_values: dict[str, Any],
     ) -> bool:
-        if not _value_is_present(sibling_values[constraint.condition_field.name]):
+        if not LLMRequestOutputValues.unwrapped_value_is_present(
+            sibling_values[constraint.condition_field.name]
+        ):
             return True
-        return _value_is_present(field_value)
+        return LLMRequestOutputValues.unwrapped_value_is_present(field_value)
 
     def _violation_detail(
         self,
@@ -195,7 +182,7 @@ class _ApplicableWhenValueValidator(
         field_value: Any,
         sibling_values: dict[str, Any],
     ) -> bool:
-        if not _value_is_present(field_value):
+        if not LLMRequestOutputValues.unwrapped_value_is_present(field_value):
             return True
         return sibling_values[constraint.condition_field.name] in constraint.values
 
@@ -229,7 +216,7 @@ class _NotApplicableWhenValueValidator(
         field_value: Any,
         sibling_values: dict[str, Any],
     ) -> bool:
-        if not _value_is_present(field_value):
+        if not LLMRequestOutputValues.unwrapped_value_is_present(field_value):
             return True
         return sibling_values[constraint.condition_field.name] not in constraint.values
 
@@ -265,7 +252,7 @@ class _RequiredWhenValueValidator(
     ) -> bool:
         if sibling_values[constraint.condition_field.name] not in constraint.values:
             return True
-        return _value_is_present(field_value)
+        return LLMRequestOutputValues.unwrapped_value_is_present(field_value)
 
     def _violation_detail(
         self,
