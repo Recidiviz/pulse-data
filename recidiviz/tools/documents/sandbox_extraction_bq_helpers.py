@@ -105,10 +105,6 @@ def create_document_store_tables(
     """Creates the sandbox-prefixed document store tables (metadata, contents,
     upload status, and temp datasets) for one input collection under |sandbox_prefix|,
     so the fresh upload has somewhere to write and the extraction has somewhere to read.
-
-    TODO(OBT-42680): Not yet wired into run_sandbox_extraction, which only reads
-    from the production document store; this will be called once a run can seed a
-    sandbox document store to read from.
     """
     _create_sandbox_tables(
         collections=collect_document_store_source_tables_for_configs(
@@ -251,10 +247,6 @@ def post_entity_resolution_view_input_overrides(
 
     The entry->source map lands in the document store metadata dataset but is a result the
     run writes, so it follows the results prefix rather than the document store prefix.
-
-    TODO(OBT-42680): Not yet wired into run_sandbox_extraction, which only runs the
-    first-order layer; this will be called once the script runs entity resolution and
-    deploys the post-resolution views.
     """
     builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
     _register_extraction_results_overrides(

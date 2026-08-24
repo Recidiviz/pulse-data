@@ -1,0 +1,3 @@
+person_id,document_contents_id,entry_num,source_document_contents_id,source_document_update_datetime,source_array_index
+1001,comp_fake_extractor_collection_location_entity_resolution_1001,1,CID_A,2026-01-01 10:00:00+00:00,
+1002,comp_fake_extractor_collection_location_entity_resolution_1002,1,CID_B,2026-02-01 10:00:00+00:00,

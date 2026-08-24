@@ -1,0 +1,5 @@
+state_code,root_entity_id,source_document_contents_id,source_document_update_datetime,source_array_index,pay_rate_entity_id,rate_amount
+US_XX,1001,CID_A,2026-01-01 10:00:00+00:00,0,1,12.5
+US_XX,1001,CID_A,2026-01-01 10:00:00+00:00,1,1,12.5
+US_XX,1002,CID_B,2026-02-01 10:00:00+00:00,0,1,8.0
+US_XX,1002,CID_B,2026-02-01 10:00:00+00:00,1,1,8.0

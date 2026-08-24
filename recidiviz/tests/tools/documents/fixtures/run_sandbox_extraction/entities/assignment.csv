@@ -1,0 +1,3 @@
+state_code,person_id,assignment_entity_id,assignment_name,assignment_type
+US_XX,1001,1,Dish duty,internal
+US_XX,1002,1,Yard crew,external

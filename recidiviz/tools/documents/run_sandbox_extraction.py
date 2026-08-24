@@ -14,17 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Drives the whole first-order LLM document-extraction end-to-end against
-a single state's extractor.
+"""Drives the whole LLM document-extraction end-to-end against a single state's
+extractor, including the second-order entity-resolution (ER) pass.
 
 It runs against job/document tracking in a local Postgres that this script spins
-up itself, reads the document segment from the state's real document store in
-BigQuery + GCS, makes live Vertex AI calls, and writes the extraction result rows
-into the sandbox-prefixed BigQuery result tables and deploys the parsed views over
-them.
+up itself. The first-order extraction reads its input documents from the state's
+production document store, makes live Vertex AI calls, writes the extraction result
+rows into the --sandbox-prefix-scoped BigQuery result tables, and deploys the parsed
+views over them.
 
-TODO(OBT-42680): There is no way to point this at a sandbox document collection yet —
-it always reads the state's real document store.
+TODO(OBT-42680): There is no way to point the first-order extraction at a sandbox
+document collection yet — it always reads the state's real document store.
+
+For a collection that declares entity groups, an entity-resolution pass then runs
+between the first-order and post-resolution view deploys: for each group it
+generates composite documents from the materialized first-order `__pre_resolution`
+layer, uploads them into the sandbox store, runs the ER extractor over them, and
+deploys the entity-mentions/entities + enriched public views. The ER pass is
+skipped when --document-limit is set (ER over a truncated document set is
+meaningless).
 
 TODO(OBT-42972): Harden against Google ADC expiry mid-run. A large run can outlive the
 Google Application Default Credentials token, and today that just fails the requests (or
@@ -89,7 +97,8 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
@@ -100,12 +109,18 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    collect_entity_resolution_extractor_configs,
     get_first_order_llm_extractor_config,
+)
+from recidiviz.documents.extraction.models.llm_extractor_config import (
+    LLMExtractorConfig,
 )
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
+    collect_post_entity_resolution_llm_extraction_results_view_builders,
 )
 from recidiviz.documents.store.document_store_sandbox_context import (
+    DocumentCollectionSandboxLocation,
     DocumentStoreSandboxContext,
 )
 from recidiviz.ingest.direct.external_id_type_helpers import (
@@ -118,11 +133,16 @@ from recidiviz.tools.documents.sandbox_document_extraction_processor import (
     SandboxExtractionSummary,
 )
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
+    create_document_store_tables,
     create_extraction_results_tables,
     deploy_extraction_results_views,
     first_order_view_input_overrides,
+    post_entity_resolution_view_input_overrides,
 )
-from recidiviz.tools.documents.sandbox_extraction_runners import SandboxExtractionRunner
+from recidiviz.tools.documents.sandbox_extraction_runners import (
+    SandboxDocumentStoreRunner,
+    SandboxExtractionRunner,
+)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -239,25 +259,199 @@ def _local_operations_postgres(*, keep_postgres: bool) -> Generator[None, None, 
         yield
 
 
-def _validate_external_id_type(
-    *, external_id_type: str | None, state_code: StateCode
+def run_document_store_process(
+    *,
+    config: LLMExtractorConfig,
+    results_sandbox_prefix: str,
+    document_store_sandbox: DocumentStoreSandboxContext,
+    table_expiration_ms: int,
+    bq_client: BigQueryClient,
+    fs: GCSFileSystem,
 ) -> None:
-    """Validates that |external_id_type|, if given, is an external ID type
-    registered for |state_code| in external_id_types.py.
+    """Seeds the sandbox document store for one config's input collection: creates
+    its document store tables, then generates and uploads the collection's documents
+    into them, so the extraction has sandbox input data to read."""
+    create_document_store_tables(
+        document_collection=config.input_document_collection,
+        sandbox_prefix=document_store_sandbox.output_prefix_for_writing(
+            config.input_document_collection.name
+        ),
+        table_expiration_ms=table_expiration_ms,
+        bq_client=bq_client,
+    )
+    SandboxDocumentStoreRunner(
+        document_collection=config.input_document_collection,
+        document_store_sandbox=document_store_sandbox,
+        bq_client=bq_client,
+        fs=fs,
+        run_id=f"sandbox_{results_sandbox_prefix}",
+    ).run()
+
+
+def run_extraction(
+    *,
+    config: LLMExtractorConfig,
+    results_sandbox_prefix: str,
+    document_store_sandbox: DocumentStoreSandboxContext,
+    labels: dict[str, str],
+    table_expiration_ms: int,
+    bq_client: BigQueryClient,
+    fs: GCSFileSystem,
+) -> SandboxExtractionSummary | None:
+    """Creates one config's result tables and runs its extraction thread, returning
+    the extraction's summary (None if no work). Reads input from wherever
+    |document_store_sandbox| maps the config's input collection; writes results under
+    the run's results prefix."""
+    create_extraction_results_tables(
+        config=config,
+        sandbox_prefix=results_sandbox_prefix,
+        table_expiration_ms=table_expiration_ms,
+        bq_client=bq_client,
+    )
+
+    job_manager = LLMExtractionJobManager()
+    return SandboxExtractionRunner(
+        config=config,
+        document_store_sandbox=document_store_sandbox,
+        bq_client=bq_client,
+        job_manager=job_manager,
+        processor=DocumentExtractionProcessor(
+            config=config,
+            results_sandbox_prefix=results_sandbox_prefix,
+            document_store_sandbox=document_store_sandbox,
+            labels=labels,
+            bq_client=bq_client,
+            fs=fs,
+            sync_client=VertexAISyncLLMClient(model_config=config.model_config),
+            job_manager=job_manager,
+            persist_chunk_size=DEFAULT_PERSIST_CHUNK_SIZE,
+            request_build_concurrency=DEFAULT_REQUEST_BUILD_CONCURRENCY,
+            progress_log_interval_seconds=DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS,
+        ),
+    ).run()
+
+
+def wait_for_streaming_buffer(args: argparse.Namespace) -> None:
+    """Waits --pre-view-materialization-delay-minutes for streamed result rows to
+    become queryable before a view materialization reads them.
+
+    TODO(OBT-41801): The view materializations query the result tables the run just
+    wrote — but those writes go through streaming inserts, whose rows can sit in the
+    streaming buffer and be invisible to a query for minutes. This delay is a partial
+    mitigation (the buffer can take longer than any reasonable wait, rarely up to
+    ~90 minutes); moving the persister to load jobs (which commit atomically) is the
+    real fix. The entity-resolution pass makes this race causal, not just cosmetic:
+    composite generation reads the materialized `__pre_resolution` table.
     """
-    if external_id_type is None:
+    if not args.pre_view_materialization_delay_minutes:
         return
-    allowed_id_types = external_id_types_by_state_code()[state_code]
-    if external_id_type not in allowed_id_types:
-        raise ValueError(
-            f"Got --external-id-type [{external_id_type}], which is not an "
-            f"external ID type for [{state_code.value}]. Registered types: "
-            f"{sorted(allowed_id_types)}."
+    logging.info(
+        "Waiting %d minute(s) for streamed result rows to become queryable before "
+        "materializing views.",
+        args.pre_view_materialization_delay_minutes,
+    )
+    time.sleep(args.pre_view_materialization_delay_minutes * 60)
+
+
+def run_entity_resolution(
+    *,
+    er_configs: list[LLMExtractorConfig],
+    results_sandbox_prefix: str,
+    document_store_sandbox: DocumentStoreSandboxContext,
+    labels: dict[str, str],
+    table_expiration_ms: int,
+    bq_client: BigQueryClient,
+    fs: GCSFileSystem,
+) -> list[SandboxExtractionSummary]:
+    """Runs the second-order entity-resolution extraction, one |er_config| per entity
+    group declared by the first-order config: for each, generate + upload the
+    composite documents into the sandbox store and run the ER extraction thread over
+    them. Returns the summary of each group's extraction, skipping groups that had no
+    work.
+    """
+    if not er_configs:
+        logging.info("First-order collection declares no entity groups; no ER pass.")
+        return []
+
+    er_summaries: list[SandboxExtractionSummary] = []
+    for er_config in er_configs:
+        # ER composites are always generated into the sandbox, so every ER config
+        # seeds its document store before extracting.
+        run_document_store_process(
+            config=er_config,
+            results_sandbox_prefix=results_sandbox_prefix,
+            document_store_sandbox=document_store_sandbox,
+            table_expiration_ms=table_expiration_ms,
+            bq_client=bq_client,
+            fs=fs,
         )
+        summary = run_extraction(
+            config=er_config,
+            results_sandbox_prefix=results_sandbox_prefix,
+            document_store_sandbox=document_store_sandbox,
+            labels=labels,
+            table_expiration_ms=table_expiration_ms,
+            bq_client=bq_client,
+            fs=fs,
+        )
+        if summary is not None:
+            er_summaries.append(summary)
+
+    return er_summaries
+
+
+def _build_document_store_sandbox(
+    *,
+    results_sandbox_prefix: str,
+    config: LLMExtractorConfig,
+    er_configs: list[LLMExtractorConfig],
+) -> DocumentStoreSandboxContext:
+    """Builds the run's document store sandbox, mapping each collection it reads or
+    writes to a location under |results_sandbox_prefix|.
+
+    The first-order document collection is left unsandboxed (mapped to None):
+    TODO(OBT-42680) there is no way to seed and read a sandbox first-order document
+    store yet, so its contents are read from production. Every entity-resolution
+    composite collection is written to and diffed against its own sandbox copy.
+    """
+    document_collection_locations: dict[
+        str, DocumentCollectionSandboxLocation | None
+    ] = {config.input_document_collection.name: None}
+    for er_config in er_configs:
+        document_collection_locations[
+            er_config.input_document_collection.name
+        ] = DocumentCollectionSandboxLocation(
+            output_prefix=results_sandbox_prefix,
+            diff_read_prefix=results_sandbox_prefix,
+        )
+
+    return DocumentStoreSandboxContext(
+        document_collection_locations=document_collection_locations,
+        extractor_collection_read_prefixes={
+            config.extractor_collection.name: results_sandbox_prefix
+        },
+    )
 
 
 def parse_arguments() -> argparse.Namespace:
     """Parses the command-line arguments for a sandbox extraction run."""
+
+    def _validate_external_id_type(
+        *, external_id_type: str | None, state_code: StateCode
+    ) -> None:
+        """Validates that |external_id_type|, if given, is an external ID type
+        registered for |state_code| in external_id_types.py.
+        """
+        if external_id_type is None:
+            return
+        allowed_id_types = external_id_types_by_state_code()[state_code]
+        if external_id_type not in allowed_id_types:
+            raise ValueError(
+                f"Got --external-id-type [{external_id_type}], which is not an "
+                f"external ID type for [{state_code.value}]. Registered types: "
+                f"{sorted(allowed_id_types)}."
+            )
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--project-id",
@@ -282,13 +476,9 @@ def parse_arguments() -> argparse.Namespace:
         required=True,
         help="The extractor collection to run (e.g. PLAYGROUND_EMPLOYMENT_INFO).",
     )
-    # TODO(OBT-32176): When entity resolution is added to this script, skip the ER
-    # phase when --document-limit is set. Entity resolution across a random,
-    # arbitrarily-truncated set of documents doesn't make sense — the limit pulls
-    # documents without regard to which entities they mention.
     parser.add_argument(
         "--document-limit",
-        type=int,
+        type=positive_int,
         default=None,
         help="Cap the number of documents processed.",
     )
@@ -347,11 +537,15 @@ def parse_arguments() -> argparse.Namespace:
 
 def run_sandbox_extraction(
     args: argparse.Namespace,
-) -> SandboxExtractionSummary | None:
-    """Runs one sandbox extraction end-to-end: creates the result tables, drives
-    the extraction thread, and deploys the parsed views over what it wrote. Returns
-    None if there was no work to do (no eligible documents, or a resumed job whose
-    documents all finished before a crash)."""
+) -> list[SandboxExtractionSummary]:
+    """Runs one sandbox extraction end-to-end: the first-order extraction thread
+    (reading input from the production document store), the first-order view deploy,
+    then the entity-resolution pass. Returns one summary per phase that did work;
+    empty if there was no work in any phase.
+
+    TODO(OBT-45428) Add flags to run only first-order extraction or only the
+    entity-resolution pass.
+    """
     config = get_first_order_llm_extractor_config(
         args.state_code, args.collection
     ).with_sandbox_narrowing(
@@ -361,79 +555,54 @@ def run_sandbox_extraction(
     )
     table_expiration_ms = args.table_expiration_days * 24 * 60 * 60 * 1000
     bq_client = BigQueryClientImpl(project_id=project_id())
+    fs = GcsfsFactory.build()
+    labels = _build_labels(user_labels=args.labels, sandbox_prefix=args.sandbox_prefix)
 
-    # TODO(OBT-42680) This script currently only supports extractions against the real
-    # document store, so there is no sandbox document store to read from. When sandbox
-    # documents are supported, this will point at the sandbox copy the run seeded.
-    document_store_sandbox: DocumentStoreSandboxContext | None = None
-
-    logging.info(
-        "Creating sandbox result tables under prefix [%s].", args.sandbox_prefix
+    # TODO(OBT-45428): Once there is a run-first-order-only flag, reject
+    # --document-limit unless that flag is set (ER over a truncated document set is
+    # meaningless) and drop this gating — the ER pass will then always run its
+    # configs when reached.
+    er_configs = (
+        [
+            er_config
+            for _, er_config in collect_entity_resolution_extractor_configs(
+                first_order_configs=[config]
+            )
+        ]
+        if args.document_limit is None
+        else []
     )
-    create_extraction_results_tables(
+    document_store_sandbox = _build_document_store_sandbox(
+        results_sandbox_prefix=args.sandbox_prefix,
         config=config,
-        sandbox_prefix=args.sandbox_prefix,
+        er_configs=er_configs,
+    )
+
+    # The first-order extraction reads its input from the production document store;
+    # TODO(OBT-42680) there is no sandbox first-order document store to seed and read.
+    first_order_summary = run_extraction(
+        config=config,
+        results_sandbox_prefix=args.sandbox_prefix,
+        document_store_sandbox=document_store_sandbox,
+        labels=labels,
         table_expiration_ms=table_expiration_ms,
         bq_client=bq_client,
+        fs=fs,
     )
 
-    job_manager = LLMExtractionJobManager()
-    summary = SandboxExtractionRunner(
-        config=config,
-        document_store_sandbox=document_store_sandbox,
-        bq_client=bq_client,
-        job_manager=job_manager,
-        processor=DocumentExtractionProcessor(
-            config=config,
-            results_sandbox_prefix=args.sandbox_prefix,
-            document_store_sandbox=document_store_sandbox,
-            labels=_build_labels(
-                user_labels=args.labels, sandbox_prefix=args.sandbox_prefix
-            ),
-            bq_client=bq_client,
-            fs=GcsfsFactory.build(),
-            sync_client=VertexAISyncLLMClient(model_config=config.model_config),
-            job_manager=job_manager,
-            persist_chunk_size=DEFAULT_PERSIST_CHUNK_SIZE,
-            request_build_concurrency=DEFAULT_REQUEST_BUILD_CONCURRENCY,
-            progress_log_interval_seconds=DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS,
-        ),
-    ).run()
+    # Only the streaming-buffer wait is gated on new first-order work; the view
+    # deploy and the entity-resolution pass run regardless, since a --keep-postgres
+    # resume whose first-order documents already finished still needs its (idempotent)
+    # views deployed and its entities resolved from the prior run's results.
+    if first_order_summary is not None and first_order_summary.processed:
+        wait_for_streaming_buffer(args)
 
-    # A run that processed nothing (no eligible documents, or a resumed job whose
-    # work was already done) returns no summary: it wrote no new result rows, so
-    # there is nothing to wait for the streaming buffer on and nothing new for the
-    # views to reflect. Skip the delay and the view redeploy in that case.
-    if summary is None or summary.processed == 0:
-        logging.info("No documents were processed; skipping view materialization.")
-        return summary
-
-    # TODO(OBT-41801): The view materialization below queries the result tables the
-    # run just wrote — but those writes go through streaming inserts, whose rows can
-    # sit in the streaming buffer and be invisible to a query for minutes. So the
-    # materialized views can come back empty or short a few rows even though the run
-    # reported success. --pre-view-materialization-delay-minutes waits before
-    # materializing as a partial mitigation (the buffer can take longer than any
-    # reasonable wait, rarely up to ~90 minutes); moving the persister to load jobs
-    # (which commit atomically) is the real fix that removes this race.
-    if args.pre_view_materialization_delay_minutes:
-        delay_seconds = args.pre_view_materialization_delay_minutes * 60
-        logging.info(
-            "Waiting %d minute(s) for streamed result rows to become queryable "
-            "before materializing views.",
-            args.pre_view_materialization_delay_minutes,
-        )
-        time.sleep(delay_seconds)
-
-    logging.info(
-        "Deploying parsed views over the sandbox result tables under prefix [%s].",
-        args.sandbox_prefix,
+    first_order_view_builders = (
+        collect_first_order_llm_extraction_results_view_builders([config])
     )
     deploy_extraction_results_views(
         config=config,
-        view_builders=collect_first_order_llm_extraction_results_view_builders(
-            [config]
-        ),
+        view_builders=first_order_view_builders,
         results_sandbox_prefix=args.sandbox_prefix,
         input_source_table_overrides=first_order_view_input_overrides(
             config=config,
@@ -442,7 +611,40 @@ def run_sandbox_extraction(
         ),
         table_expiration_ms=table_expiration_ms,
     )
-    return summary
+
+    er_summaries = run_entity_resolution(
+        er_configs=er_configs,
+        results_sandbox_prefix=args.sandbox_prefix,
+        document_store_sandbox=document_store_sandbox,
+        labels=labels,
+        table_expiration_ms=table_expiration_ms,
+        bq_client=bq_client,
+        fs=fs,
+    )
+
+    if any(summary.processed for summary in er_summaries):
+        wait_for_streaming_buffer(args)
+        deploy_extraction_results_views(
+            config=config,
+            view_builders=collect_post_entity_resolution_llm_extraction_results_view_builders(
+                [config]
+            ),
+            results_sandbox_prefix=args.sandbox_prefix,
+            input_source_table_overrides=post_entity_resolution_view_input_overrides(
+                config=config,
+                er_configs=er_configs,
+                first_order_view_builders=first_order_view_builders,
+                results_sandbox_prefix=args.sandbox_prefix,
+                document_store_sandbox=document_store_sandbox,
+            ),
+            table_expiration_ms=table_expiration_ms,
+        )
+
+    summaries: list[SandboxExtractionSummary] = []
+    if first_order_summary is not None:
+        summaries.append(first_order_summary)
+    summaries.extend(er_summaries)
+    return summaries
 
 
 @requires_google_adc
@@ -458,15 +660,15 @@ def main() -> None:
         local_project_id_override(args.project_id),
         _local_operations_postgres(keep_postgres=args.keep_postgres),
     ):
-        summary = run_sandbox_extraction(args)
+        summaries = run_sandbox_extraction(args)
 
-    if summary is None:
+    if not summaries:
         logging.info(
-            "=== Sandbox extraction complete: no work to do (no eligible documents, "
-            "or a resumed run whose documents all finished). ==="
+            "=== Sandbox extraction complete: no work in any phase (no eligible "
+            "documents, or a resumed run whose documents all finished). ==="
         )
-        return
-    summary.log()
+    for summary in summaries:
+        summary.log()
 
 
 if __name__ == "__main__":

@@ -198,7 +198,10 @@ _UNMARKED_DOCUMENT = _ExtractionJobDocumentSnapshot(
 )
 
 
-# TODO(OBT-32105) Add more tests: partial failures, cross-run postgres state etc.
+# TODO(OBT-46375) Add a mixed-outcome run: one document succeeds while another
+# fails (LLM request error / validation failure) in the same run, asserting the
+# job-level PARTIAL_FAILURE roll-up, divergent per-doc result rows, and the
+# summary aggregating counts + tokens from only the successful doc.
 class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
     """Runs the extraction thread end-to-end against a real Postgres and the BQ
     emulator."""

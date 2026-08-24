@@ -66,8 +66,15 @@ class DocumentCollectionDiffQueryBuilder:
         latest_query = DocumentCollectionMetadataTableQueryBuilder().build_latest_documents_query(
             config,
             metadata_table_address=metadata_table_address,
-            # TODO(OBT-32176): Revisit if we need to pass a filter config through
-            # here when doing ER document discovery in a sandbox.
+            # TODO(OBT-42680): Once a sandbox run can seed and read a narrowed
+            # first-order document store, thread through here as the document_filter.
+            # A narrowed run generates new_docs for only its root entities, so if
+            # current_docs (the whole metadata table) is left un-narrowed, the
+            # presence diff above reports every other root entity as a phantom
+            # deletion. Not reachable today: first-order does not run discovery
+            # yet, and ER discovery generates composites from the already-
+            # narrowed first-order results while the generated ER config
+            # itself carries no narrowing, so None is correct for now.
             document_filter=None,
         )
 

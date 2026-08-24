@@ -1,0 +1,5 @@
+state_code,root_entity_id,source_document_contents_id,source_document_update_datetime,source_array_index,assignment_entity_id,assignment_name,assignment_type
+US_XX,1001,CID_A,2026-01-01 10:00:00+00:00,0,1,Dish duty,internal
+US_XX,1001,CID_A,2026-01-01 10:00:00+00:00,1,1,Dish duty,internal
+US_XX,1002,CID_B,2026-02-01 10:00:00+00:00,0,1,Yard crew,external
+US_XX,1002,CID_B,2026-02-01 10:00:00+00:00,1,1,Yard crew,external
