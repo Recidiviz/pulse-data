@@ -17,19 +17,13 @@
 """
 Helper SQL queries for Michigan
 """
-from google.cloud import bigquery
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.calculator.query.bq_utils import (
-    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
-    create_sub_sessions_with_attributes,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
@@ -44,11 +38,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.regions.us_mi.constants import ACTIVE_SUPERVISION_STATUSES
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.classification_score_component_big_query_view_builder import (
-    COMPONENT_SCORE_COLUMN_NAME,
-    INITIAL_COMPONENT_SCORE_COLUMN_NAME,
-)
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -1314,200 +1303,3 @@ def secondary_officer_dockets_cte() -> str:
             GROUP BY 1
         )
     """
-
-
-def us_mi_program_completion_count_reasons_field(
-    *,
-    count_column_name: str,
-    program_level: str,
-) -> ReasonsField:
-    """Returns the ReasonsField carrying a cumulative program completion count, given the
-    column name the count is emitted under and the human-readable program level (e.g.
-    "high") it counts."""
-    return ReasonsField(
-        name=count_column_name,
-        type=bigquery.enums.StandardSqlTypeNames.INT64,
-        description=(
-            f"Cumulative count of completed {program_level}-level programs the person "
-            f"has completed on or before the span (deduplicated by program "
-            f"recommendation and start date, with no time window)."
-        ),
-    )
-
-
-def us_mi_initial_component_score_reasons_field(score_description: str) -> ReasonsField:
-    """Returns the ReasonsField carrying a question's initial-form score, given a
-    description of how that score is derived.
-
-    TODO(OBT-41792): Remove once MI's per-form score mappings move to CSV and the
-    initial score gets its own score component views."""
-    return ReasonsField(
-        name=INITIAL_COMPONENT_SCORE_COLUMN_NAME,
-        type=bigquery.enums.StandardSqlTypeNames.INT64,
-        description=(
-            f"The points this question contributes to MI's INITIAL classification "
-            f"score during the span (the span's `component_score` carries the "
-            f"reclassification score). {score_description} "
-            f"TODO(OBT-41792): This score is carried in the reason blob as a "
-            f"workaround and is not covered by the score component span "
-            f"validations; it will move to its own `component_score` column."
-        ),
-    )
-
-
-# `Program_End_Reason` values in COMS_Program_Recommendations that indicate the
-# person completed the program.
-COMS_PROGRAM_COMPLETION_END_REASONS = ["Completed", "GED/HSE Verified"]
-
-# Raw datetime columns in the _latest view are strings of this format.
-_RAW_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-
-def _parse_raw_date(col_name: str) -> str:
-    """Returns SQL parsing a raw COMS datetime string column into a DATE."""
-    return f"DATE(SAFE.PARSE_DATETIME('{_RAW_DATETIME_FORMAT}', SUBSTR({col_name}, 1, 19)))"
-
-
-def build_program_completion_count_query_template(
-    *,
-    program_name_patterns: list[str],
-    count_column_name: str,
-) -> str:
-    """Returns a query template that counts completed program completions whose
-    COMS `Program` name matches any of the given LIKE patterns, as a cumulative,
-    span-based count.
-
-    Completions are deduplicated by program recommendation + program start date,
-    and each such (recommendation, start date) completion contributes to the
-    count from its completion (end) date onward, with no time window.
-
-    Emits the classification score component span contract, so the result can be wrapped
-    by ClassificationScoreComponentBigQueryViewBuilder: `component_score` is a NULL
-    placeholder (no points are mapped to program completion counts yet) and the count is
-    exposed as a reason field named |count_column_name|.
-
-    program_name_patterns: SQL LIKE patterns (case-sensitive, `%` wildcards
-        allowed) for the COMS `Program` names that make up this program level.
-    count_column_name: name of the output column holding the cumulative count.
-    """
-    # Expanded into an OR of LIKEs rather than `LIKE ANY (...)`, which the
-    # BigQuery emulator used in view-graph validation does not support.
-    program_name_match_clause = " OR ".join(
-        f"program.Program LIKE '{pattern}'" for pattern in program_name_patterns
-    )
-    return f"""
--- Completed program recommendations, one row per completion, deduplicated by
--- program recommendation + program start date.
-WITH completed_programs AS (
-    SELECT
-        pei.state_code,
-        pei.person_id,
-        -- Unique identifier for a completion: the dedup key is program
-        -- recommendation + start date, so key the count on that pair. Start_Date
-        -- can be NULL, so coalesce it to keep the id (and the count) intact.
-        CONCAT(program.Program_Recommendation_Id, '|', COALESCE(program.Start_Date, '')) AS completion_id,
-        {_parse_raw_date('program.End_Date')} AS completion_date,
-    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Program_Recommendations_latest` program
-    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-        ON program.Offender_Number = pei.external_id
-        AND pei.state_code = 'US_MI'
-        AND pei.id_type = 'US_MI_DOC'
-    WHERE ({program_name_match_clause})
-        AND program.Program_End_Reason IN ({list_to_query_string(COMS_PROGRAM_COMPLETION_END_REASONS, quoted=True)})
-        AND program.End_Date IS NOT NULL
-    -- Deduplicate by program recommendation + program start date
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY program.Program_Recommendation_Id, program.Start_Date
-        ORDER BY program.End_Date
-    ) = 1
-)
-,
--- Each completion contributes to the count from its completion date onward
--- (open-ended span), so the count as of any date is cumulative.
-completion_spans AS (
-    SELECT
-        person_id,
-        state_code,
-        completion_id,
-        completion_date AS start_date,
-        CAST(NULL AS DATE) AS end_date,
-    FROM completed_programs
-)
-,
--- Break overlapping completion spans into non-overlapping sub-sessions
-{create_sub_sessions_with_attributes(
-    'completion_spans',
-    index_columns=['person_id', 'state_code'],
-)}
-,
--- Count the distinct completed programs active in each sub-session
-completion_counts AS (
-    SELECT
-        person_id,
-        state_code,
-        start_date,
-        end_date,
-        COUNT(DISTINCT completion_id) AS {count_column_name},
-    FROM sub_sessions_with_attributes
-    GROUP BY person_id, state_code, start_date, end_date
-)
-SELECT
-    person_id,
-    state_code,
-    start_date,
-    end_date,
-    -- No points are mapped to program completion counts yet, so the score is a
-    -- placeholder; the count itself is carried in the reason fields until MI's
-    -- point values land. See TODO(OBT-41792) on the views built from this template.
-    CAST(NULL AS INT64) AS {COMPONENT_SCORE_COLUMN_NAME},
-    TO_JSON(STRUCT({count_column_name})) AS reason,
-    {count_column_name},
-FROM completion_counts
-"""
-
-
-# Regex patterns for categorizing Michigan incarceration incidents by offense code.
-# Matched against OFFENSE_CODE_LIST in incident_metadata (e.g., "102,203").
-# Each pattern anchors to a digit prefix — codes are stored as strings like "102", "214".
-_US_MI_VIOLENT_OFFENSE_CODE_PATTERN = (
-    r"\d02|\d03|\d04|\d05|\d07|\d08|\d09|\d10|\d11|\d15|\d16|\d13|\d51|\d52|\d53|\d22"
-)
-_US_MI_FIGHT_THREATEN_POW_OFFENSE_CODE_PATTERN = r"\d12|\d14|\d29"
-
-
-def mi_classification_policy_2026_incidents() -> str:
-    """Returns a SQL CTE that retrieves Michigan Class I and II incarceration incidents
-    with relevant metadata.
-
-    Pulls from us_mi_incarceration_incidents_preprocessed_materialized, which already
-    filters to Class I/II incidents with non-dismissed outcomes.
-
-    Incident categories:
-    - violent: offense codes matching the violent pattern
-    - fight_threaten_pow: offense codes matching the fight/threaten/POW pattern
-    - other_class_i_or_ii: any Class I or II incident not in the above categories
-    """
-    return f"""(
-        SELECT
-            i.person_id,
-            i.state_code,
-            i.incarceration_incident_id,
-            i.incident_date,
-            i.incident_type_raw_text,
-            CASE
-                WHEN i.incident_severity = 'HIGHEST' THEN 'I'
-                WHEN i.incident_severity = 'SECOND_HIGHEST' THEN 'II'
-            END AS incident_class,
-            CASE
-                WHEN REGEXP_CONTAINS(
-                    JSON_EXTRACT_SCALAR(i.incident_metadata, '$.OFFENSE_CODE_LIST'),
-                    r'{_US_MI_VIOLENT_OFFENSE_CODE_PATTERN}'
-                ) THEN 'violent'
-                WHEN REGEXP_CONTAINS(
-                    JSON_EXTRACT_SCALAR(i.incident_metadata, '$.OFFENSE_CODE_LIST'),
-                    r'{_US_MI_FIGHT_THREATEN_POW_OFFENSE_CODE_PATTERN}'
-                ) THEN 'fight_threaten_pow'
-                ELSE 'other_class_i_or_ii'
-            END AS incident_category,
-        FROM `{{project_id}}.analyst_data.us_mi_incarceration_incidents_preprocessed_materialized` i
-    )"""
