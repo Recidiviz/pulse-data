@@ -29,9 +29,43 @@ locals {
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
         }
+        # One CO job covering every continuous pathway, not one job per
+        # pathway. CO's instance refuses a second session for an account that
+        # already has one, so parallel jobs would collide; flows named together
+        # share a single login.
+        #
+        # Only the continuous pathways belong here. Certificates and GED are
+        # one-time retroactive corrections — going forward CDOC awards the new
+        # amounts natively — so they are run from the CLI, not scheduled.
+        #
+        # TODO(OBT-22951): this job cannot run yet, for two independent
+        # reasons. Both are harmless while the schedule is paused below, and
+        # both have to be cleared before it is unpaused.
+        #
+        #   1. CO's current login cannot run in the deployed image, so the job
+        #      would fail before doing any work. This file is mirrored publicly,
+        #      so the details are in recidiviz/eomis/us_co/, which is not.
+        #
+        #      The resolution is to wait rather than to change the image: once
+        #      CDOC provides a service account and whitelists our IP, CO logs in
+        #      the same way AR does and the problem disappears. Leave this
+        #      paused until then.
+        #   2. None of the four pathway candidate views exist yet -- not just
+        #      co_work. Verified 2026-08-21: work, certificate, ged and edovo
+        #      are all absent from the earned_time dataset, so both flows named
+        #      above fail at candidate load with an explicit BigQuery "table not
+        #      found". The retroactive round does not need them (the CLI takes
+        #      offender ids and a target directly); the scheduled continuous run
+        #      does.
+        #
+        # Renaming the key from "us-co-edovo" destroys and recreates the job and
+        # its scheduler rather than updating them in place -- for_each keys are
+        # resource identity. Safe here: the job is paused and holds no state, and
+        # the plan shows it as 3 destroy / 4 add rather than a surprise.
+        #
         # Daily to match AR; deployed paused until CDOC confirms cadence.
-        "us-co-edovo" = {
-          args      = ["--flow=co_edovo"]
+        "us-co-continuous" = {
+          args      = ["--flow=co_edovo", "--flow=co_work"]
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
         }
