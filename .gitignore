@@ -120,6 +120,11 @@ venv.bak/
 .runtimeconfig.json
 service_account.json
 
+# Exported login credentials. Committing one means re-issuing it, not just
+# deleting the file, so this is a backstop -- the tools that write these already
+# refuse to do so inside the checkout.
+*passkey*.json
+
 # Spyder project settings
 .spyderproject
 .spyproject

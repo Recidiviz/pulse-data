@@ -183,6 +183,10 @@ dev = [
     "black[jupyter]==22.3.0",
     "pre-commit",
     "proto-plus",
+    # Used by attended state tooling that has to drive a browser. A dev extra on
+    # purpose, and permanently so: it pulls a Chromium build that has no place in
+    # the deployed image. Needs `uv run playwright install chromium`.
+    "playwright",
     "pygtrie",
     "rope",
     "ruamel.yaml",

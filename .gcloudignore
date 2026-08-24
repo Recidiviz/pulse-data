@@ -231,3 +231,8 @@ recidiviz/research/notebooks/astromberg/output/*
 
 # ggshield writes this cache dir into the repo root on first run.
 .cache_ggshield
+
+# Exported login credentials. Committing one means re-issuing it, not just
+# deleting the file, so this is a backstop -- the tools that write these already
+# refuse to do so inside the checkout.
+*passkey*.json
