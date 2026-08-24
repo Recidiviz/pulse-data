@@ -54,6 +54,16 @@ bandit/**
 docs/**
 # Exclude research directory (which has analytical and ad hoc work)
 recidiviz/research/**
+# TODO(OBT-22951): delete this block when the copy.bara.sky one goes -- these
+# lists are kept in sync. See mirror/copy.bara.sky for why the eOMIS writeback
+# is not published.
+recidiviz/eomis/**
+recidiviz/tools/eomis/**
+recidiviz/tests/eomis/**
+recidiviz/tests/tools/eomis/**
+recidiviz/entrypoints/eomis_writeback.py
+recidiviz/tests/entrypoints/eomis_writeback_test.py
+recidiviz/tests/tools/validate_source_visibility_eomis_test.py
 # old paths
 recidiviz/ingest/scrape/{regions,vendors}/**
 recidiviz/tests/ingest/scrape/{regions,vendors}/**

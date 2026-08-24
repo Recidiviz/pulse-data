@@ -791,33 +791,6 @@ def test_entrypoint_executor_dependencies() -> None:
     )
 
 
-def test_entrypoint_eomis_writeback_dependencies() -> None:
-    """Test that the eomis_writeback entrypoint has valid dependencies."""
-    validate_dependencies_for_entrypoint(
-        "recidiviz.entrypoints.eomis_writeback",
-        valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.big_query",
-                "recidiviz.calculator.query.state.dataset_config",
-                "recidiviz.cloud_resources",
-                "recidiviz.cloud_storage.gcsfs_path",
-                "recidiviz.common",
-                "recidiviz.datasets.static_data.terraform_managed.config",
-                "recidiviz.entrypoints.entrypoint_interface",
-                "recidiviz.entrypoints.eomis_writeback",
-                "recidiviz.eomis",
-                "recidiviz.ingest.direct.types.direct_ingest_instance",
-                "recidiviz.metrics.metric_big_query_view",
-                "recidiviz.persistence.database.reserved_words",
-                "recidiviz.persistence.database.schema_type",
-                "recidiviz.source_tables",
-                "recidiviz.utils",
-            },
-        ),
-        explicitly_invalid_package_dependencies=["apache_beam"],
-    )
-
-
 def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
     """Test that report_metric_export_timeliness entrypoint has valid dependencies."""
     validate_dependencies_for_entrypoint(

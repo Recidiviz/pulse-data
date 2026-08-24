@@ -80,6 +80,20 @@ resource "google_project_iam_member" "eomis_writeback_runtime_iam" {
   member   = "serviceAccount:${local.eomis_writeback_sa_email}"
 }
 
+# Read access to the configs bucket, where the writeback kill switch's pause
+# markers live. Bucket-scoped: the job needs one prefix, not project-wide storage.
+# Without it the kill-switch check 403s and every run dies at startup.
+#
+# objectViewer is sufficient because the check *lists* the marker prefix
+# (storage.objects.list) rather than fetching bucket metadata. Reading the bucket
+# itself would need storage.buckets.get, which this role does not carry.
+resource "google_storage_bucket_iam_member" "eomis_writeback_configs_reader" {
+  count  = local.eomis_writeback_enabled ? 1 : 0
+  bucket = module.configs.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${local.eomis_writeback_sa_email}"
+}
+
 # Streaming-insert access for the audit ledger, scoped to that dataset only.
 resource "google_bigquery_dataset_iam_member" "eomis_writeback_audit_ledger_editor" {
   count      = local.eomis_writeback_enabled ? 1 : 0

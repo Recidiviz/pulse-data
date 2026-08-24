@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests US_AR support for Edovo course completions."""
+"""Tests the states the Edovo course-completion endpoint accepts, and US_AR
+support for course completions."""
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -24,6 +25,9 @@ from unittest.mock import MagicMock, patch
 from flask import Flask
 
 from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.calculator.query.state.views.reference.product_person_external_id_helpers import (
+    get_product_display_person_external_id_types_by_state,
+)
 from recidiviz.case_triage.edovo.course_completion_models import CourseCompletionRequest
 from recidiviz.case_triage.edovo.credit_calculator import (
     HOURS_PER_CREDIT_BY_STATE,
@@ -40,6 +44,7 @@ from recidiviz.common.constants.state.external_id_types import (
     US_AR_OFFENDERID,
     US_CO_ADCNUMBER,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.case_triage.schema import (
     EdovoCourseCompletion,
@@ -71,6 +76,8 @@ _AR_PAYLOAD: dict[str, object] = {
 
 
 class TestSupportedStates(TestCase):
+    """Tests the supported-state configuration."""
+
     def test_us_ar_maps_to_adcnumber(self) -> None:
         self.assertEqual(US_AR_ADCNUMBER, SUPPORTED_STATES[StateCode.US_AR])
 
@@ -83,6 +90,34 @@ class TestSupportedStates(TestCase):
                 self.assertTrue(
                     id_type.startswith(f"{state_code.value}_"),
                     f"id_type [{id_type}] is not an id_type of [{state_code.value}]",
+                )
+
+    def test_id_types_agree_with_the_product_display_id_type(self) -> None:
+        """Edovo identifies a learner by the DOC-facing number, which is also the
+        id Workflows displays for an incarceration product — today the two agree
+        for every supported state.
+
+        They are asserted equal here rather than SUPPORTED_STATES being derived
+        from the product helper, because the two are different kinds of decision
+        that only happen to coincide. What Edovo sends is fixed by our API
+        contract with them; the product display id is ours to change. Deriving
+        one from the other would let an internal product change silently alter
+        which id_type the external endpoint accepts. This test instead fails
+        loudly if either side moves, so the divergence gets a human decision.
+        """
+        product_id_types = get_product_display_person_external_id_types_by_state(
+            StateSystemType.INCARCERATION
+        )
+        for state_code, edovo_id_type in SUPPORTED_STATES.items():
+            with self.subTest(state_code=state_code):
+                self.assertEqual(
+                    product_id_types[state_code],
+                    edovo_id_type,
+                    f"The Edovo id_type for [{state_code.value}] no longer matches "
+                    f"the product display id type. If this is intentional, confirm "
+                    f"the change against the Edovo API spec before updating either "
+                    f"side — Edovo's submitted id is set by contract, not by our "
+                    f"product configuration.",
                 )
 
 
