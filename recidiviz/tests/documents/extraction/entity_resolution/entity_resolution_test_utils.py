@@ -15,13 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shared helpers for entity-resolution tests: loaders for the fake first-order
-collection/extractor, lookups for their entity groups, and the ER composite-document
-collection and extractor configs generated from them.
+collection/extractor, lookups for their entity groups, the ER composite-document
+collection and extractor configs generated from them, and builders for the fake
+composite-document generation-output rows the ER pass materializes.
 """
+import datetime
 from contextlib import AbstractContextManager
+from typing import Any
 from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_composite_document_query_builder import (
+    ENTRY_NUM_FIELD_NAME,
+    ENTRY_SOURCE_MAP_COLUMN_NAME,
+    SOURCE_ARRAY_INDEX_FIELD_NAME,
+    SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME,
+    SOURCE_DOCUMENT_UPDATE_DATETIME_FIELD_NAME,
+)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
 )
@@ -36,6 +46,11 @@ from recidiviz.documents.extraction.models.llm_extractor_collection_config impor
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_TEXT_COLUMN_NAME,
+    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.tests.documents import fake_config
 
@@ -145,3 +160,54 @@ def fake_entity_resolution_extractor_config(group_name: str) -> LLMExtractorConf
         f"Found no generated entity-resolution config for entity group "
         f"[{group_name}]."
     )
+
+
+def build_fake_entry_source_map_entry(
+    *,
+    entry_num: int,
+    source_document_contents_id: str,
+    source_document_update_datetime: datetime.datetime,
+    source_array_index: int | None,
+) -> dict[str, Any]:
+    """Returns one element of a composite generation-output row's nested
+    `entry_source_map` array, mapping a numbered composite entry back to the
+    first-order mention occurrence it was rendered from. |source_array_index| is
+    None for a top-level entity group.
+    """
+    return {
+        ENTRY_NUM_FIELD_NAME: entry_num,
+        SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME: source_document_contents_id,
+        SOURCE_DOCUMENT_UPDATE_DATETIME_FIELD_NAME: (
+            source_document_update_datetime.isoformat()
+        ),
+        SOURCE_ARRAY_INDEX_FIELD_NAME: source_array_index,
+    }
+
+
+def build_fake_composite_generation_output_row(
+    *,
+    root_entity_id_column: str,
+    root_entity_id: int,
+    document_contents_id: str,
+    document_update_datetime: datetime.datetime,
+    entries: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Returns one row of an ER collection's composite-document generation output:
+    the aggregated text a root entity's mentions render to, plus the
+    `entry_source_map` linking each numbered entry back to its first-order
+    occurrence. |entries| are built by build_fake_entry_source_map_entry.
+
+    The row shape mirrors build_bq_document_generation_output_schema for an ER
+    collection; the composite's own text is a fixed placeholder nothing under test
+    reads.
+    """
+    return {
+        root_entity_id_column: root_entity_id,
+        DOCUMENT_CONTENTS_ID_COLUMN_NAME: document_contents_id,
+        DOCUMENT_TEXT_COLUMN_NAME: (
+            f"composite for {root_entity_id_column} {root_entity_id} "
+            f"({document_contents_id})"
+        ),
+        DOCUMENT_UPDATE_DATETIME_COLUMN_NAME: document_update_datetime.isoformat(),
+        ENTRY_SOURCE_MAP_COLUMN_NAME: entries,
+    }
