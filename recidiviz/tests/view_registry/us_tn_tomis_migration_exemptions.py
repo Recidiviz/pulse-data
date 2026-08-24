@@ -245,10 +245,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         CLIENT_RECORD_VIEW_BUILDER.address: "TODO(TN-1979): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-1983): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: "TODO(TN-1983): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: "TODO(TN-1980): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-1983): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: "TODO(TN-1981): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1982): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.ContactNoteComment_latest"

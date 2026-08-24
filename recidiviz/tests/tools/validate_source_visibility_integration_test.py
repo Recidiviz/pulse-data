@@ -587,6 +587,7 @@ def test_case_triage_server_dependencies() -> None:
                 "recidiviz.common",
                 "recidiviz.firestore",
                 "recidiviz.ingest.direct.dataset_config",
+                "recidiviz.ingest.direct.feature_flags_registry",
                 "recidiviz.ingest.direct.regions.us_mi.constants",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
                 "recidiviz.ingest.views.dataset_config",
