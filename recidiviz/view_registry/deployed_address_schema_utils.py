@@ -132,6 +132,9 @@ from recidiviz.calculator.query.state.views.sessions.state_staff_role_subtype_de
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.TOMIS_CODESTABLE import (
+    US_TN_TOMIS_CODESTABLE_ANALOG_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
@@ -305,6 +308,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address,
         US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
+        US_TN_TOMIS_CODESTABLE_ANALOG_VIEW_BUILDER.address,
         US_TX_CLIENT_METADATA_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
         US_AR_RESIDENT_DATA_VIEW_BUILDER.address,
