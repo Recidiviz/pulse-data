@@ -44,6 +44,9 @@ from recidiviz.validation.views.classification.configured_validations import (
 from recidiviz.validation.views.sentencing.case_insights_rates_missing_charges import (
     CASE_INSIGHTS_RATES_MISSING_CHARGES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.sentencing.us_mo_sentencing_case_no_linked_offenses import (
+    US_MO_SENTENCING_CASE_NO_LINKED_OFFENSES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.sentencing.us_mo_sentencing_sentence_cohort_data_issues import (
     US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
 )
@@ -645,6 +648,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=CASE_INSIGHTS_RATES_MISSING_CHARGES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             hard_num_allowed_rows=5,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MO_SENTENCING_CASE_NO_LINKED_OFFENSES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
