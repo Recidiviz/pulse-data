@@ -17,8 +17,6 @@
 """Tests for sandbox_extraction_runners.py"""
 
 import copy
-import csv
-import io
 import threading
 from pathlib import Path
 from typing import Any
@@ -29,7 +27,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMDocumentExtractionErrorType,
@@ -93,6 +91,9 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
+)
+from recidiviz.tests.big_query.big_query_emulator_with_gcs_test_case import (
+    BigQueryEmulatorWithGCSTestCase,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
@@ -841,56 +842,7 @@ _RAW_INPUT_NOTES_SCHEMA = [
 ]
 
 
-class _FakeGcsCsvLoader:
-    """Stand-in for BigQueryClientImpl.load_table_from_cloud_storage that reads the
-    upload-status CSVs the uploader wrote to a FakeGCSFileSystem and streams them into
-    the destination emulator table. The emulator cannot load from a gs:// URI backed by
-    the fake filesystem, so this replaces only that GCS→BQ transport step; every other
-    query in the recorder runs for real against the emulator."""
-
-    def __init__(self, *, fs: FakeGCSFileSystem, bq_client: Any) -> None:
-        self.fs = fs
-        self.bq_client = bq_client
-
-    def __call__(
-        self,
-        *,
-        source_uris: list[str],
-        destination_address: BigQueryAddress,
-        destination_table_schema: list[bigquery.SchemaField],
-        **_kwargs: Any,
-    ) -> mock.MagicMock:
-        column_names = [field.name for field in destination_table_schema]
-        rows = [
-            dict(zip(column_names, values))
-            for uri in source_uris
-            for values in self._read_csv_rows(uri)
-        ]
-        if rows:
-            self.bq_client.stream_into_table(destination_address, rows=rows)
-        return mock.MagicMock()
-
-    def _read_csv_rows(self, source_uri: str) -> list[list[str | None]]:
-        # source_uri is a "<directory>/*.csv" glob; read every CSV the uploader wrote
-        # under that directory out of the fake filesystem.
-        directory = GcsfsDirectoryPath.from_absolute_path(source_uri.rsplit("/", 1)[0])
-        rows: list[list[str | None]] = []
-        for path in self.fs.ls(
-            directory.bucket_name, blob_prefix=directory.relative_path
-        ):
-            if not isinstance(path, GcsfsFilePath) or not path.abs_path().endswith(
-                ".csv"
-            ):
-                continue
-            contents = self.fs.download_as_string(path)
-            rows.extend(
-                [value or None for value in row]
-                for row in csv.reader(io.StringIO(contents))
-            )
-        return rows
-
-
-class SandboxDocumentStoreRunnerTest(BigQueryEmulatorTestCase):
+class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
     """Runs SandboxDocumentStoreRunner's discovery → batch → GCS upload → record
     pipeline end-to-end against the BQ emulator and a fake GCS for a first-order
     collection, asserting on the metadata/contents rows and GCS text it writes.
@@ -942,7 +894,6 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.fs = FakeGCSFileSystem()
         # SandboxDocumentStoreRunner delegates to NewDocumentDiscoverer /
         # DocumentUploadResultRecorder, which re-resolve the collection config from the
         # production config module; point that resolution at the fake module.
@@ -952,17 +903,8 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorTestCase):
             fake_config,
         )
         self.config_module_patcher.start()
-        # The recorder loads upload-status CSVs from GCS into BQ; the emulator can't read
-        # a gs:// URI backed by the fake filesystem, so replace only that transport step.
-        self.load_csvs_patcher = mock.patch.object(
-            self.bq_client,
-            "load_table_from_cloud_storage",
-            _FakeGcsCsvLoader(fs=self.fs, bq_client=self.bq_client),
-        )
-        self.load_csvs_patcher.start()
 
     def tearDown(self) -> None:
-        self.load_csvs_patcher.stop()
         self.config_module_patcher.stop()
         self._clear_emulator_table_data()
         super().tearDown()
