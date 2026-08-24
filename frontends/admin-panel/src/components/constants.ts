@@ -95,7 +95,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
 } satisfies Record<string, string>;
 
 export const ALLOWED_APPS_LABELS = {
-  staff: "Staff (dashboard.recidiviz.org)",
+  staff: "Staff (dashboard.recidiviz.org, meet.)",
   jii: "JII (opportunities.app)",
 } satisfies Record<string, string>;
 

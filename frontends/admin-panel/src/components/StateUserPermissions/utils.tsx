@@ -309,8 +309,8 @@ export const getUserPermissionsTableColumns = (
     },
     {
       title: titleWithInfoTooltip(
-        "Allowed Apps (In Development)",
-        "Top-level access-control for each of our apps. NOTE: This feature is still in development and currently does nothing."
+        "Allowed Apps",
+        "Top-level access-control for each of our apps"
       ),
       dataIndex: "allowedApps",
       key: "allowedApps",
@@ -577,8 +577,8 @@ export const getRolePermissionsTableColumns = (
     },
     {
       title: titleWithInfoTooltip(
-        "Allowed Apps (In Development)",
-        "Top-level access-control for each of our apps. NOTE: This feature is still in development and currently does nothing."
+        "Allowed Apps",
+        "Top-level access-control for each of our apps"
       ),
       dataIndex: "allowedApps",
       key: "allowedApps",
