@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for LLMDocumentExtractionRequestBuilder."""
+"""Tests for LLMDocumentExtractionRequestBuilder and
+GCSLLMDocumentExtractionRequestBuilder.
+"""
 
 from typing import Any
 from unittest import TestCase
@@ -22,6 +24,7 @@ from unittest import TestCase
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
+    GCSLLMDocumentExtractionRequestBuilder,
     LLMDocumentExtractionRequestBuilder,
     LLMDocumentExtractionRequestError,
 )
@@ -35,6 +38,9 @@ from recidiviz.documents.store.document_store_gcs_path_utils import (
 from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_extractor_config,
+)
 from recidiviz.utils.types import assert_type
 
 _PROJECT_ID = "recidiviz-testing"
@@ -50,6 +56,7 @@ _REQUEST_PARAMETERS: dict[str, Any] = {
     "temperature": 0.0,
     "labels": {"state_code": "us_xx"},
 }
+_BILLING_LABELS = {"state_code": "us_xx"}
 _DOCUMENT_CONTENTS_ID = "a" * 64
 
 
@@ -66,13 +73,73 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
     """Tests for LLMDocumentExtractionRequestBuilder."""
 
     def setUp(self) -> None:
+        self.builder = LLMDocumentExtractionRequestBuilder(
+            instructions_prompt=_INSTRUCTIONS_PROMPT,
+            response_json_schema=_RESPONSE_JSON_SCHEMA,
+            request_parameters=_REQUEST_PARAMETERS,
+        )
+
+    def test_build_request_for_text_assembles_request(self) -> None:
+        request = self.builder.build_request_for_text(
+            document_contents_id=_DOCUMENT_CONTENTS_ID,
+            document_text="Client started a new job.",
+        )
+
+        self.assertEqual(
+            LLMDocumentExtractionRequest(
+                document_contents_id=_DOCUMENT_CONTENTS_ID,
+                system_prompt=_INSTRUCTIONS_PROMPT,
+                document_text="Client started a new job.",
+                response_json_schema=_RESPONSE_JSON_SCHEMA,
+                request_parameters=_REQUEST_PARAMETERS,
+            ),
+            request,
+        )
+
+    def test_build_request_for_text_empty_text_raises(self) -> None:
+        # A caller that already holds the text is responsible for not handing over
+        # an empty document, so this is an error rather than a skipped document.
+        with self.assertRaises(LLMDocumentExtractionRequestError) as cm:
+            self.builder.build_request_for_text(
+                document_contents_id=_DOCUMENT_CONTENTS_ID, document_text=""
+            )
+
+        self.assertEqual(_DOCUMENT_CONTENTS_ID, cm.exception.document_contents_id)
+
+    def test_for_config(self) -> None:
+        config = fake_first_order_extractor_config()
+
+        builder = LLMDocumentExtractionRequestBuilder.for_config(
+            config=config, billing_labels=_BILLING_LABELS
+        )
+
+        self.assertEqual(
+            LLMDocumentExtractionRequestBuilder(
+                instructions_prompt=config.instructions_prompt,
+                response_json_schema=config.extractor_collection.generate_json_schema(),
+                # The US_XX fake extractor binds the ACME_LARGE_DETERMINISTIC model
+                # config, which sets temperature and thinking_budget_tokens.
+                request_parameters={
+                    "temperature": 0.0,
+                    "thinking_budget_tokens": 0,
+                    "labels": _BILLING_LABELS,
+                },
+            ),
+            builder,
+        )
+
+
+class GCSLLMDocumentExtractionRequestBuilderTest(TestCase):
+    """Tests for GCSLLMDocumentExtractionRequestBuilder."""
+
+    def setUp(self) -> None:
         self.fs = FakeGCSFileSystem()
         self.builder = self._builder(source_sandbox_prefix=None)
 
     def _builder(
         self, *, source_sandbox_prefix: str | None
-    ) -> LLMDocumentExtractionRequestBuilder:
-        return LLMDocumentExtractionRequestBuilder(
+    ) -> GCSLLMDocumentExtractionRequestBuilder:
+        return GCSLLMDocumentExtractionRequestBuilder(
             fs=self.fs,
             project_id=_PROJECT_ID,
             state_code=_STATE_CODE,

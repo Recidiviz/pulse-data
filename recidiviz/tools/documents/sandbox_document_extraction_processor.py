@@ -36,6 +36,7 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
     EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
+    GCSLLMDocumentExtractionRequestBuilder,
     LLMDocumentExtractionRequestBuilder,
 )
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
@@ -391,7 +392,7 @@ class DocumentExtractionProcessor:
             document_store_sandbox=self.document_store_sandbox,
             bq_client=self.bq_client,
         )
-        request_builder = LLMDocumentExtractionRequestBuilder(
+        request_builder = GCSLLMDocumentExtractionRequestBuilder(
             fs=self.fs,
             project_id=self.bq_client.project_id,
             state_code=self.state_code,
@@ -474,7 +475,7 @@ class DocumentExtractionProcessor:
         self,
         *,
         job_documents: list[LLMExtractionJobDocument],
-        request_builder: LLMDocumentExtractionRequestBuilder,
+        request_builder: GCSLLMDocumentExtractionRequestBuilder,
         source_text_by_document: dict[str, str],
         progress: _ExtractionProgressLogger,
     ) -> Iterator[LLMDocumentExtractionRequest]:
