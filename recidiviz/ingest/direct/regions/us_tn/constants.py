@@ -33,6 +33,11 @@ CLASSIFICATION_2026_PILOT_FACILITY_START_DATES: dict[str, datetime.date] = {
     "MCCX": datetime.date(2026, 7, 27),
     "NECX": datetime.date(2026, 7, 27),
     "SCCF": datetime.date(2026, 7, 27),
+    "WTSP": datetime.date(2026, 8, 25),
+    "MLRC": datetime.date(2026, 8, 25),
+    "NWCX": datetime.date(2026, 8, 26),
+    "HCCF": datetime.date(2026, 8, 27),
+    "WCFA": datetime.date(2026, 8, 27),
 }
 
 
