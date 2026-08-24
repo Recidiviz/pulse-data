@@ -271,12 +271,11 @@ class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
 
         Why: TN's raw SentenceStatus is unreliable — sentences frequently lack
         a COMPLETED snapshot even after the projected end date has passed,
-        leaving the v2 sentence_serving_period open indefinitely. v1's
-        `us_tn_sentence_status_raw_text_sessions` view coalesces
-        projected_completion_date_max into the effective completion_date
-        only when raw status is not 'AC'; for sentences still raw-marked
-        Active, v1 keeps the serving period open. This delegate method
-        replicates that gating.
+        leaving the v2 sentence_serving_period open indefinitely. The legacy
+        v1 sessions logic coalesced projected_completion_date_max into the
+        effective completion_date only when raw status was not 'AC'; for
+        sentences still raw-marked Active, it kept the serving period open.
+        This delegate method replicates that gating.
 
         Net effect:
           - Raw status = 'AC' + past projected date → don't fire (matches v1

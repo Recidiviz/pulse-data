@@ -94,9 +94,6 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_s
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_status_raw_text_sessions import (
-    US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -540,9 +537,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
-        US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
@@ -918,17 +912,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
-    },
-    # TODO(#46261): Delete `us_tn_sentence_status_raw_text_sessions` once US_TN is migrated to v2
-    #  infra
-    US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: {
-        SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference when we flip the TN gate to v2"
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all",
-            table_id="sentence_status_raw_text_sessions",
-        ): "TODO(#46261): Remove this reference when we flip the TN gate to v2",
     },
     # TODO(#33402): Delete StateIncarcerationSentence once all states are migrated
     # to v2 infra

@@ -7459,16 +7459,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "tentative_parole_date",
     ],
-    BigQueryAddress.from_str("sessions.us_tn_sentence_status_raw_text_sessions"): [
-        "end_date_exclusive",
-        "is_serving_sentence_status",
-        "person_id",
-        "sentence_id",
-        "start_date",
-        "state_code",
-        "status",
-        "status_raw_text",
-    ],
     BigQueryAddress.from_str("sessions.us_tn_sentences_preprocessed"): [
         "charge_id",
         "classification_subtype",
