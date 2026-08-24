@@ -679,8 +679,14 @@ class SourceTableCollection:
     is_sandbox_collection: bool = attr.ib(default=False)
 
     def as_sandbox_collection(
-        self, sandbox_dataset_prefix: str
+        self,
+        sandbox_dataset_prefix: str,
+        *,
+        table_expiration_ms: int | None = None,
     ) -> "SourceTableCollection":
+        """Returns this collection's sandbox-prefixed copy, optionally with a custom
+        table expiration time for all tables in the collection.
+        """
         if self.is_sandbox_collection:
             raise ValueError("Config for this collection is already a sandbox config.")
 
@@ -695,17 +701,16 @@ class SourceTableCollection:
         return attr.evolve(
             self,
             dataset_id=dataset_id,
+            default_table_expiration_ms=table_expiration_ms,
             source_tables_by_address=source_tables_by_address,
             is_sandbox_collection=True,
         )
 
     @property
     def table_expiration_ms(self) -> int | None:
-        return (
-            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if self.is_sandbox_collection
-            else self.default_table_expiration_ms
-        )
+        if self.is_sandbox_collection and not self.default_table_expiration_ms:
+            return TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        return self.default_table_expiration_ms
 
     def _build_table_address(self, table_id: str) -> BigQueryAddress:
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=table_id)

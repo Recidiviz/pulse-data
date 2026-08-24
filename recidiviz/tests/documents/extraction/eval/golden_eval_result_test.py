@@ -22,11 +22,18 @@ from recidiviz.common.constants.operations.llm_extraction_job import (
 )
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
+    GoldenEvalRequestFailure,
     GoldenEvalResult,
+)
+from recidiviz.documents.extraction.llm_client.types import (
+    LLMDocumentExtractionTokenCounts,
+    LLMRequestErrorType,
 )
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
 )
+
+_EMPTY_TOKEN_COUNTS = LLMDocumentExtractionTokenCounts.empty()
 
 
 def _score(
@@ -80,6 +87,7 @@ class GoldenEvalResultTest(TestCase):
                 "unit_2": LLMExtractionJobDocumentResultType.SUCCESS,
                 "sample_1": LLMExtractionJobDocumentResultType.SUCCESS,
             },
+            total_token_counts=_EMPTY_TOKEN_COUNTS,
         )
 
         self.assertEqual(
@@ -98,6 +106,7 @@ class GoldenEvalResultTest(TestCase):
             actual_llm_result_type_by_document_id={
                 "unit_1": LLMExtractionJobDocumentResultType.SUCCESS
             },
+            total_token_counts=_EMPTY_TOKEN_COUNTS,
         )
 
         self.assertEqual(
@@ -111,11 +120,53 @@ class GoldenEvalResultTest(TestCase):
 
     def test_accuracies_with_no_scores(self) -> None:
         result = GoldenEvalResult(
-            field_scores=[], actual_llm_result_type_by_document_id={}
+            field_scores=[],
+            actual_llm_result_type_by_document_id={},
+            total_token_counts=_EMPTY_TOKEN_COUNTS,
         )
 
         self.assertEqual({}, result.accuracy_by_test_type)
         self.assertEqual({}, result.accuracy_by_field)
+
+    def test_scored_document_with_request_failure_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Golden eval result has scored field\(s\) for document\(s\) whose "
+            r"extraction request failed outright: \['unit_1'\]\.$",
+        ):
+            GoldenEvalResult(
+                field_scores=[
+                    _score("unit_1", "UNIT", "primary_status", None, True),
+                ],
+                actual_llm_result_type_by_document_id={
+                    "unit_1": LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+                },
+                request_failure_by_document_id={
+                    "unit_1": GoldenEvalRequestFailure(
+                        error_type=LLMRequestErrorType.SERVER_ERROR,
+                        error_message="503 Service Unavailable",
+                    )
+                },
+                total_token_counts=_EMPTY_TOKEN_COUNTS,
+            )
+
+    def test_request_failure_missing_result_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Golden eval result has request failure\(s\) for document\(s\) with "
+            r"no processed result type: \['unit_1'\]\.$",
+        ):
+            GoldenEvalResult(
+                field_scores=[],
+                actual_llm_result_type_by_document_id={},
+                request_failure_by_document_id={
+                    "unit_1": GoldenEvalRequestFailure(
+                        error_type=LLMRequestErrorType.SERVER_ERROR,
+                        error_message="503 Service Unavailable",
+                    )
+                },
+                total_token_counts=_EMPTY_TOKEN_COUNTS,
+            )
 
     def test_scored_document_missing_result_type_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -131,4 +182,5 @@ class GoldenEvalResultTest(TestCase):
                 actual_llm_result_type_by_document_id={
                     "unit_1": LLMExtractionJobDocumentResultType.SUCCESS
                 },
+                total_token_counts=_EMPTY_TOKEN_COUNTS,
             )

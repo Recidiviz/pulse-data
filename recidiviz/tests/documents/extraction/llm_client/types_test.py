@@ -36,6 +36,38 @@ class LLMDocumentExtractionTokenCountsTest(TestCase):
         self.assertEqual(0, counts.cached_input_token_count)
         self.assertEqual(0, counts.thinking_token_count)
 
+    def test_sum_totals_each_field(self) -> None:
+        self.assertEqual(
+            LLMDocumentExtractionTokenCounts(
+                input_token_count=110,
+                output_token_count=22,
+                cached_input_token_count=80,
+                thinking_token_count=5,
+            ),
+            LLMDocumentExtractionTokenCounts.sum(
+                [
+                    LLMDocumentExtractionTokenCounts(
+                        input_token_count=100,
+                        output_token_count=20,
+                        cached_input_token_count=80,
+                        thinking_token_count=5,
+                    ),
+                    LLMDocumentExtractionTokenCounts(
+                        input_token_count=10,
+                        output_token_count=2,
+                        cached_input_token_count=0,
+                        thinking_token_count=0,
+                    ),
+                ]
+            ),
+        )
+
+    def test_sum_of_nothing_is_empty(self) -> None:
+        self.assertEqual(
+            LLMDocumentExtractionTokenCounts.empty(),
+            LLMDocumentExtractionTokenCounts.sum([]),
+        )
+
     def test_populated_usage_is_mapped(self) -> None:
         counts = LLMDocumentExtractionTokenCounts.from_google_genai_usage_metadata(
             usage=types.GenerateContentResponseUsageMetadata(

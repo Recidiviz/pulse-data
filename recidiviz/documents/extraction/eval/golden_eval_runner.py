@@ -50,6 +50,7 @@ from recidiviz.documents.extraction.llm_client.sync_llm_document_extraction_requ
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionRequest,
+    LLMDocumentExtractionTokenCounts,
 )
 from recidiviz.documents.extraction.llm_client.vertex_ai_sync_llm_client import (
     VertexAISyncLLMClient,
@@ -241,6 +242,9 @@ class GoldenEvalRunner:
                 document_id: result.result_type
                 for document_id, result in processed_results_by_document_id.items()
             },
+            total_token_counts=LLMDocumentExtractionTokenCounts.sum(
+                result.token_counts for result in raw_results_by_document_id.values()
+            ),
         )
 
     @classmethod

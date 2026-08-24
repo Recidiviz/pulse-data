@@ -23,6 +23,10 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
 )
+from recidiviz.documents.extraction.llm_client.types import (
+    LLMDocumentExtractionTokenCounts,
+    LLMRequestErrorType,
+)
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
 )
@@ -100,6 +104,21 @@ class GoldenEvalFieldScore:
 
 
 @attr.define(frozen=True, kw_only=True)
+class GoldenEvalRequestFailure:
+    """Why one document's extraction request failed outright, so the summary can
+    name the failure instead of scoring the document as a miss on every field.
+    """
+
+    error_type: LLMRequestErrorType = attr.ib(
+        validator=attr.validators.in_(LLMRequestErrorType)
+    )
+    """The category of the request failure."""
+
+    error_message: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The human-readable description of the failure the LLM client reported."""
+
+
+@attr.define(frozen=True, kw_only=True)
 class GoldenEvalResult:
     """The structured result of a golden eval run, for callers to report.
 
@@ -123,6 +142,22 @@ class GoldenEvalResult:
     downgrades read as such in the summary rather than as generic field misses.
     """
 
+    # Defaulted until the eval runner populates it.
+    request_failure_by_document_id: dict[str, GoldenEvalRequestFailure] = attr.ib(
+        factory=dict,
+        validator=attr_validators.is_dict_of(str, GoldenEvalRequestFailure),
+    )
+    """Each document whose extraction request failed outright (no response came
+    back to score), keyed by document id. These documents carry no field scores.
+    """
+
+    total_token_counts: LLMDocumentExtractionTokenCounts = attr.ib(
+        validator=attr.validators.instance_of(LLMDocumentExtractionTokenCounts),
+    )
+    """Token counts summed over every LLM request the run made, including failed
+    requests.
+    """
+
     def __attrs_post_init__(self) -> None:
         scored_document_ids = {score.golden_document_id for score in self.field_scores}
         if unclassified_document_ids := scored_document_ids - set(
@@ -131,6 +166,21 @@ class GoldenEvalResult:
             raise ValueError(
                 f"Golden eval result has scored field(s) for document(s) with no "
                 f"processed result type: {sorted(unclassified_document_ids)}."
+            )
+        if scored_failed_document_ids := scored_document_ids & set(
+            self.request_failure_by_document_id
+        ):
+            raise ValueError(
+                f"Golden eval result has scored field(s) for document(s) whose "
+                f"extraction request failed outright: "
+                f"{sorted(scored_failed_document_ids)}."
+            )
+        if unclassified_failure_document_ids := set(
+            self.request_failure_by_document_id
+        ) - set(self.actual_llm_result_type_by_document_id):
+            raise ValueError(
+                f"Golden eval result has request failure(s) for document(s) with no "
+                f"processed result type: {sorted(unclassified_failure_document_ids)}."
             )
 
     @property

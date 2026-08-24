@@ -22,6 +22,7 @@ SDK response, so a future batch path can produce the same type from echoed
 JSONL.
 """
 
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Any
 
@@ -141,6 +142,24 @@ class LLMDocumentExtractionTokenCounts:
             output_token_count=0,
             cached_input_token_count=0,
             thinking_token_count=0,
+        )
+
+    @classmethod
+    def sum(
+        cls, counts: Iterable["LLMDocumentExtractionTokenCounts"]
+    ) -> "LLMDocumentExtractionTokenCounts":
+        """Returns the field-wise total of |counts|."""
+        input_total = output_total = cached_total = thinking_total = 0
+        for count in counts:
+            input_total += count.input_token_count
+            output_total += count.output_token_count
+            cached_total += count.cached_input_token_count
+            thinking_total += count.thinking_token_count
+        return cls(
+            input_token_count=input_total,
+            output_token_count=output_total,
+            cached_input_token_count=cached_total,
+            thinking_token_count=thinking_total,
         )
 
     @classmethod
