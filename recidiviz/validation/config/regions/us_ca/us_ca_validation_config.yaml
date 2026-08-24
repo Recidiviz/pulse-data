@@ -17,7 +17,10 @@ exclusions:
     exclusion_reason: TODO(#20922) -- We haven't hydrated sentences yet
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+    exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
+  - validation_name: case_insights_record_sentencing_charge_record_offense_mismatch
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
   - validation_name: state_incarceration_period_by_release_date_stable_counts
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#54723) Incarceration periods only exist as inferred from supervision periods.

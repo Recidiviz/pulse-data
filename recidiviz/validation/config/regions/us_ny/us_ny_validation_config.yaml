@@ -4,6 +4,12 @@ region_code: US_NY
 # TODO(#46303): Enable validations for US_NY.
 dev_mode: True
 exclusions:
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
+  - validation_name: case_insights_record_sentencing_charge_record_offense_mismatch
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
   - validation_name: sessions_missing_closest_sentence_imposed_group
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: NY doesn't have sentences ingested.
