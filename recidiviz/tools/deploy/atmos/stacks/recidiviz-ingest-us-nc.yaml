@@ -7,6 +7,9 @@ import:
 settings:
   context:
     project_id: recidiviz-ingest-us-nc
+    # The service account that runs the RNA Writeback job needs write access to the storage buckets
+    jii_project_id_prod: recidiviz-jii-production
+    jii_project_id_staging: recidiviz-jii-staging
     state_code: US_NC
 
 # The variables set here are automatically provided to any components used in this stack.
@@ -43,16 +46,30 @@ components:
           # This is a bucket which backs an SFTP virtual folder for US_NC to download data and write it back into their OMS
           # More info: https://www.notion.so/recidiviz/Design-Doc-Postgres-GCS-data-transfer-for-NC-RNA-writeback-3497889f4d1980beb7bccb946c3dc31d#3497889f4d1980888c54fc966e598c65
           - writeback
+
+          # This is an internal-only bucket used for testing purposes
+          - writeback-staging
         encryption_key_names:
           writeback: projects/recidiviz-ingest-us-nc/locations/us/keyRings/recidiviz-ingest-us-nc-cloud-storage/cryptoKeys/writeback-key
+          writeback-staging: projects/recidiviz-ingest-us-nc/locations/us/keyRings/recidiviz-ingest-us-nc-cloud-storage/cryptoKeys/writeback-key
         versioning:
           writeback: true
+          writeback-staging: true
         bucket_lifecycle_rules:
           writeback:
             - action:
                 type: Delete
               condition:
                 num_newer_versions: "7"
+          writeback-staging:
+            - action:
+                type: Delete
+              condition:
+                num_newer_versions: "7"
+        set_creator_roles: true
+        bucket_creators:
+          writeback: serviceAccount:jii-server@{{ .settings.context.jii_project_id_prod }}.iam.gserviceaccount.com
+          writeback-staging: serviceAccount:jii-server@{{ .settings.context.jii_project_id_staging }}.iam.gserviceaccount.com
 
     isolated-direct-ingest-bucket-with-replication:
       vars:
