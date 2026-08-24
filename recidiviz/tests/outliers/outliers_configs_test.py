@@ -21,7 +21,10 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
     get_outliers_enabled_states_for_bigquery,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.outliers.outliers_configs import get_outliers_backend_config
+from recidiviz.outliers.outliers_configs import (
+    get_outliers_backend_config,
+    get_states_with_include_all_supervisors_for_bigquery,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -52,3 +55,17 @@ class TestOutliersConfigs(unittest.TestCase):
             self.assertEqual(
                 StateCode.US_IX, assert_type(metric_config.state_code, StateCode)
             )
+
+    def test_get_states_with_include_all_supervisors_for_bigquery(self) -> None:
+        states_with_flag_set = get_states_with_include_all_supervisors_for_bigquery()
+
+        for state_code_str in states_with_flag_set:
+            self.assertTrue(
+                get_outliers_backend_config(state_code_str).include_all_supervisors
+            )
+
+        for state_code_str in get_outliers_enabled_states_for_bigquery():
+            if state_code_str not in states_with_flag_set:
+                self.assertFalse(
+                    get_outliers_backend_config(state_code_str).include_all_supervisors
+                )

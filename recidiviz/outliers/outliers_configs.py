@@ -16,7 +16,7 @@
 # =============================================================================
 """The configuration objects for Outliers states"""
 from collections import defaultdict
-from typing import Dict, Set
+from typing import Dict, List, Set
 
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
@@ -365,6 +365,7 @@ Denominator is the average daily caseload for the officer over the given time pe
                 ),
             ]
         },
+        include_all_supervisors=True,
     ),
     StateCode.US_CA: OutliersBackendConfig(
         metrics=[
@@ -484,6 +485,7 @@ Denominator is the average daily caseload for the agent over the given time peri
             ASSESSMENT_COMPLETION_RATE,
             CONTACT_COMPLETION_RATE_DUE_DATE_BASED,
         ],
+        include_all_supervisors=True,
     ),
     StateCode.US_UT: OutliersBackendConfig(
         metrics=[
@@ -580,3 +582,13 @@ def get_outliers_backend_config(state_code: str) -> OutliersBackendConfig:
         return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode.US_IX]
 
     return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode(state_code)]
+
+
+def get_states_with_include_all_supervisors_for_bigquery() -> List[str]:
+    """Returns the state codes whose outliers config has include_all_supervisors set,
+    for use in BigQuery views that need to replicate this state list in SQL."""
+    return [
+        state_code.value
+        for state_code, config in _OUTLIERS_BACKEND_CONFIGS_BY_STATE.items()
+        if config.include_all_supervisors
+    ]

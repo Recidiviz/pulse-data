@@ -363,6 +363,12 @@ class OutliersBackendConfig:
         InsightsCaseloadCategoryType, list[CaseloadCategory]
     ] = attr.ib(default={})
 
+    # If True, the `/supervisors` endpoint includes supervisors regardless of whether
+    # they currently supervise an officer with a nonzero caseload. Some states (e.g.
+    # district managers/regional directors in Texas) have supervisors who only
+    # supervise other supervisors/managers who never personally carry a caseload.
+    include_all_supervisors: bool = attr.ib(default=False)
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
@@ -380,11 +386,12 @@ class OutliersBackendConfig:
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
-        # Omit the inclusion criteria since they are only for internal (backend) use.
+        # Omit fields that are only for internal (backend) use.
         unst_hook = make_dict_unstructure_fn(
             OutliersBackendConfig,
             c,
             include_in_outcomes_condition=override(omit=True),
+            include_all_supervisors=override(omit=True),
         )
         c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
         return c.unstructure(self)
