@@ -38,21 +38,20 @@ CONTEXT_CACHE_TTL_SECONDS = 60 * 60
 _BAD_REQUEST_CODE = 400
 _MINIMUM_CACHE_TOKENS_PATTERN = re.compile(r"minimum token count to start .*caching")
 
-# (HTTP status, message substring) pairs Vertex returns when a `generate_content`
+# (HTTP status, message pattern) pairs Vertex returns when a `generate_content`
 # call references an explicit context cache that no longer exists server-side —
 # because it was torn down after its TTL elapsed, while we still held its name in
 # `_cache_name_by_system_prompt`. Matched to drop the stale name and recreate the
 # cache on a single retry rather than failing the call. A torn-down cache surfaces
-# as the 400 "invalid resource state" variant; a name that never resolves surfaces
-# as the 404 "not found" variant (handled defensively in case an expiry ever
-# presents that way).
+# in a number of different ways, so we enumerate all known error patterns here.
 #
-# These substrings are coupled to Vertex's error wording, which is not a
-# contract: if Google rewords them, stale-cache detection silently stops and
-# expired-cache calls fail as UNKNOWN_ERROR until the strings are updated here.
+# These patterns are coupled to Vertex's error wording, which is not a contract:
+# if Google rewords them, stale-cache detection silently stops and expired-cache
+# calls fail as UNKNOWN_ERROR until the patterns are updated here.
 _STALE_CACHE_ERROR_SIGNATURES = (
-    (400, "Invalid resource state for cache content"),
-    (404, "Not found: cached content metadata for"),
+    (400, re.compile(r"Invalid resource state for cache content")),
+    (400, re.compile(r"Cache content \d+ is expired\.")),
+    (404, re.compile(r"Not found: cached content metadata for")),
 )
 
 
@@ -152,6 +151,6 @@ class VertexContextCacheManager:
         """
         message = error.message or ""
         return any(
-            error.code == code and substring in message
-            for code, substring in _STALE_CACHE_ERROR_SIGNATURES
+            error.code == code and pattern.search(message)
+            for code, pattern in _STALE_CACHE_ERROR_SIGNATURES
         )

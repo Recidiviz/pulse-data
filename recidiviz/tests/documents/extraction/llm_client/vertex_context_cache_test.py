@@ -185,8 +185,19 @@ class VertexContextCacheManagerTest(TestCase):
                 }
             },
         )
+        stale_expired = errors.ClientError(
+            400,
+            {
+                "error": {
+                    "code": 400,
+                    "message": "Cache content 6542565068301664256 is expired.",
+                    "status": "INVALID_ARGUMENT",
+                }
+            },
+        )
         self.assertTrue(VertexContextCacheManager.is_stale_cache_error(stale_400))
         self.assertTrue(VertexContextCacheManager.is_stale_cache_error(stale_404))
+        self.assertTrue(VertexContextCacheManager.is_stale_cache_error(stale_expired))
         # A 400 whose message is not the stale-cache signature must not match.
         self.assertFalse(
             VertexContextCacheManager.is_stale_cache_error(_too_small_error())
