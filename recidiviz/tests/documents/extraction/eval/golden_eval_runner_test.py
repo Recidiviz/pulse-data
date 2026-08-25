@@ -703,12 +703,12 @@ class GoldenEvalRunnerEmulatorTest(BigQueryEmulatorTestCase):
         return _sheet(
             _cells(),
             _cells(
-                golden_document_id="unit_2",
+                document_id="unit_2",
                 test_case="missing_location",
                 document_text=_GROUNDED_NO_LOCATION_RESULT.source_document_text,
             ),
             _cells(
-                golden_document_id="sample_1",
+                document_id="sample_1",
                 test_type="sample",
                 test_case="request_error",
             ),

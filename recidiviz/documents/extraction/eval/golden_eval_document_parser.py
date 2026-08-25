@@ -44,7 +44,7 @@ from recidiviz.utils.types import assert_type
 # `{field}__expected` column per output schema field.
 TEST_TYPE_COLUMN_NAME = "test_type"
 TEST_CASE_COLUMN_NAME = "test_case"
-GOLDEN_DOCUMENT_ID_COLUMN_NAME = "golden_document_id"
+GOLDEN_DOCUMENT_ID_COLUMN_NAME = "document_id"
 DOCUMENT_TEXT_COLUMN_NAME = "document_text"
 
 REQUIRED_METADATA_COLUMN_NAMES = (

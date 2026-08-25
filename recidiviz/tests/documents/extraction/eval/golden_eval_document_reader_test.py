@@ -1038,7 +1038,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
                     reason="is blank, but is required",
                 )
             ],
-            self._read_one_row_issues(_cells(golden_document_id="")),
+            self._read_one_row_issues(_cells(document_id="")),
         )
 
     # ------------------------------------------------------------------
@@ -1105,8 +1105,8 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_documents_yields_one_result_at_a_time(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1"),
-            _cells(golden_document_id="unit_2"),
+            _cells(document_id="unit_1"),
+            _cells(document_id="unit_2"),
         )
 
         results = self.reader.documents()
@@ -1129,8 +1129,8 @@ class GoldenEvalDocumentReaderTest(TestCase):
         # The whole point of yielding results rather than raising: a malformed row
         # does not kill the iterator, so a caller still sees every later row.
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1", is_relevant__expected="yes"),
-            _cells(golden_document_id="unit_2"),
+            _cells(document_id="unit_1", is_relevant__expected="yes"),
+            _cells(document_id="unit_2"),
         )
 
         results = list(self.reader.documents())
@@ -1151,9 +1151,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_load_all_documents_returns_rows_in_sheet_order(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1"),
-            _cells(golden_document_id="unit_2"),
-            _cells(golden_document_id="unit_3"),
+            _cells(document_id="unit_1"),
+            _cells(document_id="unit_2"),
+            _cells(document_id="unit_3"),
         )
 
         documents = self.reader.load_all_documents()
@@ -1165,9 +1165,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_load_all_documents_reports_every_malformed_row_at_once(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1", primary_status__expected="bogus"),
-            _cells(golden_document_id="unit_2"),
-            _cells(golden_document_id="unit_3", is_relevant__expected="yes"),
+            _cells(document_id="unit_1", primary_status__expected="bogus"),
+            _cells(document_id="unit_2"),
+            _cells(document_id="unit_3", is_relevant__expected="yes"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
@@ -1190,9 +1190,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_load_all_documents_reports_duplicate_document_ids(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1"),
-            _cells(golden_document_id="unit_2"),
-            _cells(golden_document_id="unit_1"),
+            _cells(document_id="unit_1"),
+            _cells(document_id="unit_2"),
+            _cells(document_id="unit_1"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
@@ -1207,9 +1207,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
         self,
     ) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1"),
-            _cells(golden_document_id="unit_2", is_relevant__expected="yes"),
-            _cells(golden_document_id="unit_1"),
+            _cells(document_id="unit_1"),
+            _cells(document_id="unit_2", is_relevant__expected="yes"),
+            _cells(document_id="unit_1"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
@@ -1241,8 +1241,8 @@ class GoldenEvalDocumentReaderTest(TestCase):
         self,
     ) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1", test_type="unit"),
-            _cells(golden_document_id="sample_1", test_type="sample"),
+            _cells(document_id="unit_1", test_type="unit"),
+            _cells(document_id="sample_1", test_type="sample"),
         )
 
         with self.assertNoLogs(level="WARNING"):
@@ -1252,8 +1252,8 @@ class GoldenEvalDocumentReaderTest(TestCase):
         # A mistake repeated down a whole column puts the same issue on every
         # row, and repeating it once per row would bury everything else.
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1", is_relevant__expected="yes"),
-            _cells(golden_document_id="unit_2", is_relevant__expected="yes"),
+            _cells(document_id="unit_1", is_relevant__expected="yes"),
+            _cells(document_id="unit_2", is_relevant__expected="yes"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
@@ -1269,8 +1269,8 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_load_all_documents_leaves_a_one_row_issue_alone(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(
-            _cells(golden_document_id="unit_1", is_relevant__expected="yes"),
-            _cells(golden_document_id="unit_2"),
+            _cells(document_id="unit_1", is_relevant__expected="yes"),
+            _cells(document_id="unit_2"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
