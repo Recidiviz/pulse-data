@@ -1807,6 +1807,7 @@ def on_negative_drug_screen_streak(
     criteria_name: str,
     date_interval: int,
     date_part: str = "MONTH",
+    meets_criteria_default: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Creates spans showing when someone has had entirely negative drug screens for at
@@ -1826,6 +1827,8 @@ def on_negative_drug_screen_streak(
         date_interval (int): Number of <date_part> that must pass since first negative
         date_part (str): Supports any of the BigQuery date_part values:
             "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        meets_criteria_default (bool): Determines whether people who don't have any
+            drug screen on record are considered eligible. Defaults to False.
     Returns:
         StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
     """
@@ -1945,7 +1948,9 @@ def on_negative_drug_screen_streak(
         criteria_spans_query_template=query_template,
         description="Creates spans showing when someone has had entirely negative drug screens for at least X time",
         sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=False,
+        # The query above only emits spans for people with at least one drug screen on
+        # record, so this default triggers only for people who have never had a drug screen at all.
+        meets_criteria_default=meets_criteria_default,
         reasons_fields=[
             ReasonsField(
                 name="first_negative_test_in_streak",

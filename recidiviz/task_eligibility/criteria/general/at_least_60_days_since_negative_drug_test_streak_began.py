@@ -28,12 +28,14 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    on_negative_drug_screen_streak(
-        date_interval=60,
-        date_part="DAY",
-        criteria_name="AT_LEAST_60_DAYS_SINCE_NEGATIVE_DRUG_TEST_STREAK_BEGAN",
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = on_negative_drug_screen_streak(
+    date_interval=60,
+    date_part="DAY",
+    criteria_name="AT_LEAST_60_DAYS_SINCE_NEGATIVE_DRUG_TEST_STREAK_BEGAN",
+    # People with no drug screen on record at all should not be disqualified by
+    # this criterion -- treat missing drug screen data as eligible rather than
+    # ineligible.
+    meets_criteria_default=True,
 )
 
 if __name__ == "__main__":
