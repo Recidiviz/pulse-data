@@ -128,9 +128,10 @@ def datasets_to_protect(project_id: str) -> set[str]:
 def apply_protection_tags(*, dry_run: bool) -> None:
     """Ensures every dataset in the protect set carries the protection tag. Add-only.
 
-    Non-fatal: a failure to tag any single dataset is logged and counted, never raised -- this
-    runs inside the calculation DAG and must not fail it. A non-zero failure count is the signal
-    to alert on.
+    Attempts every dataset before failing: per-dataset errors are collected (never raised
+    individually) so one bad dataset can't mask the rest. If any dataset failed to tag, raises
+    at the end so a wrapping Airflow task fails and failures are surfaced through normal
+    Airflow alerting channels.
     """
     bq_client = BigQueryClientImpl()
     project_id = metadata.project_id()
@@ -167,15 +168,19 @@ def apply_protection_tags(*, dry_run: bool) -> None:
         len(by_outcome[_TagOutcome.FAILED]),
         len(not_yet_created),
     )
+    _log_protection_drift(bq_client=bq_client, expected=to_protect)
+
     failed = by_outcome[_TagOutcome.FAILED]
     if failed:
-        logging.warning(
-            "Protection tagging FAILED (non-fatal) for %d dataset(s): %s",
-            len(failed),
-            sorted(failed),
+        raise RuntimeError(
+            f"Failed to stamp the protection tag on {len(failed)} dataset(s): "
+            f"{sorted(failed)}. These datasets are NOT covered by the catastrophic-delete deny "
+            f"policy until re-tagged. Most likely the calc-pod service account is missing "
+            f"roles/resourcemanager.tagUser on the protection tag value or "
+            f"bigquery.datasets.update on the datasets; see "
+            f"recidiviz/tools/deploy/deletion_protection/. Per-dataset errors are in the WARNING "
+            f"logs above."
         )
-
-    _log_protection_drift(bq_client=bq_client, expected=to_protect)
 
 
 def _ensure_protection_tag(
@@ -183,8 +188,8 @@ def _ensure_protection_tag(
 ) -> _TagOutcome:
     """Adds the protection tag to a dataset if missing (merging, not clobbering other tags).
 
-    Never raises -- a failure is logged and reported as ``_TagOutcome.FAILED`` so a single
-    dataset cannot fail the calculation DAG.
+    Never raises -- a failure is logged and reported as ``_TagOutcome.FAILED`` so every dataset
+    is attempted before ``apply_protection_tags`` raises on the aggregate failure.
     """
     try:
         dataset = bq_client.get_dataset(dataset_id)

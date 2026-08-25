@@ -256,7 +256,7 @@ class ApplyProtectionTagsTest(unittest.TestCase):
             [call.args[0] for call in client.client.update_dataset.call_args_list],
         )
 
-    def test_tag_failure_is_non_fatal(
+    def test_tag_failure_raises_after_attempting_all(
         self,
         mock_client_cls: MagicMock,
         mock_metadata: MagicMock,
@@ -277,10 +277,14 @@ class ApplyProtectionTagsTest(unittest.TestCase):
 
         client.client.update_dataset.side_effect = _update
 
-        with self.assertLogs(level="WARNING") as logs:
-            apply_protection_tags(dry_run=False)  # must not raise
+        # Every dataset is attempted, then the aggregate failure is raised so it surfaces
+        # through the calc DAG's normal Airflow task-failure alerting.
+        with self.assertRaisesRegex(RuntimeError, r"boom"), self.assertLogs(
+            level="WARNING"
+        ):
+            apply_protection_tags(dry_run=False)
 
-        self.assertTrue(any("boom" in line for line in logs.output))
+        # "ok" was still tagged before the raise -- one bad dataset doesn't mask the rest.
         self.assertEqual(
             {PROTECTION_TAG_KEY: PROTECTION_TAG_VALUE}, datasets["ok"].resource_tags
         )
