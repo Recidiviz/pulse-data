@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Entrypoint for Intercom outbound content data export"""
+"""Entrypoint for Intercom data export"""
 
 import argparse
 import csv
@@ -101,7 +101,7 @@ def export_and_upload_intercom_data(
     end_datetime_inclusive: datetime,
     update_datetime: datetime,
 ) -> None:
-    """Runs the full Intercom outbound data export process."""
+    """Runs the full Intercom data export process."""
 
     intercom_api_client = IntercomAPIClient()
     intercom_api_manager = IntercomAPIManager(client=intercom_api_client)
@@ -165,8 +165,8 @@ def export_and_upload_intercom_data(
             )
 
 
-class IntercomOutboundDataExport(EntrypointInterface):
-    """Entrypoint for Intercom outbound content data export"""
+class IntercomDataExport(EntrypointInterface):
+    """Entrypoint for Intercom data export"""
 
     @staticmethod
     def get_parser() -> argparse.ArgumentParser:
@@ -192,8 +192,7 @@ class IntercomOutboundDataExport(EntrypointInterface):
         *,
         args: argparse.Namespace,
     ) -> None:
-        """Runs Intercom outbound content data export and writes to the
-        intercom_export.export_tracker table."""
+        """Runs Intercom data export and writes to the export_tracker table."""
 
         start_datetime_inclusive = args.start_datetime_inclusive
         end_datetime_inclusive = args.end_datetime_inclusive
@@ -250,6 +249,4 @@ if __name__ == "__main__":
     if in_development():
         set_development_project_id_override(GCP_PROJECT_STAGING)
 
-    IntercomOutboundDataExport.run_entrypoint(
-        args=IntercomOutboundDataExport.get_parser().parse_args()
-    )
+    IntercomDataExport.run_entrypoint(args=IntercomDataExport.get_parser().parse_args())

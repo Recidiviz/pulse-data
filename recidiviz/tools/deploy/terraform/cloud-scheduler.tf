@@ -141,8 +141,8 @@ resource "google_cloud_scheduler_job" "workflows_configuration_data_pull_trigger
   }
 }
 
-resource "google_cloud_scheduler_job" "intercom_outbound_data_export" {
-  name             = "intercom-outbound-data-export"
+resource "google_cloud_scheduler_job" "intercom_data_export" {
+  name             = "intercom-data-export"
   schedule         = "0 0 * * *" # Every day at 12 am PT
   description      = "[Intercom] Execute daily Intercom data export."
   time_zone        = "US/Pacific"
@@ -150,7 +150,7 @@ resource "google_cloud_scheduler_job" "intercom_outbound_data_export" {
 
   http_target {
     http_method = "POST"
-    uri         = "https://${var.us_central_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.intercom_outbound_data_export.name}:run"
+    uri         = "https://${var.us_central_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.intercom_data_export.name}:run"
 
     oauth_token {
       service_account_email = google_service_account.cloud_run.email

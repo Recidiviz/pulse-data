@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""GCS Upload for Intercom outbound data"""
+"""GCS Upload for Intercom data"""
 
 from datetime import datetime
 

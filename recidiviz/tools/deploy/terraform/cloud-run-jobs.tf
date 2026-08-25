@@ -244,8 +244,8 @@ resource "google_storage_bucket_iam_member" "cloud_run_intercom_export_creator" 
   member = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
-resource "google_cloud_run_v2_job" "intercom_outbound_data_export" {
-  name     = "intercom-outbound-data-export"
+resource "google_cloud_run_v2_job" "intercom_data_export" {
+  name     = "intercom-data-export"
   location = var.us_central_region
   provider = google-beta
 
@@ -259,7 +259,7 @@ resource "google_cloud_run_v2_job" "intercom_outbound_data_export" {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["uv"]
-        args    = ["run", "python", "-m", "recidiviz.entrypoints.intercom_outbound_data_export"]
+        args    = ["run", "python", "-m", "recidiviz.entrypoints.intercom_data_export"]
         env {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"

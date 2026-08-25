@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for Intercom outbound content data export CSV header verification"""
+"""Tests for Intercom data export"""
 
 import argparse
 import os
@@ -24,8 +24,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.entrypoints.intercom_outbound_data_export import (
-    IntercomOutboundDataExport,
+from recidiviz.entrypoints.intercom_data_export import (
+    IntercomDataExport,
     verify_headers,
 )
 from recidiviz.intercom.intercom_export_bq_table_manager import (
@@ -35,7 +35,7 @@ from recidiviz.intercom.manager import IntercomAPIManager
 
 
 class TestIntercomCSVHeaderVerification(unittest.TestCase):
-    """Tests for Intercom outbound content data export CSV header verification"""
+    """Tests for Intercom data export CSV header verification"""
 
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
@@ -131,14 +131,14 @@ class TestIntercomCSVHeaderVerification(unittest.TestCase):
         )
 
 
-class TestIntercomOutbountDataExport(unittest.TestCase):
-    """Tests for IntercomOutbountDataExport"""
+class TestIntercomDataExport(unittest.TestCase):
+    """Tests for IntercomDataExport"""
 
     def setUp(self) -> None:
-        self.intercom_outbound_data_export = MagicMock(spec=IntercomOutboundDataExport)
+        self.intercom_data_export = MagicMock(spec=IntercomDataExport)
 
         self.export_and_upload_intercom_data_patcher = patch(
-            "recidiviz.entrypoints.intercom_outbound_data_export.export_and_upload_intercom_data",
+            "recidiviz.entrypoints.intercom_data_export.export_and_upload_intercom_data",
             return_value=None,
         )
         self.mock_export_and_upload_intercom_data = (
@@ -146,20 +146,20 @@ class TestIntercomOutbountDataExport(unittest.TestCase):
         )
 
         self.bq_table_manager_patcher = patch(
-            "recidiviz.entrypoints.intercom_outbound_data_export.IntercomExportBigQueryTableManager",
+            "recidiviz.entrypoints.intercom_data_export.IntercomExportBigQueryTableManager",
             spec=IntercomExportBigQueryTableManager,
         )
         self.mock_bq_table_manager = self.bq_table_manager_patcher.start()
 
         # BigQueryClientImpl and IntercomAPIManager are patched to prevent real API calls
         self.bq_client_patcher = patch(
-            "recidiviz.entrypoints.intercom_outbound_data_export.BigQueryClientImpl",
+            "recidiviz.entrypoints.intercom_data_export.BigQueryClientImpl",
             spec=BigQueryClientImpl,
         )
         self.bq_client_patcher.start()
 
         self.intercom_api_manager_patcher = patch(
-            "recidiviz.entrypoints.intercom_outbound_data_export.IntercomAPIManager",
+            "recidiviz.entrypoints.intercom_data_export.IntercomAPIManager",
             spec=IntercomAPIManager,
         )
         self.intercom_api_manager_patcher.start()
@@ -171,7 +171,7 @@ class TestIntercomOutbountDataExport(unittest.TestCase):
         self.intercom_api_manager_patcher.stop()
 
     def helper_create_parsed_args(self, one_arg: bool = False) -> argparse.Namespace:
-        """Returns argparse.Namespace object for IntercomOutboundDataExport"""
+        """Returns argparse.Namespace object for IntercomDataExport"""
 
         if one_arg:
             args = [
@@ -186,19 +186,19 @@ class TestIntercomOutbountDataExport(unittest.TestCase):
                 "2026-07-22:11:07:00Z",
             ]
 
-        return IntercomOutboundDataExport.get_parser().parse_args(args)
+        return IntercomDataExport.get_parser().parse_args(args)
 
     def test_run_entrypoint(self) -> None:
         """Tests that run_entrypoint() gets to the last function call without rasing errors"""
 
-        IntercomOutboundDataExport.run_entrypoint(args=self.helper_create_parsed_args())
+        IntercomDataExport.run_entrypoint(args=self.helper_create_parsed_args())
         self.mock_bq_table_manager.return_value.write_to_table.assert_called_once()
 
     def test_run_entrypoint_one_arg_provided(self) -> None:
         """Tests that run_entrypoint() properly raises ValueError when only one datetime arg is provided"""
 
         with self.assertRaises(ValueError) as context:
-            IntercomOutboundDataExport.run_entrypoint(
+            IntercomDataExport.run_entrypoint(
                 args=self.helper_create_parsed_args(one_arg=True)
             )
 
@@ -215,9 +215,7 @@ class TestIntercomOutbountDataExport(unittest.TestCase):
         self.mock_export_and_upload_intercom_data.side_effect = KeyError()
 
         with self.assertRaises(ValueError) as context:
-            IntercomOutboundDataExport.run_entrypoint(
-                args=self.helper_create_parsed_args()
-            )
+            IntercomDataExport.run_entrypoint(args=self.helper_create_parsed_args())
 
         self.assertIn(
             "Intercom export cloud run job failed due to a failure in the Intercom data export.",
