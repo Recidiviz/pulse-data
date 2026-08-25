@@ -113,6 +113,47 @@ def document_extraction_entity_mentions_dataset_for_region(
     )
 
 
+def state_agnostic_document_extraction_results_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing the cross-state UNION ALL views over every
+    state's public (validated, parsed) document extraction results.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_results"
+
+
+def state_agnostic_document_extraction_results_unvalidated_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing the cross-state UNION ALL views over every
+    state's unvalidated (raw-parsed) document extraction results.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_results__unvalidated"
+
+
+def state_agnostic_document_extraction_pre_resolution_results_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing the cross-state UNION ALL views over every
+    state's un-normalized (pre-entity-resolution) parsed document extraction
+    results.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_results__pre_resolution"
+
+
+def state_agnostic_document_extraction_entity_mentions_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing the cross-state UNION ALL views over every
+    state's entity mentions views.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_results__entity_mentions"
+
+
 def document_extraction_golden_eval_results_dataset(
     sandbox_dataset_prefix: str | None = None,
 ) -> str:

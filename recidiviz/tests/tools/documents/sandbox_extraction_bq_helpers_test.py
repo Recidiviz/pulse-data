@@ -17,6 +17,7 @@
 """Tests for sandbox_extraction_bq_helpers"""
 
 import unittest
+from typing import Sequence
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -85,7 +86,7 @@ class SandboxOverridesTest(unittest.TestCase):
         ) | self._referenced_source_tables(self.post_resolution_view_builders)
 
     def _referenced_source_tables(
-        self, view_builders: list[BigQueryViewBuilder]
+        self, view_builders: Sequence[BigQueryViewBuilder]
     ) -> set[BigQueryAddress]:
         """Returns every source table the views in |view_builders| read."""
         dag = BigQueryViewDagWalker([builder.build() for builder in view_builders])

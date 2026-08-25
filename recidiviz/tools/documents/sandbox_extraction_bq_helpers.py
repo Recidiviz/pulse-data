@@ -19,6 +19,8 @@ result and document store tables, building the source-table overrides that
 re-point the parsed views at the tables the run reads, and deploying those views.
 """
 
+from typing import Sequence
+
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -190,7 +192,7 @@ def _register_input_document_store_overrides(
 def _register_deployed_view_overrides(
     builder: BigQueryAddressOverrides.Builder,
     *,
-    view_builders: list[BigQueryViewBuilder],
+    view_builders: Sequence[BigQueryViewBuilder],
     results_sandbox_prefix: str,
 ) -> None:
     """Registers overrides pointing every address |view_builders| deploy — each view
@@ -231,7 +233,7 @@ def post_entity_resolution_view_input_overrides(
     *,
     config: LLMExtractorConfig,
     er_configs: list[LLMExtractorConfig],
-    first_order_view_builders: list[BigQueryViewBuilder],
+    first_order_view_builders: Sequence[BigQueryViewBuilder],
     results_sandbox_prefix: str,
     document_store_sandbox: DocumentStoreSandboxContext | None,
 ) -> BigQueryAddressOverrides:
@@ -279,7 +281,7 @@ def post_entity_resolution_view_input_overrides(
 def deploy_extraction_results_views(
     *,
     config: LLMExtractorConfig,
-    view_builders: list[BigQueryViewBuilder],
+    view_builders: Sequence[BigQueryViewBuilder],
     results_sandbox_prefix: str,
     input_source_table_overrides: BigQueryAddressOverrides,
     table_expiration_ms: int,
@@ -290,7 +292,7 @@ def deploy_extraction_results_views(
     load_collected_views_to_sandbox(
         sandbox_dataset_prefix=results_sandbox_prefix,
         state_code_filter=config.state_code,
-        collected_builders=view_builders,
+        collected_builders=list(view_builders),
         input_source_table_dataset_overrides_dict=None,
         input_source_table_overrides=input_source_table_overrides,
         allow_slow_views=True,
