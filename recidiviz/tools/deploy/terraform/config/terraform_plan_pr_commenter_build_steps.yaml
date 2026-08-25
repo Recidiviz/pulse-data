@@ -24,8 +24,7 @@ steps:
   - name: gcr.io/cloud-builders/git
     args:
       - -c
-      - git config --global credential.helper store && echo "https://oauth2:$${GITHUB_TOKEN}@github.com"
-        > ~/.git-credentials && git fetch origin $_COMMIT_REF && git checkout $_COMMIT_REF
+      - git config --global credential.helper store && echo "https://oauth2:$${GITHUB_TOKEN}@github.com" > ~/.git-credentials && git fetch origin $_COMMIT_REF && git checkout $_COMMIT_REF
     id: Fetch webhook-specified commit
     entrypoint: sh
     secret_env:
@@ -55,13 +54,7 @@ steps:
       - TF_LOG_PATH=/workspace/terraform-plan-error.txt
     args:
       - -c
-      - "set -eu\ntag=$$(TF_CLI_ARGS= terraform output -raw docker_image_tag)\nhash=$$(TF_CLI_ARGS=\
-        \ terraform output -raw git_hash)\nif [ -z \"$${tag}\" ] || [ -z \"$${hash}\"\
-        \ ]; then\n  echo \"ERROR: docker_image_tag or git_hash output is empty in\
-        \ TF state\" >&2\n  exit 1\nfi\necho \"Planning against currently-deployed\
-        \ docker_image_tag=$${tag} git_hash=$${hash}\"\nterraform plan -parallelism=32\
-        \ -out=/workspace/$_VERSION_TAG-$_COMMIT_REF.tfplan -var=project_id=$_PROJECT_ID\
-        \ -var=docker_image_tag=$${tag} -var=git_hash=$${hash}"
+      - "set -eu\ntag=$$(TF_CLI_ARGS= terraform output -raw docker_image_tag)\nhash=$$(TF_CLI_ARGS= terraform output -raw git_hash)\nif [ -z \"$${tag}\" ] || [ -z \"$${hash}\" ]; then\n  echo \"ERROR: docker_image_tag or git_hash output is empty in TF state\" >&2\n  exit 1\nfi\necho \"Planning against currently-deployed docker_image_tag=$${tag} git_hash=$${hash}\"\nterraform plan -parallelism=32 -out=/workspace/$_VERSION_TAG-$_COMMIT_REF.tfplan -var=project_id=$_PROJECT_ID -var=docker_image_tag=$${tag} -var=git_hash=$${hash}"
     dir: /workspace/recidiviz/tools/deploy/terraform/
     id: Create Terraform plan
     wait_for:
@@ -84,10 +77,7 @@ steps:
       - HOME=/home/recidiviz
     args:
       - -c
-      - uv run python -m recidiviz.tools.github.upsert_terraform_plan --pull-request-number
-        $_PR_NUMBER --commit-ref $_COMMIT_REF --terraform-plan-output-path /workspace/terraform-plan-output.txt
-        --terraform-plan-error-logs-path /workspace/terraform-plan-error.txt --cloud-build-url
-        "https://console.cloud.google.com/cloud-build/builds;region=$LOCATION/$BUILD_ID?project=$PROJECT_ID"
+      - uv run python -m recidiviz.tools.github.upsert_terraform_plan --pull-request-number $_PR_NUMBER --commit-ref $_COMMIT_REF --terraform-plan-output-path /workspace/terraform-plan-output.txt --terraform-plan-error-logs-path /workspace/terraform-plan-error.txt --cloud-build-url "https://console.cloud.google.com/cloud-build/builds;region=$LOCATION/$BUILD_ID?project=$PROJECT_ID"
     dir: /app/
     id: Comment plan on Pull Request
     wait_for:

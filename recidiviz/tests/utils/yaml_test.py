@@ -78,6 +78,28 @@ class TestPrettierFriendlyYamlDump(unittest.TestCase):
             prettier_friendly_yaml_dump({"value": "true"}), 'value: "true"\n'
         )
 
+    def test_strings_with_embedded_double_quotes_are_single_quoted(self) -> None:
+        # The trailing space forces quoting; the embedded double quotes make
+        # prettier prefer single quotes.
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"cmd": 'echo "$${VAR}" && run '}),
+            "cmd: 'echo \"$${VAR}\" && run '\n",
+        )
+
+    def test_strings_with_more_single_than_double_quotes_are_double_quoted(
+        self,
+    ) -> None:
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"cmd": "echo 'hi': done"}),
+            "cmd: \"echo 'hi': done\"\n",
+        )
+
+    def test_multiline_strings_are_double_quoted_with_escapes(self) -> None:
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"cmd": 'set -eu\necho "$${VAR}"'}),
+            'cmd: "set -eu\\necho \\"$${VAR}\\""\n',
+        )
+
     def test_plain_strings_stay_unquoted(self) -> None:
         self.assertEqual(
             prettier_friendly_yaml_dump({"description": "Stores things"}),

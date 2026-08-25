@@ -78,13 +78,11 @@ def get_properly_quoted_yaml_str(value: str, always_quote: bool = False) -> str:
 _NO_LINE_WRAP_WIDTH = 10**9
 
 
-# TODO(OBT-45577): Replace the duplicate _PrettierYamlDumper implementations in the
-# cloud_build step generators with this shared dumper.
 class PrettierFriendlyDumper(yaml.Dumper):
     """Dumper whose output matches the formatting of the prettier pre-commit
     hook, so files generated with it never produce a prettier diff. Block
     sequence items are indented under their parent key, and strings that cannot
-    be emitted plain are double-quoted."""
+    be emitted plain are quoted following prettier's quote choice."""
 
     def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
         # PyYAML's emitter passes indentless by keyword, so renaming the
@@ -95,11 +93,16 @@ class PrettierFriendlyDumper(yaml.Dumper):
 
 
 def _represent_str_prettier(dumper: yaml.Dumper, data: str) -> yaml.ScalarNode:
-    """Emits a string plain where possible, and double-quoted (prettier's quote
-    style; PyYAML defaults to single quotes) where not."""
-    needs_quoting = yaml.safe_dump(data).startswith(("'", '"'))
+    """Emits a string plain where possible, and quoted following prettier's
+    quote choice where not: double quotes by default, single quotes when the
+    string contains more double quotes than single quotes (whichever needs
+    fewer escapes). Strings with characters that only exist as double-quoted
+    escape sequences (newlines, control characters) stay double-quoted."""
+    if not yaml.safe_dump(data).startswith(("'", '"')):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=None)
+    prefers_single = data.isprintable() and data.count('"') > data.count("'")
     return dumper.represent_scalar(
-        "tag:yaml.org,2002:str", data, style='"' if needs_quoting else None
+        "tag:yaml.org,2002:str", data, style="'" if prefers_single else '"'
     )
 
 
@@ -108,8 +111,8 @@ PrettierFriendlyDumper.add_representer(str, _represent_str_prettier)
 
 def prettier_friendly_yaml_dump(value: object) -> str:
     """Returns the value argument dumped as YAML with formatting that matches
-    the prettier pre-commit hook (indented block sequences, double quotes, no
-    line wrapping). Mapping keys keep their insertion order.
+    the prettier pre-commit hook (indented block sequences, prettier's quote
+    choice, no line wrapping). Mapping keys keep their insertion order.
     """
     return yaml.dump(
         value,

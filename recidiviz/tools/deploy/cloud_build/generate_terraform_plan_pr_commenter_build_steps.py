@@ -31,8 +31,6 @@ change, then commit the updated YAML file:
 import argparse
 import os
 
-import yaml
-
 import recidiviz
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     DeploymentContext,
@@ -42,6 +40,7 @@ from recidiviz.tools.deploy.cloud_build.build_configuration import (
 from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
     CreateTerraformPlan,
 )
+from recidiviz.utils.yaml import prettier_friendly_yaml_dump
 
 # Placeholders resolved at build execution time via trigger-level
 # substitutions (which come from the webhook body) and build-level
@@ -91,23 +90,9 @@ _HEADER_COMMENT = (
 )
 
 
-class _PrettierYamlDumper(yaml.Dumper):
-    """YAML dumper that indents list items under their parent key, matching
-    prettier's formatting expectations."""
-
-    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
-        return super().increase_indent(flow, indentless=False)
-
-
 if __name__ == "__main__":
     output = generate()
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(_HEADER_COMMENT)
-        yaml.dump(
-            output,
-            f,
-            Dumper=_PrettierYamlDumper,
-            default_flow_style=False,
-            sort_keys=False,
-        )
+        f.write(prettier_friendly_yaml_dump(output))
     print(f"Wrote {OUTPUT_PATH}")

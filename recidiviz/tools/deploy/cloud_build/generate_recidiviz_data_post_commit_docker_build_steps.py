@@ -32,7 +32,6 @@ import argparse
 import os
 
 import attrs
-import yaml
 
 import recidiviz
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
@@ -45,6 +44,7 @@ from recidiviz.tools.deploy.cloud_build.constants import (
     PLATFORM_LINUX_ARM64,
 )
 from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
+from recidiviz.utils.yaml import prettier_friendly_yaml_dump
 
 # Image kinds built by the staging release trigger. These are the images that
 # include arm64 builds — i.e. the ones that are pulled and run locally on
@@ -109,23 +109,9 @@ _HEADER_COMMENT = (
 )
 
 
-class _PrettierYamlDumper(yaml.Dumper):
-    """YAML dumper that indents list items under their parent key, matching
-    prettier's formatting expectations."""
-
-    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
-        return super().increase_indent(flow, indentless=False)
-
-
 if __name__ == "__main__":
     output = generate()
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(_HEADER_COMMENT)
-        yaml.dump(
-            output,
-            f,
-            Dumper=_PrettierYamlDumper,
-            default_flow_style=False,
-            sort_keys=False,
-        )
+        f.write(prettier_friendly_yaml_dump(output))
     print(f"Wrote {OUTPUT_PATH}")
