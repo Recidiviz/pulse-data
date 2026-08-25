@@ -37,6 +37,12 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 COMMON_VESTIGES = [
+    # Legacy home of experiment_assignments.experiment_assignments_large. The view
+    # graph now reads the new table; this one keeps the original data until the
+    # migration is verified.
+    # TODO(OBT-45863): Remove once the manually_updated_source_tables dataset is
+    #  deleted.
+    "manually_updated_source_tables.experiment_assignments_large",
     # This table provides a list of active feature variants that will populate dropdown
     # menus in the admin panel.
     "google_sheet_backed_tables.feature_variants",

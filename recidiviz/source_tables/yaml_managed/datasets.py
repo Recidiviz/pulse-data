@@ -31,6 +31,10 @@ from recidiviz.datasets.static_data.terraform_managed.config import (
 
 CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID: str = "cloud_sql_to_bq_refresh"
 
+# Assignments for large experiments, generated via notebooks or other manual
+# means and uploaded via recidiviz/tools/analyst/randomization.py
+EXPERIMENT_ASSIGNMENTS_DATASET: str = "experiment_assignments"
+
 VERA_DATASET: str = "vera_data"
 
 VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
@@ -60,6 +64,11 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     EOMIS_WRITEBACK_METADATA_DATASET: (
         "Stores the append-only audit ledger for eOMIS writeback runs: run lifecycle "
         "events and per-candidate write events. Rows contain offender IDs."
+    ),
+    EXPERIMENT_ASSIGNMENTS_DATASET: (
+        "Stores assignments for large experiments, generated via notebooks or other "
+        "manual means and uploaded via recidiviz/tools/analyst/randomization.py. See "
+        "https://go/experiment-assignments."
     ),
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."

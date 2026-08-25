@@ -17,6 +17,8 @@ datasets:
     description: Golden eval result tables for LLM document extraction, one per extractor collection. Append-only.
   eomis_writeback_metadata:
     description: "Stores the append-only audit ledger for eOMIS writeback runs: run lifecycle events and per-candidate write events. Rows contain offender IDs."
+  experiment_assignments:
+    description: Stores assignments for large experiments, generated via notebooks or other manual means and uploaded via recidiviz/tools/analyst/randomization.py. See https://go/experiment-assignments.
   experiments_metadata:
     description: This dataset contains the metadata for our experiments.
   export_archives:

@@ -25,14 +25,12 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
-)
-from recidiviz.source_tables.externally_managed.datasets import (
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
+)
+from recidiviz.source_tables.yaml_managed.datasets import EXPERIMENT_ASSIGNMENTS_DATASET
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
@@ -148,16 +146,16 @@ _REFERENCED_EXPERIMENT_ASSIGNMENTS_COLUMNS = [
 
 def get_large_experiment_assignments_source_table_config() -> SourceTableConfig:
     """Returns the SourceTableConfig with schema information about the
-    manually_updated_source_tables.experiment_assignments_large table, as defined in
+    experiment_assignments.experiment_assignments_large table, as defined in
     experiment_assignments_large.yaml.
     """
     table_address = BigQueryAddress(
-        dataset_id=MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
+        dataset_id=EXPERIMENT_ASSIGNMENTS_DATASET,
         table_id="experiment_assignments_large",
     )
 
     source_table_repository: SourceTableRepository = (
-        build_source_table_repository_for_externally_managed_tables(project_id=None)
+        build_source_table_repository_for_yaml_managed_tables(project_id=None)
     )
 
     config = source_table_repository.get_config(table_address)
@@ -176,7 +174,7 @@ def upload_assignments_to_gbq(
 ) -> None:
     """
     Appends an experiment assignment DataFrame to the BigQuery table <experiment_assignments_large>
-    in the <manually_updated_source_tables> dataset. The final DF must have the same
+    in the <experiment_assignments> dataset. The final DF must have the same
     columns as defined in the table schema definition in
     experiment_assignments_large.yaml.
 
