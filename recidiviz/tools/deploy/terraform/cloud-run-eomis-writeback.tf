@@ -132,7 +132,7 @@ resource "google_storage_bucket_iam_member" "eomis_writeback_configs_reader" {
 resource "google_bigquery_dataset_iam_member" "eomis_writeback_audit_ledger_editor" {
   count      = local.eomis_writeback_enabled ? 1 : 0
   project    = var.project_id
-  dataset_id = module.eomis_writeback_metadata_dataset.dataset_id
+  dataset_id = module.terraform_managed_bigquery_dataset["eomis_writeback_metadata"].dataset_id
   role       = "roles/bigquery.dataEditor"
   member     = "serviceAccount:${local.eomis_writeback_sa_email}"
 }

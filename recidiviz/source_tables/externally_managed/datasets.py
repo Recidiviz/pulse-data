@@ -84,7 +84,10 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Contains tables that archive the contents of daily exports."
     ),
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
-        "Stores source tables that are updated manually."
+        "Stores source tables that are updated manually at some cadence, e.g. via "
+        "a script or a manual BQ query in the UI to insert rows. Descriptions for "
+        "tables added to this dataset should include information about how/when "
+        "the table is updated."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."
@@ -99,7 +102,7 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS: "Stores backend usage events logged from JII Tablet App via Segment",
     JII_FRONTEND_PROD_SEGMENT_DATASET: "Stores frontend pageview events logged from JII Tablet App via Segment",
-    INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data exported from Intercom",
+    INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data from Intercom",
     JII_TEXTING_DASHBOARDS_DB_US_TX: "Stores JII Texting dashboard data for Texas.",
     JII_TEXTING_DASHBOARDS_DB_US_IX: "Stores JII Texting dashboard data for Idaho.",
     MEETINGS_DASHBOARDS_DB_US_AZ: "Stores Meetings product data for Arizona.",

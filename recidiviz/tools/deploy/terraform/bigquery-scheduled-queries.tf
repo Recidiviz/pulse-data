@@ -41,41 +41,13 @@ resource "google_project_iam_member" "bigquery_datatransfer_admin" {
   member = "serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"
 }
 
-# Link experiments_metadata as a module
-module "experiments_metadata" {
-  source      = "./modules/big_query_dataset"
-  dataset_id  = "experiments_metadata"
-  description = "This dataset contains the metadata for our experiments."
-}
-
-# Link static_reference_tables as a module
-module "static_reference_tables" {
-  source      = "./modules/big_query_dataset"
-  dataset_id  = "static_reference_tables"
-  description = "This dataset contains (static) reference tables."
-}
-
-# Link google_sheet_backed_tables as a module
-module "google_sheet_backed_tables" {
-  source      = "./modules/big_query_dataset"
-  dataset_id  = "google_sheet_backed_tables"
-  description = "This dataset contains tables backed by Google Sheets."
-}
-
-# Link manually_updated_source_tables as a module
-module "manually_updated_source_tables" {
-  source      = "./modules/big_query_dataset"
-  dataset_id  = "manually_updated_source_tables"
-  description = "This dataset includes source tables that are updated manually at some cadence, e.g. via a script or a manual BQ query in the UI to insert rows. Descriptions for tables added to this dataset should include information about how/when the table is updated."
-}
-
 resource "google_bigquery_data_transfer_config" "product_roster_archive" {
   display_name           = "product_roster_archive"
   location               = "US"
   data_source_id         = "scheduled_query"
   schedule               = "every day 03:00" # In UTC, gives us end of day in US
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.export_archives_dataset.dataset_id
+  destination_dataset_id = module.terraform_managed_bigquery_dataset["export_archives"].dataset_id
 
   params = {
     destination_table_name_template = "product_roster_archive"

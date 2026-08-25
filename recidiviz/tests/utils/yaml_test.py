@@ -17,7 +17,12 @@
 """Tests for YAML utils."""
 import unittest
 
-from recidiviz.utils.yaml import get_properly_quoted_yaml_str
+import yaml
+
+from recidiviz.utils.yaml import (
+    get_properly_quoted_yaml_str,
+    prettier_friendly_yaml_dump,
+)
 
 
 class TestGetProperlyQuotedYamlString(unittest.TestCase):
@@ -53,3 +58,48 @@ class TestGetProperlyQuotedYamlString(unittest.TestCase):
         self.assertEqual(
             get_properly_quoted_yaml_str('foo"bar', always_quote=True), '"foo\\"bar"'
         )
+
+
+class TestPrettierFriendlyYamlDump(unittest.TestCase):
+    """Tests for prettier_friendly_yaml_dump."""
+
+    def test_block_sequences_are_indented_under_their_key(self) -> None:
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"roles": ["a", "b"]}),
+            "roles:\n  - a\n  - b\n",
+        )
+
+    def test_strings_needing_quotes_are_double_quoted(self) -> None:
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"description": "Contains things: and more"}),
+            'description: "Contains things: and more"\n',
+        )
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"value": "true"}), 'value: "true"\n'
+        )
+
+    def test_plain_strings_stay_unquoted(self) -> None:
+        self.assertEqual(
+            prettier_friendly_yaml_dump({"description": "Stores things"}),
+            "description: Stores things\n",
+        )
+
+    def test_long_strings_are_not_wrapped(self) -> None:
+        long_value = "word " * 100
+        dumped = prettier_friendly_yaml_dump({"description": long_value.strip()})
+        self.assertEqual(len(dumped.splitlines()), 1)
+
+    def test_keys_keep_insertion_order(self) -> None:
+        self.assertEqual(prettier_friendly_yaml_dump({"b": 1, "a": 2}), "b: 1\na: 2\n")
+
+    def test_round_trips_through_safe_load(self) -> None:
+        value = {
+            "datasets": {
+                "my_dataset": {
+                    "description": "Contains things: and more",
+                    "default_table_expiration_ms": 604800000,
+                    "projects": ["recidiviz-staging"],
+                }
+            }
+        }
+        self.assertEqual(yaml.safe_load(prettier_friendly_yaml_dump(value)), value)

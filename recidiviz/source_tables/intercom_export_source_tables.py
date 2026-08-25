@@ -39,7 +39,7 @@ def build_intercom_export_source_tables() -> SourceTableCollection:
     intercom_export_collection = SourceTableCollection(
         dataset_id=INTERCOM_EXPORT_DATASET,
         update_config=SourceTableCollectionUpdateConfig.protected(),
-        description="Dataset that contains user interaction and survey data from Intercom",
+        description="Stores user interaction and survey data from Intercom",
     )
 
     intercom_export_collection.add_source_table(

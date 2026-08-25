@@ -44,6 +44,10 @@ resource "google_bigquery_dataset" "dataset" {
   description                 = var.description
   max_time_travel_hours       = "168"
   default_table_expiration_ms = var.default_table_expiration_ms
+  # The provider default, stated explicitly because the dataset registry
+  # (bigquery-datasets.tf) relies on it: destroying a non-empty dataset must
+  # fail, so deleting real data requires a human to empty the dataset first.
+  delete_contents_on_destroy = false
 
   lifecycle {
     # The `protection` Resource Manager tag is stamped onto protected-tier datasets
