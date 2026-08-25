@@ -44,9 +44,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics
 from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
     SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.charge_record import (
-    SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
     US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
 )
@@ -213,14 +210,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
     },
     "SENTENCING": {
-        SENTENCING_CHARGE_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                SENTENCING_CHARGE_RECORD_VIEW_BUILDER.address,
-            },
-        },
         SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: {
             COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
                 US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,

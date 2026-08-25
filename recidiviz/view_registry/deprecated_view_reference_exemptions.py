@@ -37,9 +37,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentence_status_ra
 from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.charge_record import (
-    SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
@@ -284,10 +281,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
             "sentences migration"
         ),
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        SENTENCING_CHARGE_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
