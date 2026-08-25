@@ -19,11 +19,12 @@
 The generation query has two parts: the collection's own generation SQL (which
 varies by collection type — an authored template for a base collection, a composite
 query built from other document-store tables for entity resolution) and an invariant
-wrapper that adds the framework-computed document_contents_id and filters out
-null-text rows. The builder owns the wrapper; the collection's own generation SQL is
-passed in as the inner query. The factory in this module picks that inner query by
-collection type — knowing which tables each type reads and how they are scoped for a
-sandbox — and hands it to the builder.
+wrapper that normalizes document_text, adds the framework-computed
+document_contents_id, and filters out rows whose text is null or normalizes to the
+empty string. The builder owns the wrapper;
+the collection's own generation SQL is passed in as the inner query. The factory in
+this module picks that inner query by collection type — knowing which tables each
+type reads and how they are scoped for a sandbox — and hands it to the builder.
 """
 
 import string
@@ -50,6 +51,9 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentStoreSandboxContext,
 )
+from recidiviz.documents.store.document_text_normalization import (
+    build_normalized_document_text_sql,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 
@@ -57,7 +61,7 @@ from recidiviz.utils.string import StrictStringFormatter
 class DocumentGenerationQueryBuilder:
     """Builds the full generation query for a document collection: the collection's
     own generation SQL, passed in as the inner query, wrapped with the
-    framework-computed document_contents_id and a null-text filter."""
+    framework-computed document_contents_id and a null-or-empty-text filter."""
 
     project_id: str = attr.ib(validator=attr_validators.is_str)
     config: DocumentCollectionConfig = attr.ib(
@@ -85,8 +89,8 @@ class DocumentGenerationQueryBuilder:
     def build_query(self) -> str:
         """Returns the full generation query: every column the collection's
         generation SQL outputs, plus document_contents_id computed from
-        document_text, with null-text rows filtered out, with the project_id
-        interpolated.
+        document_text, with null-text and empty-text rows filtered out, with the
+        project_id interpolated.
         """
         return StrictStringFormatter().format(
             self._wrap_inner_query(self.inner_query),
@@ -94,20 +98,30 @@ class DocumentGenerationQueryBuilder:
         )
 
     def _wrap_inner_query(self, inner_query: str) -> str:
-        """Returns |inner_query| wrapped to add the framework-computed
-        document_contents_id and drop null-text rows. Invariant across collection
-        types."""
+        """Returns |inner_query| wrapped to normalize document_text, add the
+        framework-computed document_contents_id, and drop rows whose text is null or
+        normalizes to the empty string (a document of only tags and whitespace).
+        Invariant across collection types.
+        """
         passthrough_columns = [
             col.name
             for col in self.config.build_bq_document_generation_output_schema()
             if col.name != DOCUMENT_CONTENTS_ID_COLUMN_NAME
         ]
+        normalized_document_text = build_normalized_document_text_sql(
+            DOCUMENT_TEXT_COLUMN_NAME
+        )
         return f"""
 SELECT
     {self._document_contents_id_sql_clause(self.config.state_code)} AS {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
     {list_to_query_string(passthrough_columns)}
-FROM ({inner_query})
-WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
+FROM (
+    SELECT
+        * EXCEPT ({DOCUMENT_TEXT_COLUMN_NAME}),
+        {normalized_document_text} AS {DOCUMENT_TEXT_COLUMN_NAME}
+    FROM ({inner_query})
+)
+WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL AND {DOCUMENT_TEXT_COLUMN_NAME} != ''"""
 
     @staticmethod
     def _document_contents_id_sql_clause(state_code: StateCode) -> str:

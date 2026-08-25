@@ -85,11 +85,19 @@ SOURCE_DOCUMENT_CONTENTS_ID_FIELD_NAME = "source_document_contents_id"
 SOURCE_DOCUMENT_UPDATE_DATETIME_FIELD_NAME = "source_document_update_datetime"
 SOURCE_ARRAY_INDEX_FIELD_NAME = "source_array_index"
 
-# Rendered into the composite document text: the label prefixing each source
-# document's text, and the placeholder shown for an included entry's null entity
-# field. The label coincides with the document_text column name but is
-# prompt-facing text, kept as its own constant so a column rename never silently
-# rewords the composite documents.
+# Literal markers rendered into the composite document text. These are re-normalized
+# by the document store's generation wrapper (which normalizes the composite text a
+# second time, on top of the already-normalized first-order text it embeds), so each
+# must survive text normalization unchanged — no marker may contain an allowlisted
+# HTML tag name at a word boundary, an HTML entity, or a whitespace run that would
+# collapse. `document_text_normalization_test.py` guards this.
+SOURCE_DOCUMENT_HEADER_PREFIX = "=== Source document — "
+SOURCE_DOCUMENT_HEADER_SUFFIX = " ==="
+ENTRY_HEADER_PREFIX = "[Entry "
+ENTRY_HEADER_SUFFIX = "]"
+# The label prefixing each source document's text coincides with the document_text
+# column name but is prompt-facing text, kept as its own constant so a column rename
+# never silently rewords the composite documents.
 SOURCE_DOCUMENT_TEXT_LABEL = "document_text"
 NULL_ENTITY_FIELD_PLACEHOLDER = "[not provided]"
 
@@ -207,9 +215,9 @@ class EntityResolutionCompositeDocumentQueryTemplateBuilder:
         with `employer_name: [not provided]` in place of the value when it is null.
         """
         concat_args = [
-            "'[Entry '",
+            f"'{ENTRY_HEADER_PREFIX}'",
             f"CAST({ENTRY_NUM_FIELD_NAME} AS STRING)",
-            "']'",
+            f"'{ENTRY_HEADER_SUFFIX}'",
         ]
         for field_name in self._entity_field_names:
             # Each field is one newline-prefixed "field: value" line, with the
@@ -232,9 +240,9 @@ class EntityResolutionCompositeDocumentQueryTemplateBuilder:
         return fix_indent(
             f"""
             CONCAT(
-                '=== Source document — ',
+                '{SOURCE_DOCUMENT_HEADER_PREFIX}',
                 CAST(CAST({DOCUMENT_UPDATE_DATETIME_COLUMN_NAME} AS DATE) AS STRING),
-                ' ===\\n',
+                '{SOURCE_DOCUMENT_HEADER_SUFFIX}\\n',
                 '{SOURCE_DOCUMENT_TEXT_LABEL}: ', ANY_VALUE(source_document_text), '\\n\\n',
                 STRING_AGG(entry_block, '\\n\\n' ORDER BY {ENTRY_NUM_FIELD_NAME})
             )

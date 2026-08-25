@@ -112,7 +112,11 @@ class ERGenerationQueryTextTest(unittest.TestCase):
 SELECT
     TO_HEX(SHA256(CONCAT('US_XX', '|', document_text))) AS document_contents_id,
     person_id, document_text, document_update_datetime, entry_source_map
-FROM (WITH mentions AS (
+FROM (
+    SELECT
+        * EXCEPT (document_text),
+        REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(document_text, r'(?s)<!--.*?-->', ''), r'(?i)</?(blockquote|br|center|div|h1|h2|h3|h4|h5|h6|hr|li|ol|p|pre|table|tbody|td|tfoot|th|thead|tr|ul)(\s[^<>]*)?/?>', '\n'), r'(?i)</?(a|b|big|code|em|font|i|img|s|small|span|strike|strong|sub|sup|tt|u)(\s[^<>]*)?/?>', ''), r'&nbsp;', ' '), r'&lt;', '<'), r'&gt;', '>'), r'&quot;', '"'), r'&apos;', '\''), r'&amp;', '&'), r'\r\n?', '\n'), r'[\t\v\f\pZ]*\n[\t\v\f\pZ]*', '\n'), r'[\t\v\f\pZ]+', ' '), r'\n\n+', '\n\n'), r'^\s+|\s+$', '') AS document_text
+    FROM (WITH mentions AS (
     SELECT
         pre.person_id AS person_id,
         pre.document_contents_id AS source_document_contents_id,
@@ -193,7 +197,8 @@ SELECT
     composite_entry_source_map.entry_source_map AS entry_source_map
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id))
-WHERE document_text IS NOT NULL"""
+)
+WHERE document_text IS NOT NULL AND document_text != ''"""
 
         self.assertEqual(
             expected_query,
@@ -207,7 +212,11 @@ WHERE document_text IS NOT NULL"""
 SELECT
     TO_HEX(SHA256(CONCAT('US_XX', '|', document_text))) AS document_contents_id,
     person_id, document_text, document_update_datetime, entry_source_map
-FROM (WITH mentions AS (
+FROM (
+    SELECT
+        * EXCEPT (document_text),
+        REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(document_text, r'(?s)<!--.*?-->', ''), r'(?i)</?(blockquote|br|center|div|h1|h2|h3|h4|h5|h6|hr|li|ol|p|pre|table|tbody|td|tfoot|th|thead|tr|ul)(\s[^<>]*)?/?>', '\n'), r'(?i)</?(a|b|big|code|em|font|i|img|s|small|span|strike|strong|sub|sup|tt|u)(\s[^<>]*)?/?>', ''), r'&nbsp;', ' '), r'&lt;', '<'), r'&gt;', '>'), r'&quot;', '"'), r'&apos;', '\''), r'&amp;', '&'), r'\r\n?', '\n'), r'[\t\v\f\pZ]*\n[\t\v\f\pZ]*', '\n'), r'[\t\v\f\pZ]+', ' '), r'\n\n+', '\n\n'), r'^\s+|\s+$', '') AS document_text
+    FROM (WITH mentions AS (
     SELECT
         pre.person_id AS person_id,
         pre.document_contents_id AS source_document_contents_id,
@@ -288,7 +297,8 @@ SELECT
     composite_entry_source_map.entry_source_map AS entry_source_map
 FROM composite_document_text
 JOIN composite_entry_source_map USING (person_id))
-WHERE document_text IS NOT NULL"""
+)
+WHERE document_text IS NOT NULL AND document_text != ''"""
 
         self.assertEqual(
             expected_query,
