@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_active_discretionary_override,
     not_already_on_lowest_eligible_custody_level,
     not_in_classification_pilot,
+    not_within_6_months_of_initial_classification,
     serving_a_termer_sentence,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
@@ -54,6 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_active_discretionary_override.VIEW_BUILDER,
         not_in_classification_pilot.VIEW_BUILDER,
         not_already_on_lowest_eligible_custody_level.VIEW_BUILDER,
+        not_within_6_months_of_initial_classification.VIEW_BUILDER,
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             criteria_name="US_IX_SERVING_A_TERMER_SENTENCE_OR_INCARCERATED_AT_LEAST_6_MONTHS",
             logic_type=TaskCriteriaGroupLogicType.OR,
