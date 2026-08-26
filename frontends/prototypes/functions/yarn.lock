@@ -115,10 +115,10 @@
   dependencies:
     tslib "^2.1.0"
 
-"@google-cloud/firestore@^8.6.0":
-  version "8.7.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-8.7.0.tgz#b2805e364404a0a957e087d9738ffdd9e6e5212c"
-  integrity sha512-EvMpZQUXkTRdweSvOu6VL6EEQwHjHAgWz2UYZR+Mj6Ao52S+TWieHbSn15jiNnEw8F8RhbZj7IGXZ1PFB1eA+A==
+"@google-cloud/firestore@^8.7.1":
+  version "8.7.1"
+  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-8.7.1.tgz#bba0b35af840a3843898efee786dd03e1cbe7b72"
+  integrity sha512-Hp/WI8sH569ANitsko6RNvCUkzTCYudHoINOkQjiJq2FBG6kKnofBAW7PtS823cu6RMxHqK2RxRcspdjrRpUFA==
   dependencies:
     "@opentelemetry/api" "^1.9.0"
     fast-deep-equal "^3.1.3"
@@ -144,10 +144,10 @@
   resolved "https://registry.yarnpkg.com/@google-cloud/promisify/-/promisify-4.0.0.tgz#a906e533ebdd0f754dca2509933334ce58b8c8b1"
   integrity sha512-Orxzlfb9c67A15cq2JQEyVc7wEsmFBmHjZWZYQMUyJ1qivXyMwdyNOs9odi79hze+2zqdTtu1E19IM/FtqZ10g==
 
-"@google-cloud/storage@^7.19.0":
-  version "7.19.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-7.19.0.tgz#34fb7cc4eacede5a2f1f0d6cefa0c70a22078c5b"
-  integrity sha512-n2FjE7NAOYyshogdc7KQOl/VZb4sneqPjWouSyia9CMDdMhRX5+RIbqalNmC7LOLzuLAN89VlF2HvG8na9G+zQ==
+"@google-cloud/storage@^7.22.0":
+  version "7.22.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-7.22.0.tgz#57ea83962c50f5c6f29ebc433bd7eb5a37199ba2"
+  integrity sha512-W98gTQOAntEeEQ7/pZxSQXxfUO5CiQcXJRsxBpUa6UU25n8YN/VtogPBi0H+MAmUrn/6bY/sBhFansoWEsr2/g==
   dependencies:
     "@google-cloud/paginator" "^5.0.0"
     "@google-cloud/projectify" "^4.0.0"
@@ -163,7 +163,6 @@
     p-limit "^3.0.1"
     retry-request "^7.0.0"
     teeny-request "^9.0.0"
-    uuid "^8.0.0"
 
 "@grpc/grpc-js@^1.12.6":
   version "1.14.4"
@@ -1648,10 +1647,10 @@ finalhandler@~1.3.1:
     statuses "~2.0.2"
     unpipe "~1.0.0"
 
-firebase-admin@^14.2.0:
-  version "14.2.0"
-  resolved "https://registry.yarnpkg.com/firebase-admin/-/firebase-admin-14.2.0.tgz#e9f2688c8940b7fb6dd8eb5dd4dd6a2577b71c87"
-  integrity sha512-zfs5PdccEgjX479bbMmz95Rqc7ttQ4LV3qkGFlPiqOaOu/suBZc3fG52Qzn2hQjiSHkBM4NP2AZV5r2NvAt0TQ==
+firebase-admin@^14.3.0:
+  version "14.3.0"
+  resolved "https://registry.yarnpkg.com/firebase-admin/-/firebase-admin-14.3.0.tgz#42b36fa0c83c55fd2bc806a9855c5550be365f77"
+  integrity sha512-FUxr5HI9C0RNJW3B+CKyJOnIt5uXn/XHheyCECVTLQGSJ/MaE1Zcwf+dCaaG+xx0+VX1A4sZ1t+hc35bu73dVw==
   dependencies:
     "@fastify/busboy" "^3.0.0"
     "@firebase/database-compat" "^2.1.4"
@@ -1661,8 +1660,8 @@ firebase-admin@^14.2.0:
     jsonwebtoken "^9.0.0"
     jwks-rsa "^4.0.1"
   optionalDependencies:
-    "@google-cloud/firestore" "^8.6.0"
-    "@google-cloud/storage" "^7.19.0"
+    "@google-cloud/firestore" "^8.7.1"
+    "@google-cloud/storage" "^7.22.0"
 
 firebase-functions@^7.3.2:
   version "7.3.2"
@@ -3711,11 +3710,6 @@ utils-merge@1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/utils-merge/-/utils-merge-1.0.1.tgz#9f95710f50a267947b2ccc124741c1028427e713"
   integrity sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM=
-
-uuid@^8.0.0:
-  version "8.3.2"
-  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
-  integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
 uuid@^9.0.0, uuid@^9.0.1:
   version "9.0.1"
