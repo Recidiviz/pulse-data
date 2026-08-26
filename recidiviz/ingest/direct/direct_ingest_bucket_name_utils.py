@@ -23,9 +23,13 @@ INGEST_PRIMARY_BUCKET_SUFFIX = ""
 INGEST_SECONDARY_BUCKET_SUFFIX = "-secondary"
 INGEST_SFTP_BUCKET_SUFFIX = "-sftp"
 
+# The region-code segment is "us-" followed by 2 or more letters ("us-nd",
+# "us-nyc"). {2,} admits multi-letter tenant codes (3 or more letters) while
+# [a-z]{2,} cannot cross a hyphen, so a trailing non-suffix segment (e.g.
+# "us-ma-middlesex") still does not parse.
 _DIRECT_INGEST_BUCKET_REGEX = re.compile(
     r"(?P<project>recidiviz-(?:.*))-direct-ingest-state-"
-    r"(?P<state_code>[a-z]{2}-[a-z]{2})"
+    r"(?P<state_code>[a-z]{2}-[a-z]{2,})"
     rf"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX}|"
     rf"-upload-testing|{INGEST_SFTP_BUCKET_SUFFIX})?$"
 )

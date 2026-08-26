@@ -55,3 +55,39 @@ class TestFindStateCodesInStr(unittest.TestCase):
 
     def test_invalid_state_code_ignored(self) -> None:
         self.assertEqual(set(), find_state_codes_in_str("us_zz_raw_data"))
+
+    def test_multi_letter_state_code(self) -> None:
+        # Codes of 3 or more letters are handled the same as 2-letter codes.
+        self.assertEqual({StateCode.US_NYC}, find_state_codes_in_str("us_nyc_raw_data"))
+        self.assertEqual(
+            {StateCode.US_NYC}, find_state_codes_in_str("prefix_us_nyc_raw_data")
+        )
+        self.assertEqual(
+            {StateCode.US_NYC}, find_state_codes_in_str("my_dataset_us_nyc")
+        )
+        # US_DEMO exercises a 4-letter code.
+        self.assertEqual(
+            {StateCode.US_DEMO}, find_state_codes_in_str("us_demo_raw_data")
+        )
+
+    def test_multi_letter_code_not_resolved_to_shorter_prefix(self) -> None:
+        # A tenant code must resolve whole, never to a shorter registered prefix:
+        # "us_nyc" is US_NYC (not US_NY), "us_demo" is US_DEMO (not US_DE).
+        self.assertEqual({StateCode.US_NYC}, find_state_codes_in_str("us_nyc"))
+        self.assertNotIn(StateCode.US_NY, find_state_codes_in_str("us_nyc"))
+        self.assertEqual({StateCode.US_DEMO}, find_state_codes_in_str("us_demo"))
+        self.assertNotIn(StateCode.US_DE, find_state_codes_in_str("us_demo"))
+
+    def test_three_and_two_letter_codes_together(self) -> None:
+        self.assertEqual(
+            {StateCode.US_XX, StateCode.US_NYC},
+            find_state_codes_in_str("us_xx_something_us_nyc"),
+        )
+
+    def test_overlapping_parent_and_child_codes_together(self) -> None:
+        # When a 2-letter parent (US_NY) and its overlapping longer tenant code
+        # (US_NYC) both appear explicitly, both are returned.
+        self.assertEqual(
+            {StateCode.US_NY, StateCode.US_NYC},
+            find_state_codes_in_str("us_ny_data_us_nyc"),
+        )

@@ -43,14 +43,15 @@ class TestStates(unittest.TestCase):
     def test_hasStates_not_in_test(self) -> None:
         self.mock_in_test.return_value = False
 
-        # There are 60 states included because we count US_DC, U.S. territories
+        # There are 61 states included because we count US_DC, U.S. territories
         # (US_AS - American Samoa, US_GU - Guam, US_MP - Northern Mariana Islands,
-        # US_UM - U.S. Minor Outlying Islands, US_VI - U.S. Virgin Islands), a
-        # playground region (US_OZ), an alternate ingest code for Idaho (US_IX for
-        # US_ID), and the demo state code.
-        self.assertEqual(60, len(states.StateCode))
+        # US_UM - U.S. Minor Outlying Islands, US_VI - U.S. Virgin Islands), the
+        # US_NYC non-state tenant code, a playground region (US_OZ), an alternate
+        # ingest code for Idaho (US_IX for US_ID), and the demo state code.
+        self.assertEqual(61, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-4].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-5].value)
+        self.assertEqual("US_NYC", list(states.StateCode)[-4].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-3].value)
         # TODO(#10703): Remove this state_code after merging US_IX into US_ID
         self.assertEqual("US_IX", list(states.StateCode)[-2].value)
@@ -59,11 +60,12 @@ class TestStates(unittest.TestCase):
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 65 states because we are in tests, so we add US_DD, US_LL,
+        # There are 66 states because we are in tests, so we add US_DD, US_LL,
         # US_WW, US_XX, and US_YY as valid values.
-        self.assertEqual(65, len(states.StateCode))
+        self.assertEqual(66, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-9].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-10].value)
+        self.assertEqual("US_NYC", list(states.StateCode)[-9].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-8].value)
         # TODO(#10703): Remove this state_code after merging US_IX into US_ID
         self.assertEqual("US_IX", list(states.StateCode)[-7].value)
@@ -105,6 +107,39 @@ class TestStates(unittest.TestCase):
             _ = StateCode(invalid_state_code)
 
         self.assertEqual(None, StateCode.get(invalid_state_code))
+
+    def test_prefix_state_code(self) -> None:
+        self.mock_in_test.return_value = False
+
+        # A two-letter code resolves to itself.
+        self.assertEqual(
+            StateCode.US_CO, StateCode.prefix_state_code("US_CO_OFFENDERID")
+        )
+        self.assertEqual(StateCode.US_NY, StateCode.prefix_state_code("US_NY_DOC"))
+
+        # A three-letter tenant code resolves to itself, NOT to its two-letter
+        # prefix US_NY (New York) — this is the silent-misattribution fix.
+        self.assertEqual(
+            StateCode.US_NYC, StateCode.prefix_state_code("US_NYC_OFFENDERID")
+        )
+        self.assertEqual(StateCode.US_NYC, StateCode.prefix_state_code("US_NYC"))
+
+        # A 4-letter code resolves whole, not to its 2-letter prefix US_DE.
+        self.assertEqual(
+            StateCode.US_DEMO, StateCode.prefix_state_code("US_DEMO_OFFENDERID")
+        )
+
+        # A bare code with no suffix resolves to itself.
+        self.assertEqual(StateCode.US_CO, StateCode.prefix_state_code("US_CO"))
+
+    def test_prefix_state_code_none_when_unregistered(self) -> None:
+        self.mock_in_test.return_value = False
+
+        self.assertIsNone(StateCode.prefix_state_code("US_ZZ_OFFENDERID"))
+        self.assertIsNone(StateCode.prefix_state_code("OFFENDERID"))
+        # A two-letter prefix that is a real state must still not match when it
+        # is not followed by an underscore boundary.
+        self.assertIsNone(StateCode.prefix_state_code("US_COX"))
 
     def test_max_fips_code(self) -> None:
         self.mock_in_test.return_value = False

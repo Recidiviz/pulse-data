@@ -71,6 +71,44 @@ class DirectIngestBucketNameUtilsTest(TestCase):
             "us_pa",
         )
 
+    def test_get_region_code_from_direct_ingest_bucket_multi_letter_code(self) -> None:
+        self.assertEqual(
+            get_region_code_from_direct_ingest_bucket(
+                "recidiviz-123-direct-ingest-state-us-nyc"
+            ),
+            "us_nyc",
+        )
+        # A 4-letter code (US_DEMO) parses back the same way.
+        self.assertEqual(
+            get_region_code_from_direct_ingest_bucket(
+                "recidiviz-123-direct-ingest-state-us-demo"
+            ),
+            "us_demo",
+        )
+        self.assertEqual(
+            get_region_code_from_direct_ingest_bucket(
+                "recidiviz-123-direct-ingest-state-us-nyc-secondary"
+            ),
+            "us_nyc",
+        )
+        self.assertEqual(
+            get_region_code_from_direct_ingest_bucket(
+                "recidiviz-staging-direct-ingest-state-us-nyc-upload-testing"
+            ),
+            "us_nyc",
+        )
+
+    def test_get_region_code_from_direct_ingest_bucket_multi_letter_still_no_extra_segment(
+        self,
+    ) -> None:
+        # A trailing non-suffix segment is still rejected for multi-letter codes.
+        self.assertEqual(
+            get_region_code_from_direct_ingest_bucket(
+                "recidiviz-staging-direct-ingest-state-us-nyc-middlesex"
+            ),
+            None,
+        )
+
     def test_get_region_code_from_direct_ingest_bucket_malformed(self) -> None:
         # States should not have three part region names
         self.assertEqual(

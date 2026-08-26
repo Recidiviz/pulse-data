@@ -27,16 +27,19 @@ from recidiviz.common.constants.states import StateCode
 #                           without creating a capture). (?<=_) is a lookbehind
 #                           that asserts "_" precedes this position without
 #                           consuming it.
-#   (?P<state>us_[a-z]{2}) - Captures "us_" followed by exactly 2 lowercase
-#                           letters into a group named "state". The {2} is what
-#                           prevents "us_states" from matching — "st" is only 2
-#                           chars, but the next char is "a", not "_" or end-of-
-#                           string, so the lookahead below rejects it.
+#   (?P<state>us_[a-z]{2,}) - Captures "us_" followed by 2 or more lowercase
+#                           letters into a group named "state". Two letters covers
+#                           real state codes ("us_ca"); the open-ended {2,} also
+#                           admits longer non-state tenant codes ("us_nyc"). The
+#                           token so captured is then filtered by enum membership
+#                           below, so non-code tokens like "us_states" — which now
+#                           match the shape — are dropped rather than returned.
 #   (?=_|$)               - Lookahead asserting "_" or end-of-string follows,
-#                           without consuming it. This is the boundary that
-#                           rejects partial matches like "us_st" inside
-#                           "us_states".
-_STATE_CODE_PATTERN = re.compile(r"(?:^|(?<=_))(?P<state>us_[a-z]{2})(?=_|$)")
+#                           without consuming it. This is the boundary that keeps
+#                           each token whole: "us_nyc" is captured as "us_nyc"
+#                           (not "us_ny"), and "us_st" inside "us_states" is not a
+#                           partial match.
+_STATE_CODE_PATTERN = re.compile(r"(?:^|(?<=_))(?P<state>us_[a-z]{2,})(?=_|$)")
 
 
 def find_state_codes_in_str(s: str) -> set[StateCode]:

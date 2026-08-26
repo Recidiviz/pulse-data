@@ -100,6 +100,24 @@ class TestBigQuerySqlglotHelpers(unittest.TestCase):
             get_state_code_literal_references(state_code_subquery_query),
         )
 
+    def test_get_state_code_literal_references_multi_letter_code(self) -> None:
+        # US_NYC (3 letters) and US_DEMO (4 letters) are both detected.
+        multi_letter_query = self._parse_query(
+            "SELECT a, b FROM `{project_id}.dataset.table` "
+            "WHERE state IN ('US_NYC', 'US_DEMO')"
+        )
+        self.assertEqual(
+            {StateCode.US_NYC, StateCode.US_DEMO},
+            get_state_code_literal_references(multi_letter_query),
+        )
+
+    def test_get_state_code_literal_references_ignores_non_code_literals(self) -> None:
+        # Lowercase literals and non-registered US_-shaped literals are not codes.
+        query = self._parse_query(
+            "SELECT 'us_xx' AS a, 'US_ZZ' AS b FROM `{project_id}.dataset.table`"
+        )
+        self.assertEqual(set(), get_state_code_literal_references(query))
+
     def test_get_undocumented_ctes(self) -> None:
         query = """
         WITH

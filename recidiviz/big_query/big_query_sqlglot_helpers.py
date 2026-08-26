@@ -17,8 +17,6 @@
 """Query parsing helpers that are used in production code to understand BigQuery view
 queries.
 """
-import re
-
 import sqlglot
 import sqlglot.expressions as expr
 
@@ -30,6 +28,11 @@ def get_state_code_literal_references(
 ) -> set[StateCode]:
     """Returns any state code literals referenced by this query expression (e.g. "US_XX"
     written in the SQL).
+
+    A literal counts as a state code by exact StateCode membership
+    (case-sensitive), not by matching a US_XX shape. Any registered code is
+    detected, including multi-letter tenant codes (3 or more letters, e.g.
+    US_NYC), and non-registered US_-shaped literals are ignored.
     """
 
     found_states = set()
@@ -38,8 +41,14 @@ def get_state_code_literal_references(
             continue
         str_literal_value = literal.this
 
-        if match := re.match(r"^US_[A-Z]{2}$", str_literal_value):
-            found_states.add(StateCode(match.string))
+        # Match against StateCode membership rather than a hardcoded US_[A-Z]{2}
+        # shape, so multi-letter tenant codes (3 or more letters, e.g. US_NYC)
+        # are detected too. The constructor is case-sensitive, so only exact
+        # code literals match.
+        try:
+            found_states.add(StateCode(str_literal_value))
+        except ValueError:
+            continue
 
     return found_states
 

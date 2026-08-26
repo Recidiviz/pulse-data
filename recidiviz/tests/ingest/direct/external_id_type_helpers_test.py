@@ -16,8 +16,11 @@
 # =============================================================================
 """Tests for external_id_type_helpers."""
 import unittest
+from unittest import mock
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
     get_external_id_types,
     is_valid_external_id_type_shape,
 )
@@ -49,3 +52,23 @@ class IsValidExternalIdTypeShapeTest(unittest.TestCase):
         self.assertFalse(is_valid_external_id_type_shape("US_CO OFFENDERID"))
         self.assertFalse(is_valid_external_id_type_shape("US_CO_OFFENDERID' OR '1'='1"))
         self.assertFalse(is_valid_external_id_type_shape("US_CO_OFFENDERID\nUS_XX_DOC"))
+
+
+class ExternalIdTypesByStateCodeTest(unittest.TestCase):
+    """Tests for external_id_types_by_state_code."""
+
+    def test_all_real_types_owned_by_prefix_state(self) -> None:
+        for state_code, id_types in external_id_types_by_state_code().items():
+            for id_type in id_types:
+                with self.subTest(id_type=id_type):
+                    self.assertTrue(id_type.startswith(state_code.value))
+
+    def test_three_letter_code_owns_its_types_not_the_two_letter_prefix(self) -> None:
+        with mock.patch(
+            "recidiviz.ingest.direct.external_id_type_helpers.get_external_id_types",
+            return_value=["US_NY_DOC", "US_NYC_TESTID"],
+        ):
+            result = external_id_types_by_state_code()
+
+        self.assertEqual({"US_NY_DOC"}, result[StateCode.US_NY])
+        self.assertEqual({"US_NYC_TESTID"}, result[StateCode.US_NYC])

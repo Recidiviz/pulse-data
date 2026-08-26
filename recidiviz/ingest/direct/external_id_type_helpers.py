@@ -22,9 +22,12 @@ from recidiviz.common.constants.state import external_id_types
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.types import assert_type
 
-# An external ID type is a US_XX state code prefix (captured, so the same regex
-# parses the owning state) followed by capital letters and underscores.
-EXTERNAL_ID_TYPE_REGEX = re.compile(r"^(?P<state_code>US_[A-Z]{2})[A-Z_]*$")
+# An external ID type is a US_XX-shaped state code prefix followed by capital
+# letters and underscores. This regex is a shape check only; the owning state is
+# recovered with StateCode.prefix_state_code (longest registered-prefix match),
+# not by capturing a fixed 2-letter prefix here. A fixed capture would silently
+# resolve a multi-letter tenant code like US_NYC to its 2-letter prefix US_NY.
+EXTERNAL_ID_TYPE_REGEX = re.compile(r"^US_[A-Z]{2}[A-Z_]*$")
 
 
 def is_valid_external_id_type_shape(external_id_type: str) -> bool:
@@ -52,11 +55,16 @@ def get_external_id_types() -> list[str]:
 def external_id_types_by_state_code() -> dict[StateCode, set[str]]:
     result = defaultdict(set)
     for external_id_name in get_external_id_types():
-        match = EXTERNAL_ID_TYPE_REGEX.match(external_id_name)
-        if not match:
+        if not is_valid_external_id_type_shape(external_id_name):
             raise ValueError(
                 f"Expected external id name [{external_id_name}] to match "
                 f"[{EXTERNAL_ID_TYPE_REGEX.pattern}]."
             )
-        result[StateCode[match.group("state_code")]].add(external_id_name)
+        state_code = StateCode.prefix_state_code(external_id_name)
+        if state_code is None:
+            raise ValueError(
+                f"Could not determine the owning state code for external id name "
+                f"[{external_id_name}] via a registered-prefix match."
+            )
+        result[state_code].add(external_id_name)
     return result

@@ -80,6 +80,26 @@ class _SharedStateCode(enum.Enum):
         except ValueError as _:
             return False
 
+    @classmethod
+    def prefix_state_code(cls: typing.Type[StateCodeT], s: str) -> Optional[StateCodeT]:
+        """Returns the registered StateCode that owns |s| by longest
+        boundary-delimited prefix match, or None if none does.
+
+        A code owns |s| when |s| equals the code (e.g. "US_NYC") or begins with
+        the code followed by an underscore (e.g. "US_NYC_OFFENDERID"). The
+        longest such code wins, so a string prefixed with a longer tenant code
+        (3 or more letters, e.g. US_NYC) resolves to that code rather than
+        silently to its 2-letter prefix (US_NY). Use this to recover the owning
+        state from a larger identifier such as an external ID type name.
+        """
+        best: Optional[StateCodeT] = None
+        for member in cls:
+            value = member.value
+            if s == value or s.startswith(f"{value}_"):
+                if best is None or len(value) > len(best.value):
+                    best = member
+        return best
+
     def slack_channel_name(self) -> str:
         """Returns the name of the primary Slack channel name for this state - e.g.
         '#us-north-dakota' or '#us-tennessee'.
@@ -167,6 +187,24 @@ US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO = {
     ),
 }
 
+US_NYC_STATE_CODE = "US_NYC"
+US_NYC_STATE_INFO = {
+    US_NYC_STATE_CODE: us.states.State(
+        **{
+            "fips": "84",
+            "name": "New York City",
+            "abbr": "NYC",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": True,
+            "is_continental": True,
+            "ap_abbr": "NYC",
+            "time_zones": ["America/New_York"],
+            "name_metaphone": "N YRK ST",
+        }
+    )
+}
+
 US_DEMO_STATE_CODE = "US_DEMO"
 US_DEMO_STATE_INFO = {
     US_DEMO_STATE_CODE: us.states.State(
@@ -192,6 +230,7 @@ US_DEMO_STATE_INFO = {
 class _RealStateCode(_SharedStateCode):
     """Code for every state in the US"""
 
+    # Values representing US states and territories with real FIPS codes
     US_AK = "US_AK"
     US_AL = "US_AL"
     US_AR = "US_AR"
@@ -252,6 +291,9 @@ class _RealStateCode(_SharedStateCode):
     US_WV = "US_WV"
     US_WY = "US_WY"
 
+    # Non-state/territory values
+    US_NYC = "US_NYC"  # New York City
+
     # Playground
     US_OZ = "US_OZ"
 
@@ -270,6 +312,7 @@ class _RealStateCode(_SharedStateCode):
             or PLAYGROUND_STATE_INFO.get(state_code)
             or ALTERNATE_INGEST_US_ID_STATE_INFO.get(state_code)
             or US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO.get(state_code)
+            or US_NYC_STATE_INFO.get(state_code)
             or US_DEMO_STATE_INFO.get(state_code)
         )
 
@@ -383,7 +426,10 @@ TEST_STATE_INFO = {
 class _FakeStateCode(_SharedStateCode):
     """Code for every state in the US, plus codes to only be used in tests"""
 
-    # Real codes
+    ################################
+    # Real codes                   #
+    ################################
+    # Values representing US states and territories with real FIPS codes
     US_AK = "US_AK"
     US_AL = "US_AL"
     US_AR = "US_AR"
@@ -444,6 +490,9 @@ class _FakeStateCode(_SharedStateCode):
     US_WV = "US_WV"
     US_WY = "US_WY"
 
+    # Non-state/territory values
+    US_NYC = "US_NYC"  # New York City
+
     # Playground code
     US_OZ = "US_OZ"
 
@@ -454,7 +503,9 @@ class _FakeStateCode(_SharedStateCode):
     # Demo states
     US_DEMO = "US_DEMO"
 
-    # Test codes
+    ################################
+    # Test codes                   #
+    ################################
     US_DD = TEST_STATE_CODE_DATAFLOW
     US_LL = TEST_STATE_CODE_LOOKER
     US_WW = TEST_STATE_CODE_DOCS

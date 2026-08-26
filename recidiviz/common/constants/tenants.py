@@ -100,6 +100,7 @@ class _RealTenant(_SharedTenant):
     US_NM = "US_NM"
     US_NV = "US_NV"
     US_NY = "US_NY"
+    US_NYC = "US_NYC"  # New York City sub-jurisdiction
     US_OH = "US_OH"
     US_OK = "US_OK"
     US_OR = "US_OR"
@@ -178,6 +179,7 @@ class _FakeTenant(_SharedTenant):
     US_NM = "US_NM"
     US_NV = "US_NV"
     US_NY = "US_NY"
+    US_NYC = "US_NYC"  # New York City sub-jurisdiction
     US_OH = "US_OH"
     US_OK = "US_OK"
     US_OR = "US_OR"
