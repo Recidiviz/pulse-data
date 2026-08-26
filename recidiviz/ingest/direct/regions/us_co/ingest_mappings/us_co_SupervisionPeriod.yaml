@@ -54,6 +54,8 @@ output:
                       StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
                         - "IN // Inmate Receiving Parole Services"
                         - "SP // Inmate Receiving TSP"
+                      StateSupervisionPeriodSupervisionType.DEPORTED:
+                        - "DP // Deported"
                       StateSupervisionPeriodSupervisionType.PAROLE:
                         - "AC // Active"
                         - "EM // On Electronic Monitoring"
