@@ -29,7 +29,10 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_validators import (
     is_dict_of,
     is_list_of,
+    is_non_empty_set,
+    is_non_empty_set_of,
     is_not_set_along_with,
+    is_opt_non_empty_set_of,
     is_set_of,
     is_tuple_of,
 )
@@ -1433,6 +1436,113 @@ class TestIsSetOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 set_of_str_field=set(),
                 set_of_class_field={None},  # type: ignore[arg-type]
+            )
+
+
+class TestIsNonEmptySetValidators(unittest.TestCase):
+    """Tests for the is_non_empty_set, is_non_empty_set_of, and
+    is_opt_non_empty_set_of validators."""
+
+    @attr.define
+    class TestClass:
+        non_empty_set_field: set = attr.ib(validator=is_non_empty_set)
+        non_empty_set_of_str_field: set[str] = attr.ib(
+            validator=is_non_empty_set_of(str)
+        )
+        opt_non_empty_set_of_str_field: set[str] | None = attr.ib(
+            validator=is_opt_non_empty_set_of(str)
+        )
+
+    def test_correct_values(self) -> None:
+        _ = self.TestClass(
+            non_empty_set_field={1, "a"},
+            non_empty_set_of_str_field={"a", "b"},
+            opt_non_empty_set_of_str_field={"a"},
+        )
+        # None is allowed for the optional field.
+        _ = self.TestClass(
+            non_empty_set_field={1},
+            non_empty_set_of_str_field={"a"},
+            opt_non_empty_set_of_str_field=None,
+        )
+
+    def test_non_set_input(self) -> None:
+        with self.assertRaises(TypeError):
+            _ = self.TestClass(
+                non_empty_set_field=["a"],  # type: ignore[arg-type]
+                non_empty_set_of_str_field={"a"},
+                opt_non_empty_set_of_str_field=None,
+            )
+
+    def test_empty_set(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [non_empty_set_field] on [TestClass] must be a non-empty set. "
+                "Found value [set()]"
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_set_field=set(),
+                non_empty_set_of_str_field={"a"},
+                opt_non_empty_set_of_str_field=None,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [non_empty_set_of_str_field] on [TestClass] must be a "
+                "non-empty set. Found value [set()]"
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_set_field={1},
+                non_empty_set_of_str_field=set(),
+                opt_non_empty_set_of_str_field=None,
+            )
+
+    def test_empty_set_optional(self) -> None:
+        # An empty set is still rejected for the optional field — only None is allowed.
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [opt_non_empty_set_of_str_field] on [TestClass] must be a "
+                "non-empty set. Found value [set()]"
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_set_field={1},
+                non_empty_set_of_str_field={"a"},
+                opt_non_empty_set_of_str_field=set(),
+            )
+
+    def test_bad_element_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in set type field [non_empty_set_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsNonEmptySetValidators.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_set_field={1},
+                non_empty_set_of_str_field={1},  # type: ignore[arg-type]
+                opt_non_empty_set_of_str_field=None,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in set type field [opt_non_empty_set_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsNonEmptySetValidators.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_set_field={1},
+                non_empty_set_of_str_field={"a"},
+                opt_non_empty_set_of_str_field={1},  # type: ignore[arg-type]
             )
 
 

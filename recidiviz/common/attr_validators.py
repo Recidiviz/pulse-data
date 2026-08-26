@@ -931,6 +931,34 @@ def is_set_of(set_item_expected_type: Type) -> IsSetOfValidator:
     return IsSetOfValidator(set_item_expected_type)
 
 
+def is_non_empty_set(instance: Any, attribute: attr.Attribute, value: set) -> None:
+    is_set(instance, attribute, value)
+
+    if not value:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"non-empty set. Found value [{value}]"
+        )
+
+
+def is_non_empty_set_of(set_item_expected_type: Type) -> AttrValidator:
+    """Returns a validator that checks the value is a non-empty set whose every element
+    is an instance of |set_item_expected_type|."""
+    element_validator = is_set_of(set_item_expected_type)
+
+    def _validate(instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        is_non_empty_set(instance, attribute, value)
+        element_validator(instance, attribute, value)
+
+    return _validate
+
+
+def is_opt_non_empty_set_of(set_item_expected_type: Type) -> AttrValidator:
+    """Returns a validator that checks the value is None or a non-empty set whose every
+    element is an instance of |set_item_expected_type|."""
+    return attr.validators.optional(is_non_empty_set_of(set_item_expected_type))
+
+
 def _assert_value_falls_in_bounds(
     instance: Any,
     attribute: attr.Attribute,
