@@ -70,6 +70,12 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             "updated_at": 1785956960,
             "ticket_state": "resolved",
             "category": "Customer",
+            "contacts": {
+                "type": "contact.list",
+                "contacts": [
+                    {"type": "contact", "id": "5ba682d23d7cf92bef87bfd4"},
+                ],
+            },
         }
         self.intercom_search_ticket = IntercomSearchTicket(
             ticket_id=self.ticket_json[TICKET_ID],
@@ -83,6 +89,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 self.ticket_json[UPDATED_AT], tz=timezone.utc
             ),
             ticket_state=IntercomTicketState(self.ticket_json[TICKET_STATE]),
+            contact_id="5ba682d23d7cf92bef87bfd4",
             raw_ticket_json=self.ticket_json,
         )
 
@@ -111,6 +118,17 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
         ticket = self.json_to_csv_converter.flatten_ticket(ticket_json=self.ticket_json)
 
         assert ticket == self.intercom_search_ticket
+
+    def test_flatten_ticket_unexpected_contact_count(self) -> None:
+        """flatten_ticket() raises when a ticket has other than one contact."""
+
+        for contacts in ([], [{"id": "a"}, {"id": "b"}]):
+            ticket_json = {**self.ticket_json}
+            ticket_json["contacts"] = {"type": "contact.list", "contacts": contacts}
+            with self.assertRaisesRegex(
+                ValueError, r"Expected exactly one contact for ticket"
+            ):
+                self.json_to_csv_converter.flatten_ticket(ticket_json=ticket_json)
 
     def test_flatten_contact(self) -> None:
         """Tests that flatten_contact() properly parses the contact JSON"""

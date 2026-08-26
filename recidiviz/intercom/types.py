@@ -180,6 +180,8 @@ class IntercomSearchTicket:
     updated_at: datetime
     # The state of the ticket
     ticket_state: IntercomTicketState
+    # The ID of the contact who opened the ticket
+    contact_id: str
     # The ticket's raw JSON from the Intercom API search tickets response
     raw_ticket_json: dict
 
