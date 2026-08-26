@@ -67,6 +67,9 @@ from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
+    RAW_DATA_PRUNING_UPDATE_GROUPS,
+    RAW_DATA_UPDATE_GROUPS,
     RawDataSourceTableLabel,
     SchemaTypeSourceTableLabel,
     SourceTableCollection,
@@ -106,6 +109,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
     ]
     collections = [
         SourceTableCollection(
+            update_groups=RAW_DATA_PRUNING_UPDATE_GROUPS,
             dataset_id=raw_data_pruning_new_raw_data_dataset(state_code, instance),
             labels=labels,
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -116,6 +120,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             ),
         ),
         SourceTableCollection(
+            update_groups=RAW_DATA_PRUNING_UPDATE_GROUPS,
             dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
                 state_code, instance
             ),
@@ -128,6 +133,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             ),
         ),
         SourceTableCollection(
+            update_groups=RAW_DATA_PRUNING_UPDATE_GROUPS,
             dataset_id=raw_data_temp_load_dataset(state_code, instance),
             labels=labels,
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -144,6 +150,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
     ]
 
     raw_data_collection = SourceTableCollection(
+        update_groups=RAW_DATA_UPDATE_GROUPS,
         dataset_id=raw_tables_dataset_for_region(
             state_code=state_code,
             instance=instance,
@@ -195,6 +202,7 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
 
     for export_config in export_configs:
         collection = SourceTableCollection(
+            update_groups=CALC_UPDATE_GROUPS,
             labels=[SchemaTypeSourceTableLabel(export_config.schema_type)],
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             dataset_id=export_config.multi_region_dataset(

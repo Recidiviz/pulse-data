@@ -131,6 +131,7 @@ from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -181,6 +182,7 @@ def _create_sandbox_shared_metadata_tables(
         if dataset_id != EXTRACTION_METADATA_DATASET_ID:
             continue
         collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=dataset_id,
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             description=f"Source tables for {dataset_id}",
@@ -236,6 +238,7 @@ def _create_sandbox_source_tables(
         collect_document_extraction_validated_source_table_collection(),
     ]:
         filtered_collection = SourceTableCollection(
+            update_groups=full_collection.update_groups,
             dataset_id=full_collection.dataset_id,
             update_config=SourceTableCollectionUpdateConfig.protected(),
             description=full_collection.description,

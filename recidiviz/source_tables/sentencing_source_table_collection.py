@@ -20,6 +20,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.dataset_config import SENTENCING_DATASET
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
@@ -62,6 +63,7 @@ def collect_sentencing_source_tables() -> list[SourceTableCollection]:
     )
 
     case_insights_collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=CASE_INSIGHTS_RATES_ADDRESS.dataset_id,
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         source_tables_by_address={case_insights_config.address: case_insights_config},

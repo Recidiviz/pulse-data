@@ -20,6 +20,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
     collect_document_collection_configs,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -31,6 +32,7 @@ def collect_document_store_source_table_collections() -> list[SourceTableCollect
     configs = collect_document_collection_configs()
 
     collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
         dataset_id=DOCUMENT_STORE_METADATA_DATASET_ID,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description=(

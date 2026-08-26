@@ -47,6 +47,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
     SourceTableLabel,
+    SourceTableUpdateGroup,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
@@ -340,6 +341,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
         table_address: BigQueryAddress, labels: list[SourceTableLabel[Any]]
     ) -> SourceTableCollection:
         return SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id=table_address.dataset_id,
             labels=labels,
             source_tables_by_address={

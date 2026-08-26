@@ -38,6 +38,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollectionUpdateConfig,
     SourceTableCollectionValidationConfig,
     SourceTableConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.source_tables.source_table_update_manager import (
     FieldChangeKind,
@@ -1336,6 +1337,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
 
         extraneous_field = bigquery.SchemaField("age", "INT64")
         with_extraneous_field = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             source_tables_by_address={
                 table_address: SourceTableConfig(
@@ -1356,6 +1358,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         )
 
         without_extraneous_field = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             source_tables_by_address={
                 table_address: SourceTableConfig(
@@ -1389,6 +1392,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             clustering_fields=["name"],
         )
         with_clustering = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1403,6 +1407,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(
+                    update_groups={SourceTableUpdateGroup.CALC},
                     dataset_id="test_dataset",
                     source_tables_by_address={
                         table_address: attr.evolve(
@@ -1430,6 +1435,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             clustering_fields=None,
         )
         collection = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1440,6 +1446,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         # Assert no errors
         self.source_table_update_manager.update(
             source_table_collection=SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="test_dataset",
                 source_tables_by_address={
                     table_address: attr.evolve(table_config, clustering_fields=[])
@@ -1466,6 +1473,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             time_partitioning=bigquery.TimePartitioning(field="dt"),
         )
         with_partitioning = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1478,6 +1486,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         # update a second time should be a no-op
         self.source_table_update_manager.update(
             source_table_collection=SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="test_dataset",
                 source_tables_by_address={table_address: table_config},
                 update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1490,6 +1499,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(
+                    update_groups={SourceTableUpdateGroup.CALC},
                     dataset_id="test_dataset",
                     source_tables_by_address={
                         table_address: attr.evolve(
@@ -1507,6 +1517,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(
+                    update_groups={SourceTableUpdateGroup.CALC},
                     dataset_id="test_dataset",
                     source_tables_by_address={
                         table_address: attr.evolve(
@@ -1549,6 +1560,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
     def get_source_tables(cls) -> list[SourceTableCollection]:
         return [
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id=cls.dataset_id,
                 source_tables_by_address={cls.table_address: cls.existing_table_config},
                 update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1582,6 +1594,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
         ):
             self.source_table_update_manager.update(
                 SourceTableCollection(
+                    update_groups={SourceTableUpdateGroup.CALC},
                     dataset_id="test_dataset",
                     source_tables_by_address={
                         self.table_address: self.updated_table_config
@@ -1598,6 +1611,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
     def test_recreate_true_recreates(self) -> None:
         self.source_table_update_manager.update(
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="test_dataset",
                 update_config=SourceTableCollectionUpdateConfig(
                     attempt_to_manage=True,
@@ -1624,6 +1638,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         collection = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             description="Description for dataset test_dataset",
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -1854,6 +1869,7 @@ class GetChangesExceptionLoggingTest(unittest.TestCase):
 
     def test_exceptions_logged_by_address_and_summarized(self) -> None:
         collection = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="test_dataset",
             description="Description for dataset test_dataset",
             update_config=SourceTableCollectionUpdateConfig.protected(),

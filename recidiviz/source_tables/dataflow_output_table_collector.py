@@ -17,6 +17,7 @@ from recidiviz.source_tables.identity_pipeline_output_table_collector import (
     build_identity_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     DataflowPipelineOutputSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -26,6 +27,7 @@ from recidiviz.source_tables.source_table_config import (
 def get_dataflow_output_source_table_collections() -> list[SourceTableCollection]:
     """Collects all source tables that are populated by our Dataflow pipelines"""
     dataflow_metrics = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         labels=[DataflowPipelineOutputSourceTableLabel(METRICS_PIPELINE_NAME)],
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=DATAFLOW_METRICS_DATASET,
@@ -49,6 +51,7 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
         )
 
     supplemental_data = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         labels=[DataflowPipelineOutputSourceTableLabel(SUPPLEMENTAL_PIPELINE_NAME)],
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=SUPPLEMENTAL_DATA_DATASET,

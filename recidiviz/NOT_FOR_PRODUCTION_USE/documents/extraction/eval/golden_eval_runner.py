@@ -79,6 +79,7 @@ from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -207,6 +208,7 @@ class GoldenEvalRunner:
             )
 
         collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=_EVAL_DATASET_ID,
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             description=f"Golden eval data for {table_id}",

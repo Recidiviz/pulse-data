@@ -67,6 +67,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -680,6 +681,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         if cls._source_table_addresses:
             return [
                 SourceTableCollection(
+                    update_groups={SourceTableUpdateGroup.CALC},
                     dataset_id=dataset_id,
                     source_tables_by_address={
                         address: repository.source_tables[address]

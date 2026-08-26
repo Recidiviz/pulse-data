@@ -52,6 +52,7 @@ from recidiviz.source_tables.ingest_pipeline_output_helpers import (
     build_ingest_view_results_source_table_collection_from_manifests,
 )
 from recidiviz.source_tables.source_table_config import (
+    IDENTITY_INGEST_UPDATE_GROUPS,
     DataflowPipelineOutputSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -78,6 +79,7 @@ def build_identity_ingest_view_results_source_table_collection(
         region_code=state_code.value
     )
     return build_ingest_view_results_source_table_collection_from_manifests(
+        update_groups=IDENTITY_INGEST_UPDATE_GROUPS,
         dataset_id=identity_ingest_view_results_dataset_for_tenant(tenant.value),
         description=(
             f"Stores materialized ingest view results produced by the "
@@ -104,6 +106,7 @@ def build_identity_fragment_output_source_table_collection(
     used to investigate clustering decisions.
     """
     collection = SourceTableCollection(
+        update_groups=IDENTITY_INGEST_UPDATE_GROUPS,
         dataset_id=identity_fragment_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
@@ -133,6 +136,7 @@ def build_identity_cluster_output_source_table_collection(
     identity ingest pipeline output dataset for a given tenant.
     """
     collection = SourceTableCollection(
+        update_groups=IDENTITY_INGEST_UPDATE_GROUPS,
         dataset_id=identity_cluster_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
@@ -163,6 +167,7 @@ def build_identity_rejections_source_table_collection(
     pipeline dropped from clustering and why.
     """
     collection = SourceTableCollection(
+        update_groups=IDENTITY_INGEST_UPDATE_GROUPS,
         dataset_id=identity_rejections_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[

@@ -34,6 +34,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -83,6 +84,7 @@ class DataflowMetricPruningEntrypointTest(BigQueryEmulatorTestCase):
         return [
             dataflow_source_table_collection,
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="sessions",
                 description="Sessions, needed by recidiviz.calculator.query.state.views.dataflow_metrics_materialized.make_most_recent_metric_view_builders",
                 update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -109,6 +111,7 @@ class DataflowMetricPruningEntrypointTest(BigQueryEmulatorTestCase):
                 },
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="reference_views",
                 description="Reference views, needed by recidiviz.calculator.query.state.views.dataflow_metrics_materialized.make_most_recent_metric_view_builders",
                 update_config=SourceTableCollectionUpdateConfig.protected(),

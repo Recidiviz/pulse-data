@@ -29,6 +29,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.docu
     DocumentExtractionResultMetadata,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -58,6 +59,7 @@ def collect_document_extraction_raw_source_table_collection() -> SourceTableColl
     extractors = collect_extractors()
 
     collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
         dataset_id=DocumentExtractionResultMetadata.RAW_DATASET_ID,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description="Raw extraction results. One table per state-specific extractor.",

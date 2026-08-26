@@ -88,6 +88,7 @@ from recidiviz.source_tables.extraction_results_source_table_collection import (
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -878,6 +879,7 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
         # production tables. Seed production + sandbox copies of the doc-store tables,
         # plus the raw input table the first-order generation query reads.
         raw_input = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id=_RAW_INPUT_NOTES_ADDRESS.dataset_id,
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             description="Raw input table the fake first-order generation query reads.",

@@ -35,6 +35,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.vali
     ValidatedExtractionResultMetadata,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -71,6 +72,7 @@ def collect_document_extraction_failures_source_table_collection() -> (
     extractors = collect_extractors()
 
     collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
         dataset_id=DocumentResultExclusionMetadata.EXCLUSIONS_DATASET_ID,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description=(
@@ -104,6 +106,7 @@ def collect_document_extraction_validated_source_table_collection() -> (
     extractors = collect_extractors()
 
     collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
         dataset_id=ValidatedExtractionResultMetadata.VALIDATED_DATASET_ID,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description=(

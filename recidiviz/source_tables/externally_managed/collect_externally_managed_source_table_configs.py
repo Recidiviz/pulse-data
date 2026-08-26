@@ -42,6 +42,7 @@ from recidiviz.source_tables.externally_managed.datasets import (
     MEETINGS_DASHBOARDS_DB_US_TN,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableCollectionValidationConfig,
@@ -121,6 +122,7 @@ def collect_externally_managed_source_table_collections(
 
     return [
         SourceTableCollection(
+            update_groups=CALC_UPDATE_GROUPS,
             dataset_id=dataset_id,
             update_config=SourceTableCollectionUpdateConfig.externally_managed(),
             validation_config=datasets_to_validation_config.get(dataset_id, None),

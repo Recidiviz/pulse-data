@@ -174,6 +174,7 @@ def source_table_collection_for_paths(
     ]
 
     sandbox_raw_data_collection = SourceTableCollection(
+        is_sandbox_collection=True,
         dataset_id=raw_tables_dataset_for_region(
             state_code=state_code,
             instance=DirectIngestInstance.PRIMARY,
@@ -205,6 +206,7 @@ def source_table_collection_for_paths(
         )
 
     sandbox_temp_load_collection = SourceTableCollection(
+        is_sandbox_collection=True,
         dataset_id=raw_data_temp_load_dataset(
             state_code,
             DirectIngestInstance.PRIMARY,

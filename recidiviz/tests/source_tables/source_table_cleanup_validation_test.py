@@ -33,6 +33,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.untracked_source_table_exemptions import (
@@ -56,6 +57,7 @@ def _make_collection(dataset_id: str, table_ids: list[str]) -> SourceTableCollec
         for tid in table_ids
     }
     return SourceTableCollection(
+        update_groups={SourceTableUpdateGroup.CALC},
         dataset_id=dataset_id,
         description=f"Test collection for {dataset_id}",
         update_config=SourceTableCollectionUpdateConfig.externally_managed(),
@@ -178,6 +180,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
     def test_skips_empty_collections(self) -> None:
         """Collections with no expected tables (filtered by deployed_projects) are skipped."""
         empty_collection = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="empty_dataset",
             description="Empty collection",
             update_config=SourceTableCollectionUpdateConfig.externally_managed(),

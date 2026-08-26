@@ -43,6 +43,7 @@ from recidiviz.source_tables.ingest_pipeline_output_helpers import (
     build_ingest_view_results_source_table_collection_from_manifests,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     DataflowPipelineOutputSourceTableLabel,
     IngestViewResultsSourceTableLabel,
     SourceTableCollection,
@@ -61,6 +62,7 @@ def build_ingest_view_results_source_table_collection(
         region_code=state_code.value
     )
     return build_ingest_view_results_source_table_collection_from_manifests(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=ingest_view_materialization_results_dataset(state_code),
         description=(
             f"Contains materialized ingest view results produced by the ingest "
@@ -86,6 +88,7 @@ def build_state_output_source_table_collection(
     dataset for a given state.
     """
     collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=state_dataset_for_state_code(state_code),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
@@ -109,6 +112,7 @@ def build_normalized_state_output_source_table_collection(
     pipeline output dataset for a given state.
     """
     collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=normalized_state_dataset_for_state_code(state_code),
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[

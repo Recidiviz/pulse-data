@@ -18,6 +18,7 @@
 
 import abc
 import typing
+from enum import Enum
 from typing import Any
 
 import attr
@@ -650,7 +651,52 @@ class SourceTableCollectionUpdateConfig:
         )
 
 
-@attr.s(auto_attribs=True)
+class SourceTableUpdateGroup(Enum):
+    """A group of source table collections whose schemas are updated together by one
+    Airflow DAG's schema-update task. A collection's update_groups contains one group
+    per DAG whose tasks read or write its tables.
+    """
+
+    CALC = "CALC"
+    LLM_DOCUMENT_EXTRACTION = "LLM_DOCUMENT_EXTRACTION"
+    IDENTITY_INGEST = "IDENTITY_INGEST"
+    RAW_DATA_IMPORT = "RAW_DATA_IMPORT"
+
+
+# Collections read/written only within the calc DAG.
+CALC_UPDATE_GROUPS = {SourceTableUpdateGroup.CALC}
+
+# Collections read/written by the LLM document extraction DAG.
+# TODO(OBT-44672): Drop CALC once the extraction DAG has its own schema-update task.
+LLM_EXTRACTION_UPDATE_GROUPS = {
+    SourceTableUpdateGroup.CALC,
+    SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+}
+
+# Collections read/written by the identity ingest DAG.
+# TODO(OBT-45756): Drop CALC once the identity ingest DAG has its own schema-update task.
+IDENTITY_INGEST_UPDATE_GROUPS = {
+    SourceTableUpdateGroup.CALC,
+    SourceTableUpdateGroup.IDENTITY_INGEST,
+}
+
+# Raw data collections, which are also read by the calc DAG and identity DAG
+RAW_DATA_UPDATE_GROUPS = {
+    SourceTableUpdateGroup.CALC,
+    SourceTableUpdateGroup.IDENTITY_INGEST,
+    SourceTableUpdateGroup.RAW_DATA_IMPORT,
+}
+
+# The raw data import DAG's intermediate pruning and temp-load collections, which the
+# identity ingest pipelines do not read.
+# TODO(OBT-45757): Drop CALC once the raw data import DAG has its own schema-update task.
+RAW_DATA_PRUNING_UPDATE_GROUPS = {
+    SourceTableUpdateGroup.CALC,
+    SourceTableUpdateGroup.RAW_DATA_IMPORT,
+}
+
+
+@attr.define(kw_only=True)
 class SourceTableCollection:
     """Represents a set of source tables in a dataset. A dataset may be composed of
     multiple collections.
@@ -667,6 +713,13 @@ class SourceTableCollection:
     # collection.
     update_config: SourceTableCollectionUpdateConfig
 
+    # The schema-update jobs responsible for creating and updating this collection's
+    # tables. Required for non-sandbox collections.
+    update_groups: set[SourceTableUpdateGroup] | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_non_empty_set_of(SourceTableUpdateGroup),
+    )
+
     validation_config: SourceTableCollectionValidationConfig | None = attr.ib(
         default=None
     )
@@ -677,6 +730,14 @@ class SourceTableCollection:
         factory=dict
     )
     is_sandbox_collection: bool = attr.ib(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.is_sandbox_collection == (self.update_groups is not None):
+            raise ValueError(
+                f"Collection [{self.dataset_id}] must declare update_groups iff it is "
+                f"non-sandbox. Found is_sandbox_collection=[{self.is_sandbox_collection}], "
+                f"update_groups=[{self.update_groups}]."
+            )
 
     def as_sandbox_collection(
         self,
@@ -704,6 +765,8 @@ class SourceTableCollection:
             default_table_expiration_ms=table_expiration_ms,
             source_tables_by_address=source_tables_by_address,
             is_sandbox_collection=True,
+            # No DAG updates a sandbox collection, so it declares no update groups.
+            update_groups=None,
         )
 
     @property

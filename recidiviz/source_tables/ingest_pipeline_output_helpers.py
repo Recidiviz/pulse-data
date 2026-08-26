@@ -28,11 +28,13 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableLabel,
+    SourceTableUpdateGroup,
 )
 
 
 def build_ingest_view_results_source_table_collection_from_manifests(
     *,
+    update_groups: set[SourceTableUpdateGroup],
     dataset_id: str,
     description: str,
     labels: list[SourceTableLabel],
@@ -49,6 +51,7 @@ def build_ingest_view_results_source_table_collection_from_manifests(
     local and deployed environments.
     """
     collection = SourceTableCollection(
+        update_groups=update_groups,
         dataset_id=dataset_id,
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=labels,

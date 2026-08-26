@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for SourceTableConfig"""
+
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -27,6 +28,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
+    SourceTableUpdateGroup,
 )
 
 _ONE_HOUR_MS = 60 * 60 * 1000
@@ -189,6 +191,7 @@ class TestSourceTableCollectionTableExpiration(unittest.TestCase):
         *, default_table_expiration_ms: int | None = None
     ) -> SourceTableCollection:
         collection = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id="my_dataset",
             description="A collection of my tables",
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -246,3 +249,63 @@ class TestSourceTableCollectionTableExpiration(unittest.TestCase):
             ["my_prefix_my_dataset.my_table"],
             [table.address.to_str() for table in collection.source_tables],
         )
+
+
+class TestSourceTableCollectionUpdateGroups(unittest.TestCase):
+    """Tests validation of a SourceTableCollection's update_groups field, which is
+    required for non-sandbox collections but optional for sandbox ones."""
+
+    def test_missing_update_groups_raises_for_non_sandbox(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "must declare update_groups iff it is non-sandbox"
+        ):
+            SourceTableCollection(
+                dataset_id="my_dataset",
+                description="A collection of my tables",
+                update_config=SourceTableCollectionUpdateConfig.protected(),
+            )
+
+    def test_empty_update_groups_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[update_groups\] on \[SourceTableCollection\] must be a non-empty set",
+        ):
+            SourceTableCollection(
+                dataset_id="my_dataset",
+                description="A collection of my tables",
+                update_config=SourceTableCollectionUpdateConfig.protected(),
+                update_groups=set(),
+            )
+
+    def test_sandbox_collection_omits_update_groups(self) -> None:
+        collection = SourceTableCollection(
+            dataset_id="my_dataset",
+            description="A collection of my tables",
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            is_sandbox_collection=True,
+        )
+        self.assertIsNone(collection.update_groups)
+
+    def test_sandbox_collection_with_update_groups_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "must declare update_groups iff it is non-sandbox"
+        ):
+            SourceTableCollection(
+                is_sandbox_collection=True,
+                update_groups={SourceTableUpdateGroup.CALC},
+                dataset_id="my_dataset",
+                description="A collection of my tables",
+                update_config=SourceTableCollectionUpdateConfig.protected(),
+            )
+
+    def test_as_sandbox_collection_removes_update_groups(self) -> None:
+        collection = SourceTableCollection(
+            dataset_id="my_dataset",
+            description="A collection of my tables",
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            update_groups={SourceTableUpdateGroup.CALC},
+        )
+        self.assertIsNotNone(collection.update_groups)
+
+        sandbox_collection = collection.as_sandbox_collection("my_prefix")
+        self.assertIsNone(sandbox_collection.update_groups)

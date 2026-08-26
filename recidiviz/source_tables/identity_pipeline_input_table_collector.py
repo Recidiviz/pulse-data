@@ -34,6 +34,7 @@ from recidiviz.pipelines.ingest.identity.identity_cluster_override import (
     identity_cluster_override_schema_fields,
 )
 from recidiviz.source_tables.source_table_config import (
+    IDENTITY_INGEST_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     StateSpecificSourceTableLabel,
@@ -48,6 +49,7 @@ def build_identity_overrides_source_table_collection(
     be dropped by a schema update or a pipeline run, so it is protected.
     """
     collection = SourceTableCollection(
+        update_groups=IDENTITY_INGEST_UPDATE_GROUPS,
         dataset_id=identity_overrides_dataset_for_tenant(tenant.value),
         update_config=SourceTableCollectionUpdateConfig.protected(),
         labels=[

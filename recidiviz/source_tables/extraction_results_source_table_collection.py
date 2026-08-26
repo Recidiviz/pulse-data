@@ -45,6 +45,7 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     ExtractionResultsSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -80,6 +81,7 @@ def collect_extraction_results_source_table_collections(
         # three can be reconstructed without re-calling the model, so we protect
         # against field deletions and recreation.
         raw_collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=document_extraction_raw_results_dataset_for_region(state_code),
             labels=labels,
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -89,6 +91,7 @@ def collect_extraction_results_source_table_collections(
             ),
         )
         validated_collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=document_extraction_validated_results_dataset_for_region(
                 state_code
             ),
@@ -100,6 +103,7 @@ def collect_extraction_results_source_table_collections(
             ),
         )
         audit_collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=document_extraction_validation_audit_dataset_for_region(
                 state_code
             ),
@@ -165,6 +169,7 @@ def collect_golden_eval_results_source_table_collection(
     to the same table, keyed apart by the `state_code` column.
     """
     collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
         dataset_id=document_extraction_golden_eval_results_dataset(),
         labels=[],
         update_config=SourceTableCollectionUpdateConfig.protected(),

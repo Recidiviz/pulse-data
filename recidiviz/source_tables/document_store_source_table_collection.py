@@ -45,6 +45,7 @@ from recidiviz.documents.store.document_upload_status_table import (
     DocumentUploadStatusTable,
 )
 from recidiviz.source_tables.source_table_config import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     DocumentStoreSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -107,6 +108,7 @@ def _collect_document_store_source_tables(
         ]
 
         metadata_collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=document_store_metadata_dataset_for_region(state_code),
             labels=labels,
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -114,6 +116,7 @@ def _collect_document_store_source_tables(
         )
 
         contents_collection = SourceTableCollection(
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
             dataset_id=document_contents_dataset_for_region(state_code),
             labels=labels,
             update_config=SourceTableCollectionUpdateConfig.protected(),
@@ -166,6 +169,7 @@ def _collect_document_store_source_tables(
 
         collections.append(
             SourceTableCollection(
+                update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
                 dataset_id=document_store_temp_dataset_for_region(state_code),
                 labels=labels,
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),

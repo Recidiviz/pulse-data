@@ -25,6 +25,7 @@ from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -67,6 +68,7 @@ def collect_yaml_managed_source_table_collections(
         }
         collections.append(
             SourceTableCollection(
+                update_groups=CALC_UPDATE_GROUPS,
                 dataset_id=dataset_id,
                 # All external data tables are fundamentally regenerable - we load data
                 # from
@@ -82,6 +84,7 @@ def collect_yaml_managed_source_table_collections(
         }
         collections.append(
             SourceTableCollection(
+                update_groups=CALC_UPDATE_GROUPS,
                 dataset_id=dataset_id,
                 # The remainder of tables are protected - the data is potentially loaded
                 # in some manual / un-repeatable process.

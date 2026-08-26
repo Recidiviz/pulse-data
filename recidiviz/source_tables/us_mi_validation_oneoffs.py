@@ -17,6 +17,7 @@
 """Contains source table definitions for us_mi validation oneoffs."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableCollectionValidationConfig,
@@ -44,6 +45,7 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
 
     dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
     collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=dataset_id,
         update_config=SourceTableCollectionUpdateConfig.externally_managed(),
         source_tables_by_address={
@@ -56,6 +58,7 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
     )
 
     orc_report_collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=dataset_id,
         update_config=SourceTableCollectionUpdateConfig.externally_managed(),
         validation_config=SourceTableCollectionValidationConfig(

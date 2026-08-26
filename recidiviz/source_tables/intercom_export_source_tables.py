@@ -23,6 +23,7 @@ from recidiviz.intercom.intercom_export_columns import (
     build_intercom_export_tickets_schema,
 )
 from recidiviz.source_tables.source_table_config import (
+    CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
@@ -37,6 +38,7 @@ def build_intercom_export_source_tables() -> SourceTableCollection:
     """Add Intercom tickets and contacts tables to the Intercom export source table collection"""
 
     intercom_export_collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=INTERCOM_EXPORT_DATASET,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description="Stores user interaction and survey data from Intercom",
@@ -61,6 +63,7 @@ def build_intercom_export_metadata_source_tables() -> SourceTableCollection:
     """Add an Intercom export cloud run job tracker table to an Intercom metadata source table collection"""
 
     intercom_export_metadata_collection = SourceTableCollection(
+        update_groups=CALC_UPDATE_GROUPS,
         dataset_id=INTERCOM_EXPORT_METADATA_DATASET,
         update_config=SourceTableCollectionUpdateConfig.protected(),
         description="Dataset that contains metadata related to Intercom exports",

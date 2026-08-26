@@ -97,6 +97,7 @@ from recidiviz.source_tables.document_store_source_table_collection import (
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_emulator_with_gcs_test_case import (
     BigQueryEmulatorWithGCSTestCase,
@@ -270,6 +271,7 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
             )
 
         raw_input = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id=RAW_INPUT_NOTES_ADDRESS.dataset_id,
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             description="Raw input table the fake first-order generation query reads.",
@@ -281,6 +283,7 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
 
         person_external_id_address = _person_external_id_address()
         person_external_id = SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
             dataset_id=person_external_id_address.dataset_id,
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             description="Person external ids the parsed views resolve person_id through.",

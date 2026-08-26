@@ -36,6 +36,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
+    SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -77,11 +78,13 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
     def get_source_tables(cls) -> list[SourceTableCollection]:
         return [
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="terraform_managed_dataset",
                 description="Terraform managed",
                 update_config=SourceTableCollectionUpdateConfig.protected(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id=raw_data_pruning_new_raw_data_dataset(
                     StateCode.US_AZ, DirectIngestInstance.PRIMARY
                 ),
@@ -89,6 +92,7 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id=raw_data_temp_load_dataset(
                     StateCode.US_AZ, DirectIngestInstance.PRIMARY
                 ),
@@ -96,26 +100,31 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="beam_temp_dataset",
                 description="Test dataset for beam temp tables",
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="test_empty_dataset",
                 description="Test dataset for empty dataset",
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="temp_dataset_recent_empty",
                 description="Test dataset for empty dataset",
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="test_recent_empty_dataset",
                 description="Test dataset for empty dataset",
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
             ),
             SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
                 dataset_id="temp_dataset_recent_non_empty",
                 description="Test dataset for empty dataset",
                 update_config=SourceTableCollectionUpdateConfig.regenerable(),
