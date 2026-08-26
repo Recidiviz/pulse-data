@@ -21,7 +21,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-intercom-export/outbound-content/*/click.csv
+    - gs://{project_id}-intercom-export/*/click.csv
   sourceFormat: CSV
   compression: NONE
   ignoreUnknownValues: false

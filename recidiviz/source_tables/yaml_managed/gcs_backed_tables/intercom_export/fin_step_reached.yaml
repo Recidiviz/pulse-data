@@ -29,7 +29,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-intercom-export/outbound-content/*/fin_step_reached.csv
+    - gs://{project_id}-intercom-export/*/fin_step_reached.csv
   sourceFormat: CSV
   compression: NONE
   ignoreUnknownValues: false

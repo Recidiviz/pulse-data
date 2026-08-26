@@ -39,10 +39,32 @@ def intercom_gcs_upload(
     )
 
 
-def generate_intercom_outbound_content_gcs_path(
-    project_id: str, file_base_name: str, update_datetime: datetime
+def generate_intercom_content_gcs_path(
+    *,
+    project_id: str,
+    file_base_name: str,
+    update_datetime: datetime,
 ) -> GcsfsFilePath:
     return GcsfsFilePath.from_bucket_and_blob_name(
         bucket_name=f"{project_id}-intercom-export",
-        blob_name=f"outbound-content/{update_datetime.isoformat()}/{file_base_name}.csv",
+        blob_name=f"{update_datetime.isoformat()}/{file_base_name}.csv",
     )
+
+
+def upload_intercom_csvs_to_gcs(
+    *,
+    project_id: str,
+    file_paths: dict[str, str],
+    update_datetime: datetime,
+) -> None:
+    """Uploads each Intercom CSV to the GCS directory."""
+    for base_name, source_path in file_paths.items():
+        destination_gcs_path = generate_intercom_content_gcs_path(
+            project_id=project_id,
+            file_base_name=base_name,
+            update_datetime=update_datetime,
+        )
+        intercom_gcs_upload(
+            intercom_source_path=source_path,
+            destination_gcs_path=destination_gcs_path,
+        )

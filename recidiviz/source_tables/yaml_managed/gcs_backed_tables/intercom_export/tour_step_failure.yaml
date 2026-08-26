@@ -24,7 +24,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-intercom-export/outbound-content/*/tour_step_failure.csv
+    - gs://{project_id}-intercom-export/*/tour_step_failure.csv
   sourceFormat: CSV
   compression: NONE
   ignoreUnknownValues: false

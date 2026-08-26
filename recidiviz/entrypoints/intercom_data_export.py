@@ -30,10 +30,7 @@ from recidiviz.intercom.client import IntercomAPIClient
 from recidiviz.intercom.intercom_export_bq_table_manager import (
     IntercomExportBigQueryTableManager,
 )
-from recidiviz.intercom.intercom_gcs_upload import (
-    generate_intercom_outbound_content_gcs_path,
-    intercom_gcs_upload,
-)
+from recidiviz.intercom.intercom_gcs_upload import upload_intercom_csvs_to_gcs
 from recidiviz.intercom.json_to_csv_converter import IntercomJsonToCsvConverter
 from recidiviz.intercom.manager import IntercomAPIManager
 from recidiviz.intercom.types import IntercomCloudRunJobInfo, IntercomCloudRunJobStatus
@@ -152,17 +149,11 @@ def export_and_upload_intercom_data(
             )
         file_paths.update(inbound_data_file_paths)
 
-        current_project_id = metadata.project_id()
-        for base_name, source_path in file_paths.items():
-            destination_gcs_path = generate_intercom_outbound_content_gcs_path(
-                project_id=current_project_id,
-                file_base_name=base_name,
-                update_datetime=update_datetime,
-            )
-            intercom_gcs_upload(
-                intercom_source_path=source_path,
-                destination_gcs_path=destination_gcs_path,
-            )
+        upload_intercom_csvs_to_gcs(
+            file_paths=file_paths,
+            update_datetime=update_datetime,
+            project_id=metadata.project_id(),
+        )
 
 
 class IntercomDataExport(EntrypointInterface):
