@@ -84,11 +84,17 @@ class SourceDocumentTextTest(TestCase):
     def test_quote_absent_from_document(self) -> None:
         self.assertIsNone(self._find("the Laundry"))
 
-    def test_match_is_case_sensitive(self) -> None:
-        # The model is instructed to quote verbatim, so a quote that differs in
-        # casing is not the document's text and is left ungrounded rather than
-        # fuzzily matched.
-        self.assertIsNone(self._find("kitchen"))
+    def test_quote_differing_only_in_case_found(self) -> None:
+        # Some source systems store notes entirely in uppercase and the model
+        # re-cases quotes into sentence case, so case carries no grounding
+        # signal and matching ignores it.
+        self.assertEqual(CitationSpan(start=37, end=44), self._find("kitchen"))
+
+    def test_recased_quote_found_in_uppercase_document(self) -> None:
+        self.assertEqual(
+            CitationSpan(start=33, end=44),
+            self._find("the Kitchen", document=_DOCUMENT.upper()),
+        )
 
     def test_empty_quote_matches_nothing(self) -> None:
         # There is no span of any document an empty quote could be grounded in,

@@ -55,11 +55,8 @@ class CitationSpan:
 
 @attr.define(frozen=True, kw_only=True)
 class SourceDocumentText:
-    """The text of the document an extraction's citations are matched against.
-
-    Matching is exact: the model is instructed to cite verbatim, so a quote that
-    differs from the document in wording, casing, or whitespace is treated as
-    ungrounded rather than fuzzily matched to the nearest text.
+    """The text of the document an extraction's citations are matched against. Matching
+    ignores case but is otherwise exact.
     """
 
     text: str = attr.ib(validator=attr_validators.is_str)
@@ -109,11 +106,13 @@ class SourceDocumentText:
 def _all_occurrences(
     *, haystack: str, needle: str, search_from: int = 0, search_to: int | None = None
 ) -> list[int]:
-    """Returns the start offset of every occurrence of |needle| in |haystack|
-    whose start lies in [|search_from|, |search_to|) — or from |search_from| to
-    the end of |haystack| when |search_to| is None — including overlapping
-    occurrences, in ascending order.
+    """Returns the start offset of every case-insensitive occurrence of |needle|
+    in |haystack| whose start lies in [|search_from|, |search_to|) — or from
+    |search_from| to the end of |haystack| when |search_to| is None — including
+    overlapping occurrences, in ascending order.
     """
+    haystack = haystack.lower()
+    needle = needle.lower()
     offsets: list[int] = []
     while (found_at := haystack.find(needle, search_from, search_to)) != -1:
         offsets.append(found_at)

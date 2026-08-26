@@ -188,6 +188,42 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
             _citations(adjusted_json, "primary_status")[0][CITATION_END_FIELD_NAME],
         )
 
+    def test_recased_quote_at_correct_offsets_untouched(self) -> None:
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        self._assert_unchanged(
+            grounded.result_json,
+            source_document_text=grounded.source_document_text.upper(),
+        )
+
+    def test_recased_quote_offsets_corrected_against_original_text(self) -> None:
+        # Corrected offsets always point into the document as-is, so slicing
+        # the original text stays exact for consumers that highlight citations
+        # even when the quote's case differs from the document's.
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        uppercase_document = grounded.source_document_text.upper()
+        citation = _citations(grounded.result_json, "primary_status")[0]
+        correct_start = citation[CITATION_START_FIELD_NAME]
+        correct_end = citation[CITATION_END_FIELD_NAME]
+        citation[CITATION_START_FIELD_NAME] = correct_start - _DRIFT_WITHIN_WINDOW
+        citation[CITATION_END_FIELD_NAME] = correct_end - _DRIFT_WITHIN_WINDOW
+
+        issues, adjusted_json = self._apply(
+            grounded.result_json, source_document_text=uppercase_document
+        )
+
+        self.assertEqual(1, len(issues))
+        adjusted_citation = _citations(adjusted_json, "primary_status")[0]
+        self.assertEqual(correct_start, adjusted_citation[CITATION_START_FIELD_NAME])
+        self.assertEqual(correct_end, adjusted_citation[CITATION_END_FIELD_NAME])
+        self.assertEqual(
+            adjusted_citation[CITATION_TEXT_FIELD_NAME].upper(),
+            uppercase_document[correct_start:correct_end],
+        )
+
     def test_ungrounded_citation_left_alone(self) -> None:
         # A quote that appears nowhere has no correct offsets to move to. The
         # validator fails such a document on CitationGroundingCheck before this

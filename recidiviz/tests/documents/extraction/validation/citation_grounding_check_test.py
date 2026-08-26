@@ -196,6 +196,19 @@ class CitationGroundingCheckTest(TestCase):
             ),
         )
 
+    def test_quote_with_different_case_not_flagged(self) -> None:
+        # The check is case-insensitive.
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        self.assertEqual(
+            [],
+            self._issues(
+                grounded.result_json,
+                source_document_text=grounded.source_document_text.upper(),
+            ),
+        )
+
     def test_quote_broken_across_lines_flagged(self) -> None:
         # Matching is exact, not whitespace-normalized: a document that
         # reformats the quote's line breaks no longer contains it verbatim.
