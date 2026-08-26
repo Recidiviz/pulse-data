@@ -76,3 +76,8 @@ write_to_file "$WORKFLOWS_TWILIO_ACCOUNT_SID" recidiviz/local/gsm/twilio_sid
 # This secret is used to connect to google routes for workflows
 WORKFLOWS_GOOGLE_ROUTES_TOKEN=$(get_secret recidiviz-staging google_routes_api_key)
 write_to_file "$WORKFLOWS_GOOGLE_ROUTES_TOKEN" recidiviz/local/gsm/google_routes_api_key
+
+# This secret is used for send grid tls for states that send email
+# and require tls encryption
+WORKFLOWS_SEND_GRID_TLS_AND_CERT_KEY=$(get_secret recidiviz-staging sendgrid_enforced_tls_and_cert_api_key)
+write_to_file "$WORKFLOWS_SEND_GRID_TLS_AND_CERT_KEY" recidiviz/local/gsm/sendgrid_enforced_tls_and_cert_api_key

@@ -37,6 +37,7 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
+from recidiviz.case_triage.sentry_filters import scrub_email_user_pii
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
     get_redis_connection_options,
@@ -71,6 +72,12 @@ if in_gcp():
         # This value may need to be adjusted over time as usage increases.
         traces_sample_rate=1.0,
         environment=get_gcp_environment(),
+        # In HCRP we send selected client PII in the email_user request body, so we
+        # need to scrub it before it reaches Sentry. The function needs to run for both
+        # hooks as before_send is only for errors and before_send_transaction runs for
+        # every transaction and both send the body to sentry otherwise.
+        before_send=scrub_email_user_pii,
+        before_send_transaction=scrub_email_user_pii,
     )
 
 # Flask setup
