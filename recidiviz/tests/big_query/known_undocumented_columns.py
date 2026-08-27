@@ -338,15 +338,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "total_nca_points",
     ],
-    BigQueryAddress.from_str("classification_views.recommended_custody_level_spans"): [
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "score_type",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str("analyst_data.resident_record_archive_sessions"): [
         "date_gap_id",
         "end_date_exclusive",
@@ -1303,90 +1294,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "offense_date",
         "person_id",
         "sentence_effective_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_diagnostic_2026_policy"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_diagnostic_2026_policy_v2"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy_no_aging_disciplinaries"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy_v2"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "classification_views.us_tn_recommended_custody_level_spans_reclassification_2026_policy_v3"
-    ): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
         "state_code",
     ],
     BigQueryAddress.from_str("analyst_data.us_tn_relevant_contact_codes"): [

@@ -45,7 +45,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
-    classification_score_components_state_specific_dataset,
 )
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
@@ -79,9 +78,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 )
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
-)
-from recidiviz.calculator.query.state.views.classification.classification_score_component_big_query_view_collector import (
-    ClassificationScoreComponentBigQueryViewCollector,
 )
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
@@ -332,16 +328,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"
     ),
-    **{
-        view_builder.address: (
-            "New MI classification form sub-score input view. Not yet referenced "
-            "downstream; will be consumed once the MI classification form scoring "
-            "is built (Maggie Taylor, 2026-06-25)"
-        )
-        for view_builder in ClassificationScoreComponentBigQueryViewCollector().collect_view_builders()
-        if view_builder.dataset_id
-        == classification_score_components_state_specific_dataset(StateCode.US_MI)
-    },
     **{
         VIEW_BUILDER.address: (
             "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
