@@ -26,58 +26,51 @@ from recidiviz.airflow.dags.utils.config_utils import (
     STATE_CODE_FILTER,
     TENANT_FILTER,
 )
+from recidiviz.utils.airflow_dag import AirflowDag
 
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
 
 
 def get_metadata_maintenance_dag_id(project_id: str) -> str:
     """Returns the id of the calculation DAG defined in metadata_maintenance_dag.py."""
-    return f"{project_id}_metadata_maintenance_dag"
+    return AirflowDag.METADATA_MAINTENANCE.dag_id(project_id)
 
 
 def get_calculation_dag_id(project_id: str) -> str:
     """Returns the id of the calculation DAG defined in calculation_dag.py."""
-    return f"{project_id}_calculation_dag"
+    return AirflowDag.CALCULATION.dag_id(project_id)
 
 
 def get_monitoring_dag_id(project_id: str) -> str:
     """Returns the id of the monitoring DAG defined in monitoring_dag.py."""
-    return f"{project_id}_hourly_monitoring_dag"
+    return AirflowDag.MONITORING.dag_id(project_id)
 
 
 def get_raw_data_import_dag_id(project_id: str) -> str:
     """Returns the id of the raw data import DAG defined in raw_data_import_dag.py."""
-    return f"{project_id}_raw_data_import_dag"
+    return AirflowDag.RAW_DATA_IMPORT.dag_id(project_id)
 
 
 def get_llm_document_extraction_dag_id(project_id: str) -> str:
     """Returns the id of the LLM document extraction DAG defined in llm_document_extraction_dag.py."""
-    return f"{project_id}_llm_document_extraction_dag"
+    return AirflowDag.LLM_DOCUMENT_EXTRACTION.dag_id(project_id)
 
 
 def get_identity_ingest_dag_id(project_id: str) -> str:
     """Returns the id of the identity ingest DAG defined in identity_ingest_dag.py."""
-    return f"{project_id}_identity_ingest_dag"
+    return AirflowDag.IDENTITY_INGEST.dag_id(project_id)
 
 
 def get_sftp_dag_id(project: str) -> str:
     """Returns the id of the monitoring DAG defined in sftp_dag.py."""
-    return f"{project}_sftp_dag"
+    return AirflowDag.SFTP.dag_id(project)
 
 
 def get_all_dag_ids(project_id: str) -> List[str]:
     """A list of all DAGs that are deployed in the given project. Each should have a
     corresponding DAG definition in a recidiviz/airflow/dags/*_dag.py file.
     """
-    return [
-        get_monitoring_dag_id(project_id),
-        get_calculation_dag_id(project_id),
-        get_sftp_dag_id(project_id),
-        get_raw_data_import_dag_id(project_id),
-        get_metadata_maintenance_dag_id(project_id),
-        get_llm_document_extraction_dag_id(project_id),
-        get_identity_ingest_dag_id(project_id),
-    ]
+    return [dag_id.dag_id(project_id) for dag_id in AirflowDag]
 
 
 def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]:
