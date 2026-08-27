@@ -22,12 +22,14 @@ import pandas as pd
 from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.constants import RAW_DATA_METADATA_COLUMNS
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_METADATA_COLUMNS,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_file_config,

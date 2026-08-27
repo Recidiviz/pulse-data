@@ -17,7 +17,10 @@
 """This module has functionality to prune fixture data to avoid BIG ol' files."""
 import pandas as pd
 
-from recidiviz.big_query.constants import IS_DELETED_COL_NAME, UPDATE_DATETIME_COL_NAME
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+)
 
 
 def prune_fixture_data(df: pd.DataFrame, primary_key_cols: list[str]) -> pd.DataFrame:

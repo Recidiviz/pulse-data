@@ -20,12 +20,15 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 
-from recidiviz.big_query.constants import IS_DELETED_COL_NAME, UPDATE_DATETIME_COL_NAME
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (

@@ -20,7 +20,10 @@ from typing import Any
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from recidiviz.big_query.constants import IS_DELETED_COL_NAME, UPDATE_DATETIME_COL_NAME
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.fixture_pruning import (
     prune_fixture_data,
 )

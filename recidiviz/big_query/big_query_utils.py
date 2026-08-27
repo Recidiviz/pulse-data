@@ -33,7 +33,6 @@ from sqlalchemy.dialects import postgresql
 from recidiviz.big_query.constants import (
     BQ_RESERVED_COLUMN_NAME_PREFIXES,
     BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
-    RAW_DATA_METADATA_COLUMNS,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.attr_utils import (
@@ -408,8 +407,11 @@ def to_validated_schema_field(
     )
 
 
-def normalize_column_name_for_bq(column_name: str) -> str:
-    """Normalizes a column name to be compatible with BigQuery's column naming rules."""
+def normalize_column_name_for_bq(
+    column_name: str, additional_reserved_column_names: set[str] | None = None
+) -> str:
+    """Normalizes a column name to be compatible with BigQuery's column naming rules.
+    The contents of |additional_reserved_column_names| must be in all upper case, following the convention of |BIGQUERY_RESERVED_WORDS|"""
     if not column_name:
         raise ValueError("Column name cannot be empty")
 
@@ -429,7 +431,10 @@ def normalize_column_name_for_bq(column_name: str) -> str:
     if (
         column_name[0] in string.digits
         or column_name.upper() in BIGQUERY_RESERVED_WORDS
-        or column_name.lower() in RAW_DATA_METADATA_COLUMNS
+        or (
+            additional_reserved_column_names
+            and column_name.upper() in additional_reserved_column_names
+        )
     ):
         column_name = "_" + column_name
 

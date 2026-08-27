@@ -19,16 +19,16 @@ from unittest import TestCase
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 

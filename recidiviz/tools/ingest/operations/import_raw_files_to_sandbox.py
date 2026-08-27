@@ -50,10 +50,7 @@ import re
 from typing import List, Optional, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.constants import (
-    FILE_ID_COL_NAME,
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -74,6 +71,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder imp
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.source_tables.collect_all_source_table_configs import (
     ONE_DAY_MS,

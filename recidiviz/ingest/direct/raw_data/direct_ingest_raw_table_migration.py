@@ -21,7 +21,9 @@ import os
 import re
 from typing import List, Optional, Tuple
 
-from recidiviz.big_query.constants import UPDATE_DATETIME_COL_NAME
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    UPDATE_DATETIME_COL_NAME,
+)
 
 RAW_DATA_SUBDIR = "raw_data"
 MIGRATIONS_SUBDIR = "migrations"

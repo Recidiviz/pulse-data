@@ -26,6 +26,9 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_METADATA_COLUMNS_UPPER,
+)
 
 DEFAULT_READ_CHUNK_SIZE = (
     10 * 1024
@@ -223,7 +226,10 @@ class DirectIngestRawFileHeaderReader:
         normalized_csv_columns = set()
         for i, column_name in enumerate(csv_first_row):
             try:
-                normalized_col = normalize_column_name_for_bq(column_name)
+                normalized_col = normalize_column_name_for_bq(
+                    column_name,
+                    additional_reserved_column_names=RAW_DATA_METADATA_COLUMNS_UPPER,
+                )
             except Exception as e:
                 header_validation_errors.append(e)
                 continue

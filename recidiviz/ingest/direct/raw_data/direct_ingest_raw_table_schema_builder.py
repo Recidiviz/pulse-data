@@ -22,16 +22,14 @@ from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_utils import format_description_for_big_query
-from recidiviz.big_query.constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_DESCRIPTION,
+    FILE_ID_COL_NAME,
     IS_DELETED_COL_DESCRIPTION,
+    IS_DELETED_COL_NAME,
     UPDATE_DATETIME_COL_DESCRIPTION,
+    UPDATE_DATETIME_COL_NAME,
 )
 
 FILE_ID_COLUMN = SchemaField(

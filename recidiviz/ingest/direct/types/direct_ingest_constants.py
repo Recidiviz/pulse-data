@@ -16,20 +16,27 @@
 # =============================================================================
 """Constants used by the direct ingest system."""
 
-# Descriptions for the Recidiviz-managed raw data metadata columns. The column name
-# constants themselves (FILE_ID_COL_NAME, IS_DELETED_COL_NAME,
-# UPDATE_DATETIME_COL_NAME, RAW_DATA_METADATA_COLUMNS) live in
-# recidiviz.big_query.constants instead, since recidiviz.big_query.big_query_utils
-# needs them and cannot depend on this module.
+# Recidiviz-managed raw data columns
+FILE_ID_COL_NAME = "file_id"
 FILE_ID_COL_DESCRIPTION = "The ID of the file this row was extracted from"
 
+IS_DELETED_COL_NAME = "is_deleted"
 IS_DELETED_COL_DESCRIPTION = (
     "Whether this row is inferred deleted via omission from more recent files"
 )
 
+UPDATE_DATETIME_COL_NAME = "update_datetime"
 UPDATE_DATETIME_COL_DESCRIPTION = (
     "The timestamp of the file this row was extracted from"
 )
+
+RAW_DATA_METADATA_COLUMNS = {
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+}
+
+RAW_DATA_METADATA_COLUMNS_UPPER = {col.upper() for col in RAW_DATA_METADATA_COLUMNS}
 
 # Recidiviz-managed ingest view results columns
 UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"

@@ -79,21 +79,6 @@ class BigQueryUtilsTest(unittest.TestCase):
             normalize_column_name_for_bq("TableSAmple"),
         )
 
-        # Handles collisions with Recidiviz-managed raw data metadata columns
-        # correctly, regardless of the raw column's original casing
-        self.assertEqual(
-            "_IS_DELETED",
-            normalize_column_name_for_bq("IS_DELETED"),
-        )
-        self.assertEqual(
-            "_file_id",
-            normalize_column_name_for_bq("file_id"),
-        )
-        self.assertEqual(
-            "_Update_Datetime",
-            normalize_column_name_for_bq("Update_Datetime"),
-        )
-
         # Handles digits correctly
         self.assertEqual("_123_COLUMN", normalize_column_name_for_bq("123_COLUMN"))
 
@@ -111,6 +96,32 @@ class BigQueryUtilsTest(unittest.TestCase):
             "Column name cannot contain only whitespace and/or unprintable characters",
             normalize_column_name_for_bq,
             "  αα",
+        )
+
+        # handles additional reserved column names correctly
+        self.assertEqual(
+            "ADDITIONAL_RESERVED_NAME",
+            normalize_column_name_for_bq("ADDITIONAL_RESERVED_NAME"),
+        )
+        self.assertEqual(
+            "ADDITIONAL_RESERVED_NAME",
+            normalize_column_name_for_bq(
+                "ADDITIONAL_RESERVED_NAME", additional_reserved_column_names=set()
+            ),
+        )
+        self.assertEqual(
+            "ADDITIONAL_RESERVED_NAME",
+            normalize_column_name_for_bq(
+                "ADDITIONAL_RESERVED_NAME",
+                additional_reserved_column_names={"additional_reserved_name"},
+            ),
+        )
+        self.assertEqual(
+            "_ADDITIONAL_RESERVED_NAME",
+            normalize_column_name_for_bq(
+                "ADDITIONAL_RESERVED_NAME",
+                additional_reserved_column_names={"ADDITIONAL_RESERVED_NAME"},
+            ),
         )
 
     def test_make_bq_compatible_identifier(self) -> None:
