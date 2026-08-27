@@ -34,7 +34,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 COMMON_VESTIGES = [
     # Legacy home of experiment_assignments.experiment_assignments_large. The view
@@ -208,7 +208,7 @@ class SourceTablesTest(unittest.TestCase):
             referenced_source_tables = BigQueryViewDagWalker(
                 [
                     view_builder.build()
-                    for view_builder in all_deployed_view_builders()
+                    for view_builder in all_view_builders_across_projects()
                     if view_builder.should_deploy_in_project(project_id)
                 ]
             ).get_referenced_source_tables()

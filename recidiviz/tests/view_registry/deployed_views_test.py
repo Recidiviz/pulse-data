@@ -128,7 +128,7 @@ from recidiviz.view_registry.address_to_complexity_score_mapping import (
     ParentAddressComplexityScoreMapper,
 )
 from recidiviz.view_registry.deployed_views import (
-    all_deployed_view_builders,
+    all_view_builders_across_projects,
     deployed_view_builders,
 )
 from recidiviz.view_registry.deprecated_view_reference_exemptions import (
@@ -159,7 +159,7 @@ class DeployedViewsTest(unittest.TestCase):
                 f"Found project_id [{project_id}] when no project_id should be set "
                 f"for this test."
             )
-        _ = all_deployed_view_builders()
+        _ = all_view_builders_across_projects()
 
     def test_view_builders_do_not_change_between_projects(self) -> None:
         """Tests that if view builders are collected when a project_id is set, the list
@@ -167,11 +167,13 @@ class DeployedViewsTest(unittest.TestCase):
         built views.
         """
         with local_project_id_override(GCP_PROJECT_STAGING):
-            staging_builders = {b.address: b for b in all_deployed_view_builders()}
+            staging_builders = {
+                b.address: b for b in all_view_builders_across_projects()
+            }
         self.assertGreater(len(staging_builders), 0)
 
         with local_project_id_override(GCP_PROJECT_PRODUCTION):
-            prod_builders = {b.address: b for b in all_deployed_view_builders()}
+            prod_builders = {b.address: b for b in all_view_builders_across_projects()}
         self.assertGreater(len(prod_builders), 0)
 
         staging_builder_addresses = set(staging_builders)
@@ -221,7 +223,7 @@ class DeployedViewsTest(unittest.TestCase):
 
     def test_unique_addresses(self) -> None:
         view_addresses: Dict[BigQueryAddress, BigQueryViewBuilder] = {}
-        for view_builder in all_deployed_view_builders():
+        for view_builder in all_view_builders_across_projects():
             address = view_builder.address
 
             existing_view_builder = view_addresses.get(address)
@@ -232,7 +234,7 @@ class DeployedViewsTest(unittest.TestCase):
             if id(view_builder) == id(existing_view_builder):
                 self.fail(
                     f"View builder for address [{address}] added to "
-                    f"all_deployed_view_builders() list twice."
+                    f"all_view_builders_across_projects() list twice."
                 )
             if (
                 view_builder.build().view_query
@@ -249,7 +251,7 @@ class DeployedViewsTest(unittest.TestCase):
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
     )
     def test_build_all_views_perf(self) -> None:
-        all_view_builders = all_deployed_view_builders()
+        all_view_builders = all_view_builders_across_projects()
         # some view builders are constants (which run logic on import, which happens before the test starts)
         # and others are functions (which will run during the test itself), so don't start the timer until
         # after we've collected all the view builders
@@ -267,7 +269,7 @@ class DeployedViewsTest(unittest.TestCase):
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
     )
     def test_view_descriptions(self) -> None:
-        for view_builder in all_deployed_view_builders():
+        for view_builder in all_view_builders_across_projects():
             view = view_builder.build()
 
             # This shouldn't crash
@@ -402,7 +404,9 @@ class ViewDagInvariantTests(unittest.TestCase):
     """Tests that certain views have the correct descendants."""
 
     dag_walker: BigQueryViewDagWalker
-    all_deployed_view_builders_by_address: Dict[BigQueryAddress, BigQueryViewBuilder]
+    all_view_builders_across_projects_by_address: Dict[
+        BigQueryAddress, BigQueryViewBuilder
+    ]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -415,8 +419,8 @@ class ViewDagInvariantTests(unittest.TestCase):
             cls.dag_walker = BigQueryViewDagWalker(views)
 
             # All view builders deployed to any project.
-            all_deployed_builders = all_deployed_view_builders()
-            cls.all_deployed_view_builders_by_address = {
+            all_deployed_builders = all_view_builders_across_projects()
+            cls.all_view_builders_across_projects_by_address = {
                 b.address: b for b in all_deployed_builders
             }
 
@@ -426,7 +430,7 @@ class ViewDagInvariantTests(unittest.TestCase):
         """
         union_all_view_addresses = {
             address
-            for address, vb in self.all_deployed_view_builders_by_address.items()
+            for address, vb in self.all_view_builders_across_projects_by_address.items()
             if isinstance(vb, UnionAllBigQueryViewBuilder)
             # UnionAllBigQueryViewBuilder that union AggregatedMetricsBigQueryViewBuilder
             # for different time periods together are relatively small and ok to query.
@@ -489,7 +493,10 @@ class ViewDagInvariantTests(unittest.TestCase):
         }
 
         for exempt_child_address in allowed_union_all_view_children:
-            if exempt_child_address not in self.all_deployed_view_builders_by_address:
+            if (
+                exempt_child_address
+                not in self.all_view_builders_across_projects_by_address
+            ):
                 raise ValueError(
                     f"Address [{exempt_child_address.to_str()}] is not a valid view "
                     f"address."
@@ -676,7 +683,9 @@ class ViewDagInvariantTests(unittest.TestCase):
         def process_check_using_materialized(
             view: BigQueryView, parent_results: Dict[BigQueryView, Set[str]]
         ) -> Set[str]:
-            view_builder = self.all_deployed_view_builders_by_address[view.address]
+            view_builder = self.all_view_builders_across_projects_by_address[
+                view.address
+            ]
 
             parent_constraints: List[Set[str]] = [
                 parent_projects_to_deploy
@@ -933,7 +942,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             )
 
     def test_no_conflicts_between_source_tables_and_views(self) -> None:
-        view_builder_addresses = set(self.all_deployed_view_builders_by_address)
+        view_builder_addresses = set(self.all_view_builders_across_projects_by_address)
         source_table_addresses = get_all_source_table_addresses()
         if not view_builder_addresses.isdisjoint(source_table_addresses):
             overlapping_elements = ", ".join(
@@ -950,7 +959,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_union_all_big_query_view_parents_valid(self) -> None:
         for view_address, node in self.dag_walker.nodes_by_address.items():
-            builder = self.all_deployed_view_builders_by_address[view_address]
+            builder = self.all_view_builders_across_projects_by_address[view_address]
             if not isinstance(builder, UnionAllBigQueryViewBuilder):
                 continue
 
@@ -992,9 +1001,11 @@ The following views have less restrictive projects_to_deploy than their parents:
                             f"the actual view graph.",
                         )
 
-                    parent_view_builder = self.all_deployed_view_builders_by_address[
-                        parent.address
-                    ]
+                    parent_view_builder = (
+                        self.all_view_builders_across_projects_by_address[
+                            parent.address
+                        ]
+                    )
                     self.assertIsNotNone(
                         parent_view_builder.materialized_address,
                         f"Found view {parent.address.to_str()} which is a parent of "
@@ -1017,7 +1028,7 @@ class ViewSchemaTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         with local_project_id_override(GCP_PROJECT_STAGING):
             cls.all_deployed_views_by_address = {
-                vb.address: vb.build() for vb in all_deployed_view_builders()
+                vb.address: vb.build() for vb in all_view_builders_across_projects()
             }
 
     def _run_schema_test(
@@ -1073,7 +1084,7 @@ class ViewQueryFormatTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # All view builders deployed to any project.
-        cls.all_deployed_builders = all_deployed_view_builders()
+        cls.all_deployed_builders = all_view_builders_across_projects()
         with local_project_id_override("recidiviz-456"):
             cls.all_deployed_views_by_address = {
                 vb.address: vb.build() for vb in cls.all_deployed_builders

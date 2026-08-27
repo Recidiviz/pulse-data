@@ -31,7 +31,7 @@ from recidiviz.view_registry.deployed_address_schema_utils import (
     state_agnostic_deployed_views_without_state_code_column,
     state_specific_deployed_views_without_state_code_columns,
 )
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 
 class TestDeployedAddressesWithoutStateCodeColumn(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestDeployedAddressesWithoutStateCodeColumn(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.view_builders_by_address = {
-            vb.address: vb for vb in all_deployed_view_builders()
+            vb.address: vb for vb in all_view_builders_across_projects()
         }
         cls.all_source_tables_to_configs = {}
 

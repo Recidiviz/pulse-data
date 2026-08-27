@@ -51,7 +51,7 @@ from recidiviz.view_registry.address_overrides_factory import (
 )
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    all_deployed_view_builders,
+    all_view_builders_across_projects,
 )
 
 _PROJECT_ID = "fake-recidiviz-project"
@@ -724,7 +724,7 @@ class ViewManagerTest(unittest.TestCase):
 
     def test_no_duplicate_views_in_update_list(self) -> None:
         all_views = [
-            view_builder.build() for view_builder in all_deployed_view_builders()
+            view_builder.build() for view_builder in all_view_builders_across_projects()
         ]
 
         expected_keys: Set[Tuple[str, str]] = set()
@@ -734,7 +734,7 @@ class ViewManagerTest(unittest.TestCase):
             expected_keys.add(dag_key)
 
     def test_no_views_in_source_data_datasets(self) -> None:
-        for view_builder in all_deployed_view_builders():
+        for view_builder in all_view_builders_across_projects():
             self.assertNotIn(
                 view_builder.dataset_id,
                 self.view_source_table_datasets,
@@ -745,7 +745,7 @@ class ViewManagerTest(unittest.TestCase):
     def test_all_cross_project_views_in_cross_project_view_builders(self) -> None:
         """Tests that all views that query from both production and staging
         environments are only deployed to production."""
-        for view_builder in all_deployed_view_builders():
+        for view_builder in all_view_builders_across_projects():
             view_query = view_builder.build().view_query
 
             if (
@@ -876,7 +876,7 @@ class ViewManagerTest(unittest.TestCase):
 
     def test_all_deployed_datasets_registered_as_managed(self) -> None:
         all_views = [
-            view_builder.build() for view_builder in all_deployed_view_builders()
+            view_builder.build() for view_builder in all_view_builders_across_projects()
         ]
 
         for view in all_views:

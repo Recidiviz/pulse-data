@@ -74,8 +74,8 @@ from recidiviz.validation.views.view_config import (
 )
 
 
-def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
-    logging.info("Gathering all deployed view builders...")
+def _all_view_builders_across_projects() -> List[BigQueryViewBuilder]:
+    logging.info("Gathering all view builders across projects...")
     return list(
         itertools.chain(
             get_aggregated_metrics_view_builders(),
@@ -104,18 +104,18 @@ def deployed_view_builders() -> List[BigQueryViewBuilder]:
     """
     return [
         builder
-        for builder in _all_deployed_view_builders()
+        for builder in _all_view_builders_across_projects()
         if builder.should_deploy_in_project(metadata.project_id())
     ]
 
 
 @environment.local_only
-def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
+def all_view_builders_across_projects() -> List[BigQueryViewBuilder]:
     """Returns a list of all view builders for views that are candidates for deploy.
     Some of these views may not actually get deployed to a given project based on
     the builder configuration.
     """
-    return _all_deployed_view_builders()
+    return _all_view_builders_across_projects()
 
 
 # A list of all datasets that have ever held managed views that were updated by our

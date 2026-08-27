@@ -47,7 +47,7 @@ from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_list
 from recidiviz.utils.types import assert_type
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 
 def update_source_file_yaml(table_address: BigQueryAddress) -> None:
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             referenced_source_tables = BigQueryViewDagWalker(
                 views=[
                     view_builder.build()
-                    for view_builder in all_deployed_view_builders()
+                    for view_builder in all_view_builders_across_projects()
                 ]
             ).get_referenced_source_tables()
             tables_to_update = {

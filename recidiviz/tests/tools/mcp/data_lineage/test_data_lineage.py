@@ -33,7 +33,7 @@ from recidiviz.tools.mcp.data_lineage.ingest_view_lineage_builder import Lineage
 
 # Mock expensive operations before importing the server module to speed up tests
 with patch(
-    "recidiviz.view_registry.deployed_views.all_deployed_view_builders"
+    "recidiviz.view_registry.deployed_views.all_view_builders_across_projects"
 ) as mock_builders:
     mock_builders.return_value = (
         []

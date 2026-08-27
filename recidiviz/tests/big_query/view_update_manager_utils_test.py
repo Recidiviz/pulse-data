@@ -37,7 +37,7 @@ from recidiviz.big_query.view_update_manager_utils import (
 )
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.test_utils import assert_group_contains_regex
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 
 class TestViewUpdateManagerUtils(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.project_id_patcher.start().return_value = "recidiviz-456"
 
         self.all_views = [
-            view_builder.build() for view_builder in all_deployed_view_builders()
+            view_builder.build() for view_builder in all_view_builders_across_projects()
         ]
         self.empty_view_list: List[BigQueryView] = []
         self.one_view_list = [
