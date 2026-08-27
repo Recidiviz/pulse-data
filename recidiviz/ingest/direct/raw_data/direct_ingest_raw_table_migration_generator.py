@@ -22,15 +22,13 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Tuple, Type, cast
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.constants import UPDATE_DATETIME_COL_NAME
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     RawTableMigration,
     UpdateRawTableMigration,
-)
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata

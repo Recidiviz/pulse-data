@@ -33,6 +33,7 @@ from sqlalchemy.dialects import postgresql
 from recidiviz.big_query.constants import (
     BQ_RESERVED_COLUMN_NAME_PREFIXES,
     BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
+    RAW_DATA_METADATA_COLUMNS,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.attr_utils import (
@@ -428,6 +429,7 @@ def normalize_column_name_for_bq(column_name: str) -> str:
     if (
         column_name[0] in string.digits
         or column_name.upper() in BIGQUERY_RESERVED_WORDS
+        or column_name.lower() in RAW_DATA_METADATA_COLUMNS
     ):
         column_name = "_" + column_name
 

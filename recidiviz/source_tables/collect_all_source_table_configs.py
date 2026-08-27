@@ -20,6 +20,7 @@ from types import ModuleType
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
+from recidiviz.big_query.constants import FILE_ID_COL_NAME
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     collect_all_extractor_configs_by_state,
@@ -37,7 +38,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_fil
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,

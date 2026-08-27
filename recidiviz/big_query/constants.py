@@ -16,6 +16,22 @@
 # =============================================================================
 """Common constants for BigQuery infrastructure."""
 
+# Recidiviz-managed raw data metadata columns. Defined here (rather than in
+# recidiviz.ingest.direct.types.direct_ingest_constants, where the rest of the raw
+# data import constants live) because recidiviz.big_query.big_query_utils needs to
+# reference these column names and cannot depend on recidiviz.ingest.direct without
+# breaking source visibility for some entrypoints. See the corresponding
+# *_COL_DESCRIPTION constants in direct_ingest_constants.py.
+FILE_ID_COL_NAME = "file_id"
+IS_DELETED_COL_NAME = "is_deleted"
+UPDATE_DATETIME_COL_NAME = "update_datetime"
+
+RAW_DATA_METADATA_COLUMNS = {
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+}
+
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 

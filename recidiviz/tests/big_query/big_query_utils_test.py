@@ -79,6 +79,21 @@ class BigQueryUtilsTest(unittest.TestCase):
             normalize_column_name_for_bq("TableSAmple"),
         )
 
+        # Handles collisions with Recidiviz-managed raw data metadata columns
+        # correctly, regardless of the raw column's original casing
+        self.assertEqual(
+            "_IS_DELETED",
+            normalize_column_name_for_bq("IS_DELETED"),
+        )
+        self.assertEqual(
+            "_file_id",
+            normalize_column_name_for_bq("file_id"),
+        )
+        self.assertEqual(
+            "_Update_Datetime",
+            normalize_column_name_for_bq("Update_Datetime"),
+        )
+
         # Handles digits correctly
         self.assertEqual("_123_COLUMN", normalize_column_name_for_bq("123_COLUMN"))
 

@@ -39,12 +39,12 @@ from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.constants import IS_DELETED_COL_NAME
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import IS_DELETED_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING

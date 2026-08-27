@@ -25,6 +25,11 @@ from collections import defaultdict
 from typing import Dict, List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.constants import (
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -40,11 +45,8 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_DESCRIPTION,
-    FILE_ID_COL_NAME,
     IS_DELETED_COL_DESCRIPTION,
-    IS_DELETED_COL_NAME,
     UPDATE_DATETIME_COL_DESCRIPTION,
-    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.looker.lookml_view import LookMLView
