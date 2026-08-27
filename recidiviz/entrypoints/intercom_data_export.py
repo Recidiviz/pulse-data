@@ -137,6 +137,7 @@ def export_and_upload_intercom_data(
             tickets=intercom_tickets,
             contacts=intercom_contacts,
             output_dir=temp_output_dir,
+            update_datetime=update_datetime,
         )
         if any(
             inbound_data_name in file_paths

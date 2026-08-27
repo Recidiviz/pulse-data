@@ -23,6 +23,7 @@ import unittest
 from datetime import datetime, timezone
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NAME
 from recidiviz.intercom.json_to_csv_converter import (
     CATEGORY,
     CONTACTS,
@@ -57,6 +58,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
 
     def setUp(self) -> None:
         self.json_to_csv_converter = IntercomJsonToCsvConverter()
+        self.update_datetime = datetime(2026, 8, 25, tzinfo=timezone.utc)
 
         self.ticket_json: dict = {
             "type": "ticket",
@@ -171,6 +173,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 flatten_method=self.json_to_csv_converter.flatten_ticket,
                 output_dir=output_dir,
                 base_name=TICKETS,
+                update_datetime=self.update_datetime,
             )
 
             self.assertEqual(
@@ -183,6 +186,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             expected_data[CREATED_AT] = str(expected_data[CREATED_AT])
             expected_data[UPDATED_AT] = str(expected_data[UPDATED_AT])
             expected_data[RAW_TICKET_JSON] = str(expected_data[RAW_TICKET_JSON])
+            expected_data[UPDATE_DATETIME_COLUMN_NAME] = str(self.update_datetime)
             print("expected", expected_data)
 
             with open(file_path, "r", encoding="utf-8") as f:
@@ -204,6 +208,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 tickets=[self.ticket_json],
                 contacts=[self.contact_json],
                 output_dir=output_dir,
+                update_datetime=self.update_datetime,
             )
 
             self.assertEqual(
@@ -213,3 +218,11 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 },
                 file_paths,
             )
+
+            for path in file_paths.values():
+                with open(path, "r", encoding="utf-8") as f:
+                    rows = list(csv.DictReader(f))
+                for row in rows:
+                    self.assertEqual(
+                        str(self.update_datetime), row[UPDATE_DATETIME_COLUMN_NAME]
+                    )

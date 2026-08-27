@@ -28,11 +28,8 @@ import pandas as pd
 import requests
 
 from recidiviz.intercom.client import IntercomAPIClient
-from recidiviz.intercom.manager import (
-    UPDATE_DATETIME,
-    IntercomAPIManager,
-    extract_base_name,
-)
+from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NAME
+from recidiviz.intercom.manager import IntercomAPIManager, extract_base_name
 from recidiviz.intercom.types import IntercomExportJobResponse, IntercomJobStatus
 
 
@@ -157,11 +154,11 @@ class TestIntercomAPIManager(unittest.TestCase):
             expected_update_datetime = pd.Timestamp(self.update_datetime)
 
             for base_name, path in file_paths.items():
-                df = pd.read_csv(path, parse_dates=[UPDATE_DATETIME])
-                self.assertIn(UPDATE_DATETIME, df.columns)
+                df = pd.read_csv(path, parse_dates=[UPDATE_DATETIME_COLUMN_NAME])
+                self.assertIn(UPDATE_DATETIME_COLUMN_NAME, df.columns)
                 self.assertTrue(
-                    (df[UPDATE_DATETIME] == expected_update_datetime).all(),
-                    msg=f"{base_name} has unexpected {UPDATE_DATETIME} values: {df[UPDATE_DATETIME].tolist()}",
+                    (df[UPDATE_DATETIME_COLUMN_NAME] == expected_update_datetime).all(),
+                    msg=f"{base_name} has unexpected {UPDATE_DATETIME_COLUMN_NAME} values: {df[UPDATE_DATETIME_COLUMN_NAME].tolist()}",
                 )
 
     def test_download_and_process_export_fails(self) -> None:

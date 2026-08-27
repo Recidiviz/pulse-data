@@ -24,6 +24,7 @@ import attr
 import pandas as pd
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NAME
 from recidiviz.intercom.types import (
     IntercomContact,
     IntercomSearchTicket,
@@ -124,8 +125,10 @@ class IntercomJsonToCsvConverter:
         flatten_method: Callable[[dict[str, Any]], Any],
         output_dir: str,
         base_name: str,
+        update_datetime: datetime,
     ) -> str:
-        """Writes a list of JSON data to a CSV file
+        """Writes a list of JSON data to a CSV file, stamping each row with the
+        export window's update_datetime.
 
         Args:
             data_list: list of JSON data
@@ -133,6 +136,7 @@ class IntercomJsonToCsvConverter:
                 schema of the corresponding BQ table
             output_dir: output directory for the CSV
             base_name: the data name, used to construct the CSV filename
+            update_datetime: the datetime of the export window, written to every row
 
         Returns:
             the filepath to the CSV
@@ -143,6 +147,7 @@ class IntercomJsonToCsvConverter:
         ]
 
         df = pd.DataFrame(flattened_json)
+        df[UPDATE_DATETIME_COLUMN_NAME] = update_datetime
 
         filename = f"{base_name}.csv"
         output_path = os.path.join(
@@ -159,6 +164,7 @@ class IntercomJsonToCsvConverter:
         tickets: list[dict[str, Any]],
         contacts: list[dict[str, Any]],
         output_dir: str,
+        update_datetime: datetime,
     ) -> dict[str, str]:
         """Creates CSV files for Inbound Intercom tickets and contacts data
 
@@ -166,6 +172,7 @@ class IntercomJsonToCsvConverter:
             tickets: List of raw ticket JSON
             contacts: List of raw contact JSON
             output_dir: output directory for the CSVs
+            update_datetime: the datetime of the export window, written to every row
 
         Returns:
             dictionary of output filepaths for each data type (tickets and contacts)
@@ -179,6 +186,7 @@ class IntercomJsonToCsvConverter:
             flatten_method=cls.flatten_ticket,
             output_dir=output_dir,
             base_name=TICKETS,
+            update_datetime=update_datetime,
         )
 
         file_paths[CONTACTS] = cls.write_data_to_csv(
@@ -186,6 +194,7 @@ class IntercomJsonToCsvConverter:
             flatten_method=cls.flatten_contact,
             output_dir=output_dir,
             base_name=CONTACTS,
+            update_datetime=update_datetime,
         )
 
         return file_paths

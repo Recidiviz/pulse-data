@@ -27,11 +27,11 @@ import attr
 import pandas as pd
 
 from recidiviz.intercom.client import IntercomAPIClient
+from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NAME
 from recidiviz.intercom.types import IntercomExportJobResponse, IntercomJobStatus
 
 DEFAULT_MAX_POLL_ATTEMPTS = 30
 DEFAULT_POLL_SLEEP_TIME = 10
-UPDATE_DATETIME = "update_datetime"
 # Matches Intercom export filenames like "receipt_20251121.csv" or
 # "hard_bounce_20251121.csv", capturing the base name (everything before
 # the trailing `_YYYYMMDD.csv`).
@@ -114,7 +114,7 @@ class IntercomAPIManager:
                     with zip_file.open(filename) as csv_file:
                         df = pd.read_csv(csv_file)
 
-                        df[UPDATE_DATETIME] = update_datetime
+                        df[UPDATE_DATETIME_COLUMN_NAME] = update_datetime
 
                         output_path = os.path.join(
                             output_dir,

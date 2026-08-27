@@ -19,6 +19,10 @@
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
+# Column stamped onto every inbound-content CSV to record the export window it
+# was produced in.
+UPDATE_DATETIME_COLUMN_NAME = "update_datetime"
+
 # export_tracker table constants
 EXPORT_DATETIME_COLUMN_NAME = "export_datetime"
 EXPORT_WINDOW_START_INCLUSIVE_COLUMN_NAME = "export_window_start_inclusive"
