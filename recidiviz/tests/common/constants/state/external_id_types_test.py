@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.external_id_type_helpers import get_external_id_typ
 class ExternalIdTypeTest(unittest.TestCase):
     """Tests reasonableness of all the external ids"""
 
+    # TODO(OBT-46888): Doesn't fail for US_NYC but another example of duplicated parser
     def test_starts_with_us_xx(self) -> None:
         for var_name in get_external_id_types():
             if not re.match(r"^US_[A-Z]{2}", var_name):

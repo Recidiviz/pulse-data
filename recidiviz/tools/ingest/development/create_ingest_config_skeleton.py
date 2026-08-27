@@ -18,16 +18,31 @@
 """Tool to create skeleton ingest raw file config yamls from raw data dumps.
 
 Usage:
-    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state [US_XX] \
-    --delimiter <field separator> --classification (source|validation) (--file|--folder) [path_to_raw_table(s)] \
-    [--allow-overwrite] [--initialize-state] [--add-description-placeholders] [--encoding]
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton \
+        --state [US_XX] \
+        --delimiter <field separator> \
+        --classification (source|validation) \
+        (--file|--folder) [path_to_raw_table(s)] \
+        [--allow-overwrite] \
+        [--initialize-state] \
+        [--add-description-placeholders] \
+        [--encoding] \
+        [--custom-line-terminator <line terminator>]
 
 Example:
-    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
-    --delimiter '|' --file Xxandland/db/historical/filename --classification source --encoding utf-16
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton \
+        --state-code US_XX \
+        --delimiter '|' \
+        --file Xxandland/db/historical/filename \
+        --classification source \
+        --encoding utf-16
     
-    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
-    --delimiter ',' --folder Xxandland/db/historical/ --classification source --add-description-placeholders True
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton \
+        --state-code US_XX \
+        --delimiter ',' \
+        --folder Xxandland/db/historical/ \
+        --classification source \
+        --add-description-placeholders True
 """
 import argparse
 import logging
