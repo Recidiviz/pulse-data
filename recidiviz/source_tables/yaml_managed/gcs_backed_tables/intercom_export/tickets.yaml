@@ -1,0 +1,47 @@
+address:
+  dataset_id: intercom_export
+  table_id: tickets
+description: Contains inbound support tickets created when users reach out to us via Intercom
+schema:
+  - name: ticket_id
+    type: STRING
+    mode: NULLABLE
+  - name: ticket_category
+    type: STRING
+    mode: NULLABLE
+  - name: ticket_name
+    type: STRING
+    mode: NULLABLE
+  - name: description
+    type: STRING
+    mode: NULLABLE
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: ticket_state
+    type: STRING
+    mode: NULLABLE
+  - name: contact_id
+    type: STRING
+    mode: NULLABLE
+  - name: raw_ticket_json
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-intercom-export/*/tickets.csv
+  sourceFormat: CSV
+  compression: NONE
+  ignoreUnknownValues: false
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8
