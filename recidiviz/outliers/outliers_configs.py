@@ -516,7 +516,7 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name="absconsions",
                 event_name_singular="absconsion",
                 event_name_past_tense="absconded",
-                description_markdown="""All reported absconsions from supervision in the given time period.
+                description_markdown="""All reported absconsions from supervision in the given time period are counted in this metric.
 
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
@@ -530,7 +530,7 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name="technical incarcerations",
                 event_name_singular="technical incarceration",
                 event_name_past_tense="had a technical incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a "new admission", as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison."
+                description_markdown="""Transitions to incarceration from supervision due to technical violations are counted in this metric, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a "new admission," as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
 <br />
 Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
@@ -542,7 +542,7 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event_name="new crime incarcerations",
                 event_name_singular="new crime incarceration",
                 event_name_past_tense="had a new crime incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to new crime violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a new crime incarceration only if the most serious violation type across all violations in the prior 24 months was a new crime (felony, misdemeanor, or law violation).
+                description_markdown="""Transitions to incarceration from supervision due to new crime violations that occurred in the prior 24 months are counted in this metric, regardless of whether the final decision was a revocation or sanction admission, and regardless of whether there was also a technical violation or absconsion within the same time period.
 
 <br />
 Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
