@@ -55,9 +55,9 @@ from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.types import assert_type
 
-_STATE_CODE_BEGINNING_REGEX = re.compile(r"^(?P<state_code>US_[A-Z]{2})(_|$)")
-_STATE_CODE_END_REGEX = re.compile(r".*_(?P<state_code>US_[A-Z]{2})$")
-_STATE_CODE_MIDDLE_REGEX = re.compile(r"_(?P<state_code>US_[A-Z]{2})_")
+_STATE_CODE_BEGINNING_REGEX = re.compile(r"^(?P<state_code>US_[A-Z]{2,})(_|$)")
+_STATE_CODE_END_REGEX = re.compile(r".*_(?P<state_code>US_[A-Z]{2,})$")
+_STATE_CODE_MIDDLE_REGEX = re.compile(r"_(?P<state_code>US_[A-Z]{2,})_")
 
 
 def _state_code_from_job_id_part(job_id_part: str) -> Optional[StateCode]:

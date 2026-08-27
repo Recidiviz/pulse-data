@@ -18,6 +18,7 @@ slack_channels:
   us-north-dakota: "C01SQ00C890"
   us-nebraska: "C07EQLGLZ2T"
   us-new-york: "C08KQ0KAB5J"
+  us-nyc: "C09N3KZS5S7"
   us-oregon: "C03NQCDSUQ2"
   us-pennsylvania-internal: "C02UDH1FUQH"
   us-tennessee: "G01P6S547T4"
@@ -30,7 +31,6 @@ slack_people:
   n-damiani: "U042YRU8C56"
   elisegonzal: "U04A99TE4RW"
   not-a-doctor-stromberg: "U03V1BHSKQW"
-  lydiamasri2: "U036XAJAL79"
   santymendoza: "U067TSCJD5X"
   jkgerig: "U01S74N158A"
 
@@ -104,6 +104,10 @@ state_config:
     slack_channel: us-new-york
     default_assignees:
       - n-damiani
+  US_NYC:
+    slack_channel: us-nyc
+    default_assignees:
+      - jkgerig
   US_OR:
     slack_channel: us-oregon
     default_assignees: []

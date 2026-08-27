@@ -93,6 +93,7 @@ def get_fips_for(state: us.states.State) -> pd.DataFrame:
     return fips[["fips"]]
 
 
+# TODO(OBT-46748): this parser is not currently used outside of justice counts, but will map `US_NYC` to `US_NY`
 def validate_county_code(county_code: str) -> None:
     """
     Validate county_code is in proper format without spelling errors,

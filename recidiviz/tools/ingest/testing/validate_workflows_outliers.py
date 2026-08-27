@@ -107,10 +107,10 @@ def _get_workflow_addresses() -> List[ValidationAddress]:
     firestore_workflows_addresses = [
         vb.address
         for vb in FIRESTORE_VIEW_BUILDERS
-        if re.match(r"^(us_[a-z]{2}).*_record$", vb.address.table_id)
+        if re.match(r"^(us_[a-z]{2,}).*_record$", vb.address.table_id)
     ]
     for address in firestore_workflows_addresses:
-        match = re.match(r"^(us_[a-z]{2}).*", address.table_id)
+        match = re.match(r"^(us_[a-z]{2,}).*", address.table_id)
         if not match:
             raise ValueError(
                 f"Could not parse state code from table id {address.table_id}"

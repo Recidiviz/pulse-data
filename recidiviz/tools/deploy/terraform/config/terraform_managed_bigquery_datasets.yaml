@@ -637,6 +637,44 @@ datasets:
     default_table_expiration_ms: 86400000
   us_ny_state:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NY.
+  us_nyc_identity_cluster:
+    description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NYC, consumed by the Identity Service.
+  us_nyc_identity_fragment:
+    description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NYC.
+  us_nyc_identity_ingest_view_results:
+    description: Stores materialized ingest view results produced by the identity ingest pipeline for tenant US_NYC.
+  us_nyc_identity_overrides:
+    description: Stores reviewer-recorded overrides of the identity ingest pipeline's clustering decisions for tenant US_NYC, read by the pipeline.
+  us_nyc_identity_rejections:
+    description: Stores the identity ingest pipeline's record of clusters and external ids it dropped from clustering for tenant US_NYC, for human review.
+  us_nyc_ingest_view_results:
+    description: Contains materialized ingest view results produced by the ingest pipeline for US_NYC.
+  us_nyc_new_pruned_raw_data_primary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nyc_new_pruned_raw_data_secondary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nyc_normalized_state:
+    description: Contains normalized versions of the entities in the state dataset produced by the ingest pipeline for US_NYC.
+  us_nyc_primary_raw_data_temp_load:
+    description: Contains intermediate results of the raw data import process that will be queried during the raw data import DAG.
+    default_table_expiration_ms: 86400000
+  us_nyc_raw_data:
+    description: Raw data tables from New York City
+  us_nyc_raw_data_pruning_diff_results_primary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nyc_raw_data_pruning_diff_results_secondary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nyc_raw_data_secondary:
+    description: Raw data tables from New York City
+  us_nyc_secondary_raw_data_temp_load:
+    description: Contains intermediate results of the raw data import process that will be queried during the raw data import DAG.
+    default_table_expiration_ms: 86400000
+  us_nyc_state:
+    description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NYC.
   us_or_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_OR, consumed by the Identity Service.
   us_or_identity_fragment:

@@ -213,7 +213,14 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
     )
 
     branches_by_state_code = {}
-    for state_code in get_direct_ingest_states_launched_in_env():
+    # Instantiate the state task groups in group_id order so they sort alphabetically in
+    # the DAG UI (topological_sort follows instantiation order). Ordering by the bare
+    # state code would place a prefix-sharing code wrong (e.g. US_NY before US_NYC),
+    # since the "_dataflow_pipelines" suffix flips the comparison.
+    for state_code in sorted(
+        get_direct_ingest_states_launched_in_env(),
+        key=lambda sc: f"{sc.value}_dataflow_pipelines",
+    ):
         with TaskGroup(
             f"{state_code.value}_dataflow_pipelines"
         ) as state_pipelines_group:
@@ -370,8 +377,12 @@ def create_calculation_dag() -> None:
         create_branching_by_key(
             # We turn on validations (may still be in dev mode) as soon as there is
             # any ingest output that may feed into our BQ views.
+            # Sorted by state code so the validation task ids (which end in the bare
+            # state code, no suffix) sort alphabetically in the DAG UI. The dataflow
+            # groups above are ordered by group_id instead; the two differ for
+            # prefix-sharing codes like US_NY / US_NYC.
             validation_branches_by_state_code(
-                states_to_validate=pipeline_branches_by_state.keys()
+                states_to_validate=sorted(pipeline_branches_by_state.keys())
             ),
             select_all_branches,
         )

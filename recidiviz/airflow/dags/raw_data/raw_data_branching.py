@@ -90,10 +90,14 @@ def create_raw_data_branch_map(
         get_direct_ingest_states_launched_in_env(), DirectIngestInstance
     )
 
-    # sort to maintain DAG insertion order in topological_sort which determines ui visual sorting
+    # sort by the branch key so DAG insertion order matches the alphabetical order of
+    # the branch task ids in topological_sort (which determines ui visual sorting).
+    # Sorting on state_code.value + instance.value instead would order a state code
+    # that is a prefix of another wrong (e.g. US_NYC before US_NY), since the branch
+    # key's separators flip the comparison.
     for (state_code, ingest_instance,) in sorted(
         launched_state_and_ingest_paris,
-        key=lambda x: x[0].value + x[1].value,
+        key=lambda x: get_raw_data_import_branch_key(x[0], x[1]),
     ):
         task_group_by_task_id[
             get_raw_data_import_branch_key(state_code, ingest_instance)

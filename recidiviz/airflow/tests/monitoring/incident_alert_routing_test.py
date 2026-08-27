@@ -32,6 +32,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
+    _state_code_from_job_id_part,
     get_alerting_services_for_incident,
 )
 from recidiviz.airflow.dags.monitoring.job_run import JobRunType
@@ -369,6 +370,61 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 )
             ),
         )
+
+        # US_NYC raw-data-import file-tag failure: the state code sits at the start of
+        # the job id (the _STATE_CODE_BEGINNING_REGEX branch), so confirm the 3-letter
+        # code routes to the US_NYC raw data services.
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.raw_data_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_NYC
+                ),
+                AirflowGitHubService.raw_data_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_NYC
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
+                    job_id="US_NYC.some_file_tag",
+                )
+            ),
+        )
+
+        # Confirm StateCode values with three or more characters after US_ properly route to the correct service
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_NYC
+                ),
+                AirflowGitHubService.dataflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_NYC
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    job_id=(
+                        "ingest.us_nyc_dataflow.initialize_ingest_pipeline."
+                        "check_for_valid_watermarks"
+                    ),
+                )
+            ),
+        )
+
+    def test_state_code_from_job_id_part_ny_vs_nyc(self) -> None:
+        # US_NYC is the first state code that is a prefix of an existing one (US_NY),
+        # so confirm the parser keeps them distinct in every position within a part.
+        for part, expected in [
+            ("US_NY_dataflow", StateCode.US_NY),
+            ("foo_US_NY_bar", StateCode.US_NY),
+            ("foo_US_NY", StateCode.US_NY),
+            ("US_NYC_dataflow", StateCode.US_NYC),
+            ("foo_US_NYC_bar", StateCode.US_NYC),
+            ("foo_US_NYC", StateCode.US_NYC),
+        ]:
+            with self.subTest(part=part):
+                self.assertEqual(expected, _state_code_from_job_id_part(part))
 
     def test_get_alerting_service_for_incident_two_different_state_codes(self) -> None:
         with self.assertRaisesRegex(

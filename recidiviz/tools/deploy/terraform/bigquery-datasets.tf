@@ -135,6 +135,25 @@ import {
       "google_sheet_backed_tables",
       "manually_updated_source_tables",
       "user_mgmt_logs",
+      # US_NYC datasets are newly registered and do not exist in BigQuery yet, so
+      # they must be created rather than imported. Excluded from this one-time
+      # adoption import block; removed along with the whole block in OBT-44639.
+      "us_nyc_identity_cluster",
+      "us_nyc_identity_fragment",
+      "us_nyc_identity_ingest_view_results",
+      "us_nyc_identity_overrides",
+      "us_nyc_identity_rejections",
+      "us_nyc_ingest_view_results",
+      "us_nyc_new_pruned_raw_data_primary",
+      "us_nyc_new_pruned_raw_data_secondary",
+      "us_nyc_normalized_state",
+      "us_nyc_primary_raw_data_temp_load",
+      "us_nyc_raw_data",
+      "us_nyc_raw_data_pruning_diff_results_primary",
+      "us_nyc_raw_data_pruning_diff_results_secondary",
+      "us_nyc_raw_data_secondary",
+      "us_nyc_secondary_raw_data_temp_load",
+      "us_nyc_state",
     ], dataset_id)
   }
   to = module.terraform_managed_bigquery_dataset[each.key].google_bigquery_dataset.dataset

@@ -140,7 +140,7 @@ class RawTableMigration:
             raise ValueError(
                 f"Unexpected path parts: {(raw_data_dir, migrations_dir_name)}"
             )
-        if not re.match(r"us_[a-z]{2}(_[a-z_]+)?", region_code):
+        if not re.match(r"us_[a-z]{2,}(_[a-z_]+)?", region_code):
             raise ValueError(f"Unexpected region code: {region_code}")
         return region_code
 

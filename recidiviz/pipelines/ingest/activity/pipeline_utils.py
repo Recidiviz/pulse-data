@@ -48,6 +48,7 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_IX: "us-east4",
     # us-east5 (3 zones w/ c4a-highcpu-32)
     StateCode.US_NY: "us-east5",
+    StateCode.US_NYC: "us-east5",
     StateCode.US_TX: "us-east5",
     # us-south1 (2 zones w/ c4a-highcpu-32)
     StateCode.US_OR: "us-south1",  # doesn't run

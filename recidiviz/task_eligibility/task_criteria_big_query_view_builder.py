@@ -358,7 +358,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         if criteria_name.upper() != criteria_name:
             raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
 
-        if match := re.match(r"^(US_[A-Z]{2})_.*", criteria_name):
+        if match := re.match(r"^(US_[A-Z]{2,})_.*", criteria_name):
             state_code = match.group(1)
             raise ValueError(
                 f"Found state-agnostic task criteria [{criteria_name}] whose name "
