@@ -46,7 +46,9 @@ def main(dry_run: bool, output_path: str) -> None:
     ]
 
     source_files_to_destination = {
-        file: os.path.basename(file) if file.endswith("dag.py") else file
+        file: os.path.basename(file)
+        if file.startswith("recidiviz/airflow/dags/") and file.endswith("_dag.py")
+        else file
         for file in source_files
     }
 
