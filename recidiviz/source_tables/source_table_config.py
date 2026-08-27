@@ -667,9 +667,7 @@ class SourceTableUpdateGroup(Enum):
 CALC_UPDATE_GROUPS = {SourceTableUpdateGroup.CALC}
 
 # Collections read/written by the LLM document extraction DAG.
-# TODO(OBT-44672): Drop CALC once the extraction DAG has its own schema-update task.
 LLM_EXTRACTION_UPDATE_GROUPS = {
-    SourceTableUpdateGroup.CALC,
     SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
 }
 

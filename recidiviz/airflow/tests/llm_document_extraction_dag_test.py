@@ -36,8 +36,13 @@ from recidiviz.airflow.dags.utils.constants import (
     DOCUMENT_UPLOAD_TASK_ID,
     RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID,
     RUN_DOCUMENT_DISCOVERY_TASK_ID,
+    UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
+from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_failing_operator_constructor,
+    fake_operator_constructor,
+)
 from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
     fake_noop_kpo_partial,
 )
@@ -126,6 +131,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         # us_xx + fake_case_notes.
         self.us_xx_fake_case_notes_frame_success_regexes = [
             r"^initialize_dag\..*$",
+            rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
             r"^extraction_branching\.branch_(start|end)$",
             rf"^{self.us_xx_branch}\.document_collections_branching\.branch_(start|end)$",
             *self.non_target_document_collection_always_succeeds_regexes,
@@ -135,6 +141,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         # failure rather than succeeding.
         self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends = [
             r"^initialize_dag\..*$",
+            rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
             r"^extraction_branching\.branch_start$",
             rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
             *self.non_target_document_collection_always_succeeds_regexes,
@@ -170,11 +177,12 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         )
         self.bq_client_patcher.start()
 
-        self.kpo_partial_patcher = patch(
-            "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.RecidivizKubernetesPodOperator.partial",
-            side_effect=fake_noop_kpo_partial(),
+        self.kpo_patcher = patch(
+            "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.RecidivizKubernetesPodOperator",
+            side_effect=fake_operator_constructor,
         )
-        self.kpo_partial_patcher.start()
+        self.mock_kpo_constructor = self.kpo_patcher.start()
+        self.mock_kpo_constructor.partial.side_effect = fake_noop_kpo_partial()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -182,7 +190,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.config_module_patcher.stop()
         self.collectors_config_module_patcher.stop()
         self.bq_client_patcher.stop()
-        self.kpo_partial_patcher.stop()
+        self.kpo_patcher.stop()
         super().tearDown()
 
     @staticmethod
@@ -505,6 +513,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     expected_skipped_task_id_regexes=[
                         r"^initialize_dag\.(record_dag_run_metadata|"
                         r"wait_to_continue_or_cancel|handle_queueing_result)$",
+                        rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                         r"^extraction_branching\..*$",
                     ],
                     expected_success_task_id_regexes=[
@@ -514,6 +523,40 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 )
                 self.mock_bq_client.create_table_from_query.assert_not_called()
                 self.mock_bq_client.run_query_async.assert_not_called()
+
+    def test_schema_update_failure_skips_branches(self) -> None:
+        """When the schema-update task fails, the extraction branching that depends on
+        it does not run: every branching task upstream-fails, except the ALL_DONE
+        after_upload_noop tasks, which still run and succeed."""
+        self.mock_kpo_constructor.side_effect = lambda **kwargs: (
+            fake_failing_operator_constructor(**kwargs)
+            if kwargs["task_id"] == UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID
+            else fake_operator_constructor(**kwargs)
+        )
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(
+                    state_code_filter=StateCode.US_XX.value,
+                    document_collection_name_filter="FAKE_CASE_NOTES",
+                ),
+                expected_failure_task_id_regexes=[
+                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    # Everything under extraction_branching upstream-fails except the
+                    # ALL_DONE after_upload_noop tasks below. The branch_end scaffolding
+                    # tasks also upstream-fail (their inputs failed rather than skipped).
+                    r"^extraction_branching\.(?!.*after_upload_noop$).*$",
+                ],
+                expected_skipped_task_id_regexes=[],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag\..*$",
+                    r"^extraction_branching\..*after_upload_noop$",
+                ],
+            )
+            self.mock_bq_client.create_table_from_query.assert_not_called()
+            self.mock_bq_client.run_query_async.assert_not_called()
 
     def test_metadata_updates_only_run_end_to_end(self) -> None:
         """When discovery finds metadata updates but no new document contents, the
@@ -613,6 +656,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
+                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                     r"^extraction_branching\.branch_start$",
                     # All us_xx document collection branches' after_upload_noop tasks
                     # succeed (ALL_DONE).
@@ -642,6 +686,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     r"^initialize_dag\.(record_dag_run_metadata|"
                     r"wait_to_continue_or_cancel|handle_queueing_result)$",
+                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                     r"^extraction_branching\..*$",
                 ],
                 expected_success_task_id_regexes=[
@@ -666,38 +711,39 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         def _fail(_context: Context) -> None:
             raise ValueError("upload failed")
 
-        with patch(
-            "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.RecidivizKubernetesPodOperator.partial",
-            side_effect=fake_noop_kpo_partial(execute_fn=_fail),
-        ):
-            with Session(bind=self.engine) as session:
-                result = self.run_dag_test(
-                    self._create_dag(),
-                    session=session,
-                    run_conf=self._run_conf(
-                        state_code_filter=StateCode.US_XX.value,
-                        document_collection_name_filter="FAKE_CASE_NOTES",
+        # Make the mapped document_upload task fail; the constructor path (used by the
+        # schema task) keeps succeeding.
+        self.mock_kpo_constructor.partial.side_effect = fake_noop_kpo_partial(
+            execute_fn=_fail
+        )
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(
+                    state_code_filter=StateCode.US_XX.value,
+                    document_collection_name_filter="FAKE_CASE_NOTES",
+                ),
+                expected_failure_task_id_regexes=[
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        DOCUMENT_UPLOAD_TASK_ID
                     ),
-                    expected_failure_task_id_regexes=[
-                        self._us_xx_fake_case_notes_collection_branch_regex(
-                            DOCUMENT_UPLOAD_TASK_ID
-                        ),
-                    ],
-                    expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
-                    expected_success_task_id_regexes=[
-                        *self.us_xx_fake_case_notes_frame_success_regexes,
-                        rf"^{self.us_xx_fake_case_notes_collection_branch}\."
-                        rf"(?!{DOCUMENT_UPLOAD_TASK_ID}$)[^.]+$",
-                    ],
-                )
-                self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+                ],
+                expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
+                expected_success_task_id_regexes=[
+                    *self.us_xx_fake_case_notes_frame_success_regexes,
+                    rf"^{self.us_xx_fake_case_notes_collection_branch}\."
+                    rf"(?!{DOCUMENT_UPLOAD_TASK_ID}$)[^.]+$",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-                # Recorder still ran both INSERTs (document_contents + metadata)
-                # for the document collection.
-                insert_queries = self._get_insert_query_strs()
-                self.assertEqual(len(insert_queries), 2)
+            # Recorder still ran both INSERTs (document_contents + metadata)
+            # for the document collection.
+            insert_queries = self._get_insert_query_strs()
+            self.assertEqual(len(insert_queries), 2)
 
-                # Partial-success path: the recorder preserves its temp tables
-                # for debugging. Discovery itself succeeded, so it already
-                # deleted the generation-output temp table.
-                self.assertEqual(self.mock_bq_client.delete_table.call_count, 1)
+            # Partial-success path: the recorder preserves its temp tables
+            # for debugging. Discovery itself succeeded, so it already
+            # deleted the generation-output temp table.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 1)

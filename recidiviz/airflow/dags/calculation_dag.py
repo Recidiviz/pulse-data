@@ -17,6 +17,7 @@
 """The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
+
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
@@ -59,6 +60,9 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+    execute_update_big_query_table_schemata,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
@@ -96,18 +100,6 @@ def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
             "--entrypoint=UpdateAllManagedViewsEntrypoint",
         ],
         trigger_rule=TriggerRule.ALL_SUCCESS,
-    )
-
-
-def execute_update_big_query_table_schemata() -> RecidivizKubernetesPodOperator:
-    task_id = "update_big_query_table_schemata"
-    return build_kubernetes_pod_task(
-        task_id=task_id,
-        container_name=task_id,
-        arguments=[
-            "--entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint",
-        ],
-        trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
@@ -304,7 +296,14 @@ def create_calculation_dag() -> None:
     # If the schema update is successful, we kick off BQ refresh.
     # If the schema update is not successful, we do not want to continue
     # with the rest of the DAG.
-    update_big_query_table_schemata = execute_update_big_query_table_schemata()
+    # TODO(OBT-46918): Change this to the default ALL_SUCCESS to match the LLM DAG.
+    # ALL_DONE mostly works today because the preceding short-circuit task skips this
+    # regardless, but if something upstream of handle_queueing_result fails,
+    # handle_queueing_result becomes UPSTREAM_FAILED and this would run before
+    # initialization finished.
+    update_big_query_table_schemata = execute_update_big_query_table_schemata(
+        trigger_rule=TriggerRule.ALL_DONE
+    )
     apply_dataset_protection_tags = execute_apply_dataset_protection_tags()
 
     with TaskGroup("bq_refresh") as bq_refresh:

@@ -16,11 +16,15 @@
 # =============================================================================
 """Script for updating BigQuery source table schemata - to be called only within the Airflow DAG's
 KubernetesPodOperator."""
+
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
+)
+from recidiviz.source_tables.source_table_update_group_dag import (
+    source_table_update_group_for_dag_id,
 )
 from recidiviz.source_tables.update_big_query_table_schemas import (
     SourceTableCheckType,
@@ -28,6 +32,10 @@ from recidiviz.source_tables.update_big_query_table_schemas import (
     update_all_managed_source_table_schemas,
 )
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import (
+    AirflowKubernetesPodEnvironment,
+    in_airflow_kubernetes_pod,
+)
 
 
 class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
@@ -43,9 +51,21 @@ class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        repository = build_source_table_repository_for_collected_schemata(
-            project_id=metadata.project_id(),
+        if not in_airflow_kubernetes_pod():
+            raise RuntimeError(
+                "This entrypoint may only be run within the Airflow DAG's "
+                "KubernetesPodOperator."
+            )
+
+        project_id = metadata.project_id()
+
+        update_group = source_table_update_group_for_dag_id(
+            AirflowKubernetesPodEnvironment.get_dag_id(), project_id=project_id
         )
+
+        repository = build_source_table_repository_for_collected_schemata(
+            project_id=project_id,
+        ).filter_to_update_group(update_group)
 
         # Verify that none of the externally managed schemas have changed under us
         # without a corresponding YAML change.

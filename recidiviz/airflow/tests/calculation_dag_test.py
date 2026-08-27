@@ -532,6 +532,14 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.kubernetes_pod_operator_patcher_2.start()
         )
 
+        self.kubernetes_pod_operator_patcher_3 = patch(
+            "recidiviz.airflow.dags.utils.update_source_table_schemata.build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.mock_kubernetes_pod_operator_3 = (
+            self.kubernetes_pod_operator_patcher_3.start()
+        )
+
         self.cloud_sql_query_operator_patcher = patch(
             "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.CloudSqlQueryOperator",
             side_effect=fake_operator_with_return_value({}),
@@ -572,6 +580,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.project_environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.kubernetes_pod_operator_patcher_2.stop()
+        self.kubernetes_pod_operator_patcher_3.stop()
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
         self.product_configs_patcher.stop()
@@ -743,7 +752,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         """
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
-        self.mock_kubernetes_pod_operator_constructor.side_effect = lambda **kwargs: (
+        self.mock_kubernetes_pod_operator_3.side_effect = lambda **kwargs: (
             fake_failing_operator_constructor(**kwargs)
             if kwargs["task_id"] == "update_big_query_table_schemata"
             else fake_operator_constructor(**kwargs)

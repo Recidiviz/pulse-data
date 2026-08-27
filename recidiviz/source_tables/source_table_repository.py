@@ -26,6 +26,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
     SourceTableConfigDoesNotExistError,
     SourceTableLabel,
+    SourceTableUpdateGroup,
 )
 
 
@@ -34,6 +35,20 @@ class SourceTableRepository:
     """The SourceTableRepository aggregates definitions of all source tables in our view graph."""
 
     source_table_collections: list[SourceTableCollection] = attr.ib(factory=list)
+
+    def filter_to_update_group(
+        self, update_group: SourceTableUpdateGroup
+    ) -> "SourceTableRepository":
+        """Returns a repository containing only the collections belonging to the given
+        update group."""
+        return SourceTableRepository(
+            source_table_collections=[
+                collection
+                for collection in self.source_table_collections
+                if collection.update_groups is not None
+                and update_group in collection.update_groups
+            ],
+        )
 
     @cached_property
     def source_tables(self) -> dict[BigQueryAddress, SourceTableConfig]:

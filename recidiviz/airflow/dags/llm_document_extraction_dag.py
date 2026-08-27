@@ -60,6 +60,9 @@ from recidiviz.airflow.dags.utils.constants import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+    execute_update_big_query_table_schemata,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     get_states_with_document_collections,
@@ -219,6 +222,8 @@ def create_llm_document_extraction_branch_map() -> dict[str, list[DAGNode] | DAG
 def create_llm_document_extraction_dag() -> None:
     initialize_dag = initialize_llm_document_extraction_dag_group()
 
+    update_big_query_table_schemata = execute_update_big_query_table_schemata()
+
     with TaskGroup(
         LLM_DOCUMENT_EXTRACTION_BRANCHING
     ) as llm_document_extraction_branching:
@@ -227,7 +232,11 @@ def create_llm_document_extraction_dag() -> None:
             get_llm_document_extraction_branch_filter,
         )
 
-    initialize_dag >> llm_document_extraction_branching
+    (
+        initialize_dag
+        >> update_big_query_table_schemata
+        >> llm_document_extraction_branching
+    )
 
 
 llm_document_extraction_dag = create_llm_document_extraction_dag()
