@@ -178,8 +178,8 @@ from recidiviz.calculator.query.state.views.tasks.snooze_status_archive import (
 from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archive import (
     SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
-    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.user_metrics.intercom_upload_user_available_actions import (
+    INTERCOM_UPLOAD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
@@ -195,12 +195,6 @@ from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_e
 )
 from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_without_referral import (
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.workflows_facilities_user_available_actions import (
-    WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.workflows_supervision_user_available_actions import (
-    WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.person_record import (
     PERSON_RECORD_VIEW_BUILDER,
@@ -461,12 +455,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
         " (Justine Kunz 12/03/2024)"
     ),
-    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
-        "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
-    ),
-    WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
-        "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
-    ),
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER.address: (
         "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
     ),
@@ -499,9 +487,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
         "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
-    ),
-    WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
-        "Referenced by the automated email login reminder process (Ryan Guan 05/07/2025)"
     ),
     BigQueryAddress.from_str(
         "static_reference_data_views.county_fips"
@@ -674,6 +659,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Operator-facing run history for eOMIS writeback runs, queried directly "
         "when reviewing what a run did. Not referenced by downstream views. "
         "(Josh Leichty, 07/31/2026)"
+    ),
+    INTERCOM_UPLOAD_VIEW_BUILDER.address: (
+        "View used by the Apps Script job that uploads user attribute data into Intercom (Justine Kunz, 7/30/2026)"
     ),
 }
 
