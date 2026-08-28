@@ -66,33 +66,35 @@ def collect_yaml_managed_source_table_collections(
             for address, source_table in project_filtered_tables_by_address.items()
             if source_table.is_external_table
         }
-        collections.append(
-            SourceTableCollection(
-                update_groups=CALC_UPDATE_GROUPS,
-                dataset_id=dataset_id,
-                # All external data tables are fundamentally regenerable - we load data
-                # from
-                update_config=SourceTableCollectionUpdateConfig.regenerable(),
-                source_tables_by_address=external_data_source_tables,
-                description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+        if external_data_source_tables:
+            collections.append(
+                SourceTableCollection(
+                    update_groups=CALC_UPDATE_GROUPS,
+                    dataset_id=dataset_id,
+                    # All external data tables are fundamentally regenerable - we load
+                    # data from
+                    update_config=SourceTableCollectionUpdateConfig.regenerable(),
+                    source_tables_by_address=external_data_source_tables,
+                    description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+                )
             )
-        )
         native_source_tables = {
             address: source_table
             for address, source_table in project_filtered_tables_by_address.items()
             if not source_table.is_external_table
         }
-        collections.append(
-            SourceTableCollection(
-                update_groups=CALC_UPDATE_GROUPS,
-                dataset_id=dataset_id,
-                # The remainder of tables are protected - the data is potentially loaded
-                # in some manual / un-repeatable process.
-                update_config=SourceTableCollectionUpdateConfig.protected(),
-                source_tables_by_address=native_source_tables,
-                description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+        if native_source_tables:
+            collections.append(
+                SourceTableCollection(
+                    update_groups=CALC_UPDATE_GROUPS,
+                    dataset_id=dataset_id,
+                    # The remainder of tables are protected - the data is potentially
+                    # loaded in some manual / un-repeatable process.
+                    update_config=SourceTableCollectionUpdateConfig.protected(),
+                    source_tables_by_address=native_source_tables,
+                    description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+                )
             )
-        )
 
     return collections
 

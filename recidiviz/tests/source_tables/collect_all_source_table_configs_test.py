@@ -16,6 +16,7 @@
 # =============================================================================
 """Test for built source table collections"""
 import unittest
+from collections import defaultdict
 
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
@@ -27,6 +28,24 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+
+# Datasets that are still split across more than one source table collection,
+# grandfathered until the follow-up consolidation work lands. Do not add to this
+# list — a new dataset with multiple collections is a bug to fix, not to allow.
+_DATASETS_WITH_MULTIPLE_COLLECTIONS = {
+    # TODO(OBT-46919): export_archives schemas are split across the
+    # externally-managed and YAML-managed packages. Consolidate them into one
+    # package (and thus one collection) and drop this entry.
+    "export_archives",
+    # TODO(OBT-45873): intercom_export schemas are split across the
+    # externally-managed and YAML-managed packages. Consolidate them into one
+    # package (and thus one collection) and drop this entry.
+    "intercom_export",
+    # TODO(OBT-46736): collect_duplicative_us_mi_validation_oneoffs builds two
+    # non-empty collections sharing this dataset. Merge them into one and drop
+    # this entry.
+    "us_mi_validation_oneoffs",
+}
 
 
 class CollectAllSourceTableConfigsTest(unittest.TestCase):
@@ -108,4 +127,47 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
                     raise ValueError(
                         f"Expected no duplicate addresses across source table "
                         f"collections; found: {duplicate_addresses}"
+                    )
+
+    def test_one_collection_per_dataset(self) -> None:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                source_table_repository = (
+                    build_source_table_repository_for_collected_schemata(
+                        project_id=project_id
+                    )
+                )
+
+                collections_by_dataset: dict[str, int] = defaultdict(int)
+                for collection in source_table_repository.source_table_collections:
+                    collections_by_dataset[collection.dataset_id] += 1
+
+                datasets_with_multiple_collections = {
+                    dataset_id
+                    for dataset_id, count in collections_by_dataset.items()
+                    if count > 1
+                }
+
+                unexpected = (
+                    datasets_with_multiple_collections
+                    - _DATASETS_WITH_MULTIPLE_COLLECTIONS
+                )
+                if unexpected:
+                    raise ValueError(
+                        f"Found datasets backed by more than one source table "
+                        f"collection: {sorted(unexpected)}. Every dataset should map "
+                        f"to exactly one collection; consolidate the collections for "
+                        f"these datasets rather than adding them to "
+                        f"_DATASETS_WITH_MULTIPLE_COLLECTIONS."
+                    )
+
+                stale = (
+                    _DATASETS_WITH_MULTIPLE_COLLECTIONS
+                    - datasets_with_multiple_collections
+                )
+                if stale:
+                    raise ValueError(
+                        f"Datasets {sorted(stale)} no longer have multiple source "
+                        f"table collections. Remove them from "
+                        f"_DATASETS_WITH_MULTIPLE_COLLECTIONS."
                     )

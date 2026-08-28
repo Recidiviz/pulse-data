@@ -48,6 +48,8 @@ datasets:
     description: Stores data calculated for sentencing views
   spark_public_output_data:
     description: Stores output of Spark simulations
+    projects:
+      - recidiviz-staging
   static_reference_tables:
     description: Reference tables used by various views in BigQuery. May need to be updated manually for new states.
   supplemental_data:
