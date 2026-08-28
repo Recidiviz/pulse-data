@@ -23,7 +23,6 @@ from typing import List, Optional
 from recidiviz.calculator.query.bq_utils import (
     date_diff_in_full_months,
     nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -136,52 +135,6 @@ def has_at_least_x_incarceration_incidents_in_time_interval(
         TO_JSON(STRUCT(latest_incident_date AS latest_incarceration_incident_date)) AS reason
     FROM
         grouped
-    """
-
-
-def get_sentences_current_span(in_projected_completion_array: bool = True) -> str:
-    """
-    Pull information on sentences from the current sentence span.
-
-    Args:
-        in_projected_completion_array (bool, optional): Determines whether we keep the
-            sentences in the intersection of
-            `sentences_preprocessed_id_array_actual_completion` +
-            `sentences_preprocessed_id_array_projected_completion` vs. just sentences
-            from `sentences_preprocessed_id_array_actual_completion`. Defaults to True,
-            such that only sentences in the intersection are included.
-
-    Returns:
-        str: SQL query as a string.
-    """
-
-    where_clause = ""
-    if in_projected_completion_array:
-        where_clause = "WHERE sentences_preprocessed_id IN UNNEST(sentences_preprocessed_id_array_projected_completion)"
-
-    return f"""
-    SELECT
-        s.person_id,
-        s.state_code,
-        s.start_date,
-        sentences.county_code AS conviction_county,
-        JSON_EXTRACT_SCALAR(sentences.sentence_metadata, '$.CASE_NUMBER') AS docket_number,
-        sentences.description AS offense,
-        sentences.judicial_district,
-        sentences.life_sentence,
-        sentences.date_imposed AS sentence_start_date,
-        sentences.status,
-        sentences.projected_completion_date_max AS expiration_date,
-        sentences.sentence_sub_type,
-    FROM (
-        SELECT *
-        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`
-        WHERE CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
-    ) s,
-    UNNEST(sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
-        USING (person_id, state_code, sentences_preprocessed_id)
-    {where_clause}
     """
 
 

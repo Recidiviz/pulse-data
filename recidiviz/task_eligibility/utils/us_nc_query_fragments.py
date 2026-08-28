@@ -18,13 +18,13 @@
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    revert_nonnull_end_date_clause,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     create_sub_sessions_with_attributes,
-)
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    nonnull_end_date_exclusive_clause,
 )
 
 

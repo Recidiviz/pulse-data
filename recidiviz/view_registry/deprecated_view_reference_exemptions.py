@@ -118,12 +118,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
-    US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension_of_direct_supervision_record import (
-    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
 )
@@ -527,12 +521,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
-        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
@@ -628,15 +616,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#33402): Delete `charges_preprocessed` once all states are migrated

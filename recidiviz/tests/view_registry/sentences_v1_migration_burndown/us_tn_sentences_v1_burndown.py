@@ -29,17 +29,8 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
-    SENTENCE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
-    US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension_of_direct_supervision_record import (
-    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
@@ -54,78 +45,31 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
 ] = {
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
         },
     },
     "WORKFLOWS_FIRESTORE": {
-        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-        },
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
             },
         },
     },
     "MEETINGS": {
         MEETINGS_CLIENTS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
-                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
-            },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
-                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
         },
