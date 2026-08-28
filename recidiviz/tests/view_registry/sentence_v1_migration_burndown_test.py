@@ -33,9 +33,6 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nd_sentenc
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_pa_sentences_v1_burndown import (
     US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_tn_sentences_v1_burndown import (
-    US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import deployed_view_builders
@@ -56,7 +53,6 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode.US_MI: US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_ND: US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_PA: US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_TN: US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 }
 
 
