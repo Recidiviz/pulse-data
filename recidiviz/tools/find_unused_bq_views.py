@@ -554,9 +554,8 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "segment_events.all_jii_opportunities_app_segment_events"
     ): (
-        "Union view for JII opportunities app segment events. Currently empty since no "
-        "JII-opportunities-app usage events are instrumented yet; kept for future use "
-        "as events are added. (Samantha Huff, 2026-07-20)"
+        "Union view for JII opportunities app segment events. Kept for potential future use. "
+        "(Jenna Bellassai, 2026-08-28)"
     ),
     BigQueryAddress.from_str("segment_events.all_lantern_segment_events"): (
         "Union view for lantern segment events. Kept for potential future use. "
