@@ -129,6 +129,27 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Case_Notes"
   }
 
+  join: us_mi_COMS_Charges {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Charges.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Charges"
+  }
+
+  join: us_mi_COMS_Demographics {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Demographics.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Demographics"
+  }
+
+  join: us_mi_COMS_Dockets {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Dockets.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Dockets"
+  }
+
   join: us_mi_COMS_Employment {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Employment.Offender_Number};;
     type: full_outer
@@ -136,11 +157,67 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Employment"
   }
 
+  join: us_mi_COMS_Housing {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Housing.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Housing"
+  }
+
+  join: us_mi_COMS_Interventions {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Interventions.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Interventions"
+  }
+
   join: us_mi_COMS_Modifiers {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Modifiers.Offender_Number};;
     type: full_outer
     relationship: many_to_many
     view_label: "us_mi_COMS_Modifiers"
+  }
+
+  join: us_mi_COMS_Movements {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Movements.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Movements"
+  }
+
+  join: us_mi_COMS_Names {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Names.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Names"
+  }
+
+  join: us_mi_COMS_Offender_Misconduct {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Misconduct.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Offender_Misconduct"
+  }
+
+  join: us_mi_COMS_Offender_Misconduct_Charge {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Misconduct_Charge.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Offender_Misconduct_Charge"
+  }
+
+  join: us_mi_COMS_Offender_Sanctions {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Sanctions.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Offender_Sanctions"
+  }
+
+  join: us_mi_COMS_Outside_Detainers {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Outside_Detainers.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Outside_Detainers"
   }
 
   join: us_mi_COMS_Parole_Violation_Violation_Incidents {
@@ -185,6 +262,13 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Security_Classification"
   }
 
+  join: us_mi_COMS_Security_Classifications {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Security_Classifications.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Security_Classifications"
+  }
+
   join: us_mi_COMS_Security_Standards_Toxin {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Security_Standards_Toxin.Offender_Number};;
     type: full_outer
@@ -197,6 +281,34 @@ explore: us_mi_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mi_COMS_Security_Threat_Group_Involvement"
+  }
+
+  join: us_mi_COMS_Security_Threat_Groups {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Security_Threat_Groups.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Security_Threat_Groups"
+  }
+
+  join: us_mi_COMS_Segregation {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Segregation.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Segregation"
+  }
+
+  join: us_mi_COMS_Sentence_Fees {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Sentence_Fees.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Sentence_Fees"
+  }
+
+  join: us_mi_COMS_Sentences {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Sentences.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Sentences"
   }
 
   join: us_mi_COMS_Specialties {
@@ -227,6 +339,13 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Supervision_Schedules"
   }
 
+  join: us_mi_COMS_Supervision_Status_Charges {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Supervision_Status_Charges.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Supervision_Status_Charges"
+  }
+
   join: us_mi_COMS_Violation_Incident_Charges {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Violation_Incident_Charges.Offender_Number};;
     type: full_outer
@@ -239,6 +358,13 @@ explore: us_mi_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mi_COMS_Violation_Incidents"
+  }
+
+  join: us_mi_COMS_Work_Units {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Work_Units.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Work_Units"
   }
 
   join: us_mi_ADH_CASE_NOTE_DETAIL {

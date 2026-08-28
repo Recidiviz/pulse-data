@@ -783,6 +783,108 @@
     width: 24
     height: 6
 
+  - name: COMS_Charges
+    title: COMS_Charges
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Charges.primary_key,
+      us_mi_COMS_Charges.Charge_Id,
+      us_mi_COMS_Charges.Docket_Id,
+      us_mi_COMS_Charges.Offender_Number,
+      us_mi_COMS_Charges.Offense_Date__raw,
+      us_mi_COMS_Charges.Juvenile_vs_Adult,
+      us_mi_COMS_Charges.Arrest_Date__raw,
+      us_mi_COMS_Charges.Charge_Count,
+      us_mi_COMS_Charges.Convicting_Crime_Code,
+      us_mi_COMS_Charges.Convicting_Crime_Code_Description,
+      us_mi_COMS_Charges.Primary_Enhanced_Crime_Code,
+      us_mi_COMS_Charges.Adjusted_Crime_Code_Class,
+      us_mi_COMS_Charges.Adjusted_Crime_Code_Group,
+      us_mi_COMS_Charges.Conviction_Type,
+      us_mi_COMS_Charges.Conviction_Date__raw,
+      us_mi_COMS_Charges.Guilty_but_Mentally_Ill,
+      us_mi_COMS_Charges.Firearms_Involved,
+      us_mi_COMS_Charges.End_Date__raw,
+      us_mi_COMS_Charges.End_Reason,
+      us_mi_COMS_Charges.Entered_Date__raw,
+      us_mi_COMS_Charges.file_id,
+      us_mi_COMS_Charges.is_deleted]
+    sorts: [us_mi_COMS_Charges.Offense_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about charge records for both active and inactive offenders. Sent as a two-week differential file including offenders whose charge records were added or updated in the two-week period. Note: see also ADH_OFFENDER_CHARGE for historical charge data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 108
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Demographics
+    title: COMS_Demographics
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Demographics.primary_key,
+      us_mi_COMS_Demographics.Offender_Number,
+      us_mi_COMS_Demographics.First_Name,
+      us_mi_COMS_Demographics.Middle_Name,
+      us_mi_COMS_Demographics.Last_Name,
+      us_mi_COMS_Demographics.Suffix,
+      us_mi_COMS_Demographics.Birth_Date__raw,
+      us_mi_COMS_Demographics.Sex,
+      us_mi_COMS_Demographics.Race,
+      us_mi_COMS_Demographics.Culture,
+      us_mi_COMS_Demographics.file_id,
+      us_mi_COMS_Demographics.is_deleted]
+    sorts: [us_mi_COMS_Demographics.Birth_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about offender demographic information, including active and inactive offenders. Sent as a two-week differential file including offenders whose demographic records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 114
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Dockets
+    title: COMS_Dockets
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Dockets.primary_key,
+      us_mi_COMS_Dockets.Docket_ID,
+      us_mi_COMS_Dockets.Offender_Number,
+      us_mi_COMS_Dockets.Jurisdiction_Type,
+      us_mi_COMS_Dockets.Jurisdiction,
+      us_mi_COMS_Dockets.Docket_Number,
+      us_mi_COMS_Dockets.Court,
+      us_mi_COMS_Dockets.Judge_First_Name,
+      us_mi_COMS_Dockets.Judge_Last_Name,
+      us_mi_COMS_Dockets.End_Date__raw,
+      us_mi_COMS_Dockets.End_Reason,
+      us_mi_COMS_Dockets.Entered_Date__raw,
+      us_mi_COMS_Dockets.file_id,
+      us_mi_COMS_Dockets.is_deleted]
+    sorts: [us_mi_COMS_Dockets.End_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about docket records for both active and inactive offenders. Sent as a two-week differential file including offenders whose docket records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 120
+    col: 0
+    width: 24
+    height: 6
+
   - name: COMS_Employment
     title: COMS_Employment
     explore: us_mi_raw_data
@@ -809,7 +911,71 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 108
+    row: 126
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Housing
+    title: COMS_Housing
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Housing.primary_key,
+      us_mi_COMS_Housing.CFA_Housing_Id,
+      us_mi_COMS_Housing.Offender_Number,
+      us_mi_COMS_Housing.Region,
+      us_mi_COMS_Housing.Facility,
+      us_mi_COMS_Housing.Housing_Unit,
+      us_mi_COMS_Housing.Tier,
+      us_mi_COMS_Housing.Room,
+      us_mi_COMS_Housing.Room_Type,
+      us_mi_COMS_Housing.Security_Level,
+      us_mi_COMS_Housing.Bed,
+      us_mi_COMS_Housing.Start_Date__raw,
+      us_mi_COMS_Housing.End_Date__raw,
+      us_mi_COMS_Housing.Entered_Date__raw,
+      us_mi_COMS_Housing.file_id,
+      us_mi_COMS_Housing.is_deleted]
+    sorts: [us_mi_COMS_Housing.Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about housing details for offenders whose Primary Supervision Status Work Unit Type is Correctional Facility Administration (CFA), for both active and inactive prisoners. Sent as a two-week differential file including offenders whose housing records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 132
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Interventions
+    title: COMS_Interventions
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Interventions.primary_key,
+      us_mi_COMS_Interventions.Interventions_Id,
+      us_mi_COMS_Interventions.Offender_Number,
+      us_mi_COMS_Interventions.Program_Type,
+      us_mi_COMS_Interventions.Service_Type,
+      us_mi_COMS_Interventions.Eligible_Date__raw,
+      us_mi_COMS_Interventions.Start_Date__raw,
+      us_mi_COMS_Interventions.End_Date__raw,
+      us_mi_COMS_Interventions.End_Reason,
+      us_mi_COMS_Interventions.Entered_Date__raw,
+      us_mi_COMS_Interventions.file_id,
+      us_mi_COMS_Interventions.is_deleted]
+    sorts: [us_mi_COMS_Interventions.Eligible_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about intervention records for both active and inactive prisoners assigned only to core programs. Sent as a full dump file every day. Note: see also COMS_Intervention_Referrals for intervention referral data for parolees, probationers, interstate compact parolees, and interstate compact probationers."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -837,7 +1003,178 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 114
+    row: 144
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Movements
+    title: COMS_Movements
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Movements.primary_key,
+      us_mi_COMS_Movements.Movement_Id,
+      us_mi_COMS_Movements.Offender_Number,
+      us_mi_COMS_Movements.Movement_Category,
+      us_mi_COMS_Movements.Movement_Code,
+      us_mi_COMS_Movements.Movement_Code_Description,
+      us_mi_COMS_Movements.Movement_From_Type,
+      us_mi_COMS_Movements.Movement_From,
+      us_mi_COMS_Movements.Movement_To_Type,
+      us_mi_COMS_Movements.Movement_To,
+      us_mi_COMS_Movements.Movement_Date__raw,
+      us_mi_COMS_Movements.Entered_Date__raw,
+      us_mi_COMS_Movements.file_id,
+      us_mi_COMS_Movements.is_deleted]
+    sorts: [us_mi_COMS_Movements.Movement_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about movement records for both active and inactive offenders. Sent as a two-week differential file including offenders whose movement records were added or updated in the two-week period. Note: see also ADH_OFFENDER_EXTERNAL_MOVEMENT for historical movement data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 150
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Names
+    title: COMS_Names
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Names.primary_key,
+      us_mi_COMS_Names.Offender_Name_Id,
+      us_mi_COMS_Names.Offender_Number,
+      us_mi_COMS_Names.First_Name,
+      us_mi_COMS_Names.Middle_Name,
+      us_mi_COMS_Names.Last_Name,
+      us_mi_COMS_Names.Suffix,
+      us_mi_COMS_Names.Name_Type,
+      us_mi_COMS_Names.Working_Name,
+      us_mi_COMS_Names.Alias,
+      us_mi_COMS_Names.file_id,
+      us_mi_COMS_Names.is_deleted]
+    sorts: [us_mi_COMS_Names.Offender_Name_Id, us_mi_COMS_Names.Name_Type]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about all name records for offenders, including aliases, court commitment names, and other name types, for both active and inactive offenders. Sent as a two-week differential file including offenders whose name records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 156
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Offender_Misconduct
+    title: COMS_Offender_Misconduct
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Offender_Misconduct.primary_key,
+      us_mi_COMS_Offender_Misconduct.Misconduct_Id,
+      us_mi_COMS_Offender_Misconduct.Offender_Number,
+      us_mi_COMS_Offender_Misconduct.Violation_Date__raw,
+      us_mi_COMS_Offender_Misconduct.Report_Date__raw,
+      us_mi_COMS_Offender_Misconduct.Hearing_Date__raw,
+      us_mi_COMS_Offender_Misconduct.Expunged,
+      us_mi_COMS_Offender_Misconduct.file_id,
+      us_mi_COMS_Offender_Misconduct.is_deleted]
+    sorts: [us_mi_COMS_Offender_Misconduct.Violation_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about misconduct records for active offenders with guilty Class I or Class II misconduct verdicts. Sent as a two-week differential file. Records with Expunged = Yes indicate the offender's records must be completely removed from the Recidiviz database. Note: see also ADH_MISCONDUCT_INCIDENT for historical misconduct data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 162
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Offender_Misconduct_Charge
+    title: COMS_Offender_Misconduct_Charge
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Offender_Misconduct_Charge.primary_key,
+      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Id,
+      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_ID,
+      us_mi_COMS_Offender_Misconduct_Charge.Offender_Number,
+      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_Code,
+      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_Code_Number,
+      us_mi_COMS_Offender_Misconduct_Charge.file_id,
+      us_mi_COMS_Offender_Misconduct_Charge.is_deleted]
+    sorts: [us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_ID]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about guilty misconduct charge records (Class I or Class II) for active offenders referenced in COMS_Offender_Misconduct. Sent as a two-week differential file. Note: see also ADH_MISCONDUCT_CHARGE for historical misconduct charge data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 168
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Offender_Sanctions
+    title: COMS_Offender_Sanctions
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Offender_Sanctions.primary_key,
+      us_mi_COMS_Offender_Sanctions.Sanction_Id,
+      us_mi_COMS_Offender_Sanctions.Misconduct_Id,
+      us_mi_COMS_Offender_Sanctions.Offender_Number,
+      us_mi_COMS_Offender_Sanctions.Sanction_Length,
+      us_mi_COMS_Offender_Sanctions.Sanction_Start_Date__raw,
+      us_mi_COMS_Offender_Sanctions.Sanction_End_Date__raw,
+      us_mi_COMS_Offender_Sanctions.file_id,
+      us_mi_COMS_Offender_Sanctions.is_deleted]
+    sorts: [us_mi_COMS_Offender_Sanctions.Sanction_Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about detention sanctions associated with guilty Class I or Class II misconducts for active offenders. Sent as a two-week differential file. Note: see also ADH_SANCTION for historical sanction data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 174
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Outside_Detainers
+    title: COMS_Outside_Detainers
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Outside_Detainers.primary_key,
+      us_mi_COMS_Outside_Detainers.Outside_Detainer_ID,
+      us_mi_COMS_Outside_Detainers.Offender_Number,
+      us_mi_COMS_Outside_Detainers.Detainer_Type,
+      us_mi_COMS_Outside_Detainers.Issued_Date__raw,
+      us_mi_COMS_Outside_Detainers.Contact_Agency,
+      us_mi_COMS_Outside_Detainers.Closed_Date__raw,
+      us_mi_COMS_Outside_Detainers.Closed_Reason,
+      us_mi_COMS_Outside_Detainers.Entered_Date__raw,
+      us_mi_COMS_Outside_Detainers.file_id,
+      us_mi_COMS_Outside_Detainers.is_deleted]
+    sorts: [us_mi_COMS_Outside_Detainers.Issued_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about outside detainer records for both active and inactive offenders. Sent as a two-week differential file including offenders whose outside detainer records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -862,7 +1199,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 120
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -891,7 +1228,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 126
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -916,7 +1253,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 132
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -955,7 +1292,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 138
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -987,7 +1324,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 144
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -1018,7 +1355,39 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 150
+    row: 216
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Security_Classifications
+    title: COMS_Security_Classifications
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Security_Classifications.primary_key,
+      us_mi_COMS_Security_Classifications.Security_Classification_Id,
+      us_mi_COMS_Security_Classifications.Offender_Number,
+      us_mi_COMS_Security_Classifications.Confinement_Level,
+      us_mi_COMS_Security_Classifications.Management_Level,
+      us_mi_COMS_Security_Classifications.Management_Level_Score,
+      us_mi_COMS_Security_Classifications.True_Security_Level,
+      us_mi_COMS_Security_Classifications.Actual_Placement_Level,
+      us_mi_COMS_Security_Classifications.Departure_Reason,
+      us_mi_COMS_Security_Classifications.Waiver_Reason,
+      us_mi_COMS_Security_Classifications.Start_Date__raw,
+      us_mi_COMS_Security_Classifications.Entered_Date__raw,
+      us_mi_COMS_Security_Classifications.file_id,
+      us_mi_COMS_Security_Classifications.is_deleted]
+    sorts: [us_mi_COMS_Security_Classifications.Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about security classification assessment results for active prisoners. Only includes submitted security classification assessments. Sent as a full dump file every day. Note: see also COMS_Security_Classification for an earlier COMS security classification data format with a different schema."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 222
     col: 0
     width: 24
     height: 6
@@ -1060,7 +1429,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 156
+    row: 228
     col: 0
     width: 24
     height: 6
@@ -1090,7 +1459,160 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 162
+    row: 234
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Security_Threat_Groups
+    title: COMS_Security_Threat_Groups
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Security_Threat_Groups.primary_key,
+      us_mi_COMS_Security_Threat_Groups.Offender_Number,
+      us_mi_COMS_Security_Threat_Groups.Role,
+      us_mi_COMS_Security_Threat_Groups.file_id,
+      us_mi_COMS_Security_Threat_Groups.is_deleted]
+    sorts: []
+    note_display: hover
+    note_text: "This table includes data from the COMS system about security threat groups."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 240
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Segregation
+    title: COMS_Segregation
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Segregation.primary_key,
+      us_mi_COMS_Segregation.Housing_Segregation_Id,
+      us_mi_COMS_Segregation.Offender_Number,
+      us_mi_COMS_Segregation.Segregation_Type,
+      us_mi_COMS_Segregation.Initial_Placement_Approved_Date__raw,
+      us_mi_COMS_Segregation.Release_Date__raw,
+      us_mi_COMS_Segregation.Entered_Date__raw,
+      us_mi_COMS_Segregation.file_id,
+      us_mi_COMS_Segregation.is_deleted]
+    sorts: [us_mi_COMS_Segregation.Initial_Placement_Approved_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about housing segregation records for both active and inactive prisoners. Sent as a two-week differential file including prisoners whose housing segregation records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 246
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Sentence_Fees
+    title: COMS_Sentence_Fees
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Sentence_Fees.primary_key,
+      us_mi_COMS_Sentence_Fees.Fine_Cost_Restitution_ID,
+      us_mi_COMS_Sentence_Fees.Sentence_ID,
+      us_mi_COMS_Sentence_Fees.Offender_Number,
+      us_mi_COMS_Sentence_Fees.Type,
+      us_mi_COMS_Sentence_Fees.Amount,
+      us_mi_COMS_Sentence_Fees.Entered_Date__raw,
+      us_mi_COMS_Sentence_Fees.file_id,
+      us_mi_COMS_Sentence_Fees.is_deleted]
+    sorts: [us_mi_COMS_Sentence_Fees.Entered_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about fines, costs, and restitution associated with Prison and HYTA sentence records for both active and inactive offenders. Sent as a two-week differential file."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 252
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Sentences
+    title: COMS_Sentences
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Sentences.primary_key,
+      us_mi_COMS_Sentences.Sentence_Id,
+      us_mi_COMS_Sentences.Charge_Id,
+      us_mi_COMS_Sentences.Offender_Number,
+      us_mi_COMS_Sentences.Sentence_Work_Unit,
+      us_mi_COMS_Sentences.Disposition_Status,
+      us_mi_COMS_Sentences.Sentence_Type,
+      us_mi_COMS_Sentences.Commitment_Date__raw,
+      us_mi_COMS_Sentences.Sentence_Disclosure,
+      us_mi_COMS_Sentences.Sentencing_Status,
+      us_mi_COMS_Sentences.Sentence_Date__raw,
+      us_mi_COMS_Sentences.Sentence_Begin_Date__raw,
+      us_mi_COMS_Sentences.Sentence_Effective_Date__raw,
+      us_mi_COMS_Sentences.Prison_Applicable,
+      us_mi_COMS_Sentences.Prison_Minimum_Term_Life,
+      us_mi_COMS_Sentences.Prison_Minimum_Term_Years,
+      us_mi_COMS_Sentences.Prison_Minimum_Term_Months,
+      us_mi_COMS_Sentences.Prison_Minimum_Term_Days,
+      us_mi_COMS_Sentences.Prison_Maximum_Term_Life,
+      us_mi_COMS_Sentences.Prison_Maximum_Term_Years,
+      us_mi_COMS_Sentences.Prison_Maximum_Term_Months,
+      us_mi_COMS_Sentences.Prison_Maximum_Term_Days,
+      us_mi_COMS_Sentences.Prison_Effective_Date__raw,
+      us_mi_COMS_Sentences.Prison_Corrected_Date__raw,
+      us_mi_COMS_Sentences.Prison_Scheduled_End_Date__raw,
+      us_mi_COMS_Sentences.Probation_Applicable,
+      us_mi_COMS_Sentences.Probation_Term_Life,
+      us_mi_COMS_Sentences.Probation_Term_Years,
+      us_mi_COMS_Sentences.Probation_Term_Months,
+      us_mi_COMS_Sentences.Probation_Term_Days,
+      us_mi_COMS_Sentences.Probation_Effective_Date__raw,
+      us_mi_COMS_Sentences.Probation_Scheduled_End_Date__raw,
+      us_mi_COMS_Sentences.Jail_Term_Life,
+      us_mi_COMS_Sentences.Jail_Term_Years,
+      us_mi_COMS_Sentences.Jail_Term_Months,
+      us_mi_COMS_Sentences.Jail_Term_Days,
+      us_mi_COMS_Sentences.Minimum_Term_Life,
+      us_mi_COMS_Sentences.Minimum_Term_Years,
+      us_mi_COMS_Sentences.Minimum_Term_Months,
+      us_mi_COMS_Sentences.Minimum_Term_Days,
+      us_mi_COMS_Sentences.Maximum_Term_Life,
+      us_mi_COMS_Sentences.Maximum_Term_Years,
+      us_mi_COMS_Sentences.Maximum_Term_Months,
+      us_mi_COMS_Sentences.Maximum_Term_Days,
+      us_mi_COMS_Sentences.Jail_Term_Ordered,
+      us_mi_COMS_Sentences.Paroleable_Life,
+      us_mi_COMS_Sentences.Transferred_To_Specialty_Court,
+      us_mi_COMS_Sentences.Specialty_Court,
+      us_mi_COMS_Sentences.Specialty_Court_Docket_Number,
+      us_mi_COMS_Sentences.Specialty_Court_Start_Date__raw,
+      us_mi_COMS_Sentences.Specialty_Court_End_Date__raw,
+      us_mi_COMS_Sentences.Scheduled_End_Date_Life,
+      us_mi_COMS_Sentences.Scheduled_End_Date__raw,
+      us_mi_COMS_Sentences.End_Date__raw,
+      us_mi_COMS_Sentences.End_Reason,
+      us_mi_COMS_Sentences.Entered_Date__raw,
+      us_mi_COMS_Sentences.file_id,
+      us_mi_COMS_Sentences.is_deleted]
+    sorts: [us_mi_COMS_Sentences.Commitment_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about Prison, Probation, Delayed Sentence, Jail Only, and HYTA sentence records for both active and inactive offenders. Sent as a two-week differential file including offenders whose sentence records were added or updated in the two-week period. Note: see also ADH_OFFENDER_SENTENCE for historical sentence data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 258
     col: 0
     width: 24
     height: 6
@@ -1118,7 +1640,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 168
+    row: 264
     col: 0
     width: 24
     height: 6
@@ -1146,7 +1668,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 174
+    row: 270
     col: 0
     width: 24
     height: 6
@@ -1178,7 +1700,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 180
+    row: 276
     col: 0
     width: 24
     height: 6
@@ -1207,7 +1729,35 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 186
+    row: 282
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Supervision_Status_Charges
+    title: COMS_Supervision_Status_Charges
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Supervision_Status_Charges.primary_key,
+      us_mi_COMS_Supervision_Status_Charges.Offender_Linked_Charges_To_Supervision_Statuses_Id,
+      us_mi_COMS_Supervision_Status_Charges.Supervision_Status_Id,
+      us_mi_COMS_Supervision_Status_Charges.Offender_Number,
+      us_mi_COMS_Supervision_Status_Charges.Charge_Id,
+      us_mi_COMS_Supervision_Status_Charges.Start_Date__raw,
+      us_mi_COMS_Supervision_Status_Charges.End_Date__raw,
+      us_mi_COMS_Supervision_Status_Charges.Entered_Date__raw,
+      us_mi_COMS_Supervision_Status_Charges.file_id,
+      us_mi_COMS_Supervision_Status_Charges.is_deleted]
+    sorts: [us_mi_COMS_Supervision_Status_Charges.Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system linking offenders' charges to their supervision statuses (Prison, Probation, Parole, Interstate compact parole, and Interstate compact probation), for both active and inactive offenders. Sent as a two-week differential file including offenders whose linked charge records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 288
     col: 0
     width: 24
     height: 6
@@ -1234,7 +1784,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 192
+    row: 294
     col: 0
     width: 24
     height: 6
@@ -1265,7 +1815,37 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 198
+    row: 300
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Work_Units
+    title: COMS_Work_Units
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Work_Units.primary_key,
+      us_mi_COMS_Work_Units.FOA_Work_Unit_Id,
+      us_mi_COMS_Work_Units.Supervision_Status_Id,
+      us_mi_COMS_Work_Units.Offender_Number,
+      us_mi_COMS_Work_Units.Region,
+      us_mi_COMS_Work_Units.Work_Unit,
+      us_mi_COMS_Work_Units.Work_Unit_Code,
+      us_mi_COMS_Work_Units.Start_Date__raw,
+      us_mi_COMS_Work_Units.End_Date__raw,
+      us_mi_COMS_Work_Units.Entered_Date__raw,
+      us_mi_COMS_Work_Units.file_id,
+      us_mi_COMS_Work_Units.is_deleted]
+    sorts: [us_mi_COMS_Work_Units.Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about work unit assignments for offenders whose Primary Supervision Status Work Unit Type is Field Operations Administration (FOA), including both active and inactive parolees, probationers, interstate compact parolees, and interstate compact probationers. Sent as a two-week differential file including offenders whose work unit records were added or updated in the two-week period."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 306
     col: 0
     width: 24
     height: 6
@@ -1308,7 +1888,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 204
+    row: 312
     col: 0
     width: 24
     height: 6
@@ -1358,7 +1938,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 210
+    row: 318
     col: 0
     width: 24
     height: 6
@@ -1400,7 +1980,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 216
+    row: 324
     col: 0
     width: 24
     height: 6
@@ -1462,7 +2042,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 222
+    row: 330
     col: 0
     width: 24
     height: 6
@@ -1514,7 +2094,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 228
+    row: 336
     col: 0
     width: 24
     height: 6
@@ -1553,7 +2133,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 234
+    row: 342
     col: 0
     width: 24
     height: 6
@@ -1774,7 +2354,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 240
+    row: 348
     col: 0
     width: 24
     height: 6
@@ -1858,7 +2438,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 246
+    row: 354
     col: 0
     width: 24
     height: 6
@@ -1884,7 +2464,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 252
+    row: 360
     col: 0
     width: 24
     height: 6
@@ -1936,7 +2516,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 258
+    row: 366
     col: 0
     width: 24
     height: 6
@@ -1993,7 +2573,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 264
+    row: 372
     col: 0
     width: 24
     height: 6
@@ -2028,7 +2608,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 270
+    row: 378
     col: 0
     width: 24
     height: 6
@@ -2079,7 +2659,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 276
+    row: 384
     col: 0
     width: 24
     height: 6
@@ -2121,7 +2701,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 282
+    row: 390
     col: 0
     width: 24
     height: 6
@@ -2154,7 +2734,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 288
+    row: 396
     col: 0
     width: 24
     height: 6
@@ -2194,7 +2774,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 294
+    row: 402
     col: 0
     width: 24
     height: 6
@@ -2233,7 +2813,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 300
+    row: 408
     col: 0
     width: 24
     height: 6
@@ -2268,7 +2848,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 306
+    row: 414
     col: 0
     width: 24
     height: 6
@@ -2296,7 +2876,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 312
+    row: 420
     col: 0
     width: 24
     height: 6
@@ -2326,7 +2906,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 318
+    row: 426
     col: 0
     width: 24
     height: 6
@@ -2384,7 +2964,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 324
+    row: 432
     col: 0
     width: 24
     height: 6
@@ -2439,7 +3019,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 330
+    row: 438
     col: 0
     width: 24
     height: 6
@@ -2509,7 +3089,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 336
+    row: 444
     col: 0
     width: 24
     height: 6
@@ -2547,7 +3127,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 342
+    row: 450
     col: 0
     width: 24
     height: 6
