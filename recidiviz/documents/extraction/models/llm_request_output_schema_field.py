@@ -178,6 +178,22 @@ class LLMOutputFieldType(Enum):
             return bigquery.SqlTypeNames.FLOAT
         raise ValueError(f"No BigQuery type mapping for value type [{value_type}].")
 
+    def primitive_scalar_value_python_type(self) -> type:
+        """Returns the Python type this field's scalar output value takes in
+        parsed output JSON. Raises for the array types, which have no scalar
+        value.
+        """
+        value_type = self.primitive_scalar_value_type()
+        if value_type is LLMOutputFieldType.STRING:
+            return str
+        if value_type is LLMOutputFieldType.BOOLEAN:
+            return bool
+        if value_type is LLMOutputFieldType.INTEGER:
+            return int
+        if value_type is LLMOutputFieldType.FLOAT:
+            return float
+        raise ValueError(f"No Python type mapping for value type [{value_type}].")
+
 
 class LLMOutputFieldMode(Enum):
     """How an output schema field is produced by the model."""
@@ -316,10 +332,20 @@ class LLMOutputSemanticConsistencyConstraint(abc.ABC):
     """A constraint relating an output schema field to the value of a sibling
     field at the same schema level. Most constraints gate applicability — they
     restrict when a field may be non-null, so a null field always satisfies them
-    — while RequiredWhenValueConstraint instead requires the field to be present.
-    Rendered into natural language in the prompt AND enforced programmatically in
-    validation. Each subclass holds a direct reference to its condition field.
+    — while the Required* constraints instead require the field to be present
+    (RequiredValueWhenNonnullConstraint additionally pins the exact value it
+    must hold). Rendered into natural language in the prompt and enforced
+    programmatically in validation.
     """
+
+    def validate_against_owner_field(
+        self, owner_field: "LLMRequestOutputSchemaField"
+    ) -> None:
+        """Validates this constraint against |owner_field|, the field it is
+        declared on, raising ValueError on a mismatch. A constraint is built
+        before its owner field, so this runs in the owner field's
+        __attrs_post_init__; the base implementation accepts any field.
+        """
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -462,13 +488,38 @@ class LLMRequestOutputSchemaField(abc.ABC):
                 f"absence via its null_reason branch)."
             )
 
+        for constraint in self.semantic_consistency_constraints:
+            constraint.validate_against_owner_field(self)
+
     @staticmethod
+    def _peek_constraint_dict(
+        field_name: str, field_yaml_dict: YAMLDict, constraint_key: str
+    ) -> dict | None:
+        """Returns the mapping at |constraint_key| without consuming it, or None
+        when the key is absent. Raises when the key is present but its value is
+        not a mapping, so a misdeclared constraint (e.g. a bare condition field
+        name) fails at parse time instead of being silently dropped.
+        """
+        # TODO(OBT-46924): Simplify this once the YAMLDict *_optional accessors
+        # raise on wrong-typed values instead of swallowing them.
+        if constraint_key not in field_yaml_dict.keys():
+            return None
+        try:
+            return field_yaml_dict.peek(constraint_key, dict)
+        except ValueError as e:
+            raise ValueError(
+                f"Field [{field_name}] declares a [{constraint_key}] constraint "
+                f"whose value is not a mapping."
+            ) from e
+
+    @classmethod
     def _constraint_dependency_names(
-        field_name: str, field_yaml_dict: YAMLDict
+        cls, field_name: str, field_yaml_dict: YAMLDict
     ) -> set[str]:
         """Returns the names of the fields the constraints in |field_yaml_dict|
         reference, read without consuming them (so the field can still be fully parsed
-        later). Used to order a scope's fields by dependency.
+        later). Used to order a scope's fields by dependency. Raises when a
+        constraint key that takes a mapping holds a non-mapping value.
         """
         dependency_names: set[str] = set()
         for nonnull_condition_key in (
@@ -487,11 +538,22 @@ class LLMRequestOutputSchemaField(abc.ABC):
             "required_when_value",
         ):
             if (
-                value_condition := field_yaml_dict.peek_optional(
-                    value_condition_key, dict
+                value_condition := cls._peek_constraint_dict(
+                    field_name, field_yaml_dict, value_condition_key
                 )
             ) is not None:
                 dependency_names.update(value_condition.keys())
+        if (
+            required_value_condition := cls._peek_constraint_dict(
+                field_name, field_yaml_dict, "required_value_when_nonnull"
+            )
+        ) is not None:
+            if "condition_field" not in required_value_condition:
+                raise ValueError(
+                    f"Field [{field_name}] declares a required_value_when_nonnull "
+                    f"constraint without a condition_field key."
+                )
+            dependency_names.add(required_value_condition["condition_field"])
         if field_name in dependency_names:
             raise ValueError(
                 f"Field [{field_name}] declares a semantic-consistency constraint "
@@ -655,9 +717,10 @@ class LLMRequestOutputSchemaField(abc.ABC):
     ) -> list[LLMOutputSemanticConsistencyConstraint]:
         """Returns the semantic-consistency constraints parsed off a field's
         YAML block, consuming the `applicable_when_nonnull`,
-        `required_when_nonnull`, `applicable_when_value`,
-        `not_applicable_when_value`, and `required_when_value` keys and resolving
-        each condition against the already-built |already_built_fields_by_name|.
+        `required_when_nonnull`, `required_value_when_nonnull`,
+        `applicable_when_value`, `not_applicable_when_value`, and
+        `required_when_value` keys and resolving each condition against the
+        already-built |already_built_fields_by_name|.
         """
         constraints: list[LLMOutputSemanticConsistencyConstraint] = []
         if (
@@ -678,6 +741,16 @@ class LLMRequestOutputSchemaField(abc.ABC):
             constraints.append(
                 RequiredWhenNonnullConstraint.from_condition_field_name(
                     required_nonnull_condition_field, already_built_fields_by_name
+                )
+            )
+        if (
+            required_value_when_nonnull_yaml := yaml_dict.pop_dict_optional(
+                "required_value_when_nonnull"
+            )
+        ) is not None:
+            constraints.append(
+                RequiredValueWhenNonnullConstraint.from_yaml_dict(
+                    required_value_when_nonnull_yaml, already_built_fields_by_name
                 )
             )
         if (
@@ -1038,6 +1111,103 @@ class RequiredWhenNonnullConstraint(_NonnullConditionConstraint):
     ApplicableWhenNonnullConstraint on the same condition field to express a
     strict "both set or both null" relationship.
     """
+
+
+@attr.define(frozen=True, kw_only=True)
+class RequiredValueWhenNonnullConstraint(_NonnullConditionConstraint):
+    """The field must hold one specific value when its condition field is
+    non-null (e.g. self_employed must be false whenever employer_name is set).
+    A null field violates this constraint: unlike RequiredWhenNonnullConstraint,
+    which only requires the field to be set, this also pins the exact value it
+    must take.
+    """
+
+    value: str | bool | int | float = attr.ib(
+        validator=attr.validators.instance_of((str, bool, int, float))
+    )
+    """The value the constrained field must hold when the condition field is
+    non-null. Its Python type must match the owner field's scalar type, which
+    validate_against_owner_field checks.
+    """
+
+    def validate_against_owner_field(
+        self, owner_field: "LLMRequestOutputSchemaField"
+    ) -> None:
+        """Validates that this constraint's value is a value |owner_field|
+        could hold: the field is scalar-valued, an ENUM field's value is among
+        its allowed values, and any other field's value has the Python type its
+        scalar type parses to.
+        """
+        if not isinstance(owner_field, ScalarValuedLLMRequestOutputSchemaField):
+            raise ValueError(
+                f"Field [{owner_field.name}] declares a "
+                f"required_value_when_nonnull constraint but has type "
+                f"[{owner_field.field_type.value}]; only a scalar-valued field "
+                f"can be required to hold a specific value."
+            )
+        if isinstance(owner_field, EnumLLMRequestOutputSchemaField):
+            if self.value not in owner_field.value_names:
+                raise ValueError(
+                    f"Field [{owner_field.name}] declares a "
+                    f"required_value_when_nonnull value [{self.value}] that is "
+                    f"not among its allowed values: {owner_field.value_names}."
+                )
+            return
+        expected_python_type = (
+            owner_field.field_type.primitive_scalar_value_python_type()
+        )
+        # bool subclasses int, so isinstance would let a boolean value satisfy
+        # an INTEGER field; compare exact types instead.
+        # pylint: disable-next=unidiomatic-typecheck
+        if type(self.value) is not expected_python_type:
+            raise ValueError(
+                f"Field [{owner_field.name}] has type "
+                f"[{owner_field.field_type.value}] but its "
+                f"required_value_when_nonnull value [{self.value!r}] has type "
+                f"[{type(self.value).__name__}]."
+            )
+
+    @property
+    def value_display(self) -> str:
+        """Returns the required value as rendered in the prompt and in
+        violation messages: booleans in JSON casing, strings quoted, numbers
+        bare.
+        """
+        if isinstance(self.value, bool):
+            return "true" if self.value else "false"
+        if isinstance(self.value, str):
+            return f"'{self.value}'"
+        return str(self.value)
+
+    @classmethod
+    def from_yaml_dict(
+        cls,
+        yaml_dict: YAMLDict,
+        already_built_fields_by_name: dict[str, "LLMRequestOutputSchemaField"],
+    ) -> "RequiredValueWhenNonnullConstraint":
+        """Returns the constraint parsed from a `{condition_field, value}`
+        block, resolving the condition field against
+        |already_built_fields_by_name| and requiring it to be scalar-valued.
+        """
+        condition_field_name = yaml_dict.pop("condition_field", str)
+        value = yaml_dict.pop("value", object)
+        if not isinstance(value, (str, bool, int, float)):
+            raise ValueError(
+                f"A required_value_when_nonnull value must be a string, "
+                f"boolean, integer, or float, found [{type(value).__name__}]."
+            )
+        constraint = cls(
+            condition_field=assert_scalar_valued_field(
+                already_built_fields_by_name[condition_field_name]
+            ),
+            value=value,
+        )
+        if yaml_dict:
+            raise ValueError(
+                f"Found unexpected config values for required_value_when_nonnull "
+                f"constraint: {repr(yaml_dict.get())}"
+            )
+        return constraint
 
 
 @attr.define(frozen=True, kw_only=True)

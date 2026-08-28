@@ -113,8 +113,12 @@ class YAMLDict:
     def pop_dict_optional(self, field: str) -> Optional["YAMLDict"]:
         """Returns the dictionary at the given key |field| without popping it from the
         YAMLDict. Will return None if the field does not exist or if the value at that
-        field is None. Throws if the value is nonnull but is not a dictionary.
+        field is None.
         """
+        # TODO(OBT-46924): This catches the ValueError that a nonnull non-dict
+        # value raises, so the key is consumed and the malformed value silently
+        # discarded. Catch only KeyError here (and in the other *_optional accessors)
+        # so wrong-typed values raise.
         try:
             raw_yaml = self.pop(field, dict)
             return YAMLDict(raw_yaml)

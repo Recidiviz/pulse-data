@@ -50,6 +50,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     NotApplicableWhenValueConstraint,
     NullReason,
     PrimitiveScalarLLMRequestOutputSchemaField,
+    RequiredValueWhenNonnullConstraint,
     RequiredWhenNonnullConstraint,
     RequiredWhenValueConstraint,
 )
@@ -377,6 +378,11 @@ class LLMExtractorOutputFormatInstructionsGenerator:
             )
             return (
                 f"`{name}` {requirement} when "
+                f"`{constraint.condition_field.name}` is set."
+            )
+        if isinstance(constraint, RequiredValueWhenNonnullConstraint):
+            return (
+                f"`{name}` must be {constraint.value_display} when "
                 f"`{constraint.condition_field.name}` is set."
             )
         if isinstance(constraint, RequiredWhenValueConstraint):

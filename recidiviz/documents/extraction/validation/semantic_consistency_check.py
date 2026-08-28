@@ -32,6 +32,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     LLMOutputSemanticConsistencyConstraint,
     LLMRequestOutputSchemaField,
     NotApplicableWhenValueConstraint,
+    RequiredValueWhenNonnullConstraint,
     RequiredWhenNonnullConstraint,
     RequiredWhenValueConstraint,
 )
@@ -168,6 +169,40 @@ class _RequiredWhenNonnullValidator(
         )
 
 
+class _RequiredValueWhenNonnullValidator(
+    _SemanticConstraintValidator[RequiredValueWhenNonnullConstraint]
+):
+    """The field must hold the constraint's required value when its condition
+    field is present; a null field violates the constraint.
+    """
+
+    def is_valid_output(
+        self,
+        *,
+        constraint: RequiredValueWhenNonnullConstraint,
+        field_value: Any,
+        sibling_values: dict[str, Any],
+    ) -> bool:
+        if not LLMRequestOutputValues.unwrapped_value_is_present(
+            sibling_values[constraint.condition_field.name]
+        ):
+            return True
+        return field_value == constraint.value
+
+    def _violation_detail(
+        self,
+        *,
+        constraint: RequiredValueWhenNonnullConstraint,
+        field_display_name: str,
+        sibling_values: dict[str, Any],
+    ) -> str:
+        condition_name = constraint.condition_field.name
+        return (
+            f"Field [{field_display_name}] is required to have value "
+            f"[{constraint.value_display}] when field [{condition_name}] is non-null."
+        )
+
+
 class _ApplicableWhenValueValidator(
     _SemanticConstraintValidator[ApplicableWhenValueConstraint]
 ):
@@ -276,6 +311,7 @@ _VALIDATORS_BY_CONSTRAINT_TYPE: dict[
 ] = {
     ApplicableWhenNonnullConstraint: _ApplicableWhenNonnullValidator(),
     RequiredWhenNonnullConstraint: _RequiredWhenNonnullValidator(),
+    RequiredValueWhenNonnullConstraint: _RequiredValueWhenNonnullValidator(),
     ApplicableWhenValueConstraint: _ApplicableWhenValueValidator(),
     NotApplicableWhenValueConstraint: _NotApplicableWhenValueValidator(),
     RequiredWhenValueConstraint: _RequiredWhenValueValidator(),
@@ -324,9 +360,9 @@ class _SiblingScope:
 class SemanticConsistencyCheck:
     """The semantic-consistency check: validates a result's field values against
     the `applicable_when_nonnull` / `required_when_nonnull` /
-    `applicable_when_value` / `not_applicable_when_value` /
-    `required_when_value` constraints declared on the output schema, one
-    `ValidationIssue` per violated constraint.
+    `required_value_when_nonnull` / `applicable_when_value` /
+    `not_applicable_when_value` / `required_when_value` constraints declared on
+    the output schema, one `ValidationIssue` per violated constraint.
 
     A constraint only ever conditions on a sibling field at the same schema
     level, so evaluation walks a flat list of `_SiblingScope`s: one for the

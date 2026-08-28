@@ -43,6 +43,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     NotApplicableWhenValueConstraint,
     NullReason,
     PrimitiveScalarLLMRequestOutputSchemaField,
+    RequiredValueWhenNonnullConstraint,
     RequiredWhenNonnullConstraint,
     RequiredWhenValueConstraint,
     ScalarValuedLLMRequestOutputSchemaField,
@@ -311,6 +312,225 @@ class ConstraintResolutionTest(TestCase):
                     fields=[_field("assignment_name")],
                 ),
                 _field("assignment_note", applicable_when_nonnull="assignments"),
+            )
+
+    def test_required_value_when_nonnull_builds_holding_field_and_value(self) -> None:
+        # Declared before its condition field, so this also exercises the
+        # dict-form dependency extraction that orders construction.
+        self_employed, employer_name = _build(
+            _field(
+                "self_employed",
+                field_type="BOOLEAN",
+                required_value_when_nonnull={
+                    "condition_field": "employer_name",
+                    "value": False,
+                },
+            ),
+            _field("employer_name"),
+        )
+        (constraint,) = self_employed.semantic_consistency_constraints
+        assert isinstance(constraint, RequiredValueWhenNonnullConstraint)
+        self.assertIs(employer_name, constraint.condition_field)
+        self.assertIs(False, constraint.value)
+
+    def test_required_value_when_nonnull_missing_condition_field_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [self_employed] declares a required_value_when_nonnull "
+                "constraint without a condition_field key."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull={"value": False},
+                ),
+            )
+
+    def test_required_value_when_nonnull_wrong_value_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [self_employed] has type [BOOLEAN] but its "
+                "required_value_when_nonnull value ['false'] has type [str]."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": "false",
+                    },
+                ),
+            )
+
+    def test_required_value_when_nonnull_enum_value_not_allowed_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [status] declares a required_value_when_nonnull value "
+                "[retired] that is not among its allowed values: "
+                "['employed', 'unemployed']."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "status",
+                    field_type="ENUM",
+                    values=_enum_values("employed", "unemployed"),
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": "retired",
+                    },
+                ),
+            )
+
+    def test_required_value_when_nonnull_on_array_field_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [assignments] declares a required_value_when_nonnull "
+                "constraint but has type [ARRAY_OF_STRUCT]; only a scalar-valued "
+                "field can be required to hold a specific value."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "assignments",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["assignment_name"],
+                    fields=[_field("assignment_name")],
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": "shop",
+                    },
+                ),
+            )
+
+    def test_required_value_when_nonnull_unexpected_key_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found unexpected config values for required_value_when_nonnull "
+                "constraint: {'extra': 1}"
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": False,
+                        "extra": 1,
+                    },
+                ),
+            )
+
+    def test_required_value_when_nonnull_enum_value_builds(self) -> None:
+        status, _ = _build(
+            _field(
+                "status",
+                field_type="ENUM",
+                values=_enum_values("employed", "unemployed"),
+                required_value_when_nonnull={
+                    "condition_field": "employer_name",
+                    "value": "employed",
+                },
+            ),
+            _field("employer_name"),
+        )
+        (constraint,) = status.semantic_consistency_constraints
+        assert isinstance(constraint, RequiredValueWhenNonnullConstraint)
+        self.assertEqual("employed", constraint.value)
+        self.assertEqual("'employed'", constraint.value_display)
+
+    def test_required_value_when_nonnull_value_display_by_type(self) -> None:
+        for field_type, value, expected_display in [
+            ("BOOLEAN", False, "false"),
+            ("STRING", "shop", "'shop'"),
+            ("INTEGER", 3, "3"),
+            ("FLOAT", 12.5, "12.5"),
+        ]:
+            with self.subTest(field_type=field_type):
+                constrained, _ = _build(
+                    _field(
+                        "constrained",
+                        field_type=field_type,
+                        required_value_when_nonnull={
+                            "condition_field": "anchor",
+                            "value": value,
+                        },
+                    ),
+                    _field("anchor"),
+                )
+                (constraint,) = constrained.semantic_consistency_constraints
+                assert isinstance(constraint, RequiredValueWhenNonnullConstraint)
+                self.assertEqual(value, constraint.value)
+                self.assertEqual(expected_display, constraint.value_display)
+
+    def test_required_value_when_nonnull_non_scalar_value_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "A required_value_when_nonnull value must be a string, boolean, "
+                "integer, or float, found [list]."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": [1, 2],
+                    },
+                ),
+            )
+
+    def test_required_value_when_nonnull_non_dict_raises(self) -> None:
+        # Throw when required_value_when_nonnull is passed a non-dict
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [self_employed] declares a [required_value_when_nonnull] "
+                "constraint whose value is not a mapping."
+            ),
+        ):
+            _build(
+                _field("employer_name"),
+                _field(
+                    "self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull="employer_name",
+                ),
+            )
+
+    def test_value_condition_non_mapping_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [employer_name] declares a [applicable_when_value] "
+                "constraint whose value is not a mapping."
+            ),
+        ):
+            _build(
+                _field(
+                    "status",
+                    field_type="ENUM",
+                    values=_enum_values("employed", "unemployed"),
+                ),
+                _field("employer_name", applicable_when_value="status"),
             )
 
     def test_value_condition_referencing_multiple_fields_raises(self) -> None:

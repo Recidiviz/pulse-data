@@ -70,14 +70,16 @@ def _sc_enum_values(*names: str) -> list[dict[str, str]]:
 def _semantic_consistency_test_schema() -> LLMRequestOutputSchema:
     """Returns a schema exercising every semantic-consistency constraint type:
     a `pay_rate_amount` / `pay_rate_frequency` pair testing
-    `applicable_when_nonnull` + `required_when_nonnull` together (the "both set
-    or both null" pattern), an `employment_status` ENUM gating three sibling
-    fields via `applicable_when_value`, `not_applicable_when_value`, and
-    `required_when_value`, a `bonus_amount` carrying two gates at once, and an
-    `assignments` ARRAY_OF_STRUCT that is itself `applicable_when_value`-gated
-    (so a list-typed field's presence is exercised) and whose
-    `assignment_location` sub-field is `applicable_when_value`-gated on its
-    sibling sub-field `assignment_type`.
+    `applicable_when_nonnull` + `required_when_nonnull` together, an
+    `employment_status` ENUM constraining three sibling fields via
+    `applicable_when_value`, `not_applicable_when_value`, and
+    `required_when_value`, a `bonus_amount` carrying two gates at once, an
+    `is_self_employed` BOOLEAN pinned to false via `required_value_when_nonnull`
+    whenever `employer_name` is set, and an `assignments` ARRAY_OF_STRUCT that
+    is itself `applicable_when_value`-gated (so a list-typed field's presence is
+    exercised) and whose sub-fields carry an `applicable_when_value` constraint
+    (`assignment_location`) and a `required_value_when_nonnull` constraint
+    (`is_remote`), so array-element scoping is exercised too.
     """
     fields = LLMRequestOutputSchemaField.build_output_schema_fields(
         field_yamls=[
@@ -112,6 +114,14 @@ def _semantic_consistency_test_schema() -> LLMRequestOutputSchema:
                     applicable_when_value={"employment_status": ["employed"]},
                 ),
                 _sc_field(
+                    "is_self_employed",
+                    field_type="BOOLEAN",
+                    required_value_when_nonnull={
+                        "condition_field": "employer_name",
+                        "value": False,
+                    },
+                ),
+                _sc_field(
                     "assignments",
                     field_type="ARRAY_OF_STRUCT",
                     applicable_when_value={"employment_status": ["employed"]},
@@ -125,6 +135,14 @@ def _semantic_consistency_test_schema() -> LLMRequestOutputSchema:
                         _sc_field(
                             "assignment_location",
                             applicable_when_value={"assignment_type": ["internal"]},
+                        ),
+                        _sc_field(
+                            "is_remote",
+                            field_type="BOOLEAN",
+                            required_value_when_nonnull={
+                                "condition_field": "assignment_location",
+                                "value": False,
+                            },
                         ),
                     ],
                 ),
@@ -154,6 +172,7 @@ def _sc_content(**overrides: Any) -> dict[str, Any]:
         "unemployment_reason": build_null_inferred_field_result_json(),
         "retirement_date": build_null_inferred_field_result_json(),
         "bonus_amount": build_null_inferred_field_result_json(),
+        "is_self_employed": build_inferred_field_result_json(False),
         "assignments": [],
     }
     base.update(overrides)
@@ -161,7 +180,10 @@ def _sc_content(**overrides: Any) -> dict[str, Any]:
 
 
 def _sc_assignment(
-    *, assignment_type: str, assignment_location: str | None
+    *,
+    assignment_type: str,
+    assignment_location: str | None,
+    is_remote: bool | None = False,
 ) -> dict[str, Any]:
     """Returns one `assignments` array element."""
     return {
@@ -170,6 +192,11 @@ def _sc_assignment(
             build_null_inferred_field_result_json()
             if assignment_location is None
             else build_inferred_field_result_json(assignment_location)
+        ),
+        "is_remote": (
+            build_null_inferred_field_result_json()
+            if is_remote is None
+            else build_inferred_field_result_json(is_remote)
         ),
     }
 
@@ -230,6 +257,39 @@ class SemanticConsistencyCheckTest(TestCase):
             content,
             expected_field_name="pay_rate_frequency",
             expected_detail_substring="condition field [pay_rate_amount] is non-null",
+        )
+
+    def test_required_value_when_nonnull_satisfied_when_condition_null(self) -> None:
+        # employer_name is null, so is_self_employed may hold any value —
+        # including the one the constraint would otherwise forbid.
+        content = _sc_content(
+            employment_status=build_inferred_field_result_json("unemployed"),
+            employer_name=build_null_inferred_field_result_json(),
+            is_self_employed=build_inferred_field_result_json(True),
+        )
+        self.assertEqual([], self._issues({RESULT_KEY: content}))
+
+    def test_required_value_when_nonnull_violated_by_wrong_value(self) -> None:
+        # employer_name stays "Acme" (the baseline), so is_self_employed must
+        # be false; true violates.
+        content = _sc_content(is_self_employed=build_inferred_field_result_json(True))
+        self._assert_single_issue(
+            content,
+            expected_field_name="is_self_employed",
+            expected_detail_substring=(
+                "required to have value [false] when field [employer_name] is "
+                "non-null"
+            ),
+        )
+
+    def test_required_value_when_nonnull_violated_by_null(self) -> None:
+        # Null ("unclear") is not the same as an affirmative false, so a null
+        # is_self_employed alongside a set employer_name is a violation too.
+        content = _sc_content(is_self_employed=build_null_inferred_field_result_json())
+        self._assert_single_issue(
+            content,
+            expected_field_name="is_self_employed",
+            expected_detail_substring="required to have value [false]",
         )
 
     def test_applicable_when_value_violated(self) -> None:
@@ -323,6 +383,28 @@ class SemanticConsistencyCheckTest(TestCase):
             content,
             expected_field_name="assignments[1].assignment_location",
             expected_detail_substring="only allowed when [assignment_type]",
+        )
+
+    def test_required_value_when_nonnull_violated_in_array_element(self) -> None:
+        # The constraint lives on a sub-field inside an ARRAY_OF_STRUCT — the
+        # shape the production config uses — so the issue's field name carries
+        # the element prefix.
+        content = _sc_content(
+            assignments=[
+                _sc_assignment(
+                    assignment_type="internal",
+                    assignment_location="Kitchen",
+                    is_remote=True,
+                )
+            ]
+        )
+        self._assert_single_issue(
+            content,
+            expected_field_name="assignments[0].is_remote",
+            expected_detail_substring=(
+                "required to have value [false] when field [assignment_location] "
+                "is non-null"
+            ),
         )
 
     def test_empty_array_is_absent_for_its_own_gate(self) -> None:

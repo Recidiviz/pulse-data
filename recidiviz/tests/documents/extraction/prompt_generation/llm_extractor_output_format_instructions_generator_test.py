@@ -330,6 +330,14 @@ class SemanticConsistencyConstraintsTest(TestCase):
             ),
             _field("a_applicable_nonnull", applicable_when_nonnull="anchor"),
             _field("a_required_nonnull", required_when_nonnull="anchor"),
+            _field(
+                "a_required_value_nonnull",
+                field_type="BOOLEAN",
+                required_value_when_nonnull={
+                    "condition_field": "anchor",
+                    "value": False,
+                },
+            ),
             _field("a_required_value", required_when_value={"status": ["employed"]}),
             _field(
                 "employers",
@@ -357,6 +365,7 @@ class SemanticConsistencyConstraintsTest(TestCase):
             "- `a_applicable_nonnull` applies only when `anchor` is set; otherwise set "
             "it to null with null_reason='not_applicable'.\n"
             "- `a_required_nonnull` must be set when `anchor` is set.\n"
+            "- `a_required_value_nonnull` must be false when `anchor` is set.\n"
             "- `a_required_value` must be set when `status` is one of ['employed'].\n"
             "- `employers[].pay_rate_time_period` must be set when `pay_rate_amount` is set."
         )
