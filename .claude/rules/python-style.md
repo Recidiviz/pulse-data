@@ -207,6 +207,66 @@ return fix_indent(query_template, indent_level=0)
 
 Here the inner `fix_indent(time_periods_query, indent_level=4)` re-indents the embedded subquery to sit four spaces deep inside the `time_periods` CTE, and the outer `fix_indent(query_template, indent_level=0)` strips the surrounding blank lines and normalizes the whole template to a clean left margin.
 
+## Testing
+
+### Assert the whole output, not fragments
+
+When a function returns a string, assert the complete expected value with `assertEqual` rather than a chain of `assertIn` checks against fragments. A series of `assertIn`s doesn't check ordering, doesn't catch unexpected extra content, and isn't as easy to read as an `assertEqual` with a single complete string.
+
+```python
+# Prefer this:
+expected = """CASE
+  WHEN expr = 'A' THEN '1'
+  ELSE expr
+END"""
+self.assertEqual(expected, build_case_expression("expr", {"A": "1"}))
+
+# over spot-checking fragments:
+result = build_case_expression("expr", {"A": "1"})
+self.assertIn("CASE", result)
+self.assertIn("WHEN expr = 'A' THEN '1'", result)
+self.assertIn("ELSE expr", result)
+```
+
+This is the string-shaped case of the rule the YAML section applies to parsed objects below: compare the whole value, not selected pieces of it.
+
+Reserve `assertIn` for genuinely partial checks against large output you do not control, e.g. an error message where the full content of the message can vary and/or doesn't need to be tested.
+
+### Try to avoid putting logic in tests
+
+Prefer to state a test's inputs and outputs directly rather than constructing them with programming logic. For example, a loop that constructs an expected output may be more compact and better for production code, but should be avoided in test code since it's more brittle and harder to read. This is especially problematic when the logic mirrors the original implementation, since that can break in the same way as the original and the test will keep passing. Prefer comparisons to literal values that are readable, even if it's more verbose, because tests aren't themselves tested so a reader is the only thing checking them.
+
+```python
+# Bad — computes the expectation with a loop:
+expected = [column.name for column in _make_test_columns()]
+self.assertEqual(expected, view.schema_column_names)
+
+# Good — a literal:
+self.assertEqual(["person_id", "state_code", "start_date"], view.schema_column_names)
+```
+
+Where test logic is genuinely needed, move it into a named helper rather than the test body. For example, `BigQueryEmulatorTestCase` (`recidiviz/tests/big_query/big_query_emulator_test_case.py`) consolidates the logic of setting up the emulator, creating tables, running the query, and comparing results, so each test body states only its input rows and its expected output:
+
+```python
+class OpenSessionsViewTest(BigQueryEmulatorTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_mock_table(_SESSIONS_ADDRESS, _SESSIONS_SCHEMA)
+
+    def test_only_sessions_with_no_end_date_are_open(self) -> None:
+        self.load_rows_into_table(
+            _SESSIONS_ADDRESS,
+            [
+                {"person_id": 1, "state_code": "US_XX", "end_date": None},
+                {"person_id": 2, "state_code": "US_XX", "end_date": "2024-01-15"},
+            ],
+        )
+        self.run_query_test(
+            f"SELECT person_id FROM ({VIEW_BUILDER.build().view_query})",
+            expected_result=[{"person_id": 1}],
+        )
+```
+
 ## YAML parsing and serialization
 
 When a YAML file backs a Python model, parse and serialize it through these conventions rather than indexing raw parsed dicts.
