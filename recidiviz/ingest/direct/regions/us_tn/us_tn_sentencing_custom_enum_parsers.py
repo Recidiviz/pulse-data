@@ -116,9 +116,9 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
 
     # At this point, this individual was not sentenced to prison, probation, or community corrections.
     # They also did not have a sentence suspended to probation.
-    # The only remaining option is to have an "INACTIVE" earliest known status and an earliest known SentencedTo
-    # value was jail or workhouse. This is most likely due to an individual completing their sentence before we
-    # began ingesting data in TN.
+    # The remaining cases all have an "INACTIVE" earliest known status. When the earliest
+    # known SentencedTo value was jail or workhouse, this is most likely due to an individual
+    # completing their sentence before we began ingesting data in TN.
 
     # Read about being sentenced to labor in a county workhouse:
     #     - https://www.ctas.tennessee.edu/eli/sentence-county-workhouse
@@ -131,8 +131,7 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
     }:
         return StateSentenceType.COUNTY_JAIL
 
-    raise ValueError(
-        f"Could not determine initial sentence type from : {initial_status=}, "
-        f"{initial_sentenced_to=}, "
-        f"{suspended_to_probation=}"
-    )
+    # The only combination left is an INACTIVE earliest status with no SentencedTo
+    # value at all, which happens when TN back-enters an already terminated sentence
+    # without recording where it was served. We have no signal about the modality.
+    return StateSentenceType.INTERNAL_UNKNOWN
