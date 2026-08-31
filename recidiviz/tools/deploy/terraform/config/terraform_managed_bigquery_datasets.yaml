@@ -94,6 +94,13 @@ datasets:
     default_table_expiration_ms: 86400000
   us_ar_state:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_AR.
+  us_az_document_contents:
+    description: Document contents tables for Arizona
+  us_az_document_store_metadata:
+    description: Document store metadata tables for Arizona
+  us_az_document_store_temp:
+    description: Temporary tables used during document store processing for Arizona
+    default_table_expiration_ms: 1209600000
   us_az_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_AZ, consumed by the Identity Service.
   us_az_identity_fragment:
