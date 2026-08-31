@@ -72,6 +72,14 @@ resource "google_storage_bucket" "config" {
   }
 }
 
+# Binds the org-wide `protection` tag so the catastrophic-delete deny policy blocks bucket
+# deletion by humans. Tag binding locations must be lowercase.
+resource "google_tags_location_tag_binding" "config_protection" {
+  parent    = "//storage.googleapis.com/projects/_/buckets/${google_storage_bucket.config.name}"
+  tag_value = "tagValues/281481200938210" # 448885369991/protection/managed-data
+  location  = lower(var.region)
+}
+
 # Upload config.yaml to GCS bucket
 resource "google_storage_bucket_object" "config" {
   name   = "config.yaml"

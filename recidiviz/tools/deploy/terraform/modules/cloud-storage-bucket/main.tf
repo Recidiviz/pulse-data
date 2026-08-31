@@ -97,6 +97,22 @@ variable "cmek_project_id" {
   default     = "cmek-82ade411-5705-4461-b2cb-9"
 }
 
+# When true, binds the org-wide `protection` tag to the bucket, which the
+# catastrophic-delete deny policy uses to block bucket deletion by humans (see
+# recidiviz/tools/deploy/deletion_protection/). Default on: over-protecting a bucket is
+# harmless because break-glass exists, while under-protecting is the loss we are guarding
+# against. Set false only for buckets that tooling routinely deletes and recreates.
+variable "protect_from_deletion" {
+  type    = bool
+  default = true
+}
+
+variable "protection_tag_value" {
+  type        = string
+  description = "Resource Manager tag value binding the `protection` tag. Namespaced name is 448885369991/protection/managed-data."
+  default     = "tagValues/281481200938210"
+}
+
 
 # CMEK resources: when use_cmek is true, create a per-bucket crypto key under
 # the shared gcs-cmek key ring in the CMEK project.
@@ -176,4 +192,13 @@ resource "google_storage_bucket" "bucket" {
       default_kms_key_name = google_kms_crypto_key.gcs_cmek[0].id
     }
   }
+}
+
+# Bucket tag bindings are location-scoped, and the location must be lowercase: a
+# multiregion bucket in "US" takes "us".
+resource "google_tags_location_tag_binding" "protection" {
+  count     = var.protect_from_deletion ? 1 : 0
+  parent    = "//storage.googleapis.com/projects/_/buckets/${google_storage_bucket.bucket.name}"
+  tag_value = var.protection_tag_value
+  location  = lower(var.location)
 }

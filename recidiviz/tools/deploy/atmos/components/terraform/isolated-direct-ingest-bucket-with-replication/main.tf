@@ -68,6 +68,15 @@ module "gcs_bucket" {
   }]
 }
 
+# Binds the org-wide `protection` tag so the catastrophic-delete deny policy blocks bucket
+# deletion by humans. The bucket module is vendored, so the binding lives here rather than
+# inside it. Tag binding locations must be lowercase: a multiregion "US" bucket takes "us".
+resource "google_tags_location_tag_binding" "raw_files_protection" {
+  parent    = "//storage.googleapis.com/projects/_/buckets/${module.gcs_bucket.name}"
+  tag_value = "tagValues/281481200938210" # 448885369991/protection/managed-data
+  location  = lower(var.region)
+}
+
 resource "google_project_iam_audit_config" "project" {
   project = var.project_id
   service = "storage.googleapis.com"
