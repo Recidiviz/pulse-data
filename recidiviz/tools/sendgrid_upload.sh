@@ -5,6 +5,10 @@
 # Usage: ./recidiviz/tools/sendgrid_upload.sh
 # Requires you are authenticated with gcloud and have uv installed!
 
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
+source "${BASH_SOURCE_DIR}/deploy/deploy_helpers.sh"
+
 # Get most recently downloaded CSV from downloads:
 filepath=$(find ~/Downloads -maxdepth 1 -name "*.csv" -type f -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)
 
@@ -21,8 +25,10 @@ if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-for project_id in recidiviz-staging recidiviz-123; do 
+for project_id in recidiviz-staging recidiviz-123; do
+    request_pam_grant "${project_id}" "pam-update-data" "s-pam-update-data@" \
+        "SendGrid CSV upload to ${project_id}"
     uv run python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq \
         --local-filepath "$filepath" \
-        --project-id $project_id; 
+        --project-id $project_id;
 done;

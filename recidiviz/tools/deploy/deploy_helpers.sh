@@ -191,34 +191,30 @@ function next_alpha_version {
     echo "${NEW_VERSION}"
 }
 
-# Requests a just-in-time Privileged Access Manager (PAM) grant for the
-# `pam-deploy-app` lane so the deploying engineer holds deploy permissions only
-# for the duration of the deploy, rather than relying on standing access. This
-# is the first step in migrating deploys off go/jit onto PAM.
+# Requests a just-in-time Privileged Access Manager (PAM) grant for the given
+# entitlement/lane so the caller holds elevated permissions only for the
+# duration of the operation, rather than relying on standing access.
 #
 # Deliberately non-fatal: if the entitlement isn't reachable or the user isn't
-# eligible yet (mid-rollout), it logs and returns so engineers still on go/jit
-# are unaffected. Scoped to staging alpha deploys for now.
-#
-# TODO(#2839): once go/jit is deprecated, remove the go/jit references in this
-# comment; and once the PAM rollout is complete and all deployers are eligible,
-# make this fatal (fail the deploy rather than warning) so a deploy can no longer
-# silently fall back to standing access.
-function request_pam_deploy_grant {
+# eligible yet (mid-rollout), it logs and returns so callers still on standing
+# access are unaffected.
+function request_pam_grant {
     local PROJECT_ID=$1
-    local VERSION_TAG=$2
-    local ENTITLEMENT_ID="pam-deploy-app"
+    local ENTITLEMENT_ID=$2
+    local GROUP_HINT=$3
+    local JUSTIFICATION=$4
+    # 2h default — comfortably longer than a typical operation, well under
+    # the entitlement max.
+    local DURATION=${5:-"7200s"}
     local LOCATION="global"
-    # 2h — comfortably longer than a deploy, well under the entitlement max.
-    local DURATION="7200s"
     local GCLOUD_USER
     GCLOUD_USER=$(gcloud config get-value account 2>/dev/null)
 
-    echo "Requesting just-in-time Privileged Access Manager (PAM) deploy access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
+    echo "Requesting just-in-time Privileged Access Manager (PAM) access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
 
     # Check reachability from the REQUESTER's view (privilegedaccessmanager.entitlements.search),
     # not entitlements.describe. Eligible requesters hold grants.create and entitlements.search but
-    # NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin deployer
+    # NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin requester
     # and silently skips JIT elevation, falling back to standing access.
     if ! gcloud pam entitlements search \
             --project="${PROJECT_ID}" --location="${LOCATION}" \
@@ -226,14 +222,15 @@ function request_pam_deploy_grant {
             --format="value(name)" 2>/dev/null \
             | grep -q "/entitlements/${ENTITLEMENT_ID}$"; then
         echo "⚠️  Not eligible for PAM entitlement [${ENTITLEMENT_ID}] on [${PROJECT_ID}] as [${GCLOUD_USER}] — skipping JIT elevation."
-        echo "    (Confirm you're in s-pam-deploy-app@.)"
+        echo "    (Confirm you're in ${GROUP_HINT}.)"
         return 0
     fi
 
-    # Reuse an existing active grant rather than stacking a new one every deploy.
+    # Reuse an existing active grant rather than stacking a new one every request.
     local ACTIVE_GRANT
-    ACTIVE_GRANT=$(gcloud pam grants list \
+    ACTIVE_GRANT=$(gcloud pam grants search \
         --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
+        --caller-relationship=had-created \
         --filter="requester=${GCLOUD_USER} AND state=ACTIVE" \
         --format="value(name)" 2>/dev/null | head -1)
     if [[ -n "${ACTIVE_GRANT}" ]]; then
@@ -244,8 +241,8 @@ function request_pam_deploy_grant {
     if ! gcloud pam grants create \
             --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
             --requested-duration="${DURATION}" \
-            --justification="Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}" >/dev/null 2>&1; then
-        echo "⚠️  Could not create a PAM grant (are you in s-pam-deploy-app@?). Continuing with existing access."
+            --justification="${JUSTIFICATION}" >/dev/null 2>&1; then
+        echo "⚠️  Could not create a PAM grant (are you in ${GROUP_HINT}?). Continuing with existing access."
         return 0
     fi
 
@@ -253,8 +250,9 @@ function request_pam_deploy_grant {
     echo "Waiting for PAM grant to activate..."
     local i
     for i in $(seq 1 24); do
-        ACTIVE_GRANT=$(gcloud pam grants list \
+        ACTIVE_GRANT=$(gcloud pam grants search \
             --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
+            --caller-relationship=had-created \
             --filter="requester=${GCLOUD_USER} AND state=ACTIVE" \
             --format="value(name)" 2>/dev/null | head -1)
         [[ -n "${ACTIVE_GRANT}" ]] && break
@@ -264,10 +262,26 @@ function request_pam_deploy_grant {
         echo "⚠️  PAM grant did not reach ACTIVE in time — continuing with existing access."
         return 0
     fi
-    # Give IAM a moment to propagate the freshly-written bindings before the
-    # deploy (verify_can_deploy reads a secret the grant provides).
+    # Give IAM a moment to propagate the freshly-written bindings before use.
     sleep 20
-    echo "PAM deploy access granted (auto-expires in ${DURATION})."
+    echo "PAM access granted (auto-expires in ${DURATION})."
+}
+
+# Requests a just-in-time PAM grant for the `pam-deploy-app` lane so the
+# deploying engineer holds deploy permissions only for the duration of the
+# deploy, rather than relying on standing access. This is the first step in
+# migrating deploys off go/jit onto PAM. Scoped to staging alpha deploys for
+# now.
+#
+# TODO(#2839): once go/jit is deprecated, remove the go/jit references in this
+# comment; and once the PAM rollout is complete and all deployers are eligible,
+# make this fatal (fail the deploy rather than warning) so a deploy can no longer
+# silently fall back to standing access.
+function request_pam_deploy_grant {
+    local PROJECT_ID=$1
+    local VERSION_TAG=$2
+    request_pam_grant "${PROJECT_ID}" "pam-deploy-app" "s-pam-deploy-app@" \
+        "Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}"
 }
 
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
