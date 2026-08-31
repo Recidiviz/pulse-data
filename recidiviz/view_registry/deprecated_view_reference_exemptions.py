@@ -88,12 +88,6 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_consecutive_sen
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_sentences_preprocessed import (
     US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
-    US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
-    US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
     state_specific_supervision_projected_completion_date_spans_address,
 )
@@ -312,32 +306,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove state_charge reference as part of the v2 "
             "sentences migration"
-        ),
-    },
-    (StateCode.US_TN, StateCharge): {
-        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): This view should be deleted once TN no longer "
-            "relies on v1 sentences"
-        ),
-    },
-    (StateCode.US_TN, StateIncarcerationSentence): {
-        US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): This view should be deleted once TN no longer "
-            "relies on v1 sentences"
-        ),
-        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): This view should be deleted once TN no longer "
-            "relies on v1 sentences"
-        ),
-    },
-    (StateCode.US_TN, StateSupervisionSentence): {
-        US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): This view should be deleted once TN no longer "
-            "relies on v1 sentences"
-        ),
-        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): This view should be deleted once TN no longer "
-            "relies on v1 sentences"
         ),
     },
     (StateCode.US_MI, StateCharge): {
@@ -833,9 +801,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `consecutive_sentences_preprocessed` once all states are
     #  migrated to v2 infra
     CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
         SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
@@ -858,25 +823,11 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46257): Remove this reference as part of the v2 sentences migration"
         ),
     },
-    # TODO(#46261): Delete `us_tn_consecutive_sentences_preprocessed` once US_TN is
-    #  migrated to v2 infra
-    US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-    },
     # TODO(#46257): Delete `us_nd_consecutive_sentences_preprocessed` once US_ND is
     #  migrated to v2 infra
     US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
         SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46257): Remove this reference as part of the v2 sentences migration"
-        ),
-    },
-    # TODO(#46261): Delete `us_tn_sentences_preprocessed` once US_TN is migrated to v2
-    #  infra
-    US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#33402): Delete StateIncarcerationSentence once all states are migrated
