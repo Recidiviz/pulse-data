@@ -142,6 +142,7 @@ class StateAssessmentType(StateEntityEnum):
         state_enum_strings.state_assessment_type_az_internal_risk_class
     )
     TN_STG = state_enum_strings.state_assessment_type_tn_stg
+    VRAG = state_enum_strings.state_assessment_type_vrag
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -230,6 +231,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.TN_STG: "Tennessee Security Threat Group (STG) Validation "
     "Assessment, used to determine whether someone is affiliated with a gang.",
     StateAssessmentType.AZ_INTERNAL_RISK_CLASS: "Arizona Internal Risk Classification",
+    StateAssessmentType.VRAG: "Violence Risk Appraisal Guide (VRAG/VRAG-R)",
 }
 
 

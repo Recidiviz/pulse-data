@@ -44,6 +44,10 @@ output:
                   - "LSI-R"
                 StateAssessmentType.STABLE:
                   - "Stable 2007 v.2"
+                StateAssessmentType.STATIC_99:
+                  - "Static 99-R"
+                StateAssessmentType.VRAG:
+                  - "VRAG-R"
           assessment_level:
             $conditional:
               - $if:
@@ -123,16 +127,32 @@ output:
                   $enum_mapping:
                     $raw_text: AssessmentDegreeDesc
                     $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "Very Low Risk"
                       StateAssessmentLevel.LOW:
                         - "Low Risk"
                         - "Low"
+                        - "Below Average Risk"
+                        - "5 Yr % Recidivism = .09 (Low)"
+                        - "5 Yr % Recidivism = .12 (Low)"
+                        - "5 Yr % Recidivism = .16 (Low)"
                       StateAssessmentLevel.MEDIUM:
                         - "Moderate Risk"
+                        - "Average Risk"
+                        - "5 Yr % Recidivism = .20 (Med)"
+                        - "5 Yr % Recidivism = .26 (Med)"
+                        - "5 Yr % Recidivism = .34 (Med)"
                       StateAssessmentLevel.MODERATE:
                         - "Moderate"
                       StateAssessmentLevel.HIGH:
                         - "High Risk"
                         - "High"
+                        - "Above Average Risk"
+                        - "5 Yr % Recidivism = .45 (High)"
+                        - "5 Yr % Recidivism = .58 (High)"
+                        - "5 Yr % Recidivism = .76 (High)"
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "Well Above Average Risk"
           assessment_score: OverallScore
           assessment_metadata:
             $normalized_values_json_dict:

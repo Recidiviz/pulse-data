@@ -244,6 +244,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.AZ_CUSTODY_CLASS,
                 StateAssessmentType.TN_STG,
                 StateAssessmentType.AZ_INTERNAL_RISK_CLASS,
+                StateAssessmentType.VRAG,
             ]:
                 pass
             else:
