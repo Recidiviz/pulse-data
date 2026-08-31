@@ -826,6 +826,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ix_ingest_view_results.incarceration_sentence_v2",
     "us_ix_ingest_view_results.parole_hearing_deadline",
     "us_ix_ingest_view_results.person",
+    "us_ix_ingest_view_results.program_assignment",
     "us_ix_ingest_view_results.state_charge",
     "us_ix_ingest_view_results.state_sentence",
     "us_ix_ingest_view_results.state_sentence_group",

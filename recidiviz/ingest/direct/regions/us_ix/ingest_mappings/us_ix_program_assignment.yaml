@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_program_assignment` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OfdCourseEnrollmentId: STRING
+  OffenderId: STRING
+  CourseNameName: STRING
+  CourseTypeName: STRING
+  LocationName: STRING
+  OfdEnrollmentStatusDesc: STRING
+  InsertUserId: STRING
+  PendingEnrollmentDate: STRING
+  StartDate: STRING
+  EndDate: STRING
+  IsRequestedByOffender: STRING
+  IsRequiredForRelease: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id: OfdCourseEnrollmentId
+          # Only set while an enrollment is (or was) pending, i.e. when the person was
+          # placed on the course waitlist.
+          referral_date: PendingEnrollmentDate
+          start_date: StartDate
+          discharge_date: EndDate
+          program_id: CourseNameName
+          program_location_id: LocationName
+          # Atlas does not record a referring staff member, so we use the staff member
+          # who created the enrollment record.
+          referring_staff_external_id: InsertUserId
+          referring_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: InsertUserId
+                $then: $literal("US_IX_EMPLOYEE")
+          participation_status:
+            $enum_mapping:
+              $raw_text: OfdEnrollmentStatusDesc
+              $mappings:
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - "Enrolled"
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - "Waitlisted"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - "Complete"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - "Removed: Failed"
+                  - "Removed: Non-Compliance"
+                  - "Removed: Disciplinary"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - "Removed: Transfer"
+                  - "Removed: Administrative"
+                  - "Removed: Medical/Mental Health"
+                  - "Removed: Topped Time"
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - "Removed from Wait List"
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  # Participation was paused, but Atlas does not say why.
+                  - "Suspended"
+                  # Legacy status applied to records migrated into Atlas.
+                  - "Conversion"
+          referral_metadata:
+            $normalized_values_json_dict:
+              COURSE_TYPE: CourseTypeName
+              IS_REQUESTED_BY_OFFENDER: IsRequestedByOffender
+              IS_REQUIRED_FOR_RELEASE: IsRequiredForRelease
