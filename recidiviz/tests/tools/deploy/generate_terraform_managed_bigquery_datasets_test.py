@@ -21,6 +21,8 @@ import re
 import unittest
 from collections import defaultdict
 
+import yaml
+
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
@@ -30,6 +32,8 @@ from recidiviz.source_tables.externally_managed.datasets import (
 from recidiviz.tools import deploy
 from recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets import (
     _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS,
+    BIGQUERY_DATA_VIEWER_ROLE,
+    IDENTITY_SERVICE_CLOUD_RUN_ACCOUNT_ID,
     TERRAFORM_MANAGED_BIGQUERY_DATASETS_YAML_PATH,
     build_registry_contents,
 )
@@ -142,3 +146,27 @@ class GenerateTerraformManagedBigqueryDatasetsTest(unittest.TestCase):
             "declaration site is genuinely needed, update the expected counts "
             "here.",
         )
+
+    def test_identity_cluster_datasets_grant_identity_service_reader_access(
+        self,
+    ) -> None:
+        """The Identity Service reads each tenant's identity cluster dataset
+        during POST /import, so every registered identity cluster dataset must
+        grant its service account reader access."""
+        with open(
+            TERRAFORM_MANAGED_BIGQUERY_DATASETS_YAML_PATH, encoding="utf-8"
+        ) as yaml_file:
+            registry = yaml.safe_load(yaml_file)
+
+        identity_cluster_entries = {
+            dataset_id: entry
+            for dataset_id, entry in registry["datasets"].items()
+            if dataset_id.endswith("_identity_cluster")
+        }
+        self.assertTrue(identity_cluster_entries)
+        for dataset_id, entry in identity_cluster_entries.items():
+            self.assertEqual(
+                {IDENTITY_SERVICE_CLOUD_RUN_ACCOUNT_ID: [BIGQUERY_DATA_VIEWER_ROLE]},
+                entry["service_account_roles"],
+                f"Missing or unexpected reader grant on [{dataset_id}]",
+            )

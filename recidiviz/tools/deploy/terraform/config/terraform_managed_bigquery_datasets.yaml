@@ -58,6 +58,9 @@ datasets:
     description: Stores requests from Twilio made to internal webhooks
   us_ar_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_AR, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ar_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_AR.
   us_ar_identity_ingest_view_results:
@@ -103,6 +106,9 @@ datasets:
     default_table_expiration_ms: 1209600000
   us_az_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_AZ, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_az_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_AZ.
   us_az_identity_ingest_view_results:
@@ -141,6 +147,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_AZ.
   us_ca_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_CA, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ca_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_CA.
   us_ca_identity_ingest_view_results:
@@ -192,6 +201,9 @@ datasets:
     default_table_expiration_ms: 1209600000
   us_co_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_CO, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_co_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_CO.
   us_co_identity_ingest_view_results:
@@ -230,6 +242,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_CO.
   us_ia_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_IA, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ia_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_IA.
   us_ia_identity_ingest_view_results:
@@ -268,6 +283,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_IA.
   us_id_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_ID, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_id_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_ID.
   us_id_identity_ingest_view_results:
@@ -306,6 +324,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_ID.
   us_ix_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_IX, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ix_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_IX.
   us_ix_identity_ingest_view_results:
@@ -344,6 +365,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_IX.
   us_ma_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_MA, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ma_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_MA.
   us_ma_identity_ingest_view_results:
@@ -382,6 +406,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_MA.
   us_me_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_ME, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_me_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_ME.
   us_me_identity_ingest_view_results:
@@ -420,6 +447,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_ME.
   us_mi_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_MI, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_mi_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_MI.
   us_mi_identity_ingest_view_results:
@@ -458,6 +488,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_MI.
   us_mo_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_MO, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_mo_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_MO.
   us_mo_identity_ingest_view_results:
@@ -496,6 +529,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_MO.
   us_nc_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NC, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_nc_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NC.
   us_nc_identity_ingest_view_results:
@@ -534,6 +570,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NC.
   us_nd_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_ND, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_nd_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_ND.
   us_nd_identity_ingest_view_results:
@@ -572,6 +611,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_ND.
   us_ne_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NE, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ne_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NE.
   us_ne_identity_ingest_view_results:
@@ -610,6 +652,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NE.
   us_ny_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NY, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ny_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NY.
   us_ny_identity_ingest_view_results:
@@ -648,6 +693,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NY.
   us_nyc_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NYC, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_nyc_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NYC.
   us_nyc_identity_ingest_view_results:
@@ -686,6 +734,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NYC.
   us_or_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_OR, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_or_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_OR.
   us_or_identity_ingest_view_results:
@@ -739,6 +790,9 @@ datasets:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_OZ, consumed by the Identity Service.
     projects:
       - recidiviz-staging
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_oz_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_OZ.
     projects:
@@ -807,6 +861,9 @@ datasets:
       - recidiviz-staging
   us_pa_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_PA, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_pa_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_PA.
   us_pa_identity_ingest_view_results:
@@ -845,6 +902,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_PA.
   us_tn_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_TN, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_tn_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_TN.
   us_tn_identity_ingest_view_results:
@@ -883,6 +943,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_TN.
   us_tx_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_TX, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_tx_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_TX.
   us_tx_identity_ingest_view_results:
@@ -921,6 +984,9 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_TX.
   us_ut_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_UT, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
   us_ut_identity_fragment:
     description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_UT.
   us_ut_identity_ingest_view_results:

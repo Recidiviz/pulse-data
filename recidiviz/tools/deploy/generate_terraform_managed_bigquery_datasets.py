@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Generates terraform_managed_bigquery_datasets.yaml, the registry of BigQuery
-datasets whose dataset shells are created by Terraform. The registry is consumed
-by recidiviz/tools/deploy/terraform/bigquery-datasets.tf, which creates each
-registered dataset at deploy time.
+datasets whose dataset shells (and any dataset-level IAM grants) are created by
+Terraform. The registry is consumed by
+recidiviz/tools/deploy/terraform/bigquery-datasets.tf, which creates each
+registered dataset and applies its IAM at deploy time.
 
 Registered datasets come from two kinds of sources:
   - datasets declared directly in this module (_NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS);
@@ -34,6 +35,7 @@ stale. Regenerate it with:
     uv run python -m recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets
 """
 import os
+import re
 from collections import defaultdict
 
 import attr
@@ -43,6 +45,13 @@ from recidiviz.calculator.query.experiments_metadata.dataset_config import (
     EXPERIMENTS_METADATA_DATASET,
 )
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
+from recidiviz.pipelines.ingest.identity.dataset_config import (
+    identity_cluster_dataset_for_tenant,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
     get_source_table_datasets_to_descriptions,
@@ -65,10 +74,35 @@ TERRAFORM_MANAGED_BIGQUERY_DATASETS_YAML_PATH = os.path.join(
     "terraform_managed_bigquery_datasets.yaml",
 )
 
+# account_id of the Identity Service Cloud Run service account, created in
+# cloud-run-identity-service.tf. The Identity Service reads each tenant's
+# identity cluster dataset during POST /import.
+IDENTITY_SERVICE_CLOUD_RUN_ACCOUNT_ID = "identity-service-cr"
+
+# GCP service account ids are 6-30 characters of lowercase letters, digits, and
+# hyphens, starting with a letter and not ending with a hyphen.
+_SERVICE_ACCOUNT_ID_REGEX = re.compile(r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$")
+
+BIGQUERY_DATA_VIEWER_ROLE = "roles/bigquery.dataViewer"
+
+# The dataset-level roles the registry may grant. Expand as needed, keeping to
+# roles that make sense scoped to a single dataset.
+_ALLOWED_DATASET_ROLES = frozenset(
+    {
+        BIGQUERY_DATA_VIEWER_ROLE,
+        "roles/bigquery.dataEditor",
+        "roles/bigquery.metadataViewer",
+    }
+)
+
 _SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
+# Roles granted on a dataset, by the account id of the service account (in the
+# dataset's own project) they are granted to.
+ServiceAccountRoles = dict[str, list[str]]
+
 # The value of each registry entry, as dumped to YAML.
-RegistryEntry = dict[str, str | int | list[str]]
+RegistryEntry = dict[str, str | int | list[str] | ServiceAccountRoles]
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -84,6 +118,43 @@ class TerraformManagedDataset:
         default=None, validator=attr_validators.is_opt_positive_int
     )
     """Default expiration applied to tables in the dataset, if any."""
+
+    service_account_roles: ServiceAccountRoles = attr.ib(
+        factory=dict,
+        validator=attr_validators.is_dict_where_each(
+            key_validator=attr_validators.is_str,
+            value_validator=attr_validators.is_list_of(str),
+        ),
+    )
+    """Dataset-level roles granted on this dataset, by the account id of the
+    service account (in the dataset's own project) they are granted to.
+    """
+
+    def __attrs_post_init__(self) -> None:
+        for account_id, roles in self.service_account_roles.items():
+            if not _SERVICE_ACCOUNT_ID_REGEX.fullmatch(account_id):
+                raise ValueError(
+                    f"Dataset described as [{self.description}] grants roles to "
+                    f"[{account_id}], which is not a valid service account "
+                    f"account id."
+                )
+            if not roles:
+                raise ValueError(
+                    f"Dataset described as [{self.description}] grants no roles "
+                    f"to [{account_id}]; remove the entry."
+                )
+            if len(set(roles)) != len(roles):
+                raise ValueError(
+                    f"Dataset described as [{self.description}] grants duplicate "
+                    f"roles to [{account_id}]: [{roles}]"
+                )
+            for role in roles:
+                if role not in _ALLOWED_DATASET_ROLES:
+                    raise ValueError(
+                        f"Dataset described as [{self.description}] grants role "
+                        f"[{role}] to [{account_id}], which is not in the "
+                        f"allowed dataset roles: [{sorted(_ALLOWED_DATASET_ROLES)}]"
+                    )
 
 
 # Terraform-managed datasets that are not registered in the source-table
@@ -122,10 +193,26 @@ _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS: dict[str, TerraformManagedDataset]
 }
 
 
+def _service_account_roles_by_dataset() -> dict[str, ServiceAccountRoles]:
+    """Returns, by dataset id, the dataset-level roles granted to service
+    accounts on that dataset. Must be called with a project id override in
+    place, since the set of tenants differs by project.
+    """
+    return {
+        # The Identity Service reads each tenant's identity cluster dataset
+        # during POST /import.
+        identity_cluster_dataset_for_tenant(Tenant.from_state_code(state_code).value): {
+            IDENTITY_SERVICE_CLOUD_RUN_ACCOUNT_ID: [BIGQUERY_DATA_VIEWER_ROLE]
+        }
+        for state_code in get_direct_ingest_states_existing_in_env()
+    }
+
+
 def _source_table_datasets(
     repository: SourceTableRepository,
     *,
     dataset_descriptions: dict[str, str],
+    service_account_roles_by_dataset: dict[str, ServiceAccountRoles],
 ) -> dict[str, TerraformManagedDataset]:
     """Returns a TerraformManagedDataset for every dataset generated by the
     source-table collections whose tables the source-table framework manages.
@@ -135,6 +222,8 @@ def _source_table_datasets(
         dataset_descriptions: The description of every source-table dataset, as
             returned by get_source_table_datasets_to_descriptions, which raises
             if any two collections sharing a dataset disagree on it.
+        service_account_roles_by_dataset: Dataset-level roles to grant on the
+            generated datasets, by dataset id.
     """
     collections_by_dataset = defaultdict(list)
     for collection in repository.source_table_collections:
@@ -153,6 +242,18 @@ def _source_table_datasets(
         datasets[dataset_id] = TerraformManagedDataset(
             description=dataset_descriptions[dataset_id],
             default_table_expiration_ms=expirations.pop(),
+            service_account_roles=service_account_roles_by_dataset.get(dataset_id, {}),
+        )
+
+    if datasets_with_grants_but_no_collection := (
+        set(service_account_roles_by_dataset) - set(datasets)
+    ):
+        raise ValueError(
+            f"Found datasets with service account roles declared in "
+            f"_service_account_roles_by_dataset that no source-table collection "
+            f"generates: [{sorted(datasets_with_grants_but_no_collection)}]. The "
+            f"grants would silently never be applied; fix the dataset ids or "
+            f"remove the grants."
         )
     return datasets
 
@@ -170,6 +271,7 @@ def _terraform_managed_datasets(
         # description, so the description Terraform writes cannot drift from
         # the ones the collections assert.
         dataset_descriptions = get_source_table_datasets_to_descriptions(project_id)
+        service_account_roles_by_dataset = _service_account_roles_by_dataset()
 
     datasets = dict(_NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS)
     for dataset_id, dataset in datasets.items():
@@ -185,7 +287,9 @@ def _terraform_managed_datasets(
                 f"match the other."
             )
     for dataset_id, dataset in _source_table_datasets(
-        repository, dataset_descriptions=dataset_descriptions
+        repository,
+        dataset_descriptions=dataset_descriptions,
+        service_account_roles_by_dataset=service_account_roles_by_dataset,
     ).items():
         if dataset_id in datasets:
             raise ValueError(
@@ -212,6 +316,8 @@ def _to_registry_entry(
         entry["default_table_expiration_ms"] = dataset.default_table_expiration_ms
     if projects is not None:
         entry["projects"] = projects
+    if dataset.service_account_roles:
+        entry["service_account_roles"] = dataset.service_account_roles
     return entry
 
 
