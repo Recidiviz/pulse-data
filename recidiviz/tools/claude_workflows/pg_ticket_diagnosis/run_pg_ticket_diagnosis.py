@@ -56,7 +56,7 @@ To test end-to-end, fire the Cloud Build webhook trigger directly:
 The API key portion of the URL is shown on the trigger's detail page in the
 Cloud Build console. _PRODUCT_AREAS is a comma-separated list of product
 areas (workflows, tasks, insights); leave empty for all. Requires GCP setup
-via setup_gcp.sh and Terraform-applied pg-diagnosis-trigger.tf.
+via Terraform-applied pg-diagnosis.tf, plus secret values from setup_gcp.sh.
 
 Alternatively, fire the `workflow_dispatch` event on
 .github/workflows/pg-diagnosis.yml from the GitHub Actions UI — that wraps

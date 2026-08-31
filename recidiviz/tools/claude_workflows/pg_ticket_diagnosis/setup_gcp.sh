@@ -1,225 +1,88 @@
 #!/bin/bash
-# Run this once to set up GCP resources for the PG diagnosis Cloud Build job.
-# Safe to re-run — skips resources that already exist.
+# Provisions the secret VALUES for the PG diagnosis pipeline. Safe to re-run.
+#
+# Everything else (service account, IAM roles, secret containers, secret-level
+# access, BigQuery row-access-policy group memberships, Cloud Build trigger)
+# is defined in Terraform: recidiviz/tools/deploy/terraform/pg-diagnosis.tf.
+# Run this script after that Terraform has been applied — the secret
+# containers must exist before values can be added to them.
+#
+# Secret values are deliberately not stored in Terraform: they would end up in
+# plain text in the Terraform state bucket.
 
 # TODO(#70351): Switch to recidiviz-123 after getting prod SA permissions
 PROJECT_ID="recidiviz-staging"
-SA_NAME="diagnosis-for-pg-ticket"
-SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
 gcloud config set project "$PROJECT_ID"
 
-has_role() {
-  local sa_email="$1" role="$2"
-  gcloud projects get-iam-policy "$PROJECT_ID" \
-    --flatten="bindings[].members" \
-    --filter="bindings.members:$sa_email AND bindings.role:$role" \
-    --format="value(bindings.role)" 2>/dev/null | grep -q .
+secret_has_version() {
+  local secret_name="$1"
+  gcloud secrets versions list "$secret_name" --project="$PROJECT_ID" \
+    --format="value(name)" 2>/dev/null | grep -q .
 }
 
-grant_role() {
-  local sa_email="$1" role="$2"
-  if has_role "$sa_email" "$role"; then
-    echo "    $role — already bound, skipping."
-    return
-  fi
-  echo "    Binding $role to $sa_email..."
-  if gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:$sa_email" \
-    --role="$role" \
-    --condition=None \
-    --quiet > /dev/null 2>&1; then
-    echo "    OK."
-  else
-    echo "    FAILED — you may need Security Admin permissions."
-  fi
-}
-
-
-# 1. Enable required APIs
-echo "==> Enabling APIs..."
-gcloud services enable \
-  cloudbuild.googleapis.com \
-  secretmanager.googleapis.com \
-  bigquery.googleapis.com \
-  docs.googleapis.com \
-  artifactregistry.googleapis.com
-echo "    Done."
-
-# 2. Create a dedicated service account (skip if exists)
-echo "==> Creating service account..."
-if gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" > /dev/null 2>&1; then
-  echo "    Already exists, skipping."
-else
-  gcloud iam service-accounts create "$SA_NAME" \
-    --display-name="Agent performing initial diagnosis and triage of incoming Product Growth tickets"
-  echo "    Created."
-fi
-
-# 3. Grant IAM roles to the service account.
-# The Cloud Build trigger defined in pg-diagnosis-trigger.tf runs as this SA;
-# these are the runtime permissions it needs. artifactregistry.reader lets the
-# build pull the private appengine/default image its run step executes in.
-echo "==> Granting IAM roles..."
-grant_role "$SA_EMAIL" "roles/cloudbuild.builds.editor"
-grant_role "$SA_EMAIL" "roles/bigquery.dataViewer"
-grant_role "$SA_EMAIL" "roles/bigquery.jobUser"
-grant_role "$SA_EMAIL" "roles/logging.logWriter"
-grant_role "$SA_EMAIL" "roles/artifactregistry.reader"
-
-# 4. Grant the SA permission to mint OAuth tokens for itself.
-# The agent's PII-doc fetch (fetch_pii_for_issue in run_pg_ticket_diagnosis.py)
-# self-impersonates to get a token scoped to documents.readonly, which the
-# default Cloud Build credentials don't have. `add-iam-policy-binding` is
-# naturally idempotent so no skip-guard is needed.
-#
-# NOTE: the IAM binding below only gets the SA a scoped token — it does not grant
-# access to any document. Per-ticket PII docs are created across SEVERAL Drive
-# folders (e.g. 1alKihL5iNsXtG62NyKT6IfJC4k08whN5 and
-# 1kjTBfySzQ5ZZkMV1Kn5emhe81K-GQo8j), and $SA_EMAIL must hold at least Viewer on
-# each one for fetch_pii to work; per-doc access is inherited from the folder.
-# Drive ACLs are managed neither here nor in Terraform, so when the doc
-# automation starts writing to a folder the SA isn't shared on, every diagnosis
-# of a ticket landing there fails with PIIFetchError. Granting the SA access at
-# the shared-drive level is the durable fix.
-echo "==> Granting self-impersonation binding..."
-if gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
-  --project="$PROJECT_ID" \
-  --member="serviceAccount:$SA_EMAIL" \
-  --role="roles/iam.serviceAccountTokenCreator" \
-  --quiet > /dev/null 2>&1; then
-  echo "    OK."
-else
-  echo "    FAILED — you may need Service Account Admin permissions."
-fi
-
-# 5. Grant BigQuery row-access-policy group memberships.
-# `normalized_state.state_person_external_id` and other downstream tables
-# have row-access policies that filter by state_code. Project-level
-# `bigquery.dataViewer` alone is not enough — the SA must also be a member of
-# the per-state grantee groups, otherwise queries silently return 0 rows.
-# `s-me-data` (US_ME) is intentionally excluded; we do not access Maine data.
-#
-# This uses `gcloud identity groups memberships add`, which requires the caller
-# to have Google Workspace groups-admin permissions. If a grant fails, add the
-# SA manually at https://admin.google.com/ac/groups.
-add_to_group() {
-  local group_email="$1" sa_email="$2"
-  if gcloud identity groups memberships list \
-    --group-email="$group_email" \
-    --format="value(preferredMemberKey.id)" 2>/dev/null | grep -qx "$sa_email"; then
-    echo "    $group_email — already a member, skipping."
-    return
-  fi
-  echo "    Adding $sa_email to $group_email..."
-  if gcloud identity groups memberships add \
-    --group-email="$group_email" \
-    --member-email="$sa_email" \
-    --quiet > /dev/null 2>&1; then
-    echo "    OK."
-  else
-    echo "    FAILED — add manually at https://admin.google.com/ac/groups (needs groups-admin)."
-  fi
-}
-
-echo "==> Granting BigQuery row-access-policy group memberships..."
-for GROUP in \
-  s-default-state-data@recidiviz.org \
-  s-az-data@recidiviz.org \
-  s-id-data@recidiviz.org \
-  s-ix-data@recidiviz.org \
-  s-mi-data@recidiviz.org \
-  s-nc-data@recidiviz.org \
-  s-pa-data@recidiviz.org \
-  s-ut-data@recidiviz.org; do
-  add_to_group "$GROUP" "$SA_EMAIL"
-done
-
-# 6. Create the Cloud Build webhook auth secret.
-# Used by pg-diagnosis-trigger.tf to authenticate webhook calls. The value is
-# random and untyped — anything fits, as long as the same value is used in the
-# webhook URL that pg-diagnosis.yml POSTs to.
-echo "==> Creating Cloud Build webhook secret..."
+# 1. The Cloud Build webhook auth secret. The trigger
+# (pg-diagnosis.tf) references version 1 of this secret to authenticate
+# webhook calls. The value is random and untyped — anything fits, as long as
+# the same value is used in the webhook URL that pg-diagnosis.yml POSTs to.
+echo "==> Provisioning Cloud Build webhook secret value..."
 WEBHOOK_SECRET_NAME="github_pg_diagnosis_webhook"
-if gcloud secrets describe "$WEBHOOK_SECRET_NAME" --project="$PROJECT_ID" > /dev/null 2>&1; then
-  echo "    $WEBHOOK_SECRET_NAME already exists, skipping."
+if secret_has_version "$WEBHOOK_SECRET_NAME"; then
+  echo "    $WEBHOOK_SECRET_NAME already has a version, skipping."
 else
   # 32 random bytes (64 hex chars) is plenty of entropy.
-  WEBHOOK_SECRET_VALUE=$(openssl rand -hex 32)
-  if echo -n "$WEBHOOK_SECRET_VALUE" | gcloud secrets create "$WEBHOOK_SECRET_NAME" \
-    --data-file=- --project="$PROJECT_ID" \
-    --replication-policy=user-managed --locations=us-west1; then
-    echo "    Created."
+  if openssl rand -hex 32 | tr -d '\n' \
+    | gcloud secrets versions add "$WEBHOOK_SECRET_NAME" --data-file=- --project="$PROJECT_ID"; then
+    echo "    Added."
   else
-    echo "    FAILED to create $WEBHOOK_SECRET_NAME."
+    echo "    FAILED — has pg-diagnosis.tf been applied to $PROJECT_ID yet?"
   fi
 fi
 
-# 7. Grant secret-level access.
-# github_deploy_script_pat (helperbot comments) and linear_deploy_script_api_key
-# (Linear ID resolution) are both read directly from Secret Manager by the run
-# step via get_secret, so the SA needs secretAccessor on them. The Linear key
-# must be a read-capable Linear API key — create a staging copy of the prod
-# linear_deploy_script_api_key secret first:
+# 2. The Anthropic API key for the agent loop.
+echo "==> Provisioning Anthropic API key..."
+SECRET_NAME="pg_diagnosis_claude_api_key"
+if secret_has_version "$SECRET_NAME"; then
+  echo "    $SECRET_NAME already has a version."
+  read -rp "    Add a new version? (y/N): " REGEN
+  if [[ ! "$REGEN" =~ ^[Yy]$ ]]; then
+    echo "    Skipping."
+    REGEN=""
+  fi
+else
+  REGEN="y"
+fi
+if [[ "$REGEN" =~ ^[Yy]$ ]]; then
+  echo "    Paste your Anthropic API key, then press Enter:"
+  read -rs SECRET_VALUE
+  if echo -n "$SECRET_VALUE" | gcloud secrets versions add "$SECRET_NAME" --data-file=- --project="$PROJECT_ID"; then
+    echo "    Stored."
+  else
+    echo "    FAILED — has pg-diagnosis.tf been applied to $PROJECT_ID yet?"
+  fi
+fi
+
+# 3. Summary. The remaining secrets the agent reads
+# (github_deploy_script_pat, linear_deploy_script_api_key) are owned and
+# provisioned by the deploy scripts; pg-diagnosis.tf only grants the agent SA
+# access to them. The Linear key must be a read-capable Linear API key — to
+# create a staging copy of the prod linear_deploy_script_api_key secret:
 #   gcloud secrets versions access latest --secret=linear_deploy_script_api_key \
 #     --project=recidiviz-123 \
 #     | gcloud secrets create linear_deploy_script_api_key --data-file=- \
 #       --project="$PROJECT_ID" --replication-policy=user-managed --locations=us-west1
-# The grant below fails harmlessly if a secret doesn't exist yet.
-echo "==> Granting secret-level access..."
-for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat linear_deploy_script_api_key; do
-  echo "    Granting access to $SECRET..."
-  if gcloud secrets add-iam-policy-binding "$SECRET" \
-    --project="$PROJECT_ID" \
-    --member="serviceAccount:$SA_EMAIL" \
-    --role="roles/secretmanager.secretAccessor" \
-    --quiet > /dev/null 2>&1; then
-    echo "    OK."
-  else
-    echo "    FAILED — you may need Security Admin permissions."
-  fi
-done
-
-# 8. Store Anthropic API key (GitHub token uses existing github_deploy_script_pat secret)
-echo "==> Storing secrets..."
-SECRET_NAME="pg_diagnosis_claude_api_key"
-if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" > /dev/null 2>&1; then
-  echo "    $SECRET_NAME already exists."
-  read -rp "    Regenerate? (y/N): " REGEN
-  if [[ "$REGEN" =~ ^[Yy]$ ]]; then
-    echo "    Paste your Anthropic API key, then press Enter:"
-    read -rs SECRET_VALUE
-    if echo -n "$SECRET_VALUE" | gcloud secrets versions add "$SECRET_NAME" --data-file=- --project="$PROJECT_ID"; then
-      echo "    Updated."
-    else
-      echo "    FAILED to update."
-    fi
-  else
-    echo "    Skipping."
-  fi
-else
-  echo "    Paste your Anthropic API key, then press Enter:"
-  read -rs SECRET_VALUE
-  if echo -n "$SECRET_VALUE" | gcloud secrets create "$SECRET_NAME" --data-file=- --project="$PROJECT_ID" --replication-policy=user-managed --locations=us-west1; then
-    echo "    Stored."
-  else
-    echo "    FAILED to store."
-  fi
-fi
-
-# 9. Summary
 echo ""
 echo "============================================================"
-echo "Setup complete."
+echo "Secret values provisioned."
 echo ""
 echo "The GitHub Action workflow (.github/workflows/pg-diagnosis.yml)"
 echo "POSTs to a Cloud Build webhook trigger declared in"
-echo "recidiviz/tools/deploy/terraform/pg-diagnosis-trigger.tf, which"
+echo "recidiviz/tools/deploy/terraform/pg-diagnosis.tf, which"
 echo "runs the build steps in"
 echo "recidiviz/tools/claude_workflows/pg_ticket_diagnosis/cloudbuild.yaml."
 echo ""
 echo "Remaining one-time setup (do after the next staging deploy applies"
-echo "pg-diagnosis-trigger.tf):"
+echo "pg-diagnosis.tf):"
 echo "  1. Grab the trigger's webhook URL from the Cloud Build UI"
 echo "     (it embeds the github_pg_diagnosis_webhook secret value)."
 echo "  2. Set it as the CLOUD_BUILD_PG_DIAGNOSIS_WEBHOOK secret in"

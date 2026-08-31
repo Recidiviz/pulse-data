@@ -39,7 +39,7 @@ steps:
 # The Linear API key (linear_deploy_script_api_key) is NOT injected here: the
 # run step reads it directly from Secret Manager via get_secret using the build
 # SA, the same way it reads github_deploy_script_pat for helperbot comments. It
-# only needs the SA's secretAccessor grant (setup_gcp.sh), not env injection.
+# only needs the SA's secretAccessor grant (pg-diagnosis.tf), not env injection.
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/pg_diagnosis_claude_api_key/versions/latest
@@ -58,7 +58,7 @@ substitutions:
   _PRODUCT_AREAS: ""
 
 # No `serviceAccount` here: it's set on the Cloud Build trigger
-# (pg-diagnosis-trigger.tf), which inlines these steps via `yamldecode`.
+# (pg-diagnosis.tf), which inlines these steps via `yamldecode`.
 # Specifying a service account in both the trigger and the build config is
 # rejected by Cloud Build. `logging: CLOUD_LOGGING_ONLY` below is still
 # required because the trigger runs the build as a custom service account.
