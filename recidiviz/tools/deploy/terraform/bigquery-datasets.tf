@@ -187,6 +187,9 @@ import {
       "us_nyc_raw_data_secondary",
       "us_nyc_secondary_raw_data_temp_load",
       "us_nyc_state",
+      # Registered after this adoption block was written, so Terraform creates
+      # it fresh; there is nothing remote to import.
+      "identity_service_export",
     ], dataset_id)
   }
   to = module.terraform_managed_bigquery_dataset[each.key].google_bigquery_dataset.dataset

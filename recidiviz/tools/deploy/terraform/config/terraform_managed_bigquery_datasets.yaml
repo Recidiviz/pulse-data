@@ -29,6 +29,8 @@ datasets:
     description: Stores tables that are backed by Google Sheets.
   hydration_archive:
     description: Archival views that track hydration of various parts of our platform overtime
+  identity_service_export:
+    description: Read-only export of the Identity Service's Postgres state.
   intercom_export:
     description: Stores user interaction and survey data from Intercom
   intercom_export_metadata:

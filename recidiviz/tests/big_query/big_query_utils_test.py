@@ -18,9 +18,11 @@
 
 import datetime
 import decimal
+import enum
 import unittest
 
 import attr
+import sqlalchemy
 from dateutil.relativedelta import relativedelta
 from google.cloud import bigquery
 
@@ -38,6 +40,8 @@ from recidiviz.big_query.big_query_utils import (
     normalize_column_name_for_bq,
     null_sql_cast_clause_for_schema_field,
     schema_field_for_attribute,
+    schema_field_for_type,
+    schema_for_sqlalchemy_table,
     sql_cast_clause_for_schema_field,
     sql_type_name_for_schema_field,
     to_big_query_valid_encoding,
@@ -365,6 +369,47 @@ class SchemaFieldForAttributeTest(unittest.TestCase):
             "STRING",
             schema_field_for_attribute("tuple_field", fields["tuple_field"]).field_type,
         )
+
+
+class _Fruit(enum.Enum):
+    APPLE = "APPLE"
+
+
+class SchemaFieldForTypeTest(unittest.TestCase):
+    """Tests for schema_field_for_type."""
+
+    def test_enum_types_map_to_string_columns(self) -> None:
+        self.assertEqual("STRING", schema_field_for_type("my_col", _Fruit).field_type)
+        self.assertEqual(
+            "STRING", schema_field_for_type("my_col", enum.Enum).field_type
+        )
+
+    def test_unhandled_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"^Unhandled field type for field_type: <class 'dict'>$"
+        ):
+            schema_field_for_type("my_col", dict)
+
+
+class SchemaForSqlalchemyTableTest(unittest.TestCase):
+    """Tests for schema_for_sqlalchemy_table."""
+
+    def test_column_comment_becomes_field_description(self) -> None:
+        table = sqlalchemy.Table(
+            "my_table",
+            sqlalchemy.MetaData(),
+            sqlalchemy.Column(
+                "commented", sqlalchemy.String, comment="The commented column."
+            ),
+            sqlalchemy.Column("uncommented", sqlalchemy.String),
+        )
+        fields_by_name = {
+            field.name: field for field in schema_for_sqlalchemy_table(table)
+        }
+        self.assertEqual(
+            "The commented column.", fields_by_name["commented"].description
+        )
+        self.assertEqual("", fields_by_name["uncommented"].description)
 
 
 def _repeated_record_field(mode: str = "REPEATED") -> bigquery.SchemaField:

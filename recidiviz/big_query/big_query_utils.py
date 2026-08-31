@@ -21,7 +21,6 @@ import enum
 import logging
 import os
 import string
-from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Type
 
 import attr
@@ -255,7 +254,9 @@ def _bq_schema_column_type_for_type(
 ) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
-    if field_type is Enum or field_type is str or field_type is list:
+    if field_type is str or field_type is list:
+        return bigquery.enums.SqlTypeNames.STRING
+    if isinstance(field_type, enum.EnumType):
         return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
         return bigquery.enums.SqlTypeNames.INTEGER
@@ -318,17 +319,9 @@ def bq_schema_column_type_for_sqlalchemy_column(
 def schema_for_sqlalchemy_table(table: sqlalchemy.Table) -> List[bigquery.SchemaField]:
     """Returns the necessary BigQuery schema for storing the contents of the
     table in BigQuery, which is a list of SchemaField objects containing the
-    column name and value type for each column in the table."""
-    columns_for_table = [
-        bigquery.SchemaField(
-            col.name,
-            bq_schema_column_type_for_sqlalchemy_column(col).value,
-            mode="REPEATED" if isinstance(col.type, postgresql.ARRAY) else "NULLABLE",
-        )
-        for col in table.columns
-    ]
-
-    return columns_for_table
+    column name, value type, and description (from the column's comment) for
+    each column in the table."""
+    return [_schema_field_for_sqlalchemy_column(col) for col in table.columns]
 
 
 def get_reserved_bq_column_name_prefix(field_name: str) -> Optional[str]:
@@ -629,4 +622,21 @@ def build_lineage_go_link(view_id: str, dataset_id: str) -> str:
         environment=environment.value,
         dataset_id=dataset_id,
         view_id=view_id,
+    )
+
+
+def _schema_field_for_sqlalchemy_column(col: Column) -> bigquery.SchemaField:
+    """Returns the BigQuery schema field for storing the values of the provided
+    |col|, carrying the column's Postgres comment over as the field description
+    when one is set."""
+    mode = (
+        BigQueryFieldMode.REPEATED
+        if isinstance(col.type, postgresql.ARRAY)
+        else BigQueryFieldMode.NULLABLE
+    )
+    return to_validated_schema_field(
+        col.name,
+        col.comment,
+        bq_schema_column_type_for_sqlalchemy_column(col),
+        mode,
     )
