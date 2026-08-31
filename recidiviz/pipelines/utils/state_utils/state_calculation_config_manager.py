@@ -14,7 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Manages state-specific methodology decisions made throughout the calculation pipelines."""
+"""Manages state-specific methodology decisions made throughout the calculation pipelines.
+
+When launching a new state, add it to every get_state_specific_* function in
+this file, not just the one that raised "Unexpected state code" — coverage for
+all existing states is enforced by state_calculation_config_manager_test.py.
+"""
 from datetime import date
 from typing import List, Optional
 
