@@ -23,6 +23,10 @@ from recidiviz.workflows.etl.typesense_backfill_client import TypesenseBackfillC
 
 FUNCTION_URL = "https://typesense-backfill-abc123-uc.a.run.app"
 
+# (connect, read). The read timeout has to outlast a whole backfill run, since the
+# function sends nothing until it finishes.
+EXPECTED_TIMEOUT = (10, 480)
+
 
 def _response_body(imported: int) -> dict:
     return {"totals": {"imported": imported, "failed": 0, "deleted": 0}}
@@ -56,7 +60,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
             FUNCTION_URL,
             json={"stateCode": "US_XX", "collections": ["clientCollection"]},
             headers={"Authorization": "Bearer id-token"},
-            timeout=60,
+            timeout=EXPECTED_TIMEOUT,
         )
         mock_post.return_value.raise_for_status.assert_called_once()
 
@@ -87,7 +91,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
                 "sourceCollection": "US_XX-supervisionLevelDowngrade",
             },
             headers={"Authorization": "Bearer id-token"},
-            timeout=60,
+            timeout=EXPECTED_TIMEOUT,
         )
         mock_post.return_value.raise_for_status.assert_called_once()
 

@@ -27,7 +27,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.metadata import CloudRunMetadata
-from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
+from recidiviz.workflows.etl.routes import (
+    WORKFLOWS_TYPESENSE_BACKFILL_QUEUE,
+    get_workflows_etl_blueprint,
+)
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
@@ -185,10 +188,10 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 
-    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
-    def test_run_firestore_etl_triggers_typesense_backfill(
-        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    def test_run_firestore_etl_enqueues_typesense_backfill(
+        self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
         filename = "client_record.json"
         mock_delegate = MagicMock(WorkflowsClientETLDelegate)
@@ -202,15 +205,23 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 json={"state_code": "US_XX", "filename": filename},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_backfill.assert_called_once_with(
-                state_code=StateCode.US_XX, collection="clientCollection"
+            self.assertEqual(
+                WORKFLOWS_TYPESENSE_BACKFILL_QUEUE,
+                mock_task_manager.call_args.kwargs["queue_name"],
+            )
+            mock_task_manager.return_value.create_task.assert_called_once_with(
+                absolute_uri="https://example.com/practices-etl/_trigger_typesense_backfill",
+                body={"state_code": "US_XX", "collection": "clientCollection"},
+                service_account_email="<EMAIL>",
             )
 
-    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
-    def test_run_firestore_etl_triggers_opportunities_typesense_backfill(
-        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    def test_run_firestore_etl_enqueues_opportunities_typesense_backfill(
+        self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
+        """Opportunity tasks name the Firestore source collection they were written from,
+        since every one of them feeds the single Typesense `opportunities` collection."""
         filename = "us_xx_supervision_level_downgrade_record.json"
         mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
@@ -225,40 +236,19 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 json={"state_code": "US_XX", "filename": filename},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_backfill.assert_not_called()
-            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
-                state_code=StateCode.US_XX,
-                source_collection="US_XX-supervisionLevelDowngrade",
+            mock_task_manager.return_value.create_task.assert_called_once_with(
+                absolute_uri="https://example.com/practices-etl/_trigger_typesense_backfill",
+                body={
+                    "state_code": "US_XX",
+                    "source_collection": "US_XX-supervisionLevelDowngrade",
+                },
+                service_account_email="<EMAIL>",
             )
 
-    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
-    def test_run_firestore_etl_opportunities_backfill_failure_does_not_fail_etl(
-        self, mock_get_delegates: MagicMock, mock_client: MagicMock
-    ) -> None:
-        filename = "us_xx_supervision_level_downgrade_record.json"
-        mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
-        mock_delegate.state_code = StateCode.US_XX
-        mock_delegate.supports_file.return_value = True
-        mock_delegate.COLLECTION_BY_FILENAME = {
-            filename: "US_XX-supervisionLevelDowngrade"
-        }
-        mock_get_delegates.return_value = [mock_delegate]
-        mock_client.return_value.trigger_opportunities_backfill.side_effect = (
-            RuntimeError("boom")
-        )
-        with self.test_app.test_client() as client:
-            response = client.post(
-                "/practices-etl/_run_firestore_etl",
-                json={"state_code": "US_XX", "filename": filename},
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_opportunities_backfill.assert_called_once()
-
-    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
     def test_run_firestore_etl_skips_backfill_for_untracked_delegate(
-        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+        self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
         filename = "us_xx_supervision_tasks_record.json"
         mock_delegate = MagicMock(WorkflowsTasksETLDelegate)
@@ -271,28 +261,107 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 json={"state_code": "US_XX", "filename": filename},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_backfill.assert_not_called()
-            mock_client.return_value.trigger_opportunities_backfill.assert_not_called()
+            mock_task_manager.return_value.create_task.assert_not_called()
 
-    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
-    def test_run_firestore_etl_backfill_failure_does_not_fail_etl(
-        self, mock_get_delegates: MagicMock, mock_client: MagicMock
+    def test_run_firestore_etl_enqueue_failure_does_not_fail_etl(
+        self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
+        """The Firestore write has already happened by the time the backfill is enqueued,
+        so failing to enqueue must not fail the ETL task — retrying it would rewrite
+        everything it already wrote."""
         filename = "client_record.json"
         mock_delegate = MagicMock(WorkflowsClientETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
         mock_delegate.supports_file.return_value = True
         mock_delegate.COLLECTION_BY_FILENAME = {filename: "clientCollection"}
         mock_get_delegates.return_value = [mock_delegate]
-        mock_client.return_value.trigger_backfill.side_effect = RuntimeError("boom")
+        mock_task_manager.return_value.create_task.side_effect = RuntimeError("boom")
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/_run_firestore_etl",
                 json={"state_code": "US_XX", "filename": filename},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_backfill.assert_called_once()
+            mock_task_manager.return_value.create_task.assert_called_once()
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill(self, mock_client: MagicMock) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={"state_code": "US_XX", "collection": "clientCollection"},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX, collection="clientCollection"
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_for_opportunities(
+        self, mock_client: MagicMock
+    ) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={
+                    "state_code": "US_XX",
+                    "source_collection": "US_XX-supervisionLevelDowngrade",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_not_called()
+            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX,
+                source_collection="US_XX-supervisionLevelDowngrade",
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_failure_is_retryable(
+        self, mock_client: MagicMock
+    ) -> None:
+        """A refused backfill has to come back as an error response so the queue retries
+        it — this endpoint writes nothing, so a repeated re-index is the only cost."""
+        mock_client.return_value.trigger_backfill.side_effect = RuntimeError("boom")
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={"state_code": "US_XX", "collection": "clientCollection"},
+            )
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_missing_state_code(
+        self, mock_client: MagicMock
+    ) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={"collection": "clientCollection"},
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Must include state_code in the request body", response.data
+            )
+            mock_client.return_value.trigger_backfill.assert_not_called()
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_missing_collection(
+        self, mock_client: MagicMock
+    ) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={"state_code": "US_XX"},
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Must include either collection or source_collection in the request "
+                b"body",
+                response.data,
+            )
+            mock_client.return_value.trigger_backfill.assert_not_called()
 
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
     def test_run_firestore_etl_unsupported_file(

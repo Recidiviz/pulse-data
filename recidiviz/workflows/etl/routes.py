@@ -58,6 +58,21 @@ from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
+# Queue that drives Typesense backfill triggers. Separate from the ETL queue because a
+# backfill runs for minutes and the backfill service refuses triggers it cannot serve, so
+# the trigger needs retry timing the ETL task's deadline cannot accommodate.
+WORKFLOWS_TYPESENSE_BACKFILL_QUEUE = "workflows-typesense-backfill-queue"
+
+# Endpoint that the Typesense backfill task targets, relative to this blueprint.
+TRIGGER_TYPESENSE_BACKFILL_ROUTE = "_trigger_typesense_backfill"
+
+# Keys in the body of a Typesense backfill task. Exactly one of COLLECTION_KEY and
+# SOURCE_COLLECTION_KEY is set: the latter for opportunities, whose many Firestore
+# collections all feed one Typesense collection.
+STATE_CODE_KEY = "state_code"
+COLLECTION_KEY = "collection"
+SOURCE_COLLECTION_KEY = "source_collection"
+
 # Delegates whose completion should trigger a Typesense backfill in the separate
 # search-indexing project. The tasks delegate is intentionally excluded — its collection
 # is not indexed in Typesense. Opportunities are handled separately below, since their
@@ -83,48 +98,63 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
     ]
 
 
-def _maybe_trigger_typesense_backfill(
+def _typesense_backfill_task_body(
     delegate: WorkflowsETLDelegate, filename: str
-) -> None:
-    """Triggers a Typesense backfill for the delegate's collection when the delegate is
-    one whose completion should refresh the search index. Failures are logged and do
-    not fail the ETL, since the Firestore write has already succeeded."""
+) -> dict[str, str] | None:
+    """Returns the body of the Typesense backfill task for the collection this ETL just
+    wrote, or None when the delegate's collection is not indexed in Typesense.
+
+    Opportunity tasks name the Firestore source collection instead of a Typesense one,
+    since every per-state, per-opportunity Firestore collection feeds the single Typesense
+    `opportunities` collection."""
     if isinstance(delegate, WorkflowsOpportunityETLDelegate):
-        _trigger_opportunities_typesense_backfill(delegate, filename)
-        return
+        return {
+            STATE_CODE_KEY: delegate.state_code.value,
+            SOURCE_COLLECTION_KEY: delegate.COLLECTION_BY_FILENAME[filename],
+        }
 
     if not isinstance(delegate, DELEGATES_TRIGGERING_TYPESENSE_BACKFILL):
+        return None
+
+    return {
+        STATE_CODE_KEY: delegate.state_code.value,
+        COLLECTION_KEY: delegate.COLLECTION_BY_FILENAME[filename],
+    }
+
+
+def _maybe_enqueue_typesense_backfill(
+    *,
+    delegate: WorkflowsETLDelegate,
+    filename: str,
+    cloud_run_metadata: CloudRunMetadata,
+) -> None:
+    """Enqueues a task that refreshes the search index for the collection this ETL just
+    wrote, for the delegates whose collections are indexed in Typesense.
+
+    The trigger is enqueued rather than sent inline because a backfill takes minutes and
+    the backfill service refuses triggers it has no capacity for: on its own queue, a
+    refused trigger can wait out the run that refused it and be retried without re-running
+    this ETL. Failing to enqueue is logged and does not fail the ETL, since the Firestore
+    write has already succeeded and retrying this task would rewrite all of it."""
+    body = _typesense_backfill_task_body(delegate, filename)
+    if body is None:
         return
 
-    collection = delegate.COLLECTION_BY_FILENAME[filename]
     try:
-        TypesenseBackfillClient().trigger_backfill(
-            state_code=delegate.state_code, collection=collection
+        SingleCloudTaskQueueManager(
+            queue_info_cls=CloudTaskQueueInfo,
+            queue_name=WORKFLOWS_TYPESENSE_BACKFILL_QUEUE,
+        ).create_task(
+            absolute_uri=(
+                f"{cloud_run_metadata.url}/practices-etl/"
+                f"{TRIGGER_TYPESENSE_BACKFILL_ROUTE}"
+            ),
+            body=body,
+            service_account_email=cloud_run_metadata.service_account_email,
         )
     except Exception:
         logging.exception(
-            "Failed to trigger Typesense backfill for state_code=[%s] collection=[%s]",
-            delegate.state_code.value,
-            collection,
-        )
-
-
-def _trigger_opportunities_typesense_backfill(
-    delegate: WorkflowsOpportunityETLDelegate, filename: str
-) -> None:
-    """Triggers a Typesense backfill of the shared `opportunities` collection from the
-    single Firestore opportunity collection this ETL just wrote."""
-    source_collection = delegate.COLLECTION_BY_FILENAME[filename]
-    try:
-        TypesenseBackfillClient().trigger_opportunities_backfill(
-            state_code=delegate.state_code, source_collection=source_collection
-        )
-    except Exception:
-        logging.exception(
-            "Failed to trigger Typesense opportunities backfill for state_code=[%s] "
-            "source_collection=[%s]",
-            delegate.state_code.value,
-            source_collection,
+            "Failed to enqueue Typesense backfill task with body [%s]", body
         )
 
 
@@ -189,7 +219,11 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
             try:
                 if delegate.supports_file(filename):
                     await delegate.run_etl(filename)
-                    _maybe_trigger_typesense_backfill(delegate, filename)
+                    _maybe_enqueue_typesense_backfill(
+                        delegate=delegate,
+                        filename=filename,
+                        cloud_run_metadata=cloud_run_metadata,
+                    )
             except ValueError as e:
                 logging.error(str(e))
                 logging.info(
@@ -200,6 +234,49 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
                 return "", HTTPStatus.OK
 
         return "", HTTPStatus.OK
+
+    @workflows_etl_blueprint.route(
+        f"/{TRIGGER_TYPESENSE_BACKFILL_ROUTE}", methods=["POST"]
+    )
+    def _trigger_typesense_backfill() -> Tuple[str, HTTPStatus]:
+        """Re-indexes one collection in Typesense. Triggered by a CloudTask created by
+        _maybe_enqueue_typesense_backfill once that collection's Firestore ETL finished.
+
+        Unlike the ETL endpoint, this one lets a failed backfill surface as an error
+        response so its queue retries the trigger. Nothing here writes to Firestore, and
+        the backfill's prune re-confirms its delete candidates against Firestore, so a
+        retry that overlaps a still-running backfill costs duplicated work rather than
+        dropped documents — while dropping the trigger leaves the search index stale until
+        the next ETL run."""
+        body = get_cloud_task_json_body()
+        state_code = body.get(STATE_CODE_KEY)
+        collection = body.get(COLLECTION_KEY)
+        source_collection = body.get(SOURCE_COLLECTION_KEY)
+
+        if not state_code:
+            return (
+                f"Must include {STATE_CODE_KEY} in the request body",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        if source_collection:
+            TypesenseBackfillClient().trigger_opportunities_backfill(
+                state_code=StateCode(state_code),
+                source_collection=source_collection,
+            )
+            return "", HTTPStatus.OK
+
+        if collection:
+            TypesenseBackfillClient().trigger_backfill(
+                state_code=StateCode(state_code), collection=collection
+            )
+            return "", HTTPStatus.OK
+
+        return (
+            f"Must include either {COLLECTION_KEY} or {SOURCE_COLLECTION_KEY} in the "
+            f"request body",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     # This endpoint is triggered by a pub/sub subscription on the GCS bucket.
     # To trigger it manually, run (substituting PROJECT_ID and FILENAME):

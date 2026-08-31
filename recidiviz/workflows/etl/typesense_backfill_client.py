@@ -26,7 +26,11 @@ Most Workflows collections map one-to-one from Firestore to Typesense. Opportuni
 not: every per-state, per-opportunity Firestore collection (e.g.
 `US_TN-supervisionLevelDowngrade`) feeds the single Typesense `opportunities`
 collection, so those requests additionally name the Firestore source collection they are
-backfilling from."""
+backfilling from.
+
+Callers reach this client from a task on the Typesense backfill queue, which owns retrying
+a trigger the function refused for lack of capacity. This client therefore does not retry;
+it only has to wait out a run long enough to see its result."""
 import logging
 from typing import Any
 
@@ -54,7 +58,17 @@ IMPORTED_FIELD = "imported"
 # The single Typesense collection that every Firestore opportunity collection feeds.
 OPPORTUNITIES_TYPESENSE_COLLECTION = "opportunities"
 
-_REQUEST_TIMEOUT_SECONDS = 60
+_CONNECT_TIMEOUT_SECONDS = 10
+
+# The function holds the connection open for the whole backfill and sends nothing back
+# until it finishes, so this has to exceed a full run rather than just the time to be
+# accepted. Runs took three to four minutes before the prune began re-scanning to confirm
+# its delete candidates, which adds a second scan to any run that finds churn. It also has
+# to stay under the Cloud Tasks dispatch deadline of the task that calls this — 600s, the
+# default, since the queue does not set one — so that a run this client gave up on fails as
+# one exhausted attempt rather than as a killed task that Cloud Tasks retries into a
+# still-running backfill.
+_READ_TIMEOUT_SECONDS = 480
 
 
 class TypesenseBackfillClient:
@@ -81,7 +95,11 @@ class TypesenseBackfillClient:
 
         One call per source collection: the function builds its config from
         `source_collection` at request time, and its prune is scoped to that source's
-        partition, so sources do not interfere with one another."""
+        partition, so sources do not interfere with one another. Two runs over the same
+        source are safe as well — the prune re-confirms each delete candidate against
+        Firestore after the export — so a retried trigger that lands while an earlier run
+        is still going duplicates the scan and import work rather than dropping
+        documents."""
         self._post_backfill_request(
             state_code=state_code,
             typesense_collection=OPPORTUNITIES_TYPESENSE_COLLECTION,
@@ -128,7 +146,7 @@ class TypesenseBackfillClient:
             function_url,
             json=body,
             headers={"Authorization": f"Bearer {id_token}"},
-            timeout=_REQUEST_TIMEOUT_SECONDS,
+            timeout=(_CONNECT_TIMEOUT_SECONDS, _READ_TIMEOUT_SECONDS),
         )
         response.raise_for_status()
         self._warn_if_nothing_imported(

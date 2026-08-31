@@ -112,6 +112,51 @@ module "workflows-etl-operations-queue" {
   max_dispatches_per_second = 100
 }
 
+# Queue used to trigger Typesense backfills once a Workflows Firestore ETL has written a
+# collection to Firestore.
+#
+# Separate from workflows-etl-operations-queue on purpose. A backfill runs for minutes and
+# the backfill service refuses triggers it has no capacity for, so a refused trigger has
+# to be retried on a timescale that would exceed the deadline of the ETL task that
+# produced the data — and retrying that ETL task to get one more attempt at the trigger
+# would redundantly rewrite everything it already wrote to Firestore.
+#
+# Declared directly rather than through the base-task-queue module because it needs retry
+# backoff bounds, which that module does not expose.
+resource "google_cloud_tasks_queue" "workflows-typesense-backfill-queue" {
+  name     = "workflows-typesense-backfill-queue"
+  location = var.us_east_region
+
+  rate_limits {
+    # The backfill service serves 4 backfills at once (Cloud Run maxScale 4, and a CFv2
+    # function serves one request per instance) and rejects the rest outright. Overlapping
+    # runs are safe there: imports are upserts, and the prune re-confirms each delete
+    # candidate against Firestore after the export, so a document one run is mid-import on
+    # is not deleted by another.
+    #
+    # Dispatch 2 of those 4 slots. A backfill that outlives the read timeout of the
+    # request that started it keeps running on its instance after we have given up, so the
+    # retry of that trigger — and the search project's own manual and scheduled runs —
+    # still find a free instance instead of a 429. Keep this below that service's max
+    # instance count.
+    max_concurrent_dispatches = 2
+    max_dispatches_per_second = 1
+  }
+
+  retry_config {
+    max_attempts = 5
+    # A backfill occupies one of the service's instances for minutes, so a trigger refused
+    # because they were all busy is only worth retrying on that timescale. Cloud Tasks'
+    # 100ms default would spend every attempt inside the run that caused the refusal.
+    min_backoff = "60s"
+    max_backoff = "600s"
+  }
+
+  stackdriver_logging_config {
+    sampling_ratio = 1.0
+  }
+}
+
 # Queue used for tasks to make external system requests related to Workflows
 module "workflows-external-system-requests-queue" {
   source = "./modules/base-task-queue"
