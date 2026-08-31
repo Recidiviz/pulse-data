@@ -780,15 +780,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "Infraction": ["DispositionDate", "LastUpdateDate"],
         "JOCharge": ["OffenseDate", "PleaDate", "SentenceImposedDate"],
         "JOIdentification": ["ArrestedDate", "PostedDate"],
-        "JOMiscellaneous": [
-            "JOEntryDate",
-            "JOStatusDate",
-            "LastAmendmentFiledDate",
-            "LastAppealFinalizedDate",
-            "LastJudgmentOrderChangeDate",
-            "LastLetterCreatedDate",
-            "LastPostConvictionReliefDate",
-        ],
         "JOSentence": [
             "ExecutionDate",
             "FirstConfinementCompletedDate",
@@ -811,7 +802,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "SentenceEffectiveDate",
             "SentenceStatusDate",
         ],
-        "SentenceAction": ["ActionDate"],
         "SentenceMiscellaneous": [
             "AlternateSentenceImposeDate",
             "BOPDate",
@@ -1706,6 +1696,15 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "LastUpdateDate",
             "StartDate",
         ],
+        "JOMiscellaneous": [
+            "JOEntryDate",
+            "JOStatusDate",
+            "LastAmendmentFiledDate",
+            "LastAppealFinalizedDate",
+            "LastJudgmentOrderChangeDate",
+            "LastLetterCreatedDate",
+            "LastPostConvictionReliefDate",
+        ],
         "OffenderContact": ["EffectiveFromDate", "EndDate", "StartDate"],
         "OffenderEmployment": [
             "EndDate",
@@ -1749,6 +1748,7 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "ReferralPriorRecord": ["EventDate", "OrderDate"],
         "ReleasePlan": ["ParolePlanDate", "StartDate"],
         "SAIUFinding": ["PostedDate"],
+        "SentenceAction": ["ActionDate"],
         "SentenceCreditLaw": ["CreditEligibleDate", "LastModifiedDate", "WaiverDate"],
         "SentenceExtension": ["ExtensionDate", "LastModifiedDate"],
         "SentenceTimeAdjustment": ["EndDate", "StartDate"],
