@@ -16,7 +16,7 @@
 # =============================================================================
 """Helper SQL fragments that import raw tables for AZ
 """
-from typing import Optional
+from typing import List, Optional
 
 from google.cloud import bigquery
 
@@ -31,8 +31,15 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    TaskEligibilitySpansSubsetType,
+    select_relevant_task_eligibility_spans_for_record,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -408,6 +415,8 @@ def acis_date_not_set_criteria_builder(
             {metadata_date_expr(metadata_key)} AS {acis_date},
         FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
         WHERE state_code = 'US_AZ'
+            AND JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__{metadata_key}_approval_status')
+                IN ('APPROVED', 'TENTATIVE')
     )"""
     _QUERY_TEMPLATE = f"""
     SELECT
@@ -1061,6 +1070,67 @@ def incarceration_past_early_release_date(
         TO_JSON(STRUCT(critical_date AS {acis_date})) AS reason,
         critical_date AS {acis_date},
     FROM critical_date_has_passed_spans
+    """
+
+
+def concatenate_reasons(
+    main_eligiblity_vbs: List[SingleTaskEligibilitySpansBigQueryViewBuilder],
+    secondary_eligiblity_vb: SingleTaskEligibilitySpansBigQueryViewBuilder,
+    main_spans_subset_type: TaskEligibilitySpansSubsetType = TaskEligibilitySpansSubsetType.ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY,
+) -> str:
+    """
+    Takes in a list of "main" task eligibility spans and a single "secondary" task eligibility span, and combines
+    their reasons such that for each row, a person has all the columns in the union of the main spans, but some
+    supplemental columns (i.e. the reasons blob) has been concatenated with the columns of the secondary view.
+
+    The main spans are unioned together before joining against the secondary span once, rather than joining each
+    main span against the secondary span separately, since each main span is expected to produce disjoint sets of
+    people (e.g. "approaching" and "overdue" spans for the same underlying date can never both apply to the same
+    person at once).
+
+    A motivating example: We want to see everyone who has an upcoming or overdue TPR release date in Arizona, seen
+    in `approaching_acis_tpr_request` and `overdue_for_acis_tpr_request`, while also seeing what criteria in policy
+    a given person meets while having a release date, without impacting eligibility. Criteria in policy is defined
+    in another TES, `overdue_for_recidiviz_tpr_request`, and so we must keep all columns in the main datasets while
+    concatenating the reasons blobs of all three datasets to get a full sense of information.
+
+    Returns: A dataset with all columns in the unioned main datasets with concatenated columns from
+    `secondary_eligiblity_vb` specified in `supplemental_columns`
+    """
+    main_tes_query = "\n    UNION ALL\n    ".join(
+        f"""(
+        {select_relevant_task_eligibility_spans_for_record(
+        tes_view_builder=main_eligiblity_vb,
+        spans_subset_type=main_spans_subset_type,
+        include_eligible_date=False,
+        include_reasons_v2=False)}
+    )"""
+        for main_eligiblity_vb in main_eligiblity_vbs
+    )
+
+    return f"""
+    WITH main_tes AS (
+        {main_tes_query}
+    )
+
+    SELECT
+        main.person_id,
+        main.state_code,
+        TO_JSON(ARRAY_CONCAT( 
+            JSON_QUERY_ARRAY(main.reasons, '$'), 
+            JSON_QUERY_ARRAY(suppl.reasons, '$') )) AS reasons,
+        ARRAY_CONCAT(main.ineligible_criteria, suppl.ineligible_criteria) AS ineligible_criteria,
+        main.is_eligible,
+        main.is_almost_eligible,
+      FROM
+        main_tes main
+      LEFT JOIN
+        `{{project_id}}.{secondary_eligiblity_vb.table_for_query.to_str()}` suppl
+      ON main.person_id = suppl.person_id
+        AND main.state_code = suppl.state_code
+        AND (CURRENT_DATE('US/Pacific') BETWEEN suppl.start_date
+            AND IFNULL(DATE_SUB(suppl.end_date, INTERVAL 1 DAY), "9999-12-31"))
+        AND main.state_code = 'US_AZ'
     """
 
 

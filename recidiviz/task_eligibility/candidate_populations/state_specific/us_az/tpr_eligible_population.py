@@ -50,6 +50,15 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+TPR_ELIGIBLE_POPULATION_STATIC_CRITERIA = (
+    no_ineligible_tpr_offense_convictions.VIEW_BUILDER,
+    no_tpr_denial_or_release_in_current_incarceration.VIEW_BUILDER,
+    no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
+    not_serving_flat_sentence.VIEW_BUILDER,
+    is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
+    no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+)
+
 _POPULATION_NAME = "US_AZ_TPR_ELIGIBLE_POPULATION"
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
@@ -59,12 +68,7 @@ _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="US_AZ_NOT_PERMANENTLY_INELIGIBLE_FOR_TPR",
             sub_criteria_list=[
-                no_ineligible_tpr_offense_convictions.VIEW_BUILDER,
-                no_tpr_denial_or_release_in_current_incarceration.VIEW_BUILDER,
-                no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
-                not_serving_flat_sentence.VIEW_BUILDER,
-                is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
-                no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+                *TPR_ELIGIBLE_POPULATION_STATIC_CRITERIA,
                 incarceration_population.VIEW_BUILDER.as_criteria(
                     criteria_name="IN_INCARCERATION_CANDIDATE_POPULATION",
                     sessions_dataset=SESSIONS_DATASET,

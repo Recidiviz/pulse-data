@@ -65,6 +65,28 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+NO_ACIS_DTP_OR_TPR_DATE_SET = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
+    criteria_name="US_AZ_NO_ACIS_DTP_OR_TPR_DATE_SET",
+    sub_criteria_list=[
+        acis_dtp_date_not_set.VIEW_BUILDER,
+        acis_tpr_date_not_set.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
+
+# TODO(OBT-47152):Remove NO Violations, replace with individual 2 criteria, when there is more bandwidth to change the FE to split the violations criteria
+NO_VIOLATIONS = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
+    criteria_name="US_AZ_NO_VIOLATIONS",
+    sub_criteria_list=[
+        no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+        no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
+
+
 # Criteria shared in both TPR and DTP
 COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[TaskCriteriaBigQueryViewBuilder] = [
     no_active_felony_detainers.VIEW_BUILDER,
@@ -72,24 +94,9 @@ COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[TaskCriteriaBigQueryViewBuilder] = [
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
     not_serving_flat_sentence.VIEW_BUILDER,
     is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-        logic_type=TaskCriteriaGroupLogicType.AND,
-        criteria_name="US_AZ_NO_VIOLATIONS",
-        sub_criteria_list=[
-            no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
-            no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[],
-    ),
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-        logic_type=TaskCriteriaGroupLogicType.AND,
-        criteria_name="US_AZ_NO_ACIS_DTP_OR_TPR_DATE_SET",
-        sub_criteria_list=[
-            acis_dtp_date_not_set.VIEW_BUILDER,
-            acis_tpr_date_not_set.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[],
-    ),
+    NO_VIOLATIONS,
+    NO_ACIS_DTP_OR_TPR_DATE_SET,
+    no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
 ]
 
 _FUNCTIONAL_LITERACY_CRITERIA_DTP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(

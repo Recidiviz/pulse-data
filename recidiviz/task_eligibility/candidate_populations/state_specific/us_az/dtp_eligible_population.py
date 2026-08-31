@@ -53,6 +53,16 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+DTP_ELIGIBLE_POPULATION_STATIC_CRITERIA = (
+    no_ineligible_dtp_offense_convictions.VIEW_BUILDER,
+    only_drug_offense_convictions.VIEW_BUILDER,
+    no_dtp_denial_or_previous_dtp_release.VIEW_BUILDER,
+    no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
+    not_serving_flat_sentence.VIEW_BUILDER,
+    is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
+    no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+)
+
 _POPULATION_NAME = "US_AZ_DTP_ELIGIBLE_POPULATION"
 
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
@@ -63,13 +73,7 @@ _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="US_AZ_NOT_PERMANENTLY_INELIGIBLE_FOR_DTP",
             sub_criteria_list=[
-                no_ineligible_dtp_offense_convictions.VIEW_BUILDER,
-                only_drug_offense_convictions.VIEW_BUILDER,
-                no_dtp_denial_or_previous_dtp_release.VIEW_BUILDER,
-                no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
-                not_serving_flat_sentence.VIEW_BUILDER,
-                is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
-                no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+                *DTP_ELIGIBLE_POPULATION_STATIC_CRITERIA,
                 incarceration_population.VIEW_BUILDER.as_criteria(
                     criteria_name="IN_INCARCERATION_CANDIDATE_POPULATION",
                     sessions_dataset=SESSIONS_DATASET,
