@@ -161,6 +161,13 @@ import {
       "google_sheet_backed_tables",
       "manually_updated_source_tables",
       "user_mgmt_logs",
+      # US_AZ document store datasets are newly registered and do not exist in
+      # BigQuery yet, so they must be created rather than imported. Excluded from
+      # this one-time adoption import block; removed along with the whole block in
+      # OBT-44639.
+      "us_az_document_contents",
+      "us_az_document_store_metadata",
+      "us_az_document_store_temp",
       # US_NYC datasets are newly registered and do not exist in BigQuery yet, so
       # they must be created rather than imported. Excluded from this one-time
       # adoption import block; removed along with the whole block in OBT-44639.
