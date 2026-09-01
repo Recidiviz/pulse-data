@@ -123,6 +123,18 @@ marketplace, declared under `extraKnownMarketplaces` and `enabledPlugins` in
 `.claude/settings.json`. Either way, available skills are listed in the system
 prompt at session start.
 
+**The `enabledPlugins` declaration does not install anything.** It only
+activates a plugin that is already installed on your machine. Each developer
+must install each declared plugin once per machine:
+
+```
+claude plugin install <name>@recidiviz --scope project
+```
+
+If a declared plugin is not installed, its skills and hooks silently do not
+load. A session-start hook in this repo checks for this and prints the install
+command for any plugin that is missing.
+
 `create-pr` and `review-pr-comments` come from the shared marketplace and are
 invoked with a plugin-namespaced name — `/create-pr:create-pr`, not `/create-pr`.
 To opt out of one locally, set it to `false` under `enabledPlugins` in

@@ -94,6 +94,20 @@
     "security-rules@recidiviz": true,
     "writing-style@recidiviz": true
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/check_plugin_installs.py\"",
+            "statusMessage": "Checking that enabled Claude plugins are installed"
+          }
+        ]
+      }
+    ]
+  },
   "env": {
     "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE": "1",
 
