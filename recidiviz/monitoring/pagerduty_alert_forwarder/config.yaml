@@ -26,6 +26,13 @@ rules:
       severity: error
       pagerduty_service: "[PRODUCTION] Dashboards Project"
 
+  - name: "JII App Production Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-jii-production"
+    actions:
+      severity: error
+      pagerduty_service: "[PRODUCTION] JII Project"
+
   # Staging/test alerts - lower priority
   - name: "Staging Alerts"
     match:
@@ -40,6 +47,13 @@ rules:
     actions:
       severity: warning
       pagerduty_service: "[STAGING] Dashboards Project"
+
+  - name: "JII App Staging Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-jii-staging"
+    actions:
+      severity: warning
+      pagerduty_service: "[STAGING] JII Project"
 
   # Secondly, apply alert policy-specific actions
   - name: "Stale Metric Exports"
@@ -237,6 +251,12 @@ rules:
     actions:
       title_prefix: "🚨 [PRODUCTION]"
 
+  - name: "JII App Production Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-jii-production"
+    actions:
+      title_prefix: "🚨 [PRODUCTION]"
+
   # Staging/test alerts - lower priority
   - name: "Staging Alerts - Prefix Title"
     match:
@@ -247,5 +267,11 @@ rules:
   - name: "Dashboard Staging Alerts - Prefix Title"
     match:
       incident.resource.labels.project_id: "recidiviz-dashboard-staging"
+    actions:
+      title_prefix: "[STAGING]"
+
+  - name: "JII App Staging Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-jii-staging"
     actions:
       title_prefix: "[STAGING]"

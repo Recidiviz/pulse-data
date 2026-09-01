@@ -851,6 +851,102 @@ class TestRuleEngineIntegration(unittest.TestCase):
             "[STAGING] Dataflow Job High vCPU Use: dashboard-metrics-staging",
         )
 
+    def test_production_jii_app_alert_routes_to_jii_service(self) -> None:
+        """Test production JII app alert with an unmatched policy uses env routing."""
+        alert = {
+            "incident": {
+                "incident_id": "test-jii-prod-1",
+                "policy_name": "Unknown Alert Type",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-jii-production",
+                    }
+                },
+                "summary": "Some JII alert",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "JII App Production Alerts" and its prefix rule
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["pagerduty_service"], "[PRODUCTION] JII Project")
+        self.assertEqual(result["title"], "🚨 [PRODUCTION] Some JII alert")
+
+    def test_staging_jii_app_alert_routes_to_jii_service(self) -> None:
+        """Test staging JII app alert with an unmatched policy uses env routing."""
+        alert = {
+            "incident": {
+                "incident_id": "test-jii-stg-1",
+                "policy_name": "Unknown Alert Type",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-jii-staging",
+                    }
+                },
+                "summary": "Some JII alert",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "JII App Staging Alerts" and its prefix rule
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[STAGING] JII Project")
+        self.assertEqual(result["title"], "[STAGING] Some JII alert")
+
+    def test_production_jii_app_cloud_run_job_failure(self) -> None:
+        """Test production JII app alert composes with a policy-specific rule."""
+        alert = {
+            "incident": {
+                "incident_id": "test-jii-prod-2",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-jii-production",
+                        "job_name": "jii-texting-prod",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match "JII App Production Alerts", "Cloud Run Job Failure", and the prefix rule
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["pagerduty_service"], "[PRODUCTION] JII Project")
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Cloud Run Job Failure: jii-texting-prod",
+        )
+
+    def test_staging_jii_app_cloud_run_job_failure(self) -> None:
+        """Test staging JII app alert composes with a policy-specific rule."""
+        alert = {
+            "incident": {
+                "incident_id": "test-jii-stg-2",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-jii-staging",
+                        "job_name": "jii-texting-staging",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match "JII App Staging Alerts", "Cloud Run Job Failure", and the prefix rule
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[STAGING] JII Project")
+        self.assertEqual(
+            result["title"],
+            "[STAGING] Cloud Run Job Failure: jii-texting-staging",
+        )
+
     def test_staging_data_platform_airflow_idle_environment(self) -> None:
         """Test production data platform alert with idle Airflow environment."""
         alert = {

@@ -86,6 +86,8 @@ components:
           - "[PRODUCTION] Dashboards Project"
           - "[STAGING] Dashboards Project"
           - "EOMIS Writeback"
+          - "[PRODUCTION] JII Project"
+          - "[STAGING] JII Project"
 
     data-platform-alerting:
       metadata:
