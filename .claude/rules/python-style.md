@@ -12,12 +12,26 @@ the plugin injects its always-on core at session start.
 - Add type information to every function definition. Use modern types (`str | None` not `Optional[str]`). Avoid `Any` where reasonable.
 - Do not give parameters or attributes nullable types (e.g. `str | None`) unless there is a legitimate, non-test use case to do so. If we always expect the non-test code to have a nonnull value, the type should be nonnull.
 - Do not give parameters or attributes default values (e.g. `my_var: str | None = None` or `my_var: str | None = attr.ib(default=None)`) unless there is a legitimate, non-test use case to do so. Avoiding verbose test updates is an ANTI GOAL.
+- Do not introduce a new type — a Protocol, wrapper, or shared base class — whose only job is to satisfy the type checker. First try narrowing the existing types (more specific return types, `assert_type()`), or annotate with a union of the concrete types that actually occur. A new abstraction must be justified by a named attribute or behavior the existing types lack.
 
 ## Avoiding complexity
 
 - If the type of a variable suggests it could have multiple values but you are certain it can only have a subset, do not add branches to handle the impossible cases. Instead, make your assumptions explicit with a runtime check: use `assert_type()` from `recidiviz.utils.types` (not `typing.assert_type`) for type narrowing, or raise a `ValueError` for other invariants. `assert_type()` returns the narrowed value, so you can chain directly (e.g. `assert_type(var, str).lower()` instead of adding a None-handling branch before accessing `var`).
 - When accessing values in dictionaries, always use `[]` (e.g. `my_dict[key]`) instead of `.get()` unless there is a known, good reason why the key might not exist.
 - Test for emptiness or presence with the object's own truthiness — `if my_collection:` / `if not my_collection:` — rather than `if len(my_collection) > 0` / `== 0`. This works for lists, dicts, sets, strings, and any object that defines `__len__` or `__bool__` (including `YAMLDict`).
+- Compile regexes once, as module-level constants — never build or `re.compile` a pattern inside a function that runs once per record. If the check reduces to a length or character-class test, drop the regex and use plain string operations.
+
+  ```python
+  # Prefer this:
+  _EXTERNAL_ID_REGEX = re.compile(r"^[A-Z]{2}\d{6}$")
+
+  def is_valid_external_id(external_id: str) -> bool:
+      return bool(_EXTERNAL_ID_REGEX.match(external_id))
+
+  # over recompiling on every call:
+  def is_valid_external_id(external_id: str) -> bool:
+      return bool(re.match(r"^[A-Z]{2}\d{6}$", external_id))
+  ```
 
 ## Filesystem paths
 
@@ -50,7 +64,66 @@ class AssignmentsByTimePeriodViewBuilder(...):
         return f"SELECT {col}, COUNT(*) FROM (...) GROUP BY {col}"
 ```
 
+## Allowlists and exemption lists
+
+An exemption or allowlist must enumerate its items explicitly — never `set(SomeEnum)` or another expression that auto-includes future members. Every entry carries its own `TODO(#issue)` so the list shrinks over time and each subsequent PR can burn down exactly one entry. When adding an exemption, ask what other feature silently relies on the guarantee being exempted, and add a test that rejects the bad combination where one exists.
+
+```python
+# Prefer this — an explicit, per-entry-tracked list:
+_STATES_MISSING_CONFIGS: set[StateCode] = {
+    StateCode.US_XX,  # TODO(#12345): Add configs and remove this exemption.
+}
+
+# over an expression that silently exempts every future member too:
+_STATES_MISSING_CONFIGS = set(StateCode)
+```
+
+## Naming
+
+- Name a thing for its actual scope and contents, not for the motivating case or the property you wish it had. A collection that can hold more than unknown datasets cannot be called `unknown_datasets`; a type that accepts any BigQuery address cannot have `View` in its name. If the name claims a property the code does not enforce, rename the thing or add the missing filter.
+- Do not coin new abstract terms. Name things with the words the code and the domain already use, and describe behavior concretely (`OptionalConflictCheckedAttribute`, not `DiscriminatableAttribute`).
+- When two same-kind values are in scope (a declared schema and a saved schema, a GitHub issue number and a Linear issue id), qualify both names so each says which one it is. A bare shared noun (`collection_name`) is wrong where two kinds of collection exist (`document_collection_name`, `extractor_collection_name`).
+- When a rename changes what a term means, sweep every derived identifier in the same change — enums, aliases, constants, YAML keys, parameters, docstrings, usage strings, and error messages — not just the declaration.
+- Name a module after the primary class it defines, converted to snake_case exactly. 
+- Use plural names for variables that hold collections.
+- Name a boolean parameter as a yes/no question about the caller's situation. When a parameter can mean three or more things, use an enum, not an optional boolean.
+
+  ```python
+  # Prefer names that read as a yes/no fact about the caller
+  # (is_..., has_..., include_..., should_...):
+  def build_export_query(*, include_sealed_records: bool) -> str: ...
+  def materialize_view(*, is_sandbox_run: bool) -> None: ...
+
+  # over names that leave the reader guessing what True means:
+  def build_export_query(*, sealed: bool) -> str: ...
+  def materialize_view(*, sandbox: bool) -> None: ...
+
+  # Bad — an optional boolean smuggles in a third meaning (None):
+  def run_validations(*, sandbox: bool | None = None) -> None: ...
+
+  # Good — three or more meanings get an enum:
+  class ValidationRunTarget(Enum):
+      PROD = "PROD"
+      STAGING = "STAGING"
+      SANDBOX = "SANDBOX"
+
+  def run_validations(*, target: ValidationRunTarget) -> None: ...
+  ```
+
 ## Control flow and error handling
+
+### Never use a bare `assert` outside of tests
+
+`assert` statements are removed when Python runs with `-O`, so a bare `assert` enforces nothing in production. Check the condition with an `if` and raise an error that names what was expected and what was found. In scripts' `__main__` blocks, report failure with `sys.exit(...)`, not `assert`.
+
+```python
+# Prefer this:
+if not batches:
+    raise ValueError(f"Expected at least one batch for run [{run_id}], found none")
+
+# over a bare assert, which is skipped under `python -O`:
+assert batches, "expected batches"
+```
 
 ### Prefer early returns and guard clauses to flatten logic
 
@@ -92,6 +165,41 @@ Bracket every interpolated value in an error or exception message — `[{value}]
 
 ```python
 raise ValueError(f"Unexpected builder type [{type(builder)}]")
+```
+
+### Name the failing item and carry the fix
+
+When an error is raised while processing one item out of many — a row, a raw file, a column — name which item failed with its exact identifier (row id, file tag, column name), not just what was wrong, so the reader can grep for it. And when a human is expected to act on the failure, the message must carry the fix: the command to run and where to run it. If a reader has to ask "what would I actually do to resolve this?", the message needs rewriting.
+
+```python
+# Prefer this:
+raise ValueError(
+    f"Column [{column_name}] in raw file [{file_tag}] has no documentation. "
+    f"Add a description to recidiviz/ingest/direct/regions/{region}/raw_data/"
+    f"{file_tag}.yaml and rerun the script."
+)
+
+# over a message with no identifier and no fix:
+raise ValueError("missing documentation")
+```
+
+### Suppress only named failure modes
+
+A broad `except`, a `.get()` default, or any other error-absorbing construct must name the specific bad values or failure modes it exists to absorb — in a comment or the surrounding logic — and let anything else re-raise. Catch only exceptions you can explain.
+
+```python
+try:
+    parsed_date = datetime.date.fromisoformat(raw_value)
+except ValueError:
+    # Rows ingested before the 2019 system migration store admission_date as an
+    # empty string; treat those as unknown.
+    parsed_date = None
+
+# Bad — absorbs every failure, known and unknown alike:
+try:
+    parsed_date = datetime.date.fromisoformat(raw_value)
+except Exception:
+    parsed_date = None
 ```
 
 ### Re-raise caught exceptions with `from e` and added context
