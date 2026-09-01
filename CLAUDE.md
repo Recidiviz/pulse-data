@@ -13,6 +13,7 @@ These apply to **every task** without exception:
 - **Worktree naming**: Name worktrees `<us_xx>_<feature_name>` (e.g. `us_nc_location_metadata`), prepending the state code of the state the work relates to. If the work spans multiple states or isn't state-specific, be flexible — just use a descriptive `<feature_name>`.
 - **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.
 - **Python style**: Follow the Python style rules in `.claude/rules/python-style.md` (loaded below) whenever writing or modifying Python.
+- **SQL style**: Before writing SQL, or code in any language that generates SQL, read the SQL style rules in `.claude/rules/sql-style.md`.
 
 ## Development Commands
 

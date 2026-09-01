@@ -45,25 +45,6 @@ Imports outside of top-level should be avoided unless absolutely necessary. If y
 
 Use raw string literals sparingly in code. Always consider storing a string in a named constant. This is critical when the string is used in more than one place and changing it in one place without the others would silently break behavior — define it once as a constant and reference that constant everywhere.
 
-A common high-value case is **SQL output column names when building queries in Python**. A column produced by one query (`SELECT … AS <name>`) is usually read again — by a downstream query, an output schema, or a test — so inlining the name as a raw string in each place lets a rename silently break the others (the SQL fails only at query time, if at all). Define the name once and reference it everywhere. A module-level constant is fine; use a class variable when there is a builder object it naturally belongs to. Don't bother for a name that lives entirely inside a single query string and is never referenced elsewhere.
-
-```python
-class AssignmentsByTimePeriodViewBuilder(...):
-    ASSIGNMENT_START_DATE_COLUMN_NAME = "assignment_start_date"
-
-    @classmethod
-    def _build_query(cls, ...) -> str:
-        return f"""
-        SELECT assignment_date AS {cls.ASSIGNMENT_START_DATE_COLUMN_NAME}
-        FROM assignment_sessions
-        """
-
-    @classmethod
-    def _build_downstream_query(cls, ...) -> str:
-        col = cls.ASSIGNMENT_START_DATE_COLUMN_NAME
-        return f"SELECT {col}, COUNT(*) FROM (...) GROUP BY {col}"
-```
-
 ## Allowlists and exemption lists
 
 An exemption or allowlist must enumerate its items explicitly — never `set(SomeEnum)` or another expression that auto-includes future members. Every entry carries its own `TODO(#issue)` so the list shrinks over time and each subsequent PR can burn down exactly one entry. When adding an exemption, ask what other feature silently relies on the guarantee being exempted, and add a test that rejects the bad combination where one exists.
@@ -287,33 +268,9 @@ class EventObservationBigQueryViewBuilder(BigQueryViewBuilder):
         ...
 ```
 
-## SQL templates
+## SQL
 
-Assemble multi-line SQL templates with `fix_indent(...)` (from `recidiviz.utils.string_formatting`) rather than hand-managing indentation in raw multi-line strings. `fix_indent(s, indent_level=N)` dedents `s`, strips surrounding whitespace, and re-indents every line to `N` spaces while preserving the relative indentation between lines. Its main value is composing templates: a fragment built elsewhere arrives with its own indentation, and `fix_indent(fragment, indent_level=N)` re-indents it so it nests cleanly inside the parent query. Prefer shared clause helpers such as `nonnull_end_date_clause` (from `recidiviz.calculator.query.bq_utils`) over hand-written SQL snippets.
-
-```python
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.utils.string_formatting import fix_indent
-
-# A subquery built elsewhere, formatted at its own (left-margin) indentation.
-time_periods_query = time_period.build_query()
-
-query_template = f"""
-WITH time_periods AS (
-{fix_indent(time_periods_query, indent_level=4)}
-),
-assignment_sessions AS (
-    SELECT
-        *,
-        {nonnull_end_date_clause("end_date_exclusive")} AS end_date_nonnull
-    FROM assignments
-)
-SELECT * FROM time_periods JOIN assignment_sessions USING (person_id)
-"""
-return fix_indent(query_template, indent_level=0)
-```
-
-Here the inner `fix_indent(time_periods_query, indent_level=4)` re-indents the embedded subquery to sit four spaces deep inside the `time_periods` CTE, and the outer `fix_indent(query_template, indent_level=0)` strips the surrounding blank lines and normalizes the whole template to a clean left margin.
+SQL-writing conventions related to generating SQL using Python live in [`sql-style.md`](./sql-style.md). That file is deliberately not auto-loaded. Before writing Python code that generates SQL, read `.claude/rules/sql-style.md` first.
 
 ## Testing
 
