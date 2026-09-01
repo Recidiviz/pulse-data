@@ -381,8 +381,8 @@ class ReadCsvFirstRowCustomTerminatorTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Could not find a line terminator after reading more than "
-            rf"\[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}\] characters",
+            r"Could not find a line terminator after reading "
+            rf"\[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}\] or more characters",
         ):
             read_csv_first_row(
                 f=io.StringIO(no_terminator),

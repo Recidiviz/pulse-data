@@ -47,7 +47,7 @@ def _read_custom_terminated_line(f: IO, line_terminator: str) -> List[str]:
     https://docs.python.org/3/library/csv.html#csv.Dialect.lineterminator
 
     So if there is a custom line terminator manually parse until we encounter it or have read more than
-    DEFAULT_READ_CHUNK_SIZE characters, and replace any newlines with spaces to avoid parsing issues.
+    MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE characters, and replace any newlines with spaces to avoid parsing issues.
     """
     line = ""
     while True:
@@ -58,8 +58,8 @@ def _read_custom_terminated_line(f: IO, line_terminator: str) -> List[str]:
 
         if len(line) >= MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE:
             raise ValueError(
-                f"Could not find a line terminator after reading more than "
-                f"[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}] characters. This is likely an "
+                f"Could not find a line terminator after reading "
+                f"[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}] or more characters. This is likely an "
                 f"indication that this file was sent with the wrong line terminators or "
                 f"encoding which meant we could not properly parse the file."
             )
