@@ -30,9 +30,16 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     RAW_DATA_METADATA_COLUMNS_UPPER,
 )
 
-DEFAULT_READ_CHUNK_SIZE = (
-    10 * 1024
-)  # 10 KiB should be more than enough to read the first row
+DEFAULT_READ_CHUNK_SIZE = 10 * 1024  # 10 KiB GCS read buffer size.
+
+# Upper bound on how far we will scan for a custom line terminator before
+# concluding the file was sent with the wrong terminators or encoding. This
+# caps memory so we never buffer an entire mis-delimited file, while still
+# being large enough to accommodate a legitimate first record that contains
+# long free-text fields (e.g. narrative clinical notes).
+# TODO(OBT-47093): Make this configurable per raw-file config and read in blocks
+# rather than one character at a time.
+MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE = 1024 * 1024  # 1 MiB
 
 
 def _read_custom_terminated_line(f: IO, line_terminator: str) -> List[str]:
@@ -49,12 +56,12 @@ def _read_custom_terminated_line(f: IO, line_terminator: str) -> List[str]:
             # if we read nothing, we're at the end of the file
             break
 
-        if len(line) >= DEFAULT_READ_CHUNK_SIZE:
+        if len(line) >= MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE:
             raise ValueError(
                 f"Could not find a line terminator after reading more than "
-                f"[{DEFAULT_READ_CHUNK_SIZE}] characters. This is likely an indication "
-                f"that this file was sent with the wrong line terminators or encoding "
-                f"which meant we could not properly parse the file."
+                f"[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}] characters. This is likely an "
+                f"indication that this file was sent with the wrong line terminators or "
+                f"encoding which meant we could not properly parse the file."
             )
 
         line += char

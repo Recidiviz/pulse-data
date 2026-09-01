@@ -16,6 +16,7 @@
 # =============================================================================
 """Test for direct_ingest_raw_file_header_reader.py"""
 import datetime
+import io
 import os
 import re
 import unittest
@@ -26,7 +27,9 @@ import attr
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader import (
+    MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE,
     DirectIngestRawFileHeaderReader,
+    read_csv_first_row,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -343,3 +346,47 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         self.fs.test_add_path(gcs_path, local_path)
 
         return gcs_path
+
+
+class ReadCsvFirstRowCustomTerminatorTest(unittest.TestCase):
+    """Tests for reading a custom-line-terminated first row, focused on the
+    MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE cap."""
+
+    DELIMITER = "†"
+    TERMINATOR = "‡"
+
+    def test_first_row_with_long_free_text_field_parses(self) -> None:
+        """A first record whose free-text field pushes it past the legacy 10 KiB
+        scan cap (but under the current cap) parses successfully. This is the case
+        that broke US_CO eomis_hsencounter, whose first record was ~10.9 KiB of
+        narrative clinical notes."""
+        long_note = "a" * (50 * 1024)
+        first_record = self.DELIMITER.join(["OFFENDER1", long_note, "2025/01/01"])
+        trailing_record = self.DELIMITER.join(["OFFENDER2", "short", "2025/01/02"])
+        contents = f"{first_record}{self.TERMINATOR}{trailing_record}{self.TERMINATOR}"
+
+        result = read_csv_first_row(
+            f=io.StringIO(contents),
+            delimiter=self.DELIMITER,
+            custom_line_terminator=self.TERMINATOR,
+            ignore_quotes=True,
+        )
+
+        self.assertEqual(result, ["OFFENDER1", long_note, "2025/01/01"])
+
+    def test_missing_terminator_beyond_cap_raises(self) -> None:
+        """A file with no terminator within the cap fails loudly, so the cap still
+        guards against buffering an entire mis-delimited file."""
+        no_terminator = "x" * (MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE + 10)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Could not find a line terminator after reading more than "
+            rf"\[{MAX_CUSTOM_LINE_TERMINATOR_SCAN_SIZE}\] characters",
+        ):
+            read_csv_first_row(
+                f=io.StringIO(no_terminator),
+                delimiter=self.DELIMITER,
+                custom_line_terminator=self.TERMINATOR,
+                ignore_quotes=True,
+            )
