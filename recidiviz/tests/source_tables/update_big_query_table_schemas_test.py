@@ -1971,6 +1971,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nyc_identity_fragment.identity_race",
     "us_nyc_identity_fragment.identity_sex",
     "us_nyc_identity_rejections.rejected_identity_cluster",
+    "us_nyc_ingest_view_results.person",
     "us_nyc_normalized_state.state_assessment",
     "us_nyc_normalized_state.state_charge",
     "us_nyc_normalized_state.state_charge_incarceration_sentence_association",

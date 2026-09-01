@@ -11,7 +11,7 @@
         "name": "state_code",
         "label": "State code",
         "helpText": "State that the pipeline is running for.",
-        "regexes": ["US_[A-Z]{2}"]
+        "regexes": ["US_[A-Z]{2,}"]
       },
       {
         "name": "output_sandbox_prefix",
