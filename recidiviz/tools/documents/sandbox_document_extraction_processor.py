@@ -36,7 +36,7 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
     EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
-    GCSLLMDocumentExtractionRequestBuilder,
+    GCSDocumentTextSource,
     LLMDocumentExtractionRequestBuilder,
 )
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
@@ -392,18 +392,20 @@ class DocumentExtractionProcessor:
             document_store_sandbox=self.document_store_sandbox,
             bq_client=self.bq_client,
         )
-        request_builder = GCSLLMDocumentExtractionRequestBuilder(
-            fs=self.fs,
-            project_id=self.bq_client.project_id,
-            state_code=self.state_code,
-            collection_name=self.config.input_document_collection.name,
-            instructions_prompt=self.config.instructions_prompt,
-            response_json_schema=self.config.extractor_collection.generate_json_schema(),
-            request_parameters=LLMDocumentExtractionRequestBuilder.build_request_parameters(
-                model_config=self.config.model_config, labels=self.labels
-            ),
-            source_sandbox_prefix=source_document_sandbox_prefix,
+        request_builder = LLMDocumentExtractionRequestBuilder.for_config(
+            config=self.config, billing_labels=self.labels
         )
+        documents = [
+            GCSDocumentTextSource(
+                document_contents_id=job_document.document_contents_id,
+                fs=self.fs,
+                project_id=self.bq_client.project_id,
+                state_code=self.state_code,
+                collection_name=self.config.input_document_collection.name,
+                source_sandbox_prefix=source_document_sandbox_prefix,
+            )
+            for job_document in pending_documents
+        ]
         runner = SyncLLMDocumentExtractionRequestRunner(client=self.sync_client)
 
         total_documents = len(pending_documents)
@@ -435,7 +437,7 @@ class DocumentExtractionProcessor:
         chunk: list[LLMJobDocumentExtractionResult] = []
         with runner.execute_document_extraction_requests(
             requests=self._iter_requests(
-                job_documents=pending_documents,
+                documents=documents,
                 request_builder=request_builder,
                 source_text_by_document=source_text_by_document,
                 progress=progress,
@@ -474,8 +476,8 @@ class DocumentExtractionProcessor:
     def _iter_requests(
         self,
         *,
-        job_documents: list[LLMExtractionJobDocument],
-        request_builder: GCSLLMDocumentExtractionRequestBuilder,
+        documents: list[GCSDocumentTextSource],
+        request_builder: LLMDocumentExtractionRequestBuilder,
         source_text_by_document: dict[str, str],
         progress: _ExtractionProgressLogger,
     ) -> Iterator[LLMDocumentExtractionRequest]:
@@ -501,10 +503,8 @@ class DocumentExtractionProcessor:
         (the one consuming the completed builds), not from the build pool.
         """
         with map_with_bounded_concurrency(
-            work_fn=lambda job_document: request_builder.build_request(
-                job_document=job_document
-            ),
-            items=job_documents,
+            work_fn=lambda document: request_builder.build_request(document=document),
+            items=documents,
             max_concurrency=self.request_build_concurrency,
         ) as completed_builds:
             for completed in completed_builds:

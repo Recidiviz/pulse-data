@@ -22,7 +22,6 @@ import datetime
 import re
 from collections.abc import Callable, Sequence
 
-import attr
 from googleapiclient.discovery import Resource
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -116,22 +115,6 @@ def _sanitize_label_key(key: str) -> str:
 def build_vertex_ai_sync_llm_client(model_config: LLMModelConfig) -> SyncLLMClient:
     """Returns the production synchronous LLM client for |model_config|."""
     return VertexAISyncLLMClient(model_config=model_config)
-
-
-@attr.define(frozen=True, kw_only=True)
-class _GoldenEvalDocumentExtractionRequestBuilder(LLMDocumentExtractionRequestBuilder):
-    """Request builder for golden eval runs, which already hold each document's
-    text and don't need to read it from GCS.
-    """
-
-    def build_request(
-        self, *, document: GoldenEvalDocument
-    ) -> LLMDocumentExtractionRequest:
-        """Returns the extraction request for |document|."""
-        return self.build_request_for_text(
-            document_contents_id=document.golden_document_id,
-            document_text=document.document_text,
-        )
 
 
 class GoldenEvalRunner:
@@ -296,10 +279,20 @@ class GoldenEvalRunner:
         """Returns one extraction request per golden eval document, built the same
         way the pipeline builds its requests.
         """
-        builder = _GoldenEvalDocumentExtractionRequestBuilder.for_config(
+        builder = LLMDocumentExtractionRequestBuilder.for_config(
             config=config, billing_labels=self.billing_labels(config=config)
         )
-        return [builder.build_request(document=document) for document in documents]
+        requests = []
+        for document in documents:
+            request = builder.build_request(document=document)
+            if request is None:
+                # Unreachable: GoldenEvalDocument validates its text non-empty.
+                raise ValueError(
+                    f"Golden eval document [{document.golden_document_id}] has "
+                    f"empty text, so no extraction request could be built for it."
+                )
+            requests.append(request)
+        return requests
 
     def _execute_requests(
         self,

@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder that assembles the per-document `LLMDocumentExtractionRequest` from
-text the caller already holds, plus a subclass for the pipeline path that reads
-the text from GCS first.
+"""Builder that assembles the per-document `LLMDocumentExtractionRequest` for any
+`DocumentTextSource`, or directly from text the caller already holds. Also
+defines the error the builder raises, and the GCS-backed `DocumentTextSource`
+the pipeline path uses.
 """
 
-from typing import Any, TypeVar
+from typing import Any
 
 import attr
 
@@ -29,6 +30,7 @@ from recidiviz.cloud_storage.gcs_file_system import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.document_text_source import DocumentTextSource
 from recidiviz.documents.extraction.llm_client.types import (
     BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME,
     LLMDocumentExtractionRequest,
@@ -39,11 +41,6 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 from recidiviz.documents.extraction.models.llm_model_registry import LLMModelConfig
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
-)
-from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
-
-_LLMDocumentExtractionRequestBuilderT = TypeVar(
-    "_LLMDocumentExtractionRequestBuilderT", bound="LLMDocumentExtractionRequestBuilder"
 )
 
 
@@ -59,8 +56,8 @@ class LLMDocumentExtractionRequestError(Exception):
 
 @attr.define(frozen=True, kw_only=True)
 class LLMDocumentExtractionRequestBuilder:
-    """Assembles the per-document `LLMDocumentExtractionRequest` from text the
-    caller already holds.
+    """Assembles the per-document `LLMDocumentExtractionRequest` for any
+    `DocumentTextSource`, or directly from text the caller already holds.
     """
 
     instructions_prompt: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -91,6 +88,24 @@ class LLMDocumentExtractionRequestBuilder:
             BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME: labels,
         }
 
+    def build_request(
+        self, *, document: DocumentTextSource
+    ) -> LLMDocumentExtractionRequest | None:
+        """Returns the extraction request for |document|, fetching its text through
+        the document's own fetch, or None if the text is empty (nothing to extract).
+
+        Raises `LLMDocumentExtractionRequestError` when the document's text cannot
+        be fetched.
+        """
+        document_text = document.fetch_document_text()
+        if not document_text:
+            return None
+
+        return self.build_request_for_text(
+            document_contents_id=document.document_contents_id,
+            document_text=document_text,
+        )
+
     def build_request_for_text(
         self, *, document_contents_id: str, document_text: str
     ) -> LLMDocumentExtractionRequest:
@@ -115,14 +130,14 @@ class LLMDocumentExtractionRequestBuilder:
 
     @classmethod
     def for_config(
-        cls: type[_LLMDocumentExtractionRequestBuilderT],
+        cls,
         *,
         config: LLMExtractorConfig,
         billing_labels: dict[str, str],
-    ) -> _LLMDocumentExtractionRequestBuilderT:
-        """Returns the text-in-hand builder for |config|: its rendered
-        instructions prompt, its collection's generated JSON schema, and the
-        request parameters its model config resolves to.
+    ) -> "LLMDocumentExtractionRequestBuilder":
+        """Returns the builder for |config|: its rendered instructions prompt, its
+        collection's generated JSON schema, and the request parameters its model
+        config resolves to.
         """
         return cls(
             instructions_prompt=config.instructions_prompt,
@@ -134,10 +149,13 @@ class LLMDocumentExtractionRequestBuilder:
 
 
 @attr.define(frozen=True, kw_only=True)
-class GCSLLMDocumentExtractionRequestBuilder(LLMDocumentExtractionRequestBuilder):
-    """Request builder for the pipeline path, which reads each document's text
-    from GCS before assembling the request.
+class GCSDocumentTextSource:
+    """A `DocumentTextSource` whose text is read from a document collection's
+    GCS blob storage on each fetch.
     """
+
+    document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Identifier of the document, which names its text blob in GCS."""
 
     fs: GCSFileSystem = attr.ib()
     """The GCS file system the document text is read from."""
@@ -146,43 +164,33 @@ class GCSLLMDocumentExtractionRequestBuilder(LLMDocumentExtractionRequestBuilder
     """The project whose document blob storage bucket holds the text."""
 
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-    """The state whose documents this job processes."""
+    """The state the document belongs to."""
 
     collection_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    """The document collection the job's documents belong to."""
+    """The document collection the document belongs to."""
 
     source_sandbox_prefix: str | None = attr.ib(validator=attr_validators.is_opt_str)
     """When set, document text is read from the state's sandbox blob-storage bucket,
     namespaced by this prefix. None in production."""
 
-    def build_request(
-        self, *, job_document: LLMExtractionJobDocument
-    ) -> LLMDocumentExtractionRequest | None:
-        """Returns the extraction request for |job_document|, reading its text
-        from GCS, or None if the document's text is empty (nothing to extract).
+    def fetch_document_text(self) -> str:
+        """Returns the document's full text, read from GCS.
 
-        Raises `LLMDocumentExtractionRequestError` when the document_contents_id is not found in GCS.
+        Raises `LLMDocumentExtractionRequestError` when the document_contents_id is
+        not found in GCS.
         """
-        document_contents_id = job_document.document_contents_id
         path = gcs_path_for_document(
             project_id=self.project_id,
             state_code=self.state_code,
             collection_name=self.collection_name,
-            document_contents_id=document_contents_id,
+            document_contents_id=self.document_contents_id,
             sandbox_prefix=self.source_sandbox_prefix,
         )
         try:
-            document_text = self.fs.download_as_string(path)
+            return self.fs.download_as_string(path)
         except GCSBlobDoesNotExistError as e:
             raise LLMDocumentExtractionRequestError(
-                document_contents_id=document_contents_id,
-                message=f"Document text for [{document_contents_id}] not found at "
-                f"[{path.uri()}].",
+                document_contents_id=self.document_contents_id,
+                message=f"Document text for [{self.document_contents_id}] not found "
+                f"at [{path.uri()}].",
             ) from e
-
-        if not document_text:
-            return None
-
-        return self.build_request_for_text(
-            document_contents_id=document_contents_id, document_text=document_text
-        )

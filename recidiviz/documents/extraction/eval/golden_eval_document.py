@@ -68,6 +68,19 @@ class GoldenEvalDocument:
     present.
     """
 
+    @property
+    def document_contents_id(self) -> str:
+        """Returns the golden document id, under the name the request builder's
+        `DocumentTextSource` interface expects.
+        """
+        return self.golden_document_id
+
+    def fetch_document_text(self) -> str:
+        """Returns the document text this instance already holds, satisfying the
+        request builder's `DocumentTextSource` interface.
+        """
+        return self.document_text
+
     def expected_scalar_value(self, field_name: str) -> Any:
         """Returns the expected value of scalar-valued field |field_name|;
         `None` means the field is not expected to be present.
