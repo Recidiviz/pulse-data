@@ -88,7 +88,7 @@ fi
 DOCKER_IMAGE_TAG=${VERSION_TAG}
 
 if [[ -n ${PROMOTE} ]]; then
-  script_prompt "Have you completed all Pre-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+  script_prompt "Have you completed all Pre-Deploy tasks for this STAGING version [${VERSION_TAG}] in https://go/platform-deploy-log?"
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"

@@ -70,7 +70,7 @@ script_prompt "Do you want to continue?"
 echo "Commits since last deploy:"
 run_cmd git log --oneline "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERSION_TAG}"
 
-script_prompt "Have you completed all Pre-Deploy tasks for this PROD version in https://go/platform-deploy-log?"
+script_prompt "Have you completed all Pre-Deploy tasks for this PROD version [${GIT_VERSION_TAG}] in https://go/platform-deploy-log?"
 
 echo "Checking for clean git status"
 if [[ -n "$(git status --porcelain)" ]]; then
@@ -124,4 +124,4 @@ MINUTES=$((duration / 60))
 echo "Production deploy completed in ${MINUTES} minutes."
 echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
-script_prompt "Have you completed all Post-Deploy tasks for this PROD version in https://go/platform-deploy-log ?"
+script_prompt "Have you completed all Post-Deploy tasks for this PROD version [${GIT_VERSION_TAG}] in https://go/platform-deploy-log?"

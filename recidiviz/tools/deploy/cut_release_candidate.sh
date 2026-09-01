@@ -141,7 +141,7 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
     echo "Pushing new release branch [$NEW_RELEASE_BRANCH] to remote"
     run_cmd git push --set-upstream origin "${NEW_RELEASE_BRANCH}"
 
-    script_prompt "Have you completed all Post-Deploy tasks for this release candidate staging version in https://go/platform-deploy-log?"
+    script_prompt "Have you completed all Post-Deploy tasks for this release candidate staging version [${RELEASE_VERSION_TAG}] in https://go/platform-deploy-log?"
 fi
 
 duration=$SECONDS
