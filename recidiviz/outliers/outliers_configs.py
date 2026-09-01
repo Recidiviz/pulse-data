@@ -37,7 +37,6 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
-    INCARCERATION_STARTS_NEW_CRIME_VIOLATION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_EARLY_DISCHARGE,
     TIMELY_CONTACT,
@@ -524,26 +523,13 @@ Denominator is the average daily caseload for the agent over the given time peri
             ),
             OutliersMetricConfig.build_from_metric(
                 state_code=StateCode.US_AZ,
-                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-                title_display_name="Technical Incarceration Rate",
-                body_display_name="technical incarceration rate",
-                event_name="technical incarcerations",
-                event_name_singular="technical incarceration",
-                event_name_past_tense="had a technical incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to technical violations are counted in this metric, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a "new admission," as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
-<br />
-Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
-            ),
-            OutliersMetricConfig.build_from_metric(
-                state_code=StateCode.US_AZ,
-                metric=INCARCERATION_STARTS_NEW_CRIME_VIOLATION,
-                title_display_name="New Crime Incarceration Rate",
-                body_display_name="new crime incarceration rate",
-                event_name="new crime incarcerations",
-                event_name_singular="new crime incarceration",
-                event_name_past_tense="had a new crime incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to new crime violations that occurred in the prior 24 months are counted in this metric, regardless of whether the final decision was a revocation or sanction admission, and regardless of whether there was also a technical violation or absconsion within the same time period.
-
+                metric=INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
+                title_display_name="Technical and New Crime Incarceration Rate",
+                body_display_name="technical and new crime incarceration rate",
+                event_name="technical and new crime incarcerations",
+                event_name_singular="technical and new crime incarceration",
+                event_name_past_tense="had a technical or new crime incarceration",
+                description_markdown="""Transitions to incarceration from supervision due to technical violations or new crimes are counted in this metric, regardless of whether the final decision was a revocation or sanction admission. We use this logic even if someone’s return to prison is labeled a "new admission," as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
 <br />
 Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
