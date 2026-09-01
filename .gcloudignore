@@ -222,6 +222,7 @@ release.out
 .claude/rules/*
 !.claude/rules/security.md
 !.claude/rules/python-style.md
+!.claude/rules/python-testing-style.md
 .claude/commands/*
 !.claude/commands/security-review.md
 

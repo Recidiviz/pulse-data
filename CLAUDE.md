@@ -7,7 +7,7 @@ These apply to **every task** without exception:
 - **License headers**: Use the current year (e.g., `Copyright (C) 2026 Recidiviz, Inc.`) in new Python file headers. Look at recently created files for the correct format.
 - **No test imports in production**: Never import from `recidiviz/tests/` outside of `recidiviz/tests/`. Test utilities and constants must stay in test code.
 - **No obvious comments**: Don't add inline comments that explain things obvious from reading the code, or that are only meaningful in the current conversation context.
-- **TODO format**: Reference GitHub issues as `TODO(#12345)` and Linear issues as `TODO(OBT-12345)`. The org has moved to Linear for issue tracking so use Linear ticket number if you have it. Use `TODO(XXXX)` as a placeholder before filing. This fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
+- **TODO format**: Reference GitHub issues as `TODO(#12345)` and Linear issues as `TODO(OBT-12345)` (any Linear team prefix works, e.g. `TODO(TN-12345)` — use the ticket's own team, don't convert it to OBT). The org has moved to Linear for issue tracking so use Linear ticket number if you have it. Use `TODO(XXXX)` as a placeholder before filing. This fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
 - **Data privacy**: Never access data from Maine (`US_ME`) or California (`US_CA`). If a query might touch this data, flag it to the user and confirm before running.
 - **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
 - **Worktree naming**: Name worktrees `<us_xx>_<feature_name>` (e.g. `us_nc_location_metadata`), prepending the state code of the state the work relates to. If the work spans multiple states or isn't state-specific, be flexible — just use a descriptive `<feature_name>`.
@@ -93,9 +93,10 @@ See the **Data privacy** rule above — never query ME or CA data.
 
 ## Additional Context
 
-States are abbreviated as `US_XX`. `US_OZ` is a fake state used for testing.
-Additional fake codes (`US_XX`, `US_YY`, `US_WW`) are available in unit tests
-and should be used when testing generic functionality.
+States are abbreviated as `US_XX`. `US_OZ` is the playground/demo state — it
+has a real region directory and is not a unit-test placeholder. In unit tests,
+use the fake codes (`US_XX`, `US_YY`, `US_WW`) when testing generic
+functionality.
 
 ## Creature Comforts
 

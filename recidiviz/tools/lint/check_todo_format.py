@@ -54,6 +54,7 @@ EXCLUDED_PATH_PATTERNS: list[re.Pattern[str]] = [
         r"\.pylintrc",
         r"CLAUDE\.md",
         r"\.claude/rules/python-style.md",
+        r"\.claude/rules/python-testing-style.md",
         r"\.claude/skills/create_recidiviz_data_issues/SKILL\.md",
         r"\.claude/skills/maintain_skill_files/SKILL\.md",
         r"/templates/",

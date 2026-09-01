@@ -209,63 +209,7 @@ Here the inner `fix_indent(time_periods_query, indent_level=4)` re-indents the e
 
 ## Testing
 
-### Assert the whole output, not fragments
-
-When a function returns a string, assert the complete expected value with `assertEqual` rather than a chain of `assertIn` checks against fragments. A series of `assertIn`s doesn't check ordering, doesn't catch unexpected extra content, and isn't as easy to read as an `assertEqual` with a single complete string.
-
-```python
-# Prefer this:
-expected = """CASE
-  WHEN expr = 'A' THEN '1'
-  ELSE expr
-END"""
-self.assertEqual(expected, build_case_expression("expr", {"A": "1"}))
-
-# over spot-checking fragments:
-result = build_case_expression("expr", {"A": "1"})
-self.assertIn("CASE", result)
-self.assertIn("WHEN expr = 'A' THEN '1'", result)
-self.assertIn("ELSE expr", result)
-```
-
-This is the string-shaped case of the rule the YAML section applies to parsed objects below: compare the whole value, not selected pieces of it.
-
-Reserve `assertIn` for genuinely partial checks against large output you do not control, e.g. an error message where the full content of the message can vary and/or doesn't need to be tested.
-
-### Try to avoid putting logic in tests
-
-Prefer to state a test's inputs and outputs directly rather than constructing them with programming logic. For example, a loop that constructs an expected output may be more compact and better for production code, but should be avoided in test code since it's more brittle and harder to read. This is especially problematic when the logic mirrors the original implementation, since that can break in the same way as the original and the test will keep passing. Prefer comparisons to literal values that are readable, even if it's more verbose, because tests aren't themselves tested so a reader is the only thing checking them.
-
-```python
-# Bad — computes the expectation with a loop:
-expected = [column.name for column in _make_test_columns()]
-self.assertEqual(expected, view.schema_column_names)
-
-# Good — a literal:
-self.assertEqual(["person_id", "state_code", "start_date"], view.schema_column_names)
-```
-
-Where test logic is genuinely needed, move it into a named helper rather than the test body. For example, `BigQueryEmulatorTestCase` (`recidiviz/tests/big_query/big_query_emulator_test_case.py`) consolidates the logic of setting up the emulator, creating tables, running the query, and comparing results, so each test body states only its input rows and its expected output:
-
-```python
-class OpenSessionsViewTest(BigQueryEmulatorTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.create_mock_table(_SESSIONS_ADDRESS, _SESSIONS_SCHEMA)
-
-    def test_only_sessions_with_no_end_date_are_open(self) -> None:
-        self.load_rows_into_table(
-            _SESSIONS_ADDRESS,
-            [
-                {"person_id": 1, "state_code": "US_XX", "end_date": None},
-                {"person_id": 2, "state_code": "US_XX", "end_date": "2024-01-15"},
-            ],
-        )
-        self.run_query_test(
-            f"SELECT person_id FROM ({VIEW_BUILDER.build().view_query})",
-            expected_result=[{"person_id": 1}],
-        )
-```
+Test-writing conventions live in [`python-testing-style.md`](./python-testing-style.md).
 
 ## YAML parsing and serialization
 
@@ -354,49 +298,7 @@ Discover YAML config files by deriving their directory from the nearest importab
 
 ### Testing YAML parsing
 
-When a class of YAML files all parse into the same model, write two complementary kinds of tests.
-
-**Fixture tests** exercise the parsing logic against small, controlled YAML:
-
-- Store fixture YAML files in a `fixtures/` directory next to the test and load them with the `fixtures.as_filepath(...)` helper, then call the model's `from_yaml` factory on the returned path.
-- Test each malformed case — wrong type, missing required key, unexpected/extra key, bad enum value, duplicate entry — with its own fixture (or inline input) and `assertRaisesRegex` against an anchored `^...$` regex matching the precise error message.
-  ```python
-  with self.assertRaisesRegex(
-      ValueError, r"^'NOT_A_VALID_TYPE' is not a valid ValidationExclusionType$"
-  ):
-      ValidationRegionConfig.from_yaml(
-          fixtures.as_filepath("us_xx_validation_config_bad_exclusion_type.yaml")
-      )
-  ```
-- For the happy path, assert the whole parsed object equals a fully built expected instance (relying on attrs `__eq__`) rather than spot-checking individual fields.
-  ```python
-  config = ValidationRegionConfig.from_yaml(
-      fixtures.as_filepath("us_xx_validation_config.yaml")
-  )
-  self.assertEqual(
-      ValidationRegionConfig(region_code="US_XX", exclusions=expected_exclusions, ...),
-      config,
-  )
-  ```
-- Where the model has serialization methods (e.g. `to_dict` or a YAML dump path), add a round-trip test that serializes and re-parses (or parses and re-serializes) and asserts equality.
-
-**A parse-all-real-files test** guards every real config of that shape:
-
-- Discover the real files by looping over `StateCode` / `get_existing_region_codes()` and calling the production collector (which resolves paths from an importable package), and assert each parses without raising. Validity is usually enforced implicitly by the attrs validators and the parsing logic, so a clean parse is the assertion.
-  ```python
-  def test_load_all_configs(self) -> None:
-      for state_code in StateCode:
-          # Raises if any real config for this state fails to parse or validate.
-          collect_document_collection_configs(state_code)
-  ```
-- Where it matters, also assert cross-file invariants that no single file can enforce — uniqueness across files, no vestigial/extraneous files, naming/suffix rules — using an explicit allowlist constant (with `TODO(#...)` references for known exceptions) and a failure message that says how to fix it.
-- Add a schema-conformance test that validates every real file against the maintained JSON schema via `validate_yaml_matches_schema`, iterating with `subTest(yaml_file=...)` so one bad file doesn't mask the rest.
-- For config types that live under `recidiviz/ingest/direct/regions/` (where the `fake_regions` test module provides a fake `US_XX` region), include the fake region's files in these tests so features exercised only in the test state still get coverage. This does not apply to config types that have no such fake-region module.
-
-**Conventions:**
-
-- Don't re-test extra/unused-key handling in per-config tests — that behavior is enforced and tested once at the `YAMLDict` layer (pop every key, then assert the dict is empty). Per-config tests rely on that, plus the schema-conformance test.
-- Name tests `test_<scenario>` (e.g. `test_parse_bad_exclusion_type`); name the parse-all tests with an `all` marker (e.g. `test_load_all_configs`, `test_validate_all_raw_yaml_schemas`).
+ For how to test code that parses YAML, see the "Testing YAML parsing" section of [`python-testing-style.md`](./python-testing-style.md).
 
 ## attrs classes
 
