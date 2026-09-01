@@ -95,6 +95,14 @@ def main(args: argparse.Namespace) -> None:
     except FileNotFoundError:
         plan_error_output = "Could not find plan error logs!"
 
+    if plan_output:
+        # The plan step runs with TF_LOG=ERROR pointed at the error-logs file,
+        # and Terraform writes benign internal ERROR-level entries there even
+        # when the plan succeeds (for example, the plugin shutdown race "error
+        # encountered while scanning stdout"). A non-empty plan means the plan
+        # command succeeded, so only render the error logs when no plan exists.
+        plan_error_output = ""
+
     # This jinja renderer does not render html to be served to clients, so disabling the `autoescape` B701 security rule
     env = Environment(
         loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))

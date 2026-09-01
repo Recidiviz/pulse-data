@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.row_access_policy_query_builder import (
     RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP,
+    access_group_configs_are_loaded,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -94,6 +95,20 @@ def _apply_permissions_for_table(
 
 def _apply_row_level_permissions_to_all_tables() -> None:
     """Applies row level permissions to all tables in our deployed datasets."""
+    if not access_group_configs_are_loaded():
+        # Only True when a group config file is absent. Those files are
+        # excluded from the public pulse-data mirror; applying permissions
+        # without them would silently build no policies, so fail closed
+        # instead. This is the same check build_row_access_policies uses for
+        # its empty-list fallback.
+        raise ValueError(
+            "The BQ access group configs are not loaded -- "
+            "restricted_access_state_groups.yaml or "
+            "state_data_access_group_settings.yaml was not found. Row-level "
+            "permissions must be applied from the private pulse-data repo "
+            "with the group config files present."
+        )
+
     client = BigQueryClientImpl()
 
     managed_source_table_datasets = get_source_table_datasets(metadata.project_id())

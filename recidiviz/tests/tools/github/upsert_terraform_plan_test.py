@@ -113,6 +113,18 @@ class TestUpsertTFPlan(TestCase):
             prefix="# Terraform plan",
         )
 
+    def test_success_with_benign_error_logs(self) -> None:
+        """A successful plan must not render the error banner, even when
+        Terraform wrote internal ERROR-level log entries to the error-logs
+        file (TF_LOG=ERROR noise, such as the plugin shutdown race)."""
+        args = self._get_args(plan_output_path=PLAN_SUCCESS, error_logs_path=PLAN_ERROR)
+        main(args)
+
+        body = self.upsert_comment_mock.call_args.kwargs["body"]
+        self.assertNotIn("There was an error while generating", body)
+        self.assertNotIn("Some unexpected error", body)
+        self.assertIn("google_storage_bucket_object", body)
+
     def test_with_failure(self) -> None:
 
         args = self._get_args(plan_output_path=EMPTY, error_logs_path=PLAN_ERROR)

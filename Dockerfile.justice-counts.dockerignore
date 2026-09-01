@@ -64,6 +64,15 @@ recidiviz/tests/tools/eomis/**
 recidiviz/entrypoints/eomis_writeback.py
 recidiviz/tests/entrypoints/eomis_writeback_test.py
 recidiviz/tests/tools/validate_source_visibility_eomis_test.py
+# State BQ data access group details, kept in sync with copy.bara.sky; see
+# mirror/copy.bara.sky for why these stay private. The code that reads these
+# files tolerates their absence, and nothing in this image applies row-level
+# permissions.
+recidiviz/big_query/config/state_data_access_groups.yaml
+recidiviz/big_query/config/restricted_access_state_groups.yaml
+recidiviz/big_query/config/state_data_access_group_settings.yaml
+recidiviz/tests/tools/deploy/terraform/state_data_access_groups_test.py
+recidiviz/tests/big_query/row_access_policy_query_builder_test.py
 # old paths
 recidiviz/ingest/scrape/{regions,vendors}/**
 recidiviz/tests/ingest/scrape/{regions,vendors}/**

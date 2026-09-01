@@ -92,6 +92,9 @@ class TestTableMayNeedRowAccessPolicies(unittest.TestCase):
     f"{_ENTRYPOINT_MODULE}.RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP",
     _FAKE_RESTRICTED_STATES,
 )
+# `new=` so no mock argument is injected. The real helper returns False in the
+# public pulse-data mirror, where the group config files are excluded.
+@patch(f"{_ENTRYPOINT_MODULE}.access_group_configs_are_loaded", new=lambda: True)
 @patch(f"{_ENTRYPOINT_MODULE}.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED", set())
 @patch(f"{_ENTRYPOINT_MODULE}.get_source_table_datasets", return_value=set())
 @patch(f"{_ENTRYPOINT_MODULE}.metadata")

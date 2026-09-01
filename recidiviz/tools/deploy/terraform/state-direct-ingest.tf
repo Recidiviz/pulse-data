@@ -36,7 +36,7 @@ module "state_direct_ingest_buckets_and_accounts" {
   region_manifest                        = local.direct_ingest_region_manifests_to_deploy[each.key]
   raw_data_storage_notification_topic_id = google_pubsub_topic.raw_data_storage_notification_topic.id
   # Restricted states get their state-specific group; non-restricted states get
-  # s-default-state-data@recidiviz.org for access to non-restricted rows in
+  # the shared default-state group for access to non-restricted rows in
   # state-agnostic BQ tables.
   state_data_access_group_resource_name = (
     contains(local.restricted_access_states, each.key)
@@ -54,11 +54,17 @@ module "state_direct_ingest_buckets_and_accounts" {
 # non-restricted states share the default group, and having multiple module
 # instances create the same membership would conflict.
 locals {
-  # Collect all unique group resource names: state-specific groups + the default group.
-  all_data_access_group_resource_names = toset(concat(
-    values(local.state_data_access_group_resource_names),
+  # Collect all unique legacy group resource names: state-specific groups + the
+  # default group. This set feeds the for_each below, so every value must be
+  # known at plan time. TF-managed groups are excluded because their resource
+  # names are only known at apply time. Their CI/CD memberships live in
+  # state-data-access-groups.tf, keyed by state code instead.
+  # compact() drops the empty-string fallback the public mirror uses for the
+  # default group resource name.
+  all_data_access_group_resource_names = toset(compact(concat(
+    values(local.legacy_state_data_access_group_resource_names),
     [local.default_state_data_group_resource_name],
-  ))
+  )))
 }
 
 # Note: the PR-commenter SA (terraform-plan-pr-commenter@…) also needs read

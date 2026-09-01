@@ -32,15 +32,63 @@ _RESTRICTED_ACCESS_YAML_PATH = os.path.join(
     "restricted_access_state_groups.yaml",
 )
 
+_GROUP_SETTINGS_YAML_PATH = os.path.join(
+    os.path.dirname(_bq_config_pkg.__file__),
+    "state_data_access_group_settings.yaml",
+)
+
 
 def _load_restricted_access_state_code_to_access_group() -> Dict[StateCode, str]:
+    """Returns the restricted-state to access-group-email map from YAML config.
+
+    The config file is excluded from the public pulse-data mirror, so this
+    module must import cleanly without it. When the file is absent, this
+    returns an empty map: build_row_access_policies then builds no policies,
+    and the apply entrypoint fails loudly instead (fail closed).
+    """
+    if not os.path.exists(_RESTRICTED_ACCESS_YAML_PATH):
+        return {}
     raw = YAMLDict.from_path(_RESTRICTED_ACCESS_YAML_PATH).raw_yaml
     return {StateCode(state_code): str(email) for state_code, email in raw.items()}
+
+
+def _load_group_settings() -> Dict[str, str]:
+    """Returns the non-per-state group settings from YAML config, or an empty
+    map when the file is absent (it is excluded from the public pulse-data
+    mirror, like the restricted-access config above)."""
+    if not os.path.exists(_GROUP_SETTINGS_YAML_PATH):
+        return {}
+    raw = YAMLDict.from_path(_GROUP_SETTINGS_YAML_PATH).raw_yaml
+    return {key: str(value) for key, value in raw.items()}
 
 
 RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[
     StateCode, str
 ] = _load_restricted_access_state_code_to_access_group()
+
+_GROUP_SETTINGS: Dict[str, str] = _load_group_settings()
+
+# These are empty strings only in the public pulse-data mirror, where the
+# settings file is excluded; build_row_access_policies builds no policies
+# there. The .get() calls (instead of []) exist for exactly that case.
+BIG_QUERY_ADMINS_GROUP_EMAIL: str = _GROUP_SETTINGS.get(
+    "big_query_admins_group_email", ""
+)
+DEFAULT_STATE_DATA_GROUP_EMAIL: str = _GROUP_SETTINGS.get(
+    "default_state_data_group_email", ""
+)
+
+
+def access_group_configs_are_loaded() -> bool:
+    """Returns whether every BQ access group config value is loaded. This is
+    only False in the public pulse-data mirror, which excludes the config
+    files."""
+    return bool(
+        RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP
+        and BIG_QUERY_ADMINS_GROUP_EMAIL
+        and DEFAULT_STATE_DATA_GROUP_EMAIL
+    )
+
 
 RESTRICTED_ACCESS_FIELDS = ["state_code", "region_code"]
 
@@ -136,7 +184,7 @@ class RowAccessPolicyQueryBuilder:
             RowAccessPolicy(
                 policy_id=f"ADMIN_ACCESS_TO_ALL_STATE_DATA_{state_code_column.upper()}",
                 table=table,
-                access_group_email="s-big-query-admins@recidiviz.org",
+                access_group_email=BIG_QUERY_ADMINS_GROUP_EMAIL,
                 filter_predicate="TRUE",
             )
         )
@@ -171,7 +219,7 @@ class RowAccessPolicyQueryBuilder:
             RowAccessPolicy(
                 policy_id=f"NON_RESTRICTIVE_STATE_DATA_ACCESS_{state_code_column.upper()}",
                 table=table,
-                access_group_email="s-default-state-data@recidiviz.org",
+                access_group_email=DEFAULT_STATE_DATA_GROUP_EMAIL,
                 filter_predicate=f"UPPER({state_code_column}) NOT IN ({filtered_states_str})",
             )
         )
@@ -192,7 +240,7 @@ class RowAccessPolicyQueryBuilder:
             RowAccessPolicy(
                 policy_id="ADMIN_ACCESS_TO_ALL_ROWS",
                 table=table,
-                access_group_email="s-big-query-admins@recidiviz.org",
+                access_group_email=BIG_QUERY_ADMINS_GROUP_EMAIL,
                 filter_predicate="TRUE",
             )
         )
@@ -220,6 +268,12 @@ class RowAccessPolicyQueryBuilder:
 
         Returns a list of semicolon-terminated queries to create row access policies for the provided table.
         """
+        if not access_group_configs_are_loaded():
+            # The group config files are excluded from the public pulse-data
+            # mirror, so there is no group data to build policies from there.
+            # In the private repo the files always exist, and the apply
+            # entrypoint fails loudly when they are missing.
+            return []
 
         address = BigQueryAddress.from_table(table)
         state_code = address.state_code_for_address()

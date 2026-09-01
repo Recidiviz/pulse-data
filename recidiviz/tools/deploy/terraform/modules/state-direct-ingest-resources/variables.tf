@@ -51,9 +51,9 @@ variable "raw_data_storage_notification_topic_id" {
   type = string
 }
 
-# The Cloud Identity group resource name (e.g. "groups/023ckvvd12tng70") for the
-# state's BQ data access group (e.g. s-mi-data@recidiviz.org). Used to add the
-# Dataflow SA as a member for row-level access permissions.
+# The Cloud Identity group resource name (in the "groups/<id>" format) for the
+# state's BQ data access group. Used to add the Dataflow SA as a member for
+# row-level access permissions.
 variable "state_data_access_group_resource_name" {
   type = string
 }
