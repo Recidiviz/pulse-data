@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for filename_normalization.py."""
 import base64
+import datetime
 import json
 import os
 from unittest import TestCase
@@ -50,16 +51,23 @@ class TestNormalizeFilename(TestCase):
         self.relative_file_path = "test_file"
         self.event = self._build_pubsub_cloudevent(self.relative_file_path)
 
-    def _build_pubsub_cloudevent(self, file_name: str) -> CloudEvent:
+    def _build_pubsub_cloudevent(
+        self,
+        file_name: str,
+        bucket: str | None = None,
+        custom_time: str | None = None,
+    ) -> CloudEvent:
         attributes = {
             "id": "5e9f24a",
             "type": "google.cloud.storage.object.v1.finalized",
             "source": "sourceUrlHere",
         }
         data = {
-            "bucket": self.bucket,
+            "bucket": bucket or self.bucket,
             "name": file_name,
         }
+        if custom_time is not None:
+            data["customTime"] = custom_time
         message = {
             "message": {
                 "data": base64.b64encode(json.dumps(data).encode("utf-8")).decode()
@@ -83,7 +91,36 @@ class TestNormalizeFilename(TestCase):
 
         normalize_filename(self.event)
 
-        mock_fs.mv_raw_file_to_normalized_path.assert_called_with(path_instance)
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_with(
+            path_instance, dt=None, normalized_from_file_name=self.relative_file_path
+        )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=False,
+    )
+    def test_direct_upload_uses_custom_time_when_present(
+        self,
+        _mock_is_normalized: MagicMock,
+        mock_fs: MagicMock,
+    ) -> None:
+        # A file with no region cleaner still picks up the preserved customTime as its
+        # update_datetime when the finalize event carries one.
+        event = self._build_pubsub_cloudevent(
+            file_name=self.relative_file_path,
+            custom_time="2026-08-19T14:05:03.716152Z",
+        )
+
+        normalize_filename(event)
+
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_with(
+            GcsfsFilePath(bucket_name=self.bucket, blob_name=self.relative_file_path),
+            dt=datetime.datetime(
+                2026, 8, 19, 14, 5, 3, 716152, tzinfo=datetime.timezone.utc
+            ),
+            normalized_from_file_name=self.relative_file_path,
+        )
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
     @patch(
@@ -241,6 +278,88 @@ class TestNormalizeFilename(TestCase):
         normalize_filename(zip_event)
 
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=False,
+    )
+    def test_us_nyc_timestamped_name_is_cleaned_and_dated(
+        self,
+        _mock_is_normalized: MagicMock,
+        mock_fs: MagicMock,
+    ) -> None:
+        nyc_bucket = "recidiviz-test-direct-ingest-state-us-nyc"
+        event = self._build_pubsub_cloudevent(
+            file_name="PIC_FEED_081920260030.csv",
+            bucket=nyc_bucket,
+            custom_time="2026-08-19T14:05:03.716152Z",
+        )
+
+        normalize_filename(event)
+
+        # The file is moved to a normalized path built from the stripped name, with
+        # update_datetime set to the object's preserved creation time (customTime), not
+        # the filename or now.
+        mock_fs.mv.assert_not_called()
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_once_with(
+            GcsfsFilePath(
+                bucket_name=nyc_bucket, blob_name="PIC_FEED_081920260030.csv"
+            ),
+            dt=datetime.datetime(
+                2026, 8, 19, 14, 5, 3, 716152, tzinfo=datetime.timezone.utc
+            ),
+            normalized_from_file_name="PIC_FEED.csv",
+        )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=False,
+    )
+    def test_us_nyc_name_without_timestamp_is_normalized(
+        self,
+        _mock_is_normalized: MagicMock,
+        mock_fs: MagicMock,
+    ) -> None:
+        nyc_bucket = "recidiviz-test-direct-ingest-state-us-nyc"
+        event = self._build_pubsub_cloudevent(
+            file_name="PIC_FEED.csv", bucket=nyc_bucket
+        )
+
+        normalize_filename(event)
+
+        mock_fs.mv.assert_not_called()
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_once_with(
+            GcsfsFilePath(bucket_name=nyc_bucket, blob_name="PIC_FEED.csv"),
+            dt=None,
+            normalized_from_file_name="PIC_FEED.csv",
+        )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=False,
+    )
+    def test_non_nyc_timestamped_name_is_not_cleaned(
+        self,
+        _mock_is_normalized: MagicMock,
+        mock_fs: MagicMock,
+    ) -> None:
+        # A different state has no cleaner, so a 12-digit-suffixed name is
+        # normalized as-is rather than stripped.
+        event = self._build_pubsub_cloudevent(file_name="PIC_FEED_081420261204.csv")
+
+        normalize_filename(event)
+
+        mock_fs.mv.assert_not_called()
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_once_with(
+            GcsfsFilePath(
+                bucket_name=self.bucket, blob_name="PIC_FEED_081420261204.csv"
+            ),
+            dt=None,
+            normalized_from_file_name="PIC_FEED_081420261204.csv",
+        )
 
 
 class TestHandleZipfile(TestCase):

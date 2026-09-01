@@ -367,16 +367,25 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         return GcsfsFilePath.from_directory_and_file_name(ingest_bucket_path, file_name)
 
     def mv_raw_file_to_normalized_path(
-        self, path: GcsfsFilePath, dt: Optional[datetime.datetime] = None
+        self,
+        path: GcsfsFilePath,
+        dt: Optional[datetime.datetime] = None,
+        normalized_from_file_name: str | None = None,
     ) -> GcsfsFilePath:
         """Renames a raw data file with an unnormalized file name to a file with a
         normalized file name in the same directory. If |dt| is specified, the file will
         contain that timestamp, otherwise will contain the current timestamp.
 
+        If |normalized_from_file_name| is specified, the normalized name is composed from
+        it rather than from |path|'s own name, while the file moved is still |path|. This
+        lets a caller normalize a file to a cleaned name (e.g. one with a region-specific
+        suffix stripped) that does not yet exist on disk.
+
         Returns the new normalized path location of this file after the move completes.
         """
-        updated_file_path = GcsfsFilePath.from_absolute_path(
-            to_normalized_unprocessed_raw_file_path(path.abs_path(), dt)
+        file_name_to_normalize = normalized_from_file_name or path.file_name
+        updated_file_path = GcsfsFilePath.with_new_file_name(
+            path, to_normalized_unprocessed_raw_file_name(file_name_to_normalize, dt=dt)
         )
 
         if self.exists(updated_file_path):

@@ -543,6 +543,7 @@ def test_cloud_function_ingest_filename_normalization_dependencies() -> None:
                 "recidiviz.cloud_storage.verifiable_bytes_reader",
                 "recidiviz.cloud_storage.gcsfs_path",
                 "recidiviz.common.attr_validators",
+                "recidiviz.common.constants.states",
                 "recidiviz.common.io.contents_handle",
                 "recidiviz.common.io.file_contents_handle",
                 "recidiviz.common.io.local_file_contents_handle",
@@ -558,6 +559,7 @@ def test_cloud_function_ingest_filename_normalization_dependencies() -> None:
                 "recidiviz.utils.string_formatting",
                 "recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system",
                 "recidiviz.ingest.direct.gcs.directory_path_utils",
+                "recidiviz.ingest.direct.gcs.raw_file_name_cleaners",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
             }
         ),

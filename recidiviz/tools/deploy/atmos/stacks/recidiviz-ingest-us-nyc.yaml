@@ -40,6 +40,10 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         region: us-central1
         state_code: "{{ .settings.context.state_code }}"
+        # NYC files carry no meaningful content date, so date them by when they were
+        # delivered to the SFTP bucket (preserved as customTime) rather than when they
+        # were normalized. See ingest_filename_normalization / raw_file_name_cleaners.
+        preserve_source_time_created_as_custom_time: true
       providers:
         google:
           # Storage Transfer Service requires a quota project, set that explicitly

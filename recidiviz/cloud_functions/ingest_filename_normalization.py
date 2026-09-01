@@ -16,12 +16,12 @@
 # =============================================================================
 """This file contains all the cloud function logic to normalize ingest file names in GCS."""
 import base64
+import datetime
 import json
 import logging
 import os
-from datetime import date
 from http import HTTPStatus
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import functions_framework
 import google.auth.transport.requests
@@ -42,6 +42,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.gcs.raw_file_name_cleaners import clean_raw_file_name
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
 )
@@ -59,6 +60,10 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
 
     If the existing file name is already prefixed by "unprocessed" or "processed", the function will return without
     doing anything. Otherwise, it will rename the file to format "unprocessed_{ISO_FORMATTED_DATETIME}_raw_{EXISTING_FILENAME}"
+
+    Before renaming, any region-specific content is stripped from the file name (e.g. NYC's embedded per-file timestamp)
+    so the parsed file tag matches the region's raw data config. The {ISO_FORMATTED_DATETIME} is sourced from the object's
+    preserved creation time (customTime) on the finalize event when present, falling back to the current time.
 
     If we encounter any error with base class ValueError, including GCSBlobDoesNotExistError,
     we will log the error and return without raising an exception, so if a file is moved or
@@ -117,7 +122,16 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
 
     if not has_normalized_filename:
         try:
-            new_path = fs.mv_raw_file_to_normalized_path(path)
+            # update_datetime comes from the object's preserved creation time
+            # (customTime) if present, otherwise None so normalization falls back to
+            # the current time.
+            update_datetime = _update_datetime_from_event(data)
+            cleaned_file_name = clean_raw_file_name(region_code, path.file_name)
+            new_path = fs.mv_raw_file_to_normalized_path(
+                path,
+                dt=update_datetime,
+                normalized_from_file_name=cleaned_file_name,
+            )
             cloud_functions_log(
                 severity="INFO",
                 message=f"File [{path.abs_path()}] normalized to [{new_path.abs_path()}]",
@@ -141,6 +155,19 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
             raise RuntimeError(
                 f"Error invoking zipfile handler function: {response.status_code} - {response.text}"
             )
+
+
+def _update_datetime_from_event(data: dict[str, Any]) -> datetime.datetime | None:
+    """Returns the object's preserved creation time from the GCS finalize event, to be
+    used as the normalized file's update_datetime. This is the source object's creation
+    time that Storage Transfer preserved into the ingest-bucket object's customTime.
+    Returns None when the event has no customTime, in which case normalization falls
+    back to the current time.
+    """
+    custom_time = data.get("customTime")
+    if not custom_time:
+        return None
+    return datetime.datetime.fromisoformat(custom_time)
 
 
 def _invoke_zipfile_handler(bucket: str, relative_file_path: str) -> requests.Response:
@@ -227,7 +254,7 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
             dst_path=gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
                 region_code=region_code,
                 ingest_instance=ingest_instance,
-                deprecated_on_date=date.today(),
+                deprecated_on_date=datetime.date.today(),
                 project_id=os.environ["PROJECT_ID"],
             ),
         )

@@ -123,6 +123,18 @@ resource "google_storage_transfer_job" "copy_to_project" {
     gcs_data_sink {
       bucket_name = "${each.value}-direct-ingest-state-${local.lower_state_code}"
     }
+
+    dynamic "transfer_options" {
+      for_each = var.preserve_source_time_created_as_custom_time ? [1] : []
+      content {
+        metadata_options {
+          # Preserve each source object's creation time as the destination's
+          # customTime, which the ingest filename normalization Cloud Function reads
+          # as the file's update_datetime.
+          time_created = "TIME_CREATED_PRESERVE_AS_CUSTOM_TIME"
+        }
+      }
+    }
   }
 
   logging_config {
