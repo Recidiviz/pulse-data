@@ -57,4 +57,9 @@ components:
             schedule:
               daily-2am-pt: "0 2 * * *"
 
+          # LLM document extraction runs hourly at the 30th minute
+          llm_document_extraction_dag:
+            schedule:
+              hourly: "30 * * * *"
+
     raw-data-import-monitoring: {}

@@ -70,6 +70,11 @@ components:
             config:
               ingest_instance: PRIMARY
 
+          # LLM document extraction runs hourly at the 30th minute
+          llm_document_extraction_dag:
+            schedule:
+              hourly: "30 * * * *"
+
     apps/pagerduty-alert-forwarder:
       vars:
         alert_notification_email: s-on-call-engineer
