@@ -39,8 +39,9 @@ data "google_secret_manager_secret_version" "iap_client_secret" {
 
 
 resource "google_cloud_run_service" "admin_panel" {
+  for_each = local.high_availibility_cloud_run_locations
   name     = "admin-panel"
-  location = var.us_central_region
+  location = each.value
   project  = var.project_id
 
   metadata {
@@ -106,7 +107,7 @@ resource "google_cloud_run_service" "admin_panel" {
     metadata {
       annotations = {
         "run.googleapis.com/cloudsql-instances" : local.joined_connection_string
-        "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.us_central_redis_vpc_connector.name
+        "run.googleapis.com/vpc-access-connector" : local.vpc_access_connectors_by_location[each.value]
         "run.googleapis.com/vpc-access-egress" : "private-ranges-only"
         # This services serves endpoints that are used during the Auth0 login flow, so we want to minimize cold starts
         "autoscaling.knative.dev/minScale" : 1
@@ -122,12 +123,13 @@ resource "google_cloud_run_service" "admin_panel" {
 }
 
 resource "google_compute_region_network_endpoint_group" "admin_panel_serverless_neg" {
+  for_each              = local.high_availibility_cloud_run_locations
   provider              = google-beta
-  name                  = "admin-panel-neg"
+  name                  = "admin-panel-neg-${each.value}"
   network_endpoint_type = "SERVERLESS"
-  region                = var.us_central_region
+  region                = each.value
   cloud_run {
-    service = google_cloud_run_service.admin_panel.name
+    service = google_cloud_run_service.admin_panel[each.value].name
   }
 }
 
@@ -147,8 +149,8 @@ module "admin_panel_load_balancer" {
     default = {
       description = null
       groups = [
-        {
-          group = google_compute_region_network_endpoint_group.admin_panel_serverless_neg.id
+        for location in local.high_availability_cloud_run_serving_locations : {
+          group = google_compute_region_network_endpoint_group.admin_panel_serverless_neg[location].id
         }
       ]
       enable_cdn      = false
@@ -207,25 +209,30 @@ data "google_service_account" "jii_functions" {
 }
 
 resource "google_cloud_run_service_iam_member" "admin-panel-auth0-actions" {
-  location = google_cloud_run_service.admin_panel.location
-  project  = google_cloud_run_service.admin_panel.project
-  service  = google_cloud_run_service.admin_panel.name
+  for_each = local.high_availibility_cloud_run_locations
+  location = google_cloud_run_service.admin_panel[each.value].location
+  project  = google_cloud_run_service.admin_panel[each.value].project
+  service  = google_cloud_run_service.admin_panel[each.value].name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_service_account.auth0_actions.email}"
 }
 
 resource "google_cloud_run_service_iam_member" "admin-panel-dashboard-metrics" {
-  location = google_cloud_run_service.admin_panel.location
-  project  = google_cloud_run_service.admin_panel.project
-  service  = google_cloud_run_service.admin_panel.name
+  for_each = local.high_availibility_cloud_run_locations
+
+  location = google_cloud_run_service.admin_panel[each.value].location
+  project  = google_cloud_run_service.admin_panel[each.value].project
+  service  = google_cloud_run_service.admin_panel[each.value].name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_service_account.dashboard_metrics.email}"
 }
 
 resource "google_cloud_run_service_iam_member" "admin-panel-jii-functions" {
-  location = google_cloud_run_service.admin_panel.location
-  project  = google_cloud_run_service.admin_panel.project
-  service  = google_cloud_run_service.admin_panel.name
+  for_each = local.high_availibility_cloud_run_locations
+
+  location = google_cloud_run_service.admin_panel[each.value].location
+  project  = google_cloud_run_service.admin_panel[each.value].project
+  service  = google_cloud_run_service.admin_panel[each.value].name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_service_account.jii_functions.email}"
 }

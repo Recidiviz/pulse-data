@@ -15,6 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+locals {
+  high_availibility_cloud_run_locations = toset([var.us_central_region, var.us_east_region])
+  # In the case of a regional outage, update this to have the load balancer route to only an unaffected location
+  high_availability_cloud_run_serving_locations = toset([var.us_central_region, var.us_east_region])
+
+  vpc_access_connectors_by_location = {
+    (var.us_central_region) : google_vpc_access_connector.us_central_redis_vpc_connector.id,
+    (var.us_east_region) : google_vpc_access_connector.redis_vpc_connector.id,
+  }
+
+}
+
 # Create a new service account for Case Triage Cloud Run
 resource "google_service_account" "cloud_run" {
   account_id   = "cloud-run-service-account"
@@ -172,8 +184,10 @@ data "google_secret_manager_secret_version" "segment_write_key" { secret = "case
 
 # Initializes Case Triage Cloud Run service
 resource "google_cloud_run_service" "case-triage" {
+  for_each = local.high_availibility_cloud_run_locations
+
   name     = "case-triage-web"
-  location = var.us_central_region
+  location = each.value
 
   template {
     spec {
@@ -265,7 +279,7 @@ resource "google_cloud_run_service" "case-triage" {
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
         # Note: this access connector is called "redis", but it actually connects to all resources
         # in the default network (Redis, Cloud NAT, etc.)
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.id
+        "run.googleapis.com/vpc-access-connector" = local.vpc_access_connectors_by_location[each.value]
         "run.googleapis.com/vpc-access-egress"    = "all-traffic"
         # This service runs gunicorn with the gevent worker (see gunicorn.conf.py),
         # which relies on background work -- the monitor thread, gRPC's completion
@@ -567,9 +581,10 @@ resource "google_cloud_run_service" "public-pathways" {
 # The blocks below set up public access so that anyone (e.g. our frontends)
 # can invoke the services through an HTTP endpoint.
 resource "google_cloud_run_service_iam_member" "public-access" {
-  location = google_cloud_run_service.case-triage.location
-  project  = google_cloud_run_service.case-triage.project
-  service  = google_cloud_run_service.case-triage.name
+  for_each = local.high_availibility_cloud_run_locations
+  location = google_cloud_run_service.case-triage[each.value].location
+  project  = google_cloud_run_service.case-triage[each.value].project
+  service  = google_cloud_run_service.case-triage[each.value].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
@@ -646,12 +661,13 @@ module "public_pathways_load_balancer" {
 # Setting up load balancer
 # Drawn from https://github.com/terraform-google-modules/terraform-google-lb-http/blob/master/examples/cloudrun/main.tf
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+  for_each              = local.high_availibility_cloud_run_locations
   provider              = google-beta
   name                  = "unified-product-neg"
   network_endpoint_type = "SERVERLESS"
-  region                = var.us_central_region
+  region                = each.value
   cloud_run {
-    service = google_cloud_run_service.case-triage.name
+    service = google_cloud_run_service.case-triage[each.value].name
   }
 }
 
@@ -684,8 +700,8 @@ module "unified-product-load-balancer" {
     default = {
       description = null
       groups = [
-        {
-          group = google_compute_region_network_endpoint_group.serverless_neg.id
+        for location in local.high_availability_cloud_run_serving_locations : {
+          group = google_compute_region_network_endpoint_group.serverless_neg[location].id
         }
       ]
       enable_cdn = true
@@ -714,7 +730,7 @@ module "unified-product-load-balancer" {
       }
       log_config = {
         enable      = true
-        sample_rate = 0
+        sample_rate = 1
       }
     }
   }
