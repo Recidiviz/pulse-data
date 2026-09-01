@@ -39,26 +39,15 @@ from recidiviz.documents.extraction.eval.golden_eval_results_table import (
 from recidiviz.documents.extraction.eval.golden_eval_scorer import (
     LLMDocumentExtractionGoldenEvalScorer,
 )
-from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
-    LLMDocumentExtractionRequestBuilder,
-)
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
-from recidiviz.documents.extraction.llm_client.sync_llm_document_extraction_request_runner import (
-    SyncLLMDocumentExtractionRequestRunner,
-)
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
-    LLMDocumentExtractionRequest,
-    LLMDocumentExtractionTokenCounts,
 )
 from recidiviz.documents.extraction.llm_client.vertex_ai_sync_llm_client import (
     VertexAISyncLLMClient,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMJobDocumentExtractionResult,
-)
-from recidiviz.documents.extraction.llm_extraction_result_processor import (
-    LLMExtractionResultProcessor,
 )
 from recidiviz.documents.extraction.llm_extraction_results_persister import (
     LLMExtractionResultsPersister,
@@ -70,8 +59,8 @@ from recidiviz.documents.extraction.models.llm_model_registry import LLMModelCon
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
-from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
+from recidiviz.documents.extraction.sync_llm_document_extraction_session import (
+    SyncLLMDocumentExtractionSession,
 )
 from recidiviz.utils.google_sheets_reader import GoogleSheetReader
 
@@ -88,6 +77,10 @@ _REQUESTER_BILLING_LABEL_KEY = "requester"
 
 # Value of the job-type billing label
 _SYNC_JOB_TYPE_BILLING_LABEL_VALUE = "golden-eval"
+
+# Golden eval documents hold their text in memory, so a request build does no I/O
+# and needs no build parallelism.
+_REQUEST_BUILD_CONCURRENCY = 1
 
 
 def _sanitize_label_value(value: str) -> str:
@@ -115,6 +108,37 @@ def _sanitize_label_key(key: str) -> str:
 def build_vertex_ai_sync_llm_client(model_config: LLMModelConfig) -> SyncLLMClient:
     """Returns the production synchronous LLM client for |model_config|."""
     return VertexAISyncLLMClient(model_config=model_config)
+
+
+class _StrictGoldenEvalSessionDelegate:
+    """Session delegate for golden eval runs, where every document must produce a
+    result: a skipped or unbuildable document aborts the run instead of being
+    counted and passed over.
+    """
+
+    def on_empty_document(self, *, document_contents_id: str) -> None:
+        """Raises: a golden eval document must have text. Unreachable today —
+        GoldenEvalDocument validates its text non-empty — but kept loud in case
+        that invariant ever changes.
+        """
+        raise ValueError(
+            f"Golden eval document [{document_contents_id}] has empty text, so no "
+            f"extraction request could be built for it."
+        )
+
+    def on_document_request_build_failure(
+        self, *, document_contents_id: str, error: Exception
+    ) -> None:
+        """Raises: every golden eval document must build a request."""
+        raise ValueError(
+            f"Could not build an extraction request for golden eval document "
+            f"[{document_contents_id}]."
+        ) from error
+
+    def on_raw_document_extraction_result(
+        self, result: LLMClientDocumentExtractionResult
+    ) -> None:
+        """Does nothing: an eval run reports no per-result progress."""
 
 
 class GoldenEvalRunner:
@@ -148,9 +172,6 @@ class GoldenEvalRunner:
         ] = build_vertex_ai_sync_llm_client,
         # The client used to write the scored rows.
         bq_client: BigQueryClient | None = None,
-        # Classifies and validates each raw result, so an eval run scores
-        # exactly what the pipeline would have persisted.
-        processor: LLMExtractionResultProcessor | None = None,
         # Compares each document's actual output to its expected values.
         scorer: LLMDocumentExtractionGoldenEvalScorer | None = None,
     ) -> None:
@@ -165,9 +186,6 @@ class GoldenEvalRunner:
         self.sheets_service = sheets_service
         self.sync_llm_client_factory = sync_llm_client_factory
         self.bq_client = bq_client or BigQueryClientImpl()
-        self.processor = processor or LLMExtractionResultProcessor(
-            validator=LLMExtractionResultValidator()
-        )
         self.scorer = scorer or LLMDocumentExtractionGoldenEvalScorer()
         # Writes the processed results to the extraction result tables when
         # persist_processed_results is set.
@@ -187,16 +205,29 @@ class GoldenEvalRunner:
 
         documents = self._read_golden_eval_documents(config=config)
 
-        requests = self._build_requests(config=config, documents=documents)
-        raw_results_by_document_id = self._execute_requests(
-            config=config, requests=requests
-        )
-        processed_results_by_document_id = self._process_raw_results(
+        session = SyncLLMDocumentExtractionSession(
             config=config,
-            documents=documents,
             job_id=job_id,
-            raw_results_by_document_id=raw_results_by_document_id,
+            billing_labels=self.billing_labels(config=config),
+            sync_client=self.sync_llm_client_factory(config.model_config),
+            delegate=_StrictGoldenEvalSessionDelegate(),
+            # Golden eval documents have no numbered entries to check.
+            expected_entry_nums_source=None,
+            request_build_concurrency=_REQUEST_BUILD_CONCURRENCY,
         )
+        # TODO(OBT-45749): Add an optional max-retries flag (default 0; never
+        # set by CI — a hand-picked case the model misses must surface as a
+        # failure) that re-calls session.extract, before finish_session, with
+        # the documents whose results classified as validation-failure
+        # transient. Production retries those across DAG runs, so the flag is a
+        # prompt-iteration diagnostic for whether a miss would converge there.
+        # Request-failure transients are excluded — the request runner already
+        # retries those in-run.
+        processed_results_by_document_id = {
+            result.document_contents_id: result
+            for result in session.extract(documents=documents)
+        }
+        session_summary = session.finish_session()
 
         if self.persist_processed_results:
             # Written before scoring, so a scoring bug still leaves the raw and
@@ -225,9 +256,7 @@ class GoldenEvalRunner:
                 document_id: result.result_type
                 for document_id, result in processed_results_by_document_id.items()
             },
-            total_token_counts=LLMDocumentExtractionTokenCounts.sum(
-                result.token_counts for result in raw_results_by_document_id.values()
-            ),
+            total_token_counts=session_summary.token_counts,
         )
 
     @classmethod
@@ -272,80 +301,6 @@ class GoldenEvalRunner:
         return GoldenEvalDocumentReader.from_config(
             config=config, sheets_reader=sheets_reader
         ).load_all_documents()
-
-    def _build_requests(
-        self, *, config: LLMExtractorConfig, documents: list[GoldenEvalDocument]
-    ) -> list[LLMDocumentExtractionRequest]:
-        """Returns one extraction request per golden eval document, built the same
-        way the pipeline builds its requests.
-        """
-        builder = LLMDocumentExtractionRequestBuilder.for_config(
-            config=config, billing_labels=self.billing_labels(config=config)
-        )
-        requests = []
-        for document in documents:
-            request = builder.build_request(document=document)
-            if request is None:
-                # Unreachable: GoldenEvalDocument validates its text non-empty.
-                raise ValueError(
-                    f"Golden eval document [{document.golden_document_id}] has "
-                    f"empty text, so no extraction request could be built for it."
-                )
-            requests.append(request)
-        return requests
-
-    def _execute_requests(
-        self,
-        *,
-        config: LLMExtractorConfig,
-        requests: list[LLMDocumentExtractionRequest],
-    ) -> dict[str, LLMClientDocumentExtractionResult]:
-        """Returns the raw extraction result for every request, keyed by document id."""
-        runner = SyncLLMDocumentExtractionRequestRunner(
-            client=self.sync_llm_client_factory(config.model_config)
-        )
-        results_by_document_id: dict[str, LLMClientDocumentExtractionResult] = {}
-        with runner.execute_document_extraction_requests(requests=requests) as results:
-            # Exiting the context early cancels outstanding requests, so drain the
-            # iterator fully.
-            for result in results:
-                results_by_document_id[result.document_contents_id] = result
-
-        requested_document_ids = {request.document_contents_id for request in requests}
-        if requested_document_ids != set(results_by_document_id):
-            raise ValueError(
-                f"Golden eval run of extractor [{config.extractor_id}] got "
-                f"extraction results that do not match its requests. Missing "
-                f"result(s) for {sorted(requested_document_ids - set(results_by_document_id))}; "
-                f"unexpected result(s) for "
-                f"{sorted(set(results_by_document_id) - requested_document_ids)}."
-            )
-        return results_by_document_id
-
-    def _process_raw_results(
-        self,
-        *,
-        config: LLMExtractorConfig,
-        documents: list[GoldenEvalDocument],
-        job_id: str,
-        raw_results_by_document_id: dict[str, LLMClientDocumentExtractionResult],
-    ) -> dict[str, LLMJobDocumentExtractionResult]:
-        """Returns the processed outcome for every document, keyed by document id.
-        Each raw result is classified and validated the same way the pipeline does.
-        TODO(OBT-45749): add optional retries for transient failures
-        """
-        return {
-            document.golden_document_id: self.processor.validate_and_classify(
-                config=config,
-                raw_result=raw_results_by_document_id[document.golden_document_id],
-                job_id=job_id,
-                source_document_text=document.document_text,
-                # Each document is a single attempt, so there are no prior failures
-                prior_transient_failure_count=0,
-                expected_entry_nums=None,
-            )
-            for document in documents
-        }
 
     @staticmethod
     def _actual_output_values(

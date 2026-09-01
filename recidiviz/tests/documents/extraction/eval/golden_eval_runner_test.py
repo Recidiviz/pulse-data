@@ -53,7 +53,10 @@ from recidiviz.documents.extraction.eval.golden_eval_result import (
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GoldenEvalResultsBQTable,
 )
-from recidiviz.documents.extraction.eval.golden_eval_runner import GoldenEvalRunner
+from recidiviz.documents.extraction.eval.golden_eval_runner import (
+    GoldenEvalRunner,
+    _StrictGoldenEvalSessionDelegate,
+)
 from recidiviz.documents.extraction.extraction_results_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     EXTRACTION_JOB_ID_COLUMN_NAME,
@@ -346,6 +349,48 @@ def _expected_rows(
     ]
 
 
+class StrictGoldenEvalSessionDelegateTest(TestCase):
+    """Tests for the strict session delegate. Its raise paths are unreachable
+    through GoldenEvalRunner — a GoldenEvalDocument validates its text non-empty
+    and its fetch never fails — so they are covered directly here.
+    """
+
+    def setUp(self) -> None:
+        self.delegate = _StrictGoldenEvalSessionDelegate()
+
+    def test_empty_document_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Golden eval document \[unit_1\] has empty text, so no extraction "
+            r"request could be built for it\.$",
+        ):
+            self.delegate.on_empty_document(document_contents_id="unit_1")
+
+    def test_build_failure_raises_and_chains_the_cause(self) -> None:
+        error = RuntimeError("boom")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Could not build an extraction request for golden eval document "
+            r"\[unit_1\]\.$",
+        ) as cm:
+            self.delegate.on_document_request_build_failure(
+                document_contents_id="unit_1", error=error
+            )
+
+        self.assertIs(error, cm.exception.__cause__)
+
+    def test_raw_result_is_a_no_op(self) -> None:
+        # Asserts only that the call raises nothing.
+        self.delegate.on_raw_document_extraction_result(
+            LLMClientDocumentExtractionResult.from_error(
+                document_contents_id="unit_1",
+                error_type=LLMRequestErrorType.CONTENT_FILTERED,
+                error_message="filtered",
+            )
+        )
+
+
 class GoldenEvalRunnerTest(TestCase):
     """Tests the golden eval run itself, with the sheet read stubbed out."""
 
@@ -614,10 +659,10 @@ class GoldenEvalRunnerTest(TestCase):
         ):
             with self.assertRaisesRegex(
                 ValueError,
-                r"^Golden eval run of extractor \[US_XX_FAKE_EXTRACTOR_COLLECTION\] "
-                r"got extraction results that do not match its requests\. Missing "
-                r"result\(s\) for \['unit_1'\]; unexpected result\(s\) for "
-                r"\['bogus_unit_1'\]\.$",
+                r"^Extraction run \[golden_eval_.*\] of extractor "
+                r"\[US_XX_FAKE_EXTRACTOR_COLLECTION\] got a result for document "
+                r"\[bogus_unit_1\] with no matching in-flight request — the "
+                r"document was never requested, or its result already arrived\.$",
             ):
                 self._runner(client=client).run_eval(config=self.config)
 

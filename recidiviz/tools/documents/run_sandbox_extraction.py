@@ -594,7 +594,10 @@ def run_sandbox_extraction(
     # deploy and the entity-resolution pass run regardless, since a --keep-postgres
     # resume whose first-order documents already finished still needs its (idempotent)
     # views deployed and its entities resolved from the prior run's results.
-    if first_order_summary is not None and first_order_summary.processed:
+    if (
+        first_order_summary is not None
+        and first_order_summary.session_summary.processed
+    ):
         wait_for_streaming_buffer(args)
 
     first_order_view_builders = (
@@ -622,7 +625,7 @@ def run_sandbox_extraction(
         fs=fs,
     )
 
-    if any(summary.processed for summary in er_summaries):
+    if any(summary.session_summary.processed for summary in er_summaries):
         wait_for_streaming_buffer(args)
         deploy_extraction_results_views(
             config=config,

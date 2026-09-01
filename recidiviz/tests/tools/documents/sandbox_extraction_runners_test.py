@@ -60,6 +60,9 @@ from recidiviz.documents.extraction.llm_extraction_results_tables import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
+from recidiviz.documents.extraction.sync_llm_document_extraction_session import (
+    SyncLLMDocumentExtractionSessionSummary,
+)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -439,12 +442,16 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=2,
-                succeeded=2,
-                input_tokens=20,
-                output_tokens=10,
-                cached_input_tokens=4,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             summary,
         )
@@ -500,15 +507,85 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=2,
-                succeeded=2,
-                input_tokens=20,
-                output_tokens=10,
-                cached_input_tokens=4,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             summary,
         )
+
+    def test_results_flushed_in_chunks(self) -> None:
+        # persist_chunk_size=1 forces a BigQuery+Postgres flush after each result
+        # instead of one flush at the end. Every other test uses a chunk size
+        # larger than its document count, so this is the only test in which the
+        # mid-run chunk boundary fires.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        config = self.config.with_sandbox_narrowing(
+            document_limit=5, root_entity_ids=None, external_id_type=None
+        )
+        job_manager = LLMExtractionJobManager()
+        processor = DocumentExtractionProcessor(
+            config=config,
+            results_sandbox_prefix=_SANDBOX_PREFIX,
+            document_store_sandbox=None,
+            labels={"reason": "test"},
+            bq_client=self.bq_client,
+            fs=self.fs,
+            sync_client=self._fake_client(),
+            job_manager=job_manager,
+            persist_chunk_size=1,
+            request_build_concurrency=4,
+            progress_log_interval_seconds=0.0,
+        )
+        # The persister is a frozen attrs instance, so the spy patches the class
+        # (autospec) and delegates to the real method.
+        with mock.patch.object(
+            LLMExtractionResultsPersister,
+            "persist_results",
+            autospec=True,
+            side_effect=LLMExtractionResultsPersister.persist_results,
+        ) as persist_spy:
+            summary = SandboxExtractionRunner(
+                config=config,
+                document_store_sandbox=None,
+                bq_client=self.bq_client,
+                job_manager=job_manager,
+                processor=processor,
+            ).run()
+
+        # Two chunks of one result each. The final flush of the empty leftover
+        # chunk never reaches the persister.
+        self.assertEqual(
+            [1, 1],
+            [len(call.kwargs["results"]) for call in persist_spy.call_args_list],
+        )
+        self.assertEqual(
+            SandboxExtractionSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+        # Both chunked flushes marked Postgres, so both documents carry results.
+        self.assertEqual({_DOC_A, _DOC_B}, set(self._extraction_job_document_by_id()))
 
     def test_failed_request_counts_as_llm_request_failure(self) -> None:
         self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
@@ -530,8 +607,10 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=2,
-                failed_llm_request=2,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    failed_llm_request=2,
+                ),
             ),
             summary,
         )
@@ -589,12 +668,16 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=2,
-                failed_validation=2,
-                input_tokens=20,
-                output_tokens=10,
-                cached_input_tokens=4,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    failed_validation=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             summary,
         )
@@ -641,13 +724,17 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=1,
-                succeeded=1,
-                failed_to_build=1,
-                input_tokens=10,
-                output_tokens=5,
-                cached_input_tokens=2,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=1,
+                    succeeded=1,
+                    failed_to_build=1,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=10,
+                        output_token_count=5,
+                        cached_input_token_count=2,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             summary,
         )
@@ -691,13 +778,17 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=1,
-                succeeded=1,
-                skipped_empty=1,
-                input_tokens=10,
-                output_tokens=5,
-                cached_input_tokens=2,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=1,
+                    succeeded=1,
+                    skipped_empty=1,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=10,
+                        output_token_count=5,
+                        cached_input_token_count=2,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             summary,
         )
@@ -761,12 +852,16 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             SandboxExtractionSummary(
                 extractor_config_name=_COLLECTION_NAME,
-                processed=2,
-                succeeded=2,
-                input_tokens=20,
-                output_tokens=10,
-                cached_input_tokens=4,
-                thinking_tokens=0,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
             ),
             first_summary,
         )

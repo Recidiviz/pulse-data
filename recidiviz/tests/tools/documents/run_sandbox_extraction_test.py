@@ -686,7 +686,14 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
                 (FAKE_ASSIGNMENT_ER_COLLECTION_NAME, 2, 2),
                 (FAKE_PAY_RATE_ER_COLLECTION_NAME, 2, 2),
             ],
-            [(s.extractor_config_name, s.processed, s.succeeded) for s in summaries],
+            [
+                (
+                    s.extractor_config_name,
+                    s.session_summary.processed,
+                    s.session_summary.succeeded,
+                )
+                for s in summaries
+            ],
         )
 
         first_order_config = fake_first_order_extractor_config()

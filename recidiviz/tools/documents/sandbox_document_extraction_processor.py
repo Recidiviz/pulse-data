@@ -21,7 +21,6 @@ a run summary as it goes."""
 
 import logging
 import time
-from collections.abc import Iterator
 
 import attr
 
@@ -35,24 +34,19 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_composit
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
 )
+from recidiviz.documents.extraction.expected_entry_nums_source import (
+    InMemoryExpectedEntryNumsSource,
+)
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
     GCSDocumentTextSource,
-    LLMDocumentExtractionRequestBuilder,
 )
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
-from recidiviz.documents.extraction.llm_client.sync_llm_document_extraction_request_runner import (
-    SyncLLMDocumentExtractionRequestRunner,
-)
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
-    LLMDocumentExtractionRequest,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
     LLMJobDocumentExtractionResult,
-)
-from recidiviz.documents.extraction.llm_extraction_result_processor import (
-    LLMExtractionResultProcessor,
 )
 from recidiviz.documents.extraction.llm_extraction_results_persister import (
     LLMExtractionResultsPersister,
@@ -60,8 +54,9 @@ from recidiviz.documents.extraction.llm_extraction_results_persister import (
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
-from recidiviz.documents.extraction.validation.llm_extraction_result_validator import (
-    LLMExtractionResultValidator,
+from recidiviz.documents.extraction.sync_llm_document_extraction_session import (
+    SyncLLMDocumentExtractionSession,
+    SyncLLMDocumentExtractionSessionSummary,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -70,7 +65,6 @@ from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentStoreSandboxContext,
 )
 from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
-from recidiviz.utils.future_executor import map_with_bounded_concurrency
 
 
 def _format_progress(*, processed: int, total: int, elapsed_seconds: float) -> str:
@@ -117,9 +111,9 @@ class _ExtractionProgressLogger:
         """Records a completed result, logging progress if |interval_seconds| has
         elapsed since the last line.
 
-        Handed to the request runner as its progress_callback, which calls it once
-        per result, serially, from the thread consuming the results — so it needs
-        no locking despite the requests themselves running concurrently.
+        Called by the session delegate once per result, serially, from the thread
+        consuming the results — so it needs no locking despite the requests
+        themselves running concurrently.
         """
         self._results_seen += 1
         if result.is_error_result:
@@ -164,6 +158,52 @@ class _ExtractionProgressLogger:
 
 
 @attr.define(kw_only=True)
+class _SandboxExtractionSessionDelegate:
+    """Routes the extraction session's per-document events into the sandbox run's
+    logging and progress reporting. Every event is survivable: the session counts
+    the document and moves on rather than aborting the whole run.
+    """
+
+    progress: _ExtractionProgressLogger = attr.ib(
+        validator=attr.validators.instance_of(_ExtractionProgressLogger)
+    )
+    """The run's progress logger, told about each result and each excluded
+    document."""
+
+    def on_empty_document(self, *, document_contents_id: str) -> None:
+        """Logs the skip and drops the document from the progress denominator.
+
+        An empty-text document is skipped without a terminal result_type, so under
+        --keep-postgres it is re-selected into a fresh job on every resume
+        (re-read, re-skipped, job marked SUCCESS) and never converges — see
+        TODO(OBT-42807) in the session's request generator.
+        """
+        logging.info("Document [%s] has empty text; skipping.", document_contents_id)
+        self.progress.exclude_document()
+
+    def on_document_request_build_failure(
+        self, *, document_contents_id: str, error: Exception
+    ) -> None:
+        """Logs the failure and drops the document from the progress denominator.
+        The document's job row is left unmarked in Postgres, so it is re-selected
+        on the next run.
+        """
+        logging.error(
+            "Could not build a request for document [%s]; leaving it unmarked for "
+            "re-selection on the next run.",
+            document_contents_id,
+            exc_info=error,
+        )
+        self.progress.exclude_document()
+
+    def on_raw_document_extraction_result(
+        self, result: LLMClientDocumentExtractionResult
+    ) -> None:
+        """Feeds each completed raw result to the progress logger."""
+        self.progress.on_result(result)
+
+
+@attr.define(frozen=True, kw_only=True)
 class SandboxExtractionSummary:
     """The tally of one extraction thread's run, paired with the extractor
     collection it covers so the run's first-order and per-entity-group phases can
@@ -172,48 +212,12 @@ class SandboxExtractionSummary:
     extractor_config_name: str = attr.ib(validator=attr_validators.is_str)
     """Extractor collection name the summary covers, used as its printed header."""
 
-    processed: int = attr.ib(default=0, validator=attr_validators.is_non_negative_int)
-    """Documents that reached the LLM and were classified (success or failure)."""
-
-    succeeded: int = attr.ib(default=0, validator=attr_validators.is_non_negative_int)
-    """Processed documents that extracted and validated cleanly."""
-
-    failed_llm_request: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
+    session_summary: SyncLLMDocumentExtractionSessionSummary = attr.ib(
+        factory=SyncLLMDocumentExtractionSessionSummary,
+        validator=attr.validators.instance_of(SyncLLMDocumentExtractionSessionSummary),
     )
-    """Processed documents whose LLM request itself failed (timeout, rate limit,
-    server error, content filter, malformed/empty response) — no result JSON came
-    back to validate."""
-
-    failed_validation: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    """Processed documents whose LLM request returned a result that then failed
-    validation."""
-
-    skipped_empty: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    """Documents skipped before the LLM because their text was empty."""
-
-    failed_to_build: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    """Documents that could not be assembled into a request (e.g. missing GCS
-    text). Left unmarked in Postgres, so they are re-selected on the next run."""
-
-    input_tokens: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    output_tokens: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    cached_input_tokens: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
-    thinking_tokens: int = attr.ib(
-        default=0, validator=attr_validators.is_non_negative_int
-    )
+    """The run's per-document outcome counts and token usage, accumulated by the
+    extraction session. Defaults to all zeros for a run that processed nothing."""
 
     # Excluded from equality: it is a non-deterministic timing measurement used
     # only for display, not part of the run's logical outcome.
@@ -235,8 +239,8 @@ class SandboxExtractionSummary:
         # Documents that never reached the LLM because a request could not be
         # built for them. Only surfaced when non-empty, so a clean run stays quiet.
         job_creation_error_rows = [
-            ("❌ Empty text in GCS (skipped)", self.skipped_empty),
-            ("❌ Failed to build LLM request", self.failed_to_build),
+            ("❌ Empty text in GCS (skipped)", self.session_summary.skipped_empty),
+            ("❌ Failed to build LLM request", self.session_summary.failed_to_build),
         ]
         if any(count for _, count in job_creation_error_rows):
             logging.info("Documents with job creation errors:")
@@ -244,20 +248,21 @@ class SandboxExtractionSummary:
                 if count:
                     logging.info("    %s: %d", label, count)
 
-        logging.info("Documents processed via LLM: %d", self.processed)
+        logging.info("Documents processed via LLM: %d", self.session_summary.processed)
         for label, count in [
-            ("✅ Succeeded", self.succeeded),
-            ("❌ Failed (LLM request)", self.failed_llm_request),
-            ("❌ Failed (validation)", self.failed_validation),
+            ("✅ Succeeded", self.session_summary.succeeded),
+            ("❌ Failed (LLM request)", self.session_summary.failed_llm_request),
+            ("❌ Failed (validation)", self.session_summary.failed_validation),
         ]:
             if count:
                 logging.info("    %s: %d", label, count)
 
+        token_counts = self.session_summary.token_counts
         logging.info("Token usage:")
-        logging.info("  Input: %d", self.input_tokens)
-        logging.info("  Output: %d", self.output_tokens)
-        logging.info("  Cached input: %d", self.cached_input_tokens)
-        logging.info("  Thinking: %d", self.thinking_tokens)
+        logging.info("  Input: %d", token_counts.input_token_count)
+        logging.info("  Output: %d", token_counts.output_token_count)
+        logging.info("  Cached input: %d", token_counts.cached_input_token_count)
+        logging.info("  Thinking: %d", token_counts.thinking_token_count)
 
 
 def read_expected_entry_nums_by_document(
@@ -316,9 +321,8 @@ def read_expected_entry_nums_by_document(
 class DocumentExtractionProcessor:
     """Runs a job's pending documents through the LLM for one extractor and
     sandbox: builds a request per document, runs them, classifies each result, and
-    flushes the results to BigQuery and Postgres in chunks. Owns the run's summary,
-    accumulating each document's outcome and token usage into it as results
-    complete.
+    flushes the results to BigQuery and Postgres in chunks. Returns a summary
+    wrapping the extraction session's outcome tally.
     """
 
     def __init__(
@@ -360,12 +364,6 @@ class DocumentExtractionProcessor:
         self.request_build_concurrency = request_build_concurrency
         self.progress_log_interval_seconds = progress_log_interval_seconds
 
-        self.summary = SandboxExtractionSummary(
-            extractor_config_name=config.extractor_collection.name
-        )
-        self.processor = LLMExtractionResultProcessor(
-            validator=LLMExtractionResultValidator()
-        )
         self.persister = LLMExtractionResultsPersister(
             sandbox_prefix=results_sandbox_prefix, bq_client=bq_client
         )
@@ -392,9 +390,6 @@ class DocumentExtractionProcessor:
             document_store_sandbox=self.document_store_sandbox,
             bq_client=self.bq_client,
         )
-        request_builder = LLMDocumentExtractionRequestBuilder.for_config(
-            config=self.config, billing_labels=self.labels
-        )
         documents = [
             GCSDocumentTextSource(
                 document_contents_id=job_document.document_contents_id,
@@ -406,26 +401,10 @@ class DocumentExtractionProcessor:
             )
             for job_document in pending_documents
         ]
-        runner = SyncLLMDocumentExtractionRequestRunner(client=self.sync_client)
-
         total_documents = len(pending_documents)
         logging.info("Processing [%d] documents through the LLM.", total_documents)
 
-        # Each buildable document's source text, keyed by document_contents_id.
-        # The request generator writes an entry as it builds each request and the
-        # classify step pops it once the result comes back, so this holds only the
-        # in-flight window's worth of text (bounded by the runner's concurrency),
-        # not every document's text at once.
-        #
-        # TODO(OBT-42971) Passing the source text in-process from request-building to
-        # classification works for this single-process sandbox script, but the
-        # Airflow version splits these across tasks and must not push document_text
-        # through XCom. The classify step will need to re-read the text rather than
-        # receive it in memory — likely from the BigQuery table that already holds
-        # the document text.
-        source_text_by_document: dict[str, str] = {}
-
-        # Progress is reported through the runner's progress_callback, which fires
+        # Progress is reported through the session's per-result event, which fires
         # as each result completes — decoupling how often the run says something
         # from how often it flushes to BigQuery. Tying the two together meant a run
         # shorter than one persist chunk (the common sandbox case) printed no
@@ -434,155 +413,36 @@ class DocumentExtractionProcessor:
             total_documents=total_documents,
             interval_seconds=self.progress_log_interval_seconds,
         )
-        chunk: list[LLMJobDocumentExtractionResult] = []
-        with runner.execute_document_extraction_requests(
-            requests=self._iter_requests(
-                documents=documents,
-                request_builder=request_builder,
-                source_text_by_document=source_text_by_document,
-                progress=progress,
-            ),
-            progress_callback=progress.on_result,
-        ) as results:
-            for raw_result in results:
-                # The document is done once its result is classified, so popping
-                # its source text here bounds the map to the in-flight window
-                # rather than the whole run.
-                chunk.append(
-                    self._classify_result(
-                        raw_result=raw_result,
-                        job_id=job_id,
-                        source_document_text=source_text_by_document.pop(
-                            raw_result.document_contents_id
-                        ),
-                        expected_entry_nums=(
-                            None
-                            if expected_entry_nums_by_document is None
-                            else expected_entry_nums_by_document[
-                                raw_result.document_contents_id
-                            ]
-                        ),
-                    )
+        session = SyncLLMDocumentExtractionSession(
+            config=self.config,
+            job_id=job_id,
+            billing_labels=self.labels,
+            sync_client=self.sync_client,
+            delegate=_SandboxExtractionSessionDelegate(progress=progress),
+            expected_entry_nums_source=(
+                None
+                if expected_entry_nums_by_document is None
+                else InMemoryExpectedEntryNumsSource(
+                    entry_nums_by_document=expected_entry_nums_by_document
                 )
-                if len(chunk) >= self.persist_chunk_size:
-                    self._write_results_to_bq_and_postgres(results=chunk)
-                    chunk = []
+            ),
+            request_build_concurrency=self.request_build_concurrency,
+        )
+
+        chunk: list[LLMJobDocumentExtractionResult] = []
+        for result in session.extract(documents=documents):
+            chunk.append(result)
+            if len(chunk) >= self.persist_chunk_size:
+                self._write_results_to_bq_and_postgres(results=chunk)
+                chunk = []
         # Flush the final partial chunk.
         self._write_results_to_bq_and_postgres(results=chunk)
         progress.log_final()
-        self.summary.llm_phase_seconds = progress.elapsed_seconds
-        return self.summary
-
-    def _iter_requests(
-        self,
-        *,
-        documents: list[GCSDocumentTextSource],
-        request_builder: LLMDocumentExtractionRequestBuilder,
-        source_text_by_document: dict[str, str],
-        progress: _ExtractionProgressLogger,
-    ) -> Iterator[LLMDocumentExtractionRequest]:
-        """Yields one extraction request per buildable document, lazily, recording
-        each document's source text in |source_text_by_document| for the classify
-        step to read back.
-
-        Builds requests on a small thread pool rather than inline. Each build
-        reads its document's text from GCS, which costs two sequential HTTP round
-        trips, and this generator is consumed on the thread driving the request
-        runner — so building inline serialized every read and starved the runner,
-        holding in-flight LLM requests far below its max_concurrency. Building on
-        a pool overlaps those round trips with each other and with the LLM calls.
-
-        Still lazy: map_with_bounded_concurrency keeps at most
-        `request_build_concurrency` reads in flight and pulls documents only as
-        the consumer takes requests, so a large run holds that many documents'
-        text rather than every document's at once. Requests come out in
-        completion order rather than job order, which the runner does not depend
-        on.
-
-        The summary counters mutated below are only ever touched from this thread
-        (the one consuming the completed builds), not from the build pool.
-        """
-        with map_with_bounded_concurrency(
-            work_fn=lambda document: request_builder.build_request(document=document),
-            items=documents,
-            max_concurrency=self.request_build_concurrency,
-        ) as completed_builds:
-            for completed in completed_builds:
-                document_contents_id = completed.item.document_contents_id
-                try:
-                    request = completed.result
-                except Exception:  # pylint: disable=broad-except
-                    # Any failure building one document's request — the expected
-                    # LLMDocumentExtractionRequestError, or an unexpected error
-                    # like a transient GCS read failure — is survivable: count it
-                    # and move on rather than letting it abort the whole run. A
-                    # systematic build bug still surfaces loudly as every document
-                    # landing in failed_to_build.
-                    logging.exception(
-                        "Could not build a request for document [%s]; leaving it "
-                        "unmarked for re-selection on the next run.",
-                        document_contents_id,
-                    )
-                    self.summary.failed_to_build += 1
-                    progress.exclude_document()
-                    continue
-                if request is None:
-                    # An empty-text document is skipped without a terminal
-                    # result_type, so under --keep-postgres it is re-selected into
-                    # a fresh job on every resume (re-read, re-skipped, job marked
-                    # SUCCESS) and never converges. Harmless but wasteful, and it
-                    # masks true completion. TODO(OBT-42807) give empty docs a
-                    # terminal result so they stop re-selecting.
-                    logging.info(
-                        "Document [%s] has empty text; skipping.", document_contents_id
-                    )
-                    self.summary.skipped_empty += 1
-                    progress.exclude_document()
-                    continue
-                source_text_by_document[document_contents_id] = request.document_text
-                yield request
-
-    def _classify_result(
-        self,
-        *,
-        raw_result: LLMClientDocumentExtractionResult,
-        job_id: str,
-        source_document_text: str,
-        # This document's complete composite-document entry set, or None for a
-        # first-order extractor whose documents have no numbered entries.
-        expected_entry_nums: set[int] | None,
-    ) -> LLMJobDocumentExtractionResult:
-        """Returns the processed result for one raw extraction result, classified
-        and validated, and folds its counts and token usage into the summary.
-        """
-        result = self.processor.validate_and_classify(
-            config=self.config,
-            raw_result=raw_result,
-            job_id=job_id,
-            source_document_text=source_document_text,
-            expected_entry_nums=expected_entry_nums,
-            # TODO(OBT-41779) since we are allowing postgres to persist across runs,
-            # we should properly pass in the prior transient failure count from the postgres table here
-            prior_transient_failure_count=0,
+        return SandboxExtractionSummary(
+            extractor_config_name=self.config.extractor_collection.name,
+            session_summary=session.finish_session(),
+            llm_phase_seconds=progress.elapsed_seconds,
         )
-
-        self.summary.processed += 1
-        if result.is_validated_result:
-            self.summary.succeeded += 1
-        elif result.raw_result.is_error_result:
-            # The LLM request itself failed, so no result JSON reached the
-            # validator.
-            self.summary.failed_llm_request += 1
-        else:
-            # The request returned a result that then failed validation.
-            self.summary.failed_validation += 1
-
-        token_counts = result.raw_result.token_counts
-        self.summary.input_tokens += token_counts.input_token_count
-        self.summary.output_tokens += token_counts.output_token_count
-        self.summary.cached_input_tokens += token_counts.cached_input_token_count
-        self.summary.thinking_tokens += token_counts.thinking_token_count
-        return result
 
     def _write_results_to_bq_and_postgres(
         self, *, results: list[LLMJobDocumentExtractionResult]

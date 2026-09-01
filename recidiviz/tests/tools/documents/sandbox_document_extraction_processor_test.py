@@ -17,7 +17,7 @@
 """Tests for the sandbox_document_extraction_processor."""
 
 import datetime
-from unittest import mock
+from unittest import TestCase, mock
 
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
@@ -25,8 +25,14 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_document
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
     EntityResolutionEntrySourceMapBQTable,
 )
+from recidiviz.documents.extraction.llm_client.types import (
+    LLMDocumentExtractionTokenCounts,
+)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
+)
+from recidiviz.documents.extraction.sync_llm_document_extraction_session import (
+    SyncLLMDocumentExtractionSessionSummary,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -45,6 +51,7 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tools.documents.sandbox_document_extraction_processor import (
+    SandboxExtractionSummary,
     read_expected_entry_nums_by_document,
 )
 from recidiviz.utils.types import assert_type
@@ -174,3 +181,47 @@ class ReadExpectedEntryNumsByDocumentTest(BigQueryEmulatorTestCase):
                 )
             )
         run_query.assert_not_called()
+
+
+class SandboxExtractionSummaryTest(TestCase):
+    """Tests for SandboxExtractionSummary's console rendering."""
+
+    def test_log_renders_every_section(self) -> None:
+        summary = SandboxExtractionSummary(
+            extractor_config_name="FAKE_EXTRACTOR_COLLECTION",
+            session_summary=SyncLLMDocumentExtractionSessionSummary(
+                processed=3,
+                succeeded=1,
+                failed_llm_request=1,
+                failed_validation=1,
+                skipped_empty=1,
+                failed_to_build=1,
+                token_counts=LLMDocumentExtractionTokenCounts(
+                    input_token_count=30,
+                    output_token_count=15,
+                    cached_input_token_count=6,
+                    thinking_token_count=2,
+                ),
+            ),
+            llm_phase_seconds=61.0,
+        )
+
+        with self.assertLogs(level="INFO") as logs:
+            summary.log()
+
+        output = "\n".join(logs.output)
+        for fragment in [
+            "=== Sandbox extraction complete: FAKE_EXTRACTOR_COLLECTION ===",
+            "LLM requests phase took 1m 1s.",
+            "❌ Empty text in GCS (skipped): 1",
+            "❌ Failed to build LLM request: 1",
+            "Documents processed via LLM: 3",
+            "✅ Succeeded: 1",
+            "❌ Failed (LLM request): 1",
+            "❌ Failed (validation): 1",
+            "Input: 30",
+            "Output: 15",
+            "Cached input: 6",
+            "Thinking: 2",
+        ]:
+            self.assertIn(fragment, output)
