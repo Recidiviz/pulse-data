@@ -231,6 +231,13 @@ def build_source_table_repository_for_collected_schemata(
     """Builds a source table repository for all source tables in a project's BigQuery graph
     If the project is unspecified, all defined source tables are collected, including
     source tables that may only exist in one project.
+
+    Tables written by Python code (not YAML-managed) must be registered in one
+    of the collections in this file — view-graph validation only materializes
+    tables found in this repository, so views over an unregistered table fail
+    view_graph_validation_test.py. Choose the update_config per the guidance on
+    SourceTableCollectionUpdateConfig (regenerable only if the table can be
+    rebuilt from its source).
     """
     if project_id is not None and project_id != metadata.project_id():
         raise ValueError(
