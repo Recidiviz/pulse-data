@@ -377,6 +377,21 @@ from recidiviz.validation.views.state.us_ar_ged_writeback_no_double_writes impor
 from recidiviz.validation.views.state.us_ar_ged_writeback_no_failed_actions import (
     US_AR_GED_WRITEBACK_NO_FAILED_ACTIONS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_co_work_credit_exceeds_achievement_cap import (
+    US_CO_WORK_CREDIT_EXCEEDS_ACHIEVEMENT_CAP_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_work_credit_for_residents_released_before_policy_effective_date import (
+    US_CO_WORK_CREDIT_FOR_RESIDENTS_RELEASED_BEFORE_POLICY_EFFECTIVE_DATE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_work_credit_no_duplicate_person_sessions import (
+    US_CO_WORK_CREDIT_NO_DUPLICATE_PERSON_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_work_engagement_multiple_sessions_credited_same_month import (
+    US_CO_WORK_ENGAGEMENT_MULTIPLE_SESSIONS_CREDITED_SAME_MONTH_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_work_engagement_no_duplicate_person_session_months import (
+    US_CO_WORK_ENGAGEMENT_NO_DUPLICATE_PERSON_SESSION_MONTHS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
     US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
@@ -1311,6 +1326,26 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AR_GED_WRITEBACK_EXPECTED_VS_ACTUAL_ACTION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_WORK_ENGAGEMENT_NO_DUPLICATE_PERSON_SESSION_MONTHS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_WORK_CREDIT_NO_DUPLICATE_PERSON_SESSIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_WORK_ENGAGEMENT_MULTIPLE_SESSIONS_CREDITED_SAME_MONTH_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_WORK_CREDIT_EXCEEDS_ACHIEVEMENT_CAP_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_WORK_CREDIT_FOR_RESIDENTS_RELEASED_BEFORE_POLICY_EFFECTIVE_DATE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
