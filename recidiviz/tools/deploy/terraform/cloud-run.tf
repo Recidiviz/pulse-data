@@ -18,7 +18,7 @@
 locals {
   high_availibility_cloud_run_locations = toset([var.us_central_region, var.us_east_region])
   # In the case of a regional outage, update this to have the load balancer route to only an unaffected location
-  high_availability_cloud_run_serving_locations = toset([var.us_central_region, var.us_east_region])
+  high_availability_cloud_run_serving_locations = toset([var.us_central_region])
 
   vpc_access_connectors_by_location = {
     (var.us_central_region) : google_vpc_access_connector.us_central_redis_vpc_connector.id,
