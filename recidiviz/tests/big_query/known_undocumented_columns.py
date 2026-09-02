@@ -175,14 +175,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.insights_officer_outlier_usage_cohort"): [
-        "cohort_month_end_date",
-        "cohort_month_start_date",
-        "metric_id",
-        "officer_id",
-        "outlier_usage_cohort",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "analyst_data.insights_supervision_officer_caseload_category_sessions"
     ): [
