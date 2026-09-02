@@ -80,6 +80,13 @@ locals {
 
 # Only the staging Terraform state owns the group resources; see the file
 # header for why.
+#
+# There is deliberately no prevent_destroy here: to retire a state's group,
+# remove its entry from state_data_access_groups.yaml, and the next staging
+# deploy tears the group down. BEWARE: Google Group deletion is permanent,
+# and any human members of the group are recorded nowhere in code. Review the
+# PR plan comment for `destroy` lines on every change to that YAML -- a typo
+# in a state key destroys the real group.
 resource "google_cloud_identity_group" "state_data_access_group" {
   for_each = local.is_production ? toset([]) : local.tf_managed_data_access_group_states
 
@@ -94,19 +101,6 @@ resource "google_cloud_identity_group" "state_data_access_group" {
 
   labels = {
     "cloudidentity.googleapis.com/groups.discussion_forum" = ""
-  }
-
-  lifecycle {
-    # A group delete drops its human members and breaks the BQ row-level
-    # access grants that reference its email. This flag also rejects any plan
-    # that removes a state's entry from the YAML while its group instance is
-    # still in Terraform state. `removed` blocks cannot target for_each
-    # instance keys, so to retire a group:
-    # 1. Drop the instance from the staging state:
-    #    terraform state rm 'google_cloud_identity_group.state_data_access_group["US_XX"]'
-    # 2. Remove the state's entry from state_data_access_groups.yaml.
-    # 3. Delete the group by hand in the Workspace admin console.
-    prevent_destroy = true
   }
 }
 
