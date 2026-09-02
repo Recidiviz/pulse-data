@@ -21,6 +21,7 @@ ready to import.
 By default all tenant branches run. To target a single tenant, pass
 `tenant_filter` in the DAG run conf.
 """
+
 from airflow.decorators import dag
 from airflow.utils.task_group import TaskGroup
 
@@ -40,6 +41,9 @@ from recidiviz.airflow.dags.utils.branching_by_key import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+    execute_update_big_query_table_schemata,
+)
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -49,6 +53,7 @@ from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineTyp
 # Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need
 # expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
+# pylint: disable=W0104 pointless-statement
 
 
 @dag(
@@ -60,7 +65,9 @@ from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineTyp
 )
 def create_identity_ingest_dag() -> None:
     """Identity ingest Dataflow pipeline branched per tenant."""
-    with TaskGroup(group_id="identity_ingest_pipelines"):
+    update_big_query_table_schemata = execute_update_big_query_table_schemata()
+
+    with TaskGroup(group_id="identity_ingest_pipelines") as identity_ingest_pipelines:
         branches_by_tenant = {}
         for state_code in get_direct_ingest_states_launched_in_env():
             tenant = Tenant.from_state_code(state_code).value
@@ -76,6 +83,8 @@ def create_identity_ingest_dag() -> None:
             branches_by_tenant,
             select_tenant_parameter_branch,
         )
+
+    update_big_query_table_schemata >> identity_ingest_pipelines
 
 
 identity_ingest_dag = create_identity_ingest_dag()

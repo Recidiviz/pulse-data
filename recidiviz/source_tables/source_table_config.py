@@ -672,9 +672,7 @@ LLM_EXTRACTION_UPDATE_GROUPS = {
 }
 
 # Collections read/written by the identity ingest DAG.
-# TODO(OBT-45756): Drop CALC once the identity ingest DAG has its own schema-update task.
 IDENTITY_INGEST_UPDATE_GROUPS = {
-    SourceTableUpdateGroup.CALC,
     SourceTableUpdateGroup.IDENTITY_INGEST,
 }
 

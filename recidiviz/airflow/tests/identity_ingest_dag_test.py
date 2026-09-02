@@ -22,9 +22,13 @@ from airflow import DAG
 from recidiviz.airflow.dags.identity_ingest.call_identity_service_trigger_import import (
     CALL_IDENTITY_SERVICE_TRIGGER_IMPORT_TASK_ID,
 )
+from recidiviz.airflow.dags.utils.branch_utils import BRANCH_START_TASK_NAME
 from recidiviz.airflow.dags.utils.branching_by_key import select_tenant_parameter_branch
 from recidiviz.airflow.dags.utils.config_utils import TENANT_FILTER
-from recidiviz.airflow.dags.utils.constants import DATAFLOW_OPERATOR_TASK_ID
+from recidiviz.airflow.dags.utils.constants import (
+    DATAFLOW_OPERATOR_TASK_ID,
+    UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+)
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_constructor,
@@ -87,6 +91,13 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
         )
         self.kubernetes_pod_operator_patcher.start()
 
+        self.schema_update_operator_patcher = patch(
+            "recidiviz.airflow.dags.utils.update_source_table_schemata."
+            "build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.schema_update_operator_patcher.start()
+
         self.dataflow_operator_patcher = patch(
             "recidiviz.airflow.dags.utils.dataflow_pipeline_group."
             "RecidivizDataflowFlexTemplateOperator",
@@ -99,6 +110,7 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
         self.ingest_regions_patcher.stop()
         self.cloud_sql_operator_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
+        self.schema_update_operator_patcher.stop()
         self.dataflow_operator_patcher.stop()
         super().tearDown()
 
@@ -125,6 +137,19 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
                 task_groups,
                 f"No branch found for [{tenant}].",
             )
+
+    def test_schema_update_gates_tenant_branches(self) -> None:
+        """The DAG updates its source table schemas before any tenant branch runs,
+        so the pipelines never read raw data or write pipeline output against a
+        stale schema. The task derives its own update group from the DAG id, so no
+        arguments are passed."""
+        dag = self._build_dag()
+        self.assertIn(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID, dag.task_ids)
+        schema_update_task = dag.get_task(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID)
+        self.assertIn(
+            f"identity_ingest_pipelines.{BRANCH_START_TASK_NAME}",
+            schema_update_task.downstream_task_ids,
+        )
 
     def test_each_branch_has_max_update_datetimes_task(self) -> None:
         """Each per-tenant branch reads raw data upper bound dates from operations
