@@ -1054,6 +1054,8 @@ def incarceration_past_early_release_date(
             {metadata_date_expr(metadata_key)} AS {acis_date},
         FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
         WHERE state_code = 'US_AZ'
+            AND JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__{metadata_key}_approval_status')
+                IN ('APPROVED', 'TENTATIVE')
     ) dates
     WHERE {acis_date} IS NOT NULL
       -- Filter out spans where the 90-day expiration cap produces an end
