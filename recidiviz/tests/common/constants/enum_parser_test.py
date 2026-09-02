@@ -19,7 +19,11 @@ import unittest
 from enum import Enum
 from typing import Optional
 
-from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
+from recidiviz.common.constants.enum_parser import (
+    EnumParser,
+    EnumParsingError,
+    parse_enum,
+)
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
     StateGender,
@@ -30,6 +34,11 @@ from recidiviz.common.constants.state.state_person import (
 class _MyEnum(Enum):
     ITEM1 = "xx"
     ITEM2 = "yy"
+
+
+class _MyUpperEnum(Enum):
+    ALPHA = "ALPHA"
+    BETA = "BETA"
 
 
 def ethnicity_mapper(label: str) -> Optional[StateEthnicity]:
@@ -224,3 +233,25 @@ class TestEnumParser(unittest.TestCase):
             r"\[_MyEnum\] but not both.",
         ):
             parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+
+
+class TestParseEnum(unittest.TestCase):
+    """Tests for parse_enum."""
+
+    def test_parses_matching_value(self) -> None:
+        self.assertEqual(_MyUpperEnum.ALPHA, parse_enum(_MyUpperEnum, "ALPHA"))
+
+    def test_parses_case_insensitively(self) -> None:
+        self.assertEqual(_MyUpperEnum.BETA, parse_enum(_MyUpperEnum, "beta"))
+
+    def test_parses_lowercase_valued_enum(self) -> None:
+        self.assertEqual(_MyEnum.ITEM1, parse_enum(_MyEnum, "xx"))
+        self.assertEqual(_MyEnum.ITEM1, parse_enum(_MyEnum, "XX"))
+
+    def test_unknown_value_raises_listing_valid_values(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unable to parse \[gamma\] as _MyUpperEnum\. Expected one of "
+            r"\[ALPHA, BETA\]\.$",
+        ):
+            parse_enum(_MyUpperEnum, "gamma")

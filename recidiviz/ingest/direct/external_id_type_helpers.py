@@ -17,6 +17,7 @@
 """Helper functions for constants defined in external_id_types"""
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 
 from recidiviz.common.constants.state import external_id_types
 from recidiviz.common.constants.states import StateCode
@@ -36,9 +37,9 @@ def is_valid_external_id_type_shape(external_id_type: str) -> bool:
     shape.
 
     This is a shape check only, not a membership check against
-    external_id_types.py. Where the state an ID type belongs to is known, check
-    membership in `external_id_types_by_state_code()[state_code]` instead — that
-    catches a typo'd or wrong-state ID type, which this cannot.
+    external_id_types.py. Where the state an ID type belongs to is known, use
+    validate_external_id_types instead. That catches a typo'd or wrong-state ID
+    type, which this cannot.
     """
     return EXTERNAL_ID_TYPE_REGEX.match(external_id_type) is not None
 
@@ -50,6 +51,32 @@ def get_external_id_types() -> list[str]:
         # Skip built-in variables and Final import
         if not id_type.startswith("__") and not id_type == "Final"
     ]
+
+
+def validate_external_id_types(
+    *, state_code: StateCode, external_id_types_to_check: Iterable[str]
+) -> None:
+    """Raises if any of |external_id_types_to_check| is not registered for
+    |state_code| in external_id_types.py, listing the registered types in the
+    error.
+
+    This is a membership check, unlike the shape check in
+    is_valid_external_id_type_shape: it catches a typo'd or wrong-state ID type,
+    which a shape check cannot.
+    """
+    allowed_id_types = external_id_types_by_state_code()[state_code]
+    invalid_id_types = sorted(
+        {
+            id_type
+            for id_type in external_id_types_to_check
+            if id_type not in allowed_id_types
+        }
+    )
+    if invalid_id_types:
+        raise ValueError(
+            f"External id type(s) {invalid_id_types} are not registered for "
+            f"[{state_code.value}]. Registered types: {sorted(allowed_id_types)}."
+        )
 
 
 def external_id_types_by_state_code() -> dict[StateCode, set[str]]:

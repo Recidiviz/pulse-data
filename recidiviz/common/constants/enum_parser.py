@@ -128,3 +128,20 @@ class EnumParser(Generic[EnumT]):
                 f"Expected [{self.enum_cls}]."
             )
         return parsed_enum
+
+
+def parse_enum(enum_cls: type[EnumT], raw: str) -> EnumT:
+    """Returns the member of |enum_cls| whose value matches |raw|
+    case-insensitively, raising a ValueError that names |raw|, the enum, and the
+    valid values on a miss.
+
+    This is a lightweight value-based lookup, unrelated to the raw-text-mapping
+    EnumParser above.
+    """
+    for member in enum_cls:
+        if str(member.value).upper() == raw.upper():
+            return member
+    raise ValueError(
+        f"Unable to parse [{raw}] as {enum_cls.__name__}. Expected one of "
+        f"[{', '.join(str(member.value) for member in enum_cls)}]."
+    )

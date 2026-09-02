@@ -123,9 +123,7 @@ from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentCollectionSandboxLocation,
     DocumentStoreSandboxContext,
 )
-from recidiviz.ingest.direct.external_id_type_helpers import (
-    external_id_types_by_state_code,
-)
+from recidiviz.ingest.direct.external_id_type_helpers import validate_external_id_types
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.documents.sandbox_document_extraction_processor import (
@@ -436,22 +434,6 @@ def _build_document_store_sandbox(
 def parse_arguments() -> argparse.Namespace:
     """Parses the command-line arguments for a sandbox extraction run."""
 
-    def _validate_external_id_type(
-        *, external_id_type: str | None, state_code: StateCode
-    ) -> None:
-        """Validates that |external_id_type|, if given, is an external ID type
-        registered for |state_code| in external_id_types.py.
-        """
-        if external_id_type is None:
-            return
-        allowed_id_types = external_id_types_by_state_code()[state_code]
-        if external_id_type not in allowed_id_types:
-            raise ValueError(
-                f"Got --external-id-type [{external_id_type}], which is not an "
-                f"external ID type for [{state_code.value}]. Registered types: "
-                f"{sorted(allowed_id_types)}."
-            )
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--project-id",
@@ -529,9 +511,11 @@ def parse_arguments() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
-    _validate_external_id_type(
-        external_id_type=args.external_id_type, state_code=args.state_code
-    )
+    if args.external_id_type is not None:
+        validate_external_id_types(
+            state_code=args.state_code,
+            external_id_types_to_check=[args.external_id_type],
+        )
     return args
 
 

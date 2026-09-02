@@ -40,23 +40,25 @@ REJECTED_IDENTITY_CLUSTER_TABLE_ID = "rejected_identity_cluster"
 
 # Top-level columns of the rejected_identity_cluster table. IDENTITY_CLUSTER_ID_COL is
 # public because the table clusters on it; REJECTED_AT_COL because the pipeline
-# test harness excludes it from fixture comparison.
+# test harness excludes it from fixture comparison; PERSON_TYPE_COL, EXTERNAL_IDS_COL,
+# RECORDED_CONFLICTS_COL, and CONFLICTS_HASH_COL because the override recording
+# tool reads them.
 IDENTITY_CLUSTER_ID_COL = "identity_cluster_id"
 REJECTED_AT_COL = "rejected_at"
-_PERSON_TYPE_COL = "person_type"
-_EXTERNAL_IDS_COL = "external_ids"
-_RECORDED_CONFLICTS_COL = "recorded_conflicts"
-_CONFLICTS_HASH_COL = "conflicts_hash"
+PERSON_TYPE_COL = "person_type"
+EXTERNAL_IDS_COL = "external_ids"
+RECORDED_CONFLICTS_COL = "recorded_conflicts"
+CONFLICTS_HASH_COL = "conflicts_hash"
 _TENANT_COL = "tenant"
 _CONTRIBUTING_FRAGMENT_IDS_COL = "contributing_fragment_ids"
 
 # Members of the external_ids record column.
-_EXTERNAL_ID_FIELD = "external_id"
-_ID_TYPE_FIELD = "id_type"
+EXTERNAL_ID_FIELD = "external_id"
+ID_TYPE_FIELD = "id_type"
 
 # Members of the recorded_conflicts record column.
-_CONFLICT_FIELD_FIELD = "field"
-_CONFLICT_VALUES_FIELD = "values"
+CONFLICT_FIELD_FIELD = "field"
+CONFLICT_VALUES_FIELD = "values"
 
 
 def rejected_identity_cluster_schema_fields() -> list[bigquery.SchemaField]:
@@ -81,7 +83,7 @@ def rejected_identity_cluster_schema_fields() -> list[bigquery.SchemaField]:
             description="Tenant the rejected cluster belongs to.",
         ),
         bigquery.SchemaField(
-            _PERSON_TYPE_COL,
+            PERSON_TYPE_COL,
             "STRING",
             mode="REQUIRED",
             description="Person type shared by the cluster's fragments.",
@@ -97,32 +99,32 @@ def rejected_identity_cluster_schema_fields() -> list[bigquery.SchemaField]:
             ),
         ),
         bigquery.SchemaField(
-            _EXTERNAL_IDS_COL,
+            EXTERNAL_IDS_COL,
             "RECORD",
             mode="REPEATED",
             description="The cluster's external ids.",
             fields=(
                 bigquery.SchemaField(
-                    _EXTERNAL_ID_FIELD, "STRING", description="External id value."
+                    EXTERNAL_ID_FIELD, "STRING", description="External id value."
                 ),
                 bigquery.SchemaField(
-                    _ID_TYPE_FIELD, "STRING", description="External id type."
+                    ID_TYPE_FIELD, "STRING", description="External id type."
                 ),
             ),
         ),
         bigquery.SchemaField(
-            _RECORDED_CONFLICTS_COL,
+            RECORDED_CONFLICTS_COL,
             "RECORD",
             mode="REPEATED",
             description="The attribute conflicts that caused the rejection.",
             fields=(
                 bigquery.SchemaField(
-                    _CONFLICT_FIELD_FIELD,
+                    CONFLICT_FIELD_FIELD,
                     "STRING",
                     description="Name of the conflicting attribute, e.g. birthdate.",
                 ),
                 bigquery.SchemaField(
-                    _CONFLICT_VALUES_FIELD,
+                    CONFLICT_VALUES_FIELD,
                     "STRING",
                     mode="REPEATED",
                     description="The distinct values the fragments held for the field.",
@@ -130,7 +132,7 @@ def rejected_identity_cluster_schema_fields() -> list[bigquery.SchemaField]:
             ),
         ),
         bigquery.SchemaField(
-            _CONFLICTS_HASH_COL,
+            CONFLICTS_HASH_COL,
             "STRING",
             mode="REQUIRED",
             description=(
@@ -217,22 +219,22 @@ class RejectedIdentityCluster:
         return {
             REJECTED_AT_COL: rejected_at.isoformat(),
             _TENANT_COL: self.tenant.value,
-            _PERSON_TYPE_COL: self.person_type.value,
+            PERSON_TYPE_COL: self.person_type.value,
             IDENTITY_CLUSTER_ID_COL: self.identity_cluster_id,
-            _EXTERNAL_IDS_COL: [
-                {_EXTERNAL_ID_FIELD: external_id, _ID_TYPE_FIELD: id_type}
+            EXTERNAL_IDS_COL: [
+                {EXTERNAL_ID_FIELD: external_id, ID_TYPE_FIELD: id_type}
                 for external_id, id_type in self.external_ids
             ],
-            _RECORDED_CONFLICTS_COL: [
+            RECORDED_CONFLICTS_COL: [
                 {
-                    _CONFLICT_FIELD_FIELD: conflict.field,
-                    _CONFLICT_VALUES_FIELD: [
+                    CONFLICT_FIELD_FIELD: conflict.field,
+                    CONFLICT_VALUES_FIELD: [
                         _serialize_conflict_value(value) for value in conflict.values
                     ],
                 }
                 for conflict in self.conflicts
             ],
-            _CONFLICTS_HASH_COL: hash_of_conflicts(self.conflicts),
+            CONFLICTS_HASH_COL: hash_of_conflicts(self.conflicts),
             _CONTRIBUTING_FRAGMENT_IDS_COL: list(self.contributing_fragment_ids),
         }
 
@@ -252,8 +254,8 @@ def hash_of_conflicts(conflicts: tuple[AttributeConflict, ...]) -> str:
     return get_hash_of_json(
         [
             {
-                _CONFLICT_FIELD_FIELD: conflict.field,
-                _CONFLICT_VALUES_FIELD: sorted(
+                CONFLICT_FIELD_FIELD: conflict.field,
+                CONFLICT_VALUES_FIELD: sorted(
                     _serialize_conflict_value(value) for value in conflict.values
                 ),
             }

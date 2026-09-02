@@ -23,6 +23,7 @@ from recidiviz.ingest.direct.external_id_type_helpers import (
     external_id_types_by_state_code,
     get_external_id_types,
     is_valid_external_id_type_shape,
+    validate_external_id_types,
 )
 
 
@@ -72,3 +73,51 @@ class ExternalIdTypesByStateCodeTest(unittest.TestCase):
 
         self.assertEqual({"US_NY_DOC"}, result[StateCode.US_NY])
         self.assertEqual({"US_NYC_TESTID"}, result[StateCode.US_NYC])
+
+
+class ValidateExternalIdTypesTest(unittest.TestCase):
+    """Tests for validate_external_id_types."""
+
+    def test_registered_types_pass(self) -> None:
+        validate_external_id_types(
+            state_code=StateCode.US_ND,
+            external_id_types_to_check=["US_ND_SID", "US_ND_ELITE"],
+        )
+
+    def test_empty_input_passes(self) -> None:
+        validate_external_id_types(
+            state_code=StateCode.US_ND, external_id_types_to_check=[]
+        )
+
+    def test_unregistered_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"External id type\(s\) \['US_ND_DOC'\] are not registered for "
+            r"\[US_ND\]\.",
+        ):
+            validate_external_id_types(
+                state_code=StateCode.US_ND,
+                external_id_types_to_check=["US_ND_DOC", "US_ND_ELITE"],
+            )
+
+    def test_wrong_state_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"External id type\(s\) \['US_PA_CONT'\] are not registered for "
+            r"\[US_ND\]\.",
+        ):
+            validate_external_id_types(
+                state_code=StateCode.US_ND,
+                external_id_types_to_check=["US_PA_CONT"],
+            )
+
+    def test_multiple_invalid_types_reported_deduped_and_sorted(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"External id type\(s\) \['US_ND_DOC', 'US_PA_CONT'\] are not "
+            r"registered for \[US_ND\]\.",
+        ):
+            validate_external_id_types(
+                state_code=StateCode.US_ND,
+                external_id_types_to_check=["US_PA_CONT", "US_ND_DOC", "US_ND_DOC"],
+            )
