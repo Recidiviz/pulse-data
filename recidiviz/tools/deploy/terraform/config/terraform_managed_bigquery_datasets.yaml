@@ -37,8 +37,6 @@ datasets:
     description: Dataset that contains metadata related to Intercom exports
   label_studio:
     description: Stores raw Label Studio annotation exports as GCS-backed external tables.
-  manually_updated_source_tables:
-    description: Stores source tables that are updated manually at some cadence, e.g. via a script or a manual BQ query in the UI to insert rows. Descriptions for tables added to this dataset should include information about how/when the table is updated.
   operations:
     description: Internal Recidiviz operations data loaded from the operations CloudSQL instance.
   population_projection_output_data:

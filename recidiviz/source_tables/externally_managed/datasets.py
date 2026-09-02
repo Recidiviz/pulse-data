@@ -36,9 +36,6 @@ from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,
 )
 
-# Views that are updated manually
-MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"
-
 ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
@@ -82,12 +79,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     CASE_PLANNING_PRODUCTION_DATASET: "Stores case planning analytics events logged via Segment",
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."
-    ),
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
-        "Stores source tables that are updated manually at some cadence, e.g. via "
-        "a script or a manual BQ query in the UI to insert rows. Descriptions for "
-        "tables added to this dataset should include information about how/when "
-        "the table is updated."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."

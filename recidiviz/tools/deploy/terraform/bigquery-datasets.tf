@@ -126,11 +126,6 @@ moved {
 }
 
 moved {
-  from = module.manually_updated_source_tables
-  to   = module.terraform_managed_bigquery_dataset["manually_updated_source_tables"]
-}
-
-moved {
   from = module.user_mgmt_logs_dataset
   to   = module.terraform_managed_bigquery_dataset["user_mgmt_logs"]
 }

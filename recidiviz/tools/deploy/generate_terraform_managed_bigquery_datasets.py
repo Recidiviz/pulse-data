@@ -56,10 +56,6 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
     get_source_table_datasets_to_descriptions,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.tools import deploy
 from recidiviz.tools.ingest.operations.constants import RAW_DATA_DIFF_RESULTS_DATASET_ID
@@ -166,16 +162,6 @@ class TerraformManagedDataset:
 _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS: dict[str, TerraformManagedDataset] = {
     EXPERIMENTS_METADATA_DATASET: TerraformManagedDataset(
         description="This dataset contains the metadata for our experiments.",
-    ),
-    # TODO(OBT-45863): Remove once experiment_assignments_large migrates out of
-    # manually_updated_source_tables and this dataset leaves the source-table
-    # repository. Until then it is the one entry here that is also registered in
-    # the repository (as externally_managed), so its description comes from that
-    # collection rather than drifting from it.
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET: TerraformManagedDataset(
-        description=EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS[
-            MANUALLY_UPDATED_SOURCE_TABLES_DATASET
-        ],
     ),
     RAW_DATA_DIFF_RESULTS_DATASET_ID: TerraformManagedDataset(
         description=(

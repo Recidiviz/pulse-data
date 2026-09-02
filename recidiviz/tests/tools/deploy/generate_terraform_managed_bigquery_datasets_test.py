@@ -26,9 +26,6 @@ import yaml
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
 from recidiviz.tools import deploy
 from recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets import (
     _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS,
@@ -39,11 +36,6 @@ from recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets import 
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
-
-# TODO(OBT-45863): Remove once experiment_assignments_large migrates out of
-# manually_updated_source_tables and the dataset leaves the source-table
-# repository.
-_SOURCE_TABLE_REPOSITORY_DATASET_EXCEPTIONS = {MANUALLY_UPDATED_SOURCE_TABLES_DATASET}
 
 
 class GenerateTerraformManagedBigqueryDatasetsTest(unittest.TestCase):
@@ -87,7 +79,7 @@ class GenerateTerraformManagedBigqueryDatasetsTest(unittest.TestCase):
             overlap = (
                 set(_NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS)
                 & source_table_dataset_ids
-            ) - _SOURCE_TABLE_REPOSITORY_DATASET_EXCEPTIONS
+            )
             self.assertFalse(
                 overlap,
                 f"Datasets declared in _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS "
