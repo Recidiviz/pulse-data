@@ -21,9 +21,17 @@ the next plan). Long term, if we want these managed declaratively, the right hom
 - Org tag `protection = managed-data` — a separate reconcile job
   ([`apply_dataset_protection_tags_entrypoint.py`](../../../entrypoints/bigquery/apply_dataset_protection_tags_entrypoint.py))
   stamps it onto the protected-tier source tables.
-- Deny policy `catastrophic-delete-guardrail` — denies `bigquery.datasets.delete` on
-  protection-tagged datasets to all workforce humans; `breakglass@` exempt; service accounts
-  excluded (so the deploy, Airflow cleanup, and view churn keep working).
+- Deny policy `catastrophic-delete-guardrail` — denies `bigquery.datasets.delete` **and
+  `bigquery.tables.delete`** on protection-tagged datasets to all workforce humans.
+  Resource Manager tags inherit from a dataset to its tables, so tagging the dataset
+  protects everything in it without per-table bindings.
+- Exempt from that deny: the `breakglass@` group, and the two deploy service accounts
+  (`cloud-build-ci-cd@recidiviz-123`, `cloud-build-ci-cd@recidiviz-staging`), which are
+  named explicitly so `terraform apply` can retire an emptied dataset. Do not rely on
+  service accounts being outside `principalSet://goog/cloudIdentityCustomerId/...` —
+  Google does not document whether that set covers them, so the exemption is listed
+  rather than assumed. Other service-account work (Airflow cleanup, view churn) targets
+  untagged datasets and is unaffected either way.
 
 ## Prerequisites
 1. **Cloud Identity customer id** — `gcloud organizations describe 448885369991 --format='value(directoryCustomerId)'`.
@@ -48,7 +56,7 @@ already exists.
 3. **Org rollout** — set `ATTACHMENT_POINT` to the organization and re-run.
 
 ## Adding the blanket bucket / KMS rules (after the dry-run)
-`deny_policy.json` ships with only the tag-gated `bigquery.datasets.delete` rule, so the first
+`deny_policy.json` ships with only the tag-gated BigQuery rule, so the first
 apply is safe. Once their dry-run is clean, add these two rule objects to the `rules` array and
 re-run the script (they are **blanket** — no tag condition — so they take effect immediately):
 
@@ -70,22 +78,53 @@ re-run the script (they are **blanket** — no tag condition — so they take ef
 ```
 
 ## Deleting a protected dataset
-The deny only blocks `bigquery.datasets.delete`, and only for workforce humans — service accounts
-are exempt (see "What it creates"). So a protected dataset is retired by emptying it by hand and
-letting the deploy service account drop the empty shell:
+The deny blocks both `datasets.delete` and `tables.delete` for workforce humans, so emptying a
+protected dataset is itself gated. The deploy service accounts are exempt, so the shape of the
+retirement is still "empty it, then let the deploy drop the shell" — but step 2 needs elevation.
 
 1. **In a PR**, remove the dataset from the protect set — from `datasets_to_protect()` (its
    source-table registry tier, or the `INFRA_PROTECT_ALLOWLIST`) and from the Terraform-managed
-   dataset registry. The reconcile job stops re-tagging it; once Terraform owns the tag it also
-   clears `protection` on the next apply. (The lingering tag doesn't block the delete either way —
-   the deploy SA is exempt from the deny — but clearing it keeps the tag set honest.)
-2. **Empty the dataset by hand** — delete its tables and views in BigQuery. The deny covers only
-   `datasets.delete`, not table deletes, so this is allowed; the dataset itself still can't be
-   deleted by a human while it's tagged.
-3. **Deploy the PR.** `terraform apply` runs as the deploy/Compute service account, which the deny
-   policy does not target, so it deletes the now-empty dataset.
+   dataset registry. Note the reconcile job is **add-only**: this stops it re-tagging the
+   dataset but does not remove the tag already there. The lingering tag does not block the
+   delete — the deploy SA is exempt — so there is no need to clear it by hand. Do not try:
+   a BigQuery `PATCH` of `{"resourceTags": {}}` silently does nothing.
+2. **Empty the dataset.** Deleting its tables needs both halves:
+   - an *allow* for `bigquery.tables.delete`. The standing `recidivizengineeringrole` does
+     **not** grant it (it grants `datasets.delete` but not `tables.delete`), and neither does
+     dataset-level access on a platform-owned dataset. Request the **`pam-update-data`** lane,
+     whose `roles/bigquery.dataEditor` supplies it — in staging as well as prod.
+   - an exception to the *deny*: join `breakglass@`. Allow and deny are evaluated
+     independently, so holding one without the other still fails. Group membership takes
+     1–2 minutes to propagate; an immediate retry looks like break-glass not working.
+3. **Merge the PR, then deploy.** `terraform apply` runs in Cloud Build as
+   `cloud-build-ci-cd@<project>`, an explicit exception, so it deletes the now-empty dataset.
+   Merge before deleting the dataset by hand — while Terraform still manages it, the next
+   apply just recreates it. The shared dataset module sets `delete_contents_on_destroy = false`,
+   so a destroy fails rather than dropping data if the dataset is not actually empty.
+
+**Sequencing warning.** Emptying the dataset before the PR merges leaves a window where a
+YAML config in `source_tables/externally_managed` declares a table that no longer exists in
+BigQuery, which fails the **BQ Source Table Validation** check on every branch until the PR
+lands. Keep that window short, and never open it just before a cherry-pick deploy.
 
 ## Status
-Design validated end-to-end in `recidiviz-terraform-sandbox` (2026-08-14): a tag-conditioned
-`datasets.delete` deny fired on a tagged BQ dataset and overrode `bigquery.admin`. **Not applied
-to any real project yet.**
+**Live and enforcing on both `recidiviz-staging` and `recidiviz-123`.** Verified 2026-09-02:
+the policy is attached to both projects, denies `datasets.delete` and `tables.delete`, and
+249 of 730 prod datasets carry the tag. Real denials have been observed in prod, and
+`breakglass@` membership has been confirmed to clear them.
+
+The `tables.delete` permission was added to the live policy on 2026-09-01; the deploy
+service-account exceptions on 2026-09-02. Both are reflected in `deny_policy.json` here.
+
+Because the script is applied by hand rather than by the deploy pipeline, this file can
+drift from what is live. Before trusting it, diff against the real thing:
+
+```bash
+# gcloud has no `iam policies describe`; read it over REST.
+curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "x-goog-user-project: recidiviz-security" \
+  "https://iam.googleapis.com/v2/policies/cloudresourcemanager.googleapis.com%2Fprojects%2F<PROJECT_NUMBER>/denypolicies/catastrophic-delete-guardrail"
+```
+
+Design origin: validated end-to-end in `recidiviz-terraform-sandbox` (2026-08-14), where a
+tag-conditioned `datasets.delete` deny fired on a tagged dataset and overrode `bigquery.admin`.

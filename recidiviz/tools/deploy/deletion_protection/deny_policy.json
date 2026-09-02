@@ -2,15 +2,19 @@
   "displayName": "Deny catastrophic data deletes to humans",
   "rules": [
     {
+      "description": "Dataset and table deletion on protection-tagged datasets. Tags inherit dataset->table, so a tagged dataset protects its tables with no per-table tagging. Sandboxes are untagged and unaffected. Humans escape via breakglass@; the deploy service accounts are exempt so terraform apply can retire an emptied dataset.",
       "denyRule": {
         "deniedPrincipals": [
           "principalSet://goog/cloudIdentityCustomerId/CUSTOMER_ID_PLACEHOLDER"
         ],
         "exceptionPrincipals": [
-          "principalSet://goog/group/BREAKGLASS_GROUP_PLACEHOLDER"
+          "principalSet://goog/group/BREAKGLASS_GROUP_PLACEHOLDER",
+          "principal://iam.googleapis.com/projects/-/serviceAccounts/cloud-build-ci-cd@recidiviz-123.iam.gserviceaccount.com",
+          "principal://iam.googleapis.com/projects/-/serviceAccounts/cloud-build-ci-cd@recidiviz-staging.iam.gserviceaccount.com"
         ],
         "deniedPermissions": [
-          "bigquery.googleapis.com/datasets.delete"
+          "bigquery.googleapis.com/datasets.delete",
+          "bigquery.googleapis.com/tables.delete"
         ],
         "denialCondition": {
           "title": "only-protection-tagged",
