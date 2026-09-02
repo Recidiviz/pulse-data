@@ -53,3 +53,8 @@ steps:
 timeout: 1800s
 options:
   substitutionOption: ALLOW_LOOSE
+  # Write logs to a project-owned regional bucket instead of the Google-owned
+  # default logs bucket. The default bucket only honors the legacy basic Viewer
+  # role, so log streams fail (and `gcloud builds submit` exits non-zero) for
+  # users whose access comes from a JIT lane rather than a standing basic role.
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
