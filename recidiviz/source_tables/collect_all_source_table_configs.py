@@ -225,19 +225,13 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
 
 
 @cache
-def build_source_table_repository_for_collected_schemata(
+def collect_source_table_collections_hydrated_outside_view_graphs(
     project_id: str | None,
-) -> SourceTableRepository:
-    """Builds a source table repository for all source tables in a project's BigQuery graph
-    If the project is unspecified, all defined source tables are collected, including
-    source tables that may only exist in one project.
-
-    Tables written by Python code (not YAML-managed) must be registered in one
-    of the collections in this file — view-graph validation only materializes
-    tables found in this repository, so views over an unregistered table fail
-    view_graph_validation_test.py. Choose the update_config per the guidance on
-    SourceTableCollectionUpdateConfig (regenerable only if the table can be
-    rebuilt from its source).
+) -> list[SourceTableCollection]:
+    """Returns the source table collections for tables whose contents are hydrated by
+    processes outside our view graphs (e.g. ingest, Dataflow pipelines, external
+    integrations). If the project is None, all defined source tables across projects are
+    collected.
     """
     if project_id is not None and project_id != metadata.project_id():
         raise ValueError(
@@ -247,24 +241,43 @@ def build_source_table_repository_for_collected_schemata(
 
     extractor_configs_by_state = collect_all_extractor_configs_by_state()
 
+    return [
+        *collect_externally_managed_source_table_collections(project_id=project_id),
+        *collect_yaml_managed_source_table_collections(project_id=project_id),
+        *collect_raw_data_source_table_collections(),
+        *_collect_cloudsql_mirror_source_table_collections(),
+        *collect_duplicative_us_mi_validation_oneoffs(),
+        *get_dataflow_output_source_table_collections(),
+        *build_identity_pipeline_input_source_table_collections(),
+        build_identity_service_export_source_table_collection(),
+        *collect_sentencing_source_tables(),
+        *collect_document_store_source_tables(),
+        *collect_extraction_results_source_table_collections(
+            configs=extractor_configs_by_state
+        ),
+        collect_golden_eval_results_source_table_collection(),
+        build_intercom_export_metadata_source_tables(),
+    ]
+
+
+@cache
+def build_source_table_repository_for_collected_schemata(
+    project_id: str | None,
+) -> SourceTableRepository:
+    """Builds a source table repository for all source tables in a project's BigQuery graph
+    If the project is None, all defined source tables across projects are collected.
+
+    Tables written by Python code (not YAML-managed) must be registered in one
+    of the collections in this file — view-graph validation only materializes
+    tables found in this repository, so views over an unregistered table fail
+    view_graph_validation_test.py. Choose the update_config per the guidance on
+    SourceTableCollectionUpdateConfig (regenerable only if the table can be
+    rebuilt from its source).
+    """
     return SourceTableRepository(
-        source_table_collections=[
-            *collect_externally_managed_source_table_collections(project_id=project_id),
-            *collect_yaml_managed_source_table_collections(project_id=project_id),
-            *collect_raw_data_source_table_collections(),
-            *_collect_cloudsql_mirror_source_table_collections(),
-            *collect_duplicative_us_mi_validation_oneoffs(),
-            *get_dataflow_output_source_table_collections(),
-            *build_identity_pipeline_input_source_table_collections(),
-            build_identity_service_export_source_table_collection(),
-            *collect_sentencing_source_tables(),
-            *collect_document_store_source_tables(),
-            *collect_extraction_results_source_table_collections(
-                configs=extractor_configs_by_state
-            ),
-            collect_golden_eval_results_source_table_collection(),
-            build_intercom_export_metadata_source_tables(),
-        ],
+        source_table_collections=collect_source_table_collections_hydrated_outside_view_graphs(
+            project_id
+        )
     )
 
 
