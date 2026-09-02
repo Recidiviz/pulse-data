@@ -23,6 +23,11 @@ output:
                 - seq
           start_date: start_date
           end_date: end_date
+          # Note that someone's "role" is determined strictly by whether or not they are
+          # actively operating as a supervision officer / case manager based on the
+          # files NC sends us -- meaning if someone is in "staff.txt" we assume they are
+          # a supervision officer, and if they're in "case_managers.txt" we assume they
+          # are a case manager.
           role_type:
             $enum_mapping:
               $raw_text: role_type_raw
@@ -37,7 +42,9 @@ output:
             $enum_mapping:
               $raw_text: role_subtype_raw
               $mappings:
-                StateStaffRoleSubtype.CASE_MANAGER: "CASE_MANAGER"
+                StateStaffRoleSubtype.CASE_MANAGER:
+                  - "CASE_MANAGER"
+                  - "CORRECTIONAL CASE MANAGER"
                 # TODO(OBT-45294) Don't user "role" to ingest this -- see if they are
                 # actually supervising someone instead
                 StateStaffRoleSubtype.SUPERVISION_OFFICER:
