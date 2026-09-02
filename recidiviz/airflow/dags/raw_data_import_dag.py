@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """DAG configuration to run raw data imports"""
+
 import datetime
 from typing import List
 
@@ -136,6 +137,9 @@ from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups import (
     kubernetes_pod_operator_mapped_task_with_output,
+)
+from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+    execute_update_big_query_table_schemata,
 )
 from recidiviz.airflow.dags.utils.warm_pool import (
     WarmPoolSpec,
@@ -619,6 +623,8 @@ def create_raw_data_import_dag() -> None:
             get_raw_data_branch_filter,
         )
 
+    update_big_query_table_schemata = execute_update_big_query_table_schemata()
+
     # Pre-warm node capacity before the branches run, then release it once the
     # run is done, to avoid pod-preemption. (OBT-2245)
     warm_pool_setup, warm_pool_teardown = build_warm_pool_setup_and_teardown(
@@ -640,8 +646,12 @@ def create_raw_data_import_dag() -> None:
         pod_active_deadline_seconds=RAW_DATA_WARM_POOL_POD_DEADLINE_SECONDS,
         ready_timeout_seconds=RAW_DATA_WARM_POOL_READY_TIMEOUT_SECONDS,
     )
+    # Run the schemata update before warming the pool so its pod doesn't race the
+    # 48-pod placeholder burst for fresh-node provisioning. It's small and quick, so
+    # sequencing it first costs little and removes the contention.
     (
         initialize_raw_data_dag_group()
+        >> update_big_query_table_schemata
         >> warm_pool_setup
         >> raw_data_branching
         >> warm_pool_teardown

@@ -46,6 +46,10 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
     SKIPPED_FILE_ERRORS,
 )
+from recidiviz.airflow.dags.utils.branch_utils import BRANCH_START_TASK_NAME
+from recidiviz.airflow.dags.utils.constants import (
+    UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+)
 from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
 from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
     FakeStateRawFileChunkingMetadataFactory,
@@ -53,6 +57,7 @@ from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failing_operator_constructor,
+    fake_operator_constructor,
     fake_operator_from_callable,
     fake_operator_with_return_value,
     fake_task_function_with_return_value,
@@ -188,6 +193,18 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
 
         assert branching_topological_sorted_groups == list(
             sorted(branching_topological_sorted_groups)
+        )
+
+    def test_schema_update_gates_state_branches(self) -> None:
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        self.assertIn(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID, dag.task_ids)
+        schema_update_task = dag.get_task(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID)
+        # Schema update runs before the warm pool so its pod doesn't race the
+        # placeholder burst for node provisioning; branching then gates on the pool.
+        self.assertEqual({"scale_up_warm_pool"}, schema_update_task.downstream_task_ids)
+        self.assertIn(
+            f"{RAW_DATA_BRANCHING}.{BRANCH_START_TASK_NAME}",
+            dag.get_task("scale_up_warm_pool").downstream_task_ids,
         )
 
     def test_lock_before_anything_else(self) -> None:
@@ -2666,6 +2683,14 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
+        # The schema-update task is built via the constructor rather than .partial,
+        # so it needs its own no-op patch.
+        self.schema_update_operator_patcher = patch(
+            "recidiviz.airflow.dags.utils.update_source_table_schemata.build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.schema_update_operator_patcher.start()
+
         self.dag_kick_off_patcher = patch(
             "recidiviz.airflow.dags.raw_data.sequencing_tasks.trigger_dag"
         )
@@ -2750,6 +2775,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # operators ---
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
+        self.schema_update_operator_patcher.stop()
         self.dag_kick_off_patcher.stop()
         self.chunking_metadata_patcher.stop()
         # task interactions
@@ -2853,6 +2879,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_success_task_id_regexes=[
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
+                    "update_big_query_table_schemata",
                     "raw_data_branching.branch_start",
                     "scale_up_warm_pool",
                     "scale_down_warm_pool",
@@ -2888,6 +2915,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
+                    "update_big_query_table_schemata",
                     "raw_data_branching.branch_start",
                     "scale_up_warm_pool",
                     "scale_down_warm_pool",
@@ -3006,11 +3034,14 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             validation_query="SELECT 1",
             error_msg="unknown known_values found in column foo",
         )
-        with patch.object(
-            DirectIngestRawTablePreImportValidator,
-            "run_raw_data_temp_table_validations",
-            return_value=[non_blocking_failure],
-        ), Session(bind=self.engine) as session:
+        with (
+            patch.object(
+                DirectIngestRawTablePreImportValidator,
+                "run_raw_data_temp_table_validations",
+                return_value=[non_blocking_failure],
+            ),
+            Session(bind=self.engine) as session,
+        ):
             result = self.run_dag_test(
                 self._create_dag(),
                 session=session,

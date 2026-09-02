@@ -683,11 +683,9 @@ RAW_DATA_UPDATE_GROUPS = {
     SourceTableUpdateGroup.RAW_DATA_IMPORT,
 }
 
-# The raw data import DAG's intermediate pruning and temp-load collections, which the
-# identity ingest pipelines do not read.
-# TODO(OBT-45757): Drop CALC once the raw data import DAG has its own schema-update task.
+# The raw data import DAG's intermediate pruning and temp-load collections, which are
+# only read by the raw data import DAG.
 RAW_DATA_PRUNING_UPDATE_GROUPS = {
-    SourceTableUpdateGroup.CALC,
     SourceTableUpdateGroup.RAW_DATA_IMPORT,
 }
 
