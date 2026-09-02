@@ -21,26 +21,3 @@ resource "google_project_service" "bigquery_connection_api" {
   disable_dependent_services = true
   disable_on_destroy         = true
 }
-
-# TODO(OBT-44639): remove this block once both projects have applied it.
-# The validation_results table is now managed by the source-table framework as a protected
-# table (see source_tables/yaml_managed/validation_results/). Deregister the Terraform table
-# resource without destroying it, so the framework adopts the existing table in place.
-removed {
-  from = google_bigquery_table.validation_results
-  lifecycle {
-    destroy = false
-  }
-}
-
-# TODO(OBT-44639): remove this block once both projects have applied it.
-# The jii_texting_incoming_messages table is now managed by the source-table framework as a
-# protected table (see source_tables/yaml_managed/twilio_webhook_requests/). Deregister the
-# Terraform table resource without destroying it, so the framework adopts the existing table
-# in place.
-removed {
-  from = google_bigquery_table.jii_texting_incoming_messages
-  lifecycle {
-    destroy = false
-  }
-}
