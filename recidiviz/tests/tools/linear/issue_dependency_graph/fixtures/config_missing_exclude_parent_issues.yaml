@@ -1,0 +1,4 @@
+project_name: "Test Project"
+milestones:
+  - name: "Phase 1"
+    short_name: P1

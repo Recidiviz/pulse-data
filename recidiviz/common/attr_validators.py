@@ -568,6 +568,10 @@ is_opt_non_empty_str = attr.validators.optional(is_non_empty_str)
 is_int = attr.validators.instance_of(int)
 is_opt_int = is_opt(int)
 
+# Float field validators
+is_float = attr.validators.instance_of(float)
+is_opt_float = is_opt(float)
+
 
 def is_positive_int(instance: Any, attribute: attr.Attribute, value: int) -> None:
     """Validator that ensures the field value is a positive integer."""

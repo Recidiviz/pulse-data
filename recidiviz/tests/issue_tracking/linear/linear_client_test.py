@@ -1281,6 +1281,303 @@ class CreateCommentTest(unittest.TestCase):
             client.create_comment(FAKE_COMMENT_ISSUE_INFO, "Hello world")
 
 
+class GetProjectIdByNameTest(unittest.TestCase):
+    """Tests for LinearClient.get_project_id_by_name()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_the_matching_project_id(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [{"id": "project-uuid", "name": "My Project"}]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_project_id_by_name(project_name="My Project")
+
+        self.assertEqual("project-uuid", result)
+        body = mock_post.call_args.kwargs["json"]
+        self.assertEqual({"name": "My Project"}, body["variables"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_when_no_project_matches(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": {"projects": {"nodes": []}}},
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaisesRegex(
+            ValueError, r"^Found no Linear project named \[Nope\]$"
+        ):
+            client.get_project_id_by_name(project_name="Nope")
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_when_several_projects_match(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [
+                            {"id": "uuid-1", "name": "My Project"},
+                            {"id": "uuid-2", "name": "My Project"},
+                        ]
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found \[2\] Linear projects named \[My Project\]; expected exactly one\.$",
+        ):
+            client.get_project_id_by_name(project_name="My Project")
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(status_code=400, text="Bad Request")
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaises(LinearApiError):
+            client.get_project_id_by_name(project_name="My Project")
+
+
+class GetProjectMilestonesTest(unittest.TestCase):
+    """Tests for LinearClient.get_project_milestones()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_milestones_sorted_by_sort_order(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "project": {
+                        "projectMilestones": {
+                            "nodes": [
+                                {"id": "uuid-2", "name": "Phase 2", "sortOrder": 200.5},
+                                {"id": "uuid-0", "name": "Phase 0", "sortOrder": -87.0},
+                                {"id": "uuid-1", "name": "Phase 1", "sortOrder": 100.0},
+                            ],
+                            "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        }
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_project_milestones(project_id="project-uuid")
+
+        self.assertEqual(["Phase 0", "Phase 1", "Phase 2"], [m["name"] for m in result])
+        self.assertEqual([-87.0, 100.0, 200.5], [m["sortOrder"] for m in result])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_handles_pagination(self, mock_post: MagicMock) -> None:
+        mock_post.side_effect = [
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "project": {
+                            "projectMilestones": {
+                                "nodes": [
+                                    {
+                                        "id": "uuid-1",
+                                        "name": "Phase 1",
+                                        "sortOrder": 100.0,
+                                    }
+                                ],
+                                "pageInfo": {
+                                    "hasNextPage": True,
+                                    "endCursor": "cursor-1",
+                                },
+                            }
+                        }
+                    }
+                },
+            ),
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "project": {
+                            "projectMilestones": {
+                                "nodes": [
+                                    {
+                                        "id": "uuid-2",
+                                        "name": "Phase 2",
+                                        "sortOrder": 200.0,
+                                    }
+                                ],
+                                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                            }
+                        }
+                    }
+                },
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_project_milestones(project_id="project-uuid")
+
+        self.assertEqual(["Phase 1", "Phase 2"], [m["name"] for m in result])
+        self.assertEqual(2, mock_post.call_count)
+        first_call_body = mock_post.call_args_list[0].kwargs["json"]
+        self.assertEqual({"projectId": "project-uuid"}, first_call_body["variables"])
+        second_call_body = mock_post.call_args_list[1].kwargs["json"]
+        self.assertEqual("cursor-1", second_call_body["variables"]["after"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_empty_for_a_project_with_no_milestones(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "project": {
+                        "projectMilestones": {
+                            "nodes": [],
+                            "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        }
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertEqual([], client.get_project_milestones(project_id="project-uuid"))
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(status_code=400, text="Bad Request")
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaises(LinearApiError):
+            client.get_project_milestones(project_id="project-uuid")
+
+
+class GetIssuesForMilestoneTest(unittest.TestCase):
+    """Tests for LinearClient.get_issues_for_milestone()."""
+
+    @staticmethod
+    def _issue_node(identifier: str) -> dict:
+        return {
+            "identifier": identifier,
+            "title": f"Title for {identifier}",
+            "state": {"name": "Todo", "type": "unstarted"},
+            "assignee": None,
+            "labels": {"nodes": [{"name": "Team: Data Platform"}]},
+            "children": {"nodes": []},
+            "relations": {"nodes": []},
+        }
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_the_milestone_issues(self, mock_post: MagicMock) -> None:
+        nodes = [self._issue_node("OBT-100"), self._issue_node("OBT-200")]
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "issues": {
+                        "nodes": nodes,
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_issues_for_milestone(milestone_id="milestone-uuid")
+
+        self.assertEqual(nodes, result)
+        body = mock_post.call_args.kwargs["json"]
+        self.assertEqual({"milestoneId": "milestone-uuid"}, body["variables"])
+        self.assertIn("projectMilestone: { id: { eq: $milestoneId } }", body["query"])
+        # The dependency graph needs each issue's labels, sub-issues, and
+        # relations; a dropped field would silently empty the graph.
+        for field in ("labels", "children", "relations"):
+            self.assertIn(field, body["query"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_handles_pagination(self, mock_post: MagicMock) -> None:
+        mock_post.side_effect = [
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "issues": {
+                            "nodes": [self._issue_node("OBT-100")],
+                            "pageInfo": {
+                                "hasNextPage": True,
+                                "endCursor": "cursor-1",
+                            },
+                        }
+                    }
+                },
+            ),
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "issues": {
+                            "nodes": [self._issue_node("OBT-200")],
+                            "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        }
+                    }
+                },
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_issues_for_milestone(milestone_id="milestone-uuid")
+
+        self.assertEqual(
+            ["OBT-100", "OBT-200"], [node["identifier"] for node in result]
+        )
+        self.assertEqual(2, mock_post.call_count)
+        second_call_body = mock_post.call_args_list[1].kwargs["json"]
+        self.assertEqual("cursor-1", second_call_body["variables"]["after"])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_empty_for_a_milestone_with_no_issues(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "issues": {
+                        "nodes": [],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertEqual(
+            [], client.get_issues_for_milestone(milestone_id="milestone-uuid")
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(status_code=400, text="Bad Request")
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaises(LinearApiError):
+            client.get_issues_for_milestone(milestone_id="milestone-uuid")
+
+
 class LinearClientFromSecretTest(unittest.TestCase):
     """Tests for linear_client_from_secret()."""
 

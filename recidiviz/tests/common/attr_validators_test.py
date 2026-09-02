@@ -184,6 +184,43 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass(my_required_int=10, my_optional_int=None)
         _ = _TestClass(my_required_int=1000, my_optional_int=3000)
 
+    def test_float_validators(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_required_float: float = attr.ib(validator=attr_validators.is_float)
+            my_optional_float: Optional[float] = attr.ib(
+                validator=attr_validators.is_opt_float, default=None
+            )
+
+        with self.assertRaises(TypeError) as e:
+            _ = _TestClass(my_required_float=None)  # type: ignore[arg-type]
+
+        self.assertEqual(
+            "'my_required_float' must be <class 'float'> (got None that is a <class 'NoneType'>).",
+            str(e.exception.args[0]),
+        )
+
+        with self.assertRaises(TypeError) as e:
+            _ = _TestClass(my_required_float=1.5, my_optional_float="True")  # type: ignore[arg-type]
+
+        self.assertEqual(
+            "'my_optional_float' must be <class 'float'> (got 'True' that is a <class 'str'>).",
+            str(e.exception.args[0]),
+        )
+
+        # An int is not a float, so it does not satisfy these validators.
+        with self.assertRaises(TypeError) as e:
+            _ = _TestClass(my_required_float=19)  # type: ignore[arg-type]
+
+        self.assertEqual(
+            "'my_required_float' must be <class 'float'> (got 19 that is a <class 'int'>).",
+            str(e.exception.args[0]),
+        )
+
+        # These don't crash
+        _ = _TestClass(my_required_float=10.5, my_optional_float=None)
+        _ = _TestClass(my_required_float=-87.0, my_optional_float=3000.25)
+
     def test_is_int_strict(self) -> None:
         @attr.s
         class _TestClass:

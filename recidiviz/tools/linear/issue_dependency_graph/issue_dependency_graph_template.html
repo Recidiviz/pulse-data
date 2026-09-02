@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PROJECT_NAME__ — Dependency Graph</title>
+<style>
+  :root {
+    --bg: #14151a; --panel: #1d1f27; --edge: #5a5e6e; --edge-hi: #f0f0f0;
+    --text: #e8e9ee; --muted: #9aa0ad;
+    --review: #2ea043; --review-bd: #56d364;
+    --progress: #d4a72c; --progress-bd: #e3b341;
+    --other: #2b2f3a; --other-bd: #444a59;
+    --done: #5e6ad2; --done-bd: #8b93e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  #header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px; background: rgba(20,21,26,0.92); backdrop-filter: blur(6px);
+    border-bottom: 1px solid #2a2d36;
+  }
+  #header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  #header .sub { color: var(--muted); font-size: 12px; }
+  .legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: var(--muted); }
+  .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+  .sw-review { background: var(--review); border: 1px solid var(--review-bd); }
+  .sw-progress { background: var(--progress); border: 1px solid var(--progress-bd); }
+  .sw-other { background: var(--other); border: 1px solid var(--other-bd); }
+  .sw-done { background: var(--done); border: 1px solid var(--done-bd); }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text);
+    cursor: pointer; user-select: none; padding: 4px 10px; border: 1px solid #3a3f4b;
+    border-radius: 6px; background: #22252f;
+  }
+  .toggle input { accent-color: var(--review); cursor: pointer; margin: 0; }
+  button.toggle { font: inherit; font-size: 12px; }
+  .dropdown { position: relative; }
+  .dropdown-panel {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+    min-width: 260px; max-height: 60vh; overflow-y: auto; padding: 8px 10px;
+    background: var(--panel); border: 1px solid #353945; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .dropdown-panel.open { display: block; }
+  .dropdown-panel .group-name {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); margin: 8px 0 4px; font-weight: 700;
+  }
+  .dropdown-panel .group-name:first-child { margin-top: 0; }
+  .dropdown-panel label {
+    display: flex; align-items: center; gap: 7px; font-size: 12px;
+    padding: 3px 2px; cursor: pointer; user-select: none;
+  }
+  .dropdown-panel input { accent-color: var(--done); cursor: pointer; margin: 0; }
+  .dropdown-panel .empty { font-size: 12px; color: var(--muted); }
+  .hint { margin-left: auto; font-size: 11px; color: var(--muted); }
+  #graph { position: absolute; inset: 0; }
+  svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  svg.panning { cursor: grabbing; }
+  .node .nbg { stroke-width: 1.5; transition: opacity .12s, stroke .12s; }
+  .node text { pointer-events: none; }
+  .node .nid { font-size: 12px; font-weight: 700; fill: var(--text); }
+  .node .ntitle { font-size: 10.5px; fill: var(--text); opacity: .82; }
+  .node .nmeta { font-size: 9px; fill: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .node .lpill-text { font-size: 9px; font-weight: 700; letter-spacing: .01em; fill: #16171c; }
+  .node .lpill-more { font-size: 9px; font-weight: 700; fill: rgba(255,255,255,.8); }
+  .node { cursor: pointer; }
+  .n-review .nbg { fill: var(--review); stroke: var(--review-bd); }
+  .n-review .nid, .n-review .ntitle { fill: #f5fff7; }
+  .n-review .nmeta { fill: #d6f5dd; }
+  .n-progress .nbg { fill: var(--progress); stroke: var(--progress-bd); }
+  .n-progress .nid, .n-progress .ntitle { fill: #1a1400; }
+  .n-progress .nmeta { fill: #4a3c08; }
+  .n-other .nbg { fill: var(--other); stroke: var(--other-bd); }
+  .n-done .nbg { fill: var(--done); stroke: var(--done-bd); }
+  .n-done .nid, .n-done .ntitle { fill: #f3f2ff; }
+  .n-done .nmeta { fill: #cfd0f5; }
+  .avatar text { font-size: 9px; font-weight: 700; fill: #fff; text-anchor: middle; }
+  .avatar circle { stroke: rgba(255,255,255,0.85); stroke-width: 1; }
+  .unassigned circle { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; opacity: .5; }
+  .edge { stroke: var(--edge); stroke-width: 1.4; fill: none; transition: stroke .12s, stroke-width .12s, opacity .12s; }
+  .edge.hi { stroke: var(--edge-hi); stroke-width: 2.2; }
+  .dim { opacity: 0.1; }
+  .milestone-box { fill: rgba(255,255,255,0.02); stroke: #3a3f4b; stroke-width: 1.2; stroke-dasharray: 6 4; }
+  .milestone-label { font-size: 13px; font-weight: 700; fill: var(--muted); letter-spacing: .02em; }
+  .edge.cross-milestone { stroke-dasharray: 5 4; }
+  marker#arrow path { fill: var(--edge); }
+  marker#arrowHi path { fill: var(--edge-hi); }
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 20; max-width: 340px;
+    background: var(--panel); border: 1px solid #353945; border-radius: 8px;
+    padding: 9px 11px; font-size: 12px; line-height: 1.4; opacity: 0; transition: opacity .1s;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  #tooltip .tt-id { font-weight: 700; }
+  #tooltip .tt-status { font-size: 11px; color: var(--muted); }
+  #tooltip .tt-rel { margin-top: 6px; color: var(--muted); font-size: 11px; }
+  #tooltip b { color: var(--text); }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1 id="title"></h1>
+  <span class="sub" id="counts"></span>
+  <div class="legend">
+    <span class="chip"><span class="swatch sw-review"></span> In Review</span>
+    <span class="chip"><span class="swatch sw-progress"></span> In Progress</span>
+    <span class="chip"><span class="swatch sw-other"></span> Todo / Backlog / Triage</span>
+    <span class="chip"><span class="swatch sw-done"></span> Done</span>
+  </div>
+  <label class="toggle"><input type="checkbox" id="toggle-hide-done"> Hide Done</label>
+  <label class="toggle"><input type="checkbox" id="toggle-review"> Treat “In Review” as Done</label>
+  <label class="toggle"><input type="checkbox" id="toggle-show-labels"> Show Labels</label>
+  <div class="dropdown">
+    <button type="button" class="toggle" id="label-filter-button" aria-expanded="false"></button>
+    <div class="dropdown-panel" id="label-filter-panel"></div>
+  </div>
+  <span class="hint">avatar = assignee · click → Linear · hover → deps · scroll = zoom · drag = pan · generated __GENERATED_AT__</span>
+</div>
+<div id="graph"><svg id="svg"></svg></div>
+<div id="tooltip"></div>
+
+<script>
+const PROJECT_NAME = __PROJECT_NAME_JSON__;
+// Milestones in the order Linear displays them, left to right.
+const MILESTONES = __MILESTONES_JSON__;
+const ISSUES = __ISSUES_JSON__;
+const EDGES = __EDGES_JSON__;
+// Every label found on any issue, and the subset the config hides on load.
+const ALL_LABELS = __ALL_LABELS_JSON__;
+const LABELS_EXCLUDED_BY_DEFAULT = __LABELS_EXCLUDED_BY_DEFAULT_JSON__;
+
+document.getElementById("title").textContent = `${PROJECT_NAME} — dependency graph`;
+
+const URL_BASE = "https://linear.app/recidiviz/issue/";
+const STATUS_LABEL = {review:"In Review", progress:"In Progress", todo:"Todo", backlog:"Backlog", triage:"Triage", done:"Done"};
+const STATUS_CLASS = {review:"n-review", progress:"n-progress", todo:"n-other", backlog:"n-other", triage:"n-other", done:"n-done"};
+
+// "Treat In Review as Done" reclassifies review -> done; "Hide Done" then removes
+// done (incl. reclassified review) nodes and their edges.
+function effStatus(n, treatReview) { return (treatReview && n.status === "review") ? "done" : n.status; }
+
+const nodeById = new Map(ISSUES.map(n => [n.id, n]));
+
+// Labels currently checked in the "Labels to exclude" dropdown. An issue is
+// hidden when ANY of its labels is in here; an issue with no labels is never
+// hidden. Seeded from the project display config, then owned by the reader.
+const excludedLabels = new Set(LABELS_EXCLUDED_BY_DEFAULT);
+
+// Labels read as "Group: value" (e.g. "Region: US_CO"), matching Linear's label
+// groups. Split on the first colon so the dropdown can section them, and so a
+// node badge can show the short half.
+function labelGroup(label) {
+  const i = label.indexOf(":");
+  return i === -1 ? "Other" : label.slice(0, i).trim();
+}
+function labelShortName(label) {
+  const i = label.indexOf(":");
+  return i === -1 ? label : label.slice(i + 1).trim();
+}
+function isHiddenByLabel(n) {
+  return n.labels.some(label => excludedLabels.has(label));
+}
+
+const labelFilterButton = document.getElementById("label-filter-button");
+const labelFilterPanel = document.getElementById("label-filter-panel");
+
+function updateLabelFilterButton() {
+  const n = excludedLabels.size;
+  labelFilterButton.textContent = n
+    ? `Labels to exclude (${n}) \u25be`
+    : "Labels to exclude \u25be";
+}
+
+function buildLabelFilterPanel() {
+  if (!ALL_LABELS.length) {
+    labelFilterPanel.innerHTML = '<div class="empty">No labels on any issue.</div>';
+    return;
+  }
+  const byGroup = new Map();
+  for (const label of ALL_LABELS) {
+    const group = labelGroup(label);
+    if (!byGroup.has(group)) byGroup.set(group, []);
+    byGroup.get(group).push(label);
+  }
+  for (const [group, labels] of [...byGroup].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const heading = document.createElement("div");
+    heading.className = "group-name";
+    heading.textContent = group;
+    labelFilterPanel.appendChild(heading);
+    for (const label of labels) {
+      const row = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = excludedLabels.has(label);
+      box.addEventListener("change", () => {
+        if (box.checked) excludedLabels.add(label);
+        else excludedLabels.delete(label);
+        updateLabelFilterButton();
+        render();
+      });
+      row.appendChild(box);
+      row.appendChild(document.createTextNode(labelShortName(label)));
+      labelFilterPanel.appendChild(row);
+    }
+  }
+}
+
+labelFilterButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = labelFilterPanel.classList.toggle("open");
+  labelFilterButton.setAttribute("aria-expanded", String(open));
+});
+document.addEventListener("click", (e) => {
+  if (!labelFilterPanel.contains(e.target) && e.target !== labelFilterButton) {
+    labelFilterPanel.classList.remove("open");
+    labelFilterButton.setAttribute("aria-expanded", "false");
+  }
+});
+buildLabelFilterPanel();
+updateLabelFilterButton();
+
+const NW = 188, COL_GAP = 140, ROW_GAP = 20, DUM_H = 6;
+// A node grows to fit two rows of label pills when "Show Labels" is on. Every
+// node in one render is the same height, so the layered layout stays simple.
+const NH_BASE = 58, NH_WITH_LABELS = 97;
+let NH = NH_BASE;
+
+// Label pill geometry, in node-local coordinates.
+const PILL_H = 16, PILL_GAP = 5, PILL_ROW_GAP = 4, PILL_PAD_X = 7;
+const PILL_TOP = 54, PILL_MAX_ROWS = 2, PILL_MORE_W = 24;
+// Width per character at the pill's 9px font. Approximate on purpose:
+// getComputedTextLength() would need a layout pass per pill.
+const PILL_CHAR_W = 5.1;
+const COL_W = NW + COL_GAP;
+const TOPPAD = 118, SIDEPAD = 48;
+const MILESTONE_SHORT_NAMES = MILESTONES.map(m => m.shortName);
+const MILESTONE_NAMES = new Map(MILESTONES.map(m => [m.shortName, m.name]));
+const MILESTONE_GAP = 130, BOX_PAD_X = 28, BOX_LABEL_H = 42, BOX_PAD_Y = 18;
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("svg");
+const tooltip = document.getElementById("tooltip");
+
+const defs = document.createElementNS(SVGNS, "defs");
+defs.innerHTML = `
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z"/>
+  </marker>
+  <marker id="arrowHi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z"/>
+  </marker>`;
+svg.appendChild(defs);
+
+let succ, pred, nodeEls, edgeEls, boxLayer, edgeLayer, nodeLayer, fullW, fullH;
+let vb = { x: 0, y: 0, w: 1000, h: 800 };
+
+function truncate(s, n) { return s.length > n ? s.slice(0, n-1) + "…" : s; }
+const AVATAR_COLORS = ["#5b8def","#9b6bd6","#d6694f","#3fa3a3","#c2557a","#7a8a3a","#c98b1e"];
+function initials(name) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length-1][0] : "")).toUpperCase();
+}
+const LABEL_COLORS = ["#6ea8fe","#b18cf0","#f08a5d","#4fc3c3","#e07a9c","#9fbf4a","#e0b13c","#7fd18a"];
+function labelColor(label) {
+  let h = 0;
+  for (const ch of label) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
+  return LABEL_COLORS[h % LABEL_COLORS.length];
+}
+
+// Packs the labels into at most PILL_MAX_ROWS rows that fit the node's width,
+// and reports how many did not fit. Returns {rows, hiddenCount}.
+function packLabelPills(labels) {
+  const avail = NW - 2 * PILL_PAD_X - 8;
+  const rows = [[]];
+  let rowWidth = 0;
+  for (let i = 0; i < labels.length; i++) {
+    const text = labelShortName(labels[i]);
+    const width = Math.ceil(text.length * PILL_CHAR_W) + 2 * PILL_PAD_X;
+    const onLastRow = rows.length === PILL_MAX_ROWS;
+    // Leave room for the "+N" chip on the last row when labels remain.
+    const reserve = onLastRow && i < labels.length - 1 ? PILL_MORE_W + PILL_GAP : 0;
+    if (rowWidth + width + reserve > avail && rowWidth > 0) {
+      if (onLastRow) return {rows, hiddenCount: labels.length - i};
+      rows.push([]);
+      rowWidth = 0;
+    }
+    rows[rows.length - 1].push({text, width, color: labelColor(labels[i])});
+    rowWidth += width + PILL_GAP;
+  }
+  return {rows, hiddenCount: 0};
+}
+
+function renderLabelPills(g, labels) {
+  const {rows, hiddenCount} = packLabelPills(labels);
+  rows.forEach((row, rowIndex) => {
+    let x = PILL_PAD_X + 4;
+    const y = PILL_TOP + rowIndex * (PILL_H + PILL_ROW_GAP);
+    for (const pill of row) {
+      const rect = document.createElementNS(SVGNS, "rect");
+      rect.setAttribute("class", "lpill");
+      rect.setAttribute("x", x); rect.setAttribute("y", y);
+      rect.setAttribute("width", pill.width); rect.setAttribute("height", PILL_H);
+      rect.setAttribute("rx", PILL_H / 2);
+      rect.setAttribute("fill", pill.color); rect.setAttribute("fill-opacity", "0.95");
+      rect.setAttribute("stroke", "#14151a"); rect.setAttribute("stroke-width", "1.3");
+      g.appendChild(rect);
+      const text = document.createElementNS(SVGNS, "text");
+      text.setAttribute("class", "lpill-text");
+      text.setAttribute("x", x + PILL_PAD_X); text.setAttribute("y", y + 11);
+      text.textContent = pill.text;
+      g.appendChild(text);
+      x += pill.width + PILL_GAP;
+    }
+    if (hiddenCount && rowIndex === rows.length - 1) {
+      const moreBg = document.createElementNS(SVGNS, "rect");
+      moreBg.setAttribute("class", "lpill");
+      moreBg.setAttribute("x", x); moreBg.setAttribute("y", y);
+      moreBg.setAttribute("width", PILL_MORE_W); moreBg.setAttribute("height", PILL_H);
+      moreBg.setAttribute("rx", PILL_H / 2);
+      moreBg.setAttribute("fill", "#14151a"); moreBg.setAttribute("fill-opacity", "0.75");
+      g.appendChild(moreBg);
+      const more = document.createElementNS(SVGNS, "text");
+      more.setAttribute("class", "lpill-more");
+      more.setAttribute("x", x + PILL_PAD_X); more.setAttribute("y", y + 11);
+      more.textContent = `+${hiddenCount}`;
+      g.appendChild(more);
+    }
+  });
+}
+
+function avatarColor(name) {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function renderAvatar(g, asg) {
+  const cx = NW - 18, cy = 17, r = 11;
+  const av = document.createElementNS(SVGNS, "g");
+  const circle = document.createElementNS(SVGNS, "circle");
+  circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", r);
+  if (!asg) {
+    av.setAttribute("class", "unassigned");
+    g.appendChild(av); av.appendChild(circle);
+    return;
+  }
+  av.setAttribute("class", "avatar");
+  circle.setAttribute("fill", avatarColor(asg));
+  const t = document.createElementNS(SVGNS, "text");
+  t.setAttribute("x", cx); t.setAttribute("y", cy + 3.2);
+  t.textContent = initials(asg);
+  av.appendChild(circle); av.appendChild(t);
+  g.appendChild(av);
+}
+function roundedPath(points, r) {
+  const p = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const [px, py] = p[p.length - 1], [x, y] = points[i];
+    if (px !== x || py !== y) p.push(points[i]);
+  }
+  if (p.length < 2) return "";
+  let d = `M${p[0][0]},${p[0][1]}`;
+  for (let i = 1; i < p.length - 1; i++) {
+    const [x0, y0] = p[i-1], [x1, y1] = p[i], [x2, y2] = p[i+1];
+    const l1 = Math.hypot(x1-x0, y1-y0), l2 = Math.hypot(x2-x1, y2-y1);
+    const rr = Math.min(r, l1/2, l2/2);
+    const ax = x1 - (x1-x0)/l1*rr, ay = y1 - (y1-y0)/l1*rr;
+    const bx = x1 + (x2-x1)/l2*rr, by = y1 + (y2-y1)/l2*rr;
+    d += ` L${ax},${ay} Q${x1},${y1} ${bx},${by}`;
+  }
+  const last = p[p.length-1];
+  d += ` L${last[0]},${last[1]}`;
+  return d;
+}
+
+function layoutMilestone(issues, intraEdges) {
+  // The single-graph layered layout, scoped to one milestone's nodes and the
+  // edges within that milestone. Returns local (0-origin) coordinates.
+  const predL = new Map(issues.map(n => [n.id, []]));
+  const succL = new Map(issues.map(n => [n.id, []]));
+  for (const [a, b] of intraEdges) { succL.get(a).push(b); predL.get(b).push(a); }
+
+  // Weakly-connected components over the within-milestone edges. Each layer is
+  // ordered by component first and barycenter second, so one cluster's nodes
+  // stay contiguous. Without this, a node with no edges keeps its initial
+  // index forever (its barycenter is its own index) and sits between the
+  // roots that feed one cluster.
+  const comp = new Map();
+  let ncomp = 0;
+  for (const n of issues) {
+    if (comp.has(n.id)) continue;
+    const c = ncomp++;
+    comp.set(n.id, c);
+    const stack = [n.id];
+    while (stack.length) {
+      const cur = stack.pop();
+      for (const m of predL.get(cur).concat(succL.get(cur))) {
+        if (!comp.has(m)) { comp.set(m, c); stack.push(m); }
+      }
+    }
+  }
+  // Biggest cluster first; isolated nodes are singleton components, so they
+  // collect into one block at the bottom instead of interleaving.
+  const compSize = new Map(), compMin = new Map();
+  issues.forEach((n, i) => {
+    const c = comp.get(n.id);
+    compSize.set(c, (compSize.get(c) || 0) + 1);
+    if (!compMin.has(c)) compMin.set(c, i);
+  });
+  const compRank = new Map(
+    [...compSize.keys()]
+      .sort((a, b) => (compSize.get(b) - compSize.get(a)) || (compMin.get(a) - compMin.get(b)))
+      .map((c, i) => [c, i])
+  );
+
+  const layer = new Map();
+  const computeLayer = (id, seen) => {
+    if (layer.has(id)) return layer.get(id);
+    if (seen.has(id)) return 0;
+    seen.add(id);
+    let L = 0;
+    for (const p of predL.get(id)) L = Math.max(L, computeLayer(p, seen) + 1);
+    seen.delete(id);
+    layer.set(id, L);
+    return L;
+  };
+  for (const n of issues) computeLayer(n.id, new Set());
+
+  const V = new Map();
+  for (const n of issues) V.set(n.id, {id: n.id, layer: layer.get(n.id), kind: "real", h: NH, comp: comp.get(n.id)});
+  const vSucc = new Map(), vPred = new Map();
+  const ensureV = id => { if (!vSucc.has(id)) { vSucc.set(id, []); vPred.set(id, []); } };
+  V.forEach((_, id) => ensureV(id));
+  const edgeChains = [];
+  let dcount = 0;
+  for (const [a, b] of intraEdges) {
+    const La = layer.get(a), Lb = layer.get(b);
+    const chain = [a];
+    for (let L = La + 1; L < Lb; L++) {
+      const did = `__d${dcount++}`;
+      V.set(did, {id: did, layer: L, kind: "dummy", h: DUM_H, comp: comp.get(a)});
+      ensureV(did);
+      chain.push(did);
+    }
+    chain.push(b);
+    for (let i = 0; i < chain.length - 1; i++) {
+      vSucc.get(chain[i]).push(chain[i+1]);
+      vPred.get(chain[i+1]).push(chain[i]);
+    }
+    edgeChains.push({a, b, chain});
+  }
+
+  let Lmax = 0;
+  V.forEach(v => Lmax = Math.max(Lmax, v.layer));
+  const layersV = Array.from({length: Lmax + 1}, () => []);
+  V.forEach(v => layersV[v.layer].push(v.id));
+
+  const orderIndex = new Map();
+  const reindex = () => layersV.forEach(col => col.forEach((id, i) => orderIndex.set(id, i)));
+  reindex();
+  for (let pass = 0; pass < 12; pass++) {
+    const downward = pass % 2 === 0;
+    const range = downward ? [...layersV.keys()] : [...layersV.keys()].reverse();
+    for (const L of range) {
+      const nbr = downward ? vPred : vSucc;
+      layersV[L] = layersV[L].map(id => {
+        const ns = nbr.get(id);
+        const bary = ns.length ? ns.reduce((s, x) => s + orderIndex.get(x), 0) / ns.length : orderIndex.get(id);
+        return {id, bary, rank: compRank.get(V.get(id).comp)};
+      }).sort((p, q) => (p.rank - q.rank) || (p.bary - q.bary)).map(o => o.id);
+      reindex();
+    }
+  }
+
+  const vy = new Map();
+  const colHeight = [];
+  for (let L = 0; L <= Lmax; L++) {
+    let y = 0;
+    layersV[L].forEach((id, i) => {
+      const v = V.get(id);
+      if (i > 0) y += ROW_GAP;
+      vy.set(id, y + v.h / 2);
+      y += v.h;
+    });
+    colHeight[L] = y;
+  }
+  const height = Math.max(1, ...colHeight);
+  const colX = [];
+  for (let L = 0; L <= Lmax; L++) {
+    colX[L] = L * COL_W;
+    const off = (height - colHeight[L]) / 2;
+    layersV[L].forEach(id => vy.set(id, vy.get(id) + off));
+  }
+  const width = colX[Lmax] + NW;
+
+  const colLeftX = L => colX[L];
+  const colRightX = L => colX[L] + NW;
+  const gutterX = L => colRightX(L - 1) + COL_GAP / 2;
+  const laneOffset = idx => ((idx % 9) - 4) / 4 * (COL_GAP / 2 - 18);
+  const edgePaths = edgeChains.map((ec, idx) => {
+    const {a, b, chain} = ec;
+    const La = layer.get(a), Lb = layer.get(b);
+    const lane = laneOffset(idx);
+    const pts = [[colRightX(La), vy.get(a)]];
+    let prevY = vy.get(a);
+    for (let k = 1; k < chain.length - 1; k++) {
+      const L = La + k, dy = vy.get(chain[k]);
+      const gx = gutterX(L) + lane;
+      pts.push([gx, prevY], [gx, dy], [colLeftX(L), dy], [colRightX(L), dy]);
+      prevY = dy;
+    }
+    const by = vy.get(b);
+    const gx = gutterX(Lb) + lane;
+    pts.push([gx, prevY], [gx, by], [colLeftX(Lb), by]);
+    return {a, b, points: pts};
+  });
+
+  const pos = new Map();
+  for (const n of issues) pos.set(n.id, {x: colX[layer.get(n.id)], y: vy.get(n.id) - NH / 2});
+  return {pos, edgePaths, width, height};
+}
+
+function render() {
+  const treatReview = document.getElementById("toggle-review").checked;
+  const hideDone = document.getElementById("toggle-hide-done").checked;
+  const showLabels = document.getElementById("toggle-show-labels").checked;
+  NH = showLabels ? NH_WITH_LABELS : NH_BASE;
+  const issues = ISSUES.filter(n =>
+    !isHiddenByLabel(n) && !(hideDone && effStatus(n, treatReview) === "done"));
+  const ids = new Set(issues.map(n => n.id));
+
+  succ = new Map(issues.map(n => [n.id, []]));
+  pred = new Map(issues.map(n => [n.id, []]));
+  const realEdges = [];
+  for (const [a, b] of EDGES) {
+    if (!ids.has(a) || !ids.has(b)) continue;
+    succ.get(a).push(b); pred.get(b).push(a); realEdges.push([a, b]);
+  }
+
+  // Split edges: an edge within one milestone uses the layered orthogonal
+  // routing inside that milestone's box. An edge that crosses milestones is
+  // drawn as a dashed bezier between the two boxes.
+  const milestoneOf = new Map(issues.map(n => [n.id, n.milestone]));
+  const intraByMilestone = new Map(MILESTONE_SHORT_NAMES.map(m => [m, []]));
+  const crossEdges = [];
+  for (const [a, b] of realEdges) {
+    if (milestoneOf.get(a) === milestoneOf.get(b)) intraByMilestone.get(milestoneOf.get(a)).push([a, b]);
+    else crossEdges.push([a, b]);
+  }
+
+  const layouts = [];
+  for (const m of MILESTONE_SHORT_NAMES) {
+    const mIssues = issues.filter(n => n.milestone === m);
+    if (!mIssues.length) continue;
+    layouts.push({milestone: m, count: mIssues.length, ...layoutMilestone(mIssues, intraByMilestone.get(m))});
+  }
+
+  const maxH = layouts.length ? Math.max(...layouts.map(l => l.height)) : 1;
+  let x = SIDEPAD + BOX_PAD_X;
+  const boxes = [];
+  const pos = new Map();
+  const absEdgePaths = [];
+  for (const l of layouts) {
+    const yOff = TOPPAD + (maxH - l.height) / 2;
+    l.pos.forEach((pt, id) => pos.set(id, {x: pt.x + x, y: pt.y + yOff}));
+    for (const ep of l.edgePaths) {
+      absEdgePaths.push({a: ep.a, b: ep.b, points: ep.points.map(([px, py]) => [px + x, py + yOff])});
+    }
+    boxes.push({milestone: l.milestone, count: l.count, x: x - BOX_PAD_X, w: l.width + 2 * BOX_PAD_X});
+    x += l.width + BOX_PAD_X + MILESTONE_GAP + BOX_PAD_X;
+  }
+  const boxTop = TOPPAD - BOX_LABEL_H;
+  const boxBottom = TOPPAD + maxH + BOX_PAD_Y;
+  fullW = (layouts.length ? x - MILESTONE_GAP - BOX_PAD_X : SIDEPAD) + SIDEPAD;
+  fullH = boxBottom + 40;
+
+  if (boxLayer) boxLayer.remove();
+  if (edgeLayer) edgeLayer.remove();
+  if (nodeLayer) nodeLayer.remove();
+  boxLayer = document.createElementNS(SVGNS, "g");
+  edgeLayer = document.createElementNS(SVGNS, "g");
+  nodeLayer = document.createElementNS(SVGNS, "g");
+  svg.appendChild(boxLayer);
+  svg.appendChild(edgeLayer);
+  svg.appendChild(nodeLayer);
+
+  for (const b of boxes) {
+    const rect = document.createElementNS(SVGNS, "rect");
+    rect.setAttribute("class", "milestone-box");
+    rect.setAttribute("x", b.x); rect.setAttribute("y", boxTop);
+    rect.setAttribute("width", b.w); rect.setAttribute("height", boxBottom - boxTop);
+    rect.setAttribute("rx", 14);
+    boxLayer.appendChild(rect);
+    const label = document.createElementNS(SVGNS, "text");
+    label.setAttribute("class", "milestone-label");
+    label.setAttribute("x", b.x + 16); label.setAttribute("y", boxTop + 27);
+    label.textContent = `${b.milestone} — ${MILESTONE_NAMES.get(b.milestone)} (${b.count})`;
+    boxLayer.appendChild(label);
+  }
+
+  edgeEls = [];
+  for (const ep of absEdgePaths) {
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("class", "edge");
+    path.setAttribute("marker-end", "url(#arrow)");
+    path.setAttribute("d", roundedPath(ep.points, 8));
+    edgeLayer.appendChild(path);
+    edgeEls.push({a: ep.a, b: ep.b, el: path});
+  }
+  for (const [a, b] of crossEdges) {
+    const pa = pos.get(a), pb = pos.get(b);
+    const forward = pb.x >= pa.x + NW;
+    const x1 = forward ? pa.x + NW : pa.x, y1 = pa.y + NH / 2;
+    const x2 = forward ? pb.x : pb.x + NW, y2 = pb.y + NH / 2;
+    const dx = Math.max(60, Math.abs(x2 - x1) / 3) * (forward ? 1 : -1);
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("class", "edge cross-milestone");
+    path.setAttribute("marker-end", "url(#arrow)");
+    path.setAttribute("d", `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`);
+    edgeLayer.appendChild(path);
+    edgeEls.push({a, b, el: path});
+  }
+
+  nodeEls = new Map();
+  for (const n of issues) {
+    const p = pos.get(n.id);
+    const g = document.createElementNS(SVGNS, "g");
+    g.setAttribute("class", `node ${STATUS_CLASS[effStatus(n, treatReview)] || "n-other"}`);
+    g.setAttribute("transform", `translate(${p.x},${p.y})`);
+    const rect = document.createElementNS(SVGNS, "rect");
+    rect.setAttribute("class", "nbg");
+    rect.setAttribute("width", NW); rect.setAttribute("height", NH); rect.setAttribute("rx", 8);
+    g.appendChild(rect);
+    const meta = document.createElementNS(SVGNS, "text");
+    meta.setAttribute("class","nmeta"); meta.setAttribute("x", 11); meta.setAttribute("y", 15);
+    meta.textContent = n.milestone; g.appendChild(meta);
+    const idt = document.createElementNS(SVGNS, "text");
+    idt.setAttribute("class","nid"); idt.setAttribute("x", 11); idt.setAttribute("y", 32);
+    idt.textContent = n.id; g.appendChild(idt);
+    const tt = document.createElementNS(SVGNS, "text");
+    tt.setAttribute("class","ntitle"); tt.setAttribute("x", 11); tt.setAttribute("y", 47);
+    tt.textContent = truncate(n.title, 27); g.appendChild(tt);
+    if (showLabels && n.labels.length) renderLabelPills(g, n.labels);
+    renderAvatar(g, n.assignee);
+    g.addEventListener("click", () => window.open(URL_BASE + n.id, "_blank"));
+    g.addEventListener("mouseenter", (e) => highlight(n.id, e));
+    g.addEventListener("mousemove", (e) => moveTip(e));
+    g.addEventListener("mouseleave", clearHighlight);
+    nodeLayer.appendChild(g);
+    nodeEls.set(n.id, g);
+  }
+
+  vb = { x: 0, y: 0, w: fullW, h: fullH };
+  applyVB();
+
+  const c = {review:0, progress:0, done:0, other:0};
+  const perMilestone = new Map(MILESTONE_SHORT_NAMES.map(m => [m, 0]));
+  for (const n of issues) {
+    const s = effStatus(n, treatReview);
+    c[s==="review"?"review":s==="progress"?"progress":s==="done"?"done":"other"]++;
+    perMilestone.set(n.milestone, perMilestone.get(n.milestone) + 1);
+  }
+  const breakdown = MILESTONE_SHORT_NAMES.map(m => `${m} ${perMilestone.get(m)}`).join(" · ");
+  document.getElementById("counts").textContent =
+    `${issues.length} tasks (${breakdown}) · ` +
+    `${realEdges.length} dependencies · ${c.review} in review, ` +
+    `${c.progress} in progress, ${c.done} done, ${c.other} todo/backlog/triage`;
+}
+
+function highlight(id, e) {
+  const up = new Set(), down = new Set();
+  (function walkUp(x){ for(const p of pred.get(x)) if(!up.has(p)){up.add(p); walkUp(p);} })(id);
+  (function walkDown(x){ for(const s of succ.get(x)) if(!down.has(s)){down.add(s); walkDown(s);} })(id);
+  const keep = new Set([id, ...up, ...down]);
+  for (const [nid, g] of nodeEls) g.classList.toggle("dim", !keep.has(nid));
+  for (const {a,b,el} of edgeEls) {
+    const on = keep.has(a) && keep.has(b);
+    el.classList.toggle("dim", !on);
+    el.classList.toggle("hi", on);
+    el.setAttribute("marker-end", on ? "url(#arrowHi)" : "url(#arrow)");
+  }
+  const n = nodeById.get(id);
+  tooltip.innerHTML =
+    `<div class="tt-id">${n.id}</div>` +
+    `<div>${n.title}</div>` +
+    `<div class="tt-status">${n.milestone} · ${STATUS_LABEL[n.status] || n.status}</div>` +
+    `<div class="tt-rel"><b>Assignee:</b> ${n.assignee || "Unassigned"}</div>` +
+    `<div class="tt-rel"><b>Labels:</b> ${n.labels.length ? n.labels.join(", ") : "—"}</div>` +
+    `<div class="tt-rel"><b>Blocked by:</b> ${pred.get(id).length?pred.get(id).join(", "):"—"}</div>` +
+    `<div class="tt-rel"><b>Blocks:</b> ${succ.get(id).length?succ.get(id).join(", "):"—"}</div>`;
+  tooltip.style.opacity = "1";
+  moveTip(e);
+}
+function moveTip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tooltip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth) x = e.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight) y = e.clientY - r.height - pad;
+  tooltip.style.left = x + "px"; tooltip.style.top = y + "px";
+}
+function clearHighlight() {
+  for (const g of nodeEls.values()) g.classList.remove("dim");
+  for (const {el} of edgeEls) { el.classList.remove("dim","hi"); el.setAttribute("marker-end","url(#arrow)"); }
+  tooltip.style.opacity = "0";
+}
+
+const applyVB = () => svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+svg.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  const mx = vb.x + (e.clientX - rect.left) / rect.width * vb.w;
+  const my = vb.y + (e.clientY - rect.top) / rect.height * vb.h;
+  const factor = e.deltaY > 0 ? 1.12 : 0.892;
+  const nw = Math.min(fullW * 3, Math.max(fullW * 0.12, vb.w * factor));
+  const nh = nw * (vb.h / vb.w);
+  vb.x = mx - (e.clientX - rect.left) / rect.width * nw;
+  vb.y = my - (e.clientY - rect.top) / rect.height * nh;
+  vb.w = nw; vb.h = nh;
+  applyVB();
+}, { passive: false });
+let dragging = false, last = null;
+svg.addEventListener("mousedown", (e) => {
+  if (e.target.closest(".node")) return;
+  dragging = true; last = {x: e.clientX, y: e.clientY}; svg.classList.add("panning");
+});
+window.addEventListener("mousemove", (e) => {
+  if (!dragging) return;
+  const rect = svg.getBoundingClientRect();
+  vb.x -= (e.clientX - last.x) / rect.width * vb.w;
+  vb.y -= (e.clientY - last.y) / rect.height * vb.h;
+  last = {x: e.clientX, y: e.clientY};
+  applyVB();
+});
+window.addEventListener("mouseup", () => { dragging = false; svg.classList.remove("panning"); });
+
+document.getElementById("toggle-review").addEventListener("change", render);
+document.getElementById("toggle-hide-done").addEventListener("change", render);
+document.getElementById("toggle-show-labels").addEventListener("change", render);
+render();
+</script>
+</body>
+</html>

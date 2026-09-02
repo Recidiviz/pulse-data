@@ -1,0 +1,6 @@
+project_name: "Test Project"
+exclude_parent_issues: true
+milestones:
+  - name: "Phase 1"
+    short_name: P1
+labels_to_exclude: []

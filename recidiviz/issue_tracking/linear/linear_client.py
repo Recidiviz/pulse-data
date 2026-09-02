@@ -224,13 +224,16 @@ class LinearClient:
         self,
         query: str,
         variables: dict[str, Any],
-        connection_field: str,
+        connection_path: tuple[str, ...],
     ) -> list[dict]:
         """Execute a paginated GraphQL query and return all nodes.
 
         Linear uses the Relay connection spec: every paginated field returns
         ``nodes``, ``pageInfo.hasNextPage``, and ``pageInfo.endCursor``. The
         query must accept an ``$after: String`` variable for the cursor.
+        ``connection_path`` names the field to page, e.g. ``("issues",)`` for
+        a top-level field or ``("project", "projectMilestones")`` for a field
+        nested under another.
         """
         all_nodes: list[dict] = []
         cursor: str | None = None
@@ -242,12 +245,14 @@ class LinearClient:
                 page_variables["after"] = cursor
             result = self.query(query, page_variables)
 
-            connection = result[connection_field]
+            connection = result
+            for field in connection_path:
+                connection = connection[field]
             all_nodes.extend(connection["nodes"])
             logger.info(
                 "Fetched page %d of %r (%d total so far)",
                 page_num,
-                connection_field,
+                connection_path,
                 len(all_nodes),
             )
 
@@ -485,7 +490,7 @@ class LinearClient:
         nodes = self._paginated_query(
             query,
             {"since": since.isoformat(), "excludeLabels": exclude_with_labels},
-            "issues",
+            ("issues",),
         )
 
         return [
@@ -628,6 +633,83 @@ class LinearClient:
             mutation,
             {"input": {"issueId": issue_info.uuid, "body": comment_body}},
         )
+
+    def get_project_id_by_name(self, *, project_name: str) -> str:
+        """Returns the UUID of the project with the given name.
+
+        Linear does not enforce unique project names, so this raises if the name
+        matches anything other than exactly one project.
+        """
+        query = """
+        query($name: String!) {
+            projects(filter: { name: { eq: $name } }) {
+                nodes { id name }
+            }
+        }
+        """
+        nodes = self.query(query, {"name": project_name})["projects"]["nodes"]
+        if not nodes:
+            raise ValueError(f"Found no Linear project named [{project_name}]")
+        if len(nodes) > 1:
+            raise ValueError(
+                f"Found [{len(nodes)}] Linear projects named [{project_name}]; "
+                f"expected exactly one."
+            )
+        return assert_type(nodes[0]["id"], str)
+
+    def get_project_milestones(self, *, project_id: str) -> list[dict]:
+        """Returns every milestone in a project, each with its `id`, `name`, and
+        `sortOrder`. Milestones come back in the order Linear displays them,
+        ascending by `sortOrder`.
+        """
+        query = """
+        query($projectId: String!, $after: String) {
+            project(id: $projectId) {
+                projectMilestones(first: 50, after: $after) {
+                    nodes { id name sortOrder }
+                    pageInfo { hasNextPage endCursor }
+                }
+            }
+        }
+        """
+        nodes = self._paginated_query(
+            query, {"projectId": project_id}, ("project", "projectMilestones")
+        )
+        return sorted(nodes, key=lambda node: node["sortOrder"])
+
+    def get_issues_for_milestone(self, *, milestone_id: str) -> list[dict]:
+        """Returns every issue assigned to a project milestone, in every workflow
+        state. Each issue carries the fields the dependency graph needs: its
+        identifier, title, workflow state, assignee, labels, whether it has
+        sub-issues, and its outbound issue relations.
+        """
+        query = """
+        query($milestoneId: ID!, $after: String) {
+            issues(
+                first: 100
+                after: $after
+                filter: { projectMilestone: { id: { eq: $milestoneId } } }
+            ) {
+                nodes {
+                    identifier
+                    title
+                    state { name type }
+                    assignee { name }
+                    labels { nodes { name } }
+                    children { nodes { id } }
+                    relations {
+                        nodes {
+                            type
+                            issue { identifier }
+                            relatedIssue { identifier }
+                        }
+                    }
+                }
+                pageInfo { hasNextPage endCursor }
+            }
+        }
+        """
+        return self._paginated_query(query, {"milestoneId": milestone_id}, ("issues",))
 
 
 def linear_client_from_secret() -> LinearClient:

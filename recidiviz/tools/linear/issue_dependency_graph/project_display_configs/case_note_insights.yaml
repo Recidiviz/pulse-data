@@ -1,0 +1,26 @@
+# Dependency graph scope for the Case Note Insights productionalization work.
+#
+# Rendered by:
+#   uv run python -m recidiviz.tools.linear.generate_issue_dependency_graph_html \
+#     --config case_note_insights
+project_name: "Case Note Insights MVP"
+
+# Drop container issues: their blocking relations duplicate their children's.
+exclude_parent_issues: true
+
+# Include list. A milestone the project gains later stays out of the graph until
+# it is added here. Left-to-right order comes from Linear's own milestone order,
+# not from this list.
+milestones:
+  - name: "Phase 1: TT (1-3 MM users per state)"
+    short_name: P1
+  - name: "Phase 2: TT (5-15 MM users per state)"
+    short_name: P2
+  - name: "Full-state launch support"
+    short_name: FSL
+
+# Hidden on load. Every label found on any issue is a checkbox in the rendered
+# page's "Labels to exclude" dropdown, so these can be restored without a
+# re-fetch.
+labels_excluded_by_default:
+  - "Region: US_CO"
