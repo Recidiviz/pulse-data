@@ -88,6 +88,7 @@ JII_TABLET_APP_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.DISTINCT_LOGGED_IN_JII_TABLET_APP_USERS,
     metric_config.LOGINS_JII_TABLET_APP_USER,
     metric_config.PAGE_VIEWS_JII_TABLET_APP_USER,
+    metric_config.PROGRAM_DETAILS_OPENED_JII_TABLET_APP_USER,
     metric_config.EARNED_CREDIT_EVENTS,
     metric_config.POSITIVE_EARNED_CREDIT_EVENTS,
     metric_config.SUM_EARNED_CREDITS,

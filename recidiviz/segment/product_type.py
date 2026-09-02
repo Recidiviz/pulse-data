@@ -243,6 +243,23 @@ class ProductType(Enum):
                     mode="NULLABLE",
                 )
             ]
+        if self is ProductType.JII_OPPORTUNITIES_APP:
+            return [
+                String(
+                    name="program_id",
+                    description="For program catalog events, the identifier of the "
+                    "program the event is about. Null in US_AR, which does not assign "
+                    "program IDs.",
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="title",
+                    description="For program catalog events, the title of the program "
+                    "the event is about. This is the only program identifier available "
+                    "in US_AR.",
+                    mode="NULLABLE",
+                ),
+            ]
         if self is ProductType.ROUTE_PLANNER:
             return [
                 String(

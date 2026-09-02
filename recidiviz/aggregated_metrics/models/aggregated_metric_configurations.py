@@ -3098,6 +3098,18 @@ PAGE_VIEWS_JII_TABLET_APP_USER = EventCountMetric(
     ),
 )
 
+PROGRAM_DETAILS_OPENED_JII_TABLET_APP_USER = EventCountMetric(
+    name="program_details_opened_jii_tablet_app_user",
+    display_name="Program Details Opened, JII Tablet App Users",
+    description="Number of times a program's details were opened in the JII tablet "
+    "app program catalog",
+    event_selector=EventSelector(
+        event_type=EventType.JII_TABLET_APP_PROGRAM_DETAIL_OPENED,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["program_detail_open_number"],
+)
+
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_CANDIDATE = DailyAvgSpanCountMetric(
     name="avg_population_task_candidate",
