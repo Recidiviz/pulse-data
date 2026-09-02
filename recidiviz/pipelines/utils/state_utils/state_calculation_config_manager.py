@@ -551,6 +551,39 @@ from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_violations_delegate import (
     UsNeViolationDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_assessment_normalization_delegate import (
+    UsNvAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_commitment_from_supervision_utils import (
+    UsNvCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_incarceration_delegate import (
+    UsNvIncarcerationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_incarceration_period_normalization_delegate import (
+    UsNvIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_normalization_delegate import (
+    UsNvNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_sentence_normalization_delegate import (
+    UsNvSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_staff_role_period_normalization_delegate import (
+    UsNvStaffRolePeriodNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_supervision_delegate import (
+    UsNvSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_supervision_period_normalization_delegate import (
+    UsNvSupervisionNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_violation_response_normalization_delegate import (
+    UsNvViolationResponseNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_nv.us_nv_violations_delegate import (
+    UsNvViolationDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.us_ny.us_ny_assessment_normalization_delegate import (
     UsNyAssessmentNormalizationDelegate,
 )
@@ -917,6 +950,8 @@ def get_state_specific_assessment_normalization_delegate(
         return UsNyAssessmentNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvAssessmentNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -970,6 +1005,8 @@ def get_state_specific_incarceration_period_normalization_delegate(
         return UsNyIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycIncarcerationNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvIncarcerationNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1045,6 +1082,8 @@ def get_state_specific_supervision_period_normalization_delegate(
         return UsNySupervisionNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycSupervisionNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvSupervisionNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1110,6 +1149,8 @@ def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unuse
         return UsNySentenceNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycSentenceNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvSentenceNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1168,6 +1209,8 @@ def get_state_specific_staff_role_period_normalization_delegate(
         return UsNyStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycStaffRolePeriodNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvStaffRolePeriodNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1221,6 +1264,8 @@ def get_state_specific_commitment_from_supervision_delegate(
         return UsNyCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvCommitmentFromSupervisionDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1274,6 +1319,8 @@ def get_state_specific_violation_delegate(
         return UsNyViolationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycViolationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvViolationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1340,6 +1387,8 @@ def get_state_specific_violation_response_normalization_delegate(
         return UsNyViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycViolationResponseNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvViolationResponseNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1393,6 +1442,8 @@ def get_state_specific_incarceration_delegate(
         return UsNyIncarcerationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycIncarcerationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvIncarcerationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1446,6 +1497,8 @@ def get_state_specific_supervision_delegate(
         return UsNySupervisionDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycSupervisionDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvSupervisionDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1499,4 +1552,6 @@ def get_state_specific_normalization_delegate(
         return UsNyNormalizationDelegate()
     if state_code == StateCode.US_NYC.value:
         return UsNycNormalizationDelegate()
+    if state_code == StateCode.US_NV.value:
+        return UsNvNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")

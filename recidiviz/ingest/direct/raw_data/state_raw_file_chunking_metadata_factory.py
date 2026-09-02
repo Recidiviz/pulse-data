@@ -44,6 +44,7 @@ _STATES_WITH_NO_CHUNKED_FILES: set[StateCode] = {
     StateCode.US_NC,
     StateCode.US_ND,
     StateCode.US_NE,
+    StateCode.US_NV,
     StateCode.US_NY,
     StateCode.US_NYC,
     StateCode.US_OR,

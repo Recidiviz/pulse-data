@@ -17,6 +17,7 @@ slack_channels:
   us-north-carolina: "C085XCNQ0TC"
   us-north-dakota: "C01SQ00C890"
   us-nebraska: "C07EQLGLZ2T"
+  us-nevada: "C0AFC9Q3KMF"
   us-new-york: "C08KQ0KAB5J"
   us-nyc: "C09N3KZS5S7"
   us-oregon: "C03NQCDSUQ2"
@@ -98,6 +99,10 @@ state_config:
       - elisegonzal
   US_NE:
     slack_channel: us-nebraska
+    default_assignees:
+      - not-a-doctor-stromberg
+  US_NV:
+    slack_channel: us-nevada
     default_assignees:
       - not-a-doctor-stromberg
   US_NY:

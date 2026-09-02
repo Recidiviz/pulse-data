@@ -58,6 +58,7 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_MO: "us-west1",
     # us-west2 (2 zones w/ c4a-highcpu-32)
     StateCode.US_ND: "us-west2",
+    StateCode.US_NV: "us-west2",
     StateCode.US_TN: "us-west2",
     # us-west4 (3 zones w/ c4a-highcpu-32)
     StateCode.US_NC: "us-west4",

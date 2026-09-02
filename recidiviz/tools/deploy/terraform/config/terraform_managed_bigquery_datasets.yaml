@@ -650,6 +650,47 @@ datasets:
     default_table_expiration_ms: 86400000
   us_ne_state:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NE.
+  us_nv_identity_cluster:
+    description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NV, consumed by the Identity Service.
+    service_account_roles:
+      identity-service-cr:
+        - roles/bigquery.dataViewer
+  us_nv_identity_fragment:
+    description: Stores pre-clustering IdentityFragment output produced by the identity ingest pipeline for tenant US_NV.
+  us_nv_identity_ingest_view_results:
+    description: Stores materialized ingest view results produced by the identity ingest pipeline for tenant US_NV.
+  us_nv_identity_overrides:
+    description: Stores reviewer-recorded overrides of the identity ingest pipeline's clustering decisions for tenant US_NV, read by the pipeline.
+  us_nv_identity_rejections:
+    description: Stores the identity ingest pipeline's record of clusters and external ids it dropped from clustering for tenant US_NV, for human review.
+  us_nv_ingest_view_results:
+    description: Contains materialized ingest view results produced by the ingest pipeline for US_NV.
+  us_nv_new_pruned_raw_data_primary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nv_new_pruned_raw_data_secondary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nv_normalized_state:
+    description: Contains normalized versions of the entities in the state dataset produced by the ingest pipeline for US_NV.
+  us_nv_primary_raw_data_temp_load:
+    description: Contains intermediate results of the raw data import process that will be queried during the raw data import DAG.
+    default_table_expiration_ms: 86400000
+  us_nv_raw_data:
+    description: Raw data tables from Nevada
+  us_nv_raw_data_pruning_diff_results_primary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nv_raw_data_pruning_diff_results_secondary:
+    description: Contains intermediate results of the raw data import process that will be queried as part of the automatic raw data pruning process.
+    default_table_expiration_ms: 86400000
+  us_nv_raw_data_secondary:
+    description: Raw data tables from Nevada
+  us_nv_secondary_raw_data_temp_load:
+    description: Contains intermediate results of the raw data import process that will be queried during the raw data import DAG.
+    default_table_expiration_ms: 86400000
+  us_nv_state:
+    description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_NV.
   us_ny_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_NY, consumed by the Identity Service.
     service_account_roles:

@@ -1,0 +1,10 @@
+# Per-person-type configuration for the identity ingest pipeline.
+#
+# max_ids_per_type_overrides: The maximum number of external IDs of a given type a
+# person can have before that ID value is assumed to be a sentinel with no real ID
+# meaning (e.g. InmateNum='000000'). ID types not listed here fall back to the
+# pipeline default defined in identity_ingest_pipeline_config.py.
+jii:
+  max_ids_per_type_overrides: {}
+staff:
+  max_ids_per_type_overrides: {}
