@@ -24,7 +24,7 @@ from google.cloud.bigquery import SchemaField
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
+    get_all_source_table_addresses,
 )
 from recidiviz.source_tables.source_table_cleanup_validation import (
     validate_clean_source_table_datasets,
@@ -257,12 +257,7 @@ class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):
         """Tables with YAML configs should be removed from
         ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG.
         """
-        source_table_repository = build_source_table_repository_for_collected_schemata(
-            project_id=None
-        )
-        configured_source_table_addresses: set[BigQueryAddress] = set(
-            source_table_repository.source_tables
-        )
+        configured_source_table_addresses = get_all_source_table_addresses()
 
         exempted_table_addresses: set[BigQueryAddress] = set()
         for dataset_id, exempted_tables in sorted(

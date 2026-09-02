@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains utilities to collect and build source tables"""
+
 from functools import cache
 from types import ModuleType
 
@@ -262,10 +263,9 @@ def collect_source_table_collections_hydrated_outside_view_graphs(
 
 @cache
 def build_source_table_repository_for_collected_schemata(
-    project_id: str | None,
+    project_id: str,
 ) -> SourceTableRepository:
     """Builds a source table repository for all source tables in a project's BigQuery graph
-    If the project is None, all defined source tables across projects are collected.
 
     Tables written by Python code (not YAML-managed) must be registered in one
     of the collections in this file — view-graph validation only materializes
