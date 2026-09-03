@@ -37,6 +37,7 @@ from recidiviz.validation.views.dataset_config import (
 )
 
 ALL_BILLING_DATA_DATASET: str = "all_billing_data"
+JESSICALIU_US_AR_EDOVO_RAW_DATA: str = "jessicaliu_us_ar_edovo_raw_data"
 
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
 JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
@@ -82,6 +83,9 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     MEETINGS_APP_SEGMENT_DATASET: (
         "Stores events logged from the Meetings app via Segment."
+    ),
+    JESSICALIU_US_AR_EDOVO_RAW_DATA: (
+        "Stores temporary AR Edovo data for staging validation."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."

@@ -1,0 +1,41 @@
+address:
+  dataset_id: jessicaliu_us_ar_edovo_raw_data
+  table_id: edovo_course_completions
+description: Temporary AR Edovo course completion snapshot for staging validation.
+schema:
+  - name: State
+    type: STRING
+    mode: NULLABLE
+  - name: person_id
+    type: STRING
+    mode: NULLABLE
+  - name: Edovo_Learner_ID
+    type: STRING
+    mode: NULLABLE
+  - name: First_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Last_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Facility
+    type: STRING
+    mode: NULLABLE
+  - name: course_id
+    type: STRING
+    mode: NULLABLE
+  - name: course_name
+    type: STRING
+    mode: NULLABLE
+  - name: Start_Date
+    type: STRING
+    mode: NULLABLE
+  - name: First_Completion_Date
+    type: STRING
+    mode: NULLABLE
+  - name: completed_at
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+deployed_projects:
+  - recidiviz-staging
