@@ -27,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     JII_AUTH0_PROD_SEGMENT_DATASET,
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
     JII_FRONTEND_PROD_SEGMENT_DATASET,
+    MEETINGS_APP_SEGMENT_DATASET,
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
@@ -79,6 +80,9 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     CASE_PLANNING_PRODUCTION_DATASET: "Stores case planning analytics events logged via Segment",
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."
+    ),
+    MEETINGS_APP_SEGMENT_DATASET: (
+        "Stores events logged from the Meetings app via Segment."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."

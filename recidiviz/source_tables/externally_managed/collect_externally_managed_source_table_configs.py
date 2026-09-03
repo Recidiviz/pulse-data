@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_PROD_ACTION_LOGS,
     CASE_PLANNING_PRODUCTION_DATASET,
     EXPORT_ARCHIVES_DATASET,
+    MEETINGS_APP_SEGMENT_DATASET,
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
@@ -86,6 +87,9 @@ def collect_externally_managed_source_table_collections(
             only_check_required_columns=True,
         ),
         PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        MEETINGS_APP_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
         EXPORT_ARCHIVES_DATASET: SourceTableCollectionValidationConfig(
