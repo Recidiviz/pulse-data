@@ -32,15 +32,15 @@ python -m recidiviz.tools.deploy.source_tables.check_source_table_schemas \
 import argparse
 import logging
 
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.update_big_query_table_schemas import (
     SourceTableCheckType,
     check_source_table_schemas,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 
 def parse_args() -> argparse.Namespace:

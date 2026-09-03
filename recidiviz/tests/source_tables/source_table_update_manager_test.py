@@ -30,9 +30,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -53,6 +50,9 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.utils.future_executor import ThreadPoolExecutorResult
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"

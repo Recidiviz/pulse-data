@@ -28,14 +28,14 @@ from recidiviz.segment.segment_event_utils import (
     get_segment_frontend_event_source_table_addresses,
 )
 from recidiviz.segment.view_config import get_view_builders_for_views_to_update
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_addresses,
-)
 from recidiviz.source_tables.untracked_source_table_exemptions import (
     get_allowed_tables_in_source_table_datasets_with_no_config,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_all_source_table_addresses,
+)
 
 
 class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):

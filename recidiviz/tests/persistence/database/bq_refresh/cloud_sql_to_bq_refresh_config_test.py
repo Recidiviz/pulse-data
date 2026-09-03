@@ -28,11 +28,11 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_source_table_datasets,
+)
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):

@@ -18,12 +18,12 @@
 import unittest
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.address_to_complexity_score_mapping import (
     ParentAddressComplexityScoreMapper,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 

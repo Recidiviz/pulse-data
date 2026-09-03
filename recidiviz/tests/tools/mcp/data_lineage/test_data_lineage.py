@@ -39,7 +39,7 @@ with patch(
         []
     )  # Return empty list to avoid loading 4618 view builders
     with patch(
-        "recidiviz.source_tables.collect_all_source_table_configs.get_source_table_addresses"
+        "recidiviz.view_registry.deployed_source_table_repository.get_source_table_addresses"
     ) as mock_source:
         mock_source.return_value = (
             []

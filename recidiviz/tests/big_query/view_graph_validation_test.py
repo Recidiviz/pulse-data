@@ -61,9 +61,6 @@ from recidiviz.ingest.views.dataset_config import (
 from recidiviz.metrics.export.exported_view_utils import (
     get_all_metric_export_view_addresses,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -88,6 +85,9 @@ from recidiviz.validation.views.view_config import (
 )
 from recidiviz.view_registry.deployed_address_schema_utils import (
     get_deployed_addresses_without_state_code_column,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.view_registry.deployed_view_external_id_exemptions import (
     NORMALIZED_STATE_VIEWS_DATASET,

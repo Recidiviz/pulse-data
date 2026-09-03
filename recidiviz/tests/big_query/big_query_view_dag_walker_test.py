@@ -41,12 +41,12 @@ from recidiviz.datasets.static_data.views.dataset_config import (
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_source_table_datasets,
+)
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")

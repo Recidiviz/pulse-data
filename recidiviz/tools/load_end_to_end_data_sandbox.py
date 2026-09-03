@@ -92,9 +92,6 @@ from recidiviz.pipelines.pipeline_parameters import (
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_dataflow_sandbox,
 )
@@ -124,6 +121,9 @@ from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_source_table_datasets,
 )
 
 

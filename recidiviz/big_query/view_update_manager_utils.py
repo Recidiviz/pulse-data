@@ -30,10 +30,10 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 from recidiviz.big_query.big_query_view_update_sandbox_context import (
     BigQueryViewUpdateSandboxContext,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
+from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
-from recidiviz.utils import metadata
 
 
 def get_managed_view_and_materialized_table_addresses_by_dataset(

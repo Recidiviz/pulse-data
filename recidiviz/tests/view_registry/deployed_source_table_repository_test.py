@@ -14,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test for built source table collections"""
+"""Tests for deployed_source_table_repository.py"""
+
 import unittest
 from collections import defaultdict
 
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_config import (
     NormalizedStateAgnosticEntitySourceTableLabel,
     StateSpecificSourceTableLabel,
@@ -28,6 +26,9 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 # Datasets that are still split across more than one source table collection,
 # grandfathered until the follow-up consolidation work lands. Do not add to this
@@ -48,8 +49,8 @@ _DATASETS_WITH_MULTIPLE_COLLECTIONS = {
 }
 
 
-class CollectAllSourceTableConfigsTest(unittest.TestCase):
-    """Test for built source table collections"""
+class DeployedSourceTableRepositoryTest(unittest.TestCase):
+    """Tests for build_source_table_repository_for_collected_schemata."""
 
     def test_valid_external_data_configurations(self) -> None:
         for project_id in DATA_PLATFORM_GCP_PROJECTS:

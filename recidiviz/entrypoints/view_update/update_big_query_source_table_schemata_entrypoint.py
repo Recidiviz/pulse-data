@@ -20,9 +20,6 @@ KubernetesPodOperator."""
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_update_group_dag import (
     source_table_update_group_for_dag_id,
 )
@@ -35,6 +32,9 @@ from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     AirflowKubernetesPodEnvironment,
     in_airflow_kubernetes_pod,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
 )
 
 

@@ -178,10 +178,6 @@ from recidiviz.common.git import (
     get_hash_of_data_platform_version,
     is_commit_in_current_branch,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_addresses,
-    get_source_table_datasets,
-)
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
@@ -198,6 +194,10 @@ from recidiviz.view_registry.address_overrides_factory import (
 from recidiviz.view_registry.deployed_address_schema_utils import (
     get_deployed_addresses_without_state_code_column,
     get_source_tables_to_pseudocolumns,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_source_table_addresses,
+    get_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 from recidiviz.view_registry.execute_update_all_managed_views import (

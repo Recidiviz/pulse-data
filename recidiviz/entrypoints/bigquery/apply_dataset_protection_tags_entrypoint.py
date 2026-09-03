@@ -46,13 +46,13 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollectionUpdateConfig,
 )
 from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 # The org-scoped Resource Manager tag created by the deletion_protection guardrail. BigQuery
 # ``resource_tags`` keys are namespaced as "<org_id>/<tag_key_short_name>".

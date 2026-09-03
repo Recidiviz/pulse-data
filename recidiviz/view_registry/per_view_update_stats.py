@@ -37,12 +37,12 @@ from recidiviz.big_query.view_update_manager import CreateOrUpdateViewResult
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.utils import environment, metadata
 from recidiviz.view_registry.address_to_complexity_score_mapping import (
     ParentAddressComplexityScoreMapper,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 from recidiviz.view_registry.infra_library import is_view_part_of_infra_library_2025

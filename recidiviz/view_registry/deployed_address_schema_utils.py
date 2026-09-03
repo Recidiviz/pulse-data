@@ -198,11 +198,11 @@ from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
 from recidiviz.outcome_metrics.views.transitions_metric_utils import (
     collect_view_builders_for_breadth_depth_metrics,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 STATE_CODE_COLUMN_NAME = "state_code"

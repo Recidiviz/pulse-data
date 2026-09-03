@@ -30,14 +30,14 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-    get_source_table_datasets,
-)
 from recidiviz.source_tables.source_table_cleanup_validation import (
     validate_clean_source_table_datasets,
 )
 from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+    get_source_table_datasets,
+)
 
 # Empty datasets must be at least 2 hours old to be deleted
 EMPTY_DATASET_DELETION_MIN_SECONDS = 2 * 60 * 60

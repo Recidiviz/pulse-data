@@ -21,10 +21,10 @@ from typing import Sequence
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryViewBuilder
-from recidiviz.source_tables.collect_all_source_table_configs import (
+from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
-from recidiviz.utils import metadata
 
 
 def address_overrides_for_view_builders(

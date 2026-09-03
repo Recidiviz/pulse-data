@@ -35,10 +35,10 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     TraversalDirection,
 )
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
-from recidiviz.source_tables.collect_all_source_table_configs import (
+from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 

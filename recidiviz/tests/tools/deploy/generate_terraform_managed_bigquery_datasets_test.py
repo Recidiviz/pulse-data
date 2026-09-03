@@ -23,9 +23,6 @@ from collections import defaultdict
 
 import yaml
 
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.tools import deploy
 from recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets import (
     _NON_SOURCE_TABLE_TERRAFORM_MANAGED_DATASETS,
@@ -36,6 +33,9 @@ from recidiviz.tools.deploy.generate_terraform_managed_bigquery_datasets import 
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 
 class GenerateTerraformManagedBigqueryDatasetsTest(unittest.TestCase):

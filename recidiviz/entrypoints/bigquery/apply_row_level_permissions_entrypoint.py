@@ -34,10 +34,10 @@ from recidiviz.big_query.row_access_policy_query_builder import (
     access_group_configs_are_loaded,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.collect_all_source_table_configs import (
+from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
-from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
 )

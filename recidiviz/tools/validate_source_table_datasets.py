@@ -28,14 +28,14 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_cleanup_validation import (
     validate_clean_source_table_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 
 def parse_args() -> argparse.Namespace:

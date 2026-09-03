@@ -19,9 +19,6 @@ import unittest
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,6 +27,9 @@ from recidiviz.view_registry.deployed_address_schema_utils import (
     get_deployed_addresses_without_state_code_column,
     state_agnostic_deployed_views_without_state_code_column,
     state_specific_deployed_views_without_state_code_columns,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 

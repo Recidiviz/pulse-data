@@ -100,11 +100,6 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-    get_all_source_table_addresses,
-    get_source_table_addresses,
-)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     DATA_PLATFORM_GCP_PROJECTS,
@@ -127,6 +122,11 @@ from recidiviz.validation.views.dataset_config import (
 )
 from recidiviz.view_registry.address_to_complexity_score_mapping import (
     ParentAddressComplexityScoreMapper,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+    get_all_source_table_addresses,
+    get_source_table_addresses,
 )
 from recidiviz.view_registry.deployed_views import (
     all_view_builders_across_projects,

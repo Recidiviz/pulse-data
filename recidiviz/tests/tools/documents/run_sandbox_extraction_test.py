@@ -88,9 +88,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables,
 )
@@ -140,6 +137,9 @@ from recidiviz.tools.documents.sandbox_document_extraction_processor import (
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 STATE_CODE = StateCode.US_XX
 EXTRACTOR_COLLECTION_NAME = FAKE_EXTRACTOR_COLLECTION

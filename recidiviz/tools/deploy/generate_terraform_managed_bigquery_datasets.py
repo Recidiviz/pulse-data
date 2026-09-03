@@ -52,16 +52,16 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-    get_source_table_datasets_to_descriptions,
-)
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.tools import deploy
 from recidiviz.tools.ingest.operations.constants import RAW_DATA_DIFF_RESULTS_DATASET_ID
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml import prettier_friendly_yaml_dump
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+    get_source_table_datasets_to_descriptions,
+)
 
 TERRAFORM_MANAGED_BIGQUERY_DATASETS_YAML_PATH = os.path.join(
     os.path.dirname(deploy.__file__),

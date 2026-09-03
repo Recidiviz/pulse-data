@@ -40,14 +40,14 @@ from recidiviz.big_query.big_query_view_update_sandbox_context import (
 )
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_resources.resource_label import ResourceLabel
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,

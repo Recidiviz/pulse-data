@@ -24,9 +24,6 @@ from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.identity_pipeline_input_table_collector import (
     build_identity_overrides_source_table_collection,
     build_identity_pipeline_input_source_table_collections,
@@ -38,6 +35,9 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 
 _TENANT = Tenant.US_OZ
 

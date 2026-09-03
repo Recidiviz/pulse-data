@@ -23,9 +23,6 @@ from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_addresses,
-)
 from recidiviz.source_tables.source_table_cleanup_validation import (
     validate_clean_source_table_datasets,
 )
@@ -38,6 +35,9 @@ from recidiviz.source_tables.source_table_config import (
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.untracked_source_table_exemptions import (
     get_allowed_tables_in_source_table_datasets_with_no_config,
+)
+from recidiviz.view_registry.deployed_source_table_repository import (
+    get_all_source_table_addresses,
 )
 
 

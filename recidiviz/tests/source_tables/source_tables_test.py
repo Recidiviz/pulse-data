@@ -23,9 +23,6 @@ from typing import Iterable
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.source_tables import yaml_managed
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
 )
@@ -34,6 +31,9 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
+)
 from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 COMMON_VESTIGES = [
@@ -244,7 +244,7 @@ class SourceTablesTest(unittest.TestCase):
                 "\nFound source tables that were referenced in views, but whose view definitions do not exist: \n"
                 f"{missing_definitions} \n\n"
                 "If this is a table that is externally managed, add a YAML definition to recidiviz/source_tables/<dataset_id>/<table_id>.yaml"
-                "If we expect this table to be defined in code, be sure that it is included in a SourceTableCollection inside recidiviz.source_tables.collect_all_source_table_configs.build_source_table_repository_for_collected_schemata",
+                "If we expect this table to be defined in code, be sure that it is included in a SourceTableCollection inside recidiviz.view_registry.deployed_source_table_repository.build_source_table_repository_for_collected_schemata",
             )
             # Assert there are not any vestigial YAML files for tables that are no longer used in the view graph
             yaml_definition_addresses = set(
