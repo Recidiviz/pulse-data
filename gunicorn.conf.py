@@ -18,9 +18,6 @@
 import logging
 import multiprocessing
 
-from gunicorn.arbiter import Arbiter
-from gunicorn.workers.base import Worker
-
 import gevent_config
 
 # Note: if we adjust the number of gunicorn workers per cpu upwards,
@@ -40,7 +37,10 @@ worker_class = ".".join(
     ]
 )
 timeout = 3600  # 60 min timeout
-loglevel = "debug"
+# "info" is gunicorn's default. "debug" logs every worker lifecycle event on every
+# request across all workers, which is far more volume than it is worth outside an
+# active investigation.
+loglevel = "info"
 accesslog = "gunicorn-access.log"
 errorlog = "gunicorn-error.log"
 keepalive = 650

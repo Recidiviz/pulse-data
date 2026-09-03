@@ -57,7 +57,7 @@ def _env_default(name: str, default: str) -> None:
 # stalling a whole worker on non-cooperative I/O, so it is on by default. It was
 # previously disabled over gevent/gevent#1665, which has since been resolved.
 config.monitor_thread = _env_flag("MONITOR_THREAD", default=True)
-config.max_blocking_time = 5  # 5 seconds
+config.max_blocking_time = 30  # 30 seconds
 config.max_memory_usage = 4 * 1024 * 1024 * 1024  # 4 GiB
 config.memory_monitor_period = 60  # 1 minute
 
