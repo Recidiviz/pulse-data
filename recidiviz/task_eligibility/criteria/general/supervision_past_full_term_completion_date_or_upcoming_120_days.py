@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone is past
-their supervision full term completion date (sentence projected max completion date).
+"""Defines a criteria span view that shows spans of time during which
+someone is past their supervision full term completion date (sentence projected max completion
+date) or within 120 days of their full term completion date.
 """
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -26,15 +28,15 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE"
+_CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
+        meets_criteria_leading_window_time=120,
         critical_date_column="sentence_projected_full_term_release_date_max",
         compartment_level_1_filter="SUPERVISION",
-        leave_last_sentence_span_open=True,
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
     )
 )
 

@@ -643,7 +643,7 @@ def us_mo_contact_compliance_builder(
                 "last_contact_date",
             ],
         )}
-        SELECT 
+        SELECT
             state_code,
             person_id,
             start_date,
@@ -859,7 +859,7 @@ def us_mo_contact_compliance_builder(
             "supplementary_contacts",
         ],
     )}
-    SELECT 
+    SELECT
         state_code,
         person_id,
         start_date,
@@ -1177,6 +1177,179 @@ def us_mo_non_recurring_contact_compliance_builder(
                 name="contact_period_start_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the relevant contact period began",
+            ),
+        ],
+    )
+
+
+def us_mo_recurring_oras_assessment_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    assessment_type: str,
+    assessment_display_name: str,
+    reassessment_cadence_months: int,
+    supervision_spans_query: str,
+    meets_criteria_leading_window_days: int = 0,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Build a US_MO recurring-assessment "is missing reassessment" criterion.
+
+    Produces spans where a client has had at least one prior assessment of the
+    given type within their current supervision episode but is now overdue for
+    the next one. Spans before any assessment fall through to
+    `meets_criteria_default=False`, so a companion `meets_initial_*_assessment_trigger`
+    criterion can cover that gap. Some callers combine the two via an OR-group
+    (e.g. NE's `needs_oras_assessment.py`); MO ships CST and CSST as two
+    independent compliance tasks instead, so no such combination is needed there.
+
+    Args:
+        criteria_name: Name of the criterion view (e.g.
+            US_MO_IS_MISSING_ANNUAL_CST_REASSESSMENT).
+        description: Description of the criterion view.
+        assessment_type: Value of `state_assessment.assessment_type` to filter
+            on (e.g. 'STABLE', 'ORAS_COMMUNITY_SUPERVISION').
+        assessment_display_name: Short label for the assessment (e.g. 'STABLE',
+            'ORAS') used in reasons-field descriptions.
+        reassessment_cadence_months: Number of months after a prior assessment
+            until the next one is due
+        supervision_spans_query: SQL returning state_code, person_id,
+            start_date, and (exclusive) end_date for one row per continuous
+            supervision episode. Must already be filtered to US_MO.
+        meets_criteria_leading_window_days: Number of days before the prior
+            assessment becomes overdue and appears as incoming for the user
+    """
+    cadence_unit = "MONTH" if reassessment_cadence_months == 1 else "MONTHS"
+    contact_cadence_value = f"1 EVERY {reassessment_cadence_months} {cadence_unit}"
+
+    query_template = f"""
+WITH supervision_spans AS (
+    {supervision_spans_query}
+),
+
+assessments AS (
+    SELECT
+        a.state_code,
+        a.person_id,
+        a.assessment_date,
+        ss.start_date AS supervision_start_date,
+        ss.end_date AS supervision_end_date,
+        a.assessment_date AS span_start
+    FROM `{{project_id}}.us_mo_normalized_state.state_assessment` a
+    INNER JOIN supervision_spans ss
+        ON ss.state_code = a.state_code
+            AND ss.person_id = a.person_id
+            AND a.assessment_date BETWEEN
+                ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date")}
+    WHERE a.state_code = 'US_MO'
+        AND a.assessment_type = '{assessment_type}'
+    -- Within a single day, keep the latest assessment by sequence_num
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY a.person_id, a.assessment_date
+        ORDER BY a.sequence_num DESC
+    ) = 1
+),
+critical_date_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        span_start AS start_datetime,
+        -- Span ends at the next assessment within this supervision episode,
+        -- or at the supervision episode end if no further assessment occurs.
+        IFNULL(
+            LEAD(span_start) OVER (
+                PARTITION BY person_id, supervision_start_date
+                ORDER BY span_start ASC
+            ),
+            supervision_end_date
+        ) AS end_datetime,
+        DATE_ADD(
+            assessment_date,
+            INTERVAL {reassessment_cadence_months} MONTH
+        ) AS critical_date,
+        assessment_date AS most_recent_assessment_date,
+    FROM assessments 
+),
+
+{critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=meets_criteria_leading_window_days, attributes=["most_recent_assessment_date"])}
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(
+        critical_date AS assessment_due_date,
+        GREATEST(
+            critical_date,
+            '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime("%Y-%m-%d")}'
+            ) AS assessment_display_due_date,
+        most_recent_assessment_date,
+        FALSE AS is_first_assessment,
+        '{contact_cadence_value}' AS contact_cadence
+    )) AS reason,
+    critical_date AS assessment_due_date,
+    GREATEST(
+        critical_date,
+        '{MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE.strftime("%Y-%m-%d")}'
+    ) AS assessment_display_due_date,
+    most_recent_assessment_date,
+    FALSE AS is_first_assessment,
+    '{contact_cadence_value}' AS contact_cadence,
+FROM critical_date_has_passed_spans
+"""
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        state_code=StateCode.US_MO,
+        description=description,
+        criteria_spans_query_template=query_template,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="assessment_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=(
+                    f"Date by which the next {assessment_display_name} "
+                    f"reassessment is due ("
+                    f"{reassessment_cadence_months} months after the prior "
+                    f"assessment)."
+                ),
+            ),
+            ReasonsField(
+                name="assessment_display_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=(
+                    f"Date by which the next {assessment_display_name} reassessment "
+                    "is due, for display purposes — floored to "
+                    "MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE so the frontend never "
+                    "shows a due date from before the Tasks tool existed."
+                ),
+            ),
+            ReasonsField(
+                name="most_recent_assessment_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=f"Date of the most recent {assessment_display_name} "
+                "assessment.",
+            ),
+            ReasonsField(
+                name="is_first_assessment",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description=(
+                    f"Indicator for first {assessment_display_name} assessment "
+                    "of supervision period. Always False for this reassessment "
+                    "criterion; the initial trigger criterion does not emit "
+                    "this field, so consumers should treat NULL/absent as True "
+                    "(initial assessment due)."
+                ),
+            ),
+            ReasonsField(
+                name="contact_cadence",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description=(
+                    f"{assessment_display_name} reassessment cadence requirement "
+                    f"(every {reassessment_cadence_months} months)."
+                ),
             ),
         ],
     )

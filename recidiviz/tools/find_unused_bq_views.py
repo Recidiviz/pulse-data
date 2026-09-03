@@ -236,6 +236,12 @@ from recidiviz.task_eligibility.criteria.general.no_supervision_violation_within
 from recidiviz.task_eligibility.criteria.general.on_supervision_at_least_15_months import (
     VIEW_BUILDER as ON_SUPERVISION_AT_LEAST_15_MONTHS,
 )
+from recidiviz.task_eligibility.criteria.general.supervision_not_past_full_term_completion_date_or_upcoming_120_days import (
+    VIEW_BUILDER as SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS,
+)
+from recidiviz.task_eligibility.criteria.general.supervision_past_full_term_completion_date_or_upcoming_120_days import (
+    VIEW_BUILDER as SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_ineligible_offense_for_admin_supervision import (
     VIEW_BUILDER as US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION,
 )
@@ -311,6 +317,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_CO_WORK_CREDIT_VIEW_BUILDER.address: (
         "CO Work Credit Writeback File #2 for new Earned Credit Policy. Work tracked in OBT-37777."
         "(Shalin Brahmbhatt, 2026-08-26)"
+    ),
+    SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
+        "Temporarily unused after being pulled out of needs_cst_reassessment.py "
+        "pending an investigation into probation end-date ingest reliability for "
+        "dual-supervision clients. Tracked in MO-2. (Regina Medina, 2026-08-31)"
+    ),
+    SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
+        "Only consumer is the NOT-version above, which is itself temporarily "
+        "unused for the same reason. Tracked in MO-2. (Regina Medina, 2026-08-31)"
     ),
     **{
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
