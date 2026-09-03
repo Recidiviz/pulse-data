@@ -35,9 +35,12 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
+from recidiviz.view_registry.deployed_view_graphs import (
+    CALCULATION_VIEW_GRAPH_NAME,
+    deployed_view_graph_registry,
+)
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    deployed_view_builders,
 )
 from recidiviz.view_registry.per_view_update_stats import (
     PerViewUpdateStats,
@@ -123,7 +126,11 @@ def execute_update_all_managed_views() -> None:
     dataset.
     """
     start_time = datetime.datetime.now(tz=pytz.UTC)
-    view_builders = deployed_view_builders()
+    view_builders = (
+        deployed_view_graph_registry(metadata.project_id())
+        .graph_for_name(CALCULATION_VIEW_GRAPH_NAME)
+        .view_builders
+    )
 
     (
         update_views_result,

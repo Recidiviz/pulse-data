@@ -44,7 +44,9 @@ from recidiviz.view_registry.address_to_complexity_score_mapping import (
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 from recidiviz.view_registry.infra_library import is_view_part_of_infra_library_2025
 from recidiviz.view_registry.query_complexity_score_2025 import (
     get_query_complexity_score_2025,
@@ -248,7 +250,7 @@ def per_view_update_stats_for_view_update_result(
     )
     address_to_table_complexity_score_mapper = ParentAddressComplexityScoreMapper(
         source_table_repository=source_table_repository,
-        all_view_builders=deployed_view_builders(),
+        all_view_builders=builders_for_all_deployed_view_graphs(),
     )
     raw_data_datasets = get_raw_data_table_and_view_datasets()
 

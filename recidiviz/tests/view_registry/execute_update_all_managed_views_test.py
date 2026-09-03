@@ -236,7 +236,7 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         self.project_id_patcher.stop()
 
     @mock.patch(
-        "recidiviz.view_registry.execute_update_all_managed_views.deployed_view_builders",
+        "recidiviz.view_registry.execute_update_all_managed_views.deployed_view_graph_registry",
     )
     @mock.patch(
         "recidiviz.view_registry.execute_update_all_managed_views.BigQueryClientImpl"
@@ -248,7 +248,7 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         self,
         mock_create: MagicMock,
         _mock_bq_client: MagicMock,
-        _mock_view_builders: MagicMock,
+        _mock_view_graph_registry: MagicMock,
     ) -> None:
         mock_create.return_value = (
             ProcessDagResult(

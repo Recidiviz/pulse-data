@@ -65,7 +65,7 @@ from recidiviz.segment.view_config import (
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
 )
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import environment
 from recidiviz.validation.views.view_config import (
     build_validation_metadata_view_builders,
 )
@@ -96,17 +96,6 @@ def _all_view_builders_across_projects() -> List[BigQueryViewBuilder]:
             get_llmaj_view_builders(),
         )
     )
-
-
-def deployed_view_builders() -> List[BigQueryViewBuilder]:
-    """Returns the set of view builders which can/should be deployed to the current
-    project (as defined by metadata.project_id()).
-    """
-    return [
-        builder
-        for builder in _all_view_builders_across_projects()
-        if builder.should_deploy_in_project(metadata.project_id())
-    ]
 
 
 @environment.local_only

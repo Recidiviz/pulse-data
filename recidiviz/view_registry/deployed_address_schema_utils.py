@@ -203,7 +203,9 @@ from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 STATE_CODE_COLUMN_NAME = "state_code"
 
@@ -398,7 +400,7 @@ def get_deployed_addresses_without_state_code_column(
         ).source_tables
     )
     deployed_view_builders_by_address = {
-        vb.address: vb for vb in deployed_view_builders()
+        vb.address: vb for vb in builders_for_all_deployed_view_graphs()
     }
 
     views_no_state_code = state_specific_deployed_views_without_state_code_columns(

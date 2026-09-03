@@ -30,7 +30,6 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     TraversalDirection,
 )
-from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.calculator.query.experiments_metadata.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
@@ -258,7 +257,9 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.configured_validations import get_all_validations
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    build_dag_walker_for_all_deployed_view_graphs,
+)
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
@@ -829,12 +830,7 @@ def get_unused_across_all_projects_addresses_from_all_views_dag(
     unused_addresses: Optional[Set[BigQueryAddress]] = None
     for project in DATA_PLATFORM_GCP_PROJECTS:
         with local_project_id_override(project):
-            project_dag_walker = BigQueryViewDagWalker(
-                build_views_to_update(
-                    candidate_view_builders=deployed_view_builders(),
-                    sandbox_context=None,
-                )
-            )
+            project_dag_walker = build_dag_walker_for_all_deployed_view_graphs()
 
             if len(project_dag_walker.views) == 0:
                 raise ValueError(f"Failed to collect views for project {project}.")

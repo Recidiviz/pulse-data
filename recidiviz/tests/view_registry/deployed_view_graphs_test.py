@@ -27,9 +27,10 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.deployed_view_graphs import (
     CALCULATION_VIEW_GRAPH_NAME,
+    builders_for_all_deployed_view_graphs,
     deployed_view_graph_registry,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 
 class TestDeployedViewGraphRegistry(unittest.TestCase):
@@ -43,12 +44,22 @@ class TestDeployedViewGraphRegistry(unittest.TestCase):
                 registry = deployed_view_graph_registry(project_id)
                 self.assertEqual(project_id, registry.project_id)
                 calculation_graph = registry.graph_for_name(CALCULATION_VIEW_GRAPH_NAME)
-                deployed_addresses = [b.address for b in deployed_view_builders()]
+                deployed_addresses = [
+                    b.address
+                    for b in all_view_builders_across_projects()
+                    if b.should_deploy_in_project(project_id)
+                ]
                 graph_addresses = [b.address for b in calculation_graph.view_builders]
                 # Compare as sets because view builder collection order is not
                 # deterministic across calls.
                 self.assertEqual(len(deployed_addresses), len(graph_addresses))
                 self.assertEqual(set(deployed_addresses), set(graph_addresses))
+                # With only the calculation graph registered, the all-graphs union
+                # matches the calculation graph exactly.
+                self.assertEqual(
+                    set(graph_addresses),
+                    {b.address for b in builders_for_all_deployed_view_graphs()},
+                )
                 self.assertTrue(calculation_graph.input_source_table_collections)
                 self.assertEqual(
                     SourceTableUpdateGroup.CALC,

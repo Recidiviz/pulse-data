@@ -94,7 +94,9 @@ from recidiviz.view_registry.deployed_view_external_id_exemptions import (
     get_known_non_export_views_with_person_external_id_column,
     get_known_views_with_unqualified_external_id,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
 
@@ -197,7 +199,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with local_project_id_override(cls._get_gcp_project_id()):
-            view_builders_to_update = deployed_view_builders()
+            view_builders_to_update = builders_for_all_deployed_view_graphs()
             dag_walker = BigQueryViewDagWalker(
                 [view_builder.build() for view_builder in view_builders_to_update]
             )

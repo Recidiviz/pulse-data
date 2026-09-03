@@ -61,7 +61,9 @@ from recidiviz.validation.validation_result_for_storage import (
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 
 def attributes_for_job(job: DataValidationJob) -> Dict[str, Any]:
@@ -230,7 +232,7 @@ def _get_validations_jobs(
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJob]:
-    view_builders = deployed_view_builders()
+    view_builders = builders_for_all_deployed_view_graphs()
 
     sandbox_context = None
     if sandbox_dataset_prefix:

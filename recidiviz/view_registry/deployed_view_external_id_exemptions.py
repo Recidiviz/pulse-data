@@ -115,7 +115,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_table_id,
 )
 from recidiviz.utils import metadata
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 
 def get_workflows_opportunity_record_addresses() -> set[BigQueryAddress]:
@@ -291,7 +293,9 @@ def get_known_views_with_unqualified_external_id(
             f"[{metadata.project_id()}]"
         )
 
-    deployed_views_by_address = {vb.address: vb for vb in deployed_view_builders()}
+    deployed_views_by_address = {
+        vb.address: vb for vb in builders_for_all_deployed_view_graphs()
+    }
     external_id_entity_view_addresses = (
         _get_state_entity_view_addresses_with_external_id_column(
             deployed_views_by_address

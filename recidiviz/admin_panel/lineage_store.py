@@ -30,16 +30,14 @@ from recidiviz.admin_panel.models.lineage_api_schemas import (
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.big_query.big_query_view_dag_walker import (
-    BigQueryViewDagWalker,
-    TraversalDirection,
-)
-from recidiviz.big_query.big_query_view_utils import build_views_to_update
+from recidiviz.big_query.big_query_view_dag_walker import TraversalDirection
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    build_dag_walker_for_all_deployed_view_graphs,
+)
 
 
 class GraphDirection(Enum):
@@ -52,19 +50,10 @@ class LineageStore(AdminPanelStore):
 
     def __init__(self) -> None:
         self.cache_key_base = f"{self.__class__.__name__}"
-        self.walker = self._build_walker()
+        self.walker = build_dag_walker_for_all_deployed_view_graphs()
         self.source_tables = build_source_table_repository_for_collected_schemata(
             metadata.project_id()
         )
-
-    def _build_walker(self) -> BigQueryViewDagWalker:
-        view_builders = deployed_view_builders()
-
-        views_to_update = build_views_to_update(
-            candidate_view_builders=view_builders, sandbox_context=None
-        )
-
-        return BigQueryViewDagWalker(views_to_update)
 
     def _cache_key_for_direction_and_address(
         self, direction: GraphDirection, address: BigQueryAddress

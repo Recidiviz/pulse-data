@@ -35,7 +35,9 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_pa_sentenc
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 from recidiviz.view_registry.deprecated_view_reference_exemptions import (
     SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS,
 )
@@ -62,7 +64,7 @@ def _get_staging_dag_walker_with_descendant_sub_dags() -> BigQueryViewDagWalker:
     sub-dags.
     """
     with local_project_id_override(GCP_PROJECT_STAGING):
-        view_builders = deployed_view_builders()
+        view_builders = builders_for_all_deployed_view_graphs()
         views = build_views_to_update(
             candidate_view_builders=view_builders,
             sandbox_context=None,

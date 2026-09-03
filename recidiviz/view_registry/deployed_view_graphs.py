@@ -17,6 +17,8 @@
 """The registry of view graphs deployed to our GCP projects."""
 from functools import cache
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_graph import (
     BigQueryViewGraph,
     BigQueryViewGraphRegistry,
@@ -63,4 +65,27 @@ def _calculation_view_graph() -> BigQueryViewGraph:
         name=CALCULATION_VIEW_GRAPH_NAME,
         input_source_table_update_group=SourceTableUpdateGroup.CALC,
         view_builder_candidates=_all_view_builders_across_projects(),
+    )
+
+
+def builders_for_all_deployed_view_graphs() -> list[BigQueryViewBuilder]:
+    """Returns the view builders for every view in every view graph deployed to the
+    current project.
+    """
+    return [
+        b
+        for g in deployed_view_graph_registry(metadata.project_id()).view_graphs
+        for b in g.view_builders
+    ]
+
+
+def build_dag_walker_for_all_deployed_view_graphs() -> BigQueryViewDagWalker:
+    """Builds a BigQueryViewDagWalker over every view in every view graph deployed
+    to the current project.
+    """
+    return BigQueryViewDagWalker.union_dags(
+        *(
+            g.build_dag_walker()
+            for g in deployed_view_graph_registry(metadata.project_id()).view_graphs
+        )
     )

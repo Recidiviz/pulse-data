@@ -25,7 +25,9 @@ from recidiviz.view_registry.address_to_complexity_score_mapping import (
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 _RAW_DATA_LATEST_VIEW_ADDRESS = BigQueryAddress.from_str(
     "us_nd_raw_data_up_to_date_views.elite_offenders_latest"
@@ -59,7 +61,7 @@ class TestParentAddressComplexityScoreMapper(unittest.TestCase):
                     project_id=project_id
                 )
             )
-            all_view_builders = deployed_view_builders()
+            all_view_builders = builders_for_all_deployed_view_graphs()
 
         cls.mapper = ParentAddressComplexityScoreMapper(
             source_table_repository=source_table_repository,

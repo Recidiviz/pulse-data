@@ -89,7 +89,9 @@ from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
@@ -178,7 +180,7 @@ def compare_metric_view_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, BigQueryAddress]] = []
     skipped_views: List[str] = []
 
-    for view_builder in deployed_view_builders():
+    for view_builder in builders_for_all_deployed_view_graphs():
         # Only compare output of metric views
         if not isinstance(view_builder, MetricBigQueryViewBuilder):
             continue

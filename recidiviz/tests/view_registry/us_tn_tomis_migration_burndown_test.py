@@ -36,7 +36,9 @@ from recidiviz.tests.view_registry.us_tn_tomis_migration_exemptions import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 
 @cache
@@ -59,7 +61,7 @@ def _legacy_tomis_references_for_project(
         return_value=True,
     ), local_project_id_override(project_id):
         views = build_views_to_update(
-            candidate_view_builders=deployed_view_builders(),
+            candidate_view_builders=builders_for_all_deployed_view_graphs(),
             sandbox_context=None,
         )
 

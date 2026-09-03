@@ -31,8 +31,6 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -40,9 +38,11 @@ from recidiviz.big_query.view_update_manager_utils import (
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
+from recidiviz.view_registry.deployed_view_graphs import (
+    build_dag_walker_for_all_deployed_view_graphs,
+)
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    deployed_view_builders,
 )
 
 
@@ -67,12 +67,7 @@ def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
 
     with local_project_id_override(args.project_id):
-        views = build_views_to_update(
-            candidate_view_builders=deployed_view_builders(),
-            sandbox_context=None,
-        )
-
-        dag_walker = BigQueryViewDagWalker(views)
+        dag_walker = build_dag_walker_for_all_deployed_view_graphs()
         managed_views_map = (
             get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
         )

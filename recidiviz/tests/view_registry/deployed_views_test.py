@@ -128,10 +128,10 @@ from recidiviz.view_registry.deployed_source_table_repository import (
     get_all_source_table_addresses,
     get_source_table_addresses,
 )
-from recidiviz.view_registry.deployed_views import (
-    all_view_builders_across_projects,
-    deployed_view_builders,
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
 )
+from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 from recidiviz.view_registry.deprecated_view_reference_exemptions import (
     DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS,
 )
@@ -283,7 +283,7 @@ class DeployedViewsTest(unittest.TestCase):
             errors: list[Exception] = []
 
             with local_project_id_override(project_id):
-                candidate_view_builders = deployed_view_builders()
+                candidate_view_builders = builders_for_all_deployed_view_graphs()
 
                 source_table_addresses = get_source_table_addresses(project_id)
 
@@ -385,7 +385,7 @@ class DeployedViewsTest(unittest.TestCase):
         )
 
         views = build_views_to_update(
-            candidate_view_builders=deployed_view_builders(),
+            candidate_view_builders=builders_for_all_deployed_view_graphs(),
             sandbox_context=None,
         )
         for view in views:
@@ -412,7 +412,7 @@ class ViewDagInvariantTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
-            view_builders = deployed_view_builders()
+            view_builders = builders_for_all_deployed_view_graphs()
             views = build_views_to_update(
                 candidate_view_builders=view_builders,
                 sandbox_context=None,

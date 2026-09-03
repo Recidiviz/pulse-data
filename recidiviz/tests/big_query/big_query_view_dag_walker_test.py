@@ -47,7 +47,9 @@ from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.02
@@ -140,7 +142,8 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         cls.project_id_patcher.start().return_value = "recidiviz-456"
 
         cls.all_views = [
-            view_builder.build() for view_builder in deployed_view_builders()
+            view_builder.build()
+            for view_builder in builders_for_all_deployed_view_graphs()
         ]
 
         cls.x_shaped_dag_views_list = [

@@ -199,7 +199,9 @@ from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_addresses,
     get_source_table_datasets,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 from recidiviz.view_registry.execute_update_all_managed_views import (
     PER_VIEW_UPDATE_STATS_TABLE_ADDRESS,
 )
@@ -262,7 +264,7 @@ def load_all_views_to_sandbox(
     )
 
     logging.info("Gathering views to load to sandbox...")
-    collected_builders = deployed_view_builders()
+    collected_builders = builders_for_all_deployed_view_graphs()
     if prompt:
         prompt_for_confirmation(
             f"Continue with loading ALL {len(collected_builders)} views?"
@@ -350,7 +352,7 @@ Are you sure you still want to continue with `manual` mode?
 
     logging.info("Prefixing all view datasets with [%s_].", sandbox_dataset_prefix)
 
-    view_builders = deployed_view_builders()
+    view_builders = builders_for_all_deployed_view_graphs()
 
     addresses_to_load = set(view_ids_to_load) if view_ids_to_load else set()
     addresses_to_load |= (
@@ -1019,7 +1021,7 @@ def collect_changed_views_and_descendants_to_load(
     confirm_rebased_on_latest_view_update_version()
 
     logging.info("Constructing DAG with all known views...")
-    view_builders_in_full_dag = deployed_view_builders()
+    view_builders_in_full_dag = builders_for_all_deployed_view_graphs()
     all_views = build_views_to_update(
         candidate_view_builders=view_builders_in_full_dag,
         sandbox_context=None,

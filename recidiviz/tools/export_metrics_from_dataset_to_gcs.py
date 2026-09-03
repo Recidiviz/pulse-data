@@ -49,7 +49,9 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_deployed_view_graphs,
+)
 
 
 def export_metrics_from_dataset_to_gcs(
@@ -60,7 +62,7 @@ def export_metrics_from_dataset_to_gcs(
     if sandbox_dataset_prefix:
         sandbox_address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix=sandbox_dataset_prefix,
-            view_builders=deployed_view_builders(),
+            view_builders=builders_for_all_deployed_view_graphs(),
         )
 
         view_sandbox_context = BigQueryViewSandboxContext(

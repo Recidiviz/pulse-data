@@ -21,6 +21,8 @@ from unittest.mock import patch
 from recidiviz.admin_panel.lineage_store import LineageStore
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
@@ -84,11 +86,16 @@ class LineageStoreTest(TestCase):
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
         )
         self.project_id_patcher.start()
-        self.deployed_vbs_patch = patch(
-            "recidiviz.admin_panel.lineage_store.deployed_view_builders",
-            return_value=X_SHAPED_DAG_VIEW_BUILDERS_LIST,
+        self.deployed_walker_patch = patch(
+            "recidiviz.admin_panel.lineage_store.build_dag_walker_for_all_deployed_view_graphs",
+            return_value=BigQueryViewDagWalker(
+                build_views_to_update(
+                    candidate_view_builders=X_SHAPED_DAG_VIEW_BUILDERS_LIST,
+                    sandbox_context=None,
+                )
+            ),
         )
-        self.deployed_vbs_patch.start()
+        self.deployed_walker_patch.start()
         self.source_table_patch = patch(
             "recidiviz.admin_panel.lineage_store.build_source_table_repository_for_collected_schemata",
             return_value=SourceTableRepository(source_table_collections=[]),
@@ -98,7 +105,7 @@ class LineageStoreTest(TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
-        self.deployed_vbs_patch.stop()
+        self.deployed_walker_patch.stop()
         self.source_table_patch.stop()
 
     def test_build_upstream_dep(self) -> None:
