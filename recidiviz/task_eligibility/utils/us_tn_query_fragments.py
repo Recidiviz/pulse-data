@@ -201,10 +201,19 @@ def negative_arrest_check_within_time_interval(
             CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE) AS start_date,
             DATE_ADD(CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE), INTERVAL {date_interval} {date_part}) AS end_date,
             TRUE AS meets_criteria,
-        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest` contact
+        FROM `{{project_id}}.{{us_tn_tomis_contactnotetype_analog_table}}` contact
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON contact.OffenderID = pei.external_id
-            AND pei.id_type = 'US_TN_DOC'
+            -- contact.OffenderID values collide with other states' external
+            -- IDs (e.g. confirmed matches against US_TX_TDCJ/US_TX_SID and
+            -- US_CO_OFFENDERID id_types in staging), so this must filter on
+            -- state_code to exclude them. Deliberately not filtering on
+            -- id_type instead: contact.OffenderID is a legacy TOMIS 1.0
+            -- US_TN_DOC id before the tomis_2_0_enabled flag flips the analog
+            -- view over to MiCase, and a US_TN_PERSON_ID after -- filtering
+            -- on id_type would just be an extra thing to clean up
+            -- post-cutover, and state_code is stable across both.
+            AND pei.state_code = 'US_TN'
         WHERE contact.ContactNoteType = 'ARRN'
     ),
     /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
@@ -269,8 +278,8 @@ def no_positive_arrest_check_within_time_interval(
             CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE) AS latest_positive_arrest_check_date,
             FALSE AS meets_criteria,
         FROM
-            `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest` contact
-        INNER JOIN 
+            `{{project_id}}.{{us_tn_tomis_contactnotetype_analog_table}}` contact
+        INNER JOIN
             `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON
             contact.OffenderID = pei.external_id

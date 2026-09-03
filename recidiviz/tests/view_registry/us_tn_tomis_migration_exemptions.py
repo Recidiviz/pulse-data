@@ -145,35 +145,11 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.task_eligibility.criteria.state_specific.us_tn.most_recent_fee_code_is_feep_in_last_90_days import (
     VIEW_BUILDER as MOST_RECENT_FEE_CODE_IS_FEEP_IN_LAST_90_DAYS_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.negative_arrest_check_in_past_6_months import (
-    VIEW_BUILDER as NEGATIVE_ARREST_CHECK_IN_PAST_6_MONTHS_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.negative_arrest_check_in_past_year import (
-    VIEW_BUILDER as NEGATIVE_ARREST_CHECK_IN_PAST_YEAR_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_arrests_in_past_2_years import (
-    VIEW_BUILDER as NO_ARRESTS_IN_PAST_2_YEARS_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_arrests_in_past_6_months import (
-    VIEW_BUILDER as NO_ARRESTS_IN_PAST_6_MONTHS_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_arrests_in_past_year import (
-    VIEW_BUILDER as NO_ARRESTS_IN_PAST_YEAR_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_arrests_since_intake_supervision_level import (
-    VIEW_BUILDER as NO_ARRESTS_SINCE_INTAKE_SUPERVISION_LEVEL_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_high_sanctions_in_past_year import (
     VIEW_BUILDER as NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_recent_compliant_reporting_rejections import (
-    VIEW_BUILDER as NO_RECENT_COMPLIANT_REPORTING_REJECTIONS_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_warrant_within_2_years import (
     VIEW_BUILDER as NO_WARRANT_WITHIN_2_YEARS_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_permanently_rejected_from_compliant_reporting import (
-    VIEW_BUILDER as NOT_PERMANENTLY_REJECTED_FROM_COMPLIANT_REPORTING_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn.special_conditions_are_current import (
     VIEW_BUILDER as SPECIAL_CONDITIONS_ARE_CURRENT_VIEW_BUILDER,
@@ -248,15 +224,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER.address: "TODO(TN-1986): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-1987): Migrate this reference off of legacy TOMIS 1.0 raw data",
         MOST_RECENT_FEE_CODE_IS_FEEP_IN_LAST_90_DAYS_VIEW_BUILDER.address: "TODO(TN-1988): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NEGATIVE_ARREST_CHECK_IN_PAST_6_MONTHS_VIEW_BUILDER.address: "TODO(TN-1989): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NEGATIVE_ARREST_CHECK_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-1990): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NO_ARRESTS_IN_PAST_2_YEARS_VIEW_BUILDER.address: "TODO(TN-1991): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NO_ARRESTS_IN_PAST_6_MONTHS_VIEW_BUILDER.address: "TODO(TN-1993): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NO_ARRESTS_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-1991): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NO_ARRESTS_SINCE_INTAKE_SUPERVISION_LEVEL_VIEW_BUILDER.address: "TODO(TN-1994): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NO_RECENT_COMPLIANT_REPORTING_REJECTIONS_VIEW_BUILDER.address: "TODO(TN-1995): Migrate this reference off of legacy TOMIS 1.0 raw data",
         NO_WARRANT_WITHIN_2_YEARS_VIEW_BUILDER.address: "TODO(TN-1996): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        NOT_PERMANENTLY_REJECTED_FROM_COMPLIANT_REPORTING_VIEW_BUILDER.address: "TODO(TN-1997): Migrate this reference off of legacy TOMIS 1.0 raw data",
         SPECIAL_CONDITIONS_ARE_CURRENT_VIEW_BUILDER.address: "TODO(TN-1998): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
@@ -272,7 +240,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2000): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1999): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
