@@ -14452,11 +14452,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "region_code",
         "state_code",
     ],
-    BigQueryAddress.from_str("validation_views.opportunites_without_person_records"): [
-        "opportunity_type",
-        "region_code",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "validation_views.outlier_status_percent_change_exceeded"
     ): [
@@ -16063,18 +16058,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "other_reason",
         "person_id",
         "snoozed_by",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("workflows_views.person_record"): [
-        "all_eligible_opportunities",
-        "correctional_level",
-        "end_date",
-        "location",
-        "officer_id",
-        "person_id",
-        "person_name",
-        "pseudonymized_id",
         "start_date",
         "state_code",
     ],

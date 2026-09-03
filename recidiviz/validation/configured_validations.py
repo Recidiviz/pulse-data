@@ -425,8 +425,8 @@ from recidiviz.validation.views.state.workflows.missing_client_record_rows_null_
 from recidiviz.validation.views.state.workflows.missing_client_record_rows_unknown_reason import (
     MISSING_CLIENT_RECORD_ROWS_UNKNOWN_REASON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.opportunites_without_person_records import (
-    OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
+from recidiviz.validation.views.state.workflows.opportunities_without_surfaceable_people import (
+    OPPORTUNITIES_WITHOUT_SURFACEABLE_PEOPLE_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_missing_ids import (
     PSEUDONYMIZED_ID_TO_PERSON_ID_MISSING_IDS_VIEW_BUILDER,
@@ -690,7 +690,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
+            view_builder=OPPORTUNITIES_WITHOUT_SURFACEABLE_PEOPLE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

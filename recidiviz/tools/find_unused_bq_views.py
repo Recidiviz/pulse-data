@@ -201,9 +201,6 @@ from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_e
 from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_without_referral import (
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.person_record import (
-    PERSON_RECORD_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
@@ -277,10 +274,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
-    # TODO(Recidiviz/looker#589): Delete this view once it has been deleted out of
-    #  Looker (as of 7/28/25, it is currently referenced in an unused LookML view that
-    #  can be deleted.
-    PERSON_RECORD_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
