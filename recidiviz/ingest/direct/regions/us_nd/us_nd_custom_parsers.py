@@ -112,6 +112,15 @@ def are_new_offenses_violent(
     return any(violent_flags)
 
 
+def are_violation_offenses_violent(ncic_codes: str) -> bool:
+    """Returns whether any of the comma-separated NCIC codes are for violent offenses."""
+    return any(
+        extract_is_violent_from_ncic_code(code)
+        for code in ncic_codes.split(",")
+        if code
+    )
+
+
 def max_length_days_from_ymd(years: str, months: str, days: str) -> Optional[str]:
     result = safe_parse_days_from_duration_pieces(
         years_str=years, months_str=months, days_str=days

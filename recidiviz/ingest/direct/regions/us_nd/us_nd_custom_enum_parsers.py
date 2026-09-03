@@ -677,3 +677,19 @@ def parse_elite_supervision_violation_type(
             return StateSupervisionViolationType.ABSCONDED
         return StateSupervisionViolationType.TECHNICAL
     return StateSupervisionViolationType.INTERNAL_UNKNOWN
+
+
+def parse_new_crime_violation_type(
+    raw_text: str,
+) -> StateSupervisionViolationType:
+    """A parser that determines the violation type of a new crime violation from the
+    offense level of the most severe offense attached to it
+    (docstars_violation_crimes.OFFENSE_LEVEL). Uses the same code set as
+    docstars_offensestable.LEVEL."""
+    if raw_text.startswith("F"):
+        return StateSupervisionViolationType.FELONY
+    if raw_text.startswith("M"):
+        return StateSupervisionViolationType.MISDEMEANOR
+    if raw_text.startswith("I"):
+        return StateSupervisionViolationType.MUNICIPAL
+    return StateSupervisionViolationType.LAW

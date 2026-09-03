@@ -1,0 +1,211 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_docstars_supervision_violations` to the corresponding Ingest Object
+# fields.
+manifest_language: 1.0.0
+input_columns:
+  SID: STRING
+  violation_id: STRING
+  violation_date: DATETIME
+  VIOLATION_TYPE: STRING
+  TECHNICAL_VIOLATION: STRING
+  NEW_CRIME: STRING
+  ABSCONDER: STRING
+  FAILURE_TO_APPEAR: STRING
+  TECH_VIOLATION_TYPE: STRING
+  SEVERITY: STRING
+  assigned_officer_id: STRING
+  ncic_codes: STRING
+  most_severe_offense_level: STRING
+  response_codes: STRING
+  revocation_external_id: STRING
+  revocation_date: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    supervision_violations:
+      - StateSupervisionViolation:
+          # Violations from docstars_offendercasestable_with_officers are keyed on
+          # CASE_NUMBER, so these are prefixed to keep the two id spaces from colliding.
+          external_id:
+            $concat:
+              $values:
+                - $literal("DOCSTARS_VIOLATION")
+                - violation_id
+          violation_date: violation_date
+          is_violent:
+            $conditional:
+              - $if:
+                  $not_null: ncic_codes
+                $then:
+                  $custom:
+                    $function: us_nd_custom_parsers.are_violation_offenses_violent
+                    $args:
+                      ncic_codes: ncic_codes
+          violation_severity:
+            $enum_mapping:
+              $raw_text: SEVERITY
+              $mappings:
+                StateSupervisionViolationSeverity.HIGHEST:
+                  - "3" # High
+                StateSupervisionViolationSeverity.SECOND_HIGHEST:
+                  - "2" # Medium
+                StateSupervisionViolationSeverity.THIRD_HIGHEST:
+                  - "1" # Low
+          violation_metadata:
+            $conditional:
+              - $if:
+                  $not_null: TECH_VIOLATION_TYPE
+                $then:
+                  $json_dict:
+                    # Category of technical violation (T1-T18), defined in
+                    # docstars_reference_tables where TABLENAME = TECHVIOLATIONTYPES.
+                    TechnicalViolationType: TECH_VIOLATION_TYPE
+          # A violation can be of more than one type, and VIOLATION_TYPE and the flag
+          # columns do not always agree, so each type is recorded independently rather
+          # than picking a single winner.
+          supervision_violation_types:
+            - $conditional:
+                - $if:
+                    $or:
+                      - $in:
+                          $value: VIOLATION_TYPE
+                          $options:
+                            - $literal("TV") # Technical Violation
+                            - $literal("BC") # Bond Condition
+                            - $literal("PA") # Pretrial Agreement
+                      - $equal: [TECHNICAL_VIOLATION, $literal("Y")]
+                  $then:
+                    StateSupervisionViolationTypeEntry:
+                      violation_type: $literal_enum(StateSupervisionViolationType.TECHNICAL)
+            - $conditional:
+                - $if:
+                    $or:
+                      - $equal: [VIOLATION_TYPE, $literal("A")] # Absconded
+                      - $equal: [ABSCONDER, $literal("Y")]
+                      - $equal: [FAILURE_TO_APPEAR, $literal("Y")]
+                  $then:
+                    StateSupervisionViolationTypeEntry:
+                      violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
+            - $conditional:
+                - $if:
+                    $or:
+                      - $equal: [VIOLATION_TYPE, $literal("NC")] # New Crime
+                      - $equal: [NEW_CRIME, $literal("Y")]
+                  $then:
+                    StateSupervisionViolationTypeEntry:
+                      violation_type:
+                        $conditional:
+                          - $if:
+                              $not_null: most_severe_offense_level
+                            $then:
+                              $enum_mapping:
+                                $raw_text: most_severe_offense_level
+                                $custom_parser: us_nd_custom_enum_parsers.parse_new_crime_violation_type
+                          # Recorded as a new crime, but with no offense attached to say
+                          # what kind.
+                          - $else: $literal_enum(StateSupervisionViolationType.LAW)
+          supervision_violation_responses:
+            # The violation write-up itself, dated to the violation. Its decision
+            # entries are the responses the officer took.
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("DOCSTARS_VIOLATION")
+                      - violation_id
+                # US_ND only counts PERMANENT_DECISION responses toward a person's
+                # violation history (see UsNdViolationDelegate).
+                response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                response_date: violation_date
+                deciding_staff_external_id:
+                  $conditional:
+                    - $if:
+                        $not_null: assigned_officer_id
+                      $then: assigned_officer_id
+                deciding_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $not_null: assigned_officer_id
+                      $then: $literal("US_ND_DOCSTARS_OFFICER")
+                supervision_violation_response_decisions:
+                  - $foreach:
+                      $iterable: response_codes
+                      $result:
+                        StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - "OWR" # Deliver oral/written reprimand
+                                  - "EBE" # Establish behavioral expectations
+                                  - "NON" # Noncompliance meeting in office
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - "RC" # Review conditions (set limits/restrictions)
+                                  - "IR" # Increase reporting
+                                  - "RT" # Restrict travel
+                                  - "CFW" # Curfew
+                                  - "MCS" # Modify conditions of supervision
+                                  - "SGP" # SCRAM/GPS/Drug Patch
+                                  - "SUM" # Conduct/increase substance use monitoring
+                                  - "LWA" # Levy Wage Assignment
+                                StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                  - "CS" # Community Service
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                  - "RTX" # Referral for assessment/treatment
+                                  - "TFP" # Transitional Facility Placement
+                                StateSupervisionViolationResponseDecision.SPECIALIZED_COURT:
+                                  - "RTC" # Referral to Treatment Court
+                                  - "TCS" # Treatment Court Sanction
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - "48H" # 48 hour hold (probation only)
+                                  - "72H" # 72 hour hold (parole only)
+                                  - "30D" # 30 day hold (probation only)
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "WA" # Warrantless arrest (Rule 32 hold)
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - "PFR" # Petition for revocation
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - "HVC" # Home visit/compliance check
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - "CNV" # Client not available to implement response
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  # TODO(OBT-42974): No entry in the VIOLATIONRESPONSE
+                                  # lookup table; awaiting a definition from ND.
+                                  - "RDC"
+            # The revocation the violation gave rise to, dated to the start of the
+            # revocation proceeding rather than to the violation. US_ND only associates
+            # responses within 90 days of an incarceration admission with that
+            # admission, so this is the response that lets a revocation admission pick
+            # up the violation that caused it.
+            - $conditional:
+                - $if:
+                    $not_null: revocation_external_id
+                  $then:
+                    StateSupervisionViolationResponse:
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("DOCSTARS_REVOCATION")
+                            - violation_id
+                            - revocation_external_id
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                      response_date: revocation_date
+                      deciding_staff_external_id:
+                        $conditional:
+                          - $if:
+                              $not_null: assigned_officer_id
+                            $then: assigned_officer_id
+                      deciding_staff_external_id_type:
+                        $conditional:
+                          - $if:
+                              $not_null: assigned_officer_id
+                            $then: $literal("US_ND_DOCSTARS_OFFICER")
+                      supervision_violation_response_decisions:
+                        - StateSupervisionViolationResponseDecisionEntry:
+                            decision: $literal_enum(StateSupervisionViolationResponseDecision.REVOCATION)

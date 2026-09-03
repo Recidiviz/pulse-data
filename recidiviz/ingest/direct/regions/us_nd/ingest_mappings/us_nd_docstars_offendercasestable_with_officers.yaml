@@ -46,6 +46,7 @@ input_columns:
   recent_officer_siteid: STRING
   current_supervision_level: STRING
   SEXOFF: STRING
+  case_covered_by_violations_data: STRING
 unused_columns:
   - TERMINATING_OFFICER
   - SENT_TYPE
@@ -83,10 +84,15 @@ output:
           id_type: $literal("US_ND_SID")
     supervision_violations:
       - $conditional:
+          # Cases whose violations are recorded in the structured Docstars violations
+          # tables are hydrated by the docstars_supervision_violations view instead, so
+          # that the same violation is not counted twice.
           - $if:
-              $or:
-                - $not_null: REV_DATE
-                - $not_null: RevoDispo
+              $and:
+                - $is_null: case_covered_by_violations_data
+                - $or:
+                    - $not_null: REV_DATE
+                    - $not_null: RevoDispo
             $then:
               StateSupervisionViolation:
                 # We only generate at most a single violation per supervision period,
