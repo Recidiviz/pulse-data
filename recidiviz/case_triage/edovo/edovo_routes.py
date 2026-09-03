@@ -149,6 +149,21 @@ _FIELD_AND_TYPE_TO_CONSTRAINT: dict[tuple[str, str], _ConstraintLiteral] = {
     ("facility", "string_type"): "required",
 }
 
+# Stands in for the field name when the body failed to parse at all, so pydantic
+# reported no field to attribute the failure to.
+_UNPARSED_BODY_FIELD = "unknown"
+_UNPARSED_BODY_MESSAGE = "The request body could not be read as a JSON object."
+
+# Phrasing for each constraint, written here rather than taken from pydantic's
+# own message, which can quote the submitted value back.
+_CONSTRAINT_TO_PHRASE: dict[_ConstraintLiteral, str] = {
+    "gt_zero": "must be greater than 0",
+    "required": "is required",
+    "timezone_aware": "must include a timezone",
+    "invalid_state_code": "must be a supported state code",
+    "invalid": "is invalid",
+}
+
 
 def _log_audit(
     *,
@@ -181,22 +196,62 @@ def _log_audit(
     )
 
 
-def _map_pydantic_error(
+def _constraint_violations(
     exc: PydanticValidationError,
-) -> CourseCompletionValidationErrorResponse:
-    first = exc.errors()[0]
-    field = str(first["loc"][0]) if first["loc"] else "unknown"
-    error_type = first["type"]
+) -> list[tuple[str, _ConstraintLiteral]]:
+    """Returns one (field, constraint) pair per invalid field, in the order
+    pydantic reported them.
 
-    constraint: _ConstraintLiteral = (
-        _PYDANTIC_TYPE_TO_CONSTRAINT.get(error_type)
-        or _FIELD_AND_TYPE_TO_CONSTRAINT.get((field, error_type))
-        or "invalid"
+    An error carrying no location is the whole body failing to parse; it comes
+    back under _UNPARSED_BODY_FIELD. Where pydantic reports a field more than
+    once, the first is kept so each field is named once.
+    """
+    violations: list[tuple[str, _ConstraintLiteral]] = []
+    seen_fields: set[str] = set()
+    for error in exc.errors():
+        field = str(error["loc"][0]) if error["loc"] else _UNPARSED_BODY_FIELD
+        if field in seen_fields:
+            continue
+        seen_fields.add(field)
+        error_type = error["type"]
+        constraint: _ConstraintLiteral = (
+            _PYDANTIC_TYPE_TO_CONSTRAINT.get(error_type)
+            or _FIELD_AND_TYPE_TO_CONSTRAINT.get((field, error_type))
+            or "invalid"
+        )
+        violations.append((field, constraint))
+    return violations
+
+
+def _violations_message(violations: list[tuple[str, _ConstraintLiteral]]) -> str:
+    """Returns a message naming every invalid field and why it was rejected."""
+    return (
+        "; ".join(
+            _UNPARSED_BODY_MESSAGE.rstrip(".")
+            if field == _UNPARSED_BODY_FIELD
+            else f"{field} {_CONSTRAINT_TO_PHRASE[constraint]}"
+            for field, constraint in violations
+        )
+        + "."
     )
 
+
+def _pydantic_error_response(
+    violations: list[tuple[str, _ConstraintLiteral]],
+) -> CourseCompletionValidationErrorResponse:
+    """Returns the spec's 400 body, naming every invalid field in the message.
+
+    The spec fixes ``details`` at a single field and constraint, so it reports
+    the first violation; the message carries the rest, so Edovo can fix every
+    field in one pass instead of one per request.
+    """
+    if not violations:
+        raise ValueError("Expected at least one constraint violation, found none")
+    first_field, first_constraint = violations[0]
+
     return CourseCompletionValidationErrorResponse(
-        message=first["msg"],
-        details=ValidationErrorDetails(field=field, constraint=constraint),
+        message=_violations_message(violations),
+        details=ValidationErrorDetails(field=first_field, constraint=first_constraint),
     )
 
 
@@ -319,13 +374,14 @@ def create_edovo_api_blueprint() -> Blueprint:
         try:
             completion_request = CourseCompletionRequest.model_validate_json(body)
         except PydanticValidationError as exc:
-            validation_response = _map_pydantic_error(exc)
+            violations = _constraint_violations(exc)
+            validation_response = _pydantic_error_response(violations)
             _log_audit(
                 received_at=received_at,
                 idempotency_key=idempotency_key_header or None,
                 raw_body=body,
                 outcome=RequestOutcome.REJECTED,
-                reason=f"validation:{validation_response.details.field}",
+                reason=f"validation:{','.join(field for field, _ in violations)}",
             )
             return make_response(
                 jsonify(validation_response.model_dump()),

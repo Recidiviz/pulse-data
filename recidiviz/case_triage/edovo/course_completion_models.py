@@ -142,9 +142,10 @@ class CourseCompletionDuplicateResponse(BaseModel):
 class ValidationErrorDetails(BaseModel):
     """Field-level detail included in a 400 validation error response.
 
-    The blueprint is responsible for mapping a Pydantic ValidationError into
-    this shape: pick the first error from ``exc.errors()``, use its ``loc``
-    as ``field`` and map its ``type`` to one of the constraint literals below.
+    The blueprint maps a Pydantic ValidationError into this shape: the first
+    error from ``exc.errors()`` supplies ``field`` from its ``loc`` and one of
+    the constraint literals below from its ``type``. Where more than one field
+    is invalid, the others appear in the response message rather than here.
     """
 
     model_config = ConfigDict(frozen=True)

@@ -22,6 +22,7 @@ mocked. The database layer uses a real local Postgres instance.
 import json
 import os
 from http import HTTPStatus
+from typing import get_args
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -30,7 +31,9 @@ from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
 from recidiviz.case_triage.edovo.edovo_routes import (
+    _CONSTRAINT_TO_PHRASE,
     RequestOutcome,
+    _ConstraintLiteral,
     _redacted_body,
     create_edovo_api_blueprint,
 )
@@ -490,6 +493,68 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["error_code"], "VALIDATION_ERROR")
         self.assertEqual(data["details"]["constraint"], "timezone_aware")
+
+    def test_every_invalid_field_is_named_in_the_message(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "facility"}
+        body["content_hours"] = 0
+        body["state_code"] = "US_INVALID"
+        response = self._post(body=body)
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        message = response.get_json()["message"]
+        self.assertIn("facility is required", message)
+        self.assertIn("content_hours must be greater than 0", message)
+        self.assertIn("state_code must be a supported state code", message)
+
+    def test_details_reports_one_violation_while_message_reports_all(self) -> None:
+        # The spec pins details to a single field and constraint, so it names one
+        # violation even when the message lists several.
+        body = {k: v for k, v in _VALID_BODY.items() if k != "facility"}
+        body["content_hours"] = 0
+        data = self._post(body=body).get_json()
+        self.assertEqual(
+            {"field": "content_hours", "constraint": "gt_zero"}, data["details"]
+        )
+        self.assertIn("content_hours must be greater than 0", data["message"])
+        self.assertIn("facility is required", data["message"])
+
+    def test_validation_message_does_not_echo_submitted_values(self) -> None:
+        response = self._post(body={**_VALID_BODY, "state_code": "US_NOTAREALSTATE"})
+        data = response.get_json()
+        self.assertNotIn("US_NOTAREALSTATE", data["message"])
+        self.assertEqual("invalid_state_code", data["details"]["constraint"])
+
+    def test_unparsed_body_reports_that_the_body_could_not_be_read(self) -> None:
+        response = self.client.post(
+            "/edovo/course-completions",
+            data=b"not json at all",
+            content_type="application/json",
+            headers={
+                "Authorization": _AUTH_HEADER,
+                "Idempotency-Key": _IDEMPOTENCY_KEY,
+            },
+        )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        data = response.get_json()
+        self.assertEqual(
+            "The request body could not be read as a JSON object.", data["message"]
+        )
+        self.assertEqual("VALIDATION_ERROR", data["error_code"])
+
+    def test_every_constraint_has_a_phrase(self) -> None:
+        # A constraint with no phrase would raise a KeyError and turn a 400 into
+        # a 500 for Edovo.
+        self.assertEqual(set(get_args(_ConstraintLiteral)), set(_CONSTRAINT_TO_PHRASE))
+
+    def test_audit_reason_lists_every_invalid_field(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "facility"}
+        body["content_hours"] = 0
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            self._post(body=body)
+        reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
+        validation_reasons = [r for r in reasons if r and r.startswith("validation:")]
+        self.assertEqual(1, len(validation_reasons))
+        self.assertIn("facility", validation_reasons[0])
+        self.assertIn("content_hours", validation_reasons[0])
 
     def test_unmapped_field_failure_reports_generic_constraint(self) -> None:
         # course_name is required but has no specific constraint mapping.
