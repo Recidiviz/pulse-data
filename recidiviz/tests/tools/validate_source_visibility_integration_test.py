@@ -691,7 +691,6 @@ def test_admin_panel_server_dependencies() -> None:
                 "recidiviz.workflows",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
-                "recidiviz.eomis.us_co.constants",
             }
         ),
     )
@@ -737,7 +736,6 @@ def test_application_data_import_server_dependencies() -> None:
                 "recidiviz.workflows",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
-                "recidiviz.eomis.us_co.constants",
                 # Pulled in transitively by yaml_managed.datasets.
                 "recidiviz.datasets.static_data.terraform_managed.config",
             }
@@ -786,7 +784,6 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.segment",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
-                "recidiviz.eomis.us_co.constants",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
                 "recidiviz.utils",
@@ -829,7 +826,6 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
                 "recidiviz.datasets.static_data.views.dataset_config",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
-                "recidiviz.eomis.us_co.constants",
                 # Pulled in transitively by yaml_managed.datasets.
                 "recidiviz.datasets.static_data.terraform_managed.config",
             }
@@ -928,7 +924,6 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
-                "recidiviz.eomis.us_co.constants",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],
