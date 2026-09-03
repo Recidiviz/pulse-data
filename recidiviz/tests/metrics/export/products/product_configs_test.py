@@ -261,9 +261,13 @@ class TestRealProductConfigs(unittest.TestCase):
         product metric export is enabled for a given state.
         """
 
-        # TODO(#42928): MA JII pilot uses highly constrained raw data. Once we can ingest
-        # incarceration periods we can enable required pipelines and remove this exemption
-        state_code_exemptions = [StateCode.US_MA]
+        state_code_exemptions = [
+            # TODO(#42928): MA JII pilot uses highly constrained raw data. Once we can ingest
+            # incarceration periods we can enable required pipelines and remove this exemption
+            StateCode.US_MA,
+            # TODO(OBT-46551): Once we can ingest incarceration periods we can enable required pipelines and remove this exemption.
+            StateCode.US_NYC,
+        ]
 
         for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):

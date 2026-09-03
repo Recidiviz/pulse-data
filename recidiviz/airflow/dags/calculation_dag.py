@@ -389,12 +389,19 @@ def create_calculation_dag() -> None:
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
             metric_export_branches_by_state = metric_export_branches_by_state_code(
+                # For every state with any dataflow pipelines enabled, we can create
+                # metric exports, if any are configured for that state. There is a
+                # unittest in product_configs_test.py that enforces that metric
+                # pipelines are enabled before we enable any metric export.
+                # Sorted by group_id (not the bare state code) so DAG insertion order
+                # matches the alphabetical order of the branch group ids in
+                # topological_sort (which determines UI visual sorting). Sorting on the
+                # bare state code would order a state code that is a prefix of another
+                # wrong (e.g. US_NY before US_NYC), since the "_metric_exports" suffix
+                # flips the comparison.
                 allowed_metric_export_state_codes=sorted(
-                    # For every state with any dataflow pipelines enabled, we can create
-                    # metric exports, if any are configured for that state. There is a
-                    # unittest in product_configs_test.py that enforces that metric
-                    # pipelines are enabled before we enable any metric export.
-                    pipeline_branches_by_state.keys()
+                    pipeline_branches_by_state.keys(),
+                    key=lambda state_code: f"{state_code}_metric_exports",
                 )
             )
             create_branching_by_key(

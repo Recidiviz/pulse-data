@@ -294,5 +294,7 @@ products:
         environment: production
       - state_code: US_NE
         environment: production
+      - state_code: US_NYC
+        environment: production
       - state_code: US_TN
         environment: production
