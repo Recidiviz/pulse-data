@@ -38,10 +38,6 @@ _DATASETS_WITH_MULTIPLE_COLLECTIONS = {
     # externally-managed and YAML-managed packages. Consolidate them into one
     # package (and thus one collection) and drop this entry.
     "export_archives",
-    # TODO(OBT-45873): intercom_export schemas are split across the
-    # externally-managed and YAML-managed packages. Consolidate them into one
-    # package (and thus one collection) and drop this entry.
-    "intercom_export",
     # TODO(OBT-46736): collect_duplicative_us_mi_validation_oneoffs builds two
     # non-empty collections sharing this dataset. Merge them into one and drop
     # this entry.
