@@ -17,95 +17,9 @@
 """Views that are regularly updated and materialized as necessary via the deploy, and
 may be referenced in product exports.
 """
-import itertools
-import logging
-from typing import Dict, List, Set
+from typing import Dict, Set
 
-from recidiviz.aggregated_metrics.view_config import (
-    get_aggregated_metrics_view_builders,
-)
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.experiments_metadata.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.externally_shared_views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXTERNALLY_SHARED_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.state.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
-)
-from recidiviz.datasets.static_data.views.view_config import (
-    get_static_data_view_builders,
-)
-from recidiviz.ingest.direct.views.view_config import (
-    get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
-)
-from recidiviz.ingest.views.view_config import (
-    get_view_builders_for_views_to_update as get_ingest_infra_view_builders,
-)
-from recidiviz.llm_eval.label_studio.views.view_config import (
-    get_view_builders_for_views_to_update as get_label_studio_view_builders,
-)
-from recidiviz.llm_eval.llmaj.views.view_config import (
-    get_view_builders_for_views_to_update as get_llmaj_view_builders,
-)
-from recidiviz.monitoring.platform_kpis.view_config import (
-    get_platform_kpi_views_to_update,
-)
-from recidiviz.observations.view_config import (
-    get_view_builders_for_views_to_update as get_observations_view_builders,
-)
-from recidiviz.outcome_metrics.view_config import (
-    get_transitions_view_builders_for_views_to_update as get_transitions_view_builders,
-)
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.segment.view_config import (
-    get_view_builders_for_views_to_update as get_segment_view_builders,
-)
-from recidiviz.task_eligibility.view_config import (
-    get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
-)
-from recidiviz.utils import environment
-from recidiviz.validation.views.view_config import (
-    build_validation_metadata_view_builders,
-)
-from recidiviz.validation.views.view_config import (
-    get_view_builders_for_views_to_update as get_validation_view_builders,
-)
-
-
-def _all_view_builders_across_projects() -> List[BigQueryViewBuilder]:
-    logging.info("Gathering all view builders across projects...")
-    return list(
-        itertools.chain(
-            get_aggregated_metrics_view_builders(),
-            get_direct_ingest_view_builders(),
-            EXPERIMENTS_VIEW_BUILDERS,
-            EXTERNALLY_SHARED_VIEW_BUILDERS,
-            get_ingest_infra_view_builders(),
-            get_observations_view_builders(),
-            get_segment_view_builders(),
-            STATE_VIEW_BUILDERS,
-            get_task_eligibility_view_builders(),
-            get_validation_view_builders(),
-            build_validation_metadata_view_builders(),
-            get_platform_kpi_views_to_update(),
-            get_transitions_view_builders(),
-            get_static_data_view_builders(),
-            get_label_studio_view_builders(),
-            get_llmaj_view_builders(),
-        )
-    )
-
-
-@environment.local_only
-def all_view_builders_across_projects() -> List[BigQueryViewBuilder]:
-    """Returns a list of all view builders for views that are candidates for deploy.
-    Some of these views may not actually get deployed to a given project based on
-    the builder configuration.
-    """
-    return _all_view_builders_across_projects()
-
 
 # A list of all datasets that have ever held managed views that were updated by our
 # deploy process. This list is used to identify places where we should look for

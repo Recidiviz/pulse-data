@@ -845,10 +845,10 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
 # ============================================================================
 
 
-def test_view_registry_deployed_views_dependencies() -> None:
-    """Test that view_registry.deployed_views has valid dependencies."""
+def test_view_registry_deployed_view_graphs_dependencies() -> None:
+    """Test that view_registry.deployed_view_graphs has valid dependencies."""
     validate_dependencies_for_entrypoint(
-        "recidiviz.view_registry.deployed_views",
+        "recidiviz.view_registry.deployed_view_graphs",
         valid_module_prefixes=make_module_matcher(
             {
                 # general bq things and utils
@@ -870,6 +870,25 @@ def test_view_registry_deployed_views_dependencies() -> None:
                 "recidiviz.validation.views.dataset_config",
                 "recidiviz.source_tables",
                 "recidiviz.view_registry",
+                # source table collections assembled by
+                # collect_source_table_collections_hydrated_outside_view_graphs
+                "recidiviz.documents.config",
+                "recidiviz.documents.dataset_config",
+                "recidiviz.documents.extraction",
+                "recidiviz.documents.store",
+                "recidiviz.intercom.intercom_export_columns",
+                "recidiviz.monitoring.configs",
+                "recidiviz.monitoring.context",
+                "recidiviz.monitoring.ingest_enum_gauge",
+                "recidiviz.monitoring.instruments",
+                "recidiviz.monitoring.keys",
+                "recidiviz.monitoring.providers",
+                "recidiviz.monitoring.trace",
+                "recidiviz.monitoring.views",
+                "recidiviz.pipelines.ingest.constants",
+                "recidiviz.pipelines.ingest.identity",
+                "recidiviz.pipelines.ingest.transforms.types",
+                "recidiviz.pipelines.ingest.types",
                 # view code
                 "recidiviz.aggregated_metrics",
                 "recidiviz.calculator.query",

@@ -16,7 +16,9 @@
 # =============================================================================
 """Tests for deployed_view_graphs.py"""
 import unittest
+from unittest.mock import MagicMock, patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.source_tables.source_table_config import SourceTableUpdateGroup
 from recidiviz.utils.environment import (
     DATA_PLATFORM_GCP_PROJECTS,
@@ -28,9 +30,9 @@ from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.deployed_view_graphs import (
     CALCULATION_VIEW_GRAPH_NAME,
     builders_for_all_deployed_view_graphs,
+    builders_for_all_view_graphs_across_projects,
     deployed_view_graph_registry,
 )
-from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
 
 
 class TestDeployedViewGraphRegistry(unittest.TestCase):
@@ -46,7 +48,7 @@ class TestDeployedViewGraphRegistry(unittest.TestCase):
                 calculation_graph = registry.graph_for_name(CALCULATION_VIEW_GRAPH_NAME)
                 deployed_addresses = [
                     b.address
-                    for b in all_view_builders_across_projects()
+                    for b in builders_for_all_view_graphs_across_projects()
                     if b.should_deploy_in_project(project_id)
                 ]
                 graph_addresses = [b.address for b in calculation_graph.view_builders]
@@ -79,3 +81,38 @@ class TestDeployedViewGraphRegistry(unittest.TestCase):
                 rf"current project \[{GCP_PROJECT_STAGING}\]\.$",
             ):
                 deployed_view_graph_registry(GCP_PROJECT_PRODUCTION)
+
+
+class TestBuildersForAllViewGraphsAcrossProjects(unittest.TestCase):
+    """Tests for builders_for_all_view_graphs_across_projects()."""
+
+    def test_deployed_builders_are_drawn_from_the_cross_project_roster(self) -> None:
+        """Ensure each graph's project-filtered builders come from its cross-project
+        roster."""
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            with self.subTest(project_id=project_id), local_project_id_override(
+                project_id
+            ):
+                roster_addresses = {
+                    b.address for b in builders_for_all_view_graphs_across_projects()
+                }
+                deployed_addresses = {
+                    b.address
+                    for graph in deployed_view_graph_registry(project_id).view_graphs
+                    for b in graph.view_builders
+                }
+                unrostered_addresses = deployed_addresses - roster_addresses
+                self.assertEqual(
+                    set(),
+                    unrostered_addresses,
+                    f"Views deployed to [{project_id}] that no view graph's "
+                    f"cross-project roster contains: "
+                    f"{BigQueryAddress.addresses_to_str(unrostered_addresses)}",
+                )
+
+    @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
+    def test_cross_project_rosters_unavailable_in_gcp(self) -> None:
+        with self.assertRaisesRegex(
+            RuntimeError, r"^Not available, see service logs\.$"
+        ):
+            builders_for_all_view_graphs_across_projects()

@@ -29,7 +29,9 @@ from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RAW_DATA_REFERENCES_YAML,
     RawDataReferenceReasonsYamlLoader,
 )
-from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_view_graphs_across_projects,
+)
 
 
 class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
@@ -53,7 +55,7 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
         cls.project_id_patcher.start().return_value = "recidiviz-testing"
         cls.yaml_data = RawDataReferenceReasonsYamlLoader.get_yaml_data()
         cls.deployed_views_references = find_direct_raw_data_references(
-            all_view_builders_across_projects()
+            builders_for_all_view_graphs_across_projects()
         )
 
     def tearDown(self) -> None:

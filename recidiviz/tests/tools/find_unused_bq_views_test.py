@@ -22,7 +22,9 @@ from recidiviz.tools.find_unused_bq_views import (
     UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON,
     get_unused_across_all_projects_addresses_from_all_views_dag,
 )
-from recidiviz.view_registry.deployed_views import all_view_builders_across_projects
+from recidiviz.view_registry.deployed_view_graphs import (
+    builders_for_all_view_graphs_across_projects,
+)
 
 
 class TestFindUnusedBQViews(unittest.TestCase):
@@ -65,7 +67,7 @@ class TestFindUnusedBQViews(unittest.TestCase):
         )
 
         all_views: set[BigQueryAddress] = set(
-            vb.address for vb in all_view_builders_across_projects()
+            vb.address for vb in builders_for_all_view_graphs_across_projects()
         )
 
         # Get views that are marked as unused in the exemption list, but aren't actually
