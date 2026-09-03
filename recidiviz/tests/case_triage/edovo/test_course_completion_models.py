@@ -25,11 +25,14 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     CourseCompletionAcceptedResponse,
     CourseCompletionAlreadyCompletedResponse,
     CourseCompletionDuplicateResponse,
+    CourseCompletionPersonNameMismatchResponse,
     CourseCompletionPersonNotFoundResponse,
     CourseCompletionRequest,
     CourseCompletionValidationErrorResponse,
     ValidationErrorDetails,
 )
+
+_RECEIVED_AT = datetime(2026, 4, 23, 17, 45, 0, tzinfo=timezone.utc)
 
 VALID_PAYLOAD = {
     "person_external_id": "012345",
@@ -38,6 +41,9 @@ VALID_PAYLOAD = {
     "course_name": "Course Foo Bar",
     "content_hours": 4.5,
     "completed_at": "2026-04-23T17:42:00Z",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "facility": "CDOC-XYZ",
 }
 
 
@@ -56,6 +62,9 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(
             req.completed_at, datetime(2026, 4, 23, 17, 42, 0, tzinfo=timezone.utc)
         )
+        self.assertEqual(req.first_name, "Jane")
+        self.assertEqual(req.last_name, "Doe")
+        self.assertEqual(req.facility, "CDOC-XYZ")
 
         dumped = req.model_dump(mode="json")
         self.assertEqual(dumped["person_external_id"], "012345")
@@ -64,6 +73,9 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(dumped["course_name"], "Course Foo Bar")
         self.assertEqual(dumped["content_hours"], "4.5")
         self.assertEqual(dumped["completed_at"], "2026-04-23T17:42:00Z")
+        self.assertEqual(dumped["first_name"], "Jane")
+        self.assertEqual(dumped["last_name"], "Doe")
+        self.assertEqual(dumped["facility"], "CDOC-XYZ")
 
     # --- content_hours validation ---
 
@@ -169,6 +181,83 @@ class TestCourseCompletionRequest(TestCase):
                 {k: v for k, v in VALID_PAYLOAD.items() if k != "completed_at"}
             )
 
+    def test_missing_first_name_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate(
+                {k: v for k, v in VALID_PAYLOAD.items() if k != "first_name"}
+            )
+
+    def test_missing_last_name_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate(
+                {k: v for k, v in VALID_PAYLOAD.items() if k != "last_name"}
+            )
+
+    def test_missing_facility_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate(
+                {k: v for k, v in VALID_PAYLOAD.items() if k != "facility"}
+            )
+
+    def test_null_first_name_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate(
+                {**VALID_PAYLOAD, "first_name": None}
+            )
+
+    def test_null_last_name_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate({**VALID_PAYLOAD, "last_name": None})
+
+    def test_null_facility_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            CourseCompletionRequest.model_validate({**VALID_PAYLOAD, "facility": None})
+
+    def _assert_rejected_as_blank(self, payload: dict, field: str) -> None:
+        """Asserts |payload| fails validation on |field| and nothing else.
+
+        A blank name would otherwise fail the name check as a mismatch,
+        reporting identifier drift for a request that simply omitted a value.
+        """
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate(payload)
+        errors = cm.exception.errors()
+        self.assertEqual(1, len(errors))
+        self.assertEqual((field,), errors[0]["loc"])
+
+    def test_empty_first_name_raises(self) -> None:
+        self._assert_rejected_as_blank(
+            {**VALID_PAYLOAD, "first_name": ""}, "first_name"
+        )
+
+    def test_whitespace_first_name_raises(self) -> None:
+        self._assert_rejected_as_blank(
+            {**VALID_PAYLOAD, "first_name": "   "}, "first_name"
+        )
+
+    def test_empty_last_name_raises(self) -> None:
+        self._assert_rejected_as_blank({**VALID_PAYLOAD, "last_name": ""}, "last_name")
+
+    def test_whitespace_last_name_raises(self) -> None:
+        self._assert_rejected_as_blank(
+            {**VALID_PAYLOAD, "last_name": "   "}, "last_name"
+        )
+
+    def test_empty_facility_raises(self) -> None:
+        self._assert_rejected_as_blank({**VALID_PAYLOAD, "facility": ""}, "facility")
+
+    def test_whitespace_facility_raises(self) -> None:
+        self._assert_rejected_as_blank({**VALID_PAYLOAD, "facility": "   "}, "facility")
+
+    def test_name_is_preserved_verbatim(self) -> None:
+        """Normalization is a comparison-time concern; what Edovo sent is what
+        we persist."""
+        req = CourseCompletionRequest.model_validate(
+            {**VALID_PAYLOAD, "first_name": "  Jane ", "last_name": "O'Brien-Doe"}
+        )
+        self.assertEqual("  Jane ", req.first_name)
+        self.assertEqual("O'Brien-Doe", req.last_name)
+
 
 class TestResponseModels(TestCase):
     """Tests for the course-completion response models and their serialized shapes."""
@@ -180,9 +269,12 @@ class TestResponseModels(TestCase):
         self.assertEqual(resp.message, "Course completion recorded.")
 
     def test_duplicate_response(self) -> None:
-        resp = CourseCompletionDuplicateResponse(completion_id="rec_abc123")
+        resp = CourseCompletionDuplicateResponse(
+            completion_id="rec_abc123", originally_received_at=_RECEIVED_AT
+        )
         self.assertEqual(resp.status, "duplicate")
         self.assertEqual(resp.completion_id, "rec_abc123")
+        self.assertEqual(resp.originally_received_at, _RECEIVED_AT)
         self.assertEqual(resp.message, "This completion was already recorded.")
 
     def test_validation_error_response(self) -> None:
@@ -212,9 +304,25 @@ class TestResponseModels(TestCase):
         self.assertEqual(resp.error_code, "PERSON_NOT_FOUND")
 
     def test_already_completed_response(self) -> None:
-        resp = CourseCompletionAlreadyCompletedResponse()
+        resp = CourseCompletionAlreadyCompletedResponse(
+            completion_id="rec_abc123", originally_received_at=_RECEIVED_AT
+        )
         self.assertEqual(resp.status, "error")
         self.assertEqual(resp.error_code, "ALREADY_COMPLETED")
+        self.assertEqual(resp.completion_id, "rec_abc123")
+        self.assertEqual(resp.originally_received_at, _RECEIVED_AT)
         self.assertEqual(
             resp.message, "This person has already received credit for this course."
         )
+
+    def test_person_name_mismatch_response(self) -> None:
+        resp = CourseCompletionPersonNameMismatchResponse(
+            message=(
+                "The provided person_external_id belongs to a person with a "
+                "different name in our records."
+            ),
+            mismatched_fields=["last_name"],
+        )
+        self.assertEqual(resp.status, "error")
+        self.assertEqual(resp.error_code, "PERSON_NAME_MISMATCH")
+        self.assertEqual(["last_name"], resp.mismatched_fields)

@@ -84,6 +84,9 @@ def _build_payload() -> dict[str, object]:
         "course_name": "Smoke Test Course",
         "content_hours": 3.5,
         "completed_at": "2026-06-08T12:00:00Z",
+        "first_name": "Smoke",
+        "last_name": "Tester",
+        "facility": "SMOKE-TEST-FACILITY",
     }
 
 
@@ -122,7 +125,7 @@ def main() -> None:
     headers = {"Authorization": _AUTH_HEADER}
 
     with patch(f"{_MODULE}.BigQueryClientImpl") as mock_bq_cls, patch(
-        f"{_MODULE}.assert_person_exists", return_value=None
+        f"{_MODULE}.verify_person_identity", return_value=None
     ), patch(f"{_WIF_MODULE}.requests.get", return_value=_mock_tokeninfo()), patch.dict(
         os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": _FAKE_SA_UNIQUE_ID}
     ):

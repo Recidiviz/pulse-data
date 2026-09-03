@@ -51,6 +51,9 @@ _VALID_PAYLOAD: dict[str, object] = {
     "course_name": "Introduction to Reading",
     "content_hours": 3.5,
     "completed_at": "2026-04-23T17:42:00Z",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "facility": "CDOC-XYZ",
 }
 
 
@@ -166,9 +169,41 @@ class TestPersistCompletion(TestCase):
         with SessionFactory.using_database(self.database_key) as session:
             persist_completion(session, request, uuid.uuid4(), _RECEIVED_AT)
 
-        with self.assertRaises(AlreadyCompletedError):
+        with self.assertRaisesRegex(
+            AlreadyCompletedError,
+            r"^This person has already received credit for this course\.$",
+        ):
             with SessionFactory.using_database(self.database_key) as session:
                 persist_completion(session, request, uuid.uuid4(), _RECEIVED_AT)
+
+    def test_already_completed_error_carries_the_original_record(self) -> None:
+        """The endpoint reports the original submission back to Edovo, so the
+        error has to name which record already holds the credit."""
+        request = CourseCompletionRequest.model_validate(_VALID_PAYLOAD)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            original, _ = persist_completion(
+                session, request, uuid.uuid4(), _RECEIVED_AT
+            )
+            original_id = original.id
+
+        with SessionFactory.using_database(self.database_key) as session:
+            with self.assertRaisesRegex(
+                AlreadyCompletedError,
+                r"^This person has already received credit for this course\.$",
+            ) as cm:
+                persist_completion(session, request, uuid.uuid4(), _RECEIVED_AT)
+            self.assertEqual(original_id, cm.exception.existing.id)
+            self.assertEqual(_RECEIVED_AT, cm.exception.existing.received_at)
+
+    def test_name_and_facility_are_written(self) -> None:
+        request = CourseCompletionRequest.model_validate(_VALID_PAYLOAD)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            record, _ = persist_completion(session, request, uuid.uuid4(), _RECEIVED_AT)
+            self.assertEqual("Jane", record.first_name)
+            self.assertEqual("Doe", record.last_name)
+            self.assertEqual("CDOC-XYZ", record.facility)
 
     def test_different_courses_for_same_person_are_independent(self) -> None:
         request_a = CourseCompletionRequest.model_validate(_VALID_PAYLOAD)

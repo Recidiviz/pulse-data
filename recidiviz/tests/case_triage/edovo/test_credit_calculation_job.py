@@ -71,6 +71,9 @@ def _make_completion(course_id: str, content_hours: float) -> EdovoCourseComplet
         state_code=_STATE_CODE,
         course_id=course_id,
         course_name="Test Course",
+        first_name="Test",
+        last_name="Learner",
+        facility="TEST-FACILITY",
         content_hours=content_hours,
         completed_at=_COMPLETED_AT,
     )

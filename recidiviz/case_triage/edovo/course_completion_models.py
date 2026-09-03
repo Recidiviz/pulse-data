@@ -19,15 +19,23 @@
 Request shape: POST /edovo/course-completions
 Response shapes: accepted (201), duplicate (200), validation error (400),
 unauthenticated (401), forbidden (403), person not found (422),
-already completed (422).
+person name mismatch (422), already completed (422).
 """
 from decimal import Decimal
 from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator
 
+from recidiviz.case_triage.edovo.name_matching import normalized_name
 from recidiviz.case_triage.edovo.supported_states import SUPPORTED_STATES
 from recidiviz.common.constants.states import StateCode
+
+MismatchedNameField = Literal["first_name", "last_name"]
+"""A submitted field that the name check can report as disagreeing with our
+records. Only the name fields verify the id, so only they can mismatch."""
+
+FIRST_NAME_FIELD: MismatchedNameField = "first_name"
+LAST_NAME_FIELD: MismatchedNameField = "last_name"
 
 
 class CourseCompletionRequest(BaseModel):
@@ -35,14 +43,51 @@ class CourseCompletionRequest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    # The state's external, DOC-facing identifier for the learner (e.g. the CO
-    # ADC number) — NOT the Recidiviz-internal integer person_id.
+    # The DOC-facing id (e.g. a CO ADC number), not the internal person_id.
     person_external_id: str
     state_code: str
     course_id: str
     course_name: str
     content_hours: Decimal
     completed_at: AwareDatetime
+    # The name verifies the person_external_id match rather than resolving a
+    # person itself; the facility says which system issued the id.
+    first_name: str
+    last_name: str
+    facility: str
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def must_be_a_usable_name(cls, v: str) -> str:
+        """Rejects a name the comparison could not use.
+
+        A name with no letters — blank, whitespace, or punctuation like '--' —
+        still reaches the name check and still fails it, but it fails as a
+        *mismatch*, telling Edovo their record disagrees with ours when in fact
+        they sent us nothing usable. That would send them to reconcile a
+        discrepancy that does not exist, so it is refused here as the malformed
+        request it is.
+
+        Usability is judged with the same normalization the comparison uses, so
+        the two cannot disagree about what counts as a name. This mirrors how a
+        stored name with no letters is treated: see ``name_matching``.
+        """
+        if not normalized_name(v):
+            raise ValueError("must contain at least one letter")
+        return v
+
+    @field_validator("facility")
+    @classmethod
+    def must_not_be_blank(cls, v: str) -> str:
+        """Rejects a facility that is present but carries no value.
+
+        Unlike a name, a facility identifier is never compared to anything we
+        hold, and may legitimately be all digits — so it only has to be
+        non-empty.
+        """
+        if not v.strip():
+            raise ValueError("must not be blank")
+        return v
 
     @field_validator("state_code")
     @classmethod
@@ -68,11 +113,6 @@ class CourseCompletionRequest(BaseModel):
         return SUPPORTED_STATES[StateCode(self.state_code)]
 
 
-# ---------------------------------------------------------------------------
-# Response models
-# ---------------------------------------------------------------------------
-
-
 class CourseCompletionAcceptedResponse(BaseModel):
     """201 Created — the completion was recorded for the first time."""
 
@@ -84,12 +124,18 @@ class CourseCompletionAcceptedResponse(BaseModel):
 
 
 class CourseCompletionDuplicateResponse(BaseModel):
-    """200 OK — idempotent replay of a previously recorded completion."""
+    """200 OK — idempotent replay of a previously recorded completion.
+
+    ``originally_received_at`` is when we recorded the first request carrying
+    this idempotency key, so Edovo can tell a retry of their own from a replay
+    of something sent much earlier (e.g. during a backfill).
+    """
 
     model_config = ConfigDict(frozen=True)
 
     status: Literal["duplicate"] = "duplicate"
     completion_id: str
+    originally_received_at: AwareDatetime
     message: str = "This completion was already recorded."
 
 
@@ -136,10 +182,34 @@ class CourseCompletionPersonNotFoundResponse(CourseCompletionErrorResponse):
 
 
 class CourseCompletionAlreadyCompletedResponse(CourseCompletionErrorResponse):
-    """422 Unprocessable Content — person + course pair already recorded under a different idempotency key."""
+    """422 Unprocessable Content — person + course pair already recorded under a different idempotency key.
+
+    Carries the original submission's ``completion_id`` and
+    ``originally_received_at`` so Edovo can find what we already hold instead of
+    only learning that something exists.
+    """
 
     error_code: Literal["ALREADY_COMPLETED"] = "ALREADY_COMPLETED"
     message: str = "This person has already received credit for this course."
+    completion_id: str
+    originally_received_at: AwareDatetime
+
+
+class CourseCompletionPersonNameMismatchResponse(CourseCompletionErrorResponse):
+    """422 Unprocessable Content — the external id resolves, but to another name.
+
+    This is the identifier-drift signal Edovo asked for: we hold this id, but
+    against a different person than the one they sent. ``mismatched_fields``
+    names the submitted fields that matched no record we hold, and echoes
+    neither name back.
+    """
+
+    error_code: Literal["PERSON_NAME_MISMATCH"] = "PERSON_NAME_MISMATCH"
+    message: str = (
+        "The provided person_external_id belongs to a person with a different "
+        "name in our records."
+    )
+    mismatched_fields: list[MismatchedNameField]
 
 
 class CourseCompletionUnauthenticatedResponse(CourseCompletionErrorResponse):

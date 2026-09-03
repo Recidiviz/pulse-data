@@ -16,7 +16,7 @@
 # =============================================================================
 """Integration tests for the Edovo course-completion Flask blueprint.
 
-External dependencies (WIF token verification, BigQuery person existence check) are
+External dependencies (WIF token verification, BigQuery person identity check) are
 mocked. The database layer uses a real local Postgres instance.
 """
 import json
@@ -31,11 +31,13 @@ from werkzeug.test import TestResponse
 
 from recidiviz.case_triage.edovo.edovo_routes import (
     RequestOutcome,
+    _redacted_body,
     create_edovo_api_blueprint,
 )
-from recidiviz.case_triage.edovo.person_existence import (
+from recidiviz.case_triage.edovo.person_verification import (
+    PersonNameMismatchError,
     PersonNotFoundError,
-    assert_person_exists,
+    verify_person_identity,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -52,10 +54,12 @@ from recidiviz.utils.flask_exception import FlaskException
 
 MODULE = "recidiviz.case_triage.edovo.edovo_routes"
 WIF_MODULE = "recidiviz.case_triage.edovo.wif_verifier"
-PERSON_EXISTENCE_MODULE = "recidiviz.case_triage.edovo.person_existence"
+PERSON_VERIFICATION_MODULE = "recidiviz.case_triage.edovo.person_verification"
 
 _DOC_ID = "A123456"
 _WIF_SA_UNIQUE_ID = "123456789012345678901"
+_FIRST_NAME = "Jane"
+_LAST_NAME = "Doe"
 
 _VALID_BODY: dict[str, object] = {
     "person_external_id": _DOC_ID,
@@ -64,6 +68,9 @@ _VALID_BODY: dict[str, object] = {
     "course_name": "Introduction to Reading",
     "content_hours": 3.5,
     "completed_at": "2026-04-23T17:42:00Z",
+    "first_name": _FIRST_NAME,
+    "last_name": _LAST_NAME,
+    "facility": "CDOC-XYZ",
 }
 
 _AUTH_HEADER = "Bearer some.jwt.token"
@@ -115,7 +122,7 @@ class TestEdovoRoutes(TestCase):
         self.mock_bq_client = MagicMock()
         mock_bq_cls.return_value = self.mock_bq_client
 
-        self.resolve_patcher = patch(f"{MODULE}.assert_person_exists")
+        self.resolve_patcher = patch(f"{MODULE}.verify_person_identity")
         self.mock_resolve = self.resolve_patcher.start()
         self.mock_resolve.return_value = None
 
@@ -164,12 +171,64 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["status"], "error")
         self.assertEqual(data["error_code"], "FORBIDDEN")
-        # error_code stays the stable machine value; the human message carries
-        # the description and the specific verifier code.
+        # error_code stays the stable machine value.
         self.assertIn("wrong service account", data["message"])
         self.assertIn("wrong_identity", data["message"])
         mock_audit.assert_called_once()
         self.assertEqual(mock_audit.call_args.kwargs["reason"], "auth:wrong_identity")
+
+    def test_audit_log_redacts_the_learner_name(self) -> None:
+        """The audit record needs the identifier, course and timestamp to
+        reconcile with Edovo — not the learner's name.
+
+        Asserted against what the handler actually emitted, so that wiring
+        ``_log_audit`` to something other than ``_redacted_body`` fails here.
+        """
+        with self.assertLogs(level="INFO") as logs:
+            self._post()
+        emitted = "\n".join(logs.output)
+
+        self.assertIn("Edovo course-completion request", emitted)
+        self.assertNotIn(_FIRST_NAME, emitted)
+        self.assertNotIn(_LAST_NAME, emitted)
+        self.assertIn("[REDACTED]", emitted)
+
+    def test_audit_log_keeps_the_course_and_identifier(self) -> None:
+        """Redaction must not cost the fields reconciliation runs on."""
+        with self.assertLogs(level="INFO") as logs:
+            self._post()
+        emitted = "\n".join(logs.output)
+
+        self.assertIn(_DOC_ID, emitted)
+        self.assertIn("course-001", emitted)
+
+    def test_redaction_leaves_the_rest_of_the_body_byte_for_byte(self) -> None:
+        """The record exists to settle what Edovo sent, so nothing but the name
+        may change — no renumbering, reordering, or dropped duplicates."""
+        self.assertEqual(
+            '{"content_hours": 1e2, "first_name": "[REDACTED]", "course_id": "c1"}',
+            _redacted_body(
+                b'{"content_hours": 1e2, "first_name": "Jane", "course_id": "c1"}'
+            ),
+        )
+
+    def test_redaction_covers_a_name_cut_off_mid_value(self) -> None:
+        """A payload truncated inside the name still carries the part that
+        arrived, so the prefix must not reach the log either."""
+        self.assertEqual(
+            '{"first_name": "[REDACTED]"', _redacted_body(b'{"first_name": "Jan')
+        )
+
+    def test_audit_log_redacts_a_name_in_a_body_that_does_not_parse(self) -> None:
+        """A truncated payload still carries a name, so the fallback path has to
+        redact it too."""
+        logged_body = _redacted_body(
+            b'{"first_name": "Jane", "last_name": "Doe", "course_id": "c1"'
+        )
+
+        self.assertNotIn("Jane", logged_body)
+        self.assertNotIn("Doe", logged_body)
+        self.assertIn("c1", logged_body)
 
     def test_retry_with_same_idempotency_key_returns_200(self) -> None:
         self._post()
@@ -220,15 +279,185 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["error_code"], "PERSON_NOT_FOUND")
 
+    def test_name_mismatch_returns_422(self) -> None:
+        self.mock_resolve.side_effect = PersonNameMismatchError(
+            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
+        )
+        response = self._post()
+        self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
+        data = response.get_json()
+        self.assertEqual(data["error_code"], "PERSON_NAME_MISMATCH")
+        self.assertEqual(["last_name"], data["mismatched_fields"])
+
+    def test_name_mismatch_does_not_echo_the_submitted_name_or_id(self) -> None:
+        self.mock_resolve.side_effect = PersonNameMismatchError(
+            person_external_id=_DOC_ID,
+            mismatched_fields=["first_name", "last_name"],
+        )
+        response = self._post()
+        body = response.get_data(as_text=True)
+        self.assertNotIn(_DOC_ID, body)
+        self.assertNotIn(_FIRST_NAME, body)
+        self.assertNotIn(_LAST_NAME, body)
+
+    def test_name_mismatch_is_audited_with_the_mismatched_fields(self) -> None:
+        self.mock_resolve.side_effect = PersonNameMismatchError(
+            person_external_id=_DOC_ID,
+            mismatched_fields=["first_name", "last_name"],
+        )
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            self._post()
+        self.assertEqual(
+            "person_name_mismatch:first_name,last_name",
+            mock_audit.call_args.kwargs["reason"],
+        )
+
+    def test_name_mismatch_persists_nothing(self) -> None:
+        self.mock_resolve.side_effect = PersonNameMismatchError(
+            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
+        )
+        self._post()
+        self.assertEqual([], self._stored_external_ids())
+
     def test_already_completed_returns_422(self) -> None:
         self._post()
-        # The same person+course pair submitted under a *different* idempotency
-        # key is a genuinely new request, so it trips the no_double_credit
-        # constraint rather than the idempotent-replay path.
+        # The same person+course under a different key is a new request, so it
+        # trips no_double_credit rather than the replay path.
         response = self._post(idempotency_key=_OTHER_IDEMPOTENCY_KEY)
         self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
         data = response.get_json()
         self.assertEqual(data["error_code"], "ALREADY_COMPLETED")
+
+    def test_already_completed_points_at_the_original_completion(self) -> None:
+        """Edovo asked to be told what we already hold, not just that something
+        exists, so the rejection carries the first submission's id and time."""
+        first = self._post()
+        response = self._post(idempotency_key=_OTHER_IDEMPOTENCY_KEY)
+
+        data = response.get_json()
+        self.assertEqual(first.get_json()["completion_id"], data["completion_id"])
+        self.assertIsNotNone(data["originally_received_at"])
+
+    def test_replay_is_answered_without_reverifying_identity(self) -> None:
+        """A key we already accepted is answered from what we recorded, so a
+        replay costs no BigQuery call."""
+        self._post()
+        self.mock_resolve.reset_mock()
+
+        response = self._post()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual("duplicate", response.get_json()["status"])
+        self.mock_resolve.assert_not_called()
+
+    def test_replay_survives_a_name_change_on_our_side(self) -> None:
+        """Our stored name can change after we accept a completion (a
+        correction, a re-ingest). Re-verifying a replay would turn a settled
+        completion into a 422, breaking the idempotency guarantee."""
+        self._post()
+        self.mock_resolve.side_effect = PersonNameMismatchError(
+            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
+        )
+
+        response = self._post()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual("duplicate", response.get_json()["status"])
+
+    def test_replay_of_a_malformed_body_still_returns_the_original(self) -> None:
+        """The Idempotency-Key identifies the request, so once a key names a
+        completion we recorded, the recorded answer is returned even if the
+        replayed body no longer validates."""
+        first = self._post()
+
+        response = self._post(body={"nonsense": True})
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        data = response.get_json()
+        self.assertEqual("duplicate", data["status"])
+        self.assertEqual(first.get_json()["completion_id"], data["completion_id"])
+
+    def test_a_malformed_body_under_a_new_key_is_still_rejected(self) -> None:
+        """Answering replays early must not weaken validation for a key we have
+        not seen."""
+        response = self._post(
+            body={"nonsense": True}, idempotency_key=_OTHER_IDEMPOTENCY_KEY
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual("VALIDATION_ERROR", response.get_json()["error_code"])
+
+    def test_replay_is_audited_as_a_duplicate(self) -> None:
+        self._post()
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            self._post()
+        self.assertEqual(
+            RequestOutcome.DUPLICATE, mock_audit.call_args.kwargs["outcome"]
+        )
+
+    def test_duplicate_reports_when_the_original_was_received(self) -> None:
+        """A replay is distinguishable from a fresh retry only if we say when we
+        first recorded it."""
+        self._post()
+        response = self._post()
+
+        data = response.get_json()
+        self.assertEqual("duplicate", data["status"])
+        self.assertIsNotNone(data["originally_received_at"])
+
+    def _assert_rejected_as_required(self, response: TestResponse, field: str) -> None:
+        """Asserts |response| is a 400 naming |field| as a required field."""
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        data = response.get_json()
+        self.assertEqual(data["error_code"], "VALIDATION_ERROR")
+        self.assertEqual(data["details"]["field"], field)
+        self.assertEqual(data["details"]["constraint"], "required")
+
+    def test_blank_first_name_returns_400_as_a_missing_field(self) -> None:
+        response = self._post(body={**_VALID_BODY, "first_name": "   "})
+        self._assert_rejected_as_required(response, "first_name")
+
+    def test_blank_last_name_returns_400_as_a_missing_field(self) -> None:
+        response = self._post(body={**_VALID_BODY, "last_name": "   "})
+        self._assert_rejected_as_required(response, "last_name")
+
+    def test_blank_facility_returns_400_as_a_missing_field(self) -> None:
+        response = self._post(body={**_VALID_BODY, "facility": "   "})
+        self._assert_rejected_as_required(response, "facility")
+
+    def test_null_first_name_returns_400_as_a_missing_field(self) -> None:
+        """A JSON null is as absent as a blank string, so it is reported the
+        same way rather than as a generic type error."""
+        response = self._post(body={**_VALID_BODY, "first_name": None})
+        self._assert_rejected_as_required(response, "first_name")
+
+    def test_null_last_name_returns_400_as_a_missing_field(self) -> None:
+        response = self._post(body={**_VALID_BODY, "last_name": None})
+        self._assert_rejected_as_required(response, "last_name")
+
+    def test_null_facility_returns_400_as_a_missing_field(self) -> None:
+        response = self._post(body={**_VALID_BODY, "facility": None})
+        self._assert_rejected_as_required(response, "facility")
+
+    def test_missing_first_name_returns_400(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "first_name"}
+        self._assert_rejected_as_required(self._post(body=body), "first_name")
+
+    def test_missing_last_name_returns_400(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "last_name"}
+        self._assert_rejected_as_required(self._post(body=body), "last_name")
+
+    def test_missing_facility_returns_400(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "facility"}
+        self._assert_rejected_as_required(self._post(body=body), "facility")
+
+    def test_name_and_facility_are_persisted(self) -> None:
+        self._post()
+        with SessionFactory.using_database(self.database_key) as session:
+            record = session.query(EdovoCourseCompletion).one()
+            self.assertEqual(_FIRST_NAME, record.first_name)
+            self.assertEqual(_LAST_NAME, record.last_name)
+            self.assertEqual("CDOC-XYZ", record.facility)
 
     def test_missing_required_field_returns_400(self) -> None:
         body = {k: v for k, v in _VALID_BODY.items() if k != "course_id"}
@@ -264,7 +493,6 @@ class TestEdovoRoutes(TestCase):
 
     def test_unmapped_field_failure_reports_generic_constraint(self) -> None:
         # course_name is required but has no specific constraint mapping.
-        # The previous mapper would have mislabeled this as "invalid_state_code".
         response = self._post(body={**_VALID_BODY, "course_name": 12345})
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         data = response.get_json()
@@ -273,8 +501,7 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(data["details"]["constraint"], "invalid")
 
     def test_person_resolution_error_audits_and_returns_500(self) -> None:
-        # A non-PersonNotFound failure (e.g. BigQuery error) must still emit an
-        # audit record before the error handler returns 500.
+        # A non-PersonNotFound failure must still be audited before the 500.
         self.mock_resolve.side_effect = RuntimeError("BigQuery exploded")
         with patch(f"{MODULE}._log_audit") as mock_audit:
             response = self._post()
@@ -282,20 +509,27 @@ class TestEdovoRoutes(TestCase):
         reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
         self.assertIn("person_resolution_error", reasons)
 
-    def _post_through_real_person_existence(
-        self, *, person_exists: bool, submitted_external_id: str
+    def _post_through_real_verification(
+        self,
+        *,
+        person_exists: bool,
+        submitted_external_id: str,
+        stored_given_names: str,
+        stored_surname: str,
     ) -> TestResponse:
-        """POSTs a completion with the real ``assert_person_exists`` in the path.
+        """POSTs a completion with the real ``verify_person_identity`` in the path.
 
         BigQuery returns a fixed result, so this covers the handler wiring and the
         persistence write, not the comparison — that is emulator-tested in
-        ``test_person_existence.py``.
+        ``test_person_verification.py``.
         """
         self.mock_bq_client.run_query_async.return_value = iter(
-            [{"person_id": "9876543"}] if person_exists else []
+            [{"given_names": stored_given_names, "surname": stored_surname}]
+            if person_exists
+            else []
         )
-        with patch(f"{MODULE}.assert_person_exists", assert_person_exists), patch(
-            f"{PERSON_EXISTENCE_MODULE}.project_id", return_value="recidiviz-123"
+        with patch(f"{MODULE}.verify_person_identity", verify_person_identity), patch(
+            f"{PERSON_VERIFICATION_MODULE}.project_id", return_value="recidiviz-123"
         ):
             return self._post(
                 {**_VALID_BODY, "person_external_id": submitted_external_id}
@@ -311,27 +545,71 @@ class TestEdovoRoutes(TestCase):
     def test_end_to_end_padded_id_is_persisted_verbatim(self) -> None:
         """The padded value Edovo sent is what lands in the database — the
         comparison-only normalization must not reach the stored value."""
-        response = self._post_through_real_person_existence(
-            person_exists=True, submitted_external_id="000123456"
+        response = self._post_through_real_verification(
+            person_exists=True,
+            submitted_external_id="000123456",
+            stored_given_names=_FIRST_NAME,
+            stored_surname=_LAST_NAME,
         )
 
         self.assertEqual(response.status_code, HTTPStatus.CREATED)
         self.assertEqual(response.get_json()["status"], "accepted")
         self.assertEqual(["000123456"], self._stored_external_ids())
 
+    def test_end_to_end_name_mismatch_returns_422_and_persists_nothing(self) -> None:
+        """The id resolves, but to someone else: the drift signal Edovo asked
+        for, and no credit captured."""
+        response = self._post_through_real_verification(
+            person_exists=True,
+            submitted_external_id="000123456",
+            stored_given_names="Robert",
+            stored_surname="Smith",
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
+        data = response.get_json()
+        self.assertEqual("PERSON_NAME_MISMATCH", data["error_code"])
+        self.assertEqual(["first_name", "last_name"], data["mismatched_fields"])
+        self.assertEqual([], self._stored_external_ids())
+
     def test_end_to_end_unknown_person_returns_422_and_persists_nothing(self) -> None:
-        response = self._post_through_real_person_existence(
-            person_exists=False, submitted_external_id="000123456"
+        response = self._post_through_real_verification(
+            person_exists=False,
+            submitted_external_id="000123456",
+            stored_given_names=_FIRST_NAME,
+            stored_surname=_LAST_NAME,
         )
 
         self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
         self.assertEqual(response.get_json()["error_code"], "PERSON_NOT_FOUND")
         self.assertEqual([], self._stored_external_ids())
 
+    def test_idempotency_lookup_error_audits_and_returns_500(self) -> None:
+        # The lookup runs before the body is parsed, so its failure would
+        # otherwise be the one terminal outcome with no audit record.
+        with patch(
+            f"{MODULE}.find_completion_by_idempotency_key",
+            side_effect=RuntimeError("db down"),
+        ), patch(f"{MODULE}._log_audit") as mock_audit:
+            response = self._post()
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
+        self.assertIn("idempotency_lookup_error", reasons)
+
+    def test_persist_error_audits_and_returns_500(self) -> None:
+        # A persist failure that is not AlreadyCompletedError must still be
+        # audited before the 500.
+        with patch(
+            f"{MODULE}.persist_completion", side_effect=RuntimeError("db down")
+        ), patch(f"{MODULE}._log_audit") as mock_audit:
+            response = self._post()
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        reasons = [call.kwargs.get("reason") for call in mock_audit.call_args_list]
+        self.assertIn("persist_error", reasons)
+
     def test_commit_error_audits_and_returns_500(self) -> None:
-        # A commit failure must also be audited before returning 500. Patch
-        # Session.commit (not the current_session proxy, which can't be patched
-        # outside an app context) and stub persistence so nothing is flushed.
+        # Patch Session.commit, not the current_session proxy, which cannot be
+        # patched outside an app context.
         fake_record = MagicMock()
         fake_record.id = 123
         with patch(
@@ -447,9 +725,7 @@ class TestEdovoAuthErrors(TestCase):
         self.assertEqual(mock_audit.call_args.kwargs["reason"], "auth:wrong_identity")
 
     def test_missing_unique_id_env_returns_500_in_shared_shape(self) -> None:
-        # A 5xx is operational, not part of the partner contract: it must keep
-        # flowing to the shared handler's {code, description} shape, NOT the new
-        # {status, error_code, message} partner shape.
+        # A 5xx keeps the shared handler's shape, not the partner shape.
         with patch.dict(os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": ""}), patch(
             f"{MODULE}._log_audit"
         ) as mock_audit:

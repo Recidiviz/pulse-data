@@ -128,6 +128,14 @@ class EdovoCourseCompletion(CaseTriageBase):
     state_code = Column(String(255), nullable=False)
     course_id = Column(String(255), nullable=False)
     course_name = Column(String(255), nullable=False)
+    # The learner's name and facility as recorded in Edovo. The name is what the
+    # endpoint verified person_external_id against at capture time. The facility
+    # says which system issued the id — most non-CDOC facilities issue ids that
+    # are not ADC numbers — and is captured for reconciling identifiers with
+    # Edovo; nothing in the credit path reads it today.
+    first_name = Column(String(255), nullable=False)
+    last_name = Column(String(255), nullable=False)
+    facility = Column(String(255), nullable=False)
     # Float (not Numeric): unbounded Postgres NUMERIC does not survive the
     # Cloud SQL -> BigQuery federated export. content_hours is an expected
     # completion time (e.g. 3.5h), so double precision is more than sufficient.

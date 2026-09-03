@@ -25,8 +25,18 @@ calls the endpoint with the GCP access token that federation mints, in the
 
 Idempotency: Edovo supplies a client-generated UUID in the ``Idempotency-Key``
 header (required).  A repeat of the same key returns the original response with
-no side effects; the same person+course pair under a *different* key is rejected
-as a double-credit attempt (per the API spec).
+no side effects, and is answered before the body is parsed and before the
+identity check below, so a replay cannot be re-judged against either a changed
+body or a record that has since changed.  The same
+person+course pair under a *different* key is rejected as a double-credit
+attempt (per the API spec).  Both duplicate answers name the original
+submission, so Edovo can find what we already hold.
+
+Identity: the submitted ``person_external_id`` must resolve to a person we know,
+and the submitted name must be that person's name.  An id we hold no record of
+is a PERSON_NOT_FOUND; an id we do hold against someone else is a
+PERSON_NAME_MISMATCH — the identifier drift Edovo asked to be told about, so
+they can reconcile their records against ours.
 
 Scope: this endpoint validates, authenticates, and durably captures each
 completion, with idempotent and no-double-credit dedup enforced via database
@@ -35,6 +45,7 @@ writeback happen downstream, not in the request path.
 """
 import enum
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -45,10 +56,13 @@ from pydantic import ValidationError as PydanticValidationError
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.case_triage.edovo.course_completion_models import (
+    FIRST_NAME_FIELD,
+    LAST_NAME_FIELD,
     CourseCompletionAcceptedResponse,
     CourseCompletionAlreadyCompletedResponse,
     CourseCompletionDuplicateResponse,
     CourseCompletionForbiddenResponse,
+    CourseCompletionPersonNameMismatchResponse,
     CourseCompletionPersonNotFoundResponse,
     CourseCompletionRequest,
     CourseCompletionUnauthenticatedResponse,
@@ -57,11 +71,13 @@ from recidiviz.case_triage.edovo.course_completion_models import (
 )
 from recidiviz.case_triage.edovo.persistence import (
     AlreadyCompletedError,
+    find_completion_by_idempotency_key,
     persist_completion,
 )
-from recidiviz.case_triage.edovo.person_existence import (
+from recidiviz.case_triage.edovo.person_verification import (
+    PersonNameMismatchError,
     PersonNotFoundError,
-    assert_person_exists,
+    verify_person_identity,
 )
 from recidiviz.case_triage.edovo.wif_verifier import verify_bearer_token
 from recidiviz.common.constants.states import StateCode
@@ -69,6 +85,37 @@ from recidiviz.persistence.database.sqlalchemy_flask_utils import current_sessio
 from recidiviz.utils.flask_exception import FlaskException
 
 _IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
+
+_REDACTED_VALUE = "[REDACTED]"
+_REDACTED_FIELDS = (FIRST_NAME_FIELD, LAST_NAME_FIELD)
+# The value may run to the end of the text unclosed, because a truncated
+# payload still carries the part of the name that arrived.
+_REDACTED_FIELD_VALUE_REGEX = re.compile(
+    r'("(?:'
+    + "|".join(re.escape(field) for field in _REDACTED_FIELDS)
+    + r')"\s*:\s*)"(?:[^"\\]|\\.)*(?:"|\Z)'
+)
+
+
+def _redacted_body(raw_body: bytes) -> str:
+    """Returns |raw_body| as text with the learner's name removed.
+
+    The spec requires the request body in the audit record, and the body carries
+    the learner's name. The name is not what the audit is for — reconciling with
+    Edovo needs the identifier, the course and the timestamp — so it is dropped
+    rather than written to Cloud Logging, consistent with the rest of the
+    endpoint keeping names out of responses and error messages.
+
+    The name is cut out of the received text rather than re-serialized from a
+    parsed body, so everything else stays byte-for-byte what Edovo sent. That
+    matters for a record whose purpose is settling a question about what they
+    sent: re-serializing would silently renumber (``1e2`` -> ``100.0``),
+    reorder keys, and drop duplicates. It also means a body that never parsed
+    is redacted the same way as one that did.
+    """
+    return _REDACTED_FIELD_VALUE_REGEX.sub(
+        rf'\1"{_REDACTED_VALUE}"', raw_body.decode("utf-8", errors="replace")
+    )
 
 
 class RequestOutcome(enum.Enum):
@@ -92,6 +139,14 @@ _PYDANTIC_TYPE_TO_CONSTRAINT: dict[str, _ConstraintLiteral] = {
 _FIELD_AND_TYPE_TO_CONSTRAINT: dict[tuple[str, str], _ConstraintLiteral] = {
     ("content_hours", "value_error"): "gt_zero",
     ("state_code", "value_error"): "invalid_state_code",
+    # A blank value and a JSON null are both reported as the missing field they
+    # effectively are; pydantic raises a type error rather than a missing key.
+    ("first_name", "value_error"): "required",
+    ("last_name", "value_error"): "required",
+    ("facility", "value_error"): "required",
+    ("first_name", "string_type"): "required",
+    ("last_name", "string_type"): "required",
+    ("facility", "string_type"): "required",
 }
 
 
@@ -107,9 +162,9 @@ def _log_audit(
 
     Covers every terminal outcome (accepted / duplicate / rejected + reason) per
     the API spec's audit-logging requirement, capturing the received timestamp,
-    the idempotency key, and the full request body. Earned-time credit is
-    computed downstream (this endpoint only captures completions), so no credit
-    summary is recorded here.
+    the idempotency key, and the request body with the learner's name redacted
+    (see ``_redacted_body``). Earned-time credit is computed downstream (this
+    endpoint only captures completions), so no credit summary is recorded here.
 
     ``idempotency_key`` is always the raw value received in the
     ``Idempotency-Key`` header (or None if absent), so the audit log records
@@ -122,7 +177,7 @@ def _log_audit(
         idempotency_key,
         outcome.value,
         reason,
-        raw_body.decode("utf-8", errors="replace"),
+        _redacted_body(raw_body),
     )
 
 
@@ -174,12 +229,8 @@ def create_edovo_api_blueprint() -> Blueprint:
                 outcome=RequestOutcome.REJECTED,
                 reason=f"auth:{error.code}",
             )
-            # Spec-shaped body for the two documented auth outcomes: a
-            # human-readable message that also carries the specific verifier
-            # code so Edovo can quote it back (error_code stays the stable
-            # machine value). 5xx (e.g. tokeninfo unreachable, missing WIF
-            # config) is operational, not part of the partner contract, so it
-            # re-raises to the shared handler.
+            # Only the two documented auth outcomes get the partner-shaped body.
+            # A 5xx is operational, so it re-raises to the shared handler.
             auth_message = f"{error.description} ({error.code})"
             if error.status_code is HTTPStatus.UNAUTHORIZED:
                 return make_response(
@@ -231,6 +282,41 @@ def create_edovo_api_blueprint() -> Blueprint:
             )
 
         try:
+            already_recorded = find_completion_by_idempotency_key(
+                current_session, idempotency_key
+            )
+        except Exception:
+            # Audit before the error handler returns 500.
+            _log_audit(
+                received_at=received_at,
+                idempotency_key=idempotency_key_header or None,
+                raw_body=body,
+                outcome=RequestOutcome.REJECTED,
+                reason="idempotency_lookup_error",
+            )
+            raise
+        if already_recorded is not None:
+            # A recorded key is answered from what we recorded then, before the
+            # body is parsed and before any identity check. Re-judging a replay
+            # would let a regressed body, or a change to our own name record,
+            # turn a settled completion into a rejection.
+            _log_audit(
+                received_at=received_at,
+                idempotency_key=idempotency_key_header or None,
+                raw_body=body,
+                outcome=RequestOutcome.DUPLICATE,
+            )
+            return make_response(
+                jsonify(
+                    CourseCompletionDuplicateResponse(
+                        completion_id=str(already_recorded.id),
+                        originally_received_at=already_recorded.received_at,
+                    ).model_dump(mode="json")
+                ),
+                HTTPStatus.OK,
+            )
+
+        try:
             completion_request = CourseCompletionRequest.model_validate_json(body)
         except PydanticValidationError as exc:
             validation_response = _map_pydantic_error(exc)
@@ -247,16 +333,33 @@ def create_edovo_api_blueprint() -> Blueprint:
             )
 
         try:
-            assert_person_exists(
-                BigQueryClientImpl(),
-                StateCode(completion_request.state_code),
-                completion_request.person_external_id,
+            verify_person_identity(
+                bq_client=BigQueryClientImpl(),
+                state_code=StateCode(completion_request.state_code),
+                person_external_id=completion_request.person_external_id,
+                first_name=completion_request.first_name,
+                last_name=completion_request.last_name,
+            )
+        except PersonNameMismatchError as mismatch:
+            # We hold this id, but against someone else. Report which fields
+            # matched nothing without echoing either name back.
+            name_mismatch = CourseCompletionPersonNameMismatchResponse(
+                mismatched_fields=mismatch.mismatched_fields
+            )
+            _log_audit(
+                received_at=received_at,
+                idempotency_key=idempotency_key_header or None,
+                raw_body=body,
+                outcome=RequestOutcome.REJECTED,
+                reason=f"person_name_mismatch:{','.join(mismatch.mismatched_fields)}",
+            )
+            return make_response(
+                jsonify(name_mismatch.model_dump()), HTTPStatus.UNPROCESSABLE_ENTITY
             )
         except PersonNotFoundError:
             not_found = CourseCompletionPersonNotFoundResponse(
-                # Don't echo the submitted person_external_id (a DOC number / PII)
-                # back in the response body or audit log; the error_code is enough
-                # for Edovo to act on.
+                # The error_code is enough to act on, so the submitted id (PII)
+                # is not echoed back.
                 message="No person found for the provided person_external_id.",
             )
             _log_audit(
@@ -270,8 +373,7 @@ def create_edovo_api_blueprint() -> Blueprint:
                 jsonify(not_found.model_dump()), HTTPStatus.UNPROCESSABLE_ENTITY
             )
         except Exception:
-            # Person resolution hit an unexpected error (e.g. BigQuery failure).
-            # Audit the rejected outcome before the error handler returns 500.
+            # Audit before the error handler returns 500.
             _log_audit(
                 received_at=received_at,
                 idempotency_key=idempotency_key_header or None,
@@ -289,7 +391,7 @@ def create_edovo_api_blueprint() -> Blueprint:
                 received_at,
             )
             completion_id = str(record.id)
-        except AlreadyCompletedError:
+        except AlreadyCompletedError as already_completed:
             _log_audit(
                 received_at=received_at,
                 idempotency_key=idempotency_key_header or None,
@@ -298,15 +400,29 @@ def create_edovo_api_blueprint() -> Blueprint:
                 reason="already_completed",
             )
             return make_response(
-                jsonify(CourseCompletionAlreadyCompletedResponse().model_dump()),
+                jsonify(
+                    CourseCompletionAlreadyCompletedResponse(
+                        completion_id=str(already_completed.existing.id),
+                        originally_received_at=already_completed.existing.received_at,
+                    ).model_dump(mode="json")
+                ),
                 HTTPStatus.UNPROCESSABLE_ENTITY,
             )
+        except Exception:
+            # Audit before the error handler returns 500.
+            _log_audit(
+                received_at=received_at,
+                idempotency_key=idempotency_key_header or None,
+                raw_body=body,
+                outcome=RequestOutcome.REJECTED,
+                reason="persist_error",
+            )
+            raise
 
         try:
             current_session.commit()
         except Exception:
-            # Commit failed (e.g. DB connectivity). Audit before the error
-            # handler returns 500 so no terminal outcome goes unlogged.
+            # Audit before the error handler returns 500.
             _log_audit(
                 received_at=received_at,
                 idempotency_key=idempotency_key_header or None,
@@ -335,8 +451,9 @@ def create_edovo_api_blueprint() -> Blueprint:
         return make_response(
             jsonify(
                 CourseCompletionDuplicateResponse(
-                    completion_id=completion_id
-                ).model_dump()
+                    completion_id=completion_id,
+                    originally_received_at=record.received_at,
+                ).model_dump(mode="json")
             ),
             HTTPStatus.OK,
         )
