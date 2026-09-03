@@ -187,18 +187,33 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             expected_data[UPDATED_AT] = str(expected_data[UPDATED_AT])
             expected_data[RAW_TICKET_JSON] = str(expected_data[RAW_TICKET_JSON])
             expected_data[UPDATE_DATETIME_COLUMN_NAME] = str(self.update_datetime)
-            print("expected", expected_data)
 
             with open(file_path, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 actual_data = [dict(row) for row in reader]
-                print("actual", actual_data)
 
                 self.assertEqual(
                     actual_data,
                     [expected_data],
                     "CSV contents do not match the original ticket JSON",
                 )
+
+    def test_write_data_to_csv_no_data(self) -> None:
+        """write_data_to_csv() writes an empty CSV (with no lone update_datetime column) when there is no data."""
+
+        with tempfile.TemporaryDirectory() as output_dir:
+            file_path = self.json_to_csv_converter.write_data_to_csv(
+                data_list=[],
+                flatten_method=self.json_to_csv_converter.flatten_ticket,
+                output_dir=output_dir,
+                base_name=TICKETS,
+                update_datetime=self.update_datetime,
+            )
+
+            self.assertEqual(os.path.join(output_dir, f"{TICKETS}.csv"), file_path)
+
+            with open(file_path, "r", encoding="utf-8") as f:
+                self.assertEqual("\n", f.read())
 
     def test_create_inbound_data_csvs(self) -> None:
         """Tests that create_inbound_data_csvs() properly creates CSV files for tickets and contacts data."""

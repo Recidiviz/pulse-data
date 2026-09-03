@@ -141,13 +141,13 @@ class IntercomJsonToCsvConverter:
         Returns:
             the filepath to the CSV
         """
-
         flattened_json: list[dict[str, Any]] = [
             flatten_method(data_record).to_json() for data_record in data_list
         ]
 
         df = pd.DataFrame(flattened_json)
-        df[UPDATE_DATETIME_COLUMN_NAME] = update_datetime
+        if data_list:
+            df[UPDATE_DATETIME_COLUMN_NAME] = update_datetime
 
         filename = f"{base_name}.csv"
         output_path = os.path.join(
