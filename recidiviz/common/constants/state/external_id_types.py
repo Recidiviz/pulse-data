@@ -192,6 +192,8 @@ US_TN_DOC: Final = "US_TN_DOC"
 US_TN_STAFF_TOMIS: Final = "US_TN_STAFF_TOMIS"
 # Email identifier
 US_TN_STAFF_EMAIL: Final = "US_TN_STAFF_EMAIL"
+# MiCase/TOMIS 2.0 PERSON_ID *should* be stable across incarceration episodes (IN_EPISODE/DOC_ID)
+US_TN_PERSON_ID: Final = "US_TN_PERSON_ID"
 
 
 # US_TX
