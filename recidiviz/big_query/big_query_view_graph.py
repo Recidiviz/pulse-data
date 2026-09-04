@@ -19,6 +19,9 @@ updated together, ResolvedBigQueryViewGraph, that graph resolved to a project
 and set of input source table collections, and BigQueryViewGraphRegistry, the collection
 of all view graphs in one project.
 """
+
+from collections import defaultdict
+
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -28,6 +31,7 @@ from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.common import attr_validators
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
+    SourceTableConfig,
     SourceTableUpdateGroup,
 )
 from recidiviz.utils.types import assert_type
@@ -122,6 +126,35 @@ class ResolvedBigQueryViewGraph:
                 )
             )
         )
+
+    def build_output_source_table_configs_by_dataset(
+        self,
+    ) -> dict[str, list[SourceTableConfig]]:
+        """Returns this graph's materialized outputs grouped by dataset, as
+        SourceTableConfigs. Raises on a partitioned materialized view.
+        """
+        configs_by_dataset: dict[str, list[SourceTableConfig]] = defaultdict(list)
+        for builder in self.view_builders:
+            view = builder.build()
+            if view.materialized_address is None:
+                continue
+            # TODO(OBT-47853): Support deriving source tables from time-partitioned
+            # materialized views by plumbing time_partitioning into the config.
+            if view.time_partitioning is not None:
+                raise ValueError(
+                    f"Graph [{self.name}] materializes partitioned view "
+                    f"[{view.address.to_str()}]; partitioned outputs cannot be "
+                    f"derived as source tables."
+                )
+            configs_by_dataset[view.materialized_address.dataset_id].append(
+                SourceTableConfig(
+                    address=view.materialized_address,
+                    description=view.materialized_table_bq_description,
+                    schema_fields=view.bq_schema,
+                    clustering_fields=view.clustering_fields or [],
+                )
+            )
+        return dict(configs_by_dataset)
 
 
 @attr.define(frozen=True, kw_only=True)

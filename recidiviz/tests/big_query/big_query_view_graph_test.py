@@ -15,8 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for big_query_view_graph.py"""
+
 import unittest
 
+from google.cloud import bigquery
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
@@ -29,6 +33,7 @@ from recidiviz.big_query.big_query_view_graph import (
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableConfig,
     SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
@@ -43,6 +48,8 @@ def _view_builder(
     view_id: str,
     should_materialize: bool = False,
     projects_to_deploy: set[str] | None = None,
+    clustering_fields: list[str] | None = None,
+    time_partitioning: bigquery.TimePartitioning | None = None,
 ) -> SimpleBigQueryViewBuilder:
     return SimpleBigQueryViewBuilder(
         dataset_id=dataset_id,
@@ -51,6 +58,8 @@ def _view_builder(
         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
         should_materialize=should_materialize,
         projects_to_deploy=projects_to_deploy,
+        clustering_fields=clustering_fields,
+        time_partitioning=time_partitioning,
         schema=MINIMAL_SCHEMA,
     )
 
@@ -159,6 +168,93 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
             {b.address for b in resolved.view_builders},
             set(walker.nodes_by_address.keys()),
         )
+
+    def test_output_source_table_configs_by_dataset(self) -> None:
+        resolved = _resolved(
+            _graph(
+                "my_graph",
+                [
+                    _view_builder(
+                        "dataset_1",
+                        "table_1",
+                        should_materialize=True,
+                        clustering_fields=["col"],
+                    ),
+                    _view_builder("dataset_1", "table_2", should_materialize=True),
+                    _view_builder("dataset_2", "table_3", should_materialize=True),
+                    # Not materialized, so it contributes no output config.
+                    _view_builder("dataset_2", "table_4"),
+                ],
+            )
+        )
+
+        schema_fields = [
+            bigquery.SchemaField("col", "STRING", "NULLABLE", description="col")
+        ]
+        with local_project_id_override("recidiviz-456"):
+            self.assertEqual(
+                {
+                    "dataset_1": [
+                        SourceTableConfig(
+                            address=BigQueryAddress(
+                                dataset_id="dataset_1", table_id="table_1_materialized"
+                            ),
+                            description="Materialized data from view [dataset_1.table_1]. "
+                            "View description:\ntable_1 description\nExplore this view's "
+                            "lineage at https://go/lineage-staging/dataset_1.table_1",
+                            schema_fields=schema_fields,
+                            clustering_fields=["col"],
+                        ),
+                        SourceTableConfig(
+                            address=BigQueryAddress(
+                                dataset_id="dataset_1", table_id="table_2_materialized"
+                            ),
+                            description="Materialized data from view [dataset_1.table_2]. "
+                            "View description:\ntable_2 description\nExplore this view's "
+                            "lineage at https://go/lineage-staging/dataset_1.table_2",
+                            schema_fields=schema_fields,
+                            clustering_fields=[],
+                        ),
+                    ],
+                    "dataset_2": [
+                        SourceTableConfig(
+                            address=BigQueryAddress(
+                                dataset_id="dataset_2", table_id="table_3_materialized"
+                            ),
+                            description="Materialized data from view [dataset_2.table_3]. "
+                            "View description:\ntable_3 description\nExplore this view's "
+                            "lineage at https://go/lineage-staging/dataset_2.table_3",
+                            schema_fields=schema_fields,
+                            clustering_fields=[],
+                        ),
+                    ],
+                },
+                resolved.build_output_source_table_configs_by_dataset(),
+            )
+
+    def test_output_source_table_configs_partitioned_view_raises(self) -> None:
+        resolved = _resolved(
+            _graph(
+                "my_graph",
+                [
+                    _view_builder(
+                        "dataset_1",
+                        "table_1",
+                        should_materialize=True,
+                        time_partitioning=bigquery.TimePartitioning(field="col"),
+                    ),
+                ],
+            )
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Graph \[my_graph\] materializes partitioned view "
+                r"\[dataset_1\.table_1\]; partitioned outputs cannot be derived as "
+                r"source tables\.$",
+            ):
+                _ = resolved.build_output_source_table_configs_by_dataset()
 
 
 class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
