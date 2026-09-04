@@ -21,6 +21,7 @@ input_columns:
   penalty_free_text_description: STRING
   offense_class: STRING
   major_or_minor: STRING
+  decision: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -53,6 +54,7 @@ output:
             $normalized_values_json_dict:
               major_or_minor: major_or_minor
               STATE_VIOLATION_ID: STATE_VIOLATION_ID
+              decision: decision
           incarceration_incident_outcomes:
             # Sometimes there is no penalty, so wrap this in a conditional.
             - $conditional:
