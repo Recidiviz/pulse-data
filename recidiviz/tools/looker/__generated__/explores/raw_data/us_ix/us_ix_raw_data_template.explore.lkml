@@ -24,6 +24,13 @@ explore: us_ix_raw_data_template {
     view_label: "us_ix_com_CommunityServiceRecord"
   }
 
+  join: us_ix_com_CriminalHistory {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_com_CriminalHistory.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_com_CriminalHistory"
+  }
+
   join: us_ix_com_Investigation {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_com_Investigation.OffenderId};;
     type: full_outer

@@ -188,6 +188,49 @@
     width: 24
     height: 6
 
+  - name: com_CriminalHistory
+    title: com_CriminalHistory
+    explore: us_ix_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ix_com_CriminalHistory.primary_key,
+      us_ix_com_CriminalHistory.CriminalHistoryId,
+      us_ix_com_CriminalHistory.OffenderId,
+      us_ix_com_CriminalHistory.CourtId,
+      us_ix_com_CriminalHistory.OtherCourt,
+      us_ix_com_CriminalHistory.Juvenile,
+      us_ix_com_CriminalHistory.ArrestDate__raw,
+      us_ix_com_CriminalHistory.Same,
+      us_ix_com_CriminalHistory.Count,
+      us_ix_com_CriminalHistory.OffenseDate__raw,
+      us_ix_com_CriminalHistory.ChargedOffenseTypeId,
+      us_ix_com_CriminalHistory.OffenseDescription,
+      us_ix_com_CriminalHistory.ChargeOutcomeTypeId,
+      us_ix_com_CriminalHistory.OutcomeDispositionDate__raw,
+      us_ix_com_CriminalHistory.AmendedOffenseTypeId,
+      us_ix_com_CriminalHistory.AmendedOffenseDescription,
+      us_ix_com_CriminalHistory.DOJSentencingDate__raw,
+      us_ix_com_CriminalHistory.Sentencing,
+      us_ix_com_CriminalHistory.Inactive,
+      us_ix_com_CriminalHistory.Locking,
+      us_ix_com_CriminalHistory.InsertUserId,
+      us_ix_com_CriminalHistory.InsertDate__raw,
+      us_ix_com_CriminalHistory.UpdateUserId,
+      us_ix_com_CriminalHistory.UpdateDate__raw,
+      us_ix_com_CriminalHistory.CaseNumber,
+      us_ix_com_CriminalHistory.file_id,
+      us_ix_com_CriminalHistory.is_deleted]
+    sorts: [us_ix_com_CriminalHistory.ArrestDate__raw]
+    note_display: hover
+    note_text: "One row per prior offense on a person's criminal history in ATLAS. Records the arrest and offense, the charged and amended offense types, and the outcome. Sourced from external record checks such as NCIC and the Idaho court repository, so it covers out-of-state offenses as well as Idaho ones. Free-text comments attached to these rows live in `com_CriminalHistoryComment`."
+    listen: 
+      View Type: us_ix_ind_Offender.view_type
+      US_IX_DOC: us_ix_ind_Offender.OffenderId
+    row: 18
+    col: 0
+    width: 24
+    height: 6
+
   - name: com_Investigation
     title: com_Investigation
     explore: us_ix_raw_data
@@ -232,7 +275,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 18
+    row: 24
     col: 0
     width: 24
     height: 6
@@ -282,7 +325,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 24
+    row: 30
     col: 0
     width: 24
     height: 6
@@ -314,7 +357,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 30
+    row: 36
     col: 0
     width: 24
     height: 6
@@ -366,7 +409,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 36
+    row: 42
     col: 0
     width: 24
     height: 6
@@ -415,7 +458,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 42
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -470,7 +513,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 48
+    row: 54
     col: 0
     width: 24
     height: 6
@@ -514,7 +557,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 54
+    row: 60
     col: 0
     width: 24
     height: 6
@@ -543,7 +586,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 60
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -572,7 +615,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 66
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -599,7 +642,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 72
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -630,7 +673,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 78
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -668,7 +711,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 84
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -709,7 +752,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 90
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -739,7 +782,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 96
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -774,7 +817,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 102
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -807,7 +850,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 108
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -843,7 +886,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -881,7 +924,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -920,7 +963,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -953,7 +996,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -981,7 +1024,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1009,7 +1052,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1041,7 +1084,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1074,7 +1117,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1115,7 +1158,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1162,7 +1205,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1208,7 +1251,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1256,7 +1299,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1288,7 +1331,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1336,7 +1379,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 192
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1429,7 +1472,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 198
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -1483,7 +1526,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 204
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -1527,7 +1570,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 210
+    row: 216
     col: 0
     width: 24
     height: 6
@@ -1622,7 +1665,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 216
+    row: 222
     col: 0
     width: 24
     height: 6
@@ -1670,7 +1713,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 222
+    row: 228
     col: 0
     width: 24
     height: 6
@@ -1717,7 +1760,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 228
+    row: 234
     col: 0
     width: 24
     height: 6
