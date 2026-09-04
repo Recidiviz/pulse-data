@@ -203,9 +203,10 @@ function request_pam_grant {
     local ENTITLEMENT_ID=$2
     local GROUP_HINT=$3
     local JUSTIFICATION=$4
-    # 2h default — comfortably longer than a typical operation, well under
-    # the entitlement max.
-    local DURATION=${5:-"7200s"}
+    # 8h default, well under the 12h entitlement max. Sized for the window in which an
+    # operation might need undoing, not for the operation itself: the earlier 2h covered
+    # deploys comfortably but had lapsed by the time on-call needed to roll one back.
+    local DURATION=${5:-"28800s"}
     local LOCATION="global"
     local GCLOUD_USER
     GCLOUD_USER=$(gcloud config get-value account 2>/dev/null)
