@@ -26,10 +26,14 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
     collect_post_entity_resolution_llm_extraction_results_view_builders,
+    collect_state_agnostic_llm_extraction_results_view_builders,
 )
 from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentCollectionSandboxLocation,
     DocumentStoreSandboxContext,
+)
+from recidiviz.documents.views.view_config import (
+    collect_document_extraction_sessions_view_builders,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
@@ -38,6 +42,7 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
+    downstream_state_agnostic_view_input_overrides,
     first_order_view_input_overrides,
     post_entity_resolution_view_input_overrides,
 )
@@ -454,4 +459,65 @@ class SandboxOverridesTest(unittest.TestCase):
                 "us_xx_document_store_metadata.fake_input_notes",
             ),
             addresses_by_prefix[_DOCUMENT_STORE_PREFIX],
+        )
+
+
+class DownstreamStateAgnosticViewInputOverridesTest(unittest.TestCase):
+    """Tests for downstream_state_agnostic_view_input_overrides."""
+
+    def setUp(self) -> None:
+        self.enterContext(local_project_id_override("recidiviz-staging"))
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.first_order_config = fake_first_order_extractor_config()
+        union_all_builders = list(
+            collect_state_agnostic_llm_extraction_results_view_builders(
+                config_module=fake_config,
+                first_order_configs=[self.first_order_config],
+            )
+        )
+        sessions_builders = collect_document_extraction_sessions_view_builders()
+        self.collected_builders = union_all_builders + sessions_builders
+
+    def _addresses_by_override_prefix(
+        self, overrides: BigQueryAddressOverrides
+    ) -> dict[str | None, set[BigQueryAddress]]:
+        """Returns every source table the collected views read, grouped by the
+        sandbox dataset prefix |overrides| re-points it to. The None key holds
+        source tables |overrides| leaves pointing at production.
+        """
+        dag = BigQueryViewDagWalker([b.build() for b in self.collected_builders])
+        addresses_by_prefix: dict[str | None, set[BigQueryAddress]] = {}
+        for address in dag.get_referenced_source_tables():
+            sandbox_address = overrides.get_sandbox_address(address)
+            prefix: str | None
+            if sandbox_address is None:
+                prefix = None
+            else:
+                dataset_suffix = f"_{address.dataset_id}"
+                prefix = sandbox_address.dataset_id.removesuffix(dataset_suffix)
+            addresses_by_prefix.setdefault(prefix, set()).add(address)
+        return addresses_by_prefix
+
+    def test_sessions_source_tables_are_only_unoverridden_tables(self) -> None:
+        """Verifies that sessions.compartment_sessions_materialized is the only
+        source table the downstream views reference that is intentionally left
+        pointing at production. Every extraction-domain table must be overridden
+        to a sandbox copy. If this test fails with extra addresses in the None
+        bucket, those datasets are missing from the domain set and would be read
+        from production in a sandbox run.
+        """
+        overrides = downstream_state_agnostic_view_input_overrides(
+            first_order_configs=[self.first_order_config],
+            collected_builders=self.collected_builders,
+            sandbox_dataset_prefix=_RESULTS_PREFIX,
+            config_module=fake_config,
+        )
+        addresses_by_prefix = self._addresses_by_override_prefix(overrides)
+        self.assertEqual(
+            {None, _RESULTS_PREFIX},
+            set(addresses_by_prefix),
+        )
+        self.assertEqual(
+            _addresses("sessions.compartment_sessions_materialized"),
+            addresses_by_prefix[None],
         )

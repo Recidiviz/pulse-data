@@ -347,6 +347,16 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
                 return_value="test-user",
             )
         )
+        # The downstream view deploy step reads from state-specific sandbox-prefixed
+        # views that don't exist in the emulator (they're only deployed when the full
+        # view-deploy pipeline runs in BQ). Patch it out so the emulator tests focus
+        # on extraction logic.
+        self.enterContext(
+            mock.patch.object(
+                run_sandbox_extraction,
+                "deploy_extraction_downstream_state_agnostic_views",
+            )
+        )
         self._point_config_resolution_at_fake_module()
         # The ER composite-document generation query emits an entry_source_map
         # ARRAY<STRUCT<...TIMESTAMP...>>, which the BQ emulator cannot round-trip

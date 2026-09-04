@@ -133,6 +133,7 @@ from recidiviz.tools.documents.sandbox_document_extraction_processor import (
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
     create_document_store_tables,
     create_extraction_results_tables,
+    deploy_extraction_downstream_state_agnostic_views,
     deploy_extraction_results_views,
     first_order_view_input_overrides,
     post_entity_resolution_view_input_overrides,
@@ -626,6 +627,15 @@ def run_sandbox_extraction(
             ),
             table_expiration_ms=table_expiration_ms,
         )
+
+    logging.info(
+        "Deploying union-all extraction results views and LLM sessions views..."
+    )
+    deploy_extraction_downstream_state_agnostic_views(
+        sandbox_dataset_prefix=args.sandbox_prefix,
+        table_expiration_ms=table_expiration_ms,
+        first_order_configs=[config],
+    )
 
     summaries: list[SandboxExtractionSummary] = []
     if first_order_summary is not None:
