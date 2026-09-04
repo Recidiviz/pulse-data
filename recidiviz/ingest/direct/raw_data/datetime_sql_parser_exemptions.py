@@ -67,6 +67,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "TentativeParoleDate",
             "UpdateDate",
         ],
+        "bop_BOPHearingType": ["InsertDate", "UpdateDate"],
         "bop_BOPVoteResult": ["InsertDate", "UpdateDate"],
         "bop_BOPVoteValue": ["InsertDate", "UpdateDate"],
         "com_Transfer": [
@@ -334,7 +335,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "asm_AssessmentDegree": ["InsertDate", "UpdateDate"],
         "asm_AssessmentTool": ["InsertDate", "UpdateDate"],
         "asm_AssessmentType": ["InsertDate", "UpdateDate"],
-        "bop_BOPHearingType": ["InsertDate", "UpdateDate"],
         "clsf_Classification": [
             "ApprovedDateTime",
             "ClassificationDate",
