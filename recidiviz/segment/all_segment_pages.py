@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """View builder representing all pageview events recorded via Segment `pages` table,
-along with the product type associated with each page."""
+along with the product type associated with each page. Also includes native-app
+"screen" tracking events (Segment's `screens` table) for products with no notion of a
+page URL, with the screen name mapped to `context_page_path`."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -23,6 +25,7 @@ from recidiviz.big_query.big_query_view_column import String
 from recidiviz.calculator.query.state.dataset_config import (
     CASE_PLANNING_PRODUCTION_DATASET,
     JII_FRONTEND_PROD_SEGMENT_DATASET,
+    MEETINGS_APP_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.segment.product_type import ProductType
@@ -51,6 +54,10 @@ _STAFF_PAGES_DATASETS = [
 
 _JII_PAGES_DATASETS = [
     JII_FRONTEND_PROD_SEGMENT_DATASET,
+]
+
+_MEETINGS_SCREENS_DATASETS = [
+    MEETINGS_APP_SEGMENT_DATASET,
 ]
 
 event_schema = {col.name: col for col in segment_event_schema()}
@@ -117,6 +124,45 @@ def _get_jii_pages_query(dataset: str) -> str:
     )
 
 
+def _get_meetings_screens_query(dataset: str) -> str:
+    # Meetings is a native/web app tracked via Segment's `screen()` call, not
+    # `page()` — its `screens` table has no context_page_url to infer product_type
+    # from, but since the whole dataset belongs unambiguously to exactly one product,
+    # build_segment_event_view_query_template hardcodes product_type to MEETINGS
+    # directly rather than doing URL-based inference.
+    base_query = build_segment_event_view_query_template(
+        segment_table_sql_source=BigQueryAddress(
+            dataset_id=dataset, table_id="screens"
+        ),
+        segment_table_jii_pseudonymized_id_columns=[],
+        additional_attribute_cols=[],
+        relevant_product_types=[ProductType.MEETINGS],
+        has_session_id=False,
+        context_page_path_expr="name",
+        context_page_url_expr=None,
+        user_id_is_email=True,
+        person_id_expr="person_id",
+    )
+    # Select columns explicitly (rather than `SELECT *`) to guarantee this branch's
+    # column count/order matches the other UNION ALL branches exactly. In particular,
+    # `pages`-sourced branches omit session_id entirely (a special case keyed off the
+    # literal table_id == "pages" inside build_segment_event_view_query_template),
+    # which our `screens` source table doesn't trigger, so we drop it here too.
+    return f"""
+    SELECT
+        state_code,
+        user_id,
+        email_address,
+        event_ts,
+        person_id,
+        context_page_path,
+        context_page_url,
+        product_type,
+        {_NULL_UTM_COLS_SNIPPET}
+    FROM ({base_query})
+    """
+
+
 # TODO(#46788): Deprecate this view and generalize `pages` to use standard
 # Segment event infra once views are no longer configured by event X product builders
 ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -124,6 +170,10 @@ ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template="\nUNION ALL\n".join(
         [_get_staff_pages_query(dataset) for dataset in _STAFF_PAGES_DATASETS]
         + [_get_jii_pages_query(dataset) for dataset in _JII_PAGES_DATASETS]
+        + [
+            _get_meetings_screens_query(dataset)
+            for dataset in _MEETINGS_SCREENS_DATASETS
+        ]
     ),
     view_id=_VIEW_ID,
     description=__doc__,

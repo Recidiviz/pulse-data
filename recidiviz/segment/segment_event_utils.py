@@ -36,6 +36,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     JII_AUTH0_PROD_SEGMENT_DATASET,
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
     JII_FRONTEND_PROD_SEGMENT_DATASET,
+    MEETINGS_APP_SEGMENT_DATASET,
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
@@ -56,6 +57,7 @@ SEGMENT_FRONTEND_TRACKING_DATASETS = [
     CASE_PLANNING_PRODUCTION_DATASET,
     JII_FRONTEND_PROD_SEGMENT_DATASET,
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
+    MEETINGS_APP_SEGMENT_DATASET,
 ]
 
 # Datasets containing Segment event source tables
@@ -261,6 +263,27 @@ def build_segment_event_view_query_template(
     has_session_id: bool = True,
     has_user_id: bool = True,
     user_is_jii: bool = False,
+    # Handle cases where `user_id` is not the pre-hashed `user_hash` and is an
+    # un-hashed raw user email address instead
+    # TODO(OBT-46938): Delete this once the Meetings app emits a user_hash and the
+    # existing rows are backfilled.
+    user_id_is_email: bool = False,
+    # Expression to select as `context_page_path`/`context_page_url` from the source
+    # table. Defaults to the literal column names, which is correct for the vast
+    # majority of Segment sources (web `page()`-tracking apps). Pass a different
+    # expression (e.g. a native app's `screen` name) or None (source has no page/URL
+    # context at all, e.g. a native/desktop app using `screen()` tracking) as needed.
+    # Passing None for context_page_url_expr also disables the prod_deployment_where_clause
+    # URL-based prod-only filter below, since there's no URL to filter on.
+    context_page_path_expr: str | None = "context_page_path",
+    context_page_url_expr: str | None = "context_page_url",
+    # Expression identifying a raw source column that already contains the
+    # resolved Recidiviz internal person_id (an integer), rather than a
+    # pseudonymized ID that needs resolving via pseudonymized_id_to_person_id.
+    # When set, the join to that table is skipped entirely and this value is
+    # cast directly to INT64 and used as-is. Mutually exclusive with
+    # segment_table_jii_pseudonymized_id_columns and user_is_jii.
+    person_id_expr: str | None = None,
 ) -> str:
     """Builds the SQL query template for a Segment event view by transforming
     hashed user and client id's into internal id's and pulling any additional
@@ -273,6 +296,15 @@ def build_segment_event_view_query_template(
 
     if not additional_attribute_cols:
         additional_attribute_cols = []
+
+    if person_id_expr is not None and (
+        segment_table_jii_pseudonymized_id_columns or user_is_jii
+    ):
+        raise ValueError(
+            "person_id_expr is mutually exclusive with "
+            "segment_table_jii_pseudonymized_id_columns and user_is_jii; only one "
+            "way of resolving person_id may be used."
+        )
 
     if user_is_jii:
         person_id_join_type = "INNER"
@@ -288,6 +320,16 @@ def build_segment_event_view_query_template(
 
     if segment_table_sql_source.table_id == "pages":
         product_type_clause = _get_product_type_case_when_statement_pages()
+    elif context_page_url_expr is None:
+        # With no context_page_url to run URL-based inference against, we can only
+        # resolve product_type when the source unambiguously belongs to one product.
+        if len(relevant_product_types) != 1:
+            raise ValueError(
+                f"Cannot infer product_type without a context_page_url for source "
+                f"[{segment_table_sql_source.to_str()}] unless relevant_product_types "
+                f"has exactly one entry, found: {relevant_product_types}"
+            )
+        product_type_clause = f"'{relevant_product_types[0].value}' AS product_type,"
     else:
         product_type_clause = _get_product_type_case_when_statement_usage_event(
             relevant_product_types
@@ -314,6 +356,46 @@ def build_segment_event_view_query_template(
         "user_id," if has_user_id else "CAST(NULL AS STRING) AS user_id,"
     )
 
+    # Determine context_page_path/context_page_url selection based on whether (and how)
+    # the source table provides page/URL context. Skip the self-alias in the common
+    # (default) case to keep the generated SQL identical to before this parameter existed.
+    def _page_context_inner_select(expr: str | None, column_name: str) -> str:
+        if expr is None:
+            return f"CAST(NULL AS STRING) AS {column_name},"
+        if expr == column_name:
+            return f"{column_name},"
+        return f"{expr} AS {column_name},"
+
+    context_page_path_inner_select = _page_context_inner_select(
+        context_page_path_expr, "context_page_path"
+    )
+    context_page_url_inner_select = _page_context_inner_select(
+        context_page_url_expr, "context_page_url"
+    )
+
+    # When person_id_expr is set, the raw source already resolved person_id, so we
+    # select it directly in the inner subquery and skip the pseudonymized_id_to_person_id
+    # join entirely; otherwise, person_id is resolved via that join as before.
+    person_id_inner_select = (
+        f"\n        CAST({person_id_expr} AS INT64) AS person_id,"
+        if person_id_expr is not None
+        else ""
+    )
+    outer_person_id_select = (
+        "events.person_id" if person_id_expr is not None else "person_id"
+    )
+
+    # The "prod deployment only" filter matches context_page_url against every
+    # product's known url_bases, so it only makes sense for sources that actually have
+    # a context_page_url column to filter on.
+    prod_deployment_where_clause = (
+        f"""-- events from prod deployment only
+    WHERE
+        {_get_url_filter_for_all_products()}"""
+        if context_page_url_expr
+        else "-- No context_page_url on this source table; skipping the URL-based prod-deployment filter"
+    )
+
     if user_is_jii:
         # JII events carry no staff identity: the event's `user_id` IS the resident's
         # pseudonymized ID, there is no email, and state_code comes from the person
@@ -328,7 +410,11 @@ def build_segment_event_view_query_template(
             '"PERSON_EXTERNAL_ID_WITH_RESIDENT_RECORD_SALT"'
         )
     else:
-        state_code_select = "COALESCE(person.state_code, rdu.state_code) AS state_code"
+        state_code_select = (
+            "rdu.state_code AS state_code"
+            if person_id_expr is not None
+            else "COALESCE(person.state_code, rdu.state_code) AS state_code"
+        )
         email_select = "LOWER(rdu.email) AS email_address"
         pseudonymized_id_select = (
             # this field was renamed, fall back to previous name for older records
@@ -336,7 +422,23 @@ def build_segment_event_view_query_template(
             if segment_table_jii_pseudonymized_id_columns
             else "CAST(NULL AS STRING)"
         ) + " AS pseudonymized_id"
-        reidentified_dashboard_users_join = f"""-- join to filter out recidiviz users and others unidentified (if any)
+        # TODO(OBT-46938): Delete this once the Meetings app emits a user_hash and
+        # the existing rows are backfilled.
+        if user_id_is_email:
+            reidentified_dashboard_users_join = f"""-- join to filter out unidentified users; this source's user_id is a raw
+-- email address (not a user_hash), so match directly against the roster by email
+{user_id_join_type} JOIN (
+    SELECT DISTINCT
+        -- The roster only has US_ID, convert to US_IX
+        IF(state_code = "US_ID", "US_IX", state_code) AS state_code,
+        LOWER(email_address) AS user_id,
+        LOWER(email_address) AS email,
+    FROM `{{project_id}}.reference_views.product_roster_archive_materialized`
+) rdu
+ON
+    LOWER(events.user_id) = rdu.user_id"""
+        else:
+            reidentified_dashboard_users_join = f"""-- join to filter out recidiviz users and others unidentified (if any)
 {user_id_join_type} JOIN
     `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
 ON
@@ -357,13 +459,22 @@ ON
             f"    {'AND rdu.state_code = person.state_code' if has_user_id else ''}"
         )
 
+    pseudonymized_id_to_person_id_join = (
+        ""
+        if person_id_expr is not None
+        else f"""{person_id_join_type} JOIN
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
+ON
+    {person_join_condition}"""
+    )
+
     template = f"""
 SELECT
     {state_code_select},
     events.user_id,
     {email_select},
     DATETIME(events.timestamp, "US/Eastern") AS event_ts,
-    person_id,
+    {outer_person_id_select},
     {session_id_select}
     context_page_path,
     context_page_url,
@@ -375,25 +486,20 @@ FROM (
         {pseudonymized_id_select},
         timestamp,
     {session_id_inner_select}
-        {user_id_inner_select}
-        context_page_path,
-        context_page_url,
+        {user_id_inner_select}{person_id_inner_select}
+        {context_page_path_inner_select}
+        {context_page_url_inner_select}
         "{segment_table_sql_source.table_id}" AS event,
         {list_to_query_string(additional_attribute_cols)}
     FROM
         `{segment_table_sql_source.format_address_for_query_template()}`
-    -- events from prod deployment only
-    WHERE
-        {_get_url_filter_for_all_products()}
+    {prod_deployment_where_clause}
     -- dedupes events loaded more than once
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
 ) events
 {reidentified_dashboard_users_join}
-{person_id_join_type} JOIN
-    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
-ON
-    {person_join_condition}
+{pseudonymized_id_to_person_id_join}
 
 """
     return template

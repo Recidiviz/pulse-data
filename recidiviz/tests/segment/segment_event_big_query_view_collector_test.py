@@ -99,6 +99,10 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
         excluded_table_ids = {
             "identifies",
             "pages",
+            # `screens` is the native-app analog of `pages` (Segment's `screen()` vs
+            # `page()` tracking) and is consumed the same way `pages` is: via a union
+            # in all_segment_pages.py, not a standalone SegmentEventBigQueryViewBuilder.
+            "screens",
             "tracks",
             "users",
             "hello",

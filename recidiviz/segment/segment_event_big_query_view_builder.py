@@ -31,6 +31,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
     def __init__(
         self,
+        *,
         # Description of the segment view
         description: str,
         # The address of the source table of the segment events
@@ -53,6 +54,28 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # rather than a staff member. When True,the event's user_id is the
         # resident's pseudonymized ID and staff re-identification is skipped.
         user_is_jii: bool = False,
+        # Whether the source table has context_page_path/context_page_url columns
+        # (true for web `page()`-tracking apps; false for native/desktop apps that
+        # have no notion of a page URL, e.g. those using `screen()` tracking instead).
+        # Also determines whether prod_deployment_where_clause applies its
+        # context_page_url-based prod-only filter (skipped entirely when False, since
+        # there's no URL to filter on).
+        has_page_context: bool = True,
+        # Whether the source table's user_id column contains a raw email address
+        # rather than the usual pre-hashed user_hash. This is not an inherent
+        # property of native/desktop apps, just a gap in that source's current
+        # Segment integration. When True, staff identity is joined directly on
+        # email via `product_roster_archive` instead of the user_hash-keyed
+        # `reidentified_dashboard_users` table.
+        # TODO(OBT-46938): Delete this once the Meetings app emits a user_hash and
+        # the existing rows are backfilled.
+        user_id_is_email: bool = False,
+        # Expression identifying a raw source column that already contains the
+        # resolved Recidiviz internal person_id (an integer), rather than a
+        # pseudonymized ID that needs resolving via pseudonymized_id_to_person_id.
+        # Mutually exclusive with segment_table_jii_pseudonymized_id_columns and
+        # user_is_jii.
+        person_id_expr: str | None = None,
     ) -> None:
         self.segment_table_sql_source = segment_events_source_table_address
         self.segment_table_jii_pseudonymized_id_columns = (
@@ -64,6 +87,9 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.has_session_id = has_session_id
         self.has_user_id = has_user_id
         self.user_is_jii = user_is_jii
+        self.has_page_context = has_page_context
+        self.user_id_is_email = user_id_is_email
+        self.person_id_expr = person_id_expr
 
         address = self.view_address(
             segment_events_source_table_address, user_is_jii=user_is_jii
@@ -80,6 +106,9 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 has_session_id=has_session_id,
                 has_user_id=has_user_id,
                 user_is_jii=user_is_jii,
+                has_page_context=has_page_context,
+                user_id_is_email=user_id_is_email,
+                person_id_expr=person_id_expr,
             ),
             schema=segment_event_schema(
                 segment_events_source_table_address=segment_events_source_table_address,
@@ -112,6 +141,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     @classmethod
     def _build_query_template(
         cls,
+        *,
         segment_table_sql_source: BigQueryAddress,
         segment_table_jii_pseudonymized_id_columns: list[str],
         additional_attribute_cols: list[str],
@@ -119,6 +149,9 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         has_session_id: bool = True,
         has_user_id: bool = True,
         user_is_jii: bool = False,
+        has_page_context: bool = True,
+        user_id_is_email: bool = False,
+        person_id_expr: str | None = None,
     ) -> str:
         """Builds the SQL query template for the Segment event view for a set of relevant product types
         by transforming hashed user and client id's into internal id's and pulling any additional
@@ -132,4 +165,8 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             has_session_id=has_session_id,
             has_user_id=has_user_id,
             user_is_jii=user_is_jii,
+            context_page_path_expr="context_page_path" if has_page_context else None,
+            context_page_url_expr="context_page_url" if has_page_context else None,
+            user_id_is_email=user_id_is_email,
+            person_id_expr=person_id_expr,
         )
