@@ -677,6 +677,75 @@ class LLMDocumentExtractionGoldenEvalScorerTest(TestCase):
         self.assertEqual("12.5", scores[("assignments.rate_amount", 0)].actual_value)
         self.assertEqual("9.0", scores[("assignments.rate_amount", 1)].actual_value)
 
+    def test_array_pairs_null_primary_key_with_null(self) -> None:
+        document = _document(
+            expected_values=_expected_values(
+                assignments=[
+                    {
+                        "assignment_name": None,
+                        "assignment_type": "internal",
+                        "rate_amount": 12.5,
+                        "rate_period": "hourly",
+                    }
+                ]
+            )
+        )
+
+        scores = self._scores_by_field(
+            self._score_one(
+                document=document,
+                actual_output_json=_actual_output_json(
+                    assignments=[
+                        {
+                            "assignment_name": build_null_inferred_field_result_json(),
+                            "assignment_type": build_inferred_field_result_json(
+                                "internal"
+                            ),
+                            "rate_amount": build_inferred_field_result_json(12.5),
+                            "rate_period": build_inferred_field_result_json("hourly"),
+                        }
+                    ]
+                ),
+            )
+        )
+
+        self.assertTrue(scores[("assignments", None)].is_correct)
+        self.assertEqual(
+            _score("assignments.assignment_name", 0, None, None, True),
+            scores[("assignments.assignment_name", 0)],
+        )
+        self.assertTrue(all(score.is_correct for score in scores.values()))
+
+    def test_array_null_primary_key_does_not_pair_with_non_null(self) -> None:
+        document = _document(
+            expected_values=_expected_values(
+                assignments=[{"assignment_name": None, "rate_amount": 12.5}]
+            )
+        )
+
+        scores = self._score_one(
+            document=document, actual_output_json=_actual_output_json()
+        )
+
+        self.assertEqual(
+            _scores(
+                # The counts match (1 vs. 1) but a null key never pairs with a
+                # non-null one.
+                ("assignments", None, "count:1", "count:1", False),
+                # Element 0: expected but unpaired.
+                ("assignments.assignment_name", 0, None, None, False),
+                ("assignments.assignment_type", 0, None, None, False),
+                ("assignments.rate_amount", 0, "12.5", None, False),
+                ("assignments.rate_period", 0, None, None, False),
+                # Element 1: returned but unpaired.
+                ("assignments.assignment_name", 1, None, "Dish duty", False),
+                ("assignments.assignment_type", 1, None, "internal", False),
+                ("assignments.rate_amount", 1, None, "12.5", False),
+                ("assignments.rate_period", 1, None, "hourly", False),
+            ),
+            [score for score in scores if score.field_name.startswith("assignments")],
+        )
+
     def test_array_count_mismatch(self) -> None:
         document = _document(
             expected_values=_expected_values(

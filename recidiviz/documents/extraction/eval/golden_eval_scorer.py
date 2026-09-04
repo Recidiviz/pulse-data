@@ -71,10 +71,10 @@ class LLMDocumentExtractionGoldenEvalScorer:
 
     Flat fields score by fuzzy match (string-valued fields: case-insensitive,
     whitespace-normalized) or exact comparison (every other type).
-    ARRAY_OF_STRUCT fields pair elements on the field's `primary_keys`, score each
-    paired element's sub-fields, score unmatched expected elements as misses and
-    unmatched actual elements as false positives, and emit an array-level score
-    recording whether the counts matched and every element paired.
+    ARRAY_OF_STRUCT fields pair elements on the field's `primary_keys`, score
+    each paired element's sub-fields, score unmatched expected elements as misses
+    and unmatched actual elements as false positives, and emit an array-level
+    score recording whether the counts matched and every element paired.
 
     Returns one GoldenEvalFieldScore per (document, field[, element]) comparison.
     """

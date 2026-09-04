@@ -844,7 +844,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
             self._read_one_visits_row_issues(_visits_cells(visits__expected=cell)),
         )
 
-    def test_read_document_array_element_missing_primary_key(self) -> None:
+    def test_read_document_array_element_all_primary_keys_null(self) -> None:
         cell = '[{"assignment_type": "internal"}]'
 
         self.assertEqual(
@@ -853,9 +853,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
                     column_name="assignments__expected",
                     value=cell,
                     reason=(
-                        "element [0] has no value for primary key sub-field(s) "
-                        "['assignment_name'] of field [assignments], which expected "
-                        "and actual elements pair on"
+                        "element [0] is null for every primary key sub-field "
+                        "['assignment_name'] of field [assignments], which "
+                        "expected and actual elements pair on"
                     ),
                 )
             ],

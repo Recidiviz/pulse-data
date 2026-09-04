@@ -426,29 +426,29 @@ class GoldenEvalDocumentValidator:
         """Returns the first issue that would stop the scorer pairing the expected
         elements of ARRAY_OF_STRUCT |field| with the extractor's actual ones, or
         None when every element pairs cleanly. The scorer pairs on the field's
-        `primary_keys`, so a null key silently mispairs, and duplicate keys make
-        its greedy pairing — and therefore the score — depend on element order.
+        `primary_keys`, and a null key value pairs only with a null, so an
+        element whose keys are all null is identified by nothing, and duplicate
+        keys make the scorer's greedy pairing — and therefore the score — depend
+        on element order.
         """
         element_index_by_pairing_key: dict[tuple[Any, ...], int] = {}
         for element_index, element in enumerate(elements):
-            if null_primary_keys := [
-                primary_key
-                for primary_key in field.primary_keys
-                if element.get(primary_key) is None
-            ]:
+            if all(
+                element.get(primary_key) is None for primary_key in field.primary_keys
+            ):
                 return GoldenEvalDocumentIssue(
                     field_name=field.name,
                     element_index=element_index,
                     sub_field_name=None,
                     detail=(
-                        f"has no value for primary key sub-field(s) "
-                        f"{sorted(null_primary_keys)} of field [{field.name}], which "
+                        f"is null for every primary key sub-field "
+                        f"{field.primary_keys} of field [{field.name}], which "
                         f"expected and actual elements pair on"
                     ),
                 )
             pairing_key = tuple(
                 field_comparison_key(
-                    field=field.get_field(primary_key), value=element[primary_key]
+                    field=field.get_field(primary_key), value=element.get(primary_key)
                 )
                 for primary_key in field.primary_keys
             )

@@ -36,6 +36,14 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
 )
+from recidiviz.documents.extraction.models.llm_request_output_schema import (
+    LLMRequestOutputSchema,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfStructLLMRequestOutputSchemaField,
+    LLMOutputFieldType,
+    PrimitiveScalarLLMRequestOutputSchemaField,
+)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
 )
@@ -177,4 +185,117 @@ class GoldenEvalDocumentValidatorTest(TestCase):
     def test_required_field_is_required_of_a_relevant_document(self) -> None:
         self.assertEqual(
             ["primary_status"], self._field_paths(_document(primary_status=None))
+        )
+
+    def test_element_with_its_only_primary_key_null_is_flagged(self) -> None:
+        self.assertEqual(
+            ["assignments[0]"],
+            self._field_paths(
+                _document(assignments=[{**_DISH_DUTY_ELEMENT, "assignment_name": None}])
+            ),
+        )
+
+
+def _events_output_schema() -> LLMRequestOutputSchema:
+    """Returns a minimal output schema declaring an ARRAY_OF_STRUCT field that
+    pairs on two primary keys.
+    """
+    return LLMRequestOutputSchema(
+        full_batch_description="Fictional event records for a batch of documents.",
+        result_level_description="Fictional event record for a single document.",
+        relevance_criteria="Whether the document mentions a fictional event",
+        user_defined_fields=[
+            ArrayOfStructLLMRequestOutputSchemaField(
+                name="events",
+                description="The events the document mentions.",
+                required=False,
+                inferred_field_config=None,
+                primary_keys=["event_type", "event_date"],
+                min_items=None,
+                fields=[
+                    PrimitiveScalarLLMRequestOutputSchemaField(
+                        name="event_type",
+                        description="The kind of event.",
+                        required=False,
+                        inferred_field_config=None,
+                        scalar_type=LLMOutputFieldType.STRING,
+                    ),
+                    PrimitiveScalarLLMRequestOutputSchemaField(
+                        name="event_date",
+                        description="The date of the event.",
+                        required=False,
+                        inferred_field_config=None,
+                        scalar_type=LLMOutputFieldType.STRING,
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def _events_document(events: list[dict[str, Any]]) -> GoldenEvalDocument:
+    """Returns one relevant document against the two-key events schema, expecting
+    |events|.
+    """
+    return GoldenEvalDocument(
+        golden_document_id="unit_1",
+        test_type=GoldenEvalTestType.UNIT,
+        test_case="base_case",
+        state_code=StateCode.US_XX,
+        document_text="Fired on 2025-01-15.",
+        expected_values={IS_RELEVANT_FIELD_NAME: True, "events": events},
+    )
+
+
+class GoldenEvalDocumentValidatorMultiPrimaryKeyTest(TestCase):
+    """Tests for GoldenEvalDocumentValidator's pairing-key check against a field
+    that pairs on more than one primary key.
+    """
+
+    def setUp(self) -> None:
+        self.validator = GoldenEvalDocumentValidator(
+            output_schema=_events_output_schema()
+        )
+
+    def _field_paths(self, document: GoldenEvalDocument) -> list[str]:
+        """Returns the path of each value the validator flags in |document|."""
+        return [issue.field_path for issue in self.validator.issues(document=document)]
+
+    def test_element_with_one_of_two_primary_keys_null_is_legal(self) -> None:
+        self.assertEqual(
+            [],
+            self._field_paths(
+                _events_document([{"event_type": "fired", "event_date": None}])
+            ),
+        )
+
+    def test_element_omitting_one_primary_key_is_legal(self) -> None:
+        self.assertEqual(
+            [], self._field_paths(_events_document([{"event_type": "fired"}]))
+        )
+
+    def test_element_with_every_primary_key_null_is_flagged(self) -> None:
+        self.assertEqual(
+            ["events[0]"],
+            self._field_paths(
+                _events_document([{"event_type": None, "event_date": None}])
+            ),
+        )
+
+    def test_element_omitting_every_primary_key_is_flagged(self) -> None:
+        self.assertEqual(["events[0]"], self._field_paths(_events_document([{}])))
+
+    def test_elements_sharing_a_pairing_key_with_a_null_value_are_flagged(self) -> None:
+        # A null key value still identifies the element, so two elements whose
+        # keys are identical-including-nulls cannot be told apart.
+        self.assertEqual(
+            ["events[1]"],
+            self._field_paths(
+                _events_document(
+                    [
+                        {"event_type": "fired", "event_date": None},
+                        {"event_type": "fired", "event_date": None},
+                    ]
+                )
+            ),
         )
