@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -1360,6 +1361,103 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_count=1,
             violation_history_description="1felony",
             violation_type_frequency_counter=[["FELONY"]],
+            level_1_supervision_location_external_id="4",
+            level_2_supervision_location_external_id=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
+
+        self.assertEqual(
+            expected_commitment_from_supervision_event,
+            commitment_from_supervision_event,
+        )
+
+    def test_commitment_from_supervision_event_us_nd_violation_at_case_closure(
+        self,
+    ) -> None:
+        """A supervision period that closed with an absconsion violation on file,
+        followed by an incarceration admission more than 90 days later (but still
+        within the pre-commitment supervision period proximity window), should still
+        surface that absconsion as the most severe violation. See ND-1 / the
+        "Revocations & Violation Types" email thread: a violation recorded around the
+        time a supervision case closes should count, even if the person isn't
+        readmitted until much later."""
+        supervision_period = NormalizedStateSupervisionPeriod(
+            sequence_num=0,
+            supervision_period_id=_DEFAULT_SP_ID,
+            external_id="sp1",
+            state_code="US_ND",
+            start_date=date(2015, 3, 5),
+            termination_date=date(2016, 1, 4),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_site="4",
+        )
+
+        supervision_violation = NormalizedStateSupervisionViolation(
+            supervision_violation_id=123455,
+            external_id="sv1",
+            state_code="US_ND",
+            violation_date=date(2016, 1, 4),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.ABSCONDED,
+                ),
+            ],
+        )
+
+        ssvr = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            state_code="US_ND",
+            external_id="svr1",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            supervision_violation=supervision_violation,
+            response_date=date(2016, 1, 4),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+        )
+
+        incarceration_period = NormalizedStateIncarcerationPeriod(
+            sequence_num=0,
+            incarceration_period_id=111,
+            external_id="ip1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ND",
+            # 700 days after the supervision period's termination_date - well
+            # outside of the 90-day window around the admission_date, but still
+            # within the pre-commitment supervision period proximity window.
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="PARL",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        commitment_from_supervision_event = (
+            self._run_commitment_from_supervision_event_for_period(
+                pre_commitment_supervision_period=supervision_period,
+                incarceration_period=incarceration_period,
+                violation_responses=[ssvr],
+            )
+        )
+
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
+        expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
+            state_code=supervision_period.state_code,
+            event_date=incarceration_period.admission_date,
+            admission_reason=incarceration_period.admission_reason,
+            admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.ABSCONDED.value,
+            most_severe_violation_id=123455,
+            violation_history_id_array="123455",
+            response_count=1,
+            violation_history_description="1absconded",
+            violation_type_frequency_counter=[["ABSCONDED"]],
             level_1_supervision_location_external_id="4",
             level_2_supervision_location_external_id=None,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,

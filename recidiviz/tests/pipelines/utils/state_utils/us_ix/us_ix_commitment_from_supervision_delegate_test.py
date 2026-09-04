@@ -31,7 +31,7 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.utils.commitment_from_supervision_utils import (
-    _get_commitment_from_supervision_supervision_period,
+    get_commitment_from_supervision_period,
 )
 from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_commitment_from_supervision_delegate import (
     UsIxCommitmentFromSupervisionDelegate,
@@ -46,7 +46,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 
 
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
-    """Tests the _get_commitment_from_supervision_supervision_period function when
+    """Tests the get_commitment_from_supervision_period function when
     the UsIxCommitmentFromSupervisionDelegate is provided."""
 
     @staticmethod
@@ -67,7 +67,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         incarceration_periods = [ip]
 
-        return _get_commitment_from_supervision_supervision_period(
+        return get_commitment_from_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsIxCommitmentFromSupervisionDelegate(),
             supervision_period_index=default_normalized_sp_index_for_tests(

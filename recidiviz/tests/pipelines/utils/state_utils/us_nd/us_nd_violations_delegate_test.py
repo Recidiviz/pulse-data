@@ -168,3 +168,38 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
         )
 
         self.assertEqual(expected_violation_window, violation_window)
+
+
+class TestAdditionalViolationHistoryWindowsPreCommitment(unittest.TestCase):
+    """Tests the US_ND specific implementation of
+    additional_violation_history_windows_relevant_to_critical_date on the
+    UsNdViolationDelegate."""
+
+    def test_no_preceding_supervision_period(self) -> None:
+        additional_windows = UsNdViolationDelegate().additional_violation_history_windows_relevant_to_critical_date(
+            critical_date=date(2000, 1, 1),
+            sorted_and_filtered_violation_responses=[],
+            default_violation_history_window_months=0,
+            termination_date_of_preceding_supervision_period=None,
+        )
+
+        self.assertEqual([], additional_windows)
+
+    def test_with_preceding_supervision_period(self) -> None:
+        additional_windows = UsNdViolationDelegate().additional_violation_history_windows_relevant_to_critical_date(
+            critical_date=date(2000, 1, 1),
+            sorted_and_filtered_violation_responses=[],
+            default_violation_history_window_months=0,
+            termination_date_of_preceding_supervision_period=date(1998, 1, 4),
+        )
+
+        expected_additional_windows = [
+            DateRange(
+                # 90 days before the preceding supervision period's termination_date
+                lower_bound_inclusive_date=date(1997, 10, 6),
+                # 90 days after
+                upper_bound_exclusive_date=date(1998, 4, 4),
+            )
+        ]
+
+        self.assertEqual(expected_additional_windows, additional_windows)

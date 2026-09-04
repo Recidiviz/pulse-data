@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific logic related to identifying violations in US_ND."""
 import datetime
-from typing import List
+from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
@@ -66,3 +66,30 @@ class UsNdViolationDelegate(StateSpecificViolationDelegate):
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
         )
+
+    def additional_violation_history_windows_relevant_to_critical_date(
+        self,
+        critical_date: datetime.date,
+        sorted_and_filtered_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,
+        termination_date_of_preceding_supervision_period: Optional[datetime.date],
+    ) -> List[DateRange]:
+        """For US_ND we also look for violation responses within 90 days of the end
+        of the supervision period that preceded the admission, if there was one. This
+        catches violations that were recorded around the time a supervision case
+        closed even when the person was not readmitted to incarceration until much
+        later (e.g. an absconsion violation recorded at case closure, followed by a
+        new-crime incarceration admission long afterward).
+        """
+        if termination_date_of_preceding_supervision_period is None:
+            return []
+
+        return [
+            self.violation_history_window_relevant_to_critical_date(
+                critical_date=termination_date_of_preceding_supervision_period,
+                sorted_and_filtered_violation_responses=sorted_and_filtered_violation_responses,
+                default_violation_history_window_months=default_violation_history_window_months,
+            )
+        ]

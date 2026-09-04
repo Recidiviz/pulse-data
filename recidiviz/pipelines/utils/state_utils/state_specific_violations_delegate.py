@@ -138,6 +138,29 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
         )
 
+    def additional_violation_history_windows_relevant_to_critical_date(
+        self,
+        critical_date: datetime.date,  # pylint: disable=unused-argument
+        sorted_and_filtered_violation_responses: List[  # pylint: disable=unused-argument
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,  # pylint: disable=unused-argument
+        termination_date_of_preceding_supervision_period: Optional[  # pylint: disable=unused-argument
+            datetime.date
+        ],
+    ) -> List[DateRange]:
+        """Returns any additional windows of time, beyond the one returned by
+        violation_history_window_relevant_to_critical_date, in which we should also
+        consider violations relevant to a commitment from supervision admission with
+        the given |critical_date|.
+
+        Default behavior returns no additional windows. Should be overridden by
+        state-specific implementations that want to also search for violations
+        recorded around the end of the supervision period that preceded the
+        admission.
+        """
+        return []
+
     def get_violation_type_subtype_strings_for_violation(
         self,
         violation: NormalizedStateSupervisionViolation,

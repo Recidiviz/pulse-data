@@ -58,6 +58,7 @@ from recidiviz.pipelines.metrics.incarceration.events import (
 from recidiviz.pipelines.metrics.utils.commitment_from_supervision_utils import (
     count_temporary_custody_as_commitment_from_supervision,
     get_commitment_from_supervision_details,
+    get_commitment_from_supervision_period,
 )
 from recidiviz.pipelines.metrics.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
@@ -344,12 +345,30 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
         )
 
+        pre_commitment_supervision_period = get_commitment_from_supervision_period(
+            incarceration_period=incarceration_period,
+            supervision_period_index=supervision_period_index,
+            commitment_from_supervision_delegate=self.commitment_from_supervision_delegate,
+            incarceration_period_index=incarceration_period_index,
+        )
+
         violation_history_window = (
             self.violation_delegate.violation_history_window_relevant_to_critical_date(
                 critical_date=admission_date,
                 sorted_and_filtered_violation_responses=violation_responses_for_history,
                 default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
             )
+        )
+
+        additional_violation_history_windows = self.violation_delegate.additional_violation_history_windows_relevant_to_critical_date(
+            critical_date=admission_date,
+            sorted_and_filtered_violation_responses=violation_responses_for_history,
+            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
+            termination_date_of_preceding_supervision_period=(
+                pre_commitment_supervision_period.termination_date
+                if pre_commitment_supervision_period
+                else None
+            ),
         )
 
         # Get details about the violation and response history leading up to the
@@ -360,6 +379,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             violation_delegate=self.violation_delegate,
             incarceration_period=incarceration_period,
             lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
+            additional_violation_windows=additional_violation_history_windows,
         )
 
         most_severe_violation_type = violation_history.most_severe_violation_type

@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -253,6 +254,7 @@ def get_violation_and_response_history(
     violation_delegate: StateSpecificViolationDelegate,
     incarceration_period: Optional[NormalizedStateIncarcerationPeriod],
     lower_bound_inclusive_date_override: Optional[date] = None,
+    additional_violation_windows: Optional[List[DateRange]] = None,
 ) -> ViolationHistory:
     """Identifies and returns various details of the violation history on the responses
     that were recorded during a period of time.
@@ -262,6 +264,10 @@ def get_violation_and_response_history(
 
     If lower_bound_inclusive_date_override is null, uses the period of time
     VIOLATION_HISTORY_WINDOW_MONTHS preceding the |end_date|.
+
+    If |additional_violation_windows| is provided, violations and responses recorded
+    within any of those windows are also included in the history, alongside the
+    primary window described above.
     """
 
     lower_bound_inclusive_date = (
@@ -275,6 +281,26 @@ def get_violation_and_response_history(
         upper_bound_exclusive=upper_bound_exclusive_date,
         lower_bound_inclusive=lower_bound_inclusive_date,
     )
+
+    response_ids_in_window = {
+        response.supervision_violation_response_id
+        for response in responses_in_window
+        if response.supervision_violation_response_id
+    }
+
+    for additional_window in additional_violation_windows or []:
+        for response in violation_responses_in_window(
+            violation_responses=violation_responses_for_history,
+            upper_bound_exclusive=additional_window.upper_bound_exclusive_date,
+            lower_bound_inclusive=additional_window.lower_bound_inclusive_date,
+        ):
+            if (
+                response.supervision_violation_response_id
+                and response.supervision_violation_response_id
+                not in response_ids_in_window
+            ):
+                responses_in_window.append(response)
+                response_ids_in_window.add(response.supervision_violation_response_id)
 
     violations_in_window: List[NormalizedStateSupervisionViolation] = []
     violation_ids_in_window: Set[int] = set()

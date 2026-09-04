@@ -29,6 +29,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
@@ -1651,6 +1652,138 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_count=1,
             violation_history_description="1tech",
             violation_type_frequency_counter=[["LAW", "TECHNICAL"]],
+        )
+
+        self.assertEqual(expected_output, violation_history)
+
+    def test_get_violation_and_response_history_additional_window_finds_violation(
+        self,
+    ) -> None:
+        """A response recorded well outside of the primary window is still picked up
+        when it falls within an additional_violation_window."""
+        supervision_violation = NormalizedStateSupervisionViolation(
+            supervision_violation_id=123455,
+            external_id="sv1",
+            state_code="US_XX",
+            violation_date=datetime.date(2018, 1, 4),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.ABSCONDED,
+                ),
+            ],
+        )
+
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_XX",
+            response_date=datetime.date(2018, 1, 4),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+            ],
+            supervision_violation=supervision_violation,
+        )
+
+        # More than two years after the response_date - well outside of the default
+        # 12-month primary window.
+        admission_date = datetime.date(2020, 1, 26)
+
+        violation_history = violation_utils.get_violation_and_response_history(
+            admission_date,
+            [supervision_violation_response],
+            UsXxViolationDelegate(),
+            incarceration_period=None,
+            additional_violation_windows=[
+                DateRange(
+                    lower_bound_inclusive_date=datetime.date(2017, 10, 6),
+                    upper_bound_exclusive_date=datetime.date(2018, 4, 4),
+                )
+            ],
+        )
+
+        expected_output = violation_utils.ViolationHistory(
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.ABSCONDED.value,
+            most_severe_violation_id=123455,
+            violation_history_id_array="123455",
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            response_count=1,
+            violation_history_description="1absconded",
+            violation_type_frequency_counter=[["ABSCONDED"]],
+        )
+
+        self.assertEqual(expected_output, violation_history)
+
+    def test_get_violation_and_response_history_additional_window_no_double_count(
+        self,
+    ) -> None:
+        """A response that falls within both the primary window and an
+        additional_violation_window is only counted once."""
+        supervision_violation = NormalizedStateSupervisionViolation(
+            supervision_violation_id=123455,
+            external_id="sv1",
+            state_code="US_XX",
+            violation_date=datetime.date(2009, 1, 3),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_XX",
+            response_date=datetime.date(2009, 1, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+            ],
+            supervision_violation=supervision_violation,
+        )
+
+        revocation_date = datetime.date(2009, 2, 13)
+
+        violation_history = violation_utils.get_violation_and_response_history(
+            revocation_date,
+            [supervision_violation_response],
+            UsXxViolationDelegate(),
+            incarceration_period=None,
+            # This window also overlaps the response_date, but should not cause the
+            # response to be counted twice.
+            additional_violation_windows=[
+                DateRange(
+                    lower_bound_inclusive_date=datetime.date(2009, 1, 1),
+                    upper_bound_exclusive_date=datetime.date(2009, 1, 31),
+                )
+            ],
+        )
+
+        expected_output = violation_utils.ViolationHistory(
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_violation_id=123455,
+            violation_history_id_array="123455",
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            response_count=1,
+            violation_history_description="1felony",
+            violation_type_frequency_counter=[["FELONY"]],
         )
 
         self.assertEqual(expected_output, violation_history)

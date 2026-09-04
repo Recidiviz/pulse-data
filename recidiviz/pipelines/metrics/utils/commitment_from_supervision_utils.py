@@ -99,13 +99,11 @@ def get_commitment_from_supervision_details(
     level_1_supervision_location_external_id = None
     level_2_supervision_location_external_id = None
 
-    pre_commitment_supervision_period = (
-        _get_commitment_from_supervision_supervision_period(
-            incarceration_period=incarceration_period,
-            supervision_period_index=supervision_period_index,
-            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-            incarceration_period_index=incarceration_period_index,
-        )
+    pre_commitment_supervision_period = get_commitment_from_supervision_period(
+        incarceration_period=incarceration_period,
+        supervision_period_index=supervision_period_index,
+        commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+        incarceration_period_index=incarceration_period_index,
     )
 
     if pre_commitment_supervision_period:
@@ -286,7 +284,7 @@ def _filter_to_matching_supervision_types(
     ]
 
 
-def _get_commitment_from_supervision_supervision_period(
+def get_commitment_from_supervision_period(
     incarceration_period: NormalizedStateIncarcerationPeriod,
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
     supervision_period_index: NormalizedSupervisionPeriodIndex,
