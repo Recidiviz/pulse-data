@@ -23,11 +23,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_higher_than_recommended,
-    incarcerated_at_least_6_months,
-)
+from recidiviz.task_eligibility.criteria.general import incarcerated_at_least_6_months
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    custody_level_higher_than_recommended,
     no_active_discretionary_override,
     not_already_on_lowest_eligible_custody_level,
     not_in_classification_pilot,

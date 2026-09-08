@@ -629,18 +629,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "classification_views.us_ix_recommended_custody_level_spans"
-    ): [
-        "date_gap_id",
-        "end_date",
-        "person_id",
-        "recommended_custody_level",
-        "score_metadata",
-        "session_id",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
         "analyst_data.us_ma_compartment_sub_sessions_preprocessed"
     ): [
         "case_type",
