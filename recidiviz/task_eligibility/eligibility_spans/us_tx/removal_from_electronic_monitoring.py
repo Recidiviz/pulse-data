@@ -17,6 +17,7 @@
 """Shows the spans of time during which someone in TX, who has an electronic
 monitoring case type, is eligible to have that case type removed.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
@@ -31,6 +32,11 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     at_least_30_days_since_last_rejection_for_em_removal,
     electronic_monitoring_for_at_least_60_days,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -50,6 +56,24 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_violation_within_30_days.VIEW_BUILDER,
     ],
     completion_event_builder=case_type_downgrade_from_electronic_monitoring.VIEW_BUILDER,
+    # Electronic monitoring duration is the one criterion that resolves purely by
+    # waiting, so it's the only one that drives the almost-eligible countdown here.
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
+                reasons_date_field="eligible_date",
+                interval_length=30,
+                interval_date_part=BigQueryDateInterval.DAY,
+                description="Within 30 days of being on electronic monitoring for 60 days",
+            ),
+            EligibleCriteriaCondition(
+                criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
+                description="On electronic monitoring for at least 60 days",
+            ),
+        ],
+        at_least_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":
