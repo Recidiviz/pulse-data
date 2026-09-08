@@ -52,7 +52,7 @@ import numpy as np
 import pandas as pd
 import pandas_gbq
 import seaborn as sns
-from IPython import get_ipython
+from IPython.core.getipython import get_ipython
 from IPython.display import HTML, display
 from tqdm.notebook import tqdm
 
