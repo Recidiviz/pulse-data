@@ -52,6 +52,9 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligibl
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.classification.recommended_custody_level_views.recommended_custody_level_spans import (
+    RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_contact_reminders import (
     JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER,
 )
@@ -487,6 +490,10 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="llm_eval__llmaj",
                 table_id="notetaking_evaluation_scores_parsed",
             ),
+            # State-agnostic fan-in of every classification policy's recommended spans;
+            # reading the unioned view is what lets a newly migrated policy flow through
+            # without adding a branch here.
+            RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

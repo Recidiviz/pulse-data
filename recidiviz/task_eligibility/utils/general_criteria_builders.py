@@ -29,6 +29,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
+    convert_cols_to_json,
     create_sub_sessions_with_attributes,
     join_sentence_serving_periods_to_compartment_sessions,
     join_sentence_spans_to_compartment_sessions,
@@ -36,6 +37,14 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
+)
+from recidiviz.calculator.query.state.views.classification.recommended_classification_spans_big_query_view_builder import (
+    CUSTODY_LEVEL_COLUMN_NAME,
+    CUSTODY_LEVEL_VS_RECOMMENDED_COLUMN_NAME,
+    END_DATE_EXCLUSIVE_COLUMN_NAME,
+    RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME,
+    CustodyLevelVsRecommended,
+    RecommendedClassificationSpansBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
@@ -646,6 +655,90 @@ def custody_or_supervision_level_criteria_builder(
         meets_criteria_default=meets_criteria_default_view_builder,
         reasons_fields=reasons_fields,
     )
+
+
+def custody_level_vs_recommended_criteria(
+    *,
+    recommended_classification_spans_view_builder: RecommendedClassificationSpansBigQueryViewBuilder,
+    comparison: CustodyLevelVsRecommended,
+) -> str:
+    """Returns spans of time where a resident's current custody level compares to their
+    recommended custody level in the given way, along with the date they next become
+    eligible.
+
+    Args:
+        recommended_classification_spans_view_builder: The policy whose recommended
+            levels this criteria compares against. It has already done the
+            current-vs-recommended comparison, so this only selects the direction of
+            interest.
+        comparison: The comparison that satisfies this criteria (e.g.
+            HIGHER_THAN_RECOMMENDED for a downgrade task).
+
+    TODO(#63762): The next_eligibility_spans CTE and final SELECT below duplicate the
+    tail of custody_level_compared_to_recommended, which the policies still on
+    hand-written recommended-custody-level views use. The two copies are semantically
+    identical but differ in whitespace and comment wording, so sharing one fragment
+    would rewrite the rendered SQL of the five live criteria views built on that
+    function. Results would be unchanged, but they would all need re-materializing, so
+    factor the shared tail out when that function is deleted rather than now.
+    """
+    spans_address = (
+        recommended_classification_spans_view_builder.table_for_query.format_address_for_query_template()
+    )
+    return f"""
+    WITH meets_criteria_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            {END_DATE_EXCLUSIVE_COLUMN_NAME},
+            {CUSTODY_LEVEL_COLUMN_NAME},
+            {RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME},
+            {CUSTODY_LEVEL_VS_RECOMMENDED_COLUMN_NAME} = '{comparison.value}' AS meets_criteria,
+        FROM `{spans_address}`
+    ),
+    /* This CTE aggregates meets_criteria_spans for rows where custody_level,
+    recommended_custody_level, and meets_criteria have the same value so that we can set the
+    upcoming_eligibility_date as the start date for that row if meets_criteria, and the
+    start_date for the upcoming row, if the next row meets_criteria. In this way we get the
+    date at which someone becomes eligible for rows where clients are eligible, or the next
+    date at which the client will become eligible */
+    next_eligibility_spans AS (
+        SELECT
+            *,
+            CASE
+                WHEN LEAD(meets_criteria) OVER (PARTITION BY person_id ORDER BY start_date)
+                    THEN LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date)
+                WHEN meets_criteria THEN start_date
+                ELSE NULL
+            END AS upcoming_eligibility_date
+        FROM ({aggregate_adjacent_spans(
+            table_name='meets_criteria_spans',
+            attribute=[
+                CUSTODY_LEVEL_COLUMN_NAME,
+                RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME,
+                'meets_criteria',
+            ],
+            end_date_field_name=END_DATE_EXCLUSIVE_COLUMN_NAME,
+        )})
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        {END_DATE_EXCLUSIVE_COLUMN_NAME} AS end_date,
+        meets_criteria,
+        {convert_cols_to_json([
+            RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME,
+            CUSTODY_LEVEL_COLUMN_NAME,
+            "upcoming_eligibility_date",
+        ])} AS reason,
+        {RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME},
+        {CUSTODY_LEVEL_COLUMN_NAME},
+        upcoming_eligibility_date,
+    FROM next_eligibility_spans
+    WHERE start_date <= CURRENT_DATE('US/Pacific')
+    """
 
 
 def custody_level_compared_to_recommended(
