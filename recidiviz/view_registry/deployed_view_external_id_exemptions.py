@@ -25,6 +25,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.product_roster_archive_sessions import (
     PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_edovo_records_preprocessed import (
+    VIEW_BUILDER as US_CO_EDOVO_RECORDS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
@@ -325,6 +328,13 @@ def get_known_views_with_unqualified_external_id(
 # foundational views.
 _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
     # analyst_data views
+    US_CO_EDOVO_RECORDS_PREPROCESSED_VIEW_BUILDER.address: (
+        "raw_person_external_id/cleaned_person_external_id hold Edovo's own, "
+        "as-reported person_id (before/after CW-prefix/_OLD-suffix stripping) "
+        "-- kept for audit so a row can be traced back to exactly which raw ID "
+        "it came from, e.g. to see why it didn't resolve to an ADCNUMBER. Not "
+        "a copy of Recidiviz's canonical person_external_id."
+    ),
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     # jii_texting views
     US_IX_LSU_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",

@@ -1,0 +1,59 @@
+# TODO(OBT-39522): Temporary source table for a personal-sandbox placeholder
+# dataset. Delete this file (and edovo_course_completions.yaml, and the
+# jessicaliu_us_co_edovo_raw_data entry in ../datasets.py) once that ticket
+# lands a real ingestion path, and remove projects_to_deploy from
+# us_co_edovo_records_preprocessed.py/us_co_edovo_proposed_credit.py so they
+# deploy to production too.
+address:
+  dataset_id: jessicaliu_us_co_edovo_raw_data
+  table_id: edovo_program_map
+description: Temporary CO Edovo course list for staging validation.
+schema:
+  - name: date_evaluated
+    type: STRING
+    mode: NULLABLE
+  - name: content_id
+    type: STRING
+    mode: NULLABLE
+  - name: title
+    type: STRING
+    mode: NULLABLE
+  - name: oras_alignment_1
+    type: STRING
+    mode: NULLABLE
+  - name: oras_alignment_2
+    type: STRING
+    mode: NULLABLE
+  - name: oras_alignment_3
+    type: STRING
+    mode: NULLABLE
+  - name: oras_alignment_4
+    type: STRING
+    mode: NULLABLE
+  - name: oras_alignment_5
+    type: STRING
+    mode: NULLABLE
+  - name: oras_recommendation
+    type: STRING
+    mode: NULLABLE
+  - name: description
+    type: STRING
+    mode: NULLABLE
+  - name: language
+    type: STRING
+    mode: NULLABLE
+  - name: provider_name
+    type: STRING
+    mode: NULLABLE
+  - name: categories
+    type: STRING
+    mode: NULLABLE
+  - name: subjects
+    type: STRING
+    mode: NULLABLE
+  - name: estimated_time_to_complete_minutes
+    type: FLOAT
+    mode: NULLABLE
+clustering_fields: null
+deployed_projects:
+  - recidiviz-staging
