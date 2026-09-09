@@ -37,7 +37,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
-            job_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_calculation_views.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
             incident_type="Task Run",
         )
@@ -74,7 +74,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             dag_run_config=json.dumps({"ingest_instance": "SECONDARY"}),
-            job_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_calculation_views.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
             incident_type="Task Run",
         )
@@ -85,7 +85,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             dag_run_config="",
-            job_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_calculation_views.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
             incident_type="Task Run",
         )
@@ -97,7 +97,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
-            job_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_calculation_views.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=14)],
             incident_type="Task Run",
         )

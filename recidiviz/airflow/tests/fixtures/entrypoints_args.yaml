@@ -1,7 +1,8 @@
 # This file maintains the list of known entrypoint usages
 # It is used in both Airflow tests and recidiviz/tests/entrypoints/entrypoints_test.py
-test_update_all_managed_views_endpoint:
-  - --entrypoint=UpdateAllManagedViewsEntrypoint
+test_update_managed_view_graph_endpoint:
+  - --entrypoint=UpdateManagedViewGraphEntrypoint
+  - --view_graph_name=calculation
 
 test_refresh_bq_dataset_task:
   - --entrypoint=BigQueryRefreshEntrypoint

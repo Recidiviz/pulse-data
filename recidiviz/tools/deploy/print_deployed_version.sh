@@ -3,7 +3,7 @@
 # project. Each signal is resolved independently from the project id — no
 # signal is derived from another signal's output. View-update version is
 # always last because it lags every other signal (it only advances after
-# update_managed_views_all re-materializes the view graph, ~2–3 hours
+# update_managed_calculation_views re-materializes the view graph, ~2–3 hours
 # post-deploy).
 #
 #   1. docker_image_tag in Terraform state — updated mid-deploy, as soon as
@@ -35,7 +35,7 @@
 #
 #   4. data_platform_version from the most recent successful row in
 #      view_update_metadata.per_view_update_stats (populated by the
-#      update_managed_views_all Airflow task). Lags the code deploy by ~2–3
+#      update_managed_calculation_views Airflow task). Lags the code deploy by ~2–3
 #      hours while the full view graph is re-materialized; relevant for
 #      data investigations since BQ view contents still reflect the prior
 #      version until this catches up. If it doesn't catch up, the view
@@ -159,6 +159,6 @@ fi
 if [[ "${TF_VERSION}" != "${VIEW_UPDATE_VERSION}" ]]; then
     echo "NOTE: TF-state version and view-update version differ. Expected"
     echo "for up to ~3 hours post-deploy while views are being re-"
-    echo "materialized. If this persists, update_managed_views_all may be"
+    echo "materialized. If this persists, update_managed_calculation_views may be"
     echo "failing — check Airflow / PD."
 fi

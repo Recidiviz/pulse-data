@@ -92,12 +92,13 @@ def _get_pipeline_config() -> YAMLDict:
 
 
 def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
-    task_id = "update_managed_views_all"
+    task_id = "update_managed_calculation_views"
     return build_kubernetes_pod_task(
         task_id=task_id,
         container_name=task_id,
         arguments=[
-            "--entrypoint=UpdateAllManagedViewsEntrypoint",
+            "--entrypoint=UpdateManagedViewGraphEntrypoint",
+            "--view_graph_name=calculation",
         ],
         trigger_rule=TriggerRule.ALL_SUCCESS,
     )

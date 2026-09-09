@@ -98,7 +98,7 @@ output:
 
 4. **Latest successful view update** — `data_platform_version` from the
    most recent row in `view_update_metadata.per_view_update_stats`. This
-   lags the code deploy by ~2–3 hours while the `update_managed_views_all`
+   lags the code deploy by ~2–3 hours while the `update_managed_calculation_views`
    Airflow task re-materializes the view graph. Important for data
    investigations: BigQuery view contents still reflect the prior version
    until this catches up. If it doesn't catch up, the view update task is

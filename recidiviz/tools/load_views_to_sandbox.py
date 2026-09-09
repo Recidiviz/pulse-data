@@ -202,7 +202,7 @@ from recidiviz.view_registry.deployed_source_table_repository import (
 from recidiviz.view_registry.deployed_view_graphs import (
     builders_for_all_deployed_view_graphs,
 )
-from recidiviz.view_registry.execute_update_all_managed_views import (
+from recidiviz.view_registry.execute_view_graph_update import (
     PER_VIEW_UPDATE_STATS_TABLE_ADDRESS,
 )
 

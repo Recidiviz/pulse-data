@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utility for updating all views in the view registry."""
+"""Utility for updating the views in a deployed view graph."""
 import datetime
 import logging
 
@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
+from recidiviz.big_query.big_query_view_graph import ResolvedBigQueryViewGraph
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
@@ -35,10 +36,7 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
-from recidiviz.view_registry.deployed_view_graphs import (
-    CALCULATION_VIEW_GRAPH_NAME,
-    deployed_view_graph_registry,
-)
+from recidiviz.view_registry.deployed_view_graphs import CALCULATION_VIEW_GRAPH_NAME
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
 )
@@ -47,12 +45,12 @@ from recidiviz.view_registry.per_view_update_stats import (
     per_view_update_stats_for_view_update_result,
 )
 
-# Table that holds job-level information about successful update_managed_views_all jobs
+# Table that holds job-level information about successful view update jobs
 VIEW_UPDATE_TRACKER_TABLE_ADDRESS = BigQueryAddress(
     dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="view_update_tracker"
 )
 
-# Table that holds view-level information about successful update_managed_views_all jobs
+# Table that holds view-level information about successful view update jobs
 PER_VIEW_UPDATE_STATS_TABLE_ADDRESS = BigQueryAddress(
     dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="per_view_update_stats"
 )
@@ -120,17 +118,19 @@ class PerViewUpdateStatsPersister(BigQueryRowStreamer):
 
 
 @gcp_only
-def execute_update_all_managed_views() -> None:
-    """
-    Updates all views in the view registry. If sandbox_prefix is provided, all views will be deployed to a sandbox
-    dataset.
-    """
+def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
+    """Updates and materializes all views in the given view graph, then records
+    success stats in BigQuery."""
+    # TODO(OBT-44677): Dataset cleanup below passes the full historical dataset
+    # list, which is only correct while a single view graph exists. Remove this
+    # guard once cleanup moves out of the per-graph update path.
+    if view_graph.name != CALCULATION_VIEW_GRAPH_NAME:
+        raise ValueError(
+            f"Cannot yet update view graph [{view_graph.name}]: dataset cleanup "
+            f"would delete datasets managed by other graphs. See OBT-44677."
+        )
     start_time = datetime.datetime.now(tz=pytz.UTC)
-    view_builders = (
-        deployed_view_graph_registry(metadata.project_id())
-        .graph_for_name(CALCULATION_VIEW_GRAPH_NAME)
-        .view_builders
-    )
+    view_builders = view_graph.view_builders
 
     (
         update_views_result,
@@ -167,4 +167,7 @@ def execute_update_all_managed_views() -> None:
             view_update_dag_walker=dag_walker,
         ),
     )
-    logging.info("All managed views successfully updated and materialized.")
+    logging.info(
+        "All views in graph [%s] successfully updated and materialized.",
+        view_graph.name,
+    )

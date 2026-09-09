@@ -78,7 +78,7 @@ reliable source for "what was running before the current version."
 
 For data-content failures (not code tracebacks — e.g., stale or wrong BQ view
 results), also check the script's "Latest view-update version": if it's
-behind the code version by more than ~3 hours, the `update_managed_views_all`
+behind the code version by more than ~3 hours, the `update_managed_calculation_views`
 task may be failing, which can be the actual alert cause.
 
 ## Step 2: Find the exact failed run_id

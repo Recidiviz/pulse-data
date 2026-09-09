@@ -71,7 +71,7 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     "fake_calculation_pipeline_templates.yaml",
 )
 
-_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
+_UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID = "update_managed_calculation_views"
 _VALIDATIONS_BRANCH_START = "validations.branch_start"
 _REFRESH_OPERATIONS_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_OPERATIONS"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
@@ -214,7 +214,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertNotEqual(0, len(dag.task_ids))
 
         metric_exports_group = dag.task_group_dict["metric_exports"]
-        view_materialization = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
+        view_materialization = dag.get_task(_UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID)
         self.assertIn(
             view_materialization.task_id, metric_exports_group.upstream_task_ids
         )
@@ -228,7 +228,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertNotEqual(0, len(dag.task_ids))
 
         validations_start = dag.get_task(_VALIDATIONS_BRANCH_START)
-        view_materialization = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
+        view_materialization = dag.get_task(_UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID)
 
         self.assertIn(
             validations_start.task_id, view_materialization.downstream_task_ids
@@ -254,7 +254,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertNotEqual(0, len(pipeline_task_ids))
 
         trigger_task_subdag = dag.partial_subset(
-            task_ids_or_regex=_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
+            task_ids_or_regex=_UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID,
             include_downstream=False,
             include_upstream=True,
         )
@@ -267,10 +267,10 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
     def test_update_managed_views_endpoint_exists(self) -> None:
-        """Tests that update_all_managed_views triggers the proper endpoint."""
+        """Tests that update_managed_calculation_views triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_update_task = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
+        trigger_update_task = dag.get_task(_UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID)
 
         if not isinstance(trigger_update_task, KubernetesPodOperator):
             raise ValueError(
@@ -284,12 +284,12 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         task = update_managed_views_operator()
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
-        self.assertEqual(task.task_id, "update_managed_views_all")
+        self.assertEqual(task.task_id, "update_managed_calculation_views")
         self.assertEqual(task.trigger_rule, TriggerRule.ALL_SUCCESS)
 
         self.assertEqual(
             task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
-            self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
+            self.entrypoint_args_fixture["test_update_managed_view_graph_endpoint"],
         )
 
     def test_refresh_bq_dataset_task_exists(self) -> None:
@@ -422,7 +422,8 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertNotEqual(0, len(dag.task_ids))
 
         task = assert_type(
-            dag.get_task("update_managed_views_all"), RecidivizKubernetesPodOperator
+            dag.get_task("update_managed_calculation_views"),
+            RecidivizKubernetesPodOperator,
         )
         task.render_template_fields(
             {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": None})}
@@ -432,12 +433,14 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(
             task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             [
-                "--entrypoint=UpdateAllManagedViewsEntrypoint",
+                "--entrypoint=UpdateManagedViewGraphEntrypoint",
+                "--view_graph_name=calculation",
             ],
         )
 
         task = assert_type(
-            dag.get_task("update_managed_views_all"), RecidivizKubernetesPodOperator
+            dag.get_task("update_managed_calculation_views"),
+            RecidivizKubernetesPodOperator,
         )
         task.render_template_fields(
             {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": ""})}
@@ -447,7 +450,8 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(
             task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             [
-                "--entrypoint=UpdateAllManagedViewsEntrypoint",
+                "--entrypoint=UpdateManagedViewGraphEntrypoint",
+                "--view_graph_name=calculation",
             ],
         )
 
@@ -623,7 +627,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
                     r"^dataflow_pipelines.*",
-                    r"^update_managed_views_all",
+                    r"^update_managed_calculation_views",
                     r"^validations.*",
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",
@@ -674,7 +678,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.initialize_ingest_pipeline.*",
                     r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.us-yy-ingest-pipeline.create_flex_template",
                     r"^dataflow_pipelines_completed",
-                    r"^update_managed_views_all",
+                    r"^update_managed_calculation_views",
                     r"^validations.*",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
                     # This is a state-agnostic export so it runs
@@ -727,7 +731,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # This step runs with trigger rule ALL_DONE so it runs even though a
                     # pipeline failed.
                     r"^dataflow_pipelines_completed",
-                    r"^update_managed_views_all",
+                    r"^update_managed_calculation_views",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
                     # This is a state-agnostic export so it runs
                     r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
@@ -773,7 +777,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^dataflow_pipelines\.[a-zA-Z]*",
                     r"^bq_refresh.refresh_bq_dataset_",
-                    r"^update_managed_views_all",
+                    r"^update_managed_calculation_views",
                     r"^validations.*",
                     r"^metric_exports.*",
                 ],
@@ -808,7 +812,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
 
         dag = create_calculation_dag()
         upstream_of_view_update = dag.partial_subset(
-            task_ids_or_regex=["update_managed_views_all"],
+            task_ids_or_regex=["update_managed_calculation_views"],
             include_downstream=False,
             include_upstream=True,
         )
@@ -826,7 +830,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"bq_refresh.bq_refresh_completed",
                     r"^dataflow_pipelines.*",
-                    r"^update_managed_views_all",
+                    r"^update_managed_calculation_views",
                     r"^dataflow_metric_pruning",
                 ],
             )
@@ -857,7 +861,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^dataflow_pipelines.*",
                     r"^bq_refresh.*",
-                    r"^update_managed_views",
+                    r"^update_managed_calculation_views",
                     r"^validations.*",
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",

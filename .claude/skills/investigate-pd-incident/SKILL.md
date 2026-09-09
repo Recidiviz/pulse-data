@@ -76,7 +76,7 @@ previous** row derived from `case-triage-web`'s revision history; use
 that as `prev_deployed_tag` for any "what changed between the last two
 deploys" work in the specialist. The script also prints the latest
 successful view-update version; if it lags the TF-state version by more
-than ~3 hours, the `update_managed_views_all` task may be failing, which
+than ~3 hours, the `update_managed_calculation_views` task may be failing, which
 matters for data-content alerts. For staging the script additionally
 prints the latest tag on `origin/main` (prod has no reliable branch-tip
 signal today). See `recidiviz/tools/deploy/CLAUDE.md` for details.
