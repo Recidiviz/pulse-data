@@ -37,6 +37,7 @@ from recidiviz.common.constants.state.external_id_types import (
     US_ND_SID,
     US_NE_ID_NBR,
     US_NE_PAROLE_STAFF_ID,
+    US_NYC_BOOKCASENUMBER,
     US_PA_CONT,
     US_PA_INMATE,
     US_PA_PBPP,
@@ -65,6 +66,7 @@ def person_external_id_types_with_allowed_multiples_per_person(
         StateCode.US_MI: {US_MI_DOC_BOOK},
         StateCode.US_ND: {US_ND_ELITE_BOOKING, US_ND_SID, US_ND_ELITE},
         StateCode.US_NE: {US_NE_ID_NBR},
+        StateCode.US_NYC: {US_NYC_BOOKCASENUMBER},
         StateCode.US_PA: {US_PA_INMATE, US_PA_CONT, US_PA_PBPP},
         StateCode.US_TX: {US_TX_TDCJ},
     }

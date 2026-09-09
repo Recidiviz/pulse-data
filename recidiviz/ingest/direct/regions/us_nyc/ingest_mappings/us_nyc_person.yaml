@@ -3,10 +3,13 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
+  NYSID: STRING
   FIRST_NAME: STRING
   LAST_NAME: STRING
-  NYSID: STRING
-  BOOKCASENUMBER: STRING
+  CURRENT_BOOKCASENUMBER: STRING
+  FIRST_BOOKCASENUMBER: STRING
+  BOOKCASENUMBER_LIST: STRING
+  NAME_LIST: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -14,10 +17,38 @@ output:
       - StatePersonExternalId:
           external_id: NYSID
           id_type: $literal("US_NYC_NYSID")
-      - StatePersonExternalId:
-          external_id: BOOKCASENUMBER
-          id_type: $literal("US_NYC_BOOKCASENUMBER")
+      - $foreach:
+          $iterable: BOOKCASENUMBER_LIST
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_NYC_BOOKCASENUMBER")
+              is_current_display_id_for_type:
+                $equal:
+                  - $iter_item
+                  - CURRENT_BOOKCASENUMBER
+              is_stable_id_for_type:
+                $equal:
+                  - $iter_item
+                  - FIRST_BOOKCASENUMBER
     full_name:
       $person_name:
         $given_names: FIRST_NAME
         $surname: LAST_NAME
+    aliases:
+      - $foreach:
+          $iterable:
+            $split_json: NAME_LIST
+          $result:
+            StatePersonAlias:
+              alias_type: $literal_enum(StatePersonAliasType.INTERNAL_UNKNOWN)
+              full_name:
+                $person_name:
+                  $given_names:
+                    $json_extract:
+                      $key: alias_first
+                      $json: $iter_item
+                  $surname:
+                    $json_extract:
+                      $key: alias_last
+                      $json: $iter_item
