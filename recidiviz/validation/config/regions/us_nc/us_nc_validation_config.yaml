@@ -16,7 +16,12 @@ exclusions:
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: We don't have sentencing information in NC.
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: officer_monthly_usage_report_vs_impact_report_active_users_supervision
+    hard_max_allowed_error_override: .1
+    override_reason: >-
+      There just aren't a lot of users in NC so a small (expected) variation will cause
+      this to fail.
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 1
