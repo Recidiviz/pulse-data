@@ -74,6 +74,7 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
         self,
         *,
         success_datetime: datetime.datetime,
+        view_graph_name: str,
         num_deployed_views: int,
         dataset_override_prefix: str | None,
         runtime_sec: int,
@@ -83,6 +84,7 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
 
         success_row = {
             "success_timestamp": success_datetime.isoformat(),
+            "view_graph_name": view_graph_name,
             "dataset_override_prefix": dataset_override_prefix,
             "num_deployed_views": num_deployed_views,
             "view_update_runtime_sec": runtime_sec,
@@ -152,6 +154,7 @@ def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
     job_level_success_persister.record_success_in_bq(
         num_deployed_views=len(view_builders),
         success_datetime=success_time,
+        view_graph_name=view_graph.name,
         dataset_override_prefix=None,
         runtime_sec=runtime_sec,
         num_edges=dag_walker.get_number_of_edges(),
@@ -163,6 +166,7 @@ def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
     view_level_success_persister.record_success_in_bq(
         view_update_results=per_view_update_stats_for_view_update_result(
             success_datetime=success_time,
+            view_graph_name=view_graph.name,
             update_views_result=update_views_result,
             view_update_dag_walker=dag_walker,
         ),

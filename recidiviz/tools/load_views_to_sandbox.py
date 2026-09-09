@@ -153,6 +153,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
 )
+from recidiviz.big_query.big_query_view_graph import BigQueryViewGraphRegistry
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
@@ -200,7 +201,9 @@ from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_view_graphs import (
+    CALCULATION_VIEW_GRAPH_NAME,
     builders_for_all_deployed_view_graphs,
+    deployed_view_graph_registry,
 )
 from recidiviz.view_registry.execute_view_graph_update import (
     PER_VIEW_UPDATE_STATS_TABLE_ADDRESS,
@@ -407,6 +410,7 @@ class DeployedViewSignature:
     view_address: BigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(BigQueryAddress)
     )
+    view_graph_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     view_query_signature: str = attr.ib(validator=attr_validators.is_str)
     schema_signature: str | None = attr.ib(validator=attr_validators.is_opt_str)
     clustering_fields_string: str | None = attr.ib(validator=attr_validators.is_opt_str)
@@ -427,11 +431,45 @@ class DeployedViewSignature:
         )
 
 
+def _resolve_signatures_by_address(
+    signatures: list[DeployedViewSignature],
+    view_graph_registry: BigQueryViewGraphRegistry,
+) -> dict[BigQueryAddress, DeployedViewSignature]:
+    """Returns a map of view addresses to the view signature to count as deployed for
+    that address."""
+
+    signatures_by_address: dict[BigQueryAddress, DeployedViewSignature] = {}
+    for signature in signatures:
+        address = signature.view_address
+        existing_signature = signatures_by_address.get(address)
+        if existing_signature is None:
+            signatures_by_address[address] = signature
+            continue
+
+        current_graph_name = view_graph_registry.graph_name_for_address(address)
+        if signature.view_graph_name == current_graph_name:
+            signatures_by_address[address] = signature
+        elif existing_signature.view_graph_name != current_graph_name:
+            raise ValueError(
+                f"Found entries for [{address.to_str()}] in the "
+                f"{PER_VIEW_UPDATE_STATS_TABLE_ADDRESS.to_str()} table for view "
+                f"graphs [{existing_signature.view_graph_name}] and "
+                f"[{signature.view_graph_name}], neither of which is its current "
+                f"view graph [{current_graph_name}]."
+            )
+    return signatures_by_address
+
+
 def _get_deployed_view_signatures_by_address() -> (
     dict[BigQueryAddress, DeployedViewSignature]
 ):
     """Queries the per_view_update_stats table to return information about each view
-    updated by the last deployed view update.
+    updated by the most recent successful view update for the graph it currently
+    belongs to.
+
+    If a view has moved to a different graph since its old graph's last update, that
+    old graph's latest row for the address is discarded in favor of the address's
+    current graph.
     """
     logging.info("Downloading deployed view information...")
     bq_client = BigQueryClientImpl()
@@ -441,9 +479,11 @@ def _get_deployed_view_signatures_by_address() -> (
             metadata.project_id()
         )
     )
+    # TODO(OBT-48947): Remove the view_graph_name filter after backfilling existing rows
     signatures_query = f"""
     SELECT
         success_timestamp,
+        view_graph_name,
         dataset_id,
         table_id,
         view_query_signature,
@@ -451,31 +491,33 @@ def _get_deployed_view_signatures_by_address() -> (
         clustering_fields_string,
         time_partitioning_string
     FROM {update_stats_address.format_address_for_query()}
-    QUALIFY RANK() OVER (ORDER BY success_timestamp DESC) = 1
+    WHERE view_graph_name IS NOT NULL
+    QUALIFY RANK() OVER (
+        PARTITION BY view_graph_name ORDER BY success_timestamp DESC
+    ) = 1
     """
-    deployed_view_signatures_by_address = {}
 
     results = bq_client.run_query_async(
         query_str=signatures_query, use_query_cache=False
     )
 
-    for row in results:
-        address = BigQueryAddress(
-            dataset_id=row["dataset_id"], table_id=row["table_id"]
-        )
-        if address in deployed_view_signatures_by_address:
-            success_timestamp = row["success_timestamp"]
-            raise ValueError(
-                f"Found duplicate entries in the {update_stats_address.to_str()} table "
-                f"for [{address.to_str()}] with success_timestamp [{success_timestamp}]"
-            )
-        deployed_view_signatures_by_address[address] = DeployedViewSignature(
-            view_address=address,
+    signatures = [
+        DeployedViewSignature(
+            view_address=BigQueryAddress(
+                dataset_id=row["dataset_id"], table_id=row["table_id"]
+            ),
+            view_graph_name=row["view_graph_name"],
             view_query_signature=row["view_query_signature"],
             schema_signature=row["schema_signature"],
             clustering_fields_string=row["clustering_fields_string"],
             time_partitioning_string=row["time_partitioning_string"],
         )
+        for row in results
+    ]
+
+    deployed_view_signatures_by_address = _resolve_signatures_by_address(
+        signatures, deployed_view_graph_registry(metadata.project_id())
+    )
     logging.info("Completed deployed view information download.")
     return deployed_view_signatures_by_address
 
@@ -519,8 +561,9 @@ class LatestViewUpdateInfo(NamedTuple):
 
 def get_latest_view_update_info() -> LatestViewUpdateInfo:
     """Returns info about the most recent successful view update row in
-    `view_update_metadata.per_view_update_stats` for the active project (via
-    `metadata.project_id()`). Pure — no logging, no prompts.
+    `view_update_metadata.per_view_update_stats` for the calculation view graph, in
+    the active project (via `metadata.project_id()`). Scoped to the calculation graph
+    so that hourly updates of other view graphs don't dominate this result.
     """
     bq_client = BigQueryClientImpl()
 
@@ -533,6 +576,7 @@ def get_latest_view_update_info() -> LatestViewUpdateInfo:
     query = f"""
     SELECT success_timestamp, data_platform_version
     FROM {update_stats_address.format_address_for_query()}
+    WHERE view_graph_name = '{CALCULATION_VIEW_GRAPH_NAME}'
     QUALIFY RANK() OVER (ORDER BY success_timestamp DESC) = 1
     LIMIT 1
     """

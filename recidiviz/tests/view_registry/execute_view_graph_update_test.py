@@ -83,6 +83,7 @@ class TestAllViewsUpdateSuccessPersister(BigQueryEmulatorTestCase):
         # Just shouldn't crash
         persister.record_success_in_bq(
             success_datetime=datetime.datetime.now(tz=pytz.UTC),
+            view_graph_name="calculation",
             num_deployed_views=0,
             dataset_override_prefix=None,
             runtime_sec=100,
@@ -133,6 +134,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
         update_stats = [
             PerViewUpdateStats(
                 success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
+                view_graph_name="calculation",
                 create_or_update_result=CreateOrUpdateViewResult(
                     view=view,
                     updated_view=None,
@@ -158,6 +160,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
             ),
             PerViewUpdateStats(
                 success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
+                view_graph_name="calculation",
                 create_or_update_result=CreateOrUpdateViewResult(
                     view=view_2,
                     updated_view=None,
@@ -314,6 +317,7 @@ class TestExecuteViewGraphUpdate(unittest.TestCase):
         )
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             success_datetime=mock.ANY,
+            view_graph_name=CALCULATION_VIEW_GRAPH_NAME,
             num_deployed_views=2,
             dataset_override_prefix=None,
             runtime_sec=mock.ANY,

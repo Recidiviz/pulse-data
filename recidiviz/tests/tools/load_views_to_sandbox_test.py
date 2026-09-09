@@ -32,6 +32,7 @@ from recidiviz.tools.load_views_to_sandbox import (
     DeployedViewSignature,
     SandboxChangedAddresses,
     ViewChangeType,
+    _resolve_signatures_by_address,
     load_collected_views_to_sandbox,
     parse_arguments,
     summary_for_auto_sandbox,
@@ -72,6 +73,7 @@ class TestDeployedViewSignatureMatchesLocalView(unittest.TestCase):
     ) -> DeployedViewSignature:
         return DeployedViewSignature(
             view_address=view.address,
+            view_graph_name="calculation",
             view_query_signature=view.view_query_signature,
             schema_signature=schema_signature,
             clustering_fields_string=view.clustering_fields_string,
@@ -95,6 +97,58 @@ class TestDeployedViewSignatureMatchesLocalView(unittest.TestCase):
             deployed_view, schema_signature=deployed_view.schema_signature
         )
         self.assertFalse(signature.matches_local_view(local_view))
+
+
+class TestResolveSignaturesByAddress(unittest.TestCase):
+    """Tests for _resolve_signatures_by_address."""
+
+    ADDRESS = BigQueryAddress(dataset_id="view_dataset", table_id="my_view")
+
+    @staticmethod
+    def _signature_for(graph_name: str) -> DeployedViewSignature:
+        return DeployedViewSignature(
+            view_address=TestResolveSignaturesByAddress.ADDRESS,
+            view_graph_name=graph_name,
+            view_query_signature="query_signature",
+            schema_signature="schema_signature",
+            clustering_fields_string=None,
+            time_partitioning_string=None,
+        )
+
+    def test_single_signature_for_address(self) -> None:
+        signature = self._signature_for("graph_a")
+        registry = MagicMock()
+
+        result = _resolve_signatures_by_address([signature], registry)
+
+        self.assertEqual({self.ADDRESS: signature}, result)
+        registry.graph_name_for_address.assert_not_called()
+
+    def test_address_moved_graphs_keeps_current_graph_signature(self) -> None:
+        old_signature = self._signature_for("old_graph")
+        new_signature = self._signature_for("new_graph")
+        registry = MagicMock()
+        registry.graph_name_for_address.return_value = "new_graph"
+
+        result = _resolve_signatures_by_address(
+            [old_signature, new_signature], registry
+        )
+
+        self.assertEqual({self.ADDRESS: new_signature}, result)
+
+    def test_address_in_neither_graph_raises(self) -> None:
+        graph_a_signature = self._signature_for("graph_a")
+        graph_b_signature = self._signature_for("graph_b")
+        registry = MagicMock()
+        registry.graph_name_for_address.return_value = "graph_c"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"neither of which is its current view graph \[graph_c\]",
+        ):
+            _resolve_signatures_by_address(
+                [graph_a_signature, graph_b_signature], registry
+            )
 
 
 class TestSandboxChangedAddresses(unittest.TestCase):

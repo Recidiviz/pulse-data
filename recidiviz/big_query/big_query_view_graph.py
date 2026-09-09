@@ -187,10 +187,12 @@ class BigQueryViewGraphRegistry:
             view_graphs_by_name[graph.name] = graph
         return view_graphs_by_name
 
+    _graph_name_by_address: dict[BigQueryAddress, str] = attr.ib(init=False)
+    """Maps each view or materialized address to the name of the graph that owns
+    it."""
+
     def __attrs_post_init__(self) -> None:
-        """Raises if any graph is resolved for a different project, or if any view
-        or materialized address appears in more than one graph.
-        """
+        """Raises if any graph is resolved for a different project."""
         for graph in self.view_graphs:
             if graph.project_id != self.project_id:
                 raise ValueError(
@@ -199,6 +201,11 @@ class BigQueryViewGraphRegistry:
                     f"[{self.project_id}]"
                 )
 
+    @_graph_name_by_address.default
+    def _build_graph_name_by_address(self) -> dict[BigQueryAddress, str]:
+        """Returns every output address mapped to its owning graph's name, raising
+        if any address belongs to more than one graph.
+        """
         graph_name_by_address: dict[BigQueryAddress, str] = {}
         for graph in self.view_graphs:
             for builder in graph.view_builders:
@@ -213,6 +220,7 @@ class BigQueryViewGraphRegistry:
                             f"[{graph_name_by_address[address]}]"
                         )
                     graph_name_by_address[address] = graph.name
+        return graph_name_by_address
 
     @classmethod
     def build(
@@ -251,3 +259,9 @@ class BigQueryViewGraphRegistry:
         if name not in self._view_graphs_by_name:
             raise ValueError(f"Found no view graph with name [{name}]")
         return self._view_graphs_by_name[name]
+
+    def graph_name_for_address(self, address: BigQueryAddress) -> str | None:
+        """Returns the name of the graph that owns this view or materialized
+        address, or None if no registered graph owns it.
+        """
+        return self._graph_name_by_address.get(address)

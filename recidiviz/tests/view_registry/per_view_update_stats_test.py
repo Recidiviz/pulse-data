@@ -190,6 +190,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
     def test_as_table_row_mostly_empty(self) -> None:
         stats = PerViewUpdateStats(
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
+            view_graph_name="calculation",
             create_or_update_result=CreateOrUpdateViewResult(
                 view=self.view,
                 updated_view=None,
@@ -222,6 +223,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
         expected_table_row = {
             "success_timestamp": "2024-01-01T00:00:00+00:00",
             "data_platform_version": "v1.123.0-alpha.0",
+            "view_graph_name": "calculation",
             "dataset_id": "view_dataset",
             "table_id": "my_view",
             "was_materialized": False,
@@ -263,6 +265,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
 
         stats = PerViewUpdateStats(
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
+            view_graph_name="calculation",
             create_or_update_result=CreateOrUpdateViewResult(
                 view=self.view,
                 updated_view=None,
@@ -304,6 +307,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
         expected_table_row = {
             "success_timestamp": "2024-01-01T00:00:00+00:00",
             "data_platform_version": "v1.123.0-alpha.0",
+            "view_graph_name": "calculation",
             "dataset_id": "view_dataset",
             "table_id": "my_view",
             "was_materialized": True,
@@ -444,6 +448,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
 
         per_view_stats_list = per_view_update_stats_for_view_update_result(
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
+            view_graph_name="calculation",
             view_update_dag_walker=all_views_dag_walker,
             update_views_result=update_result,
         )
@@ -463,6 +468,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
         expected_output_rows = [
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_1",
                 "table_id": "table_1_us_yy",
                 "view_query_signature": "bb7e62b212044f5944712fcd5bb052c541d7019c0bd453bc07b13ceb57896667",
@@ -491,6 +497,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_2",
                 "table_id": "table_2_us_xx",
                 "view_query_signature": "07b207f7fcdea521507c0041cd25579fb5736ceb2d908bc2948662b6268402a0",
@@ -519,6 +526,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_3",
                 "table_id": "table_3",
                 "view_query_signature": "dd3dc013a592a0c038d3cb8290e432ba162b25a9233cdc5a00f4c57ed3a6ba8c",
@@ -550,6 +558,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_4",
                 "table_id": "table_4",
                 "view_query_signature": "8434a01d21c51adca8af9f90a4efdb919c65f62b781cda17bce96dab0478283c",
@@ -579,6 +588,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_5",
                 "table_id": "table_5",
                 "view_query_signature": "520b874d0882be60a2b43250645ed04b63802667fbfd4b9d4bca8dcc02283ea7",
@@ -608,6 +618,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
+                "view_graph_name": "calculation",
                 "dataset_id": "dataset_6",
                 "table_id": "table_6",
                 "view_query_signature": "5c73fee77db98c5f0709b78e6f4092e9354c4f3b7260686b5b015d1b89ce544a",

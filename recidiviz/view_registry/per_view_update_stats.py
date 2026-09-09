@@ -63,6 +63,9 @@ class PerViewUpdateStats:
     """
 
     success_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
+    view_graph_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Name of the BigQueryViewGraph this update ran over."""
+
     create_or_update_result: CreateOrUpdateViewResult = attr.ib(
         validator=attr.validators.instance_of(CreateOrUpdateViewResult)
     )
@@ -204,6 +207,7 @@ class PerViewUpdateStats:
         return {
             "success_timestamp": self.success_datetime.isoformat(),
             "data_platform_version": environment.get_data_platform_version(),
+            "view_graph_name": self.view_graph_name,
             "dataset_id": self.dataset_id,
             "table_id": self.table_id,
             "was_materialized": self.was_materialized,
@@ -238,6 +242,7 @@ class PerViewUpdateStats:
 
 def per_view_update_stats_for_view_update_result(
     success_datetime: datetime.datetime,
+    view_graph_name: str,
     view_update_dag_walker: BigQueryViewDagWalker,
     update_views_result: ProcessDagResult[CreateOrUpdateViewResult],
 ) -> list["PerViewUpdateStats"]:
@@ -303,6 +308,7 @@ def per_view_update_stats_for_view_update_result(
 
         return PerViewUpdateStats(
             success_datetime=success_datetime,
+            view_graph_name=view_graph_name,
             create_or_update_result=update_views_result.view_results[v],
             view_processing_metadata=update_views_result.view_processing_stats[v],
             ancestor_view_addresses=ancestor_view_addresses,

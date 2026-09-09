@@ -12,6 +12,11 @@ schema:
     description: >-
       The timestamp when the overall view update completed. This can be used to join to 
       per-view update stats in view_update_metadata.per_view_update_stats.
+  - name: view_graph_name
+    type: STRING
+    # TODO(OBT-48947): Make this REQUIRED after existing rows have been backfilled
+    mode: NULLABLE
+    description: The name of the view graph this update ran over.
   - name: num_deployed_views
     type: INTEGER
     mode: REQUIRED

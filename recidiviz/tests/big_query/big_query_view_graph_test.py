@@ -438,6 +438,51 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                 ],
             )
 
+    def test_graph_name_for_address(self) -> None:
+        graph_1 = _resolved(
+            _graph(
+                "graph_1",
+                [_view_builder("dataset_1", "table_1", should_materialize=True)],
+            )
+        )
+        graph_2 = _resolved(_graph("graph_2", [_view_builder("dataset_2", "table_2")]))
+        registry = BigQueryViewGraphRegistry(
+            project_id=_STAGING, view_graphs=[graph_1, graph_2]
+        )
+
+        self.assertEqual(
+            "graph_1",
+            registry.graph_name_for_address(
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+            ),
+        )
+        self.assertEqual(
+            "graph_1",
+            registry.graph_name_for_address(
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1_materialized")
+            ),
+        )
+        self.assertEqual(
+            "graph_2",
+            registry.graph_name_for_address(
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2")
+            ),
+        )
+
+    def test_graph_name_for_address_unknown_address_returns_none(self) -> None:
+        registry = BigQueryViewGraphRegistry(
+            project_id=_STAGING,
+            view_graphs=[
+                _resolved(_graph("graph_1", [_view_builder("dataset_1", "table_1")]))
+            ],
+        )
+
+        self.assertIsNone(
+            registry.graph_name_for_address(
+                BigQueryAddress(dataset_id="unknown_dataset", table_id="unknown_table")
+            )
+        )
+
     def test_materialized_address_in_two_graphs_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
