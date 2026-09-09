@@ -107,6 +107,15 @@ class NewDocumentDiscoverer:
     def config(self) -> DocumentCollectionConfig:
         return get_document_collection_config(self.state_code, self.collection_name)
 
+    @property
+    def output_prefix(self) -> str | None:
+        """The sandbox dataset prefix the run writes this collection's tables under,
+        or None when the run writes to the production document store. The run's temp
+        tables follow this prefix so a sandbox run writes them to a dataset it owns."""
+        if self.sandbox_context is None:
+            return None
+        return self.sandbox_context.output_prefix_for_writing(self.config.name)
+
     def _materialize_document_generation_output(
         self,
     ) -> ProjectSpecificBigQueryAddress:
@@ -117,7 +126,7 @@ class NewDocumentDiscoverer:
         """
         document_generation_output_address = (
             self.config.temp_document_generation_output_table_address(
-                self.run_id
+                self.run_id, self.output_prefix
             ).to_project_specific_address(self.project_id)
         )
         generation_query = self.generation_query_builder.build_query()
@@ -177,11 +186,7 @@ class NewDocumentDiscoverer:
         # contents-existence check further down — is read from the read prefix, which is
         # the production document store (None) for a first-order collection that already
         # exists there.
-        output_prefix = (
-            self.sandbox_context.output_prefix_for_writing(self.config.name)
-            if self.sandbox_context is not None
-            else None
-        )
+        output_prefix = self.output_prefix
         read_prefix = (
             self.sandbox_context.diff_read_prefix_for_document_collection(
                 self.config.name
@@ -200,7 +205,7 @@ class NewDocumentDiscoverer:
 
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(
-                self.run_id
+                self.run_id, output_prefix
             ).to_project_specific_address(self.project_id)
         )
         metadata_table_address = self.config.metadata_table_address(
@@ -236,7 +241,7 @@ class NewDocumentDiscoverer:
             return None
 
         temp_document_address = self.config.temp_new_document_contents_table_address(
-            self.run_id
+            self.run_id, output_prefix
         ).to_project_specific_address(self.project_id)
         new_documents_query = DocumentMetadataUpdatesQueryBuilder().build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,

@@ -75,7 +75,7 @@ class TestBuildMapReplacementQuery(BigQueryEmulatorTestCase):
             EntityResolutionDocumentCollectionConfig,
         )
         address = er_collection.temp_document_generation_output_table_address(
-            "run_1"
+            "run_1", sandbox_dataset_prefix=None
         ).to_project_specific_address(self.project_id)
         self.create_mock_table(
             address.to_project_agnostic_address(),

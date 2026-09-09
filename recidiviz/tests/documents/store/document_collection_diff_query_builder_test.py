@@ -117,7 +117,7 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
 
         document_generation_output_address = (
             self.config.temp_document_generation_output_table_address(
-                "test_run_id"
+                "test_run_id", sandbox_dataset_prefix=None
             ).to_project_specific_address(self.project_id)
         )
         with freeze_time("2026-03-15 12:00:00", tz_offset=0):
@@ -174,7 +174,7 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
         )
         self.generation_output_address = (
             self.er_collection.temp_document_generation_output_table_address(
-                "run_1"
+                "run_1", sandbox_dataset_prefix=None
             ).to_project_specific_address(self.project_id)
         )
         self.create_mock_table(

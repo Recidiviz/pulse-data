@@ -139,7 +139,9 @@ class TestNewDocumentDiscovery(unittest.TestCase):
     def _generation_output_address(self) -> BigQueryAddress:
         return get_document_collection_config(
             StateCode.US_XX, self.collection_name, config_module=fake_config_module
-        ).temp_document_generation_output_table_address("test_run_id")
+        ).temp_document_generation_output_table_address(
+            "test_run_id", sandbox_dataset_prefix=None
+        )
 
     def test_materializes_generation_output_before_diff(self) -> None:
         self._mock_temp_table_row_counts(
@@ -313,7 +315,7 @@ class TestNewDocumentDiscoverySandboxScoping(unittest.TestCase):
         )
         generation_output_table_id = (
             er_collection.temp_document_generation_output_table_address(
-                "test_run_id"
+                "test_run_id", sandbox_dataset_prefix=None
             ).table_id
         )
         self.assertEqual(
@@ -323,7 +325,7 @@ class TestNewDocumentDiscoverySandboxScoping(unittest.TestCase):
                     sandbox_dataset_prefix=None
                 ).table_id,
                 er_collection.temp_document_metadata_updates_table_address(
-                    "test_run_id"
+                    "test_run_id", sandbox_dataset_prefix=None
                 ).table_id,
             ],
             self._write_table_ids(),
@@ -343,10 +345,10 @@ class TestNewDocumentDiscoverySandboxScoping(unittest.TestCase):
         self.assertEqual(
             [
                 first_order_collection.temp_document_generation_output_table_address(
-                    "test_run_id"
+                    "test_run_id", sandbox_dataset_prefix=None
                 ).table_id,
                 first_order_collection.temp_document_metadata_updates_table_address(
-                    "test_run_id"
+                    "test_run_id", sandbox_dataset_prefix=None
                 ).table_id,
             ],
             self._write_table_ids(),

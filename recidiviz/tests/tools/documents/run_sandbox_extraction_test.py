@@ -442,7 +442,7 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
             return self._real_materialize(discoverer)
 
         address = config.temp_document_generation_output_table_address(
-            discoverer.run_id
+            discoverer.run_id, discoverer.output_prefix
         )
         self.create_mock_table(
             address, schema=config.build_bq_document_generation_output_schema()

@@ -375,14 +375,18 @@ class DocumentCollectionConfig:
         ]
 
     def temp_document_generation_output_table_address(
-        self, run_id: str
+        self, run_id: str, sandbox_dataset_prefix: str | None
     ) -> BigQueryAddress:
         """Returns the project-agnostic BigQuery address for the temp table holding
         this run's full document_generation_query output — every document for every
-        root entity, before the diff narrows to changed rows.
+        root entity, before the diff narrows to changed rows. Lands in the sandbox
+        temp dataset when the run is sandboxed, which a sandbox run can write to,
+        rather than the shared production temp dataset it cannot.
         """
         return BigQueryAddress(
-            dataset_id=document_store_temp_dataset_for_region(self.state_code),
+            dataset_id=document_store_temp_dataset_for_region(
+                self.state_code, sandbox_dataset_prefix
+            ),
             table_id=(
                 f"{TEMP_DOCUMENT_GENERATION_OUTPUT_TABLE_ID_PREFIX}"
                 f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"
@@ -390,28 +394,37 @@ class DocumentCollectionConfig:
         )
 
     def temp_document_metadata_updates_table_address(
-        self, run_id: str
+        self, run_id: str, sandbox_dataset_prefix: str | None
     ) -> BigQueryAddress:
         """Returns the project-agnostic BigQuery address for the temp document
         metadata updates table that contains rows where there were any changes to
         document_contents_id or another metadata column for each primary key in
-        this collection. Run-scoped via run_id, so it is not sandbox-prefixed."""
+        this collection. Lands in the sandbox temp dataset when the run is
+        sandboxed, which a sandbox run can write to, rather than the shared
+        production temp dataset it cannot."""
         return BigQueryAddress(
-            dataset_id=document_store_temp_dataset_for_region(self.state_code),
+            dataset_id=document_store_temp_dataset_for_region(
+                self.state_code, sandbox_dataset_prefix
+            ),
             table_id=(
                 f"{TEMP_METADATA_UPDATES_TABLE_ID_PREFIX}"
                 f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"
             ),
         )
 
-    def temp_new_document_contents_table_address(self, run_id: str) -> BigQueryAddress:
+    def temp_new_document_contents_table_address(
+        self, run_id: str, sandbox_dataset_prefix: str | None
+    ) -> BigQueryAddress:
         """Returns the project-agnostic BigQuery address for the temp new document
         contents table that tracks which document_contents_ids in this collection
         have not yet been uploaded for the state. This is the table read from to
-        perform the actual document upload. Run-scoped via run_id, so it is not
-        sandbox-prefixed."""
+        perform the actual document upload. Lands in the sandbox temp dataset when
+        the run is sandboxed, which a sandbox run can write to, rather than the
+        shared production temp dataset it cannot."""
         return BigQueryAddress(
-            dataset_id=document_store_temp_dataset_for_region(self.state_code),
+            dataset_id=document_store_temp_dataset_for_region(
+                self.state_code, sandbox_dataset_prefix
+            ),
             table_id=(
                 f"{TEMP_NEW_DOCUMENT_CONTENTS_TABLE_ID_PREFIX}"
                 f"{self.name.lower()}_{make_bq_compatible_identifier(run_id)}"

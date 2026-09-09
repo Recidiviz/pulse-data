@@ -504,7 +504,18 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 "us_xx_document_store_temp."
                 "temp_document_metadata_updates_test_collection_run_1"
             ),
-            config.temp_document_metadata_updates_table_address("run-1"),
+            config.temp_document_metadata_updates_table_address(
+                "run-1", sandbox_dataset_prefix=None
+            ),
+        )
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "my_prefix_us_xx_document_store_temp."
+                "temp_document_metadata_updates_test_collection_run_1"
+            ),
+            config.temp_document_metadata_updates_table_address(
+                "run-1", sandbox_dataset_prefix="my_prefix"
+            ),
         )
 
     def test_temp_new_document_contents_table_address(self) -> None:
@@ -514,7 +525,18 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 "us_xx_document_store_temp."
                 "temp_new_document_contents_test_collection_run_1"
             ),
-            config.temp_new_document_contents_table_address("run-1"),
+            config.temp_new_document_contents_table_address(
+                "run-1", sandbox_dataset_prefix=None
+            ),
+        )
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "my_prefix_us_xx_document_store_temp."
+                "temp_new_document_contents_test_collection_run_1"
+            ),
+            config.temp_new_document_contents_table_address(
+                "run-1", sandbox_dataset_prefix="my_prefix"
+            ),
         )
 
     def test_all_yaml_configs_conform_to_schema(self) -> None:

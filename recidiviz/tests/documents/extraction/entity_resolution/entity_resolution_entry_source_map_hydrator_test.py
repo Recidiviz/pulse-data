@@ -147,7 +147,7 @@ class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
         self, run_id: str, rows: list[dict[str, Any]]
     ) -> ProjectSpecificBigQueryAddress:
         address = self.er_collection.temp_document_generation_output_table_address(
-            run_id
+            run_id, sandbox_dataset_prefix=None
         ).to_project_specific_address(self.project_id)
         self.create_mock_table(
             address.to_project_agnostic_address(),

@@ -95,12 +95,12 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             state_code=config.state_code,
             collection_name=config.name,
             temp_document_metadata_updates_address=config.temp_document_metadata_updates_table_address(
-                self.run_id
+                self.run_id, sandbox_dataset_prefix=None
             ).to_project_specific_address(
                 self.project_id
             ),
             temp_new_document_contents_address=config.temp_new_document_contents_table_address(
-                self.run_id
+                self.run_id, sandbox_dataset_prefix=None
             ).to_project_specific_address(
                 self.project_id
             ),

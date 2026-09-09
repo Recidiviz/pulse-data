@@ -55,7 +55,7 @@ class TestDocumentContentsUploadQueryBuilder(BigQueryEmulatorTestCase):
         )
         self.temp_new_document_contents_address = (
             self.config.temp_new_document_contents_table_address(
-                "test_run_id"
+                "test_run_id", sandbox_dataset_prefix=None
             ).to_project_specific_address(self.project_id)
         )
         self.document_contents_table_address = (
