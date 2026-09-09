@@ -40,24 +40,26 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-meets_home_visit_or_address_changes_triggers = (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-        logic_type=TaskCriteriaGroupLogicType.OR,
-        criteria_name="US_IX_MEETS_HOME_VISIT_OR_ADDRESS_CHANGES_TRIGGERS",
-        sub_criteria_list=[
-            meets_home_visit_triggers.VIEW_BUILDER,
-            meets_address_changes_triggers.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[
-            "contact_due_date",
-            "last_contact_date",
-            "contact_cadence",
-        ],
-        reasons_aggregate_function_override={
-            "contact_due_date": "MIN",
-            "last_contact_date": "MAX",
-        },
-    )
+meets_home_visit_or_address_changes_triggers = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_IX_MEETS_HOME_VISIT_OR_ADDRESS_CHANGES_TRIGGERS",
+    sub_criteria_list=[
+        meets_home_visit_triggers.VIEW_BUILDER,
+        meets_address_changes_triggers.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[
+        "contact_due_date",
+        "last_contact_date",
+        "contact_cadence",
+        "earliest_unmet_due_date",
+    ],
+    reasons_aggregate_function_override={
+        "contact_due_date": "MIN",
+        "last_contact_date": "MAX",
+        # Surface the soonest unmet requirement across both triggers so an
+        # address-change verification isn't hidden behind the routine cadence.
+        "earliest_unmet_due_date": "MIN",
+    },
 )
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
