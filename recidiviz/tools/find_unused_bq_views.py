@@ -78,6 +78,12 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
+from recidiviz.calculator.query.state.views.classification.score_components.us_tn import (
+    caf_q3,
+    caf_q4,
+    caf_q5,
+    caf_q9,
+)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_credit import (
     US_CO_WORK_CREDIT_VIEW_BUILDER,
 )
@@ -321,6 +327,19 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Only consumer is the NOT-version above, which is itself temporarily "
         "unused for the same reason. Tracked in MO-2. (Regina Medina, 2026-08-31)"
     ),
+    **{
+        view_builder.address: (
+            "New pre-2026 CAF score components. The migrated caf_policy view in "
+            "#102375 is their first consumer. Tracked in OBT-1358. "
+            "(Hugo Salas, 2026-09-09)"
+        )
+        for view_builder in [
+            caf_q3.VIEW_BUILDER,
+            caf_q4.VIEW_BUILDER,
+            caf_q5.VIEW_BUILDER,
+            caf_q9.VIEW_BUILDER,
+        ]
+    },
     **{
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
             "Label Studio annotation eval views. Not yet consumed by a downstream "
