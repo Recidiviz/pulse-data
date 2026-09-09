@@ -526,11 +526,15 @@ lsir_spans AS (
     GROUP BY grp, state_code, person_id, lsir_level)"""
 
 
-DOR_CASE_NOTES_COLUMNS = """
+# Newer Atlas rows wrap the DOR narrative in a JSON blob alongside the binary detail
+# flags; older rows store it bare.
+DOR_OFFENSE_DESCRIPTION_CLAUSE = """COALESCE(REGEXP_EXTRACT(dac.OffenseDesc, r'"offense_desc": "([^"]+)"'), dac.OffenseDesc)"""
+
+DOR_CASE_NOTES_COLUMNS = f"""
         dac.OffenderId AS external_id,
         'Disciplinary Offense Reports (in the past 6 months)' AS criteria,
         CONCAT('Class ', SUBSTR(dot.DorOffenseCode, 1, 1), ': ', DorOffenseTypeName) AS note_title,
-        COALESCE(REGEXP_EXTRACT(dac.OffenseDesc, r'"offense_desc": "([^"]+)"'), dac.OffenseDesc) AS note_body,
+        {DOR_OFFENSE_DESCRIPTION_CLAUSE} AS note_body,
         SAFE_CAST(LEFT(dac.OffenseDateTime, 10) AS DATE) AS event_date,"""
 
 DOR_CRITERIA_COLUMNS = """
