@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryClientImpl"""
+
 import datetime
 import io
 import random
@@ -47,7 +48,11 @@ from recidiviz.big_query.big_query_address import (
     BigQueryAddress,
     ProjectSpecificBigQueryAddress,
 )
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BigQueryClient,
+    BigQueryClientImpl,
+    TableAlreadyExistsError,
+)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
@@ -1545,7 +1550,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
         with self.assertRaisesRegex(
-            ValueError,
+            TableAlreadyExistsError,
             "Trying to create a table that already exists: fake-dataset.test_table.",
         ):
             self.bq_client.create_table_with_schema(
@@ -1638,6 +1643,19 @@ class BigQueryClientImplTest(unittest.TestCase):
             new_schema_fields,
             self.mock_client.update_table.mock_calls[0].args[0].schema,
         )
+
+    def test_update_schema_propagates_not_found(self) -> None:
+        # A missing table surfaces as NotFound from the initial get_table so a concurrent
+        # writer mid-replacement can be distinguished from other failures upstream.
+        self.mock_client.get_table.side_effect = exceptions.NotFound("!")
+
+        with self.assertRaises(exceptions.NotFound):
+            self.bq_client.update_schema(
+                address=self.mock_table_address,
+                desired_schema_fields=[bigquery.SchemaField("field_1", "STRING")],
+                allow_field_deletions=True,
+            )
+        self.mock_client.update_table.assert_not_called()
 
     def test_update_schema_no_update(self) -> None:
         """Tests that update_schema() does not do any updates when the schema hasn't

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utilities for updating source table schema"""
+
 import enum
 import logging
 from collections import Counter, defaultdict
@@ -22,6 +23,7 @@ from typing import Any
 
 import attr
 import google
+from google.api_core.exceptions import Conflict, NotFound, PreconditionFailed
 from google.cloud import bigquery
 from google.cloud.bigquery import ExternalConfig
 
@@ -47,6 +49,16 @@ from recidiviz.utils.types import assert_type
 
 class SourceTableFailedToUpdateError(ValueError):
     pass
+
+
+# Signals that another writer touched a table concurrently while we were applying an update to it:
+# a mid-replacement read (NotFound), a lost-update on an in-place edit (PreconditionFailed),
+# or a create collision (Conflict).
+_CONCURRENT_WRITER_EXCEPTIONS = (Conflict, PreconditionFailed, NotFound)
+
+# Number of times _update_table_with_retries re-diffs against the live table after a
+# concurrency exception before giving up
+_MAX_CONCURRENT_UPDATE_ATTEMPTS = 3
 
 
 class SourceTableUpdateType(enum.StrEnum):
@@ -944,7 +956,9 @@ class SourceTableUpdateManager:
             source_table_collection,
             source_table_required_updates,
         ) = source_table_collection_and_required_updates
-        self._update_table(source_table_collection, source_table_required_updates)
+        self._update_table_with_retries(
+            source_table_collection, source_table_required_updates
+        )
 
     def _create_table_with_config(self, source_table_config: SourceTableConfig) -> None:
         if source_table_config.external_data_configuration is None:
@@ -980,61 +994,119 @@ class SourceTableUpdateManager:
                 allow_auto_detect_schema=False,
             )
 
+    @staticmethod
+    def _assert_changes_safe_to_apply(
+        source_table_required_updates: SourceTableWithRequiredUpdateTypes,
+        update_config: SourceTableCollectionUpdateConfig,
+    ) -> None:
+        """Raises SourceTableFailedToUpdateError if the required changes cannot be applied
+        safely under the collection's update config.
+        """
+        if source_table_required_updates.are_changes_safe_to_apply_to_collection(
+            update_config
+        ):
+            return
+        update_type_names = sorted(
+            t.name for t in source_table_required_updates.all_update_types
+        )
+        unmanaged_str = (
+            "EXTERNALLY MANAGED " if not update_config.attempt_to_manage else ""
+        )
+        raise SourceTableFailedToUpdateError(
+            f"Cannot apply changes of type(s) {update_type_names} to "
+            f"{unmanaged_str}table "
+            f"[{source_table_required_updates.address.to_str()}]."
+        )
+
+    def _apply_required_updates(
+        self,
+        source_table_required_updates: SourceTableWithRequiredUpdateTypes,
+        update_config: SourceTableCollectionUpdateConfig,
+    ) -> None:
+        """Updates a single source table's schema"""
+        source_table_config = source_table_required_updates.source_table_config
+        if not source_table_required_updates.deployed_table:
+            self._create_table_with_config(source_table_config)
+        else:
+            self._update_existing_table_with_config(source_table_config, update_config)
+
+    def _handle_failed_table_update(
+        self,
+        source_table_required_updates: SourceTableWithRequiredUpdateTypes,
+        update_config: SourceTableCollectionUpdateConfig,
+        error_msg: str,
+    ) -> None:
+        if not update_config.recreate_on_update_error:
+            raise SourceTableFailedToUpdateError(
+                f"Failed to update schema for [{source_table_required_updates.address.to_str()}]: {error_msg}"
+            )
+
+        logging.warning(
+            "Failed to update schema for %s (%s), will delete and recreate table.",
+            source_table_required_updates.address.to_str(),
+            error_msg,
+        )
+        self.client.delete_table(
+            address=source_table_required_updates.address, not_found_ok=True
+        )
+        self._create_table_with_config(
+            source_table_required_updates.source_table_config
+        )
+
     def _update_table(
         self,
         source_table_collection: SourceTableCollection,
         source_table_required_updates: SourceTableWithRequiredUpdateTypes,
     ) -> None:
-        """Updates a single source table's schema"""
-        source_table_address = source_table_required_updates.address
-        source_table_config = source_table_required_updates.source_table_config
+        """Makes a single attempt to apply the required updates."""
         update_config = source_table_collection.update_config
-
-        if not source_table_required_updates.are_changes_safe_to_apply_to_collection(
-            update_config
-        ):
-            update_type_names = sorted(
-                t.name for t in source_table_required_updates.all_update_types
-            )
-            unmanaged_str = (
-                "EXTERNALLY MANAGED " if not update_config.attempt_to_manage else ""
-            )
-            raise SourceTableFailedToUpdateError(
-                f"Cannot apply changes of type(s) {update_type_names} to "
-                f"{unmanaged_str}table [{source_table_address.to_str()}]."
-            )
+        self._assert_changes_safe_to_apply(source_table_required_updates, update_config)
 
         try:
-            current_table = source_table_required_updates.deployed_table
-            if current_table:
-                try:
-                    self._update_existing_table_with_config(
-                        source_table_config, update_config
-                    )
-                except Exception as e:
-                    if not update_config.recreate_on_update_error:
-                        raise e
-
-                    logging.warning(
-                        "Failed to update schema for %s due to %s, will try to delete and create table.",
-                        source_table_address.to_str(),
-                        e,
-                    )
-
-                    # We are okay deleting and recreating the table as its contents are deleted / recreated
-                    self.client.delete_table(address=source_table_config.address)
-                    self._create_table_with_config(source_table_config)
-            else:
-                self._create_table_with_config(source_table_config)
-        except Exception as e:
-            logging.exception(
-                "Failed to update schema for `%s`",
-                source_table_config.address.to_str(),
+            self._apply_required_updates(source_table_required_updates, update_config)
+        except _CONCURRENT_WRITER_EXCEPTIONS:
+            raise
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            self._handle_failed_table_update(
+                source_table_required_updates, update_config, error_msg=str(e)
             )
-            #  pylint: disable=raise-missing-from
-            raise SourceTableFailedToUpdateError(
-                f"Failed to update schema for `{source_table_config.address.to_str()}`: {e}"
-            )
+
+    def _update_table_with_retries(
+        self,
+        source_table_collection: SourceTableCollection,
+        source_table_required_updates: SourceTableWithRequiredUpdateTypes,
+    ) -> None:
+        """Applies the required updates, retrying on concurrent writer conflicts."""
+        for _ in range(_MAX_CONCURRENT_UPDATE_ATTEMPTS):
+            try:
+                self._update_table(
+                    source_table_collection, source_table_required_updates
+                )
+                return
+            except _CONCURRENT_WRITER_EXCEPTIONS as e:
+                logging.warning(
+                    "Concurrent writer conflict while updating table [%s]: %s",
+                    source_table_required_updates.address.to_str(),
+                    e,
+                )
+                # Re-diff against the live table to see if the other writer already applied the
+                # desired changes. If so, we are done; otherwise we retry.
+                source_table_required_updates = (
+                    self._get_required_update_types_for_table(
+                        source_table_collection, source_table_required_updates.address
+                    )
+                )
+                if not source_table_required_updates.has_updates_to_make:
+                    return
+
+        self._handle_failed_table_update(
+            source_table_required_updates,
+            source_table_collection.update_config,
+            error_msg=(
+                f"Exhausted retries after {_MAX_CONCURRENT_UPDATE_ATTEMPTS} attempts "
+                f"due to concurrent writer conflicts."
+            ),
+        )
 
     def _create_dataset_if_necessary(
         self,
@@ -1054,7 +1126,7 @@ class SourceTableUpdateManager:
             updates = self._get_required_update_types_for_table(
                 source_table_collection, source_table_config.address
             )
-            self._update_table(source_table_collection, updates)
+            self._update_table_with_retries(source_table_collection, updates)
 
     # TODO(#33293): Delete tables in `regenerable()` collection datasets that do not exist in code anymore. We
     #  validate all source table datasets in a separate `dataset_cleanup_and_validation` process.

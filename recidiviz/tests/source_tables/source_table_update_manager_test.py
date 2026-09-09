@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests capabilities of the SourceTableUpdateManager"""
+
 import tempfile
 import unittest
 from typing import Any
@@ -22,6 +23,12 @@ from unittest.mock import MagicMock, patch
 
 import attr
 import pytest
+from google.api_core.exceptions import (
+    BadRequest,
+    Conflict,
+    NotFound,
+    PreconditionFailed,
+)
 from google.cloud import bigquery
 from google.cloud.bigquery import ExternalConfig, SchemaField
 from more_itertools import one
@@ -38,6 +45,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableUpdateGroup,
 )
 from recidiviz.source_tables.source_table_update_manager import (
+    _MAX_CONCURRENT_UPDATE_ATTEMPTS,
     FieldChangeKind,
     FieldSchemaChange,
     SourceTableFailedToUpdateError,
@@ -53,9 +61,6 @@ from recidiviz.utils.future_executor import ThreadPoolExecutorResult
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
-
-_DATASET_1 = "dataset_1"
-_TABLE_1 = "table_1"
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456"))
@@ -1590,7 +1595,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
     def test_recreate_false_raises(self) -> None:
         with self.assertRaisesRegex(
             SourceTableFailedToUpdateError,
-            expected_regex="Failed to update schema for `test_dataset.test_table`",
+            expected_regex=r"Failed to update schema for \[test_dataset.test_table\]",
         ):
             self.source_table_update_manager.update(
                 SourceTableCollection(
@@ -1627,6 +1632,234 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
 
         table = self.bq_client.get_table(self.table_address)
         self.assertEqual(table.schema, self.updated_table_config.schema_fields)
+
+
+class TestSourceTableUpdateManagerConcurrentConvergence(BigQueryEmulatorTestCase):
+    """Exercises the update table concurrency-retry path."""
+
+    source_table_update_manager: SourceTableUpdateManager
+
+    dataset_id = "test_dataset"
+    table_address = BigQueryAddress(dataset_id="test_dataset", table_id="test_table")
+
+    existing_table_config = SourceTableConfig(
+        address=table_address,
+        description="pre-update table",
+        schema_fields=[SchemaField("id", "INTEGER")],
+    )
+
+    updated_table_config = SourceTableConfig(
+        address=table_address,
+        description="pre-update table",
+        schema_fields=[
+            SchemaField("id", "INTEGER"),
+            SchemaField("test_column", "STRING"),
+        ],
+    )
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        return [
+            SourceTableCollection(
+                update_groups={SourceTableUpdateGroup.CALC},
+                dataset_id=cls.dataset_id,
+                source_tables_by_address={cls.table_address: cls.existing_table_config},
+                update_config=SourceTableCollectionUpdateConfig.regenerable(),
+                description=f"Description for dataset {cls.dataset_id}",
+            )
+        ]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.source_table_update_manager = SourceTableUpdateManager(
+            client=self.bq_client
+        )
+
+    def _collection(self) -> SourceTableCollection:
+        return SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
+            dataset_id=self.dataset_id,
+            source_tables_by_address={self.table_address: self.updated_table_config},
+            update_config=SourceTableCollectionUpdateConfig.regenerable(),
+            description="Description for dataset test_dataset",
+        )
+
+    def test_concurrency_retry_then_recreate_converges(self) -> None:
+        # Every apply loses the race (Conflict on each update_schema), so once the retry
+        # bound is exhausted recovery delete-and-recreates the real emulator table.
+        def _always_conflicts(*_args: Any, **_kwargs: Any) -> None:
+            raise Conflict("lost a race to a concurrent writer")
+
+        with patch.object(self.bq_client, "update_schema", new=_always_conflicts):
+            self.source_table_update_manager.update(self._collection())
+
+        table = self.bq_client.get_table(self.table_address)
+        self.assertEqual(table.schema, self.updated_table_config.schema_fields)
+
+    def test_concurrency_retry_succeeds_on_second_apply(self) -> None:
+        # The first apply loses the race (Conflict); the retry re-reads the still-
+        # unchanged real table and applies our delta, converging without exhausting the
+        # retry bound.
+        calls = {"count": 0}
+
+        def _conflict_once_then_update(*_args: Any, **_kwargs: Any) -> None:
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise Conflict("lost a race to a concurrent writer")
+            # On the retry, stand in for a successful in-place update (which the emulator
+            # cannot do) by deleting and recreating the real table with the desired schema.
+            self.bq_client.delete_table(address=self.table_address, not_found_ok=True)
+            self.bq_client.create_table_with_schema(
+                address=self.updated_table_config.address,
+                schema_fields=self.updated_table_config.schema_fields,
+                clustering_fields=self.updated_table_config.clustering_fields,
+            )
+
+        with patch.object(
+            self.bq_client, "update_schema", new=_conflict_once_then_update
+        ):
+            self.source_table_update_manager.update(self._collection())
+
+        self.assertEqual(2, calls["count"])
+        table = self.bq_client.get_table(self.table_address)
+        self.assertEqual(table.schema, self.updated_table_config.schema_fields)
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456"))
+class TestSourceTableUpdateManagerConcurrentWriters(unittest.TestCase):
+    """Tests that update() tolerates a benign race with another deploy applying the same
+    declared schema.
+
+    TODO(OBT-44670): Re-implement these scenarios against the BigQuery emulator once it
+    supports in-place update_schema requests."""
+
+    ADDRESS = BigQueryAddress(dataset_id="dataset", table_id="table")
+    DEPLOYED_SCHEMA = [bigquery.SchemaField("id", "INTEGER")]
+    DESIRED_SCHEMA = [
+        bigquery.SchemaField("id", "INTEGER"),
+        bigquery.SchemaField("new_field", "STRING"),
+    ]
+
+    def setUp(self) -> None:
+        self.client = MagicMock()
+        self.manager = SourceTableUpdateManager(client=self.client)
+
+    def _config(self) -> SourceTableConfig:
+        return SourceTableConfig(
+            address=self.ADDRESS,
+            description="test",
+            schema_fields=list(self.DESIRED_SCHEMA),
+            clustering_fields=None,
+        )
+
+    def _table(self, schema: list[bigquery.SchemaField]) -> bigquery.Table:
+        table = bigquery.Table(
+            self.ADDRESS.to_project_specific_address(
+                project_id="recidiviz-456"
+            ).to_str()
+        )
+        table.schema = schema
+        return table
+
+    def _collection(
+        self, update_config: SourceTableCollectionUpdateConfig
+    ) -> SourceTableCollection:
+        return SourceTableCollection(
+            update_groups={SourceTableUpdateGroup.CALC},
+            dataset_id=self.ADDRESS.dataset_id,
+            source_tables_by_address={self.ADDRESS: self._config()},
+            update_config=update_config,
+            description="test",
+        )
+
+    def test_non_concurrency_error_recovers_without_retrying(self) -> None:
+        # A non-concurrency failure is terminal, not a race: it recovers on the first
+        # attempt without re-diffing or retrying. The recover-vs-raise outcome itself is
+        # covered against a real table in TestSourceTableUpdateManagerRecreateOnError;
+        # here we pin only that no retry happens (update_schema attempted once, get_table
+        # called just for the initial diff).
+        self.client.get_table.return_value = self._table(self.DEPLOYED_SCHEMA)
+        self.client.update_schema.side_effect = BadRequest("incompatible schema change")
+
+        self.manager.update(
+            self._collection(SourceTableCollectionUpdateConfig.regenerable())
+        )
+
+        self.client.update_schema.assert_called_once()
+        self.client.get_table.assert_called_once()
+
+    def test_race_resolved_by_peer_converges_without_recreate(self) -> None:
+        # Each concurrency exception is tolerated, not swallowed: the apply loses the race,
+        # the re-diff shows the peer already produced the declared schema, and update()
+        # converges without applying our delta again or recreating.
+        for exception in [Conflict("409"), PreconditionFailed("412"), NotFound("404")]:
+            self.client.reset_mock()
+            self.client.get_table.side_effect = [
+                self._table(self.DEPLOYED_SCHEMA),  # initial diff: our addition missing
+                self._table(self.DESIRED_SCHEMA),  # re-diff: peer applied it
+            ]
+            self.client.update_schema.side_effect = exception
+
+            self.manager.update(
+                self._collection(SourceTableCollectionUpdateConfig.regenerable())
+            )
+
+            self.client.update_schema.assert_called_once()
+            self.client.delete_table.assert_not_called()
+            self.client.create_table_with_schema.assert_not_called()
+
+    def test_race_retries_our_delta_and_succeeds(self) -> None:
+        # The apply loses a race (Conflict); the re-diff still shows our addition is
+        # missing, so update() applies our delta again, which succeeds. No recreate.
+        self.client.get_table.side_effect = [
+            self._table(self.DEPLOYED_SCHEMA),
+            self._table(self.DEPLOYED_SCHEMA),
+        ]
+        self.client.update_schema.side_effect = [Conflict("409"), None]
+
+        self.manager.update(
+            self._collection(SourceTableCollectionUpdateConfig.regenerable())
+        )
+
+        self.assertEqual(2, self.client.update_schema.call_count)
+        self.client.delete_table.assert_not_called()
+        self.client.create_table_with_schema.assert_not_called()
+
+    def test_retries_exhausted_recreates_when_regenerable(self) -> None:
+        # Every apply loses the race and the re-diff stays mismatched, so once the retry
+        # bound is exhausted a regenerable collection recovers by recreating.
+        self.client.get_table.return_value = self._table(self.DEPLOYED_SCHEMA)
+        self.client.update_schema.side_effect = Conflict("409")
+
+        self.manager.update(
+            self._collection(SourceTableCollectionUpdateConfig.regenerable())
+        )
+
+        self.assertEqual(
+            _MAX_CONCURRENT_UPDATE_ATTEMPTS, self.client.update_schema.call_count
+        )
+        self.client.delete_table.assert_called_once_with(
+            address=self.ADDRESS, not_found_ok=True
+        )
+        self.client.create_table_with_schema.assert_called_once()
+
+    def test_retries_exhausted_raises_when_not_regenerable(self) -> None:
+        self.client.get_table.return_value = self._table(self.DEPLOYED_SCHEMA)
+        self.client.update_schema.side_effect = Conflict("409")
+
+        with self.assertRaisesRegex(
+            SourceTableFailedToUpdateError,
+            r"Failed to update schema for \[dataset.table\]: Exhausted retries after "
+            rf"{_MAX_CONCURRENT_UPDATE_ATTEMPTS} attempts due to concurrent writer "
+            r"conflicts\.",
+        ):
+            self.manager.update(
+                self._collection(SourceTableCollectionUpdateConfig.protected())
+            )
+        self.assertEqual(
+            _MAX_CONCURRENT_UPDATE_ATTEMPTS, self.client.update_schema.call_count
+        )
+        self.client.delete_table.assert_not_called()
 
 
 @pytest.mark.uses_bq_emulator

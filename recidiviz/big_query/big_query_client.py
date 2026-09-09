@@ -17,6 +17,7 @@
 """Wrapper around the bigquery.Client with convenience functions for querying, creating, copying and exporting BigQuery
 tables and views.
 """
+
 import abc
 import datetime
 import json
@@ -111,6 +112,13 @@ BQ_CLIENT_MAX_POOL_CONNECTIONS = 128
 BQ_CLIENT_MAX_POOL_SIZE = 128
 
 DEFAULT_VANTA_DATASET_OWNER = "joshua"
+
+
+class TableAlreadyExistsError(google_api_exceptions.Conflict):
+    """Raised when creating a table that already exists. Subclasses Conflict (HTTP 409),
+    the same signal the BQ API raises for a concurrent create.
+    """
+
 
 # This is copied from protected variable pandas_gbq.schema._TYPE_ALIASES
 _TYPE_ALIASES = {
@@ -937,7 +945,8 @@ class BigQueryClient:
         """Updates the schema of the table at the given address to match the
         desired_schema_fields. This may result in both adding and dropping fields from
         the table's schema. Raises an exception if fields in desired_schema_fields
-        conflict with existing fields' modes or types.
+        conflict with existing fields' modes or types. Raises NotFound if no table
+        exists at the given address.
 
         Args:
             address: The address of the table to modify.
@@ -2384,7 +2393,7 @@ class BigQueryClientImpl(BigQueryClient):
         self._validate_schema(address, schema_fields)
 
         if self.table_exists(address):
-            raise ValueError(
+            raise TableAlreadyExistsError(
                 f"Trying to create a table that already exists: {address.to_str()}."
             )
 
@@ -2645,13 +2654,7 @@ class BigQueryClientImpl(BigQueryClient):
     ) -> None:
         self._validate_schema(address, desired_schema_fields)
         table_ref = self._table_ref_for_address(address)
-        try:
-            table = self.client.get_table(table_ref)
-        except exceptions.NotFound as e:
-            raise ValueError(
-                f"Cannot update schema fields for a table that does not exist: "
-                f"{address.to_str()}"
-            ) from e
+        table = self.client.get_table(table_ref)
 
         existing_schema = table.schema
         desired_schema_map = {field.name: field for field in desired_schema_fields}
