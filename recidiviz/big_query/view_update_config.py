@@ -40,7 +40,12 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="observations__workflows_primary_user_event",
         table_id="workflows_active_usage_event",
-    ): (60 * 10),
+    ): (60 * 12),
+    # TODO(OBT-49092) Improve performance of reclass_good_behavior view
+    BigQueryAddress(
+        dataset_id="classification_score_components_us_mi",
+        table_id="reclass_good_behavior",
+    ): (60 * 15),
     # TODO(#29291) Need to investigate views to improve performance
     BigQueryAddress(
         dataset_id="impact_reports",
@@ -65,7 +70,7 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="aggregated_metrics",
         table_id="justice_involved_workflows_provisioned_user_metrics_person_assignment_sessions",
-    ): (60 * 25),
+    ): (60 * 30),
 }
 
 
