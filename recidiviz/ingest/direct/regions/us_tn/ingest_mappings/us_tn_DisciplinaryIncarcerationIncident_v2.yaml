@@ -1,0 +1,339 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `DisciplinaryIncarcerationIncident_v2` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  STAFF_REVIEW_ID: STRING
+  EVENT_ID: STRING
+  EVENT_NUMBER: STRING
+  EVENT_DATE: DATE
+  EVENT_SUMMARY: STRING
+  CASE_STATUS: STRING
+  EVENT_LOCATION_TYPE: STRING
+  PRISON_CODE: STRING
+  UNIT_NAME: STRING
+  SPECIFIC_LOCATION: STRING
+  PERSON_ID: STRING
+  CASE_NUM: STRING
+  INCIDENT_REPORT_NUMBER: STRING
+  DECISION_DATE: DATE
+  OFFENSE_CLASS: STRING
+  VIOLENCE_DESCRIPTION: STRING
+  VIOLENCE_CODE: STRING
+  SR_DECISION_STATUS: STRING
+  SR_DECISION: STRING
+  INCIDENTDESCRIPTION: STRING
+  INVOLVEMENT_DESCRIPTION: STRING
+  HEARING_SANCTION_ID: STRING
+  HEARING_REPORT_ID: STRING
+  HEARING_COMMENT: STRING
+  HR_DECISION: STRING
+  SANCTION_DESCRIPTION: STRING
+  SANCTION_CODE: STRING
+  SANCTION_START_DATE: STRING
+  SANCTION_END_DATE: STRING
+  SANCTION_COMMENT: STRING
+  VIOLENCE_LEVEL_DESCRIPTION: STRING
+  INJURY_DESCRIPTION: STRING
+  INJURY_CODE: STRING
+  SentId: INTEGER
+# TODO(TN-1951): remove unused columns, pulled them through for debugging purposes for now
+unused_columns:
+  - STAFF_REVIEW_ID
+  - EVENT_ID
+  - PERSON_ID
+  - HEARING_SANCTION_ID
+  - HEARING_REPORT_ID
+  - EVENT_NUMBER
+  - CASE_NUM
+  - SR_DECISION_STATUS
+  - INJURY_DESCRIPTION
+  - VIOLENCE_DESCRIPTION
+  - CASE_STATUS
+  - EVENT_LOCATION_TYPE
+  - UNIT_NAME
+  - EVENT_SUMMARY
+  - INCIDENTDESCRIPTION
+  - HR_DECISION
+  - SANCTION_DESCRIPTION
+  - SANCTION_COMMENT
+  - INVOLVEMENT_DESCRIPTION
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    incarceration_incidents:
+      # View will show as many incidents as there are outcomes for each, but the mapping groups them so there will
+      # be one incident and however many incident outcomes branching off.
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - INCIDENT_REPORT_NUMBER
+          incident_date: EVENT_DATE
+          facility: PRISON_CODE
+          location_within_facility: SPECIFIC_LOCATION
+          incident_type:
+            $enum_mapping:
+              $raw_text: VIOLENCE_CODE
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - CON # Contraband
+                  - DPO # Drugs - Possession/Selling/Use
+                  - DRP # Drug Paraphernalia
+                  - DRS # **DRUGS-SELLING
+                  - IAL # **INTOXICANTS-ALCOHOL
+                  - IPO # **INTOXICANTS - POSSESSION
+                  - PCT # Possession/Use of Cellular Telephone/Communication Device
+                  - PDW # Possession of a Deadly Weapon
+                  - PFM # Possession of Free-World Money
+
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - ARS # Arson
+                  - BUR # Burglary
+                  - DSP # Destruction of State Property
+                  - EXT # Extortion
+                  - FAL # Falsifying, Altering, or Forging an Official Document
+                  - IND # Indecent Exposure
+                  - PIR # Participating in a Riot
+                  - RAP # Rape
+                  - RIO # **RIOT
+                  - SAA # STRONG-ARMED ACTIVITY
+                  - SAR # Robbery
+                  - SIP # **STAFF/INMATE PROVOCATION
+                  - SXH # Sexual Harassment
+                  - SXM # Sexual Misconduct
+                  - TEM # Threatening Employee
+                  - TOF # Threatening Offender
+                  - TSD # Tampering with Security Device or Equipment
+                  - VPR # Violation of TDOC/Institutional Policies
+                  - VSL # Violation of State/Federal Law
+
+                StateIncarcerationIncidentType.ESCAPE:
+                  - ACM # Abscond
+                  - AES # Attempted Escape
+                  - ESC # Escape
+
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - ADS # **ATTEMPT TO ALTER DRUG SCREEN
+                  - CVS # Conspiracy to Violate State/Federal Law
+                  - DFN # **DEFIANCE
+                  - DPP # Destruction of Personal Property
+                  - DRI # **DRINKING
+                  - DRV # Dress Code Violation
+                  - DSR # Disrespect
+                  - FRG # **FORGERY
+                  - FRS # Failure to Report as Scheduled
+                  - FTE # Failure to Turn in Earnings
+                  - FTR # **FAIL TO RETURN FROM PASS/FUR
+                  - FVI # Furlough Violation
+                  - GAG # Gambling/Gaming
+                  - HOR # Horseplay
+                  - IDR # **INTOXICANTS-DRUGS
+                  - INH # **INHALANTS
+                  - ISE # **INTOXICANTS-SELLING
+                  - ITO # **INTRODUCTION OF TOBACCO
+                  - IUS # Intoxicants - Use, Sell, Exchange, Possess
+                  - LAR # Larceny
+                  - LIT # Littering
+                  - LRT # Late Returning
+                  - NID # No TDOC ID Card on Person
+                  - NOC # No TDOC ID on Clothing
+                  - OOP # Out of Place
+                  - OUV # Operating Unauthorized Vehicle
+                  - PDR # Positive Drug Screen
+                  - PGA # Participation in Security Threat Group Activities
+                  - PGM # Possession of Security Threat Group Materials
+                  - PPV # Personal Property Violation
+                  - PTO # Possession/Use/Introduction of Tobacco Products
+                  - RAA # Refusal of/or Attempt to Alter Test
+                  - RCA # Refusal of Cell Assignment
+                  - RDN # Refusing to Provide DNA Specimen
+                  - RDO # Refusal of a Direct Order
+                  - RDR # **REFUSE DRUG SCREEN
+                  - RTP # Refusal to Participate
+                  - SMK # **SMOKING IN PROHIBITED AREA
+                  - SOS # Solicitation of Staff
+                  - TAT # TATTOO NOT RECRD AT DIAG INTAK
+                  - TEL # Abuse of Telephone Privileges
+                  - TFT # Receiving Two Food Trays
+                  - TOS # **TOBACCO SELLING
+
+                StateIncarcerationIncidentType.REPORT:
+                  - ASU # ATTEMPTED SUICIDE
+                  - BOT # **BREACH OF TRUST
+                  - DIS # Creating a Disturbance
+                  - FCM # **FAIL/COMPLETE MEDICAL APPT
+                  - FIR # **FIRE
+                  - FLD # Flooding
+                  - INT # Interference with Officer Duties
+                  - MUT # Mutilation
+                  - PIN # Pending Investigation
+                  - SUC # Attempted Suicide
+                  - ULO # **IN UNAUTHORIZED LOCATION
+                  - UNV # **UNAUTHORIZED VISITOR
+                  - VAN # **VANDALISM
+
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - AOO # Assault on Inmate without a Weapon
+                  - AOS # **ASSAULT ON STAFF
+                  - AOW # Assault on Inmate with a Weapon
+                  - ASJ # **ASSAULT STAFF - NO INJURY
+                  - ASK # **ASSAULT OFFN-NO INJURY
+                  - ASL # **ASSAULT
+                  - ASM # **ASSAULT VISITOR - NO INJURY
+                  - ASO # Assault on Staff without a Weapon
+                  - ASW # Assault on Staff with a Weapon
+                  - AVO # Assault on Visitor, Guest, or Volunteer without a Weapon
+                  - AVW # Assault on Visitor, Guest, or Volunteer with a Weapon
+                  - FIG # Fighting
+                  - HOM # Homicide
+                  - SXB # Sexual Battery
+
+                StateIncarcerationIncidentType.INTERNAL_UNKNOWN:
+                  - AIE # **ATTEMPT TO INTIMIDATE EMPLOY
+                  - RPS # **REFSD TO ADEQ PARTICI - SAIU
+                  - UFT # Unauthorized Financial Obligations/Transaction
+                  # A handful of real MiCase VIOLENCE_CODE values are observed in real data
+                  # but have no description in LOOKUPS (the DESCRIPTION column just repeats
+                  # the code back). We can't tell what they mean, so they're mapped as
+                  # INTERNAL_UNKNOWN by their literal code rather than guessed at:
+                  - "101"
+                  - "103"
+                  - "107"
+                  - "110"
+                  - "115"
+                  - "119"
+                  - "120"
+                  - "121"
+                  # LOOKUPS also defines ~194 other undescribed VIOLENCE_CODE values (a numeric
+                  # 100-476 range and J1xx/J2xx/J3xx-prefixed codes, likely a newer or juvenile-
+                  # specific taxonomy) that have never appeared in real staff review data as of
+                  # 2026-09. Deliberately not enumerating those here.
+
+          incident_details: HEARING_COMMENT
+          incident_metadata:
+            $normalized_values_json_dict:
+              Class: OFFENSE_CLASS
+              Disposition: SR_DECISION
+              InjuryLevel: INJURY_CODE
+              InfractionType: VIOLENCE_CODE
+              ViolenceLevel: VIOLENCE_LEVEL_DESCRIPTION
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderID
+                      - INCIDENT_REPORT_NUMBER
+                      - SentId
+                hearing_date: DECISION_DATE
+                date_effective: SANCTION_START_DATE
+                report_date: EVENT_DATE
+                projected_end_date: SANCTION_END_DATE
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: SANCTION_CODE
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                        - CER # Restrict to Quarters
+
+                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                        - RES # Restriction
+
+                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                        - EW # EXTRA WORK
+                        - EWD # Extra work duty
+                        - EXD # Extra Duty
+
+                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                        - FIN # Fine
+                        - RE # RESTITUTION
+                        - RL250 # Restitution ($250.00 or less)
+                        - RO250 # Restitution (over $250.00)
+                        - RSTCA # Restitution $
+                        - RSTCB # Restitution $
+                        - RTN # Restitution
+
+                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                        - CTD # Recommended Good Time, Educational and/or Case Plan Credit Time deprivation of days
+                        - D2 # DEMOTE TO CREDIT CLASS 2
+                        - D3 # DEMOTE TO CREDIT CLASS 3
+                        - DB # DEMOTE TO CREDIT CLASS B
+                        - DC # DEMOTE TO CREDIT CLASS C
+                        - DD # DEMOTE TO CREDIT CLASS D
+                        - EL # EARNED CREDIT TIME LOST
+                        - LGH # Lose Good and Honor Credit
+                        - LIT # Lose Incentive Time
+                        - LPP # Loss of Earned Sentence Credits
+                        - RCC # Time Earned Class change
+                        - RED # Release Eligibility Date (RED) Extension
+                        - RGT # Remove Good Time
+                        - RHT # Remove Honor Time
+
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - CC # CUSTODY LEVEL CHANGE
+                        - CNV # Conversion
+                        - CSBC # Contract for specific behavior change
+                        - CWHA # Change in work/Housing Assignment
+                        - ES # ENFORCE SUSPENDED SANCTN
+                        - FCRM # Formal conflict resolution meeting
+                        - FT # FACILITY TRANSFER
+                        - HC # HOUSE ASSIGNMENT CHANGE
+                        - IFTR # Inter-Facility transfer recommendation
+                        - IPT # Imposed Probated Time
+                        - PRO # Disciplinary Probation
+                        - PT # PROGRAM TRANSFER
+                        - RC # CONTINUE ON RCA
+                        - RCR # Recommend Cell/Room Change
+                        - RCSV # Referral for a change in status value
+                        - RIC # Recommend Intensive Counseling
+                        - RM # CONTINUE RCA BUT MODIFY (never used)
+                        - ROC # Recommend Outside Court
+                        - RPE # Recommend Psychiatric Evaluation
+                        - RT # TRANSFER FROM RCA
+                        - RUC # Recommend Unit Change
+                        - SC # SECURITY CLASS CHANGE
+                        - SET # Sentence Extension Time
+                        - ST # STATUS/ASSIGNMENT CHANGE
+                        - TR # TEAM REFERRAL
+                        - TS # TIME SERVED
+                        - WC # WORK ASSIGNMENT CHANGE
+
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - COM # Commissary Ordering Restriction
+                        - IMP # Impound Property
+                        - JTE # Recommend Job or Program Termination
+                        - LLA # Loss or limitation of Activity
+                        - LLC # Loss or limitation of Commissary
+                        - LLP # Loss or limitation of Playing cards
+                        - LLR # Loss or limitation of Radio
+                        - LLT # Loss or limitation of Tablet
+                        - LOP # Loss of Privileges
+                        - LRP # Lose Recreation Privileges
+                        - PAK # Package Ordering Restriction
+                        - PAY # Pay Decrease
+                        - PL # PRIVILEGES LOST/LIMITED
+                        - REC # Recreation Restriction
+                        - TEL # Telephone Restriction
+                        - VIS # Visitation Suspension
+
+                      StateIncarcerationIncidentOutcomeType.SOLITARY:
+                        - ADS # Recommend Administrative Segregation
+                        - AST # Administrative Segregation and/or Transfer
+                        - DRH # Disciplinary restrictive housing
+                        - DRHL60 # Disciplinary restrictive housing (less than 60 days)
+                        - PSG # Disciplinary Segregation
+                        - SG # SEGREGATION
+
+                      StateIncarcerationIncidentOutcomeType.WARNING:
+                        - VR # VERBAL REPRIMAND
+                        - VRE # Verbal Reprimand
+                        - WR # Written reprimand -- LOOKUPS also has a separate row with code WR described as 'WRITTEN REPORT'; ambiguous meaning
+                        - WRE # Written Reprimand

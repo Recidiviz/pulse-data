@@ -34,6 +34,19 @@
     explore: us_tn_raw_data
     field: us_tn_OffenderName.OffenderID
 
+  - name: US_TN_PERSON_ID
+    title: US_TN_PERSON_ID
+    type: field_filter
+    default_value: ""
+    allow_multiple_values: true
+    required: false
+    ui_config: 
+      type: tag_list
+      display: popover
+    model: "@{model_name}"
+    explore: us_tn_raw_data
+    field: us_tn_PERSON.PERSON_ID
+
   elements:
   - name: OffenderName
     title: OffenderName
@@ -65,6 +78,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 0
     col: 0
     width: 24
@@ -95,6 +109,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 6
     col: 0
     width: 24
@@ -126,6 +141,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 12
     col: 0
     width: 24
@@ -166,6 +182,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 18
     col: 0
     width: 24
@@ -205,6 +222,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 24
     col: 0
     width: 24
@@ -264,6 +282,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 30
     col: 0
     width: 24
@@ -288,6 +307,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 36
     col: 0
     width: 24
@@ -337,6 +357,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 42
     col: 0
     width: 24
@@ -368,6 +389,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 48
     col: 0
     width: 24
@@ -403,6 +425,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 54
     col: 0
     width: 24
@@ -436,6 +459,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 60
     col: 0
     width: 24
@@ -478,6 +502,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 66
     col: 0
     width: 24
@@ -534,6 +559,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 72
     col: 0
     width: 24
@@ -579,6 +605,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 78
     col: 0
     width: 24
@@ -620,6 +647,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 84
     col: 0
     width: 24
@@ -695,6 +723,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 90
     col: 0
     width: 24
@@ -724,6 +753,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 96
     col: 0
     width: 24
@@ -770,6 +800,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 102
     col: 0
     width: 24
@@ -827,6 +858,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 108
     col: 0
     width: 24
@@ -855,7 +887,57 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
     row: 114
+    col: 0
+    width: 24
+    height: 6
+
+  - name: PERSON
+    title: PERSON
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_PERSON.primary_key,
+      us_tn_PERSON.PERSON_ID,
+      us_tn_PERSON.PERSON_TYPE_ID,
+      us_tn_PERSON.FIRST_NAME,
+      us_tn_PERSON.MIDDLE_NAME,
+      us_tn_PERSON.SURNAME,
+      us_tn_PERSON.DATE_OF_BIRTH__raw,
+      us_tn_PERSON.GENDER,
+      us_tn_PERSON.TITLE,
+      us_tn_PERSON.SUFFIX,
+      us_tn_PERSON.CHANGE_ID,
+      us_tn_PERSON.NO_NAME_PROVIDED,
+      us_tn_PERSON.RESTRICTED_OWNER,
+      us_tn_PERSON.DOB_UNKNOWN,
+      us_tn_PERSON.PERSON_TYPE_OTHER,
+      us_tn_PERSON.DOC_FACILITY_ID,
+      us_tn_PERSON.HOUSING_STATUS_ID,
+      us_tn_PERSON.DATE_STATUS_CHANGED__raw,
+      us_tn_PERSON.OFFICE_LOCATION_ID,
+      us_tn_PERSON.MAIDEN_NAME,
+      us_tn_PERSON.IS_MERGED,
+      us_tn_PERSON.STATUS_ID,
+      us_tn_PERSON.ADC_NUMBER,
+      us_tn_PERSON.CREATE_USERID,
+      us_tn_PERSON.CREATE_DTM__raw,
+      us_tn_PERSON.UPDT_USERID,
+      us_tn_PERSON.UPDT_DTM__raw,
+      us_tn_PERSON.DOC_UNIT_ID,
+      us_tn_PERSON.DONOT_REHIRE_FLAG,
+      us_tn_PERSON.STATUS_DATE__raw,
+      us_tn_PERSON.file_id,
+      us_tn_PERSON.is_deleted]
+    sorts: [us_tn_PERSON.DATE_OF_BIRTH__raw]
+    note_display: hover
+    note_text: "Person master table in MiCase, holding primary name, date of birth, gender, and current housing/office location for both JII and staff records. Keyed on PERSON_ID. 5 of 29 columns have no comment in the MiCase data dictionary and are left undocumented here."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -938,7 +1020,8 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 120
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -968,7 +1051,8 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 126
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1004,7 +1088,8 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 132
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1075,7 +1160,8 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 138
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1100,7 +1186,78 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 144
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 150
+    col: 0
+    width: 24
+    height: 6
+
+  - name: IN_EPISODE
+    title: IN_EPISODE
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_IN_EPISODE.primary_key,
+      us_tn_IN_EPISODE.DOC_ID,
+      us_tn_IN_EPISODE.PERSON_ID,
+      us_tn_IN_EPISODE.DOC_NUMBER,
+      us_tn_IN_EPISODE.BOOKING_NUMBER,
+      us_tn_IN_EPISODE.CHANGE_ID,
+      us_tn_IN_EPISODE.INTERVIEW_STATUS_ID,
+      us_tn_IN_EPISODE.SENTENCE_STATUS_ID,
+      us_tn_IN_EPISODE.REASON_CONFINEMENT_ID,
+      us_tn_IN_EPISODE.DO_NOT_DISCLOSE,
+      us_tn_IN_EPISODE.HEADQUARTERS,
+      us_tn_IN_EPISODE.EN_ROUTE,
+      us_tn_IN_EPISODE.DOC_FACILITY_ID,
+      us_tn_IN_EPISODE.RESTRICTIVE_STATUS_ID,
+      us_tn_IN_EPISODE.RESTRICTIVE_STATUS_DATE__raw,
+      us_tn_IN_EPISODE.PREV_RESTRIC_STATUS_ID,
+      us_tn_IN_EPISODE.MPC_COUNTY_ID,
+      us_tn_IN_EPISODE.JAIL_LOCATION_ID,
+      us_tn_IN_EPISODE.PIA_LOCATION_ID,
+      us_tn_IN_EPISODE.PIA_STATE_ID,
+      us_tn_IN_EPISODE.ICC_TO_ID,
+      us_tn_IN_EPISODE.SECURITY_LEVEL_ID,
+      us_tn_IN_EPISODE.SECURITY_LEVEL_DATE__raw,
+      us_tn_IN_EPISODE.CURRENT_STATUS_DATE__raw,
+      us_tn_IN_EPISODE.IS_NO_TIME_CREDIT_RECORD,
+      us_tn_IN_EPISODE.RETURN_TYPE_ID,
+      us_tn_IN_EPISODE.DEMOGRAPHIC_COUNTY_ID,
+      us_tn_IN_EPISODE.DEMOGRAPHIC_STATE_ID,
+      us_tn_IN_EPISODE.OLD_REASON_CONFINEMENT_DESC,
+      us_tn_IN_EPISODE.CR_END_DATE__raw,
+      us_tn_IN_EPISODE.COURT_TITLE,
+      us_tn_IN_EPISODE.COURT_FIRST_NAME,
+      us_tn_IN_EPISODE.COURT_MIDDLE_NAME,
+      us_tn_IN_EPISODE.COURT_LAST_NAME,
+      us_tn_IN_EPISODE.COURT_SUFFIX,
+      us_tn_IN_EPISODE.COURT_DATE_OF_BIRTH__raw,
+      us_tn_IN_EPISODE.LAST_DATE_UPDATED__raw,
+      us_tn_IN_EPISODE.ADMISSION_DATE__raw,
+      us_tn_IN_EPISODE.INTAKE_COMPLETE_FLAG,
+      us_tn_IN_EPISODE.ARS_NUMBER,
+      us_tn_IN_EPISODE.CR_NUMBER,
+      us_tn_IN_EPISODE.CREATE_USERID,
+      us_tn_IN_EPISODE.CREATE_DTM__raw,
+      us_tn_IN_EPISODE.UPDT_USERID,
+      us_tn_IN_EPISODE.UPDT_DTM__raw,
+      us_tn_IN_EPISODE.WORK_LEVEL_ID,
+      us_tn_IN_EPISODE.DPP_ID,
+      us_tn_IN_EPISODE.ADMISSION_TYPE,
+      us_tn_IN_EPISODE.EPISODE_TYPE_ID,
+      us_tn_IN_EPISODE.CASE_PLAN_CREDIT_TIME,
+      us_tn_IN_EPISODE.IS_YIA_YN,
+      us_tn_IN_EPISODE.file_id,
+      us_tn_IN_EPISODE.is_deleted]
+    sorts: [us_tn_IN_EPISODE.RESTRICTIVE_STATUS_DATE__raw]
+    note_display: hover
+    note_text: "A person's incarceration episode — the master record other MiCase tables reference via \"EPISODE ID. FOREIGN KEY WITH IN_EPISODE TABLE\" (DOC_ID). At least a dozen other files already in this repo carry that description pointing here, so this table is a significant hub in the MiCase schema.  File description is Claude inference/placeholder. TODO(TN-2078): confirm and expand.  Irregularities (763,781 sample rows): about half of the 48 columns are empty on every single row (BOOKING_NUMBER, INTERVIEW_STATUS_ID, REASON_CONFINEMENT_ID, DO_NOT_DISCLOSE, HEADQUARTERS, RESTRICTIVE_STATUS_ID and its DATE, PREV_RESTRIC_STATUS_ID, MPC_COUNTY_ID, JAIL_LOCATION_ID, PIA_LOCATION_ID, PIA_STATE_ID, ICC_TO_ID, SECURITY_LEVEL_ID and its DATE, IS_NO_TIME_CREDIT_RECORD, RETURN_TYPE_ID, DEMOGRAPHIC_COUNTY_ID, DEMOGRAPHIC_STATE_ID, OLD_REASON_CONFINEMENT_DESC, CR_END_DATE, COURT_TITLE, ARS_NUMBER, CR_NUMBER). EN_ROUTE is populated on only 56 rows. DOC_FACILITY_ID is populated on only 21.8% of rows. The COURT_FIRST_NAME / COURT_MIDDLE_NAME / COURT_LAST_NAME / COURT_DATE_OF_BIRTH columns are populated on about 80% of rows — despite the \"COURT_\" prefix these look more like a person's name/DOB as recorded on the committing court order than anything about the judge or court itself, but that's unconfirmed. This is an initial MiCase transfer and may be truncated, incomplete, or wrong."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 156
     col: 0
     width: 24
     height: 6

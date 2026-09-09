@@ -143,6 +143,13 @@ explore: us_tn_raw_data_template {
     view_label: "us_tn_OffenderMovement"
   }
 
+  join: us_tn_PERSON {
+    sql_on: LPAD(${us_tn_PERSON.ADC_NUMBER}, 8, '0') = ${us_tn_OffenderName.OffenderID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_tn_PERSON"
+  }
+
   join: us_tn_Sentence {
     sql_on: ${us_tn_OffenderName.OffenderID} = ${us_tn_Sentence.OffenderID};;
     type: full_outer
@@ -176,6 +183,13 @@ explore: us_tn_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_tn_Violations"
+  }
+
+  join: us_tn_IN_EPISODE {
+    sql_on: ${us_tn_IN_EPISODE.PERSON_ID} = ${us_tn_PERSON.PERSON_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_tn_IN_EPISODE"
   }
 
 }
