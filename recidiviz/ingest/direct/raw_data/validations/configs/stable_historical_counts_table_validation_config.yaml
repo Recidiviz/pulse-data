@@ -100,7 +100,13 @@ custom:
             reason:
               "This file switched from incremental to full historical so this
               jump is expected."
-
+      LBAKRDTA_TAK039:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2023-01-11T00:00:00Z"
+            datetime_end_exclusive: "2026-09-01T20:38:46Z"
+            reason:
+              "This file switched from incremental to full historical so this
+              jump is expected."
   US_NC:
     file_tags:
       rna_prison:
