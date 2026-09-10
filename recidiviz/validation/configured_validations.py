@@ -59,6 +59,9 @@ from recidiviz.validation.views.sentencing.us_mo_sentencing_time_served_all_data
 from recidiviz.validation.views.sentencing.us_mo_sentencing_time_served_preprocessed_data_issues import (
     US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.sentencing.us_nd_recidiviz_reference_offense_category_mapping_incomplete import (
+    US_ND_RECIDIVIZ_REFERENCE_OFFENSE_CATEGORY_MAPPING_INCOMPLETE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
@@ -679,6 +682,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_ND_RECIDIVIZ_REFERENCE_OFFENSE_CATEGORY_MAPPING_INCOMPLETE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
