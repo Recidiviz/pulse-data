@@ -31,6 +31,10 @@ Columns intentionally excluded from this mapping:
 
 - Oversized code tables (>= 100 codes) whose `known_values` were removed entirely
   rather than listed exhaustively (the column is no longer treated as an enum):
+    - eomis_apptcalendar.OFFENDERAPPTTYPECODE (CIAPTYP, 397 codes)
+    - eomis_apptcalendar.ENCOUNTERTYPE (EncounterType, 578 codes)
+    - eomis_apptcalendar.LOCATIONWITHINAPPTFACL (CO_HOSP_CD, 179 codes)
+    - eomis_hsencounter.ENCOUNTERTYPE (EncounterType, 578 codes)
     - eomis_inmateprofile.LATESTPAROLEBOARDACTION (CIBDACT1, 254 codes)
     - eomis_inmateprofile.REASONFORLASTMOVEMENT (CITRREAS, 254 codes)
     - eomis_sentencecreditdbt.GOODTIMECHANGEREASON (CIGTRSN, 130 codes)
@@ -41,8 +45,16 @@ Columns intentionally excluded from this mapping:
 - Boolean Y/N flags and other columns with no DATANAME in `eomis_codevaluedesc`
   (their `known_values` are self-contained and not reconciled against the code
   dictionary), e.g. eomis_inmateprofile.INMATEPHOTOFLAG,
-  eomis_ofnrelatedaddress.OFFNISHOMELESS, the 54 scored LSI-R item columns in
-  eomis_lsiassessment, and the non-EOMIS informix_parhrg.par_hrg_dec.
+  eomis_ofnrelatedaddress.OFFNISHOMELESS, and the 54 scored LSI-R item columns in
+  eomis_lsiassessment. This includes the DOCNET (informix) columns whose code sets
+  appear nowhere in `eomis_codevaluedesc`: informix_pb_agenda.notify_flg,
+  informix_pb_agenda.bucket_calc, informix_pb_agenda.bucket_ovrd,
+  informix_vic_calendar.vic_cal_status, informix_vic_calendar.vic_cal_hrg_typ, and
+  informix_vic_cal_victim.vc_vic_status.
+
+DOCNET (informix) files are in scope wherever an EOMIS code list defines the
+column's codes, so informix_pb_agenda.fac_cd and informix_parhrg.par_hrg_dec are
+mapped below alongside the EOMIS columns.
 """
 
 # Maps a (raw_file_tag, column_name) pair to the eomis_codevaluedesc DATANAME(s)
@@ -50,6 +62,9 @@ Columns intentionally excluded from this mapping:
 # than one DATANAME (a field combining multiple EOMIS code lists) maps to a tuple
 # with more than one entry.
 US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
+    # eomis_apptcalendar
+    ("eomis_apptcalendar", "APPOINTMENTSTATUS"): ("CMAPSTAT",),
+    ("eomis_apptcalendar", "APPTREASONFORCHANGE"): ("ApptRsnChg",),
     # eomis_commitmentsummary
     ("eomis_commitmentsummary", "TYPEORDER"): ("CMORDER",),
     ("eomis_commitmentsummary", "COURTCASETYPE"): ("CMCASETYPE",),
@@ -65,6 +80,12 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     # eomis_externalmovement
     ("eomis_externalmovement", "EXTERNALMOVEMENTCODE"): ("CIMOVCOD",),
     ("eomis_externalmovement", "REASONFORMOVEMENT"): ("CITRREAS",),
+    # eomis_hsencounter
+    ("eomis_hsencounter", "HSRECORDTYPE"): ("HSRecordType",),
+    ("eomis_hsencounter", "HSENCREVIEWTYPE"): ("ReviewType",),
+    ("eomis_hsencounter", "HSENCOUNTERSTATUS"): ("HSEncounterStatus",),
+    ("eomis_hsencounter", "SEXUALLYAGGRESSIVERATING"): ("SexAggressivRating",),
+    ("eomis_hsencounter", "SEXUALLYVIOLENTRATING"): ("SexViolentRating",),
     # eomis_inaassessment
     ("eomis_inaassessment", "INAACADEMIC"): ("INAAcademic",),
     ("eomis_inaassessment", "INAACADEMICQ"): ("INAAcademicQ",),
@@ -144,6 +165,14 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_organizationprof", "ORGANIZATIONTYPE"): ("ORGTYPE",),
     ("eomis_organizationprof", "ORGANIZATIONSTATUS"): ("ORGSTATUS",),
     ("eomis_organizationprof", "HANDICAPACCESS"): ("ORGHNDCAP",),
+    # eomis_paroledischgplan
+    ("eomis_paroledischgplan", "TYPEOFRELEASE"): ("TYPEREL",),
+    ("eomis_paroledischgplan", "TYPEOFPLAN"): ("TypeOfPlan",),
+    # eomis_plansponsor
+    ("eomis_plansponsor", "TYPEOFRELEASE"): ("TYPEREL",),
+    ("eomis_plansponsor", "SPONSORTYPE"): ("SponsorType",),
+    ("eomis_plansponsor", "PAROLEPLANRECOMMENDED"): ("PlanRecommended",),
+    ("eomis_plansponsor", "TYPEOFPLAN"): ("TypeOfPlan",),
     # eomis_programachievement
     ("eomis_programachievement", "GTOVERRIDE"): ("GTOVERRIDE",),
     ("eomis_programachievement", "PROGRAMACHIVSTATUS"): ("CMACHSTAT",),
@@ -173,4 +202,10 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_sentencecompute", "TIMELINETYPE"): ("CDTIMELINETYPE",),
     ("eomis_sentencecompute", "SENTENCESTATUSFLAG"): ("CISTAFLG",),
     ("eomis_sentencecompute", "SENTENCELAWCODE"): ("CILAWCODE",),
+    # informix_parhrg
+    ("informix_parhrg", "par_hrg_dec"): ("CO_PAR_HRG_DEC",),
+    # informix_pb_agenda
+    # CO_FAC_CD decodes every facility code in the file except XX, which appears on
+    # 7 rows and is absent from the code list.
+    ("informix_pb_agenda", "fac_cd"): ("CO_FAC_CD",),
 }
