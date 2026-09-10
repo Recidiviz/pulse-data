@@ -17,10 +17,10 @@ reference_data:
     header: "KNOWN ENTITIES — USE THESE TO GUIDE CLASSIFICATION:"
     groups:
       - label: >
-          The following are primarily known for non-employment purposes (housing,
-          treatment, supervision). They may still be a legitimate employer for a
-          specific person — use the note's context, not just the entity's typical
-          purpose, to decide:
+          The following are primarily known for non-employment purposes
+          (housing, treatment, supervision). They may still be a legitimate
+          employer for a specific person — use the note's context, not just the
+          entity's typical purpose, to decide:
         types:
           [
             nonresidential_program,
@@ -59,7 +59,8 @@ output_schema:
             the word "employed", but only when there is some indication the
             schedule is work-related (not a housing or program schedule).
             Vocational training, GED programs, and job readiness classes do not
-            count as employment. Work release, work crews, and prison/jail labor
+            count as employment. Volunteering or unpaid caretaking do not count
+            as employment. Work release, work crews, and prison/jail labor
             programs do not count as employment — leave primary_status absent
             for these unless non-employment is also explicitly stated.
         - name: unemployed
@@ -89,16 +90,18 @@ output_schema:
         List of current employers mentioned in the case note. Empty if the
         person is unemployed or no employer details are available. Do not
         include past employers whose employment has ended. Volunteering is not
-        employment — do not include volunteer positions.
+        employment — do not include.
       applicable_when_value:
-        primary_status: [employed]
-      required_when_value:
         primary_status: [employed]
       primary_keys: [employer_name]
       fields:
         - name: employer_name
           type: STRING
-          description: Name of the employer or organization.
+          description: >
+            Name of the employer or organization. Use title case (e.g.,
+            "Walmart", "Joe's Paint Shop") unless the employer stylizes its name
+            otherwise (e.g., "eBay"), or unless the employer is not presented as
+            a proper noun (e.g., "the grocery store").
 
         - name: self_employed
           type: BOOLEAN
@@ -141,8 +144,12 @@ output_schema:
         - name: job_title
           type: STRING
           description: >
-            The person's job title or role (e.g., 'cashier', 'laborer'). Omit if
-            not mentioned.
+            The person's job title or role. Express this title in noun form, not
+            as an industry or activity — e.g., "construction worker" or
+            "laborer", not "construction" or "labor"; "driver", not "driving";
+            "person who washes dishes" not "washing dishes". Maintain lowercase
+            unless referencing a proper noun. If there is no clear role title
+            that describes the person's job, leave blank. Omit if not mentioned.
 
         - name: employer_location
           type: STRING
@@ -227,11 +234,32 @@ entity_groups:
       singular: employer
       plural: employers
     source_array_field: employers
-    entity_fields: [employer_name]
+    entity_fields:
+      [
+        employer_name,
+        employer_location,
+        job_title,
+        self_employed,
+        employment_type,
+      ]
     grouping_instructions: >
-      Cluster all forms of self-employment (sole proprietorship, freelance, gig
-      or app-based work, side businesses) into a single canonical "Self-Employed"
-      entity, regardless of the specific venture named. Keep employers that share
-      a name but are clearly at different locations (e.g. "Walmart Boise" vs.
-      "Walmart Nampa") as separate entities, using location cues in the entries'
-      note text.
+      Group mentions that likely refer to the same ongoing employment
+      relationship. Any of the four entity fields can be the primary anchor when
+      the others are absent — a mention with only a job_title, or only
+      self_employed=true and an employment_type, still deserves an entity and
+      should be matched to other mentions describing the same job.
+
+      When employer_name is present, treat it as the primary grouping signal:
+      mentions with the same or clearly equivalent name (accounting for
+      abbreviations, typos, and capitalization) are strong candidates for the
+      same entity. Employers that share a name but are clearly at different
+      locations (e.g. "Walmart Boise" vs. "Walmart Nampa") should remain
+      separate entities.
+
+      When employer_name is absent, use the combination of job_title,
+      self_employed, and employment_type to judge whether mentions refer to the
+      same job. For example, a mention with job_title="painting job" and a
+      separate mention with employer_name="Joe's Paint Shop" and
+      job_title="painter" likely describe the same entity. Distinct
+      self-employment ventures (e.g. lawn care vs. freelance design) should
+      remain separate entities even when both have self_employed=true.
