@@ -51,6 +51,20 @@ IDENTITY_SERVICE_API_VERSION = "v1"
 IDENTITIES_BLUEPRINT_ROUTE = "/identities"
 TRIGGER_IMPORT_BLUEPRINT_ROUTE = "/trigger_import"
 
+# Internal endpoint Cloud Tasks calls to run a tenant's import, directly on the
+# Cloud Run service URL with an OIDC token minted from the service's own
+# service account. It is not part of the client-facing API, so it is not
+# registered under the API version prefix.
+IMPORT_PROCESS_INTERNAL_ROUTE = "/_internal/import/process"
+
+# Cloud Tasks queue the trigger_import endpoint enqueues import work onto.
+IDENTITY_IMPORT_QUEUE = "identity-import"
+
+# app.config key under which server.py stashes the service's CloudRunMetadata so
+# the trigger_import endpoint can read the URL and service account it needs to
+# enqueue the import Cloud Task.
+CLOUD_RUN_METADATA_CONFIG_KEY = "CLOUD_RUN_METADATA"
+
 # Full client-facing paths, for callers outside the service (e.g. the batch
 # identity clustering DAG task that POSTs to trigger_import).
 IDENTITIES_ROUTE = f"/{IDENTITY_SERVICE_API_VERSION}{IDENTITIES_BLUEPRINT_ROUTE}"

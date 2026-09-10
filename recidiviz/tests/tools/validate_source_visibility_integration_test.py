@@ -623,10 +623,17 @@ def test_identity_service_server_dependencies() -> None:
         "recidiviz.services.identity.server",
         valid_module_prefixes=make_module_matcher(
             {
+                "recidiviz.big_query.address_overrides",
+                "recidiviz.big_query.big_query_address",
+                "recidiviz.big_query.big_query_job_labels",
+                "recidiviz.cloud_resources",
                 "recidiviz.common",
                 "recidiviz.monitoring",
                 "recidiviz.persistence.database",
                 "recidiviz.persistence.entity",
+                "recidiviz.persistence.errors",
+                "recidiviz.pipelines.ingest.identity.dataset_config",
+                "recidiviz.pipelines.ingest.identity.dataset_names",
                 "recidiviz.services.identity",
                 "recidiviz.utils",
             }

@@ -44,6 +44,22 @@ variable "max_retry_attempts" {
   default = 5
 }
 
+// Maps to `retry_config.min_backoff` in the `google_cloud_tasks_queue` resource.
+// When null, Cloud Tasks applies its default (0.1s).
+// See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue#min_backoff
+variable "min_backoff" {
+  type    = string
+  default = null
+}
+
+// Maps to `retry_config.max_backoff` in the `google_cloud_tasks_queue` resource.
+// When null, Cloud Tasks applies its default (1h).
+// See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue#max_backoff
+variable "max_backoff" {
+  type    = string
+  default = null
+}
+
 // Maps to `stackdriver_logging_config.sampling_ratio` in the `google_cloud_tasks_queue` resource.
 // See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue#sampling_ratio
 variable "logging_sampling_ratio" {

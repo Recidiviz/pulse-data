@@ -305,6 +305,28 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             ),
         )
 
+    def test_create_with_dispatch_deadline(self) -> None:
+        self.client_wrapper.create_task(
+            queue_name=self.QUEUE_NAME,
+            absolute_uri="https://recidiviz/my_endpoint",
+            body={},
+            dispatch_deadline_seconds=1800,
+        )
+
+        self.mock_client.create_task.assert_called_with(
+            parent="projects/my-project-id/locations/us-east1/queues/queue-name",
+            task=tasks_v2.Task(
+                mapping={
+                    "dispatch_deadline": {"seconds": 1800},
+                    "http_request": {
+                        "http_method": "POST",
+                        "url": "https://recidiviz/my_endpoint",
+                        "body": b"{}",
+                    },
+                }
+            ),
+        )
+
     def test_delete_task(self) -> None:
         self.client_wrapper.delete_task("task_name")
 

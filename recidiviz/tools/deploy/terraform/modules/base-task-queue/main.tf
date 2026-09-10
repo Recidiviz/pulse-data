@@ -26,6 +26,8 @@ resource "google_cloud_tasks_queue" "base_queue" {
 
   retry_config {
     max_attempts = var.max_retry_attempts
+    min_backoff  = var.min_backoff
+    max_backoff  = var.max_backoff
   }
 
   stackdriver_logging_config {

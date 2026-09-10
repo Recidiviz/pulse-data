@@ -17,6 +17,13 @@
 """Helpers for getting identity ingest pipeline output datasets."""
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.pipelines.ingest.identity.dataset_names import (
+    identity_cluster_dataset_name,
+    identity_fragment_dataset_name,
+    identity_ingest_view_results_dataset_name,
+    identity_overrides_dataset_name,
+    identity_rejections_dataset_name,
+)
 
 
 def identity_ingest_view_results_dataset_for_tenant(
@@ -25,11 +32,8 @@ def identity_ingest_view_results_dataset_for_tenant(
     """Returns the BigQuery dataset where the identity ingest pipeline writes
     the given tenant's ingest view results.
     """
-    base_dataset = f"{tenant.lower()}_identity_ingest_view_results"
-    if not sandbox_dataset_prefix:
-        return base_dataset
-    return BigQueryAddressOverrides.format_sandbox_dataset(
-        sandbox_dataset_prefix, base_dataset
+    return _apply_sandbox_prefix(
+        identity_ingest_view_results_dataset_name(tenant), sandbox_dataset_prefix
     )
 
 
@@ -39,11 +43,8 @@ def identity_fragment_dataset_for_tenant(
     """Returns the BigQuery dataset where the identity ingest pipeline writes
     the given tenant's pre-clustering IdentityFragment output.
     """
-    base_dataset = f"{tenant.lower()}_identity_fragment"
-    if not sandbox_dataset_prefix:
-        return base_dataset
-    return BigQueryAddressOverrides.format_sandbox_dataset(
-        sandbox_dataset_prefix, base_dataset
+    return _apply_sandbox_prefix(
+        identity_fragment_dataset_name(tenant), sandbox_dataset_prefix
     )
 
 
@@ -53,11 +54,8 @@ def identity_cluster_dataset_for_tenant(
     """Returns the BigQuery dataset where the identity ingest pipeline writes
     the given tenant's clustering results.
     """
-    base_dataset = f"{tenant.lower()}_identity_cluster"
-    if not sandbox_dataset_prefix:
-        return base_dataset
-    return BigQueryAddressOverrides.format_sandbox_dataset(
-        sandbox_dataset_prefix, base_dataset
+    return _apply_sandbox_prefix(
+        identity_cluster_dataset_name(tenant), sandbox_dataset_prefix
     )
 
 
@@ -68,11 +66,8 @@ def identity_rejections_dataset_for_tenant(
     the given tenant's rejection tables, the pipeline-written record of any
     fragments or clusters it dropped and why, for human review.
     """
-    base_dataset = f"{tenant.lower()}_identity_rejections"
-    if not sandbox_dataset_prefix:
-        return base_dataset
-    return BigQueryAddressOverrides.format_sandbox_dataset(
-        sandbox_dataset_prefix, base_dataset
+    return _apply_sandbox_prefix(
+        identity_rejections_dataset_name(tenant), sandbox_dataset_prefix
     )
 
 
@@ -83,7 +78,12 @@ def identity_overrides_dataset_for_tenant(
     overrides, the reviewer-recorded decisions to keep or drop specific clusters
     that the identity ingest pipeline reads.
     """
-    base_dataset = f"{tenant.lower()}_identity_overrides"
+    return _apply_sandbox_prefix(
+        identity_overrides_dataset_name(tenant), sandbox_dataset_prefix
+    )
+
+
+def _apply_sandbox_prefix(base_dataset: str, sandbox_dataset_prefix: str | None) -> str:
     if not sandbox_dataset_prefix:
         return base_dataset
     return BigQueryAddressOverrides.format_sandbox_dataset(

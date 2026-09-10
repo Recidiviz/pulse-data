@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional, Union
 import pytz
 from google.api_core import retry
 from google.cloud import exceptions, tasks_v2
-from google.protobuf import timestamp_pb2
+from google.protobuf import duration_pb2, timestamp_pb2
 
 from recidiviz.common.common_utils import log_retried_google_api_error
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
@@ -117,6 +117,7 @@ class GoogleCloudTasksClientWrapper:
         http_method: HttpMethod = HttpMethod.POST,
         service_account_email: Optional[str] = None,
         headers: Optional[Dict[str, Any]] = None,
+        dispatch_deadline_seconds: Optional[int] = None,
     ) -> None:
         """Creates a task with the given details.
 
@@ -135,6 +136,10 @@ class GoogleCloudTasksClientWrapper:
             http_method: The method for this request (i.e. GET or POST)
             service_account_email: A service account email to be used to generate an OIDC token for the endpoint.
             headers: Dictionary representing HTTP request headers
+            dispatch_deadline_seconds: How long Cloud Tasks waits for a
+                response before treating the attempt as failed. Cloud Tasks
+                defaults to 10 minutes for HTTP targets when unset; the maximum
+                is 30 minutes.
         """
         if body is None:
             body = {}
@@ -157,6 +162,13 @@ class GoogleCloudTasksClientWrapper:
         if schedule_timestamp:
             task_builder.update_args(
                 schedule_time=schedule_timestamp,
+            )
+
+        if dispatch_deadline_seconds is not None:
+            task_builder.update_args(
+                dispatch_deadline=duration_pb2.Duration(
+                    seconds=dispatch_deadline_seconds
+                ),
             )
 
         http_request: Dict[str, Union[str, bytes, dict]] = {}

@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """flask_smorest Blueprint and MethodView classes for the Identity Service API."""
-import logging
 import uuid
 from http import HTTPStatus
 
-from flask import Response, jsonify
+from flask import Response, current_app, jsonify
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
@@ -34,11 +33,15 @@ from recidiviz.services.identity.api_schemas import (
 )
 from recidiviz.services.identity.authorization import CallerRole
 from recidiviz.services.identity.constants import (
+    CLOUD_RUN_METADATA_CONFIG_KEY,
     IDENTITIES_BLUEPRINT_ROUTE,
     TRIGGER_IMPORT_BLUEPRINT_ROUTE,
 )
+from recidiviz.services.identity.exceptions import ClusterSnapshotNotFoundError
+from recidiviz.services.identity.import_task import enqueue_import_task
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 from recidiviz.services.identity.types import IdentitySearchRequest
+from recidiviz.utils.metadata import CloudRunMetadata
 
 identity_blueprint = Blueprint("identity", "identity")
 
@@ -177,15 +180,20 @@ class TriggerImportAPI(MethodView):
     )
     @identity_blueprint.response(HTTPStatus.ACCEPTED)
     def post(self, params: dict) -> Response:
-        """Accepts a trigger_import request for the given tenant and returns 202.
+        """Enqueues an import of the given tenant's clustering results and returns 202.
 
-        TODO(OBT-37693): Replace with the real implementation.
+        The import runs asynchronously via Cloud Tasks, so a 202 means the request
+        was accepted, not that the import has completed.
         """
-        tenant = params["tenant"]
-        logging.info(
-            "Received /trigger_import request for tenant [%s]; import not yet implemented.",
-            tenant.value,
-        )
+        cloud_run_metadata: CloudRunMetadata = current_app.config[
+            CLOUD_RUN_METADATA_CONFIG_KEY
+        ]
+        try:
+            enqueue_import_task(
+                tenant=params["tenant"], cloud_run_metadata=cloud_run_metadata
+            )
+        except ClusterSnapshotNotFoundError as e:
+            abort(HTTPStatus.NOT_FOUND, message=str(e))
         response = jsonify({})
         response.status_code = HTTPStatus.ACCEPTED
         return response

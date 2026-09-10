@@ -21,6 +21,13 @@ class UnknownCallerError(ValueError):
     """Raised when an authenticated caller is not in the source-app mapping."""
 
 
+class ClusterSnapshotNotFoundError(ValueError):
+    """Raised when a tenant's identity_cluster table does not exist at import
+    time, so there are no clustering results to import. Signals that the
+    identity ingest pipeline has not yet written the tenant's results, not a
+    service fault."""
+
+
 class IdentityHistoryIntegrityException(ValueError):
     """Raised when stored identity data violates an invariant the merge/split
     audit trail is supposed to guarantee -- e.g. a merged_into chain that

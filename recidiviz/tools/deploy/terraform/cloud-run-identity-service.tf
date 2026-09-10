@@ -47,11 +47,48 @@ resource "google_project_iam_member" "identity_service_iam" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/cloudtrace.agent",
+    # Enqueue the import Cloud Task from the trigger_import endpoint.
+    "roles/cloudtasks.enqueuer",
+    # TODO(OBT-37720): Widen this to a query-capable role.
+    "roles/bigquery.metadataViewer",
   ])
 
   project = var.project_id
   role    = each.key
   member  = "serviceAccount:${google_service_account.identity_service_cloud_run.email}"
+}
+
+# Lets the service account mint an OIDC token as itself for the import Cloud
+# Task. Without serviceAccountUser on itself, creating the task's OIDC token
+# fails with an iam.serviceAccounts.actAs permission error.
+resource "google_service_account_iam_member" "identity_service_act_as_self" {
+  service_account_id = google_service_account.identity_service_cloud_run.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.identity_service_cloud_run.email}"
+}
+
+# Lets Cloud Tasks invoke the internal import processing endpoint directly on the
+# Cloud Run URL, authenticated by an OIDC token from this same service account.
+# The IAP load balancer path is unaffected; this grants direct invocation only to
+# the service's own identity, mirroring the admin panel's per-caller invoker
+# grants.
+resource "google_cloud_run_service_iam_member" "identity_service_cloud_tasks_invoker" {
+  location = google_cloud_run_service.identity_service.location
+  project  = google_cloud_run_service.identity_service.project
+  service  = google_cloud_run_service.identity_service.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.identity_service_cloud_run.email}"
+}
+
+# Queue for the trigger_import endpoint to enqueue import work onto.
+# Should live in the same region as GoogleCloudTasksClientWrapper.QUEUES_REGION.
+module "identity-import-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name  = "identity-import"
+  region      = var.us_east_region
+  min_backoff = "5s"
+  max_backoff = "120s"
 }
 
 resource "google_cloud_run_service" "identity_service" {

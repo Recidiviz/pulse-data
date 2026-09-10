@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the Identity Service Flask app."""
+import datetime
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import patch
+
+from google.auth.exceptions import GoogleAuthError
+from werkzeug.test import TestResponse
 
 from recidiviz.common.constants.identity import IdentifierType, PersonType
 from recidiviz.common.constants.tenants import Tenant
@@ -27,10 +31,18 @@ from recidiviz.services.identity.constants import (
     DEV_IMPORTER_SERVICE_ACCOUNT,
     DEV_READER_SERVICE_ACCOUNT,
     IDENTITIES_ROUTE,
+    IMPORT_PROCESS_INTERNAL_ROUTE,
     TRIGGER_IMPORT_ROUTE,
 )
-from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
+from recidiviz.services.identity.exceptions import (
+    ClusterSnapshotNotFoundError,
+    IdentityHistoryIntegrityException,
+)
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
+from recidiviz.services.identity.import_task import (
+    SNAPSHOT_TIMESTAMP_BODY_KEY,
+    TENANT_BODY_KEY,
+)
 from recidiviz.services.identity.server import ROLE_EXEMPT_ENDPOINTS, app
 from recidiviz.services.identity.types import (
     IdentitySearchRequest,
@@ -445,8 +457,13 @@ class PostImportEndpointTest(TestCase):
 
     def setUp(self) -> None:
         self.client = app.test_client()
+        self.enqueue_patcher = patch(
+            "recidiviz.services.identity.identity_blueprint.enqueue_import_task"
+        )
+        self.mock_enqueue = self.enqueue_patcher.start()
+        self.addCleanup(self.enqueue_patcher.stop)
 
-    def test_returns_202(self) -> None:
+    def test_returns_202_and_enqueues_import(self) -> None:
         with mock_iap_environment(
             mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
         ):
@@ -455,6 +472,45 @@ class PostImportEndpointTest(TestCase):
             )
 
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
+        self.mock_enqueue.assert_called_once()
+        self.assertEqual(Tenant.US_OZ, self.mock_enqueue.call_args.kwargs["tenant"])
+
+    def test_returns_404_when_cluster_table_missing(self) -> None:
+        self.mock_enqueue.side_effect = ClusterSnapshotNotFoundError(
+            "no clustering results yet"
+        )
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                TRIGGER_IMPORT_ROUTE, json={"tenant": "US_OZ"}, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_does_not_enqueue_for_bad_tenant(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                TRIGGER_IMPORT_ROUTE,
+                json={"tenant": "NOT_A_REAL_TENANT"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        self.mock_enqueue.assert_not_called()
+
+    def test_does_not_enqueue_for_reader_caller(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=READER_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                TRIGGER_IMPORT_ROUTE, json={"tenant": "US_OZ"}, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        self.mock_enqueue.assert_not_called()
 
     def test_returns_400_for_missing_tenant(self) -> None:
         with mock_iap_environment(
@@ -569,6 +625,146 @@ class PostImportEndpointTest(TestCase):
             )
 
         self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+
+
+class ImportProcessEndpointTest(TestCase):
+    """Tests for the internal POST /_internal/import/process endpoint.
+
+    Cloud Tasks calls it directly on the Cloud Run URL with an OIDC token from the
+    service's own service account. The load balancer routes this path too, so the
+    endpoint authenticates the token rather than trusting the path.
+    """
+
+    # Matches the dev-fake service account server.py builds outside GCP, which is
+    # the identity the OIDC token is checked against in tests.
+    SERVICE_SA_EMAIL = "fake-acct@fake-project.iam.gserviceaccount.com"
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+        self.process_patcher = patch(
+            "recidiviz.services.identity.server.process_import"
+        )
+        self.mock_process = self.process_patcher.start()
+        self.addCleanup(self.process_patcher.stop)
+
+    def _post(self, headers: dict[str, str] | None = None) -> TestResponse:
+        return self.client.post(
+            IMPORT_PROCESS_INTERNAL_ROUTE,
+            json={
+                TENANT_BODY_KEY: "US_OZ",
+                SNAPSHOT_TIMESTAMP_BODY_KEY: "2026-08-08T00:00:00+00:00",
+            },
+            headers=headers or {},
+        )
+
+    def test_valid_service_account_token_runs_import(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            return_value={"email": self.SERVICE_SA_EMAIL, "email_verified": True},
+        ) as mock_verify:
+            response = self._post(headers={"Authorization": "Bearer good-token"})
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        self.mock_process.assert_called_once_with(
+            tenant=Tenant.US_OZ,
+            snapshot_timestamp=datetime.datetime(
+                2026, 8, 8, tzinfo=datetime.timezone.utc
+            ),
+        )
+        self.assertEqual(
+            "http://localhost:5000/_internal/import/process",
+            mock_verify.call_args.kwargs["audience"],
+        )
+
+    def test_missing_bearer_token_returns_401(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ):
+            response = self._post()
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_invalid_token_returns_401(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            side_effect=ValueError("token expired"),
+        ):
+            response = self._post(headers={"Authorization": "Bearer bad-token"})
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_token_with_invalid_issuer_returns_401(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            side_effect=GoogleAuthError("Wrong issuer."),
+        ):
+            response = self._post(headers={"Authorization": "Bearer bad-token"})
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_token_for_other_service_account_returns_403(self) -> None:
+        # A valid Google OIDC token from a principal that is not the service's own
+        # service account (e.g. some other authenticated caller reaching the path
+        # through the load balancer) is rejected.
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            return_value={"email": "attacker@example.com", "email_verified": True},
+        ):
+            response = self._post(headers={"Authorization": "Bearer good-token"})
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_unverified_email_returns_403(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            return_value={"email": self.SERVICE_SA_EMAIL, "email_verified": False},
+        ):
+            response = self._post(headers={"Authorization": "Bearer good-token"})
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_iap_authenticated_caller_without_oidc_token_denied(self) -> None:
+        # An IAP-authenticated caller reaching the internal path through the load
+        # balancer carries no service-account OIDC bearer, so it is denied. This
+        # is what stops the LB path from bypassing the OIDC check.
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                IMPORT_PROCESS_INTERNAL_ROUTE,
+                json={
+                    TENANT_BODY_KEY: "US_OZ",
+                    SNAPSHOT_TIMESTAMP_BODY_KEY: "2026-08-08T00:00:00+00:00",
+                },
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+        self.mock_process.assert_not_called()
+
+    def test_development_bypasses_oidc_verification(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=True
+        ):
+            response = self._post()
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        self.mock_process.assert_called_once()
 
 
 class EndpointAuthorizationTest(TestCase):
