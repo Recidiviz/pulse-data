@@ -103,6 +103,9 @@ class SpanType(Enum):
     SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION = (
         "SENTENCING_ASSESSMENT_REPORT_PROVISIONED_USER_SESSION"
     )
+    SENTENCING_ASSESSMENT_REPORT_ELIGIBILITY_SESSION = (
+        "SENTENCING_ASSESSMENT_REPORT_ELIGIBILITY_SESSION"
+    )
 
     @classmethod
     def observation_type_category(cls) -> str:
@@ -137,6 +140,7 @@ class SpanType(Enum):
             SpanType.US_AR_OVG_SESSIONS,
             SpanType.EARNED_CREDIT_BALANCE_SESSION,
             SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,
+            SpanType.SENTENCING_ASSESSMENT_REPORT_ELIGIBILITY_SESSION,
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [
