@@ -31,16 +31,14 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
   - validation_name: person_caseload_location_sessions_caseload
-    exclusion_type: BROKEN
+    exclusion_type: DOES_NOT_APPLY
     exclusion_reason:
-      Validation is not working properly for the INCARCERATION compartment and
-      is expected to fail for almost all rows until fixed.
-      # TODO(#46520): Remove this exclusion once this validation has been fixed.
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
   - validation_name: person_caseload_location_sessions_location
-    exclusion_type: BROKEN
+    exclusion_type: DOES_NOT_APPLY
     exclusion_reason:
-      Validation is not working properly for the INCARCERATION compartment and
-      is expected to fail for almost all rows until fixed.
-      # TODO(#46520): Remove this exclusion once this validation has been fixed.
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides: []

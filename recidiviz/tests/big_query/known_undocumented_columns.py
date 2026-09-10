@@ -6197,16 +6197,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("sessions.person_caseload_location_sessions"): [
-        "caseload_id",
-        "compartment_level_1",
-        "end_date_exclusive",
-        "location_detail_id",
-        "location_name",
-        "person_id",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "sessions.prioritized_supervision_compartment_level_1_sessions"
     ): [
@@ -14540,40 +14530,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "region_code",
         "state_code",
         "update_datetimes",
-    ],
-    BigQueryAddress.from_str("validation_views.person_caseload_location_sessions"): [
-        "caseload_id",
-        "compartment_level_1",
-        "location",
-        "location_detail_id",
-        "officer_id",
-        "person_id",
-        "region_code",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.person_caseload_location_sessions_caseload_errors"
-    ): [
-        "caseload_id",
-        "compartment_level_1",
-        "location",
-        "location_detail_id",
-        "officer_id",
-        "person_id",
-        "region_code",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.person_caseload_location_sessions_location_errors"
-    ): [
-        "caseload_id",
-        "compartment_level_1",
-        "location",
-        "location_detail_id",
-        "officer_id",
-        "person_id",
-        "region_code",
-        "state_code",
     ],
     BigQueryAddress.from_str(
         "validation_views.primary_keys_unique_across_all_states"

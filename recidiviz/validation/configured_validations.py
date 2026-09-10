@@ -1359,7 +1359,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "caseload_id",
-                "officer_id",
+                "person_record_caseload_id",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,

@@ -33,6 +33,14 @@ max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.0093
     override_reason: TODO(#45221) - Delete duplicates introduced in staging by #42841
+  - validation_name: person_caseload_location_sessions_caseload
+    hard_max_allowed_error_override: .02
+    soft_max_allowed_error_override: .02
+    override_reason: Person caseload location sessions does not properly take into account Iowa's primary officer prioritization
+  - validation_name: person_caseload_location_sessions_location
+    hard_max_allowed_error_override: .001
+    soft_max_allowed_error_override: .001
+    override_reason: Small edge case in person caseload location sessions for supervision out of state clients
 num_allowed_rows_overrides:
   - validation_name: in_custody_sps_have_associated_ip
     hard_num_allowed_rows_override: 2000

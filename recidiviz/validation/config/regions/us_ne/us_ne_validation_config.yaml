@@ -18,12 +18,6 @@ exclusions:
   - validation_name: case_insights_record_sentencing_charge_record_offense_mismatch
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
-  - validation_name: person_caseload_location_sessions_caseload
-    exclusion_type: BROKEN
-    exclusion_reason: Failing at 82%, will be addressed in #TODO(#47003)
-  - validation_name: person_caseload_location_sessions_location
-    exclusion_type: BROKEN
-    exclusion_reason: Failing at 82%, will be addressed in #TODO(#47003)
 max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .38
