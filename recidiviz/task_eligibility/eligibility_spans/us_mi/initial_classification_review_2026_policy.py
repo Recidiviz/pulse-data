@@ -15,14 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for an initial classification, under the 2026 classification
-policy.
+someone in MI is eligible for an initial classification review, under the 2026
+classification policy.
+
+TODO(MI-7783): not_has_initial_classification_in_state_prison_custody depends on
+custody_classification_assessment_dates, which has no MI source yet. With zero
+real spans to evaluate, this criterion falls back to its default
+(meets_criteria_default=True) for every MI resident, so this TES currently shows
+everyone in the candidate population as permanently eligible. Non-functional for
+MI until that data source exists.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison_exclude_safekeeping,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     incarceration_intake_assessment_2026_policy_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
@@ -31,26 +38,19 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    TaskCriteriaBigQueryViewBuilder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# Shared across initial classification review variants. The original
-# initial_classification_review adds custody_level_is_not_max on top of this.
-US_TN_INITIAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS: list[
-    TaskCriteriaBigQueryViewBuilder
-] = [
-    not_has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
-]
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
-    state_code=StateCode.US_TN,
+    state_code=StateCode.US_MI,
     task_name="INITIAL_CLASSIFICATION_REVIEW_2026_POLICY",
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
-    criteria_spans_view_builders=US_TN_INITIAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS,
+    # TODO(MI-7749): add any other relevant criteria for initial classification
+    # review once determined with MDOC.
+    criteria_spans_view_builders=[
+        not_has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
+    ],
     completion_event_builder=incarceration_intake_assessment_2026_policy_completed.VIEW_BUILDER,
 )
 
