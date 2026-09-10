@@ -49,8 +49,10 @@ resource "google_project_iam_member" "identity_service_iam" {
     "roles/cloudtrace.agent",
     # Enqueue the import Cloud Task from the trigger_import endpoint.
     "roles/cloudtasks.enqueuer",
-    # TODO(OBT-37720): Widen this to a query-capable role.
-    "roles/bigquery.metadataViewer",
+    # Read the {tenant}_identity_cluster tables' rows and metadata (the import
+    # task's dedupe key). The reader lists rows directly rather than running
+    # query jobs, so no job-running role is needed.
+    "roles/bigquery.dataViewer",
   ])
 
   project = var.project_id

@@ -133,8 +133,8 @@ def process_import(*, tenant: Tenant, snapshot_timestamp: datetime.datetime) -> 
     The per-cluster create, update, merge, and split passes are not yet
     implemented; this logs the snapshot it would process and returns.
 
-    TODO(OBT-37720): Replace with the real snapshot read and per-cluster
-    reconciliation, starting with the BQ snapshot reader.
+    TODO(OBT-43559): Replace this stub with the real snapshot read and import
+    now that the BQ snapshot reader this PR adds is available.
     """
     logging.info(
         "Processing identity import for tenant [%s], snapshot [%s]. Per-cluster "
