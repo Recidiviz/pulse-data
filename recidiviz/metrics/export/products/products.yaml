@@ -156,6 +156,8 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
+      - state_code: US_NYC
+        environment: production
       - state_code: US_PA
         environment: production
       - state_code: US_TN
