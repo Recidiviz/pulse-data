@@ -24,10 +24,14 @@ locals {
       # args are appended to the module invocation; dry-run is the absence of
       # --commit / --allow-prod-write, so staging entries never include them.
       jobs = {
+        # GED and Edovo share one job and eOMIS login session. Starts paused.
+        # TODO(AR-490): Set US_AR_EDOVO_POLICY_START_MONTH to the confirmed
+        # start month before unpausing. Edovo cannot run without it.
         "us-ar-ged" = {
-          args      = ["--flow=ar_ged"]
+          args      = ["--flow=ar_ged", "--flow=ar_edovo"]
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
+          env       = {}
         }
         # One CO job covering every continuous pathway, not one job per
         # pathway. CO's instance refuses a second session for an account that
@@ -68,6 +72,7 @@ locals {
           args      = ["--flow=co_edovo", "--flow=co_work"]
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
+          env       = {}
         }
       }
       # Which eOMIS instance/secrets the running container targets.
@@ -173,6 +178,14 @@ resource "google_cloud_run_v2_job" "eomis_writeback" {
         env {
           name  = "RECIDIVIZ_ENV"
           value = local.eomis_writeback.recidiviz_env
+        }
+        # Non-secret settings for each job. Credentials stay in Secret Manager.
+        dynamic "env" {
+          for_each = each.value.env
+          content {
+            name  = env.key
+            value = env.value
+          }
         }
         resources {
           limits = {
