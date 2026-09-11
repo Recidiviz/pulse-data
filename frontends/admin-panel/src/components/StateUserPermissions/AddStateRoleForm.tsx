@@ -56,9 +56,11 @@ export const CreateAddStateRoleForm = ({
           rules={[
             {
               required: true,
-              pattern: /^US_([A-Z]{2}|DEMO)$/,
+              // TODO(#99913): Consolidate this pattern with the other state code
+              // parsers throughout the repo.
+              pattern: /^US_([A-Z]{2,3}|DEMO)$/,
               message:
-                "State Code is required and must have the form US_XX OR US_DEMO",
+                "State Code is required and must have the form US_XX, US_XXX, or US_DEMO",
             },
           ]}
         >

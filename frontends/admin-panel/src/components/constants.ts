@@ -138,6 +138,7 @@ export const STATE_CODES_TO_NAMES = {
   US_NM: "New Mexico",
   US_NV: "Nevada",
   US_NY: "New York",
+  US_NYC: "New York City",
   US_OH: "Ohio",
   US_OK: "Oklahoma",
   US_OR: "Oregon",
