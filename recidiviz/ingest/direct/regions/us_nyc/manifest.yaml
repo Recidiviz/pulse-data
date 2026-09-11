@@ -1,5 +1,5 @@
 agency_name: NYC Department of Correction
-environment: staging
+environment: production
 has_launchable_activity_ingest_views_in_staging: true
 has_launchable_activity_ingest_views_in_production: true
 has_launchable_identity_ingest_views_in_staging: false
