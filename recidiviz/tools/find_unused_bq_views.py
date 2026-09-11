@@ -135,9 +135,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_se
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
-    SENTENCE_COHORT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -482,9 +479,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
     ),
     RECIDIVISM_EVENT_VIEW_BUILDER.address: (
-        "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
-    ),
-    SENTENCE_COHORT_VIEW_BUILDER.address: (
         "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
     ),
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (

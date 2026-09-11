@@ -94,6 +94,9 @@ from recidiviz.calculator.query.state.views.sentencing.staff_record import (
 from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
     US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_mo.us_mo_sentencing_case_disposition_preprocessed import (
+    US_MO_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.us_nd.us_nd_sentencing_case_disposition_preprocessed import (
     US_ND_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
 )
@@ -341,6 +344,7 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, st
     US_TX_SCHEDULED_CONTACTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     # Sentencing views
     US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    US_MO_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     US_ND_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     # tasks_views views
     SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: "This is an archive of task record exports and therefore only includes person_external_id",

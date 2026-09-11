@@ -5223,6 +5223,33 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
+        "sentencing_views.us_mo_sentencing_case_disposition_preprocessed"
+    ): [
+        "any_is_drug_uniform",
+        "any_is_sex_offense",
+        "any_is_violent_uniform",
+        "assessment_score",
+        "assigned_date",
+        "assigned_date_diff_days",
+        "case_id",
+        "client_id",
+        "completion_date",
+        "disposition",
+        "due_date",
+        "gender_or_sex",
+        "location_id",
+        "location_name",
+        "lsir_score",
+        "most_severe_description",
+        "person_external_id",
+        "person_id",
+        "psi_email",
+        "sentence_date",
+        "sentence_start_date",
+        "staff_id",
+        "state_code",
+    ],
+    BigQueryAddress.from_str(
         "sentencing_views.us_nd_sentencing_case_disposition_preprocessed"
     ): [
         "any_is_drug_uniform",
