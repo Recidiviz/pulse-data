@@ -105,16 +105,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "task_name",
     ],
-    BigQueryAddress.from_str("analyst_data.custody_classification_assessment_dates"): [
-        "assessment_date",
-        "assessment_due_date",
-        "assessment_type",
-        "classification_date",
-        "classification_decision",
-        "classification_decision_date",
-        "person_id",
-        "state_code",
-    ],
     BigQueryAddress.from_str("analyst_data.early_discharge_sessions"): [
         "compartment_level_1",
         "discharge_date",
@@ -1102,18 +1092,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "contact_comment",
         "contact_date",
         "person_id",
-    ],
-    BigQueryAddress.from_str(
-        "analyst_data.us_tn_custody_classification_assessment_dates_preprocessed"
-    ): [
-        "assessment_date",
-        "assessment_due_date",
-        "assessment_type",
-        "classification_date",
-        "classification_decision",
-        "classification_decision_date",
-        "person_id",
-        "state_code",
     ],
     BigQueryAddress.from_str(
         "analyst_data.us_tn_earned_credit_activity_preprocessed"

@@ -17,17 +17,13 @@
 """Defines a view that shows when an initial custody classification decision has
 been made for someone in Michigan, under the 2026 classification policy.
 
-TODO(MI-7783): This currently never fires for MI, since it joins to
-custody_classification_assessment_dates, which has no MI source yet.
-Non-functional for MI until that data source exists.
-
-TODO(MI-7750): Once MI has a source in custody_classification_assessment_dates,
-this will mark every initial classification decision as an event under the 2026
-policy, since MI's classification data doesn't yet distinguish which policy
-version a decision was made under (unlike TN, whose equivalent completion event
-additionally filters on assessment_type = "DCAF" to isolate 2026-policy intake
-decisions). Add an equivalent filter here once MI's data supports it, so this
-doesn't fire for pre-2026-policy initial classifications.
+TODO(MI-7750): This currently marks every 'first' classification decision as an
+event under the 2026 policy, since MI's classification data doesn't yet
+distinguish which policy version a decision was made under (unlike TN, whose
+equivalent completion event additionally filters on assessment_type = "DCAF" to
+isolate 2026-policy intake decisions). Add an equivalent filter here once MI's
+data supports it, so this doesn't fire for pre-2026-policy first
+classifications.
 """
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode

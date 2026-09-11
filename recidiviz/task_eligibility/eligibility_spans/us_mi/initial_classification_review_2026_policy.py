@@ -17,13 +17,6 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in MI is eligible for an initial classification review, under the 2026
 classification policy.
-
-TODO(MI-7783): not_has_initial_classification_in_state_prison_custody depends on
-custody_classification_assessment_dates, which has no MI source yet. With zero
-real spans to evaluate, this criterion falls back to its default
-(meets_criteria_default=True) for every MI resident, so this TES currently shows
-everyone in the candidate population as permanently eligible. Non-functional for
-MI until that data source exists.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
