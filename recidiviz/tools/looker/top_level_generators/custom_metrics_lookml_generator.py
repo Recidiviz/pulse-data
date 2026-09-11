@@ -70,6 +70,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_jii_texts_metrics_configur
     JII_TEXTS_ASSIGNMENT_NAMES_TO_TYPES,
     JII_TEXTS_IMPACT_LOOKER_METRICS,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_meetings_metrics_configurations import (
+    MEETINGS_ASSIGNMENT_NAMES_TO_TYPES,
+    MEETINGS_IMPACT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     build_assignments_by_time_period_lookml_view,
     build_assignments_lookml_view,
@@ -254,6 +258,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=CPA_IMPACT_LOOKER_METRICS,
             assignment_types_dict=CPA_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # Meetings
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="meetings_impact_metrics",
+            output_directory=output_subdir,
+            metrics=MEETINGS_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=MEETINGS_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         )
 

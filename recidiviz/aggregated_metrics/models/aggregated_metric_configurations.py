@@ -4175,6 +4175,59 @@ DISTINCT_ACTIVE_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
     ),
 )
 
+# Meetings Usage
+DISTINCT_PROVISIONED_MEETINGS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_meetings_users",
+    display_name="Distinct Provisioned Meetings Users",
+    description="Number of distinct Meetings users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={
+            "is_provisioned_meetings": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
+DISTINCT_REGISTERED_MEETINGS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_meetings_users",
+    display_name="Distinct Registered Meetings Users",
+    description="Number of distinct Meetings users who have signed up/logged into the Meetings tool at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={
+            "is_registered_meetings": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
+DISTINCT_LOGGED_IN_MEETINGS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_meetings_users",
+    display_name="Distinct Logged In Meetings Users",
+    description="Number of distinct Meetings users who logged into the Meetings tool",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_LOGIN,
+        event_conditions_dict={
+            "has_meetings_access": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
+DISTINCT_ACTIVE_MEETINGS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_meetings_users",
+    display_name="Distinct Active Meetings Users",
+    description="Number of distinct Meetings users having at least one active usage event",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "product_type": ["MEETINGS"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_daily_population_task_marked_ineligible",
     display_name="Average Population: Task Marked Ineligible",
