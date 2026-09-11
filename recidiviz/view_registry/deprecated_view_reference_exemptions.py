@@ -100,9 +100,6 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_terminatio
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (
-    US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -259,10 +256,6 @@ _ALL_SCHEMA_TABLE_VIEWS = [
 _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     (StateCode.US_IX, StateCharge): {
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
@@ -474,9 +467,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
-        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
@@ -565,9 +555,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
@@ -768,9 +755,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # states are migrated to v2 infra
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
         **{
