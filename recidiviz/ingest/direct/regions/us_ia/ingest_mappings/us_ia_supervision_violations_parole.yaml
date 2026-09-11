@@ -116,6 +116,7 @@ output:
                                       $mappings:
                                         StateSupervisionViolationResponseDecision.CONTINUANCE:
                                           - "Reinstate - No New Conditions"
+                                          - "Remain on Parole"
                                         StateSupervisionViolationResponseDecision.DELAYED_ACTION:
                                           - "Continue Disposition"
                                           - "Continue Disposition - Day Reporter"
