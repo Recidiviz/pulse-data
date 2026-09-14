@@ -24,10 +24,8 @@ from recidiviz.aggregated_metrics.view_config import (
 )
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.big_query_view_graph import (
-    BigQueryViewGraph,
-    BigQueryViewGraphRegistry,
-)
+from recidiviz.big_query.big_query_view_graph import BigQueryViewGraph
+from recidiviz.big_query.big_query_view_graph_registry import BigQueryViewGraphRegistry
 from recidiviz.calculator.query.experiments_metadata.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )

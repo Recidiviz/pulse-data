@@ -153,7 +153,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
 )
-from recidiviz.big_query.big_query_view_graph import BigQueryViewGraphRegistry
+from recidiviz.big_query.big_query_view_graph_registry import BigQueryViewGraphRegistry
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )

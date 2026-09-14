@@ -24,9 +24,9 @@ from google.cloud.bigquery import SchemaField
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_graph import (
     BigQueryViewGraph,
-    BigQueryViewGraphRegistry,
     ResolvedBigQueryViewGraph,
 )
+from recidiviz.big_query.big_query_view_graph_registry import BigQueryViewGraphRegistry
 from recidiviz.entrypoints.view_update.update_managed_view_graph import (
     UpdateManagedViewGraphEntrypoint,
 )
