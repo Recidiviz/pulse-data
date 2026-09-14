@@ -1581,6 +1581,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_identity_fragment.identity_sex",
     "us_nd_identity_ingest_view_results.docstars_offenders",
     "us_nd_identity_ingest_view_results.docstars_staff",
+    "us_nd_identity_ingest_view_results.elite_offenderbookingstable",
     "us_nd_identity_ingest_view_results.elite_offenderidentifier",
     "us_nd_identity_ingest_view_results.elite_offenders",
     "us_nd_identity_ingest_view_results.elite_staff",

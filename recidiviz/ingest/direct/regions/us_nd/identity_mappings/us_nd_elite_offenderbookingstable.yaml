@@ -1,0 +1,24 @@
+# Identity mapping for the US_ND elite_offenderbookingstable booking<->person
+# association. Each row produces one external-id-only JII IdentityFragment (no
+# attributes) that links an Elite ROOT_OFFENDER_ID to every booking ID the
+# person has held.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
+input_columns:
+  ROOT_OFFENDER_ID: STRING
+  BOOKING_ID_LIST: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+      - $foreach:
+          $iterable: BOOKING_ID_LIST
+          $result:
+            IdentityExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_ND_ELITE_BOOKING")
+    person_type: $literal_enum(PersonType.JII)
