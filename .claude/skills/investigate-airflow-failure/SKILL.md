@@ -263,6 +263,57 @@ Structure your output in this order:
    the root cause", "check if the upstream data source changed". Keep this
    advisory; do not take any of these actions unsupervised.
 
+## Known failure: stuck SFTP DAG (files discovered but never downloaded)
+
+**Symptom**: the SFTP DAG (`<project_id>_sftp_dag`) stalls or fails the same
+way run after run for one state: files are discovered (they show up in
+`find_sftp_files_to_download` / `gather_discovered_remote_files` output) but
+`download_sftp_files` never successfully downloads them.
+
+**Mechanism**: the DAG tracks SFTP files in the operations Postgres DB table
+`direct_ingest_sftp_remote_file_metadata`. `gather_discovered_remote_files`
+selects *every* row where `file_discovery_time IS NOT NULL AND
+file_download_time IS NULL` — with no time bound (see
+`recidiviz/airflow/dags/sftp/gather_discovered_remote_files_sql_query_generator.py`),
+and `filter_downloaded_files` only filters out files whose download already
+*succeeded* (`file_download_time IS NOT NULL` — see
+`recidiviz/airflow/dags/sftp/filter_downloaded_files_sql_query_generator.py`).
+So a discovered file whose download can never succeed (e.g. the state has
+since removed it from their server) stays in the pending set and re-breaks
+every subsequent run.
+
+**Diagnosis**: connect to the operations DB (read-only by default) with
+`./recidiviz/tools/postgres/access_cloudsql_instance.sh` and look for old
+pending rows:
+
+```sql
+SELECT remote_file_path, sftp_timestamp, file_discovery_time
+  FROM direct_ingest_sftp_remote_file_metadata
+ WHERE region_code = 'US_XX' AND file_download_time IS NULL
+ ORDER BY file_discovery_time;
+```
+
+Rows with an old `file_discovery_time` and a NULL `file_download_time` are the
+stuck files. Cross-check against the download task's log (Step 4) that these
+are the same files failing to download.
+
+**Remediation** (requires explicit user sign-off — this skill is
+diagnose-only): delete the stuck pending rows so the next DAG run stops
+trying to download the dead files. Reconnect with
+`./recidiviz/tools/postgres/access_cloudsql_instance.sh --write` and run:
+
+```sql
+DELETE FROM direct_ingest_sftp_remote_file_metadata
+ WHERE region_code = 'US_XX' AND file_download_time IS NULL;
+```
+
+**Caveat**: deleting a pending row means the DAG will never download that
+file (re-discovery re-inserts it only if the file still exists on the
+server). This is safe for states that send a full daily historical copy
+(e.g. US_MI), because the next day's drop re-sends everything. For a state
+that sends incremental files, confirm with the state's ingest owner that the
+stuck files are truly gone or not needed before deleting.
+
 ## Gotchas
 
 - **run_id ≠ run_start**: the PD incident subject has the *run start
