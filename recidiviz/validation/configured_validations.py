@@ -47,6 +47,9 @@ from recidiviz.validation.views.sentencing.case_insights_rates_missing_charges i
 from recidiviz.validation.views.sentencing.case_insights_record_sentencing_charge_record_offense_mismatch import (
     CASE_INSIGHTS_RECORD_SENTENCING_CHARGE_RECORD_OFFENSE_MISMATCH_VIEW_BUILDER,
 )
+from recidiviz.validation.views.sentencing.sentencing_case_record_duplicate_case_ids import (
+    SENTENCING_CASE_RECORD_DUPLICATE_CASE_IDS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.sentencing.us_mo_sentencing_case_no_linked_offenses import (
     US_MO_SENTENCING_CASE_NO_LINKED_OFFENSES_VIEW_BUILDER,
 )
@@ -666,6 +669,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CASE_INSIGHTS_RECORD_SENTENCING_CHARGE_RECORD_OFFENSE_MISMATCH_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCING_CASE_RECORD_DUPLICATE_CASE_IDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
