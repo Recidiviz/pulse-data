@@ -251,15 +251,10 @@ _ALL_SCHEMA_TABLE_VIEWS = [
 ]
 
 # These are views that still reference state-specific sentences v1 tables and have been
-# exempted. For example the views listed under (StateCode.US_IX, StateCharge) are views
-# that reference the us_ix_normalized_state.state_charge table directly.
+# exempted. For example the views listed under (StateCode.US_IX, StateIncarcerationSentence)
+# are views that reference the us_ix_normalized_state.state_incarceration_sentence table
+# directly.
 _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
-    (StateCode.US_IX, StateCharge): {
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-    },
     (StateCode.US_IX, StateIncarcerationSentence): {
         US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_incarceration_sentence reference as "
@@ -464,9 +459,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
@@ -553,9 +545,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
@@ -754,9 +743,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `supervision_projected_completion_date_spans` once all
     # states are migrated to v2 infra
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
         **{
             state_specific_supervision_projected_completion_date_spans_address(
                 StateCode(state_code_str)
