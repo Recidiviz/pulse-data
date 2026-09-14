@@ -160,6 +160,7 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["status"], "accepted")
         self.assertIsNotNone(data["completion_id"])
+        self.assertEqual("Course completion recorded.", data["message"])
 
     def test_wif_forbidden_returns_403(self) -> None:
         # A valid token for the wrong identity/audience is a 403, and is audited.
@@ -239,6 +240,9 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         data = response.get_json()
         self.assertEqual(data["status"], "duplicate")
+        # Edovo records this string in their own audit trail, so it is part of
+        # the contract, not incidental prose.
+        self.assertEqual("This completion was already recorded.", data["message"])
 
     def test_duplicate_idempotency_key_returns_same_completion_id(self) -> None:
         first = self._post()
@@ -281,6 +285,9 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
         data = response.get_json()
         self.assertEqual(data["error_code"], "PERSON_NOT_FOUND")
+        self.assertEqual(
+            "No person found for the provided person_external_id.", data["message"]
+        )
 
     def test_name_mismatch_returns_422(self) -> None:
         self.mock_resolve.side_effect = PersonNameMismatchError(
@@ -291,6 +298,11 @@ class TestEdovoRoutes(TestCase):
         data = response.get_json()
         self.assertEqual(data["error_code"], "PERSON_NAME_MISMATCH")
         self.assertEqual(["last_name"], data["mismatched_fields"])
+        self.assertEqual(
+            "The provided person_external_id belongs to a person with a "
+            "different name in our records.",
+            data["message"],
+        )
 
     def test_name_mismatch_does_not_echo_the_submitted_name_or_id(self) -> None:
         self.mock_resolve.side_effect = PersonNameMismatchError(
@@ -330,6 +342,10 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
         data = response.get_json()
         self.assertEqual(data["error_code"], "ALREADY_COMPLETED")
+        self.assertEqual(
+            "This person has already received credit for this course.",
+            data["message"],
+        )
 
     def test_already_completed_points_at_the_original_completion(self) -> None:
         """Edovo asked to be told what we already hold, not just that something
