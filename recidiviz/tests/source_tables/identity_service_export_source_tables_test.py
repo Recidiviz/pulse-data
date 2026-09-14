@@ -23,7 +23,8 @@ from more_itertools import one
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.source_tables.identity_service_export_source_tables import (
     IDENTITY_SERVICE_EXPORT_DATASET_ID,
-    PERSON_OR_STAFF_ID_COLUMN,
+    LEGACY_PERSON_ID_COLUMN,
+    LEGACY_STAFF_ID_COLUMN,
     build_identity_service_export_source_table_collection,
 )
 
@@ -80,7 +81,7 @@ class IdentityServiceSourceTablesTest(unittest.TestCase):
     def test_every_exported_column_is_documented(self) -> None:
         """Every exported column carries a description into BigQuery, sourced
         from the Postgres column comments (or built by hand for
-        person_or_staff_id)."""
+        legacy_person_id and legacy_staff_id)."""
         undocumented = [
             f"{table.address.table_id}.{field.name}"
             for table in build_identity_service_export_source_table_collection().source_tables
@@ -91,7 +92,8 @@ class IdentityServiceSourceTablesTest(unittest.TestCase):
 
     def test_identities_schema(self) -> None:
         """The exported identities table drops the import-machinery columns,
-        gains the computed person_or_staff_id column, and clusters by tenant."""
+        gains the computed legacy_person_id and legacy_staff_id columns, and
+        clusters by tenant."""
         collection = build_identity_service_export_source_table_collection()
 
         identities_table = one(
@@ -113,7 +115,8 @@ class IdentityServiceSourceTablesTest(unittest.TestCase):
                 "person_type",
                 "status",
                 "merged_into",
-                PERSON_OR_STAFF_ID_COLUMN,
+                LEGACY_PERSON_ID_COLUMN,
+                LEGACY_STAFF_ID_COLUMN,
             ],
             identities_field_names,
         )

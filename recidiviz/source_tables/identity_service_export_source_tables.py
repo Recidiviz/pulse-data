@@ -38,7 +38,8 @@ from recidiviz.utils.types import assert_type
 
 IDENTITY_SERVICE_EXPORT_DATASET_ID = "identity_service_export"
 
-PERSON_OR_STAFF_ID_COLUMN = "person_or_staff_id"
+LEGACY_PERSON_ID_COLUMN = "legacy_person_id"
+LEGACY_STAFF_ID_COLUMN = "legacy_staff_id"
 
 # Columns on the identities table that exist to support the import process and
 # carry no meaning for readers of the export.
@@ -46,13 +47,22 @@ _EXCLUDED_IDENTITIES_COLUMNS = frozenset(
     {"last_cluster_hash", "skip_demographic_guard"}
 )
 
-_PERSON_OR_STAFF_ID_DESCRIPTION = (
-    "Primary key for this identity in activity pipeline output (person_id for "
-    "justice-involved individuals, staff_id for staff), computed at export time "
-    "from the identity's active external IDs with the same code the activity "
-    "pipeline uses. NULL for identities with no active external IDs (e.g. "
-    "Recidiviz employees, or identities retired by a merge) or whose tenant "
-    "does not correspond to a state."
+_LEGACY_PERSON_ID_DESCRIPTION = (
+    "person_id this identity gets in activity pipeline output, computed at "
+    "export time from the identity's active external IDs with the same code "
+    "the activity pipeline uses. Populated only for JII identities; NULL for "
+    "all other person types, for identities with no active external IDs (e.g. "
+    "identities retired by a merge), and for identities whose tenant does not "
+    "correspond to a state."
+)
+
+_LEGACY_STAFF_ID_DESCRIPTION = (
+    "staff_id this identity gets in activity pipeline output, computed at "
+    "export time from the identity's active external IDs with the same code "
+    "the activity pipeline uses. Populated only for STAFF identities; NULL for "
+    "all other person types, for identities with no active external IDs (e.g. "
+    "identities retired by a merge), and for identities whose tenant does not "
+    "correspond to a state."
 )
 
 # Postgres tables mirrored into the export as-is, and the BQ table description
@@ -107,7 +117,7 @@ MIRRORED_TABLES_TO_DESCRIPTIONS: dict[Table, str] = {
 def _identities_schema() -> list[bigquery.SchemaField]:
     """Returns the BQ schema for the exported identities table: the Postgres
     columns minus the import-machinery columns, plus the computed
-    person_or_staff_id column."""
+    legacy_person_id and legacy_staff_id columns."""
     fields = [
         field
         for field in schema_for_sqlalchemy_table(
@@ -117,10 +127,18 @@ def _identities_schema() -> list[bigquery.SchemaField]:
     ]
     fields.append(
         bigquery.SchemaField(
-            PERSON_OR_STAFF_ID_COLUMN,
+            LEGACY_PERSON_ID_COLUMN,
             bigquery.enums.SqlTypeNames.INTEGER.value,
             mode="NULLABLE",
-            description=_PERSON_OR_STAFF_ID_DESCRIPTION,
+            description=_LEGACY_PERSON_ID_DESCRIPTION,
+        )
+    )
+    fields.append(
+        bigquery.SchemaField(
+            LEGACY_STAFF_ID_COLUMN,
+            bigquery.enums.SqlTypeNames.INTEGER.value,
+            mode="NULLABLE",
+            description=_LEGACY_STAFF_ID_DESCRIPTION,
         )
     )
     return fields
@@ -141,7 +159,7 @@ def build_identity_service_export_source_table_collection() -> SourceTableCollec
         table_id=assert_type(schema.Identity.__tablename__, str),
         description=(
             "Identity records, keyed by an immutable Recidiviz-assigned UUID, "
-            "plus the computed person_or_staff_id column."
+            "plus the computed legacy_person_id and legacy_staff_id columns."
         ),
         schema_fields=_identities_schema(),
         # Readers and the per-tenant export refresh both filter on tenant.
