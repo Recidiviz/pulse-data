@@ -54,7 +54,6 @@ COMMON_VESTIGES = [
     # Run metadata that the Cloud SQL to BQ refresh appends to; no deployed view
     # reads it.
     "cloud_sql_to_bq_refresh.refresh_status",
-    "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
     # This is a potentially useful general reference table for getting information about
     # a given zip code.
     "static_reference_tables.zip_city_county_state",
@@ -154,8 +153,9 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "sentencing_views.case_insights_record_flattened",
             # Legacy V1 Idaho tasks record archive, predates V2 pipeline
             "export_archives.us_ix_supervision_tasks_record_archive",
-            # This source table only exists & in-use in production
+            # These source tables only exist & are in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
+            "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
             *COMMON_VESTIGES,
         ]
     },

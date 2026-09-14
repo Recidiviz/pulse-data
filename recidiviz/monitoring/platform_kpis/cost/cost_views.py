@@ -21,9 +21,13 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.monitoring.platform_kpis.cost.bq_monthly_costs_by_dataset import (
     BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
 )
+from recidiviz.monitoring.platform_kpis.cost.gcp_commitment_burndown import (
+    GCP_COMMITMENT_BURNDOWN_VIEW_BUILDER,
+)
 
 
 def get_platform_cost_kpi_views_to_update() -> list[BigQueryViewBuilder]:
     return [
         BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
+        GCP_COMMITMENT_BURNDOWN_VIEW_BUILDER,
     ]
