@@ -133,6 +133,16 @@ DocumentUploadEntrypoint:
       cpu: 1000m
       memory: 2Gi
 
+# Exports the Identity Service's Postgres state to the identity_service_export
+# BigQuery dataset. Holds every exported table's rows in memory between the
+# Postgres read and the BigQuery load jobs, so memory needs grow with the
+# identity database; 1Gi is generous while only test tenants are imported.
+IdentityServiceExportEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
 # Reconciles the `protection` Resource Manager tag onto protected-tier datasets.
 # I/O-bound: lists datasets and issues per-dataset metadata reads/updates through a
 # thread pool, so it is light on CPU and holds only dataset metadata in memory.
