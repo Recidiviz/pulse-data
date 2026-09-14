@@ -571,11 +571,9 @@ view deployment.
 
 1. **Builds views** from builders (applying sandbox context if provided)
 2. **Creates datasets** for all views in parallel
-3. **Cleans up unmanaged resources** (optional - deletes views/tables/datasets
-   no longer in code)
-4. **Creates/updates views** in dependency order using DAG walker
-5. **Materializes views** to tables when appropriate
-6. **Tracks performance** and logs slow views
+3. **Creates/updates views** in dependency order using DAG walker
+4. **Materializes views** to tables when appropriate
+5. **Tracks performance** and logs slow views
 
 **Key parameters**:
 
@@ -583,7 +581,6 @@ view deployment.
 def create_managed_dataset_and_deploy_views_for_view_builders(
     *,
     view_builders_to_update: Sequence[BigQueryViewBuilder],
-    historically_managed_datasets_to_clean: set[str] | None,
     rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     view_update_sandbox_context: BigQueryViewUpdateSandboxContext | None = None,
@@ -595,8 +592,6 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
 ```
 
 - **view_builders_to_update**: List of view builders to deploy
-- **historically_managed_datasets_to_clean**: Datasets to clean up (removes
-  views/tables no longer in code). If `None`, skips cleanup
 - **rematerialize_changed_views_only**:
   - `True`: Only re-materialize views that have changed (or whose ancestors
     changed)
@@ -638,15 +633,7 @@ _create_all_datasets_if_necessary(
 )
 ```
 
-#### 3. Clean Up Unmanaged Resources (Optional)
-
-If `historically_managed_datasets_to_clean` is provided:
-
-- Deletes views/tables in managed datasets that are no longer in code
-- Deletes entire datasets that are no longer managed
-- Ensures only code-defined resources exist in production
-
-#### 4. Process DAG
+#### 3. Process DAG
 
 Uses DAG walker to process views in dependency order:
 
@@ -786,18 +773,39 @@ If a view takes longer than allowed:
 
 **File**: `view_update_manager_utils.py`
 
-The cleanup process (`cleanup_datasets_and_delete_unmanaged_views`) ensures code
-is the source of truth:
+`create_managed_dataset_and_deploy_views_for_view_builders()` never deletes
+unmanaged resources itself. Cleanup runs as a separate step, after a view
+update succeeds, via `cleanup_datasets_and_delete_unmanaged_views`, which
+ensures code is the source of truth:
 
 1. **List all tables** in each managed dataset
 2. **Compare** against `managed_views_map` (from view definitions in code)
 3. **Delete unmanaged** views/tables not in code
 4. **Delete datasets** that are no longer managed
 
-This prevents accumulation of obsolete views from renamed/deleted views in code.
+This prevents accumulation of obsolete views from renamed/deleted views in
+code. Tables and datasets created within `MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES`
+(12 hours) are never deleted, since cleanup computes its managed map from the
+code version it started with, and another deploy on newer code may have
+materialized views cleanup does not yet know about. A managed dataset that
+doesn't exist yet in BigQuery is logged and skipped rather than treated as an
+error.
 
-**Important**: Cleanup only runs in production deploys (not sandboxes) to avoid
-accidentally deleting production data.
+Callers of `cleanup_datasets_and_delete_unmanaged_views`:
+
+- `DatasetCleanupAndValidationEntrypoint`
+  (`recidiviz/entrypoints/bigquery/dataset_cleanup_and_validation_entrypoint.py`)
+  is a calculation DAG task that runs after the view update task succeeds. It
+  builds the managed map as the union across every view graph in
+  `deployed_view_graph_registry`, via
+  `build_dag_walker_for_all_deployed_view_graphs`
+  (`recidiviz/view_registry/deployed_view_graphs.py`), and passes
+  `DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED`.
+- `federated_cloud_sql_to_bq_refresh.py` runs the same cleanup for its own
+  datasets after its deploy call. It skips cleanup when a sandbox
+  `dataset_override_prefix` is set, so sandbox loads never delete anything.
+- `recidiviz/tools/run_delete_unmanaged_views.py` runs the same cleanup
+  manually from a laptop, defaulting to a dry run.
 
 ### Common Update Patterns
 
@@ -806,7 +814,6 @@ accidentally deleting production data.
 ```python
 result, dag = create_managed_dataset_and_deploy_views_for_view_builders(
     view_builders_to_update=all_production_view_builders,
-    historically_managed_datasets_to_clean=PRODUCTION_DATASETS,
     rematerialize_changed_views_only=True,  # Only refresh changed views
     failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
 )
@@ -818,7 +825,6 @@ result.log_processing_stats(n_slowest=25)
 ```python
 result, dag = create_managed_dataset_and_deploy_views_for_view_builders(
     view_builders_to_update=test_view_builders,
-    historically_managed_datasets_to_clean=None,  # Don't cleanup in sandbox
     rematerialize_changed_views_only=False,  # Always materialize for testing
     failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
     view_update_sandbox_context=BigQueryViewUpdateSandboxContext(
@@ -835,7 +841,6 @@ result, dag = create_managed_dataset_and_deploy_views_for_view_builders(
 ```python
 result, dag = create_managed_dataset_and_deploy_views_for_view_builders(
     view_builders_to_update=view_builders,
-    historically_managed_datasets_to_clean=None,
     rematerialize_changed_views_only=False,  # Materialize everything
     failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
 )

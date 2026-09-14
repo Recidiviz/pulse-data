@@ -35,6 +35,10 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
+from recidiviz.big_query.view_update_manager_utils import (
+    cleanup_datasets_and_delete_unmanaged_views,
+    get_managed_view_and_materialized_table_addresses_by_dataset,
+)
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
     CloudSqlToBqRefreshStatus,
     store_bq_refresh_status_in_big_query,
@@ -128,12 +132,6 @@ def _federated_bq_regional_dataset_refresh(
             config.schema_type
         )
 
-    historically_managed_datasets_for_schema = (
-        CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
-            config.schema_type
-        ]
-    )
-
     view_update_sandbox_context = None
     if dataset_override_prefix:
         view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
@@ -143,14 +141,25 @@ def _federated_bq_regional_dataset_refresh(
             state_code_filter=None,
         )
 
-    create_managed_dataset_and_deploy_views_for_view_builders(
+    _, dag_walker = create_managed_dataset_and_deploy_views_for_view_builders(
         view_builders_to_update=view_builders,
         view_update_sandbox_context=view_update_sandbox_context,
         bq_region_override=bq_region_override,
         rematerialize_changed_views_only=False,
-        historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
     )
+
+    if dataset_override_prefix is None:
+        cleanup_datasets_and_delete_unmanaged_views(
+            bq_client=BigQueryClientImpl(region_override=bq_region_override),
+            managed_views_map=get_managed_view_and_materialized_table_addresses_by_dataset(
+                dag_walker
+            ),
+            datasets_that_have_ever_been_managed=CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
+                config.schema_type
+            ],
+            dry_run=False,
+        )
 
 
 def _copy_regional_dataset_to_multi_region(

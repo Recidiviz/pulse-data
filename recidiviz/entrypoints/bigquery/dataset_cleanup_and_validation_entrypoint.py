@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Entrypoint for cleaning up and validating BigQuery datasets"""
+"""Entrypoint for deleting unmanaged views, tables, and datasets and validating
+source table datasets.
+"""
 import argparse
 import datetime
 import enum
@@ -27,7 +29,12 @@ from tqdm import tqdm
 
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClient,
     BigQueryClientImpl,
+)
+from recidiviz.big_query.view_update_manager_utils import (
+    cleanup_datasets_and_delete_unmanaged_views,
+    get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.source_tables.source_table_cleanup_validation import (
@@ -37,6 +44,12 @@ from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
     get_source_table_datasets,
+)
+from recidiviz.view_registry.deployed_view_graphs import (
+    build_dag_walker_for_all_deployed_view_graphs,
+)
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
 )
 
 # Empty datasets must be at least 2 hours old to be deleted
@@ -55,7 +68,9 @@ TEMP_DATASET_PREFIXES_TO_CLEAN_UP = [
 
 
 class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
-    """Entrypoint for cleaning up unused datasets and validating source table datasets"""
+    """Entrypoint for deleting unmanaged views, tables, and datasets and validating
+    source table datasets.
+    """
 
     @staticmethod
     def get_parser() -> argparse.ArgumentParser:
@@ -67,11 +82,12 @@ class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        # First, clean up unused datasets
+        bq_client = BigQueryClientImpl()
+
+        _delete_unmanaged_views_and_datasets(bq_client, dry_run=args.dry_run)
+
         _delete_empty_or_temp_datasets(dry_run=args.dry_run)
 
-        # Then, validate source table datasets contain expected tables
-        bq_client = BigQueryClientImpl()
         project_id = metadata.project_id()
         source_table_repository = build_source_table_repository_for_collected_schemata(
             project_id=project_id
@@ -80,6 +96,23 @@ class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
             bq_client=bq_client,
             source_table_repository=source_table_repository,
         )
+
+
+def _delete_unmanaged_views_and_datasets(
+    bq_client: BigQueryClient, *, dry_run: bool
+) -> None:
+    """Deletes views, tables, and datasets that no view graph deployed to this project
+    manages. A table managed by any registered view graph is never deleted.
+    """
+    managed_views_map = get_managed_view_and_materialized_table_addresses_by_dataset(
+        build_dag_walker_for_all_deployed_view_graphs()
+    )
+    cleanup_datasets_and_delete_unmanaged_views(
+        bq_client=bq_client,
+        managed_views_map=managed_views_map,
+        datasets_that_have_ever_been_managed=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        dry_run=dry_run,
+    )
 
 
 class DatasetClassification(enum.Enum):

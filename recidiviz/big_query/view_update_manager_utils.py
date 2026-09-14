@@ -16,8 +16,11 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
 
+import datetime
 import logging
 from typing import Dict, List, Sequence, Set
+
+from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -34,6 +37,13 @@ from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_datasets,
 )
+
+MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES = datetime.timedelta(hours=12)
+"""Tables and datasets created more recently than this are never deleted by cleanup.
+Cleanup runs with the managed map of the code version it was started with, so a DAG
+on newer code may materialize views into a managed dataset that cleanup does not
+yet know about. This must exceed the longest DAG run.
+"""
 
 
 def get_managed_view_and_materialized_table_addresses_by_dataset(
@@ -55,38 +65,91 @@ def get_managed_view_and_materialized_table_addresses_by_dataset(
     return managed_views_for_dataset_map
 
 
+def _is_too_new_to_delete(
+    *, created: datetime.datetime | None, resource_description: str
+) -> bool:
+    """Returns True if the resource was created within
+    MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES, raising if its creation time is unknown.
+    """
+    if created is None:
+        raise ValueError(
+            f"Cannot determine the creation time of {resource_description}, so "
+            f"cannot safely decide whether to delete it."
+        )
+    age = datetime.datetime.now(tz=datetime.timezone.utc) - created
+    return age < MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES
+
+
 def delete_unmanaged_views_and_tables_from_dataset(
     bq_client: BigQueryClient,
     dataset_id: str,
     managed_tables: Set[BigQueryAddress],
     dry_run: bool,
 ) -> Set[BigQueryAddress]:
-    """This function takes in a set of managed views/tables and compares it to the list of
-    tables BigQuery has. The function then deletes any views/tables that are in BigQuery but not
-    in the set of managed views/tables. It then returns a set of the BigQueryAddress's
-    from these unmanaged views/tables that are to be deleted."""
-    unmanaged_views_and_tables: Set[BigQueryAddress] = set()
+    """Deletes every view or table in |dataset_id| that is not in |managed_tables|,
+    skipping any created within MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES. Returns the
+    addresses that were deleted (or would be deleted, in a dry run). Logs and returns
+    an empty set if the dataset does not exist.
+    """
     if not bq_client.dataset_exists(dataset_id):
-        raise ValueError(f"Dataset {dataset_id} does not exist in BigQuery")
+        logging.info(
+            "Managed dataset [%s] does not exist in BigQuery yet. Skipping cleanup.",
+            dataset_id,
+        )
+        return set()
+
+    unmanaged_views_and_tables: Set[BigQueryAddress] = set()
     for table in list(bq_client.list_tables(dataset_id)):
         table_bq_address = BigQueryAddress.from_table(table)
-        if table_bq_address not in managed_tables:
-            unmanaged_views_and_tables.add(table_bq_address)
+        if table_bq_address in managed_tables:
+            continue
+        if _is_too_new_to_delete(
+            created=table.created,
+            resource_description=f"table [{table_bq_address.to_str()}]",
+        ):
+            logging.info(
+                "Skipping unmanaged table/view %s created within the last %s.",
+                table_bq_address.to_str(),
+                MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES,
+            )
+            continue
+        unmanaged_views_and_tables.add(table_bq_address)
+
     for view_address in unmanaged_views_and_tables:
         if dry_run:
             logging.info(
                 "[DRY RUN] Regular run would delete unmanaged table/view %s.",
                 view_address.to_str(),
             )
-
-        else:
-            logging.info(
-                "Deleting unmanaged table/view %s.",
-                view_address.to_str(),
-            )
-
-            bq_client.delete_table(view_address)
+            continue
+        logging.info("Deleting unmanaged table/view %s.", view_address.to_str())
+        bq_client.delete_table(view_address)
     return unmanaged_views_and_tables
+
+
+def _delete_unmanaged_dataset(
+    bq_client: BigQueryClient, dataset_id: str, dry_run: bool
+) -> None:
+    """Deletes |dataset_id| and its contents unless it was created within
+    MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES.
+    """
+    dataset: bigquery.Dataset = bq_client.get_dataset(dataset_id)
+    if _is_too_new_to_delete(
+        created=dataset.created, resource_description=f"dataset [{dataset_id}]"
+    ):
+        logging.info(
+            "Skipping unmanaged dataset %s created within the last %s.",
+            dataset_id,
+            MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES,
+        )
+        return
+    if dry_run:
+        logging.info(
+            "[DRY RUN] Regular run would delete unmanaged dataset %s.", dataset_id
+        )
+        return
+    logging.info("Deleting dataset %s, which is no longer managed.", dataset_id)
+    bq_client.delete_dataset(dataset_id, delete_contents=True)
 
 
 def cleanup_datasets_and_delete_unmanaged_views(
@@ -95,47 +158,37 @@ def cleanup_datasets_and_delete_unmanaged_views(
     datasets_that_have_ever_been_managed: Set[str],
     dry_run: bool = True,
 ) -> None:
-    """This function filters through a list of managed dataset ids and a map of managed
-    views to their corresponding datasets and checks that the dataset is in the provided
-    primary list |datasets_that_have_ever_been_managed|. It then cleans up the
-    datasets by deleting unmanaged datasets and deleting any unmanaged views within
-    managed datasets."""
+    """Deletes every dataset in |datasets_that_have_ever_been_managed| that is no
+    longer in |managed_views_map|, and every unmanaged view or table within the
+    datasets that are. Raises if a managed dataset is missing from
+    |datasets_that_have_ever_been_managed|. Tables and datasets created within
+    MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES are never deleted.
+    """
     managed_dataset_ids: List[str] = list(managed_views_map.keys())
 
     for dataset_id in managed_dataset_ids:
         if dataset_id not in datasets_that_have_ever_been_managed:
             raise ValueError(
-                "Managed dataset %s not found in the provided "
+                f"Managed dataset [{dataset_id}] not found in the provided "
                 "|datasets_that_have_ever_been_managed|: "
-                f"[{datasets_that_have_ever_been_managed}]." % dataset_id,
+                f"[{datasets_that_have_ever_been_managed}]."
             )
 
     for dataset_id in datasets_that_have_ever_been_managed:
-        if dataset_id not in managed_views_map:
-            if bq_client.dataset_exists(dataset_id):
-                if dry_run:
-                    logging.info(
-                        "[DRY RUN] Regular run would delete unmanaged dataset %s.",
-                        dataset_id,
-                    )
-                else:
-                    logging.info(
-                        "Deleting dataset %s, which is no longer managed.",
-                        dataset_id,
-                    )
-                    bq_client.delete_dataset(dataset_id, delete_contents=True)
-            else:
-                logging.info(
-                    "Dataset %s isn't being managed and no longer exists in BigQuery. "
-                    "It can be safely removed from the list: [%s].",
-                    dataset_id,
-                    datasets_that_have_ever_been_managed,
-                )
-
-        else:
+        if dataset_id in managed_views_map:
             delete_unmanaged_views_and_tables_from_dataset(
                 bq_client, dataset_id, managed_views_map[dataset_id], dry_run
             )
+            continue
+        if not bq_client.dataset_exists(dataset_id):
+            logging.info(
+                "Dataset %s isn't being managed and no longer exists in BigQuery. "
+                "It can be safely removed from the list: [%s].",
+                dataset_id,
+                datasets_that_have_ever_been_managed,
+            )
+            continue
+        _delete_unmanaged_dataset(bq_client, dataset_id, dry_run)
 
 
 def validate_builders_not_in_current_source_datasets(

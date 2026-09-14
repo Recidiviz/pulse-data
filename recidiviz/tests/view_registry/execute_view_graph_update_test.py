@@ -57,9 +57,6 @@ from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
 from recidiviz.view_registry.deployed_view_graphs import CALCULATION_VIEW_GRAPH_NAME
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-)
 from recidiviz.view_registry.execute_view_graph_update import (
     AllViewsUpdateSuccessPersister,
     PerViewUpdateStatsPersister,
@@ -309,7 +306,6 @@ class TestExecuteViewGraphUpdate(unittest.TestCase):
         execute_view_graph_update(view_graph)
         mock_create.assert_called_once_with(
             view_builders_to_update=view_graph.view_builders,
-            historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
             view_update_sandbox_context=None,
             rematerialize_changed_views_only=False,
             allow_slow_views=False,
@@ -325,27 +321,3 @@ class TestExecuteViewGraphUpdate(unittest.TestCase):
             num_distinct_paths=mock.ANY,
         )
         self.mock_per_view_update_success_persister.record_success_in_bq.assert_called()
-
-    @mock.patch("recidiviz.view_registry.execute_view_graph_update.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.view_registry.execute_view_graph_update.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_execute_view_graph_update_rejects_non_calculation_graph(
-        self,
-        mock_create: MagicMock,
-        _mock_bq_client: MagicMock,
-    ) -> None:
-        view_graph = ResolvedBigQueryViewGraph(
-            project_id=GCP_PROJECT_PRODUCTION,
-            view_graph=BigQueryViewGraph(
-                name="my_graph",
-                view_builder_candidates=[_view_builder("dataset_1", "table_1")],
-                input_source_table_update_group=SourceTableUpdateGroup.CALC,
-            ),
-            input_source_table_collections=[_source_table_collection()],
-        )
-        with self.assertRaisesRegex(
-            ValueError, r"^Cannot yet update view graph \[my_graph\]"
-        ):
-            execute_view_graph_update(view_graph)
-        mock_create.assert_not_called()

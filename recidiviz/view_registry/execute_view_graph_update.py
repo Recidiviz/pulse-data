@@ -36,10 +36,6 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
-from recidiviz.view_registry.deployed_view_graphs import CALCULATION_VIEW_GRAPH_NAME
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-)
 from recidiviz.view_registry.per_view_update_stats import (
     PerViewUpdateStats,
     per_view_update_stats_for_view_update_result,
@@ -123,14 +119,6 @@ class PerViewUpdateStatsPersister(BigQueryRowStreamer):
 def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
     """Updates and materializes all views in the given view graph, then records
     success stats in BigQuery."""
-    # TODO(OBT-44677): Dataset cleanup below passes the full historical dataset
-    # list, which is only correct while a single view graph exists. Remove this
-    # guard once cleanup moves out of the per-graph update path.
-    if view_graph.name != CALCULATION_VIEW_GRAPH_NAME:
-        raise ValueError(
-            f"Cannot yet update view graph [{view_graph.name}]: dataset cleanup "
-            f"would delete datasets managed by other graphs. See OBT-44677."
-        )
     start_time = datetime.datetime.now(tz=pytz.UTC)
     view_builders = view_graph.view_builders
 
@@ -139,7 +127,6 @@ def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
         dag_walker,
     ) = create_managed_dataset_and_deploy_views_for_view_builders(
         view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         view_update_sandbox_context=None,
         rematerialize_changed_views_only=False,
         allow_slow_views=False,

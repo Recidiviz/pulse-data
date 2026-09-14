@@ -1366,8 +1366,6 @@ def load_collected_views_to_sandbox(
         ) = create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=collected_builders,
             view_update_sandbox_context=view_update_sandbox_context,
-            # Don't clean up datasets when running a sandbox script
-            historically_managed_datasets_to_clean=None,
             allow_slow_views=allow_slow_views,
             rematerialize_changed_views_only=rematerialize_changed_views_only,
             failure_mode=failure_mode,

@@ -16,8 +16,9 @@
 # =============================================================================
 """Tests for classes in big_query_view_dag_walker.py"""
 
+import datetime
 import unittest
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 from unittest import mock
 
 from google.cloud import bigquery
@@ -30,6 +31,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.big_query.view_update_manager_utils import (
+    MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES,
     cleanup_datasets_and_delete_unmanaged_views,
     delete_unmanaged_views_and_tables_from_dataset,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -40,6 +42,36 @@ from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.view_registry.deployed_view_graphs import (
     builders_for_all_view_graphs_across_projects,
 )
+
+_DEFAULT_TABLE_AGE = datetime.timedelta(days=30)
+_DEFAULT_DATASET_AGE = datetime.timedelta(days=30)
+
+
+def _table_resource(
+    *,
+    project_id: str,
+    dataset_id: str,
+    table_id: str,
+    age: datetime.timedelta = _DEFAULT_TABLE_AGE,
+) -> Dict[str, Any]:
+    """Builds a mock BigQuery table list resource dict for |dataset_id|.|table_id|,
+    created |age| before now.
+    """
+    created = datetime.datetime.now(tz=datetime.timezone.utc) - age
+    return {
+        "tableReference": {
+            "projectId": project_id,
+            "datasetId": dataset_id,
+            "tableId": table_id,
+        },
+        "creationTime": str(int(created.timestamp() * 1000)),
+    }
+
+
+def _mock_dataset(*, age: datetime.timedelta = _DEFAULT_DATASET_AGE) -> mock.Mock:
+    """Builds a mock BigQuery dataset created |age| before now."""
+    created = datetime.datetime.now(tz=datetime.timezone.utc) - age
+    return mock.Mock(spec=bigquery.Dataset, created=created)
 
 
 class TestViewUpdateManagerUtils(unittest.TestCase):
@@ -218,21 +250,13 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 "tableId": "fake_table",
             },
         }
-        self.mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "table_1",
-            },
-        }
+        self.mock_table_resource_ds_1_table_1 = _table_resource(
+            project_id=self.project_id, dataset_id="dataset_1", table_id="table_1"
+        )
 
-        self.mock_table_resource_ds_1_table_2 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "table_2",
-            },
-        }
+        self.mock_table_resource_ds_1_table_2 = _table_resource(
+            project_id=self.project_id, dataset_id="dataset_1", table_id="table_2"
+        )
 
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
         self.project_number_patcher.start().return_value = "123456789"
@@ -241,6 +265,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "recidiviz.big_query.view_update_manager_utils.BigQueryClient"
         )
         self.mock_client = self.bq_client_patcher.start().return_value
+        self.mock_client.get_dataset.return_value = _mock_dataset()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
@@ -440,13 +465,163 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
         self.mock_client.dataset_exists.return_value = False
-        with self.assertRaises(ValueError):
-            delete_unmanaged_views_and_tables_from_dataset(
+        with self.assertLogs(level="INFO") as captured_log:
+            deleted_views = delete_unmanaged_views_and_tables_from_dataset(
                 self.mock_client, "dataset_bogus", managed_tables, dry_run=False
             )
+        self.assertEqual(set(), deleted_views)
+        self.assertEqual(
+            [
+                "Managed dataset [dataset_bogus] does not exist in BigQuery "
+                "yet. Skipping cleanup."
+            ],
+            [record.getMessage() for record in captured_log.records],
+        )
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
+
+    def test_delete_unmanaged_views_and_tables_skips_table_created_within_threshold(
+        self,
+    ) -> None:
+        managed_tables: Set[BigQueryAddress] = set()
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="table_1",
+                    age=MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES
+                    - datetime.timedelta(hours=1),
+                )
+            ),
+        ]
+        self.mock_client.dataset_exists.return_value = True
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(set(), deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_deletes_table_older_than_threshold(
+        self,
+    ) -> None:
+        managed_tables: Set[BigQueryAddress] = set()
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="table_1",
+                    age=MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES
+                    + datetime.timedelta(hours=1),
+                )
+            ),
+        ]
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+        }
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.delete_table.assert_called_once_with(
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+        )
+        self.assertEqual(expected_deleted_views, deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_raises_when_created_is_unknown(
+        self,
+    ) -> None:
+        managed_tables: Set[BigQueryAddress] = set()
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": self.project_id,
+                        "datasetId": "dataset_1",
+                        "tableId": "table_1",
+                    },
+                }
+            ),
+        ]
+        self.mock_client.dataset_exists.return_value = True
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot determine the creation time of table \[dataset_1\.table_1\], "
+            r"so cannot safely decide whether to delete it\.$",
+        ):
+            delete_unmanaged_views_and_tables_from_dataset(
+                self.mock_client, "dataset_1", managed_tables, dry_run=False
+            )
+
+    def test_delete_unmanaged_views_and_tables_managed_by_either_of_multiple_graphs(
+        self,
+    ) -> None:
+        view_from_graph_one = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            bq_description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
+        )
+        view_from_graph_two = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_2",
+            description="table_2 description",
+            bq_description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
+        )
+        managed_views_map_one = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(
+                BigQueryViewDagWalker([view_from_graph_one])
+            )
+        )
+        managed_views_map_two = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(
+                BigQueryViewDagWalker([view_from_graph_two])
+            )
+        )
+        managed_tables = (
+            managed_views_map_one["dataset_1"] | managed_views_map_two["dataset_1"]
+        )
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="table_1",
+                )
+            ),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="table_2",
+                )
+            ),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="table_3",
+                )
+            ),
+        ]
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_3")
+        }
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.delete_table.assert_called_once_with(
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_3")
+        )
+        self.assertEqual(expected_deleted_views, deleted_views)
 
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_ds(
         self,
@@ -481,33 +656,28 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             for view in sample_views
         ]
 
-        mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_2 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_other_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_3 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "bogus_view",
-            },
-        }
         self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_3),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_fake_view",
+                )
+            ),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_other_fake_view",
+                )
+            ),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="bogus_view",
+                )
+            ),
         ]
         self.mock_client.dataset_exists.return_value = True
 
@@ -560,48 +730,40 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             ),
         ]
 
-        mock_table_resource_ds_1_table = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_bogus = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "bogus_view_1",
-            },
-        }
-
-        mock_table_resource_ds_2_table = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_2",
-                "tableId": "my_fake_view_2",
-            },
-        }
-
-        mock_table_resource_ds_2_table_bogus = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_2",
-                "tableId": "bogus_view_2",
-            },
-        }
-
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
             if dataset_id == "dataset_1":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_1",
+                            table_id="my_fake_view",
+                        )
+                    ),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_1",
+                            table_id="bogus_view_1",
+                        )
+                    ),
                 ]
             if dataset_id == "dataset_2":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_2",
+                            table_id="my_fake_view_2",
+                        )
+                    ),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_2",
+                            table_id="bogus_view_2",
+                        )
+                    ),
                 ]
             raise ValueError(f"No tables for id: {dataset_id}")
 
@@ -667,25 +829,21 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             for view in sample_views
         ]
 
-        mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_2 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_other_fake_view",
-            },
-        }
-
         self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_fake_view",
+                )
+            ),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_other_fake_view",
+                )
+            ),
         ]
         self.mock_client.dataset_exists.return_value = True
 
@@ -737,16 +895,14 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             for view in sample_views
         ]
 
-        mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
         self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_fake_view",
+                )
+            ),
         ]
 
         self.mock_client.dataset_exists.return_value = True
@@ -771,6 +927,68 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
+
+    def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_dataset_too_new_to_delete(
+        self,
+    ) -> None:
+        datasets_that_have_ever_been_managed = {
+            "dataset_1",
+            "bogus_dataset",
+        }
+
+        sample_views = [
+            {
+                "view_id": "my_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            }
+        ]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                description=f"{view['view_id']} description",
+                bq_description=f"{view['view_id']} description",
+                should_materialize=False,
+                projects_to_deploy=None,
+                materialized_address_override=None,
+                clustering_fields=None,
+                time_partitioning=None,
+                schema=MINIMAL_SCHEMA,
+                **view,
+            )
+            for view in sample_views
+        ]
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_fake_view",
+                )
+            ),
+        ]
+
+        self.mock_client.dataset_exists.return_value = True
+        self.mock_client.get_dataset.return_value = _mock_dataset(
+            age=MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES - datetime.timedelta(hours=1)
+        )
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=False,
+        )
+
+        self.mock_client.delete_dataset.assert_not_called()
 
     def test_cleanup_datasets_and_delete_unmanaged_views_dataset_not_in_primary_list(
         self,
@@ -800,30 +1018,26 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             ),
         ]
 
-        mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_2_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "bogus_dataset",
-                "tableId": "my_fake_view_2",
-            },
-        }
-
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
             if dataset_id == "dataset_1":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_1",
+                            table_id="my_fake_view",
+                        )
+                    ),
                 ]
             if dataset_id == "bogus_dataset":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_1),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="bogus_dataset",
+                            table_id="my_fake_view_2",
+                        )
+                    ),
                 ]
             raise ValueError(f"No tables for id: {dataset_id}")
 
@@ -869,16 +1083,14 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             )
         ]
 
-        mock_table_resource_ds_1_table_1 = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
         self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(
+                _table_resource(
+                    project_id=self.project_id,
+                    dataset_id="dataset_1",
+                    table_id="my_fake_view",
+                )
+            ),
         ]
 
         def mock_dataset_exists(dataset_id: str) -> bool:
@@ -938,48 +1150,40 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             ),
         ]
 
-        mock_table_resource_ds_1_table = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_bogus = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_1",
-                "tableId": "bogus_view_1",
-            },
-        }
-
-        mock_table_resource_ds_2_table = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_2",
-                "tableId": "my_fake_view_2",
-            },
-        }
-
-        mock_table_resource_ds_2_table_bogus = {
-            "tableReference": {
-                "projectId": self.project_id,
-                "datasetId": "dataset_2",
-                "tableId": "bogus_view_2",
-            },
-        }
-
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
             if dataset_id == "dataset_1":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_1",
+                            table_id="my_fake_view",
+                        )
+                    ),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_1",
+                            table_id="bogus_view_1",
+                        )
+                    ),
                 ]
             if dataset_id == "dataset_2":
                 return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_2",
+                            table_id="my_fake_view_2",
+                        )
+                    ),
+                    bigquery.table.TableListItem(
+                        _table_resource(
+                            project_id=self.project_id,
+                            dataset_id="dataset_2",
+                            table_id="bogus_view_2",
+                        )
+                    ),
                 ]
             raise ValueError(f"No tables for id: {dataset_id}")
 

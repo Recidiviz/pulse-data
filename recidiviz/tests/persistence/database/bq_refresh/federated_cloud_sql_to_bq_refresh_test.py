@@ -16,13 +16,13 @@
 # =============================================================================
 """Tests for federated_cloud_sql_to_bq_refresh.py."""
 
+import datetime
 import unittest
 from typing import Optional
 from unittest import mock
 from unittest.mock import create_autospec, patch
 
 from google.cloud import bigquery
-from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -39,6 +39,9 @@ from recidiviz.persistence.database.bq_refresh import (
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
     CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
 )
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
+    CloudSqlToBQConfig,
+)
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh import (
     federated_bq_schema_refresh,
 )
@@ -46,6 +49,32 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+
+_OLD_TABLE_CREATION_TIME_MS = str(
+    int(
+        (
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - datetime.timedelta(days=30)
+        ).timestamp()
+        * 1000
+    )
+)
+
+
+def _table_list_item(
+    *, project_id: str, dataset_id: str, table_id: str
+) -> bigquery.table.TableListItem:
+    return bigquery.table.TableListItem(
+        {
+            "tableReference": {
+                "projectId": project_id,
+                "datasetId": dataset_id,
+                "tableId": table_id,
+            },
+            "creationTime": _OLD_TABLE_CREATION_TIME_MS,
+        }
+    )
+
 
 FEDERATED_REFRESH_PACKAGE_NAME = federated_cloud_sql_to_bq_refresh.__name__
 FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME = (
@@ -121,10 +150,66 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         # Arrange
         self.mock_bq_client.dataset_exists.return_value = True
 
+        collector = federated_cloud_sql_table_big_query_view_collector.FederatedCloudSQLTableBigQueryViewCollector(
+            CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
+        )
+        managed_table_id = collector.collect_view_builders()[0].view_id
+
+        def fake_list_tables(
+            dataset_id: str,
+        ) -> list[bigquery.table.TableListItem]:
+            return [
+                _table_list_item(
+                    project_id=self.mock_project_id,
+                    dataset_id=dataset_id,
+                    table_id=managed_table_id,
+                ),
+                _table_list_item(
+                    project_id=self.mock_project_id,
+                    dataset_id=dataset_id,
+                    table_id="unmanaged_table",
+                ),
+            ]
+
+        self.mock_bq_client.list_tables.side_effect = fake_list_tables
+
         # Act
         federated_bq_schema_refresh(SchemaType.OPERATIONS)
 
         # Assert
+        self.mock_bq_client.list_tables.assert_has_calls(
+            [
+                mock.call("operations_cloudsql_connection"),
+                mock.call("operations_regional"),
+            ],
+            any_order=True,
+        )
+        self.assertEqual(2, self.mock_bq_client.list_tables.call_count)
+        # Cleanup deletes unmanaged tables by calling delete_table with just the
+        # address, which distinguishes these calls from the not_found_ok=True calls
+        # made elsewhere in the refresh to delete and recreate managed views.
+        cleanup_delete_calls = [
+            call
+            for call in self.mock_bq_client.delete_table.mock_calls
+            if call.kwargs == {}
+        ]
+        self.assertCountEqual(
+            [
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id="operations_cloudsql_connection",
+                        table_id="unmanaged_table",
+                    )
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id="operations_regional",
+                        table_id="unmanaged_table",
+                    )
+                ),
+            ],
+            cleanup_delete_calls,
+        )
         self.assertEqual(
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
@@ -166,16 +251,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
     def test_federated_cloud_sql_to_bq_refresh_with_overrides(self) -> None:
         # Arrange
         self.mock_bq_client.dataset_exists.return_value = True
-        self.mock_bq_client.list_tables.return_value = [
-            bigquery.TableReference(
-                DatasetReference(self.mock_project_id, "my_prefix_operations"),
-                "table_1",
-            ),
-            bigquery.TableReference(
-                DatasetReference(self.mock_project_id, "my_prefix_operations"),
-                "table_2",
-            ),
-        ]
 
         # Act
         federated_bq_schema_refresh(
@@ -231,3 +306,15 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 table_id=CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
             ),
         )
+
+        # A sandboxed run never cleans up unmanaged views/tables: list_tables is
+        # only ever called as part of that cleanup, and delete_table is only called
+        # by cleanup with just the address (other delete_table calls, made when
+        # recreating a changed view, always pass not_found_ok=True).
+        self.mock_bq_client.list_tables.assert_not_called()
+        cleanup_delete_calls = [
+            call
+            for call in self.mock_bq_client.delete_table.mock_calls
+            if call.kwargs == {}
+        ]
+        self.assertEqual([], cleanup_delete_calls)

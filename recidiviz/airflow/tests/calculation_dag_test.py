@@ -75,6 +75,10 @@ _UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID = "update_managed_calculation_views"
 _VALIDATIONS_BRANCH_START = "validations.branch_start"
 _REFRESH_OPERATIONS_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_OPERATIONS"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
+_VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID = (
+    "validations_and_metric_exports_completed"
+)
+_DATASET_CLEANUP_AND_VALIDATION_TASK_ID = "dataset_cleanup_and_validation"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
@@ -235,6 +239,42 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         )
         self.assertNotIn(
             validations_start.task_id, view_materialization.upstream_task_ids
+        )
+
+    def test_dataset_cleanup_gated_on_view_update_not_validations_or_exports(
+        self,
+    ) -> None:
+        """Tests that dataset_cleanup_and_validation requires
+        update_managed_calculation_views to succeed, but only waits for validations
+        and metric_exports to finish (regardless of their outcome).
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        dataset_cleanup_and_validation = dag.get_task(
+            _DATASET_CLEANUP_AND_VALIDATION_TASK_ID
+        )
+        self.assertEqual(
+            TriggerRule.ALL_SUCCESS, dataset_cleanup_and_validation.trigger_rule
+        )
+        self.assertEqual(
+            {
+                _UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID,
+                _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID,
+            },
+            dataset_cleanup_and_validation.upstream_task_ids,
+        )
+
+        validations_group: TaskGroup = dag.task_group_dict["validations"]
+        metric_exports_group: TaskGroup = dag.task_group_dict["metric_exports"]
+        self.assertIn(
+            _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID,
+            validations_group.downstream_task_ids,
+        )
+        self.assertIn(
+            _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID,
+            metric_exports_group.downstream_task_ids,
         )
 
     def test_view_update_downstream_of_all_pipelines(
@@ -750,6 +790,48 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 self.found_pipelines_to_fail,
             )
 
+    def test_calculation_dag_fails_on_view_update_failure(self) -> None:
+        """Tests that dataset_cleanup_and_validation does not run when
+        update_managed_calculation_views fails, but apply_row_access_policies still
+        runs because it triggers on ALL_DONE.
+        """
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self.mock_kubernetes_pod_operator_constructor.side_effect = lambda **kwargs: (
+            fake_failing_operator_constructor(**kwargs)
+            if kwargs["task_id"] == "update_managed_calculation_views"
+            else fake_operator_constructor(**kwargs)
+        )
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={},
+                expected_failure_task_id_regexes=[
+                    r"^update_managed_calculation_views",
+                    r"^validations\.",
+                    r"^metric_exports.*",
+                    # ALL_SUCCESS requires update_managed_calculation_views to
+                    # succeed, so this is upstream_failed too.
+                    r"^dataset_cleanup_and_validation",
+                ],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"^bq_refresh.*",
+                    r"^dataflow_pipelines.*",
+                    r"^dataflow_metric_pruning",
+                    # ALL_DONE fires regardless of validations/metric_exports outcome.
+                    r"^validations_and_metric_exports_completed",
+                    # ALL_DONE fires even though dataset_cleanup_and_validation failed.
+                    r"^apply_row_access_policies",
+                    r"^apply_dataset_protection_tags",
+                ],
+            )
+
     def test_calculation_dag_fails_downstream_of_schema_update(self) -> None:
         """
         Tests that most tasks do not run if 'update_big_query_table_schemata' fails.
@@ -778,8 +860,11 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_pipelines\.[a-zA-Z]*",
                     r"^bq_refresh.refresh_bq_dataset_",
                     r"^update_managed_calculation_views",
-                    r"^validations.*",
+                    r"^validations\.",
                     r"^metric_exports.*",
+                    # ALL_SUCCESS requires update_managed_calculation_views to
+                    # succeed, so this is upstream_failed too.
+                    r"^dataset_cleanup_and_validation",
                 ],
                 expected_skipped_task_id_regexes=[],
                 # These indicate their respective groups completed,
@@ -790,7 +875,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^bq_refresh.bq_refresh_completed",
                     r"^dataflow_pipelines_completed",
                     r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup_and_validation",
+                    # ALL_DONE fires regardless of validations/metric_exports outcome.
+                    r"^validations_and_metric_exports_completed",
                     r"^apply_row_access_policies",
                     # Directly downstream of the failed schema update, but ALL_DONE fires
                     # on a failed upstream, so it still runs.

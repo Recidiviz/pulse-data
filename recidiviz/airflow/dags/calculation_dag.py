@@ -424,12 +424,22 @@ def create_calculation_dag() -> None:
             ):
                 create_metric_view_data_export_nodes([export_config])
 
+    # Always succeeds once validations and metric exports finish, so the cleanup task
+    # below waits for them without being blocked by their failures.
+    validations_and_metric_exports_completed = EmptyOperator(
+        task_id="validations_and_metric_exports_completed",
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    # Deletes unmanaged views and tables, so it must not run after a failed view
+    # update. ALL_SUCCESS gates it on update_all_views; the empty operator above is
+    # its only other direct upstream.
     dataset_cleanup_and_validation_task_id = "dataset_cleanup_and_validation"
     dataset_cleanup_and_validation = build_kubernetes_pod_task(
         task_id=dataset_cleanup_and_validation_task_id,
         container_name=dataset_cleanup_and_validation_task_id,
         arguments=["--entrypoint=DatasetCleanupAndValidationEntrypoint"],
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
     row_access_policy_task_id = "apply_row_access_policies"
@@ -445,6 +455,10 @@ def create_calculation_dag() -> None:
     (
         update_all_views
         >> [validations, metric_exports]
+        >> validations_and_metric_exports_completed
+    )
+    (
+        [update_all_views, validations_and_metric_exports_completed]
         >> dataset_cleanup_and_validation
         >> apply_row_access_policies
     )

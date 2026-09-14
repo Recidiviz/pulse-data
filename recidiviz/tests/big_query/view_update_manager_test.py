@@ -19,7 +19,7 @@
 import unittest
 from typing import Optional, Set, Tuple
 from unittest import mock
-from unittest.mock import call, create_autospec, patch
+from unittest.mock import create_autospec, patch
 
 from google.cloud import bigquery
 
@@ -107,10 +107,9 @@ class ViewManagerTest(unittest.TestCase):
         self,
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates
-        a dataset if necessary, and updates all views built by the view builders. No
-        |historically_managed_datasets_to_clean| provided, so nothing should be
-        cleaned up. The only deleted table calls should be the ones from recreating
-        views so changes can be reflected in schema."""
+        a dataset if necessary, and updates all views built by the view builders. The
+        only deleted table calls should be the ones from recreating views so changes
+        can be reflected in schema."""
         sample_views = [
             {
                 "view_id": "my_fake_view",
@@ -138,7 +137,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -245,7 +243,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -379,7 +376,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -474,7 +470,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -514,11 +509,8 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.cleanup_datasets_and_delete_unmanaged_views"
-    )
     def test_create_managed_dataset_and_deploy_views_for_view_builders_dataset_override(
-        self, mock_cleanup_datasets_and_delete_unmanaged_views: mock.MagicMock
+        self,
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates
         new datasets with a set table expiration for all datasets specified in
@@ -585,7 +577,6 @@ class ViewManagerTest(unittest.TestCase):
                 parent_address_formatter_provider=None,
                 state_code_filter=None,
             ),
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -623,10 +614,6 @@ class ViewManagerTest(unittest.TestCase):
             ],
             any_order=True,
         )
-
-        # The cleanup function should not be called since we didn't provide a
-        #  historically_managed_datasets_to_clean list
-        mock_cleanup_datasets_and_delete_unmanaged_views.assert_not_called()
 
         self.mock_client.delete_dataset.assert_not_called()
         # Only delete calls should be from recreating views to have changes updating
@@ -689,7 +676,6 @@ class ViewManagerTest(unittest.TestCase):
             views_to_update=mock_views,
             bq_region_override="us-east1",
             rematerialize_changed_views_only=True,
-            historically_managed_datasets_to_clean=None,
             default_table_expiration_for_new_datasets=None,
             views_might_exist=True,
             allow_slow_views=False,
@@ -763,119 +749,6 @@ class ViewManagerTest(unittest.TestCase):
                     "production, as staging cannot have access to production "
                     "BigQuery.",
                 )
-
-    def test_create_managed_dataset_and_deploy_views_for_view_builders_unmanaged_views_in_multiple_ds(
-        self,
-    ) -> None:
-        historically_managed_datasets = {_DATASET_NAME, _DATASET_NAME_2}
-
-        mock_view_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view",
-                description="my_fake_view description",
-                view_query_template="a",
-                should_materialize=False,
-                materialized_address_override=None,
-                schema=MINIMAL_SCHEMA,
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME_2,
-                view_id="my_other_fake_view",
-                description="my_other_fake_view description",
-                view_query_template="a",
-                should_materialize=False,
-                materialized_address_override=None,
-                schema=MINIMAL_SCHEMA,
-            ),
-        ]
-
-        mock_table_resource_ds_1_table = {
-            "tableReference": {
-                "projectId": _PROJECT_ID,
-                "datasetId": _DATASET_NAME,
-                "tableId": "my_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_1_table_bogus = {
-            "tableReference": {
-                "projectId": _PROJECT_ID,
-                "datasetId": _DATASET_NAME,
-                "tableId": "bogus_view_1",
-            },
-        }
-
-        mock_table_resource_ds_2_table = {
-            "tableReference": {
-                "projectId": _PROJECT_ID,
-                "datasetId": _DATASET_NAME_2,
-                "tableId": "my_other_fake_view",
-            },
-        }
-
-        mock_table_resource_ds_2_table_bogus = {
-            "tableReference": {
-                "projectId": _PROJECT_ID,
-                "datasetId": _DATASET_NAME_2,
-                "tableId": "bogus_view_2",
-            },
-        }
-
-        def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
-            if dataset_id == _DATASET_NAME:
-                return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
-                ]
-            if dataset_id == _DATASET_NAME_2:
-                return [
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
-                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
-                ]
-            raise ValueError(f"No tables for id: {dataset_id}")
-
-        self.mock_client.list_tables.side_effect = mock_list_tables
-        self.mock_client.dataset_exists.return_value = True
-
-        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=historically_managed_datasets,
-            rematerialize_changed_views_only=True,
-            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
-        )
-        self.mock_client.delete_dataset.assert_not_called()
-        self.mock_client.list_tables.assert_called()
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME_2, table_id="my_other_fake_view"
-                    ),
-                    not_found_ok=True,
-                ),
-                # above two calls are from deleting and recreating every view from
-                # _create_or_update_view_and_materialize_if_necessary()
-                call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="bogus_view_1")
-                ),
-                call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME_2, table_id="bogus_view_2")
-                ),
-                # these two calls are from the actual cleaning up of unmanaged views
-            ],
-            any_order=True,
-        )
-        self.assertEqual(self.mock_client.delete_table.call_count, 4)
-        self.assertEqual(self.mock_client.create_dataset_if_necessary.call_count, 2)
-        self.mock_client.create_or_update_view.assert_has_calls(
-            [mock.call(view_builder.build()) for view_builder in mock_view_builders],
-            any_order=True,
-        )
 
     def test_all_deployed_datasets_registered_as_managed(self) -> None:
         all_views = [
@@ -998,7 +871,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -1128,7 +1000,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
@@ -1199,7 +1070,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=[mock_view_builder],
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=False,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
             view_update_sandbox_context=BigQueryViewUpdateSandboxContext(

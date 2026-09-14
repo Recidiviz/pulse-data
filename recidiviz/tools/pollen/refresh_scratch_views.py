@@ -53,7 +53,6 @@ def refresh_scratch_views(
     with local_project_id_override(project_id):
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=builders,
-            historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=False,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )

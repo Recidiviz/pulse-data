@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Script for deleting any unmanaged views and datasets within a BigQuery project.
+A view or table managed by any deployed view graph is kept, and anything created within
+MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES is skipped.
 
 Note that this only deletes unmanaged views and datasets from datasets that have ever
 been regularly updated by our deploy process (see
