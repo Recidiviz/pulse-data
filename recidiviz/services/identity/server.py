@@ -29,6 +29,11 @@ from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     get_cloud_task_json_body,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.services.identity.authorization import CallerRole, get_caller
 from recidiviz.services.identity.constants import (
     CLOUD_RUN_METADATA_CONFIG_KEY,
@@ -45,7 +50,7 @@ from recidiviz.services.identity.import_task import (
     TENANT_BODY_KEY,
     process_import,
 )
-from recidiviz.utils import structured_logging
+from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
 from recidiviz.utils.environment import in_development, in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -78,6 +83,23 @@ else:
         url="http://localhost:5000",
         service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
     )
+    if in_development():
+        # Local runs have no metadata server, so project-scoped calls resolve
+        # the project from this override, matching the other locally runnable
+        # servers.
+        metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
+        # Connect to the local docker postgres over TCP (there is no Cloud SQL
+        # socket in development), the same way run_migrations_docker does. The
+        # host and credentials come from the local secret files written by
+        # recidiviz/tools/services/identity/initialize_development_environment.sh.
+        identity_database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+        SQLAlchemyEngineManager.init_engine_for_db_instance(
+            database_key=identity_database_key,
+            db_url=SQLAlchemyEngineManager.get_server_postgres_instance_url(
+                database_key=identity_database_key,
+                using_unix_sockets=False,
+            ),
+        )
 
 # Stashed on the app so the trigger_import endpoint can read the service URL and
 # service account it needs to enqueue the import Cloud Task.
