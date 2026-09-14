@@ -825,6 +825,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataset_cleanup_and_validation",
                 ],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
