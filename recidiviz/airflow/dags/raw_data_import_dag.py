@@ -31,6 +31,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.operators.raw_data.direct_ingest_list_files_operator import (
     DirectIngestListNormalizedUnprocessedFilesOperator,
 )
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    build_kubernetes_pod_task,
+)
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
 )
@@ -605,6 +608,24 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 def create_raw_data_import_dag() -> None:
     """DAG configuration to run raw data imports"""
 
+    # Temporary CJIS migration task (Recidiviz/zenhub-tasks#2606): re-keys this
+    # DAG's legacy raw-data tables to CMEK, time-boxed per run. The ALL_DONE
+    # barrier below orders it before any import write (a copy racing a load
+    # job would silently drop the load) while a failed re-key still cannot
+    # block ingest. No-ops outside staging; deletes with the migration.
+    rekey_legacy_tables_to_cmek = build_kubernetes_pod_task(
+        task_id="rekey_legacy_tables_to_cmek",
+        container_name="rekey_legacy_tables_to_cmek",
+        arguments=[
+            "--entrypoint=RekeyTablesToCmekEntrypoint",
+            "--scope=raw_data",
+        ],
+    )
+    rekey_barrier = EmptyOperator(
+        task_id="rekey_barrier", trigger_rule=TriggerRule.ALL_DONE
+    )
+    rekey_legacy_tables_to_cmek >> rekey_barrier
+
     # --- step 0: pipeline initialization ---------------------------------------------
     # inputs: dag parameters
     # execution layer: celery
@@ -649,8 +670,10 @@ def create_raw_data_import_dag() -> None:
     # Run the schemata update before warming the pool so its pod doesn't race the
     # 48-pod placeholder burst for fresh-node provisioning. It's small and quick, so
     # sequencing it first costs little and removes the contention.
+    initialize_raw_data = initialize_raw_data_dag_group()
+    rekey_barrier >> initialize_raw_data
     (
-        initialize_raw_data_dag_group()
+        initialize_raw_data
         >> update_big_query_table_schemata
         >> warm_pool_setup
         >> raw_data_branching

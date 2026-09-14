@@ -59,6 +59,9 @@ from recidiviz.entrypoints.bigquery.dataflow_metric_pruning_entrypoint import (
 from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
     DatasetCleanupAndValidationEntrypoint,
 )
+from recidiviz.entrypoints.bigquery.rekey_tables_to_cmek_entrypoint import (
+    RekeyTablesToCmekEntrypoint,
+)
 from recidiviz.entrypoints.document_store.document_upload import (
     DocumentUploadEntrypoint,
 )
@@ -113,6 +116,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     DatasetCleanupAndValidationEntrypoint,
     DocumentUploadEntrypoint,
     IdentityServiceExportEntrypoint,
+    RekeyTablesToCmekEntrypoint,
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,

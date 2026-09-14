@@ -292,6 +292,24 @@ def create_calculation_dag() -> None:
     2. Update the metric output for each state.
     3. Trigger BigQuery exports for each state and other datasets."""
 
+    # Temporary CJIS migration task (Recidiviz/zenhub-tasks#2606): re-keys this
+    # DAG's legacy output tables to CMEK, time-boxed per run. The ALL_DONE
+    # barrier below orders it before any pipeline write (a copy racing a
+    # write would silently drop the write) while a failed re-key still cannot
+    # block the pipelines. No-ops outside staging; deletes with the migration.
+    rekey_legacy_tables_to_cmek = build_kubernetes_pod_task(
+        task_id="rekey_legacy_tables_to_cmek",
+        container_name="rekey_legacy_tables_to_cmek",
+        arguments=[
+            "--entrypoint=RekeyTablesToCmekEntrypoint",
+            "--scope=calculation_outputs",
+        ],
+    )
+    rekey_barrier = EmptyOperator(
+        task_id="rekey_barrier", trigger_rule=TriggerRule.ALL_DONE
+    )
+    rekey_legacy_tables_to_cmek >> rekey_barrier
+
     # --- step 1: pre-ingest steps -----------------------------------
     # Here we initialize the DAG and update the BQ table schemas
     # If the schema update is successful, we kick off BQ refresh.
@@ -326,6 +344,7 @@ def create_calculation_dag() -> None:
         )
 
     initialize_dag = initialize_calculation_dag_group()
+    rekey_barrier >> initialize_dag
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
     # Once the source-table datasets exist, tag the protect-tier ones so the catastrophic-delete

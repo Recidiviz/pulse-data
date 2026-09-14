@@ -663,6 +663,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 session=session,
                 run_conf={},
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
@@ -710,6 +712,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 # No downstream processes are skipped!
                 expected_skipped_task_id_regexes=[],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
@@ -758,6 +762,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
@@ -912,6 +918,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"bq_refresh.refresh_bq_dataset_",
                 ],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"bq_refresh.bq_refresh_completed",
@@ -934,6 +942,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "some_parameter": "foo",
                 },
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.handle_params_check",
                 ],
                 expected_failure_task_id_regexes=[

@@ -142,6 +142,18 @@ def _patch_warm_pool_k8s(test_case: unittest.TestCase) -> None:
     test_case.addCleanup(patcher.stop)
 
 
+def _patch_rekey_pod_task(test_case: unittest.TestCase) -> None:
+    """Replaces the temporary rekey_legacy_tables_to_cmek pod task (the only
+    build_kubernetes_pod_task call in the raw data import DAG module) with a
+    fake operator that succeeds without doing anything."""
+    patcher = patch(
+        "recidiviz.airflow.dags.raw_data_import_dag.build_kubernetes_pod_task",
+        side_effect=fake_operator_constructor,
+    )
+    patcher.start()
+    test_case.addCleanup(patcher.stop)
+
+
 def _comparable(files: List[ImportReadyFile]) -> List[Dict]:
     comparable_files = []
     for file in files:
@@ -485,6 +497,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
     def setUp(self) -> None:
         super().setUp()
         _patch_warm_pool_k8s(self)
+        _patch_rekey_pod_task(self)
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
 
         self.ingest_states_patcher = patch(
@@ -1071,6 +1084,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
     def setUp(self) -> None:
         super().setUp()
         _patch_warm_pool_k8s(self)
+        _patch_rekey_pod_task(self)
 
         # env mocks ---
 
@@ -2697,6 +2711,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.dag_kick_off_mock = self.dag_kick_off_patcher.start()
 
         _patch_warm_pool_k8s(self)
+        _patch_rekey_pod_task(self)
 
         # task interaction mocks ---
 
@@ -2877,6 +2892,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.branch_end",  # ew, dont make it skip this
                 ],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
                     "update_big_query_table_schemata",
@@ -2912,6 +2929,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.branch_end",  # ew, dont make it skip this
                 ],
                 expected_success_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
