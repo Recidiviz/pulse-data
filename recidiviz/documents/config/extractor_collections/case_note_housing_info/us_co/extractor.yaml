@@ -8,14 +8,23 @@ golden_eval:
     unit: 1.0
     sample: 1.0
 
-# TODO(OBT-41612): Add TT staff filtering — join a BQ reference table of TT launch
-# staff external IDs to a staff assignments table to restrict to relevant person
-# external IDs only.
+# TODO(OBT-49103): Replace the staff filter subquery with a shared named SQL
+# fragment once document_metadata_filter_query_template supports them.
 document_metadata_filter_query_template: |
   SELECT DISTINCT document_contents_id
   FROM `{input_document_collection_metadata_address}`
+  INNER JOIN (
+    SELECT DISTINCT a.person_id, d.external_id AS person_external_id, d.id_type AS person_external_id_type
+    FROM `workflows_views.client_record_materialized` a
+    INNER JOIN `normalized_state.state_staff_external_id` b ON officer_id = external_id AND a.state_code = b.state_code
+    INNER JOIN `normalized_state.state_staff` c ON b.staff_id = c.staff_id
+    INNER JOIN `normalized_state.state_person_external_id` d ON a.person_id = d.person_id AND d.id_type = "US_CO_OFFENDERID"
+    INNER JOIN `reference_views.product_roster_materialized` pr ON LOWER(c.email) = LOWER(pr.email_address) AND pr.state_code = 'US_CO'
+    WHERE
+      JSON_QUERY(JSON_QUERY(pr.override_feature_variants, '$.showCNI'), "$.activeDate") IS NOT NULL
+  ) USING (person_external_id, person_external_id_type)
   WHERE document_contents_id IS NOT NULL
-    AND contact_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND contact_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
     AND contact_type NOT IN (
       'AT',   -- automated earned time credit entries (system-generated)
       'AET',  -- automated IJP credit entries (system-generated)
