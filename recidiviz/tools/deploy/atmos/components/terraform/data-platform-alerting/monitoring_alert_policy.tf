@@ -740,15 +740,26 @@ resource "google_monitoring_alert_policy" "bq_deployed_view_too_expensive" {
   combiner = "OR"
 
   conditions {
-    condition_matched_log {
-      filter = <<-EOT
-        resource.type="k8s_container"
-        resource.labels.container_name="base"
-        (textPayload=~"BigQueryViewDagWalker Node Failure" OR jsonPayload.message=~"BigQueryViewDagWalker Node Failure")
-      EOT
+    condition_threshold {
+      aggregations {
+        alignment_period     = "3600s"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["metric.label.dataset_id", "metric.label.table_id"]
+        per_series_aligner   = "ALIGN_DELTA"
+      }
+
+      comparison      = "COMPARISON_GT"
+      duration        = "0s"
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.bq_deployed_view_too_expensive.name}\" resource.type=\"k8s_container\""
+      threshold_value = "0"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
     }
 
-    display_name = "Log match condition"
+    display_name = "View exceeded allowed materialization time"
   }
 
   display_name = "BQ Deployed View Too Expensive"
