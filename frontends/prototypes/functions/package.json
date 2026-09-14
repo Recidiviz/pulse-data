@@ -33,6 +33,7 @@
   },
   "private": true,
   "resolutions": {
-    "yargs": "^18.1.0"
+    "yargs": "^18.1.0",
+    "@fastify/busboy": ">=3.2.2"
   }
 }
