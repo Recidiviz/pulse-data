@@ -791,6 +791,10 @@ class SourceTableCollection:
             if isinstance(src_label, type(label))
         )
 
+    def carries_update_group(self, update_group: SourceTableUpdateGroup) -> bool:
+        """Whether this collection is tagged with |update_group|."""
+        return self.update_groups is not None and update_group in self.update_groups
+
     def add_source_table(
         self,
         table_id: str,

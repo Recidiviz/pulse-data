@@ -309,3 +309,32 @@ class TestSourceTableCollectionUpdateGroups(unittest.TestCase):
 
         sandbox_collection = collection.as_sandbox_collection("my_prefix")
         self.assertIsNone(sandbox_collection.update_groups)
+
+    def test_carries_update_group(self) -> None:
+        collection = SourceTableCollection(
+            dataset_id="my_dataset",
+            description="A collection of my tables",
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            update_groups={
+                SourceTableUpdateGroup.CALC,
+                SourceTableUpdateGroup.IDENTITY_INGEST,
+            },
+        )
+
+        self.assertTrue(collection.carries_update_group(SourceTableUpdateGroup.CALC))
+        self.assertTrue(
+            collection.carries_update_group(SourceTableUpdateGroup.IDENTITY_INGEST)
+        )
+        self.assertFalse(
+            collection.carries_update_group(SourceTableUpdateGroup.RAW_DATA_IMPORT)
+        )
+
+    def test_sandbox_collection_carries_no_update_group(self) -> None:
+        collection = SourceTableCollection(
+            dataset_id="my_dataset",
+            description="A collection of my tables",
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            is_sandbox_collection=True,
+        )
+
+        self.assertFalse(collection.carries_update_group(SourceTableUpdateGroup.CALC))
