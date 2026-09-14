@@ -16,7 +16,7 @@
 # =============================================================================
 """Utility function for generating primary keys from external id(s)."""
 import json
-from typing import List, Set, Union, cast
+from typing import List, Union, cast
 
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
@@ -41,9 +41,9 @@ from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
     generate_primary_key,
+    generate_primary_key_from_external_id_keys,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
-from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.utils.types import assert_type, non_optional
 
 
@@ -61,8 +61,10 @@ def generate_primary_keys_for_root_entity_tree(
         if isinstance(entity, (StatePerson, StateStaff)):
             entity.set_id(root_primary_key)
         elif isinstance(entity, StateSentenceStatusSnapshot):
-            # TODO(#32690) Consolidate PK generation
-            # For StateSentenceStatusSnapshot, we generate a unique key based on the sentence external ID and partition key.
+            # TODO(#32690): Update this when PK generation is consistent across
+            #  HasExternalId entities.
+            # For StateSentenceStatusSnapshot, we generate a unique key based on
+            # the sentence external ID and partition key.
             entity.set_id(
                 build_unique_sentence_status_snapshot_key(
                     cast(StateSentenceStatusSnapshot, entity)
@@ -71,29 +73,25 @@ def generate_primary_keys_for_root_entity_tree(
         elif isinstance(entity, HasExternalIdEntity):
             external_id = assert_type(entity.get_external_id(), str)
             entity.set_id(
-                generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                external_id,
-                                entity.get_class_id_name(),
-                            )
-                        }
-                    ),
+                generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            external_id,
+                            entity.get_class_id_name(),
+                        )
+                    },
                     state_code,
                 )
             )
         elif isinstance(entity, ExternalIdEntity):
             entity.set_id(
-                generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                entity.external_id,
-                                f"{entity.id_type}#{entity.get_class_id_name()}",
-                            )
-                        }
-                    ),
+                generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            entity.external_id,
+                            f"{entity.id_type}#{entity.get_class_id_name()}",
+                        )
+                    },
                     state_code,
                 )
             )
@@ -117,19 +115,3 @@ def generate_primary_keys_for_root_entity_tree(
             )
             queue.extend(entity.get_field_as_list(field))
     return root_entity
-
-
-# TODO(#32690) Consolidate PK generation
-def string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
-    """Get a string representation of a set of external ids."""
-    return ",".join(
-        sorted(
-            _string_representation_of_key(external_id_key)
-            for external_id_key in external_id_keys
-        )
-    )
-
-
-def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
-    external_id, external_id_type = external_id_key
-    return f"{external_id_type}|{external_id}"

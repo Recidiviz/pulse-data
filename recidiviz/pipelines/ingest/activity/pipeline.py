@@ -44,7 +44,7 @@ from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
-    generate_primary_key,
+    generate_primary_key_from_external_id_keys,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.activity.associate_with_primary_keys import (
@@ -57,9 +57,6 @@ from recidiviz.pipelines.ingest.activity.expected_output_helpers import (
     get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
     get_expected_output_table_ids,
-)
-from recidiviz.pipelines.ingest.activity.generate_primary_keys import (
-    string_representation,
 )
 from recidiviz.pipelines.ingest.activity.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
@@ -200,8 +197,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             >> beam.MapTuple(
                 lambda root_external_id, cluster: (
                     root_external_id,
-                    generate_primary_key(
-                        string_representation(cluster),
+                    generate_primary_key_from_external_id_keys(
+                        cluster,
                         state_code=state_code,
                     ),
                 )

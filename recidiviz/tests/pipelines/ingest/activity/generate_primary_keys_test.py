@@ -28,10 +28,11 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
-from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
+from recidiviz.persistence.entity.generate_primary_key import (
+    generate_primary_key_from_external_id_keys,
+)
 from recidiviz.pipelines.ingest.activity.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
-    string_representation,
 )
 from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
@@ -47,8 +48,8 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         generated_primary_keys: Set[int] = set()
         for _ in range(10000):
             generated_primary_keys.add(
-                generate_primary_key(
-                    string_representation({external_id_1}), StateCode.US_DD
+                generate_primary_key_from_external_id_keys(
+                    {external_id_1}, StateCode.US_DD
                 )
             )
         self.assertEqual(len(generated_primary_keys), 1)
@@ -58,10 +59,8 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         generated_primary_keys.clear()
         for _ in range(2000):
             generated_primary_keys.add(
-                generate_primary_key(
-                    string_representation(
-                        {external_id_1, external_id_2, external_id_3}
-                    ),
+                generate_primary_key_from_external_id_keys(
+                    {external_id_1, external_id_2, external_id_3},
                     StateCode.US_DD,
                 )
             )
@@ -73,8 +72,8 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             if state_code == StateCode.US_OZ:
                 # OZ has a fips mask of 00, so we skip it.
                 continue
-            primary_key = generate_primary_key(
-                string_representation({external_id}), state_code
+            primary_key = generate_primary_key_from_external_id_keys(
+                {external_id}, state_code
             )
             self.assertTrue(
                 str(primary_key).startswith(str(int(state_code.get_state().fips)))
@@ -83,11 +82,11 @@ class TestGeneratePrimaryKey(unittest.TestCase):
     def test_generate_primary_key_deterministic(self) -> None:
         external_id = ("ID", "TYPE")
         self.assertEqual(
-            generate_primary_key(string_representation({external_id}), StateCode.US_MO),
+            generate_primary_key_from_external_id_keys({external_id}, StateCode.US_MO),
             2925259285447670540,
         )
         self.assertEqual(
-            generate_primary_key(string_representation({external_id}), StateCode.US_PA),
+            generate_primary_key_from_external_id_keys({external_id}, StateCode.US_PA),
             4225259285447670540,
         )
 
@@ -100,13 +99,11 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         )
         state_code = StateCode(person.state_code)
         all_entities = get_all_entities_from_tree(person, entities_module_context)
-        person_primary_key = generate_primary_key(
-            string_representation(
-                {
-                    (external_id.external_id, external_id.id_type)
-                    for external_id in person.external_ids
-                }
-            ),
+        person_primary_key = generate_primary_key_from_external_id_keys(
+            {
+                (external_id.external_id, external_id.id_type)
+                for external_id in person.external_ids
+            },
             state_code=state_code,
         )
         _ = generate_primary_keys_for_root_entity_tree(
@@ -127,13 +124,11 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=False)
         state_code = StateCode(staff.state_code)
         all_entities = get_all_entities_from_tree(staff, entities_module_context)
-        staff_primary_key = generate_primary_key(
-            string_representation(
-                {
-                    (external_id.external_id, external_id.id_type)
-                    for external_id in staff.external_ids
-                }
-            ),
+        staff_primary_key = generate_primary_key_from_external_id_keys(
+            {
+                (external_id.external_id, external_id.id_type)
+                for external_id in staff.external_ids
+            },
             state_code=state_code,
         )
         _ = generate_primary_keys_for_root_entity_tree(
@@ -168,13 +163,11 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         external_id_1.person = person
         external_id_2.person = person
 
-        person_primary_key = generate_primary_key(
-            string_representation(
-                {
-                    (external_id.external_id, external_id.id_type)
-                    for external_id in person.external_ids
-                }
-            ),
+        person_primary_key = generate_primary_key_from_external_id_keys(
+            {
+                (external_id.external_id, external_id.id_type)
+                for external_id in person.external_ids
+            },
             state_code=StateCode.US_XX,
         )
         _ = generate_primary_keys_for_root_entity_tree(

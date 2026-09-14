@@ -25,11 +25,10 @@ from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StatePersonExternalId,
 )
-from recidiviz.pipelines.ingest.activity import pipeline
-from recidiviz.pipelines.ingest.activity.generate_primary_keys import (
-    generate_primary_key,
-    string_representation,
+from recidiviz.persistence.entity.generate_primary_key import (
+    generate_primary_key_from_external_id_keys,
 )
+from recidiviz.pipelines.ingest.activity import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -81,12 +80,12 @@ class TestAssociateRootEntitiesWithPrimaryKeys(BigQueryEmulatorTestCase):
         self.date2 = datetime(2020, 1, 2).timestamp()
         self.date3 = datetime(2020, 1, 3).timestamp()
 
-        self.primary_key_12 = generate_primary_key(
-            string_representation({self.external_id_1, self.external_id_2}),
+        self.primary_key_12 = generate_primary_key_from_external_id_keys(
+            {self.external_id_1, self.external_id_2},
             StateCode(self.state_code().value),
         )
-        self.primary_key_3 = generate_primary_key(
-            string_representation({self.external_id_3}),
+        self.primary_key_3 = generate_primary_key_from_external_id_keys(
+            {self.external_id_3},
             StateCode(self.state_code().value),
         )
 

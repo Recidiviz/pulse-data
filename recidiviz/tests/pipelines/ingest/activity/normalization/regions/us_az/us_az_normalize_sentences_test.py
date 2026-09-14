@@ -37,10 +37,11 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     set_backedges,
 )
-from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
+from recidiviz.persistence.entity.generate_primary_key import (
+    generate_primary_key_from_external_id_keys,
+)
 from recidiviz.pipelines.ingest.activity.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
-    string_representation,
 )
 from recidiviz.pipelines.ingest.activity.normalization.sentencing.normalize_all_sentencing_entities import (
     get_normalized_sentencing_entities,
@@ -178,13 +179,11 @@ def test_sentencing_normalization() -> None:
     person.sentences = [SENTENCE_01, SENTENCE_02]
     person.sentence_groups = [SG_1, SG_2]
     set_backedges(person, entities_module_context_for_entity(person))
-    person_pk = generate_primary_key(
-        string_representation(
-            {
-                (external_id.external_id, external_id.id_type)
-                for external_id in person.external_ids
-            }
-        ),
+    person_pk = generate_primary_key_from_external_id_keys(
+        {
+            (external_id.external_id, external_id.id_type)
+            for external_id in person.external_ids
+        },
         state_code=StateCode.US_AZ,
     )
     generate_primary_keys_for_root_entity_tree(

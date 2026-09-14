@@ -22,7 +22,31 @@ from recidiviz.common.constants.states import StateCode
 
 PrimaryKey = int
 
+# An (external_id, id_type) pair identifying an entity in an external system.
+ExternalIdKey = tuple[str, str]
 
+
+def generate_primary_key_from_external_id_keys(
+    external_id_keys: set[ExternalIdKey], state_code: StateCode
+) -> PrimaryKey:
+    """Returns the primary key for an entity identified by the given set of
+    (external_id, id_type) pairs.
+
+    This is the canonical derivation of a key from external IDs: it hashes a
+    fixed string form of the set, so every producer of keys for the same entity
+    (the activity pipeline, the Identity Service export) must derive them
+    through this function for the keys to match.
+    """
+    return generate_primary_key(
+        _string_representation(external_id_keys), state_code=state_code
+    )
+
+
+# TODO(#32690): Callers hand-build several different string representations to
+# feed this generic hasher (the external-id-set form above, single-external-id
+# forms, full JSON serializations of an entity, and bespoke sentence keys).
+# Unify those derivations and compute keys at serialization time instead of
+# during pipeline traversal.
 def generate_primary_key(str_rep: str, state_code: StateCode) -> PrimaryKey:
     """Generate a primary key for an entity based on some string representation of that
     entity.
@@ -35,7 +59,7 @@ def generate_primary_key(str_rep: str, state_code: StateCode) -> PrimaryKey:
         probability_of_hash_collision = 1 - e^(-k(k-1)/2^56) wher k is the number of elements.
         For k = 30000000, the probability of a hash collision is ~1%.
     """
-    int_64_bits = generate_64_int_from_hex_digest(str_rep)
+    int_64_bits = _generate_64_int_from_hex_digest(str_rep)
     # Shift down 8 bits to create a 56 bit integer
     int_56_bits = int_64_bits >> 8
     # Generate integer that is fips code with 17 0s trailing (a 56 bit integer is no
@@ -49,7 +73,23 @@ def generate_primary_key(str_rep: str, state_code: StateCode) -> PrimaryKey:
     return fips_code_mask + int_56_bits
 
 
-def generate_64_int_from_hex_digest(str_rep: str) -> int:
+def _string_representation(external_id_keys: set[ExternalIdKey]) -> str:
+    """Returns the hash input for a set of external ids: each pair formatted as
+    id_type|external_id, sorted, and joined with commas."""
+    return ",".join(
+        sorted(
+            _string_representation_of_key(external_id_key)
+            for external_id_key in external_id_keys
+        )
+    )
+
+
+def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
+    external_id, external_id_type = external_id_key
+    return f"{external_id_type}|{external_id}"
+
+
+def _generate_64_int_from_hex_digest(str_rep: str) -> int:
     """Generate a 64 bit integer from a hex digest."""
     hex_digest_64_bits = sha256(str_rep.encode()).hexdigest()[
         :16

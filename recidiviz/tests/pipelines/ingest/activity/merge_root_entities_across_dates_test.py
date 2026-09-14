@@ -24,11 +24,10 @@ from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity import entities
-from recidiviz.pipelines.ingest.activity import pipeline
-from recidiviz.pipelines.ingest.activity.generate_primary_keys import (
-    generate_primary_key,
-    string_representation,
+from recidiviz.persistence.entity.generate_primary_key import (
+    generate_primary_key_from_external_id_keys,
 )
+from recidiviz.pipelines.ingest.activity import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -59,48 +58,40 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             external_id="ID2", id_type="STAFF", state_code=StateCode.US_DD.value
         )
 
-        primary_key_person_1 = generate_primary_key(
-            string_representation(
-                {
-                    (
-                        person_external_id_1.external_id,
-                        f"{person_external_id_1.id_type}#person_external_id_id",
-                    )
-                }
-            ),
+        primary_key_person_1 = generate_primary_key_from_external_id_keys(
+            {
+                (
+                    person_external_id_1.external_id,
+                    f"{person_external_id_1.id_type}#person_external_id_id",
+                )
+            },
             StateCode.US_DD,
         )
-        primary_key_person_2 = generate_primary_key(
-            string_representation(
-                {
-                    (
-                        person_external_id_2.external_id,
-                        f"{person_external_id_2.id_type}#person_external_id_id",
-                    )
-                }
-            ),
+        primary_key_person_2 = generate_primary_key_from_external_id_keys(
+            {
+                (
+                    person_external_id_2.external_id,
+                    f"{person_external_id_2.id_type}#person_external_id_id",
+                )
+            },
             StateCode.US_DD,
         )
-        primary_key_staff_1 = generate_primary_key(
-            string_representation(
-                {
-                    (
-                        staff_external_id_1.external_id,
-                        f"{staff_external_id_1.id_type}#staff_external_id_id",
-                    )
-                }
-            ),
+        primary_key_staff_1 = generate_primary_key_from_external_id_keys(
+            {
+                (
+                    staff_external_id_1.external_id,
+                    f"{staff_external_id_1.id_type}#staff_external_id_id",
+                )
+            },
             StateCode.US_DD,
         )
-        primary_key_staff_2 = generate_primary_key(
-            string_representation(
-                {
-                    (
-                        staff_external_id_2.external_id,
-                        f"{staff_external_id_2.id_type}#staff_external_id_id",
-                    )
-                }
-            ),
+        primary_key_staff_2 = generate_primary_key_from_external_id_keys(
+            {
+                (
+                    staff_external_id_2.external_id,
+                    f"{staff_external_id_2.id_type}#staff_external_id_id",
+                )
+            },
             StateCode.US_DD,
         )
 
@@ -207,15 +198,13 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 person_external_id_1,
                 person=person_1,
-                person_external_id_id=generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                person_external_id_1.external_id,
-                                f"{person_external_id_1.id_type}#person_external_id_id",
-                            )
-                        }
-                    ),
+                person_external_id_id=generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            person_external_id_1.external_id,
+                            f"{person_external_id_1.id_type}#person_external_id_id",
+                        )
+                    },
                     StateCode.US_DD,
                 ),
             )
@@ -224,10 +213,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 incarceration_period,
                 person=person_1,
-                incarceration_period_id=generate_primary_key(
-                    string_representation(
-                        {(incarceration_period.external_id, "incarceration_period_id")}
-                    ),
+                incarceration_period_id=generate_primary_key_from_external_id_keys(
+                    {(incarceration_period.external_id, "incarceration_period_id")},
                     StateCode.US_DD,
                 ),
             )
@@ -237,10 +224,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 supervision_period,
                 person=person_1,
-                supervision_period_id=generate_primary_key(
-                    string_representation(
-                        {(supervision_period.external_id, "supervision_period_id")}
-                    ),
+                supervision_period_id=generate_primary_key_from_external_id_keys(
+                    {(supervision_period.external_id, "supervision_period_id")},
                     StateCode.US_DD,
                 ),
             )
@@ -254,15 +239,13 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 person_external_id_2,
                 person=person_2,
-                person_external_id_id=generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                person_external_id_2.external_id,
-                                f"{person_external_id_2.id_type}#person_external_id_id",
-                            )
-                        }
-                    ),
+                person_external_id_id=generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            person_external_id_2.external_id,
+                            f"{person_external_id_2.id_type}#person_external_id_id",
+                        )
+                    },
                     StateCode.US_DD,
                 ),
             )
@@ -271,10 +254,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 incarceration_period,
                 person=person_2,
-                incarceration_period_id=generate_primary_key(
-                    string_representation(
-                        {(incarceration_period.external_id, "incarceration_period_id")}
-                    ),
+                incarceration_period_id=generate_primary_key_from_external_id_keys(
+                    {(incarceration_period.external_id, "incarceration_period_id")},
                     StateCode.US_DD,
                 ),
             )
@@ -284,10 +265,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 supervision_period,
                 person=person_2,
-                supervision_period_id=generate_primary_key(
-                    string_representation(
-                        {(supervision_period.external_id, "supervision_period_id")}
-                    ),
+                supervision_period_id=generate_primary_key_from_external_id_keys(
+                    {(supervision_period.external_id, "supervision_period_id")},
                     StateCode.US_DD,
                 ),
             )
@@ -301,15 +280,13 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 staff_external_id_1,
                 staff=staff_1,
-                staff_external_id_id=generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                staff_external_id_1.external_id,
-                                f"{staff_external_id_1.id_type}#staff_external_id_id",
-                            )
-                        }
-                    ),
+                staff_external_id_id=generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            staff_external_id_1.external_id,
+                            f"{staff_external_id_1.id_type}#staff_external_id_id",
+                        )
+                    },
                     StateCode.US_DD,
                 ),
             )
@@ -322,15 +299,13 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
             attr.evolve(
                 staff_external_id_2,
                 staff=staff_2,
-                staff_external_id_id=generate_primary_key(
-                    string_representation(
-                        {
-                            (
-                                staff_external_id_2.external_id,
-                                f"{staff_external_id_2.id_type}#staff_external_id_id",
-                            )
-                        }
-                    ),
+                staff_external_id_id=generate_primary_key_from_external_id_keys(
+                    {
+                        (
+                            staff_external_id_2.external_id,
+                            f"{staff_external_id_2.id_type}#staff_external_id_id",
+                        )
+                    },
                     StateCode.US_DD,
                 ),
             )

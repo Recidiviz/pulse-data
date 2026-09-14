@@ -16,14 +16,15 @@
 # =============================================================================
 """Type aliases shared across ingest pipelines (activity, identity, transforms)."""
 
-from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
+from recidiviz.persistence.entity.generate_primary_key import (  # pylint: disable=unused-import
+    ExternalIdKey,
+    PrimaryKey,
+)
 
 # Beam does not have a standard datetime coder that it uses to decode/encode between steps
 # for datetime objects, therefore we will use UTC timestamps for any keys that require
 # datetime objects.
 UpperBoundDate = float
-
-ExternalIdKey = tuple[str, str]
 
 IngestViewName = str
 
