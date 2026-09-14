@@ -37,6 +37,9 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
+from recidiviz.case_triage.sentence_calculation.sentence_calculation_routes import (
+    create_sentence_calculation_api_blueprint,
+)
 from recidiviz.case_triage.sentry_filters import scrub_email_user_pii
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
@@ -168,6 +171,7 @@ pathways_api_blueprint = create_pathways_api_blueprint()
 workflows_blueprint = create_workflows_api_blueprint()
 outliers_api_blueprint = create_outliers_api_blueprint()
 edovo_blueprint = create_edovo_api_blueprint()
+sentence_calculation_blueprint = create_sentence_calculation_api_blueprint()
 
 csrf = CSRFProtect(app)
 # Disable CSRF protection for workflows+outliers routes because the session id changes between
@@ -180,6 +184,8 @@ csrf.exempt(jii_api_blueprint)
 # Edovo authenticates via Workload Identity Federation (a Bearer token), not a
 # session cookie — no CSRF token needed.
 csrf.exempt(edovo_blueprint)
+# Sentence Calculation authenticates via a Bearer JWT, same rationale as workflows/outliers.
+csrf.exempt(sentence_calculation_blueprint)
 
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 # Only the pathways endpoints are accessible in offline mode
@@ -188,6 +194,9 @@ if not in_offline_mode():
     app.register_blueprint(outliers_api_blueprint, url_prefix="/outliers")
     app.register_blueprint(jii_api_blueprint, url_prefix="/jii")
     app.register_blueprint(edovo_blueprint, url_prefix="/edovo")
+    app.register_blueprint(
+        sentence_calculation_blueprint, url_prefix="/sentence_calculation"
+    )
 
     @app.route("/")
     def index() -> Response:
