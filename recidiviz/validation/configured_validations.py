@@ -50,6 +50,15 @@ from recidiviz.validation.views.sentencing.case_insights_record_sentencing_charg
 from recidiviz.validation.views.sentencing.sentencing_case_record_duplicate_case_ids import (
     SENTENCING_CASE_RECORD_DUPLICATE_CASE_IDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.sentencing.sentencing_client_record_duplicate_client_ids import (
+    SENTENCING_CLIENT_RECORD_DUPLICATE_CLIENT_IDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.sentencing.sentencing_offense_record_duplicate_case_offense_ids import (
+    SENTENCING_OFFENSE_RECORD_DUPLICATE_CASE_OFFENSE_IDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.sentencing.sentencing_staff_record_duplicate_staff_ids import (
+    SENTENCING_STAFF_RECORD_DUPLICATE_STAFF_IDS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.sentencing.us_mo_sentencing_case_no_linked_offenses import (
     US_MO_SENTENCING_CASE_NO_LINKED_OFFENSES_VIEW_BUILDER,
 )
@@ -673,6 +682,18 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCING_CASE_RECORD_DUPLICATE_CASE_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCING_CLIENT_RECORD_DUPLICATE_CLIENT_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCING_OFFENSE_RECORD_DUPLICATE_CASE_OFFENSE_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCING_STAFF_RECORD_DUPLICATE_STAFF_IDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
