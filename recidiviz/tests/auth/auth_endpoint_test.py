@@ -35,7 +35,7 @@ from sqlalchemy import select
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.auth.constants import PREDEFINED_ROLES
-from recidiviz.auth.helpers import convert_user_object_to_dict, replace_char_0_slash
+from recidiviz.auth.helpers import convert_user_object_to_dict
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -57,6 +57,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.user_hash import replace_char_0_slash
 
 _FIXTURE_PATH = os.path.abspath(
     os.path.join(

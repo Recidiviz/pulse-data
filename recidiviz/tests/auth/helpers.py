@@ -22,7 +22,6 @@ from typing import Any, List, Optional, Union
 
 from sqlalchemy import sql
 
-from recidiviz.auth.helpers import generate_user_hash
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseTriageBase,
     PermissionsOverride,
@@ -32,6 +31,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils.user_hash import generate_user_hash
 
 
 def add_entity_to_database_session(

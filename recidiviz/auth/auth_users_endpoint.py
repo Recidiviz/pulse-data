@@ -50,7 +50,6 @@ from recidiviz.auth.helpers import (
     convert_to_dict_multiple_results,
     convert_to_dict_single_result,
     generate_pseudonymized_id,
-    generate_user_hash,
     log_reason,
     validate_roles,
 )
@@ -63,6 +62,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
+from recidiviz.utils.user_hash import generate_user_hash
 
 
 def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint:

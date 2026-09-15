@@ -755,7 +755,7 @@ class Email(IdentityBase):
         comment=(
             "Normalized hash of the email address used for the "
             "application-layer uniqueness check. See generate_user_hash() "
-            "function in recidiviz/auth/helpers.py."
+            "function in recidiviz/utils/user_hash.py."
         ),
     )
 

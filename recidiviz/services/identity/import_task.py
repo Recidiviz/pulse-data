@@ -18,8 +18,9 @@
 
 The trigger_import endpoint enqueues a Cloud Task for a tenant and returns 202.
 Cloud Tasks then calls the internal processing endpoint, which runs
-process_import to reconcile that tenant's clustering results in BigQuery with the
-service's Postgres state.
+process_import to load that tenant's clustering results from BigQuery into the
+service's Postgres state: it reads the snapshot, clears the tenant's existing
+identities, and creates one identity per cluster.
 """
 import datetime
 import logging
@@ -33,16 +34,25 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     SingleCloudTaskQueueManager,
 )
+from recidiviz.persistence.database.schema.identity import schema
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
 )
 from recidiviz.pipelines.ingest.identity.dataset_config import (
     identity_cluster_dataset_for_tenant,
 )
+from recidiviz.services.identity.bq_snapshot_reader import (
+    ClusterSnapshot,
+    read_cluster_snapshot,
+)
 from recidiviz.services.identity.constants import (
     IDENTITY_IMPORT_QUEUE,
     IMPORT_PROCESS_INTERNAL_ROUTE,
 )
+from recidiviz.services.identity.create_pass import build_identity_rows
 from recidiviz.services.identity.exceptions import ClusterSnapshotNotFoundError
 from recidiviz.utils import metadata
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -54,9 +64,32 @@ SNAPSHOT_TIMESTAMP_BODY_KEY = "snapshot_timestamp"
 
 # How long Cloud Tasks waits for the processing endpoint to respond before
 # treating the attempt as failed. Set to the Cloud Tasks maximum because the
-# worker reconciles every cluster in a tenant's snapshot within the single
-# request, which can be slow for a large tenant.
+# worker creates an identity for every cluster in a tenant's snapshot within the
+# single request, which can be slow for a large tenant.
 _IMPORT_DISPATCH_DEADLINE_SECONDS = 30 * 60
+
+_IDENTITY_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+
+# The identities table's child tables, which reference identities.recidiviz_id
+# without ON DELETE CASCADE and so must be cleared before their identities rows.
+_IDENTITY_CHILD_TABLES = (
+    schema.ExternalId,
+    schema.Name,
+    schema.DateOfBirth,
+    schema.Gender,
+    schema.Race,
+    schema.Sex,
+    schema.Ethnicity,
+    schema.PhoneNumber,
+    schema.Email,
+)
+
+# Number of clusters written per transaction. Committing in chunks rather than
+# per cluster bounds the round trips to Postgres, which is what keeps a
+# large-tenant import inside the Cloud Tasks dispatch deadline; a failed chunk
+# falls back to one transaction per cluster so a single bad cluster is still
+# isolated.
+_IMPORT_CHUNK_SIZE = 500
 
 
 def enqueue_import_task(
@@ -128,19 +161,150 @@ def enqueue_import_task(
 
 
 def process_import(*, tenant: Tenant, snapshot_timestamp: datetime.datetime) -> None:
-    """Reconciles the given tenant's clustering results with the service's state.
+    """Loads the given tenant's clustering results into the service's state.
 
-    The per-cluster create, update, merge, and split passes are not yet
-    implemented; this logs the snapshot it would process and returns.
+    Reads the tenant's cluster snapshot from BigQuery, clears the tenant's
+    existing identities, and creates one identity per cluster.
 
-    TODO(OBT-43559): Replace this stub with the real snapshot read and import
-    now that the BQ snapshot reader this PR adds is available.
+    TODO(OBT-37725): This is the temporary clear-first shape (see
+    _clear_tenant_identities). When clear-first is removed, this regains the
+    per-cluster idempotency skip and the update, merge, and split passes rather
+    than creating every cluster afresh.
     """
     logging.info(
-        "Processing identity import for tenant [%s], snapshot [%s]. Per-cluster "
-        "reconciliation is not yet implemented.",
+        "Processing identity import for tenant [%s], snapshot [%s].",
         tenant.value,
         snapshot_timestamp.isoformat(),
+    )
+    snapshots = read_cluster_snapshot(tenant)
+    _clear_tenant_identities(tenant)
+    _create_identities(tenant=tenant, snapshots=snapshots)
+
+
+def _create_identities(*, tenant: Tenant, snapshots: list[ClusterSnapshot]) -> None:
+    """Creates one identity per snapshot, committing _IMPORT_CHUNK_SIZE at a time.
+
+    A chunk whose commit fails is retried one cluster per transaction, so a
+    single bad cluster is isolated and logged while the rest of the chunk still
+    lands.
+    """
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    # Under clear-first the tenant was just cleared, so it has no pre-existing
+    # emails; cross-chunk exclusion is carried entirely by the accumulating
+    # committed/staged sets. TODO(OBT-37725): once incremental imports arrive,
+    # seed this from the tenant's existing email hashes so the create pass
+    # excludes an address already attached to another identity.
+    committed_email_hashes: set[str] = set()
+    for chunk_start in range(0, len(snapshots), _IMPORT_CHUNK_SIZE):
+        chunk = snapshots[chunk_start : chunk_start + _IMPORT_CHUNK_SIZE]
+        try:
+            _write_chunk(
+                chunk=chunk, now=now, committed_email_hashes=committed_email_hashes
+            )
+        except Exception:
+            logging.exception(
+                "Failed to write a chunk of [%s] clusters for tenant [%s] in one "
+                "transaction; retrying the chunk one cluster at a time.",
+                len(chunk),
+                tenant.value,
+            )
+            _write_clusters_individually(
+                tenant=tenant,
+                chunk=chunk,
+                now=now,
+                committed_email_hashes=committed_email_hashes,
+            )
+
+
+def _write_chunk(
+    *,
+    chunk: list[ClusterSnapshot],
+    now: datetime.datetime,
+    committed_email_hashes: set[str],
+) -> None:
+    """Writes every snapshot in the chunk in a single transaction.
+
+    On success, folds the chunk's newly used email hashes into
+    committed_email_hashes so later chunks exclude them; on failure the
+    transaction rolls back and the set is left untouched.
+    """
+    staged_email_hashes: set[str] = set()
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        for snapshot in chunk:
+            session.add_all(
+                build_identity_rows(
+                    snapshot=snapshot,
+                    now=now,
+                    committed_email_hashes=committed_email_hashes,
+                    staged_email_hashes=staged_email_hashes,
+                )
+            )
+    committed_email_hashes |= staged_email_hashes
+
+
+def _write_clusters_individually(
+    *,
+    tenant: Tenant,
+    chunk: list[ClusterSnapshot],
+    now: datetime.datetime,
+    committed_email_hashes: set[str],
+) -> None:
+    """Writes each snapshot in its own transaction, isolating a failing cluster."""
+    for snapshot in chunk:
+        staged_email_hashes: set[str] = set()
+        try:
+            with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+                session.add_all(
+                    build_identity_rows(
+                        snapshot=snapshot,
+                        now=now,
+                        committed_email_hashes=committed_email_hashes,
+                        staged_email_hashes=staged_email_hashes,
+                    )
+                )
+        except Exception:
+            logging.exception(
+                "Failed to import cluster [%s] for tenant [%s]; continuing with the "
+                "remaining clusters.",
+                snapshot.cluster.identity_cluster_id,
+                tenant.value,
+            )
+            continue
+        committed_email_hashes |= staged_email_hashes
+
+
+def _clear_tenant_identities(tenant: Tenant) -> None:
+    """Deletes the tenant's identities and all of their child rows.
+
+    TODO(OBT-37725): This clear-first step is temporary scaffolding so that the
+    create pass alone loads a tenant's full clustering snapshot; with the
+    database empty, every cluster is new. Remove it once the update pass (plus
+    merge and split detection) makes incremental runs correct. While it is
+    active, every import run regenerates the tenant's recidiviz_ids, so no
+    caller may persist them.
+
+    The candidate, audit, and no-merge tables are left untouched; they stay
+    empty until the passes that write them exist.
+    """
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        tenant_identity_ids = (
+            session.query(schema.Identity.recidiviz_id)
+            .filter(schema.Identity.tenant == tenant)
+            .scalar_subquery()
+        )
+        for child_table in _IDENTITY_CHILD_TABLES:
+            session.query(child_table).filter(
+                child_table.recidiviz_id.in_(tenant_identity_ids)
+            ).delete(synchronize_session=False)
+        deleted_identity_count = (
+            session.query(schema.Identity)
+            .filter(schema.Identity.tenant == tenant)
+            .delete(synchronize_session=False)
+        )
+    logging.info(
+        "Cleared [%s] existing identities for tenant [%s] before import.",
+        deleted_identity_count,
+        tenant.value,
     )
 
 
@@ -152,8 +316,8 @@ def _cluster_snapshot_timestamp(tenant: Tenant) -> datetime.datetime:
     triggers of the same run.
     """
     # Uses the raw google.cloud.bigquery client rather than the repo's
-    # BigQueryClientImpl to keep the Identity Service free of the
-    # recidiviz.big_query dependency cascade; this is a single table-metadata get.
+    # BigQueryClientImpl because the identity server's source-visibility test
+    # forbids importing recidiviz.big_query; this is a single table-metadata get.
     bq_client = bigquery.Client(project=metadata.project_id())
     table_id = (
         f"{identity_cluster_dataset_for_tenant(tenant.value)}."

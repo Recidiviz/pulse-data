@@ -35,7 +35,6 @@ from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
 from recidiviz.auth.helpers import (
     convert_user_object_to_dict,
     generate_pseudonymized_id,
-    generate_user_hash,
     validate_roles,
 )
 from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
@@ -50,6 +49,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     UserOverride,
 )
 from recidiviz.reporting.email_reporting_utils import validate_email_address
+from recidiviz.utils.user_hash import generate_user_hash
 
 
 class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):

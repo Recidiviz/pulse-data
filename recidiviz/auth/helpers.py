@@ -42,17 +42,6 @@ _UNKNOWN_USER = "unknown"
 _REASON_KEY = "reason"
 
 
-def replace_char_0_slash(user_hash: str) -> str:
-    return user_hash[:1].replace("/", "_") + user_hash[1:]
-
-
-def generate_user_hash(email: str) -> str:
-    user_hash = base64.b64encode(hashlib.sha256(email.encode("utf-8")).digest()).decode(
-        "utf-8"
-    )
-    return replace_char_0_slash(user_hash)
-
-
 def generate_pseudonymized_id(
     state_code: str, external_id: Optional[str]
 ) -> Optional[str]:
