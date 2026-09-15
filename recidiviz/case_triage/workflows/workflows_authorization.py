@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements user validations for workflows APIs."""
+
 import os
 from typing import Any, Dict
 
@@ -61,7 +62,15 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
     )
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    g.is_recidiviz_user = app_metadata["stateCode"].upper() == "RECIDIVIZ"
+    user_state_code = app_metadata["stateCode"].upper()
+    g.is_recidiviz_user = user_state_code == "RECIDIVIZ"
+
+    is_recidiviz_or_csg = user_state_code in ("RECIDIVIZ", "CSG")
+    # The external id in the token is sourced from the admin panel, so it may
+    # not reliably exist where roster sync is not used.
+    g.authenticated_user_external_id = (
+        None if is_recidiviz_or_csg else app_metadata.get("externalId")
+    )
 
     g.feature_variants = get_active_feature_variants(
         app_metadata.get("featureVariants", {}),

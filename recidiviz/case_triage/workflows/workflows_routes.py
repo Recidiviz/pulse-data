@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes to support external requests from Workflows."""
+
 import datetime
 import hmac
 import io
@@ -265,6 +266,22 @@ def create_workflows_api_blueprint() -> Blueprint:
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
+        # We can expect authenticated_user_external_id because TN supervision uses roster sync
+        if not g.is_recidiviz_user:
+            authenticated_external_id = getattr(
+                g, "authenticated_user_external_id", None
+            )
+            if authenticated_external_id is None:
+                return jsonify_response(
+                    "User external ID not found in authentication context",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+            if parsed_request_body.staff_id != authenticated_external_id:
+                return jsonify_response(
+                    "staff_id does not match authenticated user",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+
         new_request_data = parsed_request_body.to_new_request_data()
         if parsed_request_body.should_queue_task:
             return handle_writeback_enqueue(
@@ -290,6 +307,22 @@ def create_workflows_api_blueprint() -> Blueprint:
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
+        # We can expect authenticated_user_external_id because TN supervision uses roster sync
+        if not g.is_recidiviz_user:
+            authenticated_external_id = getattr(
+                g, "authenticated_user_external_id", None
+            )
+            if authenticated_external_id is None:
+                return jsonify_response(
+                    "User external ID not found in authentication context",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+            if parsed_request_body.staff_id != authenticated_external_id:
+                return jsonify_response(
+                    "staff_id does not match authenticated user",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+
         return handle_writeback(
             UsTnContactNoteWritebackExecutor(parsed_request_body.to_new_request_data())
         )
@@ -305,6 +338,22 @@ def create_workflows_api_blueprint() -> Blueprint:
                 f"request body ({parsed_request_body.state_code})",
                 HTTPStatus.BAD_REQUEST,
             )
+
+        # We can expect authenticated_user_external_id because TN supervision uses roster sync
+        if not g.is_recidiviz_user:
+            authenticated_external_id = getattr(
+                g, "authenticated_user_external_id", None
+            )
+            if authenticated_external_id is None:
+                return jsonify_response(
+                    "User external ID not found in authentication context",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+            if parsed_request_body.staff_id != authenticated_external_id:
+                return jsonify_response(
+                    "staff_id does not match authenticated user",
+                    HTTPStatus.UNAUTHORIZED,
+                )
 
         writeback_or_enqueue_fn = (
             (

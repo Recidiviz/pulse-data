@@ -107,6 +107,7 @@ class WorkflowsBlueprintTestCase(TestCase):
         email_address: str = "test_user@somestate.gov",
         allowed_states: Optional[list[str]] = None,
         successful_authorization_handler: Callable = on_successful_authorization,
+        external_id: Optional[str] = None,
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
@@ -116,6 +117,7 @@ class WorkflowsBlueprintTestCase(TestCase):
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
                     "stateCode": f"{state_code.lower()}",
                     "allowedStates": allowed_states,
+                    "externalId": external_id,
                 },
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
             }
@@ -298,7 +300,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         expected_task_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
@@ -354,7 +358,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
@@ -401,7 +407,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
@@ -437,7 +445,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         # No contactNoteDateTime
         request_body = {
@@ -458,7 +468,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_handle_insert_tepe_contact_note_state_not_enabled(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
@@ -477,7 +489,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_handle_insert_tepe_contact_note_missing_param(
         self,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
@@ -503,7 +517,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_handle_insert_tepe_contact_note_success(
         self, mock_interface: MagicMock
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
@@ -544,7 +560,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_handle_insert_tepe_contact_note_exception(
         self, mock_interface: MagicMock
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         mock_interface.return_value.execute.side_effect = Exception("It broke!")
 
@@ -569,7 +587,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def test_insert_contact_note_state_mismatch(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "stateCode": "US_CO",
@@ -592,7 +612,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertIn("does not match", response_json["message"])
 
     def test_insert_contact_note_missing_state_code(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
@@ -624,7 +646,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "stateCode": "US_TN",
@@ -665,7 +689,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "stateCode": "US_TN",
@@ -715,7 +741,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "stateCode": "US_TN",
@@ -767,7 +795,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_co")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_co", external_id=STAFF_ID
+        )
 
         request_body = {
             "stateCode": "US_CO",
@@ -891,7 +921,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_enqueue_sms_request_failure_unauthorized_state(
         self,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
@@ -1110,7 +1142,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
     def test_send_sms_request_mismatched_state_code(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID
+        )
 
         response = self.test_client.post(
             "/workflows/external_request/us_ca/send_sms_request",
