@@ -21,8 +21,9 @@ remaining scalar divergence is benign. Each conflict-checked scalar resolves per
 the tenant's resolution strategy, either keeping the latest value or storing
 nothing when its fragments diverge. preferred_name is not conflict-checked and
 always takes the latest value. List-valued attributes union across fragments.
-Aliases dedupe on their normalized name components, and any alias that
-duplicates the resolved primary name is dropped as redundant.
+Aliases dedupe on their normalized name components, emails dedupe
+case-insensitively, and any alias that duplicates the resolved primary name is
+dropped as redundant.
 Fragments must be sorted oldest-first by (upper_bound_date, ingest view) so the
 latest value is last.
 """
@@ -90,7 +91,8 @@ def resolve_cluster_attributes(
     phone_numbers = _union(
         attributes, lambda a: a.phone_numbers, key=lambda p: p.number
     )
-    emails = _union(attributes, lambda a: a.emails, key=lambda e: e.address)
+    # Addresses store the source's casing, so dedupe case-insensitively.
+    emails = _union(attributes, lambda a: a.emails, key=lambda e: e.address.upper())
     aliases = _union(
         attributes,
         lambda a: a.aliases,

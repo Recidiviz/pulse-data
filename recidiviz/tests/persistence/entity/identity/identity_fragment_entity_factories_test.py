@@ -76,9 +76,12 @@ class TestEntityFactories(unittest.TestCase):
             self.fail(f"Found missing expected tests: {missing_tests}")
 
     def test_deserialize_IdentityExternalId(self) -> None:
+        """External IDs keep the default uppercasing, unlike names and emails:
+        they are exact-match keys for cluster grouping and joins against
+        activity pipeline output."""
         result = entity_factories.IdentityExternalIdFactory.deserialize(
             tenant=_TENANT,
-            external_id="EXT_001",
+            external_id="ext_001",
             id_type="US_XX_ID_TYPE",
         )
 
@@ -91,44 +94,62 @@ class TestEntityFactories(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_deserialize_IdentityName(self) -> None:
+        """Name parts preserve the source casing rather than uppercasing."""
         result = entity_factories.IdentityNameFactory.deserialize(
             tenant=_TENANT,
             given_name="John",
             preferred_name="Johnny",
-            surname="Doe",
-            middle_name="Q",
+            surname="McDonald",
+            middle_name="q",
             name_suffix="Jr",
         )
 
         expected = entities.IdentityName(
             tenant=_TENANT,
-            given_name="JOHN",
-            preferred_name="JOHNNY",
-            surname="DOE",
-            middle_name="Q",
-            name_suffix="JR",
+            given_name="John",
+            preferred_name="Johnny",
+            surname="McDonald",
+            middle_name="q",
+            name_suffix="Jr",
+        )
+
+        self.assertEqual(expected, result)
+
+    def test_deserialize_IdentityName_collapses_whitespace(self) -> None:
+        result = entity_factories.IdentityNameFactory.deserialize(
+            tenant=_TENANT,
+            given_name="Mary  Anne",
+            surname=" de la Cruz ",
+        )
+
+        expected = entities.IdentityName(
+            tenant=_TENANT,
+            given_name="Mary Anne",
+            surname="de la Cruz",
         )
 
         self.assertEqual(expected, result)
 
     def test_deserialize_IdentityAlias(self) -> None:
+        """Alias name parts preserve the source casing rather than uppercasing."""
         result = entity_factories.IdentityAliasFactory.deserialize(
             tenant=_TENANT,
             given_name="John",
-            surname="Doe",
-            middle_name="Q",
+            surname="McDonald",
+            middle_name="q",
             name_suffix="Jr",
             name_use=NameUse.ALIAS,
-            name_use_raw_text="AKA",
+            name_use_raw_text="aka",
         )
 
         expected = entities.IdentityAlias(
             tenant=_TENANT,
-            given_name="JOHN",
-            surname="DOE",
-            middle_name="Q",
-            name_suffix="JR",
+            given_name="John",
+            surname="McDonald",
+            middle_name="q",
+            name_suffix="Jr",
             name_use=NameUse.ALIAS,
+            # Enum raw text keeps the default uppercasing.
             name_use_raw_text="AKA",
         )
 
@@ -208,14 +229,15 @@ class TestEntityFactories(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_deserialize_IdentityEmail(self) -> None:
+        """Email addresses preserve the source casing rather than uppercasing."""
         result = entity_factories.IdentityEmailFactory.deserialize(
             tenant=_TENANT,
-            address="john@example.com",
+            address="John@Example.com",
         )
 
         expected = entities.IdentityEmail(
             tenant=_TENANT,
-            address="JOHN@EXAMPLE.COM",
+            address="John@Example.com",
         )
 
         self.assertEqual(expected, result)

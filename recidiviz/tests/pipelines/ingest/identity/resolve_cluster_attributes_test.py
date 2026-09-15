@@ -330,6 +330,36 @@ class TestResolveClusterAttributes(unittest.TestCase):
         self.assertEqual(resolved.races[0].race, Race.BLACK)
         self.assertEqual(resolved.races[0].race_raw_text, "BLACK")
 
+    def test_emails_dedup_case_insensitively_keeping_latest_casing(self) -> None:
+        # Addresses store the source's casing, so the same address written with
+        # different casing collapses to one email carrying the latest casing.
+        def _email_fragment(external_id: str, address: str) -> IdentityFragment:
+            return IdentityFragment(
+                tenant=_TENANT,
+                external_ids=[
+                    IdentityExternalId(
+                        tenant=_TENANT, external_id=external_id, id_type="US_OZ_T1"
+                    )
+                ],
+                person_type=PersonType.JII,
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    emails=[IdentityEmail(tenant=_TENANT, address=address)],
+                ),
+            )
+
+        resolved = resolve_cluster_attributes(
+            tenant=_TENANT,
+            sorted_fragments=[
+                _email_fragment("A", "JOHN@EXAMPLE.COM"),
+                _email_fragment("B", "John@example.com"),
+            ],
+            resolution_strategy_config=_DEFAULT_CONFIG,
+        )
+        assert resolved is not None
+        self.assertEqual(len(resolved.emails), 1)
+        self.assertEqual(resolved.emails[0].address, "John@example.com")
+
     def test_aliases_dedup_ignoring_name_use_raw_text(self) -> None:
         # Two fragments record the same alias name with different raw use text.
         # They collapse to one alias carrying the latest fragment's raw text.

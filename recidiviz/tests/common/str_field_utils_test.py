@@ -22,6 +22,8 @@ from recidiviz.common.str_field_utils import (
     NormalizedSerializableJSON,
     SerializableJSON,
     join_with_conjunction,
+    normalize,
+    normalize_whitespace,
     parse_bool,
     parse_date,
     parse_date_from_date_pieces,
@@ -297,6 +299,21 @@ class TestStrFieldUtils(TestCase):
         self.assertEqual(
             snake_to_title("SUPERVISION_START_FIRST"), "Supervision Start First"
         )
+
+    def test_normalize(self) -> None:
+        self.assertEqual(normalize("John  Paul "), "JOHN PAUL")
+
+    def test_normalize_empty(self) -> None:
+        with self.assertRaises(ValueError):
+            normalize("   ")
+
+    def test_normalize_whitespace_preserves_casing(self) -> None:
+        self.assertEqual(normalize_whitespace("John  Paul "), "John Paul")
+        self.assertEqual(normalize_whitespace("de la\tCruz"), "de la Cruz")
+
+    def test_normalize_whitespace_empty(self) -> None:
+        with self.assertRaises(ValueError):
+            normalize_whitespace("   ")
 
     def test_join_with_conjunction(self) -> None:
         self.assertEqual(join_with_conjunction(["A"]), "A")

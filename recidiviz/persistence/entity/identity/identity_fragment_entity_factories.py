@@ -16,12 +16,21 @@
 # =============================================================================
 """Factory classes for deserializing identity ingest pipeline entities."""
 
+from recidiviz.common.str_field_utils import normalize_whitespace
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
+    EntityFieldConverter,
     entity_deserialize,
 )
 from recidiviz.persistence.entity.identity import identity_fragment_entities as entities
+
+# Identity output preserves the source data's casing on name and email values,
+# a deliberate divergence from the activity pipeline's uppercased entities.
+# Matching stays case-insensitive: the conflict checker's normalize_name
+# uppercases at comparison time, and cluster resolution dedupes emails
+# case-insensitively.
+_CASE_PRESERVING_STRING_CONVERTER = EntityFieldConverter(str, normalize_whitespace)
 
 
 class IdentityExternalIdFactory(EntityFactory):
@@ -29,6 +38,9 @@ class IdentityExternalIdFactory(EntityFactory):
     def deserialize(
         **kwargs: DeserializableEntityFieldValue,
     ) -> entities.IdentityExternalId:
+        # External IDs keep the default uppercasing: they are exact-match keys
+        # for fragment-to-cluster grouping and for joins against activity
+        # pipeline output and crosswalks, which all store uppercased IDs.
         return entity_deserialize(
             cls=entities.IdentityExternalId,
             converter_overrides={},
@@ -44,7 +56,13 @@ class IdentityNameFactory(EntityFactory):
     ) -> entities.IdentityName:
         return entity_deserialize(
             cls=entities.IdentityName,
-            converter_overrides={},
+            converter_overrides={
+                "given_name": _CASE_PRESERVING_STRING_CONVERTER,
+                "preferred_name": _CASE_PRESERVING_STRING_CONVERTER,
+                "surname": _CASE_PRESERVING_STRING_CONVERTER,
+                "middle_name": _CASE_PRESERVING_STRING_CONVERTER,
+                "name_suffix": _CASE_PRESERVING_STRING_CONVERTER,
+            },
             defaults={},
             **kwargs,
         )
@@ -122,7 +140,9 @@ class IdentityEmailFactory(EntityFactory):
     ) -> entities.IdentityEmail:
         return entity_deserialize(
             cls=entities.IdentityEmail,
-            converter_overrides={},
+            converter_overrides={
+                "address": _CASE_PRESERVING_STRING_CONVERTER,
+            },
             defaults={},
             **kwargs,
         )
@@ -135,7 +155,12 @@ class IdentityAliasFactory(EntityFactory):
     ) -> entities.IdentityAlias:
         return entity_deserialize(
             cls=entities.IdentityAlias,
-            converter_overrides={},
+            converter_overrides={
+                "given_name": _CASE_PRESERVING_STRING_CONVERTER,
+                "surname": _CASE_PRESERVING_STRING_CONVERTER,
+                "middle_name": _CASE_PRESERVING_STRING_CONVERTER,
+                "name_suffix": _CASE_PRESERVING_STRING_CONVERTER,
+            },
             defaults={},
             **kwargs,
         )

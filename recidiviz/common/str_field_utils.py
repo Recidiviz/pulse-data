@@ -366,9 +366,15 @@ def normalize(s: str, remove_punctuation: bool = False) -> str:
         if not label_without_punctuation.isspace():
             s = label_without_punctuation
 
+    return normalize_whitespace(s).upper()
+
+
+def normalize_whitespace(s: str) -> str:
+    """Normalizes whitespace within the provided string by converting all groups
+    of whitespaces into ' ', preserving the original casing."""
     if s is None or s == "" or s.isspace():
         raise ValueError("Cannot normalize None or empty/whitespace string")
-    return " ".join(s.split()).upper()
+    return " ".join(s.split())
 
 
 def normalize_truncated(message: str) -> str:
