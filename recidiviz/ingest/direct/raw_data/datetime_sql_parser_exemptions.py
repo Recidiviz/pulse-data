@@ -139,6 +139,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         ],
         "scl_DorOffenseType": ["EffectiveDate", "EndDate", "InsertDate", "UpdateDate"],
         "scl_Offense": ["OffenseDate"],
+        "scl_SentenceDetail": ["SegmentEndDate", "SegmentStartDate"],
         "scl_SentenceOrder": ["SentenceDate"],
     },
     StateCode.US_ME: {
@@ -409,7 +410,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "ref_NameSuffixType": ["InsertDate", "UpdateDate"],
         "ref_QuestionnaireTemplate": ["InsertDate", "PublishDate", "UpdateDate"],
         "scl_ProbationSupervision": ["EndDate", "StartDate"],
-        "scl_SentenceDetail": ["SegmentEndDate", "SegmentStartDate"],
         "scl_Severity": ["InsertDate", "UpdateDate"],
         "scl_Term": [
             "ApprovalDate",
