@@ -40,11 +40,11 @@ ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
 JESSICALIU_US_AR_EDOVO_RAW_DATA: str = "jessicaliu_us_ar_edovo_raw_data"
 
-# TODO(OBT-39522): Temporary personal-sandbox placeholder dataset. Delete this
-# constant, its EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS entry below, and
-# the two source table YAMLs under
-# externally_managed/jessicaliu_us_co_edovo_raw_data/ once that ticket lands a
-# real ingestion path.
+# TODO(OBT-39522): Temporary personal-sandbox placeholder dataset holding the
+# Edovo program map. Delete this constant, its
+# EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS entry below, and
+# externally_managed/jessicaliu_us_co_edovo_raw_data/edovo_program_map.yaml
+# once that ticket lands a real ingestion path.
 JESSICALIU_US_CO_EDOVO_RAW_DATA: str = "jessicaliu_us_co_edovo_raw_data"
 
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
@@ -95,6 +95,9 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     JESSICALIU_US_AR_EDOVO_RAW_DATA: (
         "Stores temporary AR Edovo data for staging validation."
     ),
+    JESSICALIU_US_CO_EDOVO_RAW_DATA: (
+        "Stores the temporary CO Edovo course catalog for staging validation."
+    ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."
     ),
@@ -105,9 +108,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores the output of email activity data from Sendgrid."
     ),
     ALL_BILLING_DATA_DATASET: "Stores information about our GCP cloud costs",
-    JESSICALIU_US_CO_EDOVO_RAW_DATA: (
-        "Stores temporary CO Edovo data for staging validation."
-    ),
     JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS: "Stores backend usage events logged from JII Tablet App via Segment",
     JII_FRONTEND_PROD_SEGMENT_DATASET: "Stores frontend pageview events logged from JII Tablet App via Segment",

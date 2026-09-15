@@ -765,6 +765,11 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.big_query",
                 "recidiviz.calculator",
                 "recidiviz.case_triage.views",
+                # us_co_edovo_records_preprocessed strips leading zeros from
+                # the Edovo-supplied id with the same helper the capture
+                # endpoint compares with. The module imports only re and a
+                # BigQueryAddress; it does not pull in the case triage app.
+                "recidiviz.case_triage.edovo.external_id_matching",
                 "recidiviz.view_registry",
                 "recidiviz.tools.deploy.logging",
                 "recidiviz.cloud_resources",
@@ -835,6 +840,14 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
                 "recidiviz.eomis.us_ar.constants",
                 # Pulled in transitively by yaml_managed.datasets.
                 "recidiviz.datasets.static_data.terraform_managed.config",
+                # TODO(OBT-49997): this entrypoint should not reach
+                # validation views at all. It arrives that way: the Edovo
+                # validations read us_co_edovo_records_preprocessed, which
+                # strips leading zeros from an id with the capture
+                # endpoint's own helper. Drop this once OBT-49997 stops the
+                # entrypoint pulling validation view dependencies.
+                "recidiviz.case_triage.views.dataset_config",
+                "recidiviz.case_triage.edovo.external_id_matching",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
@@ -862,6 +875,11 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.utils",
                 # dataset or const imports where we want to be strict-ish
                 "recidiviz.case_triage.views.dataset_config",
+                # us_co_edovo_records_preprocessed strips leading zeros from
+                # the Edovo-supplied id with the same helper the capture
+                # endpoint compares with. The module imports only re and a
+                # BigQueryAddress; it does not pull in the case triage app.
+                "recidiviz.case_triage.edovo.external_id_matching",
                 "recidiviz.datasets.static_data.terraform_managed.config",
                 "recidiviz.pipelines.dataflow_config",
                 "recidiviz.pipelines.ingest.activity.dataset_config",
