@@ -398,6 +398,7 @@ output:
                   - "PF" # Jail Backlog Awaiting Discharge
                   - "PG" # ISP - Inmate
                   - "PK" # Community Jail Transfer
+                  - "PL" # Approved Transfer
                   - "T1" # DAY TRIP / STERLING REGIONAL MEDICAL CENTER
                   - "T2" # DAY TRIP TO BUENA VISTA MINIMUM CENTER
                   - "T3" # DAY TRIP BVCF MEDICAL
