@@ -33,7 +33,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "HAS_ACTIVE_SENTENCE"
 
 _QUERY_TEMPLATE = f"""
-    -- TODO(#38294) Update this to use sentence serving periods
     WITH sessions_and_sentence_spans AS (
        SELECT
             DISTINCT

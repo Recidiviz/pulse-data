@@ -31,8 +31,6 @@ from recidiviz.observations.span_observation_big_query_view_builder import (
 from recidiviz.observations.span_type import SpanType
 
 
-# TODO(#23055): Add state_code and person_id filters to support selecting custom
-#  populations
 @attr.define(frozen=True, kw_only=True)
 class SpanSelector(ObservationSelector[SpanType]):
     """
