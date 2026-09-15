@@ -195,7 +195,7 @@ def build_dag_walker_for_all_deployed_view_graphs() -> BigQueryViewDagWalker:
     """
     return BigQueryViewDagWalker.union_dags(
         *(
-            g.build_dag_walker()
+            g.dag_walker
             for g in deployed_view_graph_registry(metadata.project_id()).view_graphs
         )
     )

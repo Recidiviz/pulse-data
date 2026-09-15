@@ -61,7 +61,7 @@ def _view_builder(
     )
 
 
-def _collection(
+def _source_table_collection(
     dataset_id: str, update_groups: set[SourceTableUpdateGroup]
 ) -> SourceTableCollection:
     return SourceTableCollection(
@@ -72,7 +72,9 @@ def _collection(
     )
 
 
-_CALC_COLLECTION = _collection("source_dataset", {SourceTableUpdateGroup.CALC})
+_CALC_COLLECTION = _source_table_collection(
+    dataset_id="source_dataset", update_groups={SourceTableUpdateGroup.CALC}
+)
 
 
 def _graph(
@@ -176,23 +178,7 @@ class TestBigQueryViewGraph(unittest.TestCase):
                 input_source_table_update_group=SourceTableUpdateGroup.CALC,
             )
 
-
-class TestResolvedBigQueryViewGraph(unittest.TestCase):
-    """Tests for ResolvedBigQueryViewGraph."""
-
-    def test_delegates_to_wrapped_graph(self) -> None:
-        graph = _graph("my_graph", [_view_builder("dataset_1", "table_1")])
-        resolved = _resolved(graph)
-
-        self.assertEqual(graph.name, resolved.name)
-        self.assertEqual(graph.project_id, resolved.project_id)
-        self.assertEqual(graph.view_builders, resolved.view_builders)
-        self.assertEqual(
-            graph.input_source_table_update_group,
-            resolved.input_source_table_update_group,
-        )
-
-    def test_build_dag_walker(self) -> None:
+    def test_dag_walker(self) -> None:
         graph = _graph(
             "my_graph",
             [
@@ -206,34 +192,31 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
             ],
             project_id=GCP_PROJECT_PRODUCTION,
         )
-        resolved = _resolved(graph)
 
         with local_project_id_override(GCP_PROJECT_PRODUCTION):
-            walker = resolved.build_dag_walker()
+            walker = graph.dag_walker
 
         self.assertEqual(
-            {b.address for b in resolved.view_builders},
+            {b.address for b in graph.view_builders},
             set(walker.nodes_by_address.keys()),
         )
 
     def test_output_source_table_configs_by_dataset(self) -> None:
-        resolved = _resolved(
-            _graph(
-                "my_graph",
-                [
-                    _view_builder(
-                        "dataset_1",
-                        "table_1",
-                        should_materialize=True,
-                        clustering_fields=["col"],
-                    ),
-                    _view_builder("dataset_1", "table_2", should_materialize=True),
-                    _view_builder("dataset_2", "table_3", should_materialize=True),
-                    # Not materialized, so it contributes no output config.
-                    _view_builder("dataset_2", "table_4"),
-                ],
-                project_id="recidiviz-456",
-            )
+        graph = _graph(
+            name="my_graph",
+            view_builder_candidates=[
+                _view_builder(
+                    "dataset_1",
+                    "table_1",
+                    should_materialize=True,
+                    clustering_fields=["col"],
+                ),
+                _view_builder("dataset_1", "table_2", should_materialize=True),
+                _view_builder("dataset_2", "table_3", should_materialize=True),
+                # Not materialized, so it contributes no output config.
+                _view_builder("dataset_2", "table_4"),
+            ],
+            project_id="recidiviz-456",
         )
 
         schema_fields = [
@@ -277,22 +260,21 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
                         ),
                     ],
                 },
-                resolved.build_output_source_table_configs_by_dataset(),
+                graph.output_source_table_configs_by_dataset,
             )
+            self.assertEqual({"dataset_1", "dataset_2"}, graph.output_datasets)
 
     def test_output_source_table_configs_partitioned_view_raises(self) -> None:
-        resolved = _resolved(
-            _graph(
-                "my_graph",
-                [
-                    _view_builder(
-                        "dataset_1",
-                        "table_1",
-                        should_materialize=True,
-                        time_partitioning=bigquery.TimePartitioning(field="col"),
-                    ),
-                ],
-            )
+        graph = _graph(
+            name="my_graph",
+            view_builder_candidates=[
+                _view_builder(
+                    "dataset_1",
+                    "table_1",
+                    should_materialize=True,
+                    time_partitioning=bigquery.TimePartitioning(field="col"),
+                ),
+            ],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -302,4 +284,62 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
                 r"\[dataset_1\.table_1\]; partitioned outputs cannot be derived as "
                 r"source tables\.$",
             ):
-                _ = resolved.build_output_source_table_configs_by_dataset()
+                _ = graph.output_source_table_configs_by_dataset
+
+    def test_root_datasets(self) -> None:
+        graph = _graph(
+            name="my_graph",
+            view_builder_candidates=[
+                # References source_dataset.source_table but not the materialized
+                # output of table_1, so only source_dataset is a root.
+                _view_builder("dataset_1", "table_1", should_materialize=True),
+            ],
+        )
+
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            self.assertEqual({"source_dataset"}, graph.root_datasets)
+
+
+class TestResolvedBigQueryViewGraph(unittest.TestCase):
+    """Tests for ResolvedBigQueryViewGraph."""
+
+    def test_delegates_to_wrapped_graph(self) -> None:
+        graph = _graph(
+            name="my_graph",
+            view_builder_candidates=[_view_builder("dataset_1", "table_1")],
+        )
+        resolved = _resolved(graph)
+
+        self.assertEqual(graph.name, resolved.name)
+        self.assertEqual(graph.project_id, resolved.project_id)
+        self.assertEqual(graph.view_builders, resolved.view_builders)
+        self.assertEqual(
+            graph.input_source_table_update_group,
+            resolved.input_source_table_update_group,
+        )
+
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            self.assertIs(graph.dag_walker, resolved.dag_walker)
+
+    def test_mistagged_input_collection_raises(self) -> None:
+        graph = _graph(
+            name="my_graph",
+            view_builder_candidates=[_view_builder("dataset_1", "table_1")],
+            input_source_table_update_group=SourceTableUpdateGroup.CALC,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Graph \[my_graph\] resolved to input collections \['source_dataset'\] "
+            r"not tagged with the graph's update group "
+            r"\[SourceTableUpdateGroup.CALC\]\.$",
+        ):
+            ResolvedBigQueryViewGraph(
+                view_graph=graph,
+                input_source_table_collections=[
+                    _source_table_collection(
+                        dataset_id="source_dataset",
+                        update_groups={SourceTableUpdateGroup.IDENTITY_INGEST},
+                    )
+                ],
+            )

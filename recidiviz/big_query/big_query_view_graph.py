@@ -16,12 +16,13 @@
 # =============================================================================
 """Defines the two stages of a view graph:
 
-  - BigQueryViewGraph: a named set of views evaluated in one project — its builders
-    filtered to that project, plus the DAG and materialized outputs they produce.
-  - ResolvedBigQueryViewGraph: a BigQueryViewGraph with a set of input source table collections.
+- BigQueryViewGraph: a named set of views evaluated in one project — its builders
+  filtered to that project, plus the DAG and materialized outputs they produce.
+- ResolvedBigQueryViewGraph: a BigQueryViewGraph with a set of input source table collections.
 """
 
 from collections import defaultdict
+from functools import cached_property
 
 import attr
 
@@ -102,46 +103,9 @@ class BigQueryViewGraph:
             view_builders=view_builders,
         )
 
-
-@attr.define(frozen=True, kw_only=True)
-class ResolvedBigQueryViewGraph:
-    """A BigQueryViewGraph with its input source table collections resolved. Only
-    obtainable from BigQueryViewGraphRegistry.
-    """
-
-    _view_graph: BigQueryViewGraph = attr.ib(
-        validator=attr.validators.instance_of(BigQueryViewGraph)
-    )
-    """The project-scoped graph this was resolved from."""
-
-    input_source_table_collections: list[SourceTableCollection] = attr.ib(
-        validator=[
-            attr_validators.is_non_empty_list,
-            attr_validators.is_list_of(SourceTableCollection),
-        ]
-    )
-    """Source table collections whose tables provide inputs to this graph's
-    views. A collection may provide inputs to more than one graph.
-    """
-
-    @property
-    def name(self) -> str:
-        return self._view_graph.name
-
-    @property
-    def project_id(self) -> str:
-        return self._view_graph.project_id
-
-    @property
-    def view_builders(self) -> list[BigQueryViewBuilder]:
-        return self._view_graph.view_builders
-
-    @property
-    def input_source_table_update_group(self) -> SourceTableUpdateGroup:
-        return self._view_graph.input_source_table_update_group
-
-    def build_dag_walker(self) -> BigQueryViewDagWalker:
-        """Builds a BigQueryViewDagWalker over this graph's views."""
+    @cached_property
+    def dag_walker(self) -> BigQueryViewDagWalker:
+        """The DAG over this graph's views."""
         return BigQueryViewDagWalker(
             list(
                 build_views_to_update(
@@ -150,11 +114,12 @@ class ResolvedBigQueryViewGraph:
             )
         )
 
-    def build_output_source_table_configs_by_dataset(
+    @cached_property
+    def output_source_table_configs_by_dataset(
         self,
     ) -> dict[str, list[SourceTableConfig]]:
-        """Returns this graph's materialized outputs grouped by dataset, as
-        SourceTableConfigs. Raises on a partitioned materialized view.
+        """Dataset to the SourceTableConfigs for the views this graph materializes
+        into it. Empty if the graph materializes nothing.
         """
         configs_by_dataset: dict[str, list[SourceTableConfig]] = defaultdict(list)
         for builder in self.view_builders:
@@ -178,3 +143,71 @@ class ResolvedBigQueryViewGraph:
                 )
             )
         return dict(configs_by_dataset)
+
+    @property
+    def root_datasets(self) -> set[str]:
+        """Datasets of the tables this graph's views reference but do not materialize."""
+        return {
+            address.dataset_id
+            for address in self.dag_walker.get_referenced_source_tables()
+        }
+
+    @property
+    def output_datasets(self) -> set[str]:
+        """Datasets this graph materializes at least one view into."""
+        return set(self.output_source_table_configs_by_dataset)
+
+
+@attr.define(frozen=True, kw_only=True)
+class ResolvedBigQueryViewGraph:
+    """A BigQueryViewGraph with its input source table collections resolved. Only
+    obtainable from BigQueryViewGraphRegistry.
+    """
+
+    _view_graph: BigQueryViewGraph = attr.ib(
+        validator=attr.validators.instance_of(BigQueryViewGraph)
+    )
+    """The project-scoped graph this was resolved from."""
+
+    input_source_table_collections: list[SourceTableCollection] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(SourceTableCollection),
+        ]
+    )
+    """Source table collections whose tables provide inputs to this graph's
+    views. A collection may provide inputs to more than one graph.
+    """
+
+    def __attrs_post_init__(self) -> None:
+        mistagged_datasets = [
+            collection.dataset_id
+            for collection in self.input_source_table_collections
+            if not collection.carries_update_group(self.input_source_table_update_group)
+        ]
+        if mistagged_datasets:
+            raise ValueError(
+                f"Graph [{self.name}] resolved to input collections "
+                f"{sorted(mistagged_datasets)} not tagged with the graph's update "
+                f"group [{self.input_source_table_update_group}]."
+            )
+
+    @property
+    def name(self) -> str:
+        return self._view_graph.name
+
+    @property
+    def project_id(self) -> str:
+        return self._view_graph.project_id
+
+    @property
+    def view_builders(self) -> list[BigQueryViewBuilder]:
+        return self._view_graph.view_builders
+
+    @property
+    def input_source_table_update_group(self) -> SourceTableUpdateGroup:
+        return self._view_graph.input_source_table_update_group
+
+    @property
+    def dag_walker(self) -> BigQueryViewDagWalker:
+        return self._view_graph.dag_walker
