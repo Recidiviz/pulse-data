@@ -79,67 +79,114 @@ def _graph(
     name: str,
     view_builder_candidates: list[BigQueryViewBuilder],
     input_source_table_update_group: SourceTableUpdateGroup = SourceTableUpdateGroup.CALC,
+    project_id: str = GCP_PROJECT_STAGING,
 ) -> BigQueryViewGraph:
-    return BigQueryViewGraph(
+    return BigQueryViewGraph.build(
+        project_id=project_id,
         name=name,
-        view_builder_candidates=view_builder_candidates,
         input_source_table_update_group=input_source_table_update_group,
+        view_builder_candidates=view_builder_candidates,
     )
 
 
 def _resolved(
-    graph: BigQueryViewGraph, project_id: str = GCP_PROJECT_STAGING
+    graph: BigQueryViewGraph,
 ) -> ResolvedBigQueryViewGraph:
     return ResolvedBigQueryViewGraph(
-        project_id=project_id,
         view_graph=graph,
         input_source_table_collections=[_CALC_COLLECTION],
     )
 
 
-class TestResolvedBigQueryViewGraph(unittest.TestCase):
-    """Tests for ResolvedBigQueryViewGraph."""
+class TestBigQueryViewGraph(unittest.TestCase):
+    """Tests for BigQueryViewGraph."""
 
-    def test_view_builders_filtered_to_project(self) -> None:
+    def test_build_filters_view_builders_to_project(self) -> None:
         everywhere = _view_builder("dataset_1", "everywhere")
         staging_only = _view_builder(
             "dataset_1", "staging_only", projects_to_deploy={GCP_PROJECT_STAGING}
         )
-        graph = _graph("my_graph", [everywhere, staging_only])
 
         self.assertEqual(
             [everywhere, staging_only],
-            _resolved(graph, project_id=GCP_PROJECT_STAGING).view_builders,
+            BigQueryViewGraph.build(
+                project_id=GCP_PROJECT_STAGING,
+                name="my_graph",
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
+                view_builder_candidates=[everywhere, staging_only],
+            ).view_builders,
         )
         self.assertEqual(
             [everywhere],
-            _resolved(graph, project_id=GCP_PROJECT_PRODUCTION).view_builders,
+            BigQueryViewGraph.build(
+                project_id=GCP_PROJECT_PRODUCTION,
+                name="my_graph",
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
+                view_builder_candidates=[everywhere, staging_only],
+            ).view_builders,
         )
 
-    def test_no_view_builders_in_project_raises(self) -> None:
-        graph = _graph(
-            "my_graph",
-            [
-                _view_builder(
-                    "dataset_1",
-                    "staging_only",
-                    projects_to_deploy={GCP_PROJECT_STAGING},
-                )
-            ],
-        )
-
+    def test_build_no_view_builders_in_project_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             rf"^View graph \[my_graph\] has no view builders deployed in project "
             rf"\[{GCP_PROJECT_PRODUCTION}\]$",
         ):
-            _resolved(graph, project_id=GCP_PROJECT_PRODUCTION)
+            BigQueryViewGraph.build(
+                project_id=GCP_PROJECT_PRODUCTION,
+                name="my_graph",
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
+                view_builder_candidates=[
+                    _view_builder(
+                        "dataset_1",
+                        "staging_only",
+                        projects_to_deploy={GCP_PROJECT_STAGING},
+                    )
+                ],
+            )
+
+    def test_empty_view_builders_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[view_builders\] on \[BigQueryViewGraph\] must be a non-empty list",
+        ):
+            BigQueryViewGraph(
+                view_builders=[],
+                project_id=GCP_PROJECT_STAGING,
+                name="my_graph",
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
+            )
+
+    def test_constructor_with_builder_not_deployed_in_project_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^View graph \[my_graph\] contains builders that do not deploy in "
+            rf"project \[{GCP_PROJECT_PRODUCTION}\]: \['dataset_1.staging_only'\]$",
+        ):
+            BigQueryViewGraph(
+                view_builders=[
+                    _view_builder(
+                        "dataset_1",
+                        "staging_only",
+                        projects_to_deploy={GCP_PROJECT_STAGING},
+                    )
+                ],
+                project_id=GCP_PROJECT_PRODUCTION,
+                name="my_graph",
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
+            )
+
+
+class TestResolvedBigQueryViewGraph(unittest.TestCase):
+    """Tests for ResolvedBigQueryViewGraph."""
 
     def test_delegates_to_wrapped_graph(self) -> None:
         graph = _graph("my_graph", [_view_builder("dataset_1", "table_1")])
         resolved = _resolved(graph)
 
         self.assertEqual(graph.name, resolved.name)
+        self.assertEqual(graph.project_id, resolved.project_id)
+        self.assertEqual(graph.view_builders, resolved.view_builders)
         self.assertEqual(
             graph.input_source_table_update_group,
             resolved.input_source_table_update_group,
@@ -157,8 +204,9 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
                     projects_to_deploy={GCP_PROJECT_STAGING},
                 ),
             ],
+            project_id=GCP_PROJECT_PRODUCTION,
         )
-        resolved = _resolved(graph, project_id=GCP_PROJECT_PRODUCTION)
+        resolved = _resolved(graph)
 
         with local_project_id_override(GCP_PROJECT_PRODUCTION):
             walker = resolved.build_dag_walker()
@@ -184,6 +232,7 @@ class TestResolvedBigQueryViewGraph(unittest.TestCase):
                     # Not materialized, so it contributes no output config.
                     _view_builder("dataset_2", "table_4"),
                 ],
+                project_id="recidiviz-456",
             )
         )
 

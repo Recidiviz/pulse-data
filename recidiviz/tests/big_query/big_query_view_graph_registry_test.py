@@ -85,19 +85,20 @@ def _graph(
     name: str,
     view_builder_candidates: list[BigQueryViewBuilder],
     input_source_table_update_group: SourceTableUpdateGroup = SourceTableUpdateGroup.CALC,
+    project_id: str = GCP_PROJECT_STAGING,
 ) -> BigQueryViewGraph:
-    return BigQueryViewGraph(
+    return BigQueryViewGraph.build(
+        project_id=project_id,
         name=name,
-        view_builder_candidates=view_builder_candidates,
         input_source_table_update_group=input_source_table_update_group,
+        view_builder_candidates=view_builder_candidates,
     )
 
 
 def _resolved(
-    graph: BigQueryViewGraph, project_id: str = GCP_PROJECT_STAGING
+    graph: BigQueryViewGraph,
 ) -> ResolvedBigQueryViewGraph:
     return ResolvedBigQueryViewGraph(
-        project_id=project_id,
         view_graph=graph,
         input_source_table_collections=[_CALC_COLLECTION],
     )
@@ -128,7 +129,6 @@ class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
         self.assertEqual(
             [
                 ResolvedBigQueryViewGraph(
-                    project_id=GCP_PROJECT_STAGING,
                     view_graph=calc_graph,
                     input_source_table_collections=[
                         _CALC_COLLECTION,
@@ -136,7 +136,6 @@ class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
                     ],
                 ),
                 ResolvedBigQueryViewGraph(
-                    project_id=GCP_PROJECT_STAGING,
                     view_graph=llm_graph,
                     input_source_table_collections=[
                         _LLM_COLLECTION,
@@ -148,26 +147,40 @@ class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
         )
 
     def test_build_filters_view_builders_to_project(self) -> None:
-        graph = _graph(
-            "my_graph",
-            [
-                _view_builder("dataset_1", "everywhere"),
-                _view_builder(
-                    "dataset_1",
-                    "staging_only",
-                    projects_to_deploy={GCP_PROJECT_STAGING},
-                ),
-            ],
-        )
-
         staging_registry = BigQueryViewGraphRegistry.build(
             project_id=GCP_PROJECT_STAGING,
-            view_graphs=[graph],
+            view_graphs=[
+                _graph(
+                    "my_graph",
+                    [
+                        _view_builder("dataset_1", "everywhere"),
+                        _view_builder(
+                            "dataset_1",
+                            "staging_only",
+                            projects_to_deploy={GCP_PROJECT_STAGING},
+                        ),
+                    ],
+                    project_id=GCP_PROJECT_STAGING,
+                )
+            ],
             candidate_collections=[_CALC_COLLECTION],
         )
         production_registry = BigQueryViewGraphRegistry.build(
             project_id=GCP_PROJECT_PRODUCTION,
-            view_graphs=[graph],
+            view_graphs=[
+                _graph(
+                    "my_graph",
+                    [
+                        _view_builder("dataset_1", "everywhere"),
+                        _view_builder(
+                            "dataset_1",
+                            "staging_only",
+                            projects_to_deploy={GCP_PROJECT_STAGING},
+                        ),
+                    ],
+                    project_id=GCP_PROJECT_PRODUCTION,
+                )
+            ],
             candidate_collections=[_CALC_COLLECTION],
         )
 
@@ -237,8 +250,11 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                 project_id=GCP_PROJECT_STAGING,
                 view_graphs=[
                     _resolved(
-                        _graph("graph_1", [_view_builder("dataset_1", "table_1")]),
-                        project_id=GCP_PROJECT_PRODUCTION,
+                        _graph(
+                            "graph_1",
+                            [_view_builder("dataset_1", "table_1")],
+                            project_id=GCP_PROJECT_PRODUCTION,
+                        ),
                     )
                 ],
             )

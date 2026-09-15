@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for execute_view_graph_update.py"""
+
 import datetime
 import unittest
 from unittest import mock
@@ -292,14 +293,14 @@ class TestExecuteViewGraphUpdate(unittest.TestCase):
             BigQueryViewDagWalker(views=[]),
         )
         view_graph = ResolvedBigQueryViewGraph(
-            project_id=GCP_PROJECT_PRODUCTION,
-            view_graph=BigQueryViewGraph(
+            view_graph=BigQueryViewGraph.build(
+                project_id=GCP_PROJECT_PRODUCTION,
                 name=CALCULATION_VIEW_GRAPH_NAME,
+                input_source_table_update_group=SourceTableUpdateGroup.CALC,
                 view_builder_candidates=[
                     _view_builder("dataset_1", "table_1"),
                     _view_builder("dataset_2", "table_2"),
                 ],
-                input_source_table_update_group=SourceTableUpdateGroup.CALC,
             ),
             input_source_table_collections=[_source_table_collection()],
         )

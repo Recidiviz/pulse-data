@@ -114,7 +114,6 @@ class BigQueryViewGraphRegistry:
             project_id=project_id,
             view_graphs=[
                 ResolvedBigQueryViewGraph(
-                    project_id=project_id,
                     view_graph=graph,
                     input_source_table_collections=[
                         c

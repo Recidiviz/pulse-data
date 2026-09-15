@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines BigQueryViewGraph, a project-agnostic named set of views that are
-updated together, and ResolvedBigQueryViewGraph, that graph resolved to a project
-and set of input source table collections.
+"""Defines the two stages of a view graph:
+
+  - BigQueryViewGraph: a named set of views evaluated in one project — its builders
+    filtered to that project, plus the DAG and materialized outputs they produce.
+  - ResolvedBigQueryViewGraph: a BigQueryViewGraph with a set of input source table collections.
 """
 
 from collections import defaultdict
@@ -36,22 +38,23 @@ from recidiviz.source_tables.source_table_config import (
 
 @attr.define(frozen=True, kw_only=True)
 class BigQueryViewGraph:
-    """A named set of candidate view builders, across all projects, plus the
-    update group of the DAG that updates them.
+    """A named set of view builders evaluated in one project: its builders filtered
+    to that project, and the DAG and materialized outputs those builders produce.
     """
 
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Name that uniquely identifies this graph across all view graphs."""
 
-    view_builder_candidates: list[BigQueryViewBuilder] = attr.ib(
+    view_builders: list[BigQueryViewBuilder] = attr.ib(
         validator=[
             attr_validators.is_non_empty_list,
             attr_validators.is_list_of(BigQueryViewBuilder),
         ]
     )
-    """Builders for every view in this graph in any project. A builder may be
-    configured to deploy only in some projects.
-    """
+    """The view builders that are part of this graph, filtered to the project."""
+
+    project_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The project this graph is evaluated in."""
 
     input_source_table_update_group: SourceTableUpdateGroup = attr.ib(
         validator=attr.validators.in_(SourceTableUpdateGroup)
@@ -60,21 +63,56 @@ class BigQueryViewGraph:
     of the DAG whose task updates this graph's views.
     """
 
+    def __attrs_post_init__(self) -> None:
+        """Raises if any builder does not deploy in this graph's project."""
+        if addresses_that_do_not_deploy := [
+            builder.address.to_str()
+            for builder in self.view_builders
+            if not builder.should_deploy_in_project(self.project_id)
+        ]:
+            raise ValueError(
+                f"View graph [{self.name}] contains builders that do not deploy "
+                f"in project [{self.project_id}]: {addresses_that_do_not_deploy}"
+            )
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        project_id: str,
+        name: str,
+        input_source_table_update_group: SourceTableUpdateGroup,
+        view_builder_candidates: list[BigQueryViewBuilder],
+    ) -> "BigQueryViewGraph":
+        """Builds a graph scoped to project_id, keeping only the candidate builders
+        that deploy in that project.
+        """
+        view_builders = [
+            b for b in view_builder_candidates if b.should_deploy_in_project(project_id)
+        ]
+        if not view_builders:
+            raise ValueError(
+                f"View graph [{name}] has no view builders deployed in project "
+                f"[{project_id}]"
+            )
+        return cls(
+            project_id=project_id,
+            name=name,
+            input_source_table_update_group=input_source_table_update_group,
+            view_builders=view_builders,
+        )
+
 
 @attr.define(frozen=True, kw_only=True)
 class ResolvedBigQueryViewGraph:
-    """A BigQueryViewGraph scoped to one project, with its view builders filtered
-    to that project and its input source table collections resolved. Only
+    """A BigQueryViewGraph with its input source table collections resolved. Only
     obtainable from BigQueryViewGraphRegistry.
     """
-
-    project_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    """The project this graph is resolved for."""
 
     _view_graph: BigQueryViewGraph = attr.ib(
         validator=attr.validators.instance_of(BigQueryViewGraph)
     )
-    """The project-agnostic graph this was resolved from."""
+    """The project-scoped graph this was resolved from."""
 
     input_source_table_collections: list[SourceTableCollection] = attr.ib(
         validator=[
@@ -86,29 +124,17 @@ class ResolvedBigQueryViewGraph:
     views. A collection may provide inputs to more than one graph.
     """
 
-    view_builders: list[BigQueryViewBuilder] = attr.ib(init=False)
-    """Builders for every view in this graph that deploys in project_id."""
-
-    @view_builders.default
-    def _filter_view_builders_to_project(self) -> list[BigQueryViewBuilder]:
-        """Returns the candidate builders that deploy in project_id, raising if
-        there are none.
-        """
-        view_builders = [
-            b
-            for b in self._view_graph.view_builder_candidates
-            if b.should_deploy_in_project(self.project_id)
-        ]
-        if not view_builders:
-            raise ValueError(
-                f"View graph [{self.name}] has no view builders deployed in project "
-                f"[{self.project_id}]"
-            )
-        return view_builders
-
     @property
     def name(self) -> str:
         return self._view_graph.name
+
+    @property
+    def project_id(self) -> str:
+        return self._view_graph.project_id
+
+    @property
+    def view_builders(self) -> list[BigQueryViewBuilder]:
+        return self._view_graph.view_builders
 
     @property
     def input_source_table_update_group(self) -> SourceTableUpdateGroup:

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for update_managed_view_graph.py"""
+
 import os
 import unittest
 from unittest.mock import patch
@@ -60,11 +61,11 @@ def _resolved_graph(
     update_group: SourceTableUpdateGroup = SourceTableUpdateGroup.CALC,
 ) -> ResolvedBigQueryViewGraph:
     return ResolvedBigQueryViewGraph(
-        project_id=_PROJECT_ID,
-        view_graph=BigQueryViewGraph(
+        view_graph=BigQueryViewGraph.build(
+            project_id=_PROJECT_ID,
             name=name,
-            view_builder_candidates=[_view_builder(dataset_id, "table")],
             input_source_table_update_group=update_group,
+            view_builder_candidates=[_view_builder(dataset_id, "table")],
         ),
         input_source_table_collections=[_source_table_collection(update_group)],
     )

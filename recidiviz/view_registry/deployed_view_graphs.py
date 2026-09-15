@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The registry of view graphs deployed to our GCP projects."""
+
 import itertools
 import logging
 from functools import cache
@@ -22,6 +23,7 @@ from functools import cache
 from recidiviz.aggregated_metrics.view_config import (
     get_aggregated_metrics_view_builders,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_graph import BigQueryViewGraph
@@ -94,24 +96,32 @@ def deployed_view_graph_registry(
         )
     return BigQueryViewGraphRegistry.build(
         project_id=project_id,
-        view_graphs=_all_view_graphs(),
+        view_graphs=_all_view_graphs(project_id),
         candidate_collections=collect_source_table_collections_hydrated_outside_view_graphs(
             project_id
         ),
     )
 
 
-def _all_view_graphs() -> list[BigQueryViewGraph]:
-    """Returns every deployed view graph, unscoped to a project."""
-    return [_calculation_view_graph()]
+def _all_view_graphs(project_id: str) -> list[BigQueryViewGraph]:
+    """Returns every deployed view graph, scoped to the given project."""
+    return [
+        _calculation_view_graph(
+            project_id, _calculation_view_builders_across_projects()
+        )
+    ]
 
 
-def _calculation_view_graph() -> BigQueryViewGraph:
+def _calculation_view_graph(
+    project_id: str,
+    view_builder_candidates: list[BigQueryViewBuilder],
+) -> BigQueryViewGraph:
     """Returns the view graph whose views are updated by the calculation DAG."""
-    return BigQueryViewGraph(
+    return BigQueryViewGraph.build(
         name=CALCULATION_VIEW_GRAPH_NAME,
+        project_id=project_id,
         input_source_table_update_group=SourceTableUpdateGroup.CALC,
-        view_builder_candidates=_calculation_view_builders_across_projects(),
+        view_builder_candidates=view_builder_candidates,
     )
 
 
@@ -144,11 +154,28 @@ def _calculation_view_builders_across_projects() -> list[BigQueryViewBuilder]:
 
 @environment.local_only
 def builders_for_all_view_graphs_across_projects() -> list[BigQueryViewBuilder]:
-    """Returns the view builders for every view that is a candidate for any view graph,
-    across all projects. Some of these views do not deploy to a given project based on
-    the builder configuration.
+    """Returns the view builders for every view that deploys in any of our GCP
+    projects.
+
+
+    TODO(OBT-50196) We are currently rebuilding the view graphs here instead of using
+    _all_view_graphs(project_id) because we only want to retrieve _calculation_view_builders_across_projects
+    once because it is expensive to compute. However, we can't cache the function using @cache because
+    it is not truly project agnostic and returns different results depending on the project context.
+    Since tests may run in different project contexts, we cannot return the same cached result for
+    all contexts.
     """
-    return [b for g in _all_view_graphs() for b in g.view_builder_candidates]
+    builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder] = {}
+
+    calculation_view_builder_candidates = _calculation_view_builders_across_projects()
+    for project_id in environment.DATA_PLATFORM_GCP_PROJECTS:
+        all_graphs = [
+            _calculation_view_graph(project_id, calculation_view_builder_candidates)
+        ]
+        for graph in all_graphs:
+            for builder in graph.view_builders:
+                builders_by_address[builder.address] = builder
+    return list(builders_by_address.values())
 
 
 def builders_for_all_deployed_view_graphs() -> list[BigQueryViewBuilder]:
