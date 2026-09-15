@@ -71,8 +71,6 @@ def update_source_file_yaml(table_address: BigQueryAddress) -> None:
         if os.path.isdir(path)
     ]
     if len(dataset_paths) != 1:
-        # TODO(OBT-45873): intercom_export matches two directories until its
-        # YAML files are consolidated into one package.
         raise ValueError(
             f"Expected exactly one directory named [{table_address.dataset_id}] under "
             f"externally_managed/ or yaml_managed/; found {sorted(dataset_paths)}. If "
