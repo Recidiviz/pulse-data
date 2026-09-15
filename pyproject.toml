@@ -143,10 +143,15 @@ dependencies = [
     # llama_index and openai are tightly coupled, so we pin them together
     "llama_index>=0.13.1",
     "openai>=1.99.8",
-    # TODO(#66748) litellm PyPI package was compromised in v1.82.7+. Pinning to
-    # last known safe version. Unpin once a new version is verified safe.
-    # See: https://www.stepsecurity.io/blog/litellm-credential-stealer-hidden-in-pypi-wheel
-    "litellm<1.84.1",
+    # litellm PyPI package was compromised in v1.82.7-1.82.8 (see
+    # https://www.stepsecurity.io/blog/litellm-credential-stealer-hidden-in-pypi-wheel).
+    # litellm's security team has since confirmed v1.83.0+ (rebuilt CI/CD
+    # pipeline) and v1.78.0-v1.82.6 (pre-compromise) are clean; see
+    # https://docs.litellm.ai/blog/security-update-march-2026. Resolves #66748.
+    # Exact-pinned (rather than a floor) given this package's CVE/compromise
+    # track record — bump deliberately, don't let it silently drift. 1.88.6
+    # clears 3 CVEs (1 critical, 1 high, 1 medium) open as of #17227.
+    "litellm==1.88.6",
     "nest_asyncio",
 ]
 
