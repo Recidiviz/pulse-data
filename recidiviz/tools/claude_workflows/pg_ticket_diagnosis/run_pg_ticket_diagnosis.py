@@ -401,9 +401,13 @@ class PersonIDLookupError(DiagnosisFailure):
     )
     GUIDANCE = (
         "Possible causes:\n"
-        "- The external IDs in go/github-pii are incorrect or malformed.\n"
-        "- The diagnosis service account is missing row-access-policy group "
-        "memberships (see `recidiviz/tools/claude_workflows/pg_ticket_diagnosis/setup_gcp.sh`)."
+        "- The IDs in the PII doc linked at the top of this ticket (or, for a "
+        "ticket filed before per-ticket docs existed, in go/github-pii) are "
+        "incorrect or malformed.\n"
+        "- The diagnosis service account is not a member of this state's "
+        "row-access-policy group. Add the state to "
+        "`pg_diagnosis_data_access_states` in "
+        "`recidiviz/tools/deploy/terraform/pg-diagnosis.tf` and deploy."
     )
 
 
