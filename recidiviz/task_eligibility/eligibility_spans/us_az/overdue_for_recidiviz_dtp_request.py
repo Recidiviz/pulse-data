@@ -28,7 +28,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
-    no_nonviolent_incarceration_violation_within_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     acis_dtp_date_not_set,
@@ -40,6 +39,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_dtp_denial_or_previous_dtp_release,
     no_dtp_removals_from_self_improvement_programs,
     no_ineligible_dtp_offense_convictions,
+    no_major_nonviolent_incarceration_violation_within_6_months_of_csbd,
     no_major_violent_violation_during_incarceration,
     no_unsatisfactory_program_ratings_within_3_months,
     not_serving_flat_sentence,
@@ -80,7 +80,7 @@ NO_VIOLATIONS = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_AZ_NO_VIOLATIONS",
     sub_criteria_list=[
-        no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+        no_major_nonviolent_incarceration_violation_within_6_months_of_csbd.VIEW_BUILDER,
         no_major_violent_violation_during_incarceration.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
@@ -96,7 +96,7 @@ COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[TaskCriteriaBigQueryViewBuilder] = [
     is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
     NO_VIOLATIONS,
     NO_ACIS_DTP_OR_TPR_DATE_SET,
-    no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+    no_major_nonviolent_incarceration_violation_within_6_months_of_csbd.VIEW_BUILDER,
 ]
 
 _FUNCTIONAL_LITERACY_CRITERIA_DTP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
