@@ -31,7 +31,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _QUERY_TEMPLATE = f"""
 /* Get any DISCIPLINARY or TEMPORARY solitary confinement housing_unit_type_session that ends in a housing_unit_type
 that is not solitary (including nulls). */
-#TODO(#27658) Account for false transitions
 WITH housing_units AS (
     SELECT 
     state_code,

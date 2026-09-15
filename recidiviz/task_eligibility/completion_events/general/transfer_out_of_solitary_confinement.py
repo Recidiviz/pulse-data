@@ -29,7 +29,6 @@ _QUERY_TEMPLATE = """
 /* Get any SOLITARY_CONFINEMENT housing_unit_type_collapsed_solitary_session that ends. An end with a date_gap will
 indicate that the resident was discharged out of incarceration, and a new adjacent session will indicate the 
 housing_unit_type_collapsed_solitary_session has changed to a different type. */
-#TODO(#27658) Account for false transitions
 SELECT 
     state_code,
     person_id,
