@@ -42,25 +42,21 @@ locals {
         # one-time retroactive corrections — going forward CDOC awards the new
         # amounts natively — so they are run from the CLI, not scheduled.
         #
-        # TODO(OBT-22951): this job cannot run yet, for two independent
-        # reasons. Both are harmless while the schedule is paused below, and
-        # both have to be cleared before it is unpaused.
+        # TODO(OBT-22951): both of the reasons this job could not run are now
+        # cleared. It stays paused below until one manual execution of the job
+        # succeeds in staging and CDOC confirms the cadence -- the scheduler
+        # cannot produce an unattended run while it is paused.
         #
-        #   1. CO's current login cannot run in the deployed image, so the job
-        #      would fail before doing any work. This file is mirrored publicly,
-        #      so the details are in recidiviz/eomis/us_co/, which is not.
-        #
-        #      The resolution is to wait rather than to change the image: once
-        #      CDOC provides a service account and whitelists our IP, CO logs in
-        #      the same way AR does and the problem disappears. Leave this
-        #      paused until then.
-        #   2. None of the four pathway candidate views exist yet -- not just
-        #      co_work. Verified 2026-08-21: work, certificate, ged and edovo
-        #      are all absent from the earned_time dataset, so both flows named
-        #      above fail at candidate load with an explicit BigQuery "table not
-        #      found". The retroactive round does not need them (the CLI takes
-        #      offender ids and a target directly); the scheduled continuous run
-        #      does.
+        #   1. The login works in the deployed image now. CDOC provisioned a
+        #      service account, and its credentials are in Secret Manager in
+        #      both projects. --account=svc below selects it. The egress path
+        #      was already correct: this job routes through the VPC connector
+        #      and Cloud NAT, so it leaves from the same allowlisted address
+        #      the attended production run of 2026-08-30 used.
+        #   2. Both candidate views this job reads now exist:
+        #      earned_time.us_co_edovo_proposed_credit and
+        #      earned_time.us_co_work_proposed_credit. Certificates and GED
+        #      still have no view, which is why neither flow is named here.
         #
         # Renaming the key from "us-co-edovo" destroys and recreates the job and
         # its scheduler rather than updating them in place -- for_each keys are
@@ -69,7 +65,11 @@ locals {
         #
         # Daily to match AR; deployed paused until CDOC confirms cadence.
         "us-co-continuous" = {
-          args      = ["--flow=co_edovo", "--flow=co_work"]
+          # --account=svc names CDOC's provisioned service account. Its form
+          # login opens no browser, which is what lets this job run in the
+          # deployed image at all. Without the flag the job falls back to the
+          # passkey login, which needs a display.
+          args      = ["--flow=co_edovo", "--flow=co_work", "--account=svc"]
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
           env       = {}
@@ -143,10 +143,15 @@ resource "google_bigquery_dataset_iam_member" "eomis_writeback_audit_ledger_edit
 }
 
 # Secret-level access: only the specific eOMIS credentials, not all project secrets.
-# TODO(OBT-22951): add the CO eOMIS secrets here once they're provisioned in
-# Secret Manager (the grant requires the secret to already exist).
+# The CO entries are the service account CDOC provisioned; they hold the login
+# the scheduled CO job uses.
 resource "google_secret_manager_secret_iam_member" "eomis_writeback_secret_access" {
-  for_each  = local.eomis_writeback_enabled ? toset(["eomis_us_ar_username", "eomis_us_ar_password"]) : toset([])
+  for_each = local.eomis_writeback_enabled ? toset([
+    "eomis_us_ar_username",
+    "eomis_us_ar_password",
+    "eomis_us_co_svc_username",
+    "eomis_us_co_svc_password",
+  ]) : toset([])
   secret_id = each.key
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.eomis_writeback_sa_email}"
