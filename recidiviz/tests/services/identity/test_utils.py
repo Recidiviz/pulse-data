@@ -342,6 +342,7 @@ def insert_identity(
     tenant: Tenant = Tenant.US_OZ,
     person_type: PersonType = PersonType.JII,
     merged_into: uuid.UUID | None = None,
+    last_cluster_hash: str | None = None,
 ) -> None:
     """Inserts a bare Identity row (no attributes / external IDs) directly into
     the identity schema, for tests that need a scenario beyond the CSV fixtures
@@ -356,6 +357,7 @@ def insert_identity(
                 person_type=person_type,
                 status=status,
                 merged_into=merged_into,
+                last_cluster_hash=last_cluster_hash,
             )
         )
 
@@ -390,6 +392,44 @@ def insert_name(*, recidiviz_id: uuid.UUID, given_name: str, surname: str) -> No
                 middle_names=[],
                 name_suffix=None,
                 use=NameUse.OFFICIAL,
+                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
+                source_product_app=None,
+                last_updated_utc=CREATED,
+            )
+        )
+
+
+def insert_date_of_birth(
+    *,
+    recidiviz_id: uuid.UUID,
+    date: datetime.date,
+    canonical: bool = True,
+    canonical_locked: bool = False,
+) -> None:
+    """Inserts a DateOfBirth row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.DateOfBirth(
+                recidiviz_id=recidiviz_id,
+                date=date,
+                canonical=canonical,
+                canonical_locked=canonical_locked,
+                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
+                source_product_app=None,
+                last_updated_utc=CREATED,
+            )
+        )
+
+
+def insert_phone_number(*, recidiviz_id: uuid.UUID, number: str) -> None:
+    """Inserts a PhoneNumber row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.PhoneNumber(
+                recidiviz_id=recidiviz_id,
+                number=number,
+                type=None,
+                preferred=None,
                 source_type=SourceType.EXTERNAL_DATA_SYSTEM,
                 source_product_app=None,
                 last_updated_utc=CREATED,

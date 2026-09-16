@@ -42,9 +42,8 @@ def build_identity_rows(
     external_ids row per external id, a names row per name, an emails row per
     address, and so on. See identity_child_rows for the full mapping.
 
-    The identity stores the pipeline's cluster_hash as last_cluster_hash so a
-    future idempotency check (OBT-37725) can skip the cluster on the next
-    import.
+    The identity stores the pipeline's cluster_hash as last_cluster_hash so
+    the update pass skips the cluster on the next import if it is unchanged.
 
     TODO(OBT-50191): POST /identities creates identities through
     IdentityServiceQuerier.create_identity and the domain types instead of

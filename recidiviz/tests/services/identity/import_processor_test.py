@@ -39,15 +39,18 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterName,
 )
 from recidiviz.services.identity.bq_snapshot_reader import ClusterSnapshot
+from recidiviz.services.identity.demographic_guard import DemographicGuard
 from recidiviz.services.identity.import_processor import (
     _IDENTITY_CHILD_TABLES,
     process_import,
 )
 from recidiviz.tests.services.identity.test_utils import (
+    insert_date_of_birth,
     insert_email,
     insert_external_id,
     insert_identity,
     insert_name,
+    insert_phone_number,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -107,7 +110,7 @@ class ImportProcessorTestCase(TestCase):
         self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )
-        self.read_patcher = patch(f"{_PROCESSOR_MODULE}.read_cluster_snapshot")
+        self.read_patcher = patch(f"{_PROCESSOR_MODULE}.read_cluster_snapshots")
         self.mock_read = self.read_patcher.start()
         self.addCleanup(self.read_patcher.stop)
 
@@ -229,12 +232,13 @@ class ClearFirstImportTest(ImportProcessorTestCase):
 
 @pytest.mark.uses_db
 class ImportWithoutClearFirstTest(ImportProcessorTestCase):
-    """Tests for process_import without clear-first: existing identities are
-    left untouched and only clusters matching no existing identity are created.
+    """Tests for process_import without clear-first: clusters matching no
+    existing identity create new identities, and existing identities not
+    matched by any cluster are left untouched. Updates of matched identities
+    are covered by ImportUpdateTest.
 
-    TODO(OBT-37725): The skipped-cluster cases below change once the update
-    pass (and then merge detection) processes those clusters instead of
-    skipping them.
+    TODO(OBT-37726): The multiple-identity skip case below changes once merge
+    detection flags those clusters instead of skipping them.
     """
 
     def test_existing_identities_survive_and_new_cluster_is_created(self) -> None:
@@ -251,21 +255,6 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
         self.assertEqual(
             {"US_OZ": ["Untouched", "Imported"]}, self._surnames_by_tenant()
         )
-
-    def test_cluster_matching_an_existing_identity_is_skipped(self) -> None:
-        existing_id = uuid.uuid4()
-        insert_identity(recidiviz_id=existing_id)
-        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
-        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
-
-        self._run(
-            _named_snapshot(external_id="A1", surname="Changed"),
-            should_clear_first=False,
-        )
-
-        # The cluster maps to the existing identity, so no identity is created
-        # and the existing one keeps its attributes.
-        self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
 
     def test_cluster_spanning_two_existing_identities_is_skipped(self) -> None:
         first_id = uuid.uuid4()
@@ -408,6 +397,432 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
         self.assertEqual(1, self._email_count())
 
 
+@pytest.mark.uses_db
+class ImportUpdateTest(ImportProcessorTestCase):
+    """Tests for process_import's update pass: a cluster matching exactly one
+    non-RETIRED identity brings that identity up to date."""
+
+    def _external_ids_for(self, recidiviz_id: uuid.UUID) -> set[str]:
+        with SessionFactory.using_database(self.database_key) as session:
+            rows = (
+                session.query(schema.ExternalId.external_id)
+                .filter(schema.ExternalId.recidiviz_id == recidiviz_id)
+                .all()
+            )
+        return {external_id for (external_id,) in rows}
+
+    def _last_cluster_hash_for(self, recidiviz_id: uuid.UUID) -> str | None:
+        with SessionFactory.using_database(self.database_key) as session:
+            return (
+                session.query(schema.Identity.last_cluster_hash)
+                .filter(schema.Identity.recidiviz_id == recidiviz_id)
+                .one()[0]
+            )
+
+    def _identity_count(self) -> int:
+        with SessionFactory.using_database(self.database_key) as session:
+            return session.query(schema.Identity).count()
+
+    def _date_of_birth_rows(
+        self, recidiviz_id: uuid.UUID
+    ) -> list[tuple[datetime.date, bool]]:
+        """Returns each of the identity's DateOfBirth rows as
+        (date, canonical_locked)."""
+        with SessionFactory.using_database(self.database_key) as session:
+            return [
+                (row.date, row.canonical_locked)
+                for row in session.query(schema.DateOfBirth).filter(
+                    schema.DateOfBirth.recidiviz_id == recidiviz_id
+                )
+            ]
+
+    def _phone_numbers_for(self, recidiviz_id: uuid.UUID) -> set[str]:
+        with SessionFactory.using_database(self.database_key) as session:
+            rows = (
+                session.query(schema.PhoneNumber.number)
+                .filter(schema.PhoneNumber.recidiviz_id == recidiviz_id)
+                .all()
+            )
+        return {number for (number,) in rows}
+
+    def test_changed_cluster_updates_the_matched_identity(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+
+        snapshot = _named_snapshot(external_id="A1", surname="Changed")
+        self._run(snapshot, should_clear_first=False)
+
+        # The identity is updated in place: no identity is created, and the
+        # stored hash now marks the cluster as applied.
+        self.assertEqual({"US_OZ": ["Changed"]}, self._surnames_by_tenant())
+        self.assertEqual(1, self._identity_count())
+        self.assertEqual(
+            snapshot.stored_cluster_hash, self._last_cluster_hash_for(existing_id)
+        )
+
+    def test_person_type_change_is_applied(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(
+            recidiviz_id=existing_id,
+            person_type=PersonType.JII,
+            last_cluster_hash="stale-hash",
+        )
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+
+        # The cluster differs from the identity only in person_type.
+        cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.STAFF,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="Original"
+            ),
+        )
+        with self.assertLogs(level="WARNING") as logs:
+            self._run(
+                ClusterSnapshot(
+                    cluster=cluster, stored_cluster_hash=cluster.cluster_hash
+                ),
+                should_clear_first=False,
+            )
+
+        # The flip is applied, with a warning naming the identity, and the hash
+        # is stamped, so the next run skips the cluster as unchanged.
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(str(existing_id), logs.records[0].getMessage())
+        with SessionFactory.using_database(self.database_key) as session:
+            identity = (
+                session.query(schema.Identity)
+                .filter(schema.Identity.recidiviz_id == existing_id)
+                .one()
+            )
+            self.assertEqual(PersonType.STAFF, identity.person_type)
+            self.assertEqual(cluster.cluster_hash, identity.last_cluster_hash)
+
+    def test_unchanged_cluster_is_skipped(self) -> None:
+        snapshot = _named_snapshot(external_id="A1", surname="Changed")
+        existing_id = uuid.uuid4()
+        insert_identity(
+            recidiviz_id=existing_id, last_cluster_hash=snapshot.stored_cluster_hash
+        )
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+
+        self._run(snapshot, should_clear_first=False)
+
+        # The stored hash matches, so the cluster's differing surname is never
+        # applied.
+        self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
+
+    def test_external_ids_are_additive(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+        insert_external_id(
+            recidiviz_id=existing_id, external_id="OLD9", id_type=_ID_TYPE
+        )
+
+        cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="B2", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="Changed"
+            ),
+        )
+        self._run(
+            ClusterSnapshot(cluster=cluster, stored_cluster_hash=cluster.cluster_hash),
+            should_clear_first=False,
+        )
+
+        # B2 is added; OLD9 stays even though the cluster no longer carries it.
+        self.assertEqual({"A1", "OLD9", "B2"}, self._external_ids_for(existing_id))
+        self.assertEqual(1, self._identity_count())
+
+    def test_update_keeps_the_identitys_own_email(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+        insert_email(
+            recidiviz_id=existing_id, address_hash=generate_user_hash("keep@fake.com")
+        )
+
+        self._run(
+            _named_snapshot(external_id="A1", surname="Changed", email="keep@fake.com"),
+            should_clear_first=False,
+        )
+
+        # The identity's own address is not excluded as belonging to another
+        # identity; the rebuilt row is the only email row.
+        self.assertEqual({"US_OZ": ["Changed"]}, self._surnames_by_tenant())
+        self.assertEqual(1, self._email_count())
+
+    def test_update_excludes_email_owned_by_another_identity(self) -> None:
+        owner_id = uuid.uuid4()
+        insert_identity(recidiviz_id=owner_id)
+        insert_name(recidiviz_id=owner_id, given_name="Grace", surname="Owner")
+        insert_external_id(recidiviz_id=owner_id, external_id="A1", id_type=_ID_TYPE)
+        insert_email(
+            recidiviz_id=owner_id, address_hash=generate_user_hash("dup@fake.com")
+        )
+        target_id = uuid.uuid4()
+        insert_identity(recidiviz_id=target_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=target_id, given_name="Grace", surname="Target")
+        insert_external_id(recidiviz_id=target_id, external_id="B2", id_type=_ID_TYPE)
+
+        self._run(
+            _named_snapshot(external_id="B2", surname="Updated", email="dup@fake.com"),
+            should_clear_first=False,
+        )
+
+        # The update lands, but the address stays attached only to its owner.
+        self.assertEqual({"US_OZ": ["Owner", "Updated"]}, self._surnames_by_tenant())
+        self.assertEqual(1, self._email_count())
+
+    def test_canonical_locked_date_of_birth_survives_update(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+        insert_date_of_birth(
+            recidiviz_id=existing_id,
+            date=datetime.date(1990, 1, 1),
+            canonical=True,
+            canonical_locked=True,
+        )
+
+        cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="Changed"
+            ),
+            birthdate=datetime.date(1985, 5, 5),
+        )
+        self._run(
+            ClusterSnapshot(cluster=cluster, stored_cluster_hash=cluster.cluster_hash),
+            should_clear_first=False,
+        )
+
+        # The pinned row survives and the cluster's differing birthdate is not
+        # written alongside it; the rest of the update still applies.
+        self.assertEqual(
+            [(datetime.date(1990, 1, 1), True)],
+            self._date_of_birth_rows(existing_id),
+        )
+        self.assertEqual({"US_OZ": ["Changed"]}, self._surnames_by_tenant())
+
+    def test_attribute_dropped_by_the_cluster_is_removed(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+        insert_phone_number(recidiviz_id=existing_id, number="5551234567")
+
+        # The cluster carries no phone number, so the update deletes the stale
+        # row and writes nothing in its place.
+        self._run(
+            _named_snapshot(external_id="A1", surname="Changed"),
+            should_clear_first=False,
+        )
+
+        self.assertEqual(set(), self._phone_numbers_for(existing_id))
+        self.assertEqual({"US_OZ": ["Changed"]}, self._surnames_by_tenant())
+
+    def test_guard_blocked_update_is_skipped(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+
+        with patch.object(DemographicGuard, "allows_update", return_value=False):
+            self._run(
+                _named_snapshot(external_id="A1", surname="Changed"),
+                should_clear_first=False,
+            )
+
+        # Nothing is applied, and the stale hash survives so a later run (with
+        # the guard allowing) still sees the cluster as changed.
+        self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
+        self.assertEqual("stale-hash", self._last_cluster_hash_for(existing_id))
+
+    def test_clusters_matching_one_identity_are_skipped(self) -> None:
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+        insert_external_id(recidiviz_id=existing_id, external_id="B2", id_type=_ID_TYPE)
+        insert_email(
+            recidiviz_id=existing_id, address_hash=generate_user_hash("keep@fake.com")
+        )
+
+        # The identity's two external ids are in different clusters, so both clusters
+        # match it and both are skipped until split detection (OBT-37728) splits the
+        # identity apart.
+        self._run(
+            _named_snapshot(
+                external_id="A1", surname="FromFirst", email="keep@fake.com"
+            ),
+            _named_snapshot(
+                external_id="B2", surname="FromSecond", email="keep@fake.com"
+            ),
+            should_clear_first=False,
+        )
+
+        # The identity's rows, including its email, are untouched, and no
+        # cluster's hash is stamped, so a later run (once split detection has
+        # split the identity apart) still sees both clusters as changed.
+        self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
+        self.assertEqual(1, self._email_count())
+        self.assertEqual("stale-hash", self._last_cluster_hash_for(existing_id))
+
+    def test_cluster_sharing_its_identity_with_a_spanning_cluster_is_skipped(
+        self,
+    ) -> None:
+        """The identity holds external ids A1 and A2, but the clustering put A1
+        in one cluster and A2 in another cluster that also carries a second
+        identity's B2. The A1 cluster matches only this identity, but its
+        attribute values were computed from A1's records alone, so applying it
+        would overwrite attributes that should reflect A2's records too; it
+        must be skipped just like the two-identity A2 + B2 cluster."""
+        twice_matched_id = uuid.uuid4()
+        insert_identity(recidiviz_id=twice_matched_id, last_cluster_hash="stale-hash")
+        insert_name(
+            recidiviz_id=twice_matched_id, given_name="Grace", surname="TwiceMatched"
+        )
+        insert_external_id(
+            recidiviz_id=twice_matched_id, external_id="A1", id_type=_ID_TYPE
+        )
+        insert_external_id(
+            recidiviz_id=twice_matched_id, external_id="A2", id_type=_ID_TYPE
+        )
+        other_id = uuid.uuid4()
+        insert_identity(recidiviz_id=other_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=other_id, given_name="Grace", surname="Other")
+        insert_external_id(recidiviz_id=other_id, external_id="B2", id_type=_ID_TYPE)
+
+        spanning_cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A2", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="B2", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="Spanning"
+            ),
+        )
+        self._run(
+            _named_snapshot(external_id="A1", surname="FromSingleMatch"),
+            ClusterSnapshot(
+                cluster=spanning_cluster,
+                stored_cluster_hash=spanning_cluster.cluster_hash,
+            ),
+            should_clear_first=False,
+        )
+
+        # Both identities are untouched and keep their stale hashes, so a later
+        # run still sees both clusters as changed.
+        self.assertEqual(
+            {"US_OZ": ["TwiceMatched", "Other"]}, self._surnames_by_tenant()
+        )
+        self.assertEqual("stale-hash", self._last_cluster_hash_for(twice_matched_id))
+        self.assertEqual("stale-hash", self._last_cluster_hash_for(other_id))
+
+    def test_failing_update_is_isolated_and_rest_of_chunk_proceeds(self) -> None:
+        first_id = uuid.uuid4()
+        insert_identity(recidiviz_id=first_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=first_id, given_name="Grace", surname="First")
+        insert_external_id(recidiviz_id=first_id, external_id="A1", id_type=_ID_TYPE)
+        second_id = uuid.uuid4()
+        insert_identity(recidiviz_id=second_id, last_cluster_hash="stale-hash")
+        insert_name(recidiviz_id=second_id, given_name="Grace", surname="Second")
+        insert_external_id(recidiviz_id=second_id, external_id="B2", id_type=_ID_TYPE)
+
+        # Both clusters add the same new external id, so applying the chunk in
+        # one transaction violates the unique active (external_id, id_type)
+        # index and rolls back. The per-cluster retry then lands the first
+        # update and isolates the second, which fails alone.
+        first_cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="SHARED9", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="FirstChanged"
+            ),
+        )
+        second_cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="B2", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="SHARED9", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Grace", surname="SecondChanged"
+            ),
+        )
+        self._run(
+            ClusterSnapshot(
+                cluster=first_cluster, stored_cluster_hash=first_cluster.cluster_hash
+            ),
+            ClusterSnapshot(
+                cluster=second_cluster, stored_cluster_hash=second_cluster.cluster_hash
+            ),
+            should_clear_first=False,
+        )
+
+        # The first identity's update re-inserts its name row, so its surname
+        # sorts after the untouched second identity's.
+        self.assertEqual(
+            {"US_OZ": ["Second", "FirstChanged"]}, self._surnames_by_tenant()
+        )
+        self.assertEqual({"A1", "SHARED9"}, self._external_ids_for(first_id))
+        self.assertEqual({"B2"}, self._external_ids_for(second_id))
+        self.assertEqual(
+            first_cluster.cluster_hash, self._last_cluster_hash_for(first_id)
+        )
+        # The failed identity keeps its stale hash, so the next run retries its
+        # cluster instead of skipping it as unchanged.
+        self.assertEqual("stale-hash", self._last_cluster_hash_for(second_id))
+
+
 class ClearTenantChildTableCompletenessTest(TestCase):
     """Guards that _clear_tenant_identities clears every table referencing an identity.
 
@@ -424,7 +839,7 @@ class ClearTenantChildTableCompletenessTest(TestCase):
     # writes. Each should join _IDENTITY_CHILD_TABLES once the pass that populates it
     # lands.
     _CLEAR_EXEMPT_TABLES = {
-        "update_attribute_candidates",  # TODO(OBT-37725): clear once the update pass writes it.
+        "update_attribute_candidates",  # TODO(OBT-37727): clear once the guard writes it.
         "merge_candidate_identities",  # TODO(OBT-37726): clear once merge detection writes it.
         "split_candidates",  # TODO(OBT-37728): clear once split detection writes it.
         "no_merge",  # TODO(OBT-37726): clear once merge detection writes it.

@@ -45,7 +45,7 @@ from recidiviz.persistence.entity.serialization import (
 )
 from recidiviz.services.identity.bq_snapshot_reader import (
     ClusterSnapshot,
-    read_cluster_snapshot,
+    read_cluster_snapshots,
 )
 
 _CTX = identity_cluster_entities_module_context.IDENTITY_CLUSTER_ENTITIES_CONTEXT
@@ -139,8 +139,8 @@ def _mock_client(rows_by_table: dict[str, list[dict]]) -> MagicMock:
     return client
 
 
-class ReadClusterSnapshotTest(TestCase):
-    """Tests for read_cluster_snapshot."""
+class ReadClusterSnapshotsTest(TestCase):
+    """Tests for read_cluster_snapshots."""
 
     def _read(self, rows_by_table: dict[str, list[dict]]) -> list[ClusterSnapshot]:
         with patch(
@@ -149,7 +149,7 @@ class ReadClusterSnapshotTest(TestCase):
             f"{_READER}.bigquery.Client",
             return_value=_mock_client(rows_by_table),
         ):
-            return read_cluster_snapshot(Tenant.US_OZ)
+            return read_cluster_snapshots(Tenant.US_OZ)
 
     def test_round_trips_a_rich_cluster(self) -> None:
         original = _rich_cluster(Tenant.US_OZ)

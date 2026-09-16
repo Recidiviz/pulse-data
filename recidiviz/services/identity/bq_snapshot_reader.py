@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Reads a tenant's identity clustering snapshot from BigQuery.
+"""Reads a tenant's clustering results from BigQuery, one ClusterSnapshot per
+cluster.
 
 The identity ingest pipeline writes each tenant's clustering results to the
 {tenant}_identity_cluster dataset, one table per cluster entity type. This module
-reads those tables and hydrates each cluster into an IdentityCluster entity for
-the import, carrying the pipeline-computed cluster_hash verbatim so the import can
-persist what the pipeline wrote without recomputing it.
+reads those tables and hydrates each cluster into a ClusterSnapshot: the cluster's
+IdentityCluster entity paired with the cluster_hash the pipeline wrote, which the
+import persists verbatim rather than recomputing (see ClusterSnapshot for why).
 
 It reads the tables by listing their rows directly (client.list_rows) rather than
 running a SQL query job, because the import wants every row of each table with no
@@ -82,7 +83,7 @@ class ClusterSnapshot:
     stored_cluster_hash is the hash the identity ingest pipeline wrote to BigQuery for
     this cluster, which is the authoritative value the import persists as
     last_cluster_hash. The cluster entity recomputes its own cluster_hash when it is
-    constructed from the snapshot rows; the import deliberately does not rely on that
+    constructed from the BigQuery rows; the import deliberately does not rely on that
     recomputed value, because trusting it would couple correctness to the reader
     reconstructing the pipeline's hash exactly — identical field ordering, hashing
     version, and every hashed field carried through. Persisting the stored hash keeps
@@ -91,17 +92,16 @@ class ClusterSnapshot:
     cluster: IdentityCluster = attr.ib(
         validator=attr.validators.instance_of(IdentityCluster)
     )
-    """The cluster reconstructed from the snapshot tables."""
+    """The cluster reconstructed from the dataset's cluster tables."""
 
     stored_cluster_hash: str = attr.ib(validator=attr_validators.is_str)
     """The cluster_hash the pipeline wrote for this cluster."""
 
 
-def read_cluster_snapshot(tenant: Tenant) -> list[ClusterSnapshot]:
-    """Returns one ClusterSnapshot per cluster in the tenant's clustering snapshot.
+def read_cluster_snapshots(tenant: Tenant) -> list[ClusterSnapshot]:
+    """Returns one ClusterSnapshot per cluster in the tenant's identity cluster
+    dataset.
 
-    Reads the identity_cluster root table and each child table in full, groups the
-    child rows under their cluster, and builds an IdentityCluster for each root row.
     Every entity's tenant comes from its own row's tenant column rather than the
     requested tenant, so IdentityCluster's tenant-agreement validation checks the
     snapshot's data integrity.
@@ -222,7 +222,7 @@ def _single(
     absent.
 
     Raises if a cluster carries more than one row for a single-valued attribute,
-    which would mean the snapshot violates that table's one-per-cluster shape."""
+    which would mean the dataset violates that table's one-per-cluster shape."""
     if not rows:
         return None
     return hydrate(

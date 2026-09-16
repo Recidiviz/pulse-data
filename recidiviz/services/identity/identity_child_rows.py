@@ -26,6 +26,22 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 )
 from recidiviz.utils.user_hash import normalized_email_hash
 
+# Every row type build_attribute_rows can produce, one per attribute child
+# table. A consumer that sweeps an identity's attribute tables iterates this
+# instead of hand-listing them, so the sweep cannot drift from what the builder
+# writes; identity_child_rows_test enforces that the list matches the builder's
+# output.
+ATTRIBUTE_ROW_TYPES: tuple[type[schema.IdentityBase], ...] = (
+    schema.Name,
+    schema.DateOfBirth,
+    schema.Gender,
+    schema.Race,
+    schema.Sex,
+    schema.Ethnicity,
+    schema.PhoneNumber,
+    schema.Email,
+)
+
 
 def build_external_id_rows(
     cluster: IdentityCluster, *, recidiviz_id: uuid.UUID
@@ -51,6 +67,7 @@ def build_attribute_rows(
     staged_email_hashes: set[str],
 ) -> list[schema.IdentityBase]:
     """Returns one attribute row per cluster value for the given identity.
+    Each returned row is an instance of one of ATTRIBUTE_ROW_TYPES.
 
     An email whose address hash is already committed or staged is excluded,
     since an address is expected to reach at most one person.
@@ -234,9 +251,11 @@ def _build_email_rows(
             address_hash in committed_email_hashes
             or address_hash in staged_email_hashes
         ):
+            # TODO(OBT-49081): Record this exclusion as a reviewable email
+            # conflict instead of only logging it.
             logging.warning(
                 "Email on cluster [%s] already belongs to another identity in the "
-                "tenant; excluding it from the new identity.",
+                "tenant; excluding it from this identity.",
                 cluster.identity_cluster_id,
             )
             continue
