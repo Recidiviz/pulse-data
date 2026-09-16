@@ -17,10 +17,10 @@
 """Tests for verifying view graph syntax and column names"""
 import logging
 from concurrent import futures
-from itertools import groupby
 from typing import Literal, NamedTuple, Sequence
 from unittest.mock import patch
 
+import attr
 import pytest
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
@@ -44,6 +44,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
 )
+from recidiviz.big_query.big_query_view_graph_registry import BigQueryViewGraphRegistry
 from recidiviz.big_query.view_update_manager import (
     CreateOrUpdateViewStatus,
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -54,6 +55,7 @@ from recidiviz.calculator.query.state.views.reference.product_display_person_ext
 from recidiviz.calculator.query.state.views.reference.product_stable_person_external_ids import (
     PRODUCT_STABLE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
+from recidiviz.common import attr_validators
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.ingest.views.dataset_config import (
     VIEWS_DATASET as INGEST_METADATA_VIEWS_DATASET,
@@ -61,17 +63,17 @@ from recidiviz.ingest.views.dataset_config import (
 from recidiviz.metrics.export.exported_view_utils import (
     get_all_metric_export_view_addresses,
 )
-from recidiviz.source_tables.source_table_config import (
-    SourceTableCollection,
-    SourceTableCollectionUpdateConfig,
-    SourceTableUpdateGroup,
-)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.big_query.known_undocumented_columns import (
     KNOWN_UNDOCUMENTED_COLUMNS,
 )
+from recidiviz.tests.utils.big_query_emulator_log_parser import (
+    BigQueryEmulatorLogParser,
+)
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_PRODUCTION,
@@ -86,17 +88,12 @@ from recidiviz.validation.views.view_config import (
 from recidiviz.view_registry.deployed_address_schema_utils import (
     get_deployed_addresses_without_state_code_column,
 )
-from recidiviz.view_registry.deployed_source_table_repository import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.view_registry.deployed_view_external_id_exemptions import (
     NORMALIZED_STATE_VIEWS_DATASET,
     get_known_non_export_views_with_person_external_id_column,
     get_known_views_with_unqualified_external_id,
 )
-from recidiviz.view_registry.deployed_view_graphs import (
-    builders_for_all_deployed_view_graphs,
-)
+from recidiviz.view_registry.deployed_view_graphs import deployed_view_graph_registry
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
 
@@ -107,6 +104,50 @@ class ViewSchemaPair(NamedTuple):
 
     declared: Sequence[BigQueryViewColumn]
     deployed: list[bigquery.SchemaField]
+
+
+@attr.define(frozen=True, kw_only=True)
+class _ViewGraphTestSpec:
+    """The inputs for one deployed view graph's compilation subtest."""
+
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Name of the view graph under test."""
+
+    view_builders_to_update: list[BigQueryViewBuilder] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(BigQueryViewBuilder),
+        ]
+    )
+    """Builders for the graph's views, filtered by addresses_to_test when set."""
+
+    source_table_collections: list[SourceTableCollection] = attr.ib(
+        validator=attr_validators.is_list_of(SourceTableCollection)
+    )
+    """Source table collections to seed the emulator with for this graph."""
+
+
+def _filter_collections_to_addresses(
+    collections: list[SourceTableCollection],
+    addresses: set[BigQueryAddress],
+) -> list[SourceTableCollection]:
+    """Returns copies of these collections that contain only the tables at the given
+    addresses, dropping collections left with no tables.
+    """
+    filtered_collections = []
+    for collection in collections:
+        source_tables_by_address = {
+            address: config
+            for address, config in collection.source_tables_by_address.items()
+            if address in addresses
+        }
+        if source_tables_by_address:
+            filtered_collections.append(
+                attr.evolve(
+                    collection, source_tables_by_address=source_tables_by_address
+                )
+            )
+    return filtered_collections
 
 
 def _preprocess_views_to_load_to_emulator(
@@ -168,16 +209,23 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     # The project_id to use for all view collection / building operations.
     gcp_project_id: str | None = None
 
-    # Currently, we only run one test per emulator set-up/teardown, so there's no benefit to wiping emulator data
-    # We disable this functionality in order to save time on teardown
+    # Each emulator is discarded when the next view graph's subtest restarts it,
+    # and the last one is stopped in tearDownClass, so wiping data first only
+    # costs time
     wipe_emulator_data_on_teardown = False
+
+    # Each view graph's subtest boots its own emulator seeded with that graph's
+    # source tables
+    start_emulator_automatically = False
 
     # When developing features, it may be beneficial to select a subset of addresses to run this test for
     # Subclasses can override and provide a list of address strings
     addresses_to_test: list[str] = []
 
-    _view_builders_to_update: list[BigQueryViewBuilder] = []
-    _source_table_addresses: list[BigQueryAddress] = []
+    _graph_test_specs: list[_ViewGraphTestSpec] = []
+    # Emulator logs from each view graph's subtest, keyed by graph name
+    _emulator_logs_by_graph_name: dict[str, str] = {}
+    _all_deployed_view_addresses: set[BigQueryAddress] = set()
     _known_no_state_col_addresses: set[BigQueryAddress] = set()
     _known_has_external_id_addresses: set[BigQueryAddress] = set()
     _known_non_export_views_with_person_external_id: set[BigQueryAddress] = set()
@@ -199,10 +247,13 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with local_project_id_override(cls._get_gcp_project_id()):
-            view_builders_to_update = builders_for_all_deployed_view_graphs()
-            dag_walker = BigQueryViewDagWalker(
-                [view_builder.build() for view_builder in view_builders_to_update]
-            )
+            registry = deployed_view_graph_registry(metadata.project_id())
+            cls._graph_test_specs = cls._build_graph_test_specs(registry)
+            cls._all_deployed_view_addresses = {
+                vb.address
+                for graph in registry.view_graphs
+                for vb in graph.view_builders
+            }
             cls._known_no_state_col_addresses = (
                 get_deployed_addresses_without_state_code_column(
                     cls._get_gcp_project_id()
@@ -221,28 +272,95 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 vb.address for vb in get_validation_view_builders()
             }
 
-        if cls.addresses_to_test:
+        cls._emulator_logs_by_graph_name = {}
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Prints each view graph's emulator logs, then stops the last emulator so
+        the base class does not print its logs a second time."""
+        cls._print_emulator_logs_by_graph()
+        cls.control.stop_emulator()
+        super().tearDownClass()
+
+    @classmethod
+    def _print_emulator_logs_by_graph(cls) -> None:
+        """Prints query stats for each view graph's emulator run, and the raw logs
+        when show_emulator_logs_on_failure is set."""
+        for graph_name, logs in cls._emulator_logs_by_graph_name.items():
+            parser = BigQueryEmulatorLogParser()
+            parser.parse_logs(logs)
+            print(f"\n\nStats for {cls.__name__} view graph [{graph_name}]")
+            print("=" * 80)
+            parser.print_stats(n=10)
+            print("=" * 80)
+            if cls.show_emulator_logs_on_failure:
+                print(logs)
+
+    @classmethod
+    def _build_graph_test_specs(
+        cls, registry: BigQueryViewGraphRegistry
+    ) -> list[_ViewGraphTestSpec]:
+        """Returns one test spec per view graph in the registry. When the
+        addresses_to_test debug hook is set, each graph's spec is filtered down to
+        the ancestors of the requested addresses in that graph, graphs containing
+        none of the requested addresses get no spec, and an address found in no
+        graph raises.
+        """
+        if not cls.addresses_to_test:
+            return [
+                _ViewGraphTestSpec(
+                    name=graph.name,
+                    view_builders_to_update=graph.view_builders,
+                    # The emulator holds every loaded table in memory, so load
+                    # only the registered inputs the graph's views actually read.
+                    source_table_collections=_filter_collections_to_addresses(
+                        graph.input_source_table_collections,
+                        graph.dag_walker.get_referenced_source_tables(),
+                    ),
+                )
+                for graph in registry.view_graphs
+            ]
+
+        addresses_to_test = {
+            BigQueryAddress.from_str(address) for address in cls.addresses_to_test
+        }
+        specs = []
+        matched_addresses: set[BigQueryAddress] = set()
+        for graph in registry.view_graphs:
+            dag_walker = graph.dag_walker
+            addresses_in_graph = addresses_to_test & set(dag_walker.nodes_by_address)
+            if not addresses_in_graph:
+                continue
+            matched_addresses |= addresses_in_graph
             sub_dag = dag_walker.get_sub_dag(
                 views=[
-                    dag_walker.view_for_address(BigQueryAddress.from_str(address))
-                    for address in cls.addresses_to_test
+                    dag_walker.view_for_address(address)
+                    for address in addresses_in_graph
                 ],
                 include_ancestors=True,
                 include_descendants=False,
             )
-            cls._view_builders_to_update = [
-                view_builder
-                for view_builder in view_builders_to_update
-                if view_builder.address in sub_dag.nodes_by_address.keys()
-            ]
-            cls._source_table_addresses = list(sub_dag.get_referenced_source_tables())
-        else:
-            cls._view_builders_to_update = view_builders_to_update
-            cls._source_table_addresses = list(
-                dag_walker.get_referenced_source_tables()
+            specs.append(
+                _ViewGraphTestSpec(
+                    name=graph.name,
+                    view_builders_to_update=[
+                        vb
+                        for vb in graph.view_builders
+                        if vb.address in sub_dag.nodes_by_address
+                    ],
+                    source_table_collections=_filter_collections_to_addresses(
+                        graph.input_source_table_collections,
+                        sub_dag.get_referenced_source_tables(),
+                    ),
+                )
             )
-
-        super().setUpClass()
+        if unmatched_addresses := addresses_to_test - matched_addresses:
+            raise ValueError(
+                f"Found no view graph containing these addresses_to_test addresses:"
+                f"{BigQueryAddress.addresses_to_str(unmatched_addresses, indent_level=2)}"
+            )
+        return specs
 
     @classmethod
     def _allowed_has_person_external_id_addresses(cls) -> set[BigQueryAddress]:
@@ -324,8 +442,12 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     # TODO(#80204): Update this check to just verify that the schemas deployed in this
     #  test match the schemas declared in the views, then migrate all the remaining
     #  checks in this function to a new test that verifies against declared schemas.
-    def _run_view_schema_checks(self) -> None:
-        deployed_view_address_to_schemas = self._load_view_schemas_by_address()
+    def _run_view_schema_checks(
+        self, view_builders: Sequence[BigQueryViewBuilder]
+    ) -> None:
+        deployed_view_address_to_schemas = self._load_view_schemas_by_address(
+            view_builders
+        )
 
         self._verify_declared_schemas_match_actual_schemas(
             deployed_view_address_to_schemas
@@ -375,7 +497,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         return has_field_addresses, does_not_have_field_addresses
 
     def _load_view_schemas_by_address(
-        self,
+        self, view_builders: Sequence[BigQueryViewBuilder]
     ) -> dict[BigQueryAddress, ViewSchemaPair]:
         """Loads schemas for every view address into a map, pairing each view's
         declared schema (from the builder) with its deployed schema (from
@@ -383,7 +505,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         optimization are omitted from the returned map.
         """
         declared_by_address: dict[BigQueryAddress, Sequence[BigQueryViewColumn]] = {
-            vb.address: vb.build().schema for vb in self._view_builders_to_update
+            vb.address: vb.build().schema for vb in view_builders
         }
         view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair] = {}
         with futures.ThreadPoolExecutor(
@@ -394,7 +516,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         ) as executor:
             get_schema_futures = {
                 executor.submit(self._get_schema, vb.address): vb.address
-                for vb in self._view_builders_to_update
+                for vb in view_builders
             }
             for future in futures.as_completed(get_schema_futures):
                 address = get_schema_futures[future]
@@ -487,9 +609,8 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
         expected_has_external_id_addresses = self._known_has_external_id_addresses
 
-        all_known_view_addresses = {vb.address for vb in self._view_builders_to_update}
         invalid_addresses = (
-            expected_has_external_id_addresses - all_known_view_addresses
+            expected_has_external_id_addresses - self._all_deployed_view_addresses
         )
         if invalid_addresses:
             addresses_list = BigQueryAddress.addresses_to_str(
@@ -670,47 +791,35 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         if error_chunks:
             raise ValueError("\n\n".join(error_chunks))
 
-    @classmethod
-    def get_source_tables(cls) -> list[SourceTableCollection]:
-        # The view graph validation test uses all source tables
-        # When debugging failures, it may be easier to filter this list of collections
-        # down to just the failing set
-        with local_project_id_override(cls._get_gcp_project_id()):
-            repository = build_source_table_repository_for_collected_schemata(
-                project_id=cls.gcp_project_id
-            )
-
-        if cls._source_table_addresses:
-            return [
-                SourceTableCollection(
-                    update_groups={SourceTableUpdateGroup.CALC},
-                    dataset_id=dataset_id,
-                    source_tables_by_address={
-                        address: repository.source_tables[address]
-                        for address in list(source_table_addresses)
-                    },
-                    update_config=SourceTableCollectionUpdateConfig.protected(),
-                    description=f"Fake description for dataset {dataset_id}",
+    def run_all_view_graphs_test(self) -> None:
+        """Compiles every deployed view graph against the emulator, one subtest per
+        graph, seeding the emulator with exactly that graph's registered input
+        source tables."""
+        for graph_test_spec in self._graph_test_specs:
+            with self.subTest(view_graph=graph_test_spec.name):
+                # The emulator only accepts source tables at boot, so each graph
+                # gets a fresh emulator seeded with its own inputs. This also
+                # stops the previous graph's emulator, if any.
+                self.restart_emulator_with_source_tables(
+                    graph_test_spec.source_table_collections
                 )
-                for dataset_id, source_table_addresses in groupby(
-                    sorted(
-                        cls._source_table_addresses,
-                        key=lambda address: address.dataset_id,
-                    ),
-                    key=lambda address: address.dataset_id,
-                )
-            ]
+                try:
+                    self._compile_graph_and_run_schema_checks(graph_test_spec)
+                finally:
+                    self._emulator_logs_by_graph_name[
+                        graph_test_spec.name
+                    ] = self.control.get_logs()
 
-        return repository.source_table_collections
-
-    def run_view_graph_test(self) -> None:
-        """Runs an end-to-end test of our view graph"""
+    def _compile_graph_and_run_schema_checks(
+        self, graph_test_spec: _ViewGraphTestSpec
+    ) -> None:
+        """Runs an end-to-end test of one view graph"""
         skipped_views = _preprocess_views_to_load_to_emulator(
-            self._view_builders_to_update
+            graph_test_spec.view_builders_to_update
         )
         view_builders_to_update = [
             view_builder
-            for view_builder in self._view_builders_to_update
+            for view_builder in graph_test_spec.view_builders_to_update
             if view_builder.address not in skipped_views
         ]
         create_managed_dataset_and_deploy_views_for_view_builders(
@@ -730,7 +839,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             # fail exhaustively
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
-        self._run_view_schema_checks()
+        self._run_view_schema_checks(graph_test_spec.view_builders_to_update)
 
 
 class StagingViewGraphTest(BaseViewGraphTest):
@@ -739,8 +848,8 @@ class StagingViewGraphTest(BaseViewGraphTest):
     # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
     addresses_to_test: list[str] = []
 
-    def test_view_graph(self) -> None:
-        self.run_view_graph_test()
+    def test_all_view_graphs(self) -> None:
+        self.run_all_view_graphs_test()
 
 
 class ProductionViewGraphTest(BaseViewGraphTest):
@@ -749,5 +858,5 @@ class ProductionViewGraphTest(BaseViewGraphTest):
     # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
     addresses_to_test: list[str] = []
 
-    def test_view_graph(self) -> None:
-        self.run_view_graph_test()
+    def test_all_view_graphs(self) -> None:
+        self.run_all_view_graphs_test()

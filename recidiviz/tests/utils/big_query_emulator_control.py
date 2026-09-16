@@ -73,10 +73,10 @@ class BigQueryEmulatorControl:
     """Tooling for starting the BigQuery emulator via the Docker API"""
 
     docker_client: DockerClient = attr.ib()
-    container: Container | None = attr.ib(default=None)
-    name: str = attr.ib(factory=lambda: f"recidiviz-bq-emulator-{os.urandom(15).hex()}")
     port: int = attr.ib(factory=get_bq_emulator_port)
     grpc_port: int = attr.ib(factory=get_bq_emulator_grpc_port)
+    container: Container | None = attr.ib(default=None)
+    """The running emulator container, or None when no emulator is running."""
 
     def pull_image(self) -> None:
         try:
@@ -86,6 +86,10 @@ class BigQueryEmulatorControl:
 
     def start_emulator(self, input_schema_json_path: str | None = None) -> None:
         """Starts the emulator container. Optionally mounts source tables volume"""
+        if self.container is not None:
+            raise ValueError(
+                f"Emulator container [{self.container.name}] is already running"
+            )
         base_command = (
             f"{EMULATOR_ENTRYPOINT} --project={BQ_EMULATOR_PROJECT_ID} "
             f"--log-level=info --database=:memory: --port={self.port} "
@@ -104,10 +108,11 @@ class BigQueryEmulatorControl:
                 }
             }
 
+        container_name = f"recidiviz-bq-emulator-{os.urandom(15).hex()}"
         self.container = self.docker_client.containers.run(
             EMULATOR_IMAGE,
             command=base_command,
-            name=self.name,
+            name=container_name,
             auto_remove=True,
             ports={self.port: self.port, self.grpc_port: self.grpc_port},
             detach=True,
@@ -146,8 +151,10 @@ class BigQueryEmulatorControl:
         raise ValueError("expected str or bytes type from Docker logs")
 
     def stop_emulator(self) -> None:
-        if self.container:
-            self.docker_client.containers.get(self.container.id).stop()
+        if self.container is None:
+            return
+        self.docker_client.containers.get(self.container.id).stop()
+        self.container = None
 
     def prune_all(self) -> None:
         for container in self.docker_client.containers.list(

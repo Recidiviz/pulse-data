@@ -115,29 +115,61 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     # If the test failed, output the emulator logs prior to exiting
     show_emulator_logs_on_failure = False
 
+    # Subclasses that boot the emulator themselves, e.g. with
+    # restart_emulator_with_source_tables, can set this to False to skip the
+    # class-level boot
+    start_emulator_automatically = True
+
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         return []
+
+    @classmethod
+    def _write_source_tables_json(
+        cls, source_tables: list[SourceTableCollection]
+    ) -> str:
+        """Returns the path of a new JSON file in the fixtures directory describing
+        these collections' tables, for the emulator to load at boot.
+        """
+        with tempfile.NamedTemporaryFile(
+            dir=os.path.join(os.path.dirname(__file__), "fixtures"), delete=False
+        ) as file:
+            return write_emulator_source_tables_json(
+                source_table_collections=source_tables,
+                file_name=file.name,
+            )
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.control = BigQueryEmulatorControl.build()
         cls.control.pull_image()
 
+        if not cls.start_emulator_automatically:
+            return
+
         input_schema_json_path = None
         if cls.input_json_schema_path is not None:
             input_schema_json_path = cls.input_json_schema_path
         elif source_tables := cls.get_source_tables():
-            with tempfile.NamedTemporaryFile(
-                dir=os.path.join(os.path.dirname(__file__), "fixtures"), delete=False
-            ) as file:
-                cls.input_json_schema_path = file.name
-                input_schema_json_path = write_emulator_source_tables_json(
-                    source_table_collections=source_tables,
-                    file_name=cls.input_json_schema_path,
-                )
+            input_schema_json_path = cls._write_source_tables_json(source_tables)
+            cls.input_json_schema_path = input_schema_json_path
 
         cls.control.start_emulator(input_schema_json_path=input_schema_json_path)
+
+    def restart_emulator_with_source_tables(
+        self, source_tables: list[SourceTableCollection]
+    ) -> None:
+        """Stops the emulator and boots a fresh one seeded with these collections'
+        tables. The emulator only accepts source tables at boot, so this is the
+        only way to replace its loaded source tables mid-test.
+        """
+        self.control.stop_emulator()
+        input_schema_json_path = self._write_source_tables_json(source_tables)
+        try:
+            self.control.start_emulator(input_schema_json_path=input_schema_json_path)
+        finally:
+            if self.delete_json_input_schema_on_teardown:
+                os.remove(input_schema_json_path)
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
@@ -241,19 +273,20 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        logs = cls.control.get_logs()
+        if cls.control.container is not None:
+            logs = cls.control.get_logs()
 
-        parser = BigQueryEmulatorLogParser()
-        parser.parse_logs(logs)
-        print(f"\n\nStats for {cls.__name__}")
-        print("=" * 80)
-        parser.print_stats(n=10)
-        print("=" * 80)
+            parser = BigQueryEmulatorLogParser()
+            parser.parse_logs(logs)
+            print(f"\n\nStats for {cls.__name__}")
+            print("=" * 80)
+            parser.print_stats(n=10)
+            print("=" * 80)
 
-        if cls.show_emulator_logs_on_failure:
-            print(logs)
+            if cls.show_emulator_logs_on_failure:
+                print(logs)
 
-        cls.control.stop_emulator()
+            cls.control.stop_emulator()
 
         if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
             os.remove(cls.input_json_schema_path)
