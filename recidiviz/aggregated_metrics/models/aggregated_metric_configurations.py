@@ -193,6 +193,26 @@ AVG_DAILY_POPULATION = DailyAvgSpanCountMetric(
     ),
 )
 
+AVG_DAILY_POPULATION_INCARCERATED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_incarcerated",
+    display_name="Average Population Incarcerated",
+    description="Average daily count of clients in the population who are incarcerated",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["INCARCERATION"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_SUPERVISED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_supervised",
+    display_name="Average Population Supervised",
+    description="Average daily count of clients in the population who are on community supervision",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["SUPERVISION"]},
+    ),
+)
+
 AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT = DailyAvgSpanCountMetric(
     name="avg_population_community_confinement",
     display_name="Average Population: Community Confinement",

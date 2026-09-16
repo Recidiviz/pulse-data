@@ -65,6 +65,7 @@ INSIGHTS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.PERSON_DAYS_SUPERVISED,
     metric_config.AVG_DAILY_POPULATION_PAROLE,
     metric_config.AVG_DAILY_POPULATION_PROBATION,
+    metric_config.AVG_DAILY_POPULATION_SUPERVISED,
     # All outcome metrics reference in outliers configs
     *OutliersAggregatedMetricsCollector().get_metrics(),
     metric_config.DISTINCT_OUTLIER_OFFICERS,
