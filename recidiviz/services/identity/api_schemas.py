@@ -356,6 +356,15 @@ class ImportRequestSchema(marshmallow.Schema):
 
     tenant = fields.Enum(Tenant, by_value=True, required=True)
 
+    # When true, the import deletes the tenant's existing identities before
+    # creating from the snapshot; when false, it leaves them in place and
+    # creates identities only for new clusters.
+    # TODO(OBT-48249): Defaults to true because runs without the clear are not
+    # yet correct (no update pass, merge detection, or split detection); flip
+    # the default to false once they are, keeping clear-first available as an
+    # explicit full-reload option.
+    clear_first = fields.Bool(load_default=True)
+
 
 class IdentitySearchRequestSchema(marshmallow.Schema):
     """Validates the JSON body for POST /identities/search. Provided fields

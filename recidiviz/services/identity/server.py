@@ -47,6 +47,7 @@ from recidiviz.services.identity.exceptions import UnknownCallerError
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
 from recidiviz.services.identity.import_processor import process_import
 from recidiviz.services.identity.import_task_enqueuer import (
+    CLEAR_FIRST_BODY_KEY,
     SNAPSHOT_TIMESTAMP_BODY_KEY,
     TENANT_BODY_KEY,
 )
@@ -54,6 +55,7 @@ from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
 from recidiviz.utils.environment import in_development, in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.types import assert_type
 
 app = Flask(__name__)
 
@@ -274,6 +276,7 @@ def handle_import_task() -> tuple[str, HTTPStatus]:
         snapshot_timestamp=datetime.datetime.fromisoformat(
             body[SNAPSHOT_TIMESTAMP_BODY_KEY]
         ),
+        should_clear_first=assert_type(body[CLEAR_FIRST_BODY_KEY], bool),
     )
     return "", HTTPStatus.OK
 

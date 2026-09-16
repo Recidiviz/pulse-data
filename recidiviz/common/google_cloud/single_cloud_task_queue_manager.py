@@ -81,7 +81,8 @@ class SingleCloudTaskQueueManager(Generic[QueueInfoType]):
     def create_task(
         self,
         *,
-        body: Optional[Dict[str, str]] = None,
+        # The underlying GoogleCloudTasksClientWrapper converts this to JSON.
+        body: Optional[Dict[str, Any]] = None,
         task_id: Optional[str] = None,
         absolute_uri: Optional[str] = None,
         schedule_delay_seconds: int = 0,

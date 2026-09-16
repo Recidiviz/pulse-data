@@ -51,6 +51,7 @@ from recidiviz.utils.metadata import CloudRunMetadata
 # processing endpoint that reads it back.
 TENANT_BODY_KEY = "tenant"
 SNAPSHOT_TIMESTAMP_BODY_KEY = "snapshot_timestamp"
+CLEAR_FIRST_BODY_KEY = "clear_first"
 
 # How long Cloud Tasks waits for the processing endpoint to respond before
 # treating the attempt as failed. Set to the Cloud Tasks maximum because the
@@ -60,24 +61,43 @@ _IMPORT_DISPATCH_DEADLINE_SECONDS = 30 * 60
 
 
 def enqueue_import_task(
-    *, tenant: Tenant, cloud_run_metadata: CloudRunMetadata
+    *,
+    tenant: Tenant,
+    cloud_run_metadata: CloudRunMetadata,
+    should_clear_first: bool,
 ) -> None:
     """Enqueues a Cloud Task to import the given tenant's clustering results.
 
-    Names the task deterministically from the tenant's cluster snapshot timestamp
-    so Cloud Tasks dedupes rapid repeated triggers for the same snapshot. When
-    Cloud Tasks rejects the name as a duplicate because a task for this snapshot
-    is still in the queue, this function enqueues nothing. When the name is
-    rejected but no such task is in the queue (the name is tombstoned because a
-    task with it already ran or was deleted), this function re-enqueues the
-    import under a fresh name, so a permanently failed import can be recovered
-    by triggering again.
+    Names the task deterministically from the tenant's cluster snapshot
+    timestamp and the run's mode, so Cloud Tasks dedupes rapid repeated
+    triggers for the same snapshot but never dedupes one mode's request
+    against the other's. When Cloud Tasks rejects the name as a duplicate
+    because a task for this snapshot is still in the queue, this function
+    enqueues nothing. When the name is rejected but no such task is in the
+    queue (the name is tombstoned because a task with it already ran or was
+    deleted), this function re-enqueues the import under a fresh name, so a
+    permanently failed import can be recovered by triggering again.
 
-    Raises ClusterSnapshotNotFoundError if the tenant's identity_cluster table
-    does not exist yet.
+    Args:
+        tenant: The tenant whose clustering results to import.
+        cloud_run_metadata: Coordinates of the running service, used to
+            address the processing endpoint and as the identity the task
+            authenticates with.
+        should_clear_first: Whether the import deletes the tenant's existing
+            identities before creating from the snapshot, rather than leaving
+            them in place and creating only new clusters. Carried to the
+            processing endpoint in the task body.
+
+    Raises:
+        ClusterSnapshotNotFoundError: If the tenant's identity_cluster table
+            does not exist yet.
     """
     snapshot_timestamp = _cluster_snapshot_timestamp(tenant)
-    task_id = _import_task_id(tenant=tenant, snapshot_timestamp=snapshot_timestamp)
+    task_id = _import_task_id(
+        tenant=tenant,
+        snapshot_timestamp=snapshot_timestamp,
+        should_clear_first=should_clear_first,
+    )
     queue_manager: SingleCloudTaskQueueManager[
         CloudTaskQueueInfo
     ] = SingleCloudTaskQueueManager(
@@ -89,6 +109,7 @@ def enqueue_import_task(
             task_id=task_id,
             tenant=tenant,
             snapshot_timestamp=snapshot_timestamp,
+            should_clear_first=should_clear_first,
             cloud_run_metadata=cloud_run_metadata,
         )
     except AlreadyExists:
@@ -123,6 +144,7 @@ def enqueue_import_task(
             task_id=f"{task_id}-retry-{uuid.uuid4().hex[:8]}",
             tenant=tenant,
             snapshot_timestamp=snapshot_timestamp,
+            should_clear_first=should_clear_first,
             cloud_run_metadata=cloud_run_metadata,
         )
 
@@ -153,8 +175,18 @@ def _cluster_snapshot_timestamp(tenant: Tenant) -> datetime.datetime:
     return table.modified
 
 
-def _import_task_id(*, tenant: Tenant, snapshot_timestamp: datetime.datetime) -> str:
-    return f"import-{tenant.value}-{int(snapshot_timestamp.timestamp())}"
+def _import_task_id(
+    *,
+    tenant: Tenant,
+    snapshot_timestamp: datetime.datetime,
+    should_clear_first: bool,
+) -> str:
+    # Both modes carry a suffix so that neither task name is a prefix of the
+    # other; the AlreadyExists queue check in enqueue_import_task matches by
+    # prefix, and a bare name would let a pending task in one mode swallow a
+    # trigger for the other.
+    mode_suffix = "-clear-first" if should_clear_first else "-update"
+    return f"import-{tenant.value}-{int(snapshot_timestamp.timestamp())}{mode_suffix}"
 
 
 def _create_import_task(
@@ -163,6 +195,7 @@ def _create_import_task(
     task_id: str,
     tenant: Tenant,
     snapshot_timestamp: datetime.datetime,
+    should_clear_first: bool,
     cloud_run_metadata: CloudRunMetadata,
 ) -> None:
     """Creates the Cloud Task that imports the given tenant's cluster snapshot.
@@ -176,6 +209,7 @@ def _create_import_task(
         body={
             TENANT_BODY_KEY: tenant.value,
             SNAPSHOT_TIMESTAMP_BODY_KEY: snapshot_timestamp.isoformat(),
+            CLEAR_FIRST_BODY_KEY: should_clear_first,
         },
         service_account_email=cloud_run_metadata.service_account_email,
         dispatch_deadline_seconds=_IMPORT_DISPATCH_DEADLINE_SECONDS,

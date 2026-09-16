@@ -40,6 +40,7 @@ from recidiviz.services.identity.exceptions import (
 )
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
 from recidiviz.services.identity.import_task_enqueuer import (
+    CLEAR_FIRST_BODY_KEY,
     SNAPSHOT_TIMESTAMP_BODY_KEY,
     TENANT_BODY_KEY,
 )
@@ -474,6 +475,23 @@ class PostImportEndpointTest(TestCase):
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
         self.mock_enqueue.assert_called_once()
         self.assertEqual(Tenant.US_OZ, self.mock_enqueue.call_args.kwargs["tenant"])
+        # TODO(OBT-48249): A request that omits clear_first defaults to
+        # clearing until runs without the clear are correct.
+        self.assertTrue(self.mock_enqueue.call_args.kwargs["should_clear_first"])
+
+    def test_request_can_opt_out_of_clear_first(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
+        ):
+            response = self.client.post(
+                TRIGGER_IMPORT_ROUTE,
+                json={"tenant": "US_OZ", "clear_first": False},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
+        self.mock_enqueue.assert_called_once()
+        self.assertFalse(self.mock_enqueue.call_args.kwargs["should_clear_first"])
 
     def test_returns_404_when_cluster_table_missing(self) -> None:
         self.mock_enqueue.side_effect = ClusterSnapshotNotFoundError(
@@ -647,12 +665,17 @@ class ImportProcessEndpointTest(TestCase):
         self.mock_process = self.process_patcher.start()
         self.addCleanup(self.process_patcher.stop)
 
-    def _post(self, headers: dict[str, str] | None = None) -> TestResponse:
+    def _post(
+        self,
+        headers: dict[str, str] | None = None,
+        should_clear_first: bool = True,
+    ) -> TestResponse:
         return self.client.post(
             IMPORT_PROCESS_INTERNAL_ROUTE,
             json={
                 TENANT_BODY_KEY: "US_OZ",
                 SNAPSHOT_TIMESTAMP_BODY_KEY: "2026-08-08T00:00:00+00:00",
+                CLEAR_FIRST_BODY_KEY: should_clear_first,
             },
             headers=headers or {},
         )
@@ -672,10 +695,32 @@ class ImportProcessEndpointTest(TestCase):
             snapshot_timestamp=datetime.datetime(
                 2026, 8, 8, tzinfo=datetime.timezone.utc
             ),
+            should_clear_first=True,
         )
         self.assertEqual(
             "http://localhost:5000/_internal/import/process",
             mock_verify.call_args.kwargs["audience"],
+        )
+
+    def test_clear_first_false_in_task_body_is_passed_through(self) -> None:
+        with patch(
+            "recidiviz.services.identity.server.in_development", return_value=False
+        ), patch(
+            "recidiviz.services.identity.server.id_token.verify_oauth2_token",
+            return_value={"email": self.SERVICE_SA_EMAIL, "email_verified": True},
+        ):
+            response = self._post(
+                headers={"Authorization": "Bearer good-token"},
+                should_clear_first=False,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        self.mock_process.assert_called_once_with(
+            tenant=Tenant.US_OZ,
+            snapshot_timestamp=datetime.datetime(
+                2026, 8, 8, tzinfo=datetime.timezone.utc
+            ),
+            should_clear_first=False,
         )
 
     def test_missing_bearer_token_returns_401(self) -> None:

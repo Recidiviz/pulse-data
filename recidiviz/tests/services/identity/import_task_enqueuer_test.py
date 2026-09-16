@@ -32,7 +32,7 @@ from recidiviz.utils.metadata import CloudRunMetadata
 
 _SNAPSHOT = datetime.datetime(2026, 8, 8, tzinfo=datetime.timezone.utc)
 _SNAPSHOT_EPOCH = int(_SNAPSHOT.timestamp())
-_TASK_ID = f"import-US_OZ-{_SNAPSHOT_EPOCH}"
+_TASK_ID = f"import-US_OZ-{_SNAPSHOT_EPOCH}-clear-first"
 
 _CLOUD_RUN_METADATA = CloudRunMetadata(
     project_id="recidiviz-staging",
@@ -63,26 +63,61 @@ class EnqueueImportTaskTest(TestCase):
         self.mock_bq_client.get_table.return_value.modified = _SNAPSHOT
 
     def test_enqueues_task_scoped_to_the_import_queue(self) -> None:
-        enqueue_import_task(tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA)
+        enqueue_import_task(
+            tenant=Tenant.US_OZ,
+            cloud_run_metadata=_CLOUD_RUN_METADATA,
+            should_clear_first=True,
+        )
         self.assertEqual(
             IDENTITY_IMPORT_QUEUE,
             self.mock_queue_manager.call_args.kwargs["queue_name"],
         )
 
     def test_reads_snapshot_from_the_cluster_table(self) -> None:
-        enqueue_import_task(tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA)
+        enqueue_import_task(
+            tenant=Tenant.US_OZ,
+            cloud_run_metadata=_CLOUD_RUN_METADATA,
+            should_clear_first=True,
+        )
         self.mock_bq_client.get_table.assert_called_once_with(
             "us_oz_identity_cluster.identity_cluster"
         )
 
     def test_task_dedupe_key_and_payload(self) -> None:
-        enqueue_import_task(tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA)
+        enqueue_import_task(
+            tenant=Tenant.US_OZ,
+            cloud_run_metadata=_CLOUD_RUN_METADATA,
+            should_clear_first=True,
+        )
         self.mock_queue_manager.return_value.create_task.assert_called_once_with(
-            task_id=f"import-US_OZ-{_SNAPSHOT_EPOCH}",
+            task_id=f"import-US_OZ-{_SNAPSHOT_EPOCH}-clear-first",
             absolute_uri="https://identity-service-abc.a.run.app/_internal/import/process",
             body={
                 "tenant": "US_OZ",
                 "snapshot_timestamp": "2026-08-08T00:00:00+00:00",
+                "clear_first": True,
+            },
+            service_account_email="identity-service-cr@fake-project.iam.gserviceaccount.com",
+            dispatch_deadline_seconds=1800,
+        )
+
+    def test_task_without_clear_first_gets_its_own_dedupe_key_and_payload(self) -> None:
+        # The clear-first and update modes must not dedupe each other away, so
+        # the task name says which mode the run is. Each mode's suffix also
+        # keeps its name from being a prefix of the other's, which the
+        # AlreadyExists queue check (matching by prefix) relies on.
+        enqueue_import_task(
+            tenant=Tenant.US_OZ,
+            cloud_run_metadata=_CLOUD_RUN_METADATA,
+            should_clear_first=False,
+        )
+        self.mock_queue_manager.return_value.create_task.assert_called_once_with(
+            task_id=f"import-US_OZ-{_SNAPSHOT_EPOCH}-update",
+            absolute_uri="https://identity-service-abc.a.run.app/_internal/import/process",
+            body={
+                "tenant": "US_OZ",
+                "snapshot_timestamp": "2026-08-08T00:00:00+00:00",
+                "clear_first": False,
             },
             service_account_email="identity-service-cr@fake-project.iam.gserviceaccount.com",
             dispatch_deadline_seconds=1800,
@@ -92,7 +127,9 @@ class EnqueueImportTaskTest(TestCase):
         self.mock_bq_client.get_table.side_effect = NotFound("no such table")
         with self.assertRaises(ClusterSnapshotNotFoundError):
             enqueue_import_task(
-                tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA
+                tenant=Tenant.US_OZ,
+                cloud_run_metadata=_CLOUD_RUN_METADATA,
+                should_clear_first=True,
             )
         self.mock_queue_manager.return_value.create_task.assert_not_called()
 
@@ -109,7 +146,9 @@ class EnqueueImportTaskTest(TestCase):
         with self.assertLogs(level="INFO") as logs:
             # Does not raise.
             enqueue_import_task(
-                tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA
+                tenant=Tenant.US_OZ,
+                cloud_run_metadata=_CLOUD_RUN_METADATA,
+                should_clear_first=True,
             )
         self.assertFalse([r for r in logs.records if r.levelname == "WARNING"])
         # Nothing was re-enqueued beyond the rejected attempt.
@@ -128,7 +167,11 @@ class EnqueueImportTaskTest(TestCase):
         self.mock_queue_manager.return_value.get_queue_info.return_value = (
             CloudTaskQueueInfo(queue_name=IDENTITY_IMPORT_QUEUE, task_names=[])
         )
-        enqueue_import_task(tenant=Tenant.US_OZ, cloud_run_metadata=_CLOUD_RUN_METADATA)
+        enqueue_import_task(
+            tenant=Tenant.US_OZ,
+            cloud_run_metadata=_CLOUD_RUN_METADATA,
+            should_clear_first=True,
+        )
 
         (
             first_call,

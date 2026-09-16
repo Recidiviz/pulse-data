@@ -190,7 +190,9 @@ class TriggerImportAPI(MethodView):
         ]
         try:
             enqueue_import_task(
-                tenant=params["tenant"], cloud_run_metadata=cloud_run_metadata
+                tenant=params["tenant"],
+                cloud_run_metadata=cloud_run_metadata,
+                should_clear_first=params["clear_first"],
             )
         except ClusterSnapshotNotFoundError as e:
             abort(HTTPStatus.NOT_FOUND, message=str(e))
