@@ -38,7 +38,7 @@ from recidiviz.services.identity.constants import (
     TRIGGER_IMPORT_BLUEPRINT_ROUTE,
 )
 from recidiviz.services.identity.exceptions import ClusterSnapshotNotFoundError
-from recidiviz.services.identity.import_task import enqueue_import_task
+from recidiviz.services.identity.import_task_enqueuer import enqueue_import_task
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 from recidiviz.services.identity.types import IdentitySearchRequest
 from recidiviz.utils.metadata import CloudRunMetadata

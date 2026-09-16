@@ -45,10 +45,10 @@ from recidiviz.services.identity.constants import (
 from recidiviz.services.identity.error_handlers import register_error_handlers
 from recidiviz.services.identity.exceptions import UnknownCallerError
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
-from recidiviz.services.identity.import_task import (
+from recidiviz.services.identity.import_processor import process_import
+from recidiviz.services.identity.import_task_enqueuer import (
     SNAPSHOT_TIMESTAMP_BODY_KEY,
     TENANT_BODY_KEY,
-    process_import,
 )
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
