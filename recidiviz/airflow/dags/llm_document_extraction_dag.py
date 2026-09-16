@@ -65,7 +65,7 @@ from recidiviz.airflow.dags.utils.update_source_table_schemata import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
-    get_states_with_document_collections,
+    get_states_with_document_collections_existing_in_env,
     load_first_order_document_collection_configs,
 )
 
@@ -208,7 +208,7 @@ def create_llm_document_extraction_branch_map() -> dict[str, list[DAGNode] | DAG
         get_llm_document_extraction_branch_key(
             state_code
         ): create_single_state_llm_document_extraction_branch(state_code)
-        for state_code in get_states_with_document_collections()
+        for state_code in get_states_with_document_collections_existing_in_env()
     }
 
 

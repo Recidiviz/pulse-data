@@ -816,6 +816,8 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_OR.
   us_oz_document_contents:
     description: Document contents tables for Oz
+    projects:
+      - recidiviz-staging
   us_oz_document_extraction_results__raw:
     description: Raw LLM document-extraction result tables for Oz
   us_oz_document_extraction_results__validated:
@@ -824,9 +826,13 @@ datasets:
     description: LLM document-extraction validation audit tables for Oz
   us_oz_document_store_metadata:
     description: Document store metadata tables for Oz
+    projects:
+      - recidiviz-staging
   us_oz_document_store_temp:
     description: Temporary tables used during document store processing for Oz
     default_table_expiration_ms: 1209600000
+    projects:
+      - recidiviz-staging
   us_oz_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_OZ, consumed by the Identity Service.
     projects:

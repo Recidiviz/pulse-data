@@ -16,9 +16,13 @@
 # =============================================================================
 """Shared helpers for document-store tests: loaders for the fake US_XX document
 collection."""
+from contextlib import AbstractContextManager
+from unittest.mock import MagicMock, patch
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    collect_document_collection_config_yaml_paths,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
@@ -34,4 +38,21 @@ def get_fake_first_order_document_collection_config() -> DocumentCollectionConfi
         StateCode.US_XX,
         FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
         config_module=fake_config,
+    )
+
+
+def patch_fake_config_states_exist_in_env() -> AbstractContextManager[MagicMock]:
+    """Returns a patch that treats the fake config module's document-collection
+    states as existing in the environment. Enter it around any code that collects
+    document-store source tables from the fake config module.
+    """
+    fake_config_states = [
+        sc
+        for sc in StateCode
+        if collect_document_collection_config_yaml_paths(sc, config_module=fake_config)
+    ]
+    return patch(
+        "recidiviz.documents.store.document_collection_config."
+        "get_direct_ingest_states_existing_in_env",
+        MagicMock(return_value=fake_config_states),
     )

@@ -18,6 +18,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import yaml
 from google.cloud import bigquery
@@ -35,6 +36,7 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     DocumentRootEntityIdType,
     collect_document_collection_config_yaml_paths,
+    get_states_with_document_collections_existing_in_env,
     load_first_order_document_collection_configs,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
@@ -225,6 +227,34 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             StateCode.US_LL, fake_config_module
         )
         self.assertEqual(configs, {})
+
+    def test_states_with_document_collections_existing_in_env(self) -> None:
+        # The fake config defines US_XX and US_YY collections. The result is the
+        # intersection with the env: US_YY (has collections but not in env) and
+        # US_LL (in env but no collections) both drop out.
+        with patch(
+            "recidiviz.documents.store.document_collection_config."
+            "get_direct_ingest_states_existing_in_env",
+            MagicMock(return_value=[StateCode.US_XX, StateCode.US_LL]),
+        ):
+            self.assertEqual(
+                [StateCode.US_XX],
+                get_states_with_document_collections_existing_in_env(
+                    fake_config_module
+                ),
+            )
+
+        with patch(
+            "recidiviz.documents.store.document_collection_config."
+            "get_direct_ingest_states_existing_in_env",
+            MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
+        ):
+            self.assertEqual(
+                [StateCode.US_XX, StateCode.US_YY],
+                get_states_with_document_collections_existing_in_env(
+                    fake_config_module
+                ),
+            )
 
     def test_validation_duplicate_columns(self) -> None:
         with self.assertRaisesRegex(ValueError, "has duplicate column names"):

@@ -56,6 +56,9 @@ from recidiviz.documents.store.document_store_columns import (
     STAFF_ID_COLUMN_NAME,
     get_document_store_column_schema,
 )
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStatePersonExternalId,
@@ -584,16 +587,21 @@ def collect_document_collection_config_yaml_paths(
     return list(state_dir.glob("*.yaml"))
 
 
-def get_states_with_document_collections(
+def get_states_with_document_collections_existing_in_env(
     config_module: ModuleType | None = None,
 ) -> list[StateCode]:
-    """Returns the list of StateCode values that have document collection configs."""
-    module = config_module or default_config_module
-    return [
+    """Returns the states that both have document collection configs and exist in
+    the current environment.
+    """
+    states_existing_in_env = set(get_direct_ingest_states_existing_in_env())
+    states_with_document_collections = {
         sc
         for sc in StateCode
-        if collect_document_collection_config_yaml_paths(sc, config_module=module)
-    ]
+        if collect_document_collection_config_yaml_paths(
+            sc, config_module=config_module or default_config_module
+        )
+    }
+    return list(states_with_document_collections & states_existing_in_env)
 
 
 def load_first_order_document_collection_configs(

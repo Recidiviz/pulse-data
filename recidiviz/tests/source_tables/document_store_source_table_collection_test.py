@@ -50,10 +50,16 @@ from recidiviz.source_tables.source_table_config import (
     StateSpecificSourceTableLabel,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    patch_fake_config_states_exist_in_env,
+)
 
 
 class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
     """Tests for collect_document_store_source_tables."""
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_config_states_exist_in_env())
 
     def test_produces_expected_tables_for_fake_config(self) -> None:
         collections = collect_document_store_source_tables(config_module=fake_config)

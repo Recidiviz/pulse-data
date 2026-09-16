@@ -111,6 +111,9 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
 from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import (
     FakeSyncLLMClient,
 )
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    patch_fake_config_states_exist_in_env,
+)
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.tools.documents import fixtures
 from recidiviz.tools.documents import sandbox_extraction_runners
@@ -233,7 +236,8 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
                 }
             )
         ]
-        return result_tables + collect_document_store_source_tables(fake_config)
+        with patch_fake_config_states_exist_in_env():
+            return result_tables + collect_document_store_source_tables(fake_config)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -965,7 +969,7 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
         # The ER model config patch is needed only so the ER composite collections'
         # document-store tables can be collected; those tables are created but unused by
         # the first-order test below.
-        with patch_fake_entity_resolution_model_config_name():
+        with patch_fake_entity_resolution_model_config_name(), patch_fake_config_states_exist_in_env():
             document_store_collections = collect_document_store_source_tables(
                 fake_config
             )

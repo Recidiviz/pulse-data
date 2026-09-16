@@ -127,6 +127,7 @@ from recidiviz.tests.documents.extraction.views.fake_extractor_result_helpers im
 from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
     get_fake_first_order_document_collection_config,
+    patch_fake_config_states_exist_in_env,
 )
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.tests.tools.documents import fixtures
@@ -265,7 +266,7 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
         # the parsed views join. The run creates its own sandbox-prefixed result and
         # document-store tables, so pre-creating them would make its create step hit
         # the emulator's unsupported schema-update path.
-        with patch_fake_entity_resolution_model_config_name():
+        with patch_fake_entity_resolution_model_config_name(), patch_fake_config_states_exist_in_env():
             document_store_collections = collect_document_store_source_tables(
                 fake_config
             )

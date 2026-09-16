@@ -59,6 +59,9 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
 from recidiviz.tests.documents import fake_config as fake_config_module
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    patch_fake_config_states_exist_in_env,
+)
 from recidiviz.utils.types import assert_type
 
 # Per-document-collection tasks defined inside each document collection's task group, in
@@ -161,6 +164,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             document_collection_config, "default_config_module", fake_config_module
         )
         self.config_module_patcher.start()
+
+        self.enterContext(patch_fake_config_states_exist_in_env())
 
         self.collectors_config_module_patcher = patch.object(
             document_collection_config_collectors,

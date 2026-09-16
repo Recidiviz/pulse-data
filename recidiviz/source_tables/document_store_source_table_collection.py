@@ -33,7 +33,7 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    get_states_with_document_collections,
+    get_states_with_document_collections_existing_in_env,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
     collect_all_document_collection_configs,
@@ -68,7 +68,9 @@ def collect_document_store_source_tables(
         state_code: list(
             collect_all_document_collection_configs(state_code, config_module).values()
         )
-        for state_code in get_states_with_document_collections(config_module)
+        for state_code in get_states_with_document_collections_existing_in_env(
+            config_module
+        )
     }
     return _collect_document_store_source_tables(configs_by_state)
 
