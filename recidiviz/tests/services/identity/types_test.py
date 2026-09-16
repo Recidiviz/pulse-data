@@ -18,8 +18,10 @@
 import datetime
 import unittest
 import uuid
+from unittest import mock
 
 import attr
+import freezegun
 
 from recidiviz.common import demographics
 from recidiviz.common.constants.identity import (
@@ -60,6 +62,7 @@ from recidiviz.services.identity.types import (
     SplitEvent,
 )
 from recidiviz.utils.types import assert_type
+from recidiviz.utils.user_hash import generate_user_hash
 
 _UTC = datetime.timezone.utc
 _TS = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=_UTC)
@@ -787,3 +790,138 @@ class SearchResultTest(unittest.TestCase):
         result = SearchResult(results=[], next_cursor=None)
         self.assertEqual([], result.results)
         self.assertIsNone(result.next_cursor)
+
+
+NEW_CREATE_ID = uuid.UUID("abcdabcd-abcd-abcd-abcd-abcdabcdabcd")
+FROZEN_NOW = datetime.datetime(2026, 7, 9, 12, 0, 0, tzinfo=datetime.timezone.utc)
+
+
+class IdentityFromRequestDictTest(unittest.TestCase):
+    """Tests for Identity.from_request_dict construction logic."""
+
+    @freezegun.freeze_time(FROZEN_NOW)
+    def test_from_request_dict_full(self) -> None:
+        params = {
+            "tenant": Tenant.US_OZ,
+            "person_type": PersonType.JII,
+            "external_ids": [
+                {"external_id": "A123", "id_type": IdentifierType.US_OZ_LOTR_ID}
+            ],
+            "names": [
+                {
+                    "surname": "Gale",
+                    "given_name": "Dorothy",
+                    "middle_names": ["Q"],
+                    "name_suffix": None,
+                    "use": NameUse.OFFICIAL,
+                }
+            ],
+            "date_of_birth": datetime.date(1990, 1, 1),
+            "phone_numbers": [
+                {"number": "5551234567", "type": PhoneType.CELL, "preferred": True}
+            ],
+            "emails": [{"address": "Dorothy@fake.com"}],
+        }
+        with mock.patch(
+            "recidiviz.services.identity.types.uuid.uuid4",
+            return_value=NEW_CREATE_ID,
+        ):
+            identity = Identity.from_request_dict(
+                params, source_product_app=ProductApp.ADMIN_PANEL
+            )
+
+        def sourced(value: types.AttributeValue) -> SourcedAttributeValue:
+            return SourcedAttributeValue(
+                value=value,
+                source_type=SourceType.PRODUCT_APP,
+                source_product_app=ProductApp.ADMIN_PANEL,
+                last_updated_utc=FROZEN_NOW,
+            )
+
+        expected = Identity(
+            recidiviz_id=NEW_CREATE_ID,
+            created_utc=FROZEN_NOW,
+            last_updated_utc=FROZEN_NOW,
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            status=IdentityStatus.ACTIVE,
+            merged_into=None,
+            last_cluster_hash=None,
+            skip_demographic_guard=False,
+            external_ids=[
+                ExternalId(
+                    external_id="A123",
+                    id_type=IdentifierType.US_OZ_LOTR_ID,
+                    is_active=True,
+                )
+            ],
+            attributes=IdentityAttributes(
+                names=[
+                    sourced(
+                        Name(
+                            surname="Gale",
+                            given_name="Dorothy",
+                            middle_names=["Q"],
+                            name_suffix=None,
+                            use=NameUse.OFFICIAL,
+                        )
+                    )
+                ],
+                dates_of_birth=[
+                    sourced(
+                        DateOfBirth(
+                            date=datetime.date(1990, 1, 1),
+                            canonical=True,
+                            canonical_locked=False,
+                        )
+                    )
+                ],
+                genders=[],
+                races=[],
+                sexes=[],
+                ethnicities=[],
+                phone_numbers=[
+                    sourced(
+                        PhoneNumber(
+                            number="5551234567", type=PhoneType.CELL, preferred=True
+                        )
+                    )
+                ],
+                emails=[
+                    sourced(
+                        Email(
+                            address="Dorothy@fake.com",
+                            address_hash=generate_user_hash("dorothy@fake.com"),
+                        )
+                    )
+                ],
+            ),
+        )
+        self.assertEqual(expected, identity)
+
+    @freezegun.freeze_time(FROZEN_NOW)
+    def test_from_request_dict_minimal(self) -> None:
+        params = {
+            "tenant": Tenant.US_OZ,
+            "person_type": PersonType.STAFF,
+            "external_ids": [],
+            "names": [],
+            "date_of_birth": None,
+            "phone_numbers": [],
+            "emails": [],
+        }
+        identity = Identity.from_request_dict(
+            params, source_product_app=ProductApp.ADMIN_PANEL
+        )
+
+        self.assertEqual(IdentityStatus.ACTIVE, identity.status)
+        self.assertEqual(PersonType.STAFF, identity.person_type)
+        self.assertEqual(FROZEN_NOW, identity.created_utc)
+        self.assertEqual(FROZEN_NOW, identity.last_updated_utc)
+        self.assertIsNone(identity.merged_into)
+        self.assertIsNone(identity.last_cluster_hash)
+        self.assertFalse(identity.skip_demographic_guard)
+        self.assertEqual([], identity.external_ids)
+        self.assertEqual([], identity.attributes.names)
+        self.assertEqual([], identity.attributes.dates_of_birth)
+        self.assertEqual([], identity.attributes.emails)

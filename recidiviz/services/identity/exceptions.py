@@ -33,3 +33,8 @@ class IdentityHistoryIntegrityException(ValueError):
     audit trail is supposed to guarantee -- e.g. a merged_into chain that
     references a nonexistent record, or a cycle in that chain. Indicates
     corrupt data requiring investigation, not a caller error."""
+
+
+class DuplicateIdentityException(ValueError):
+    """Raised when creating an identity would duplicate a value that must be
+    unique across identities"""

@@ -19,12 +19,17 @@ import datetime
 import typing
 import unittest
 
+import marshmallow
+
 from recidiviz.common.constants.identity import (
     IdentifierType,
+    NameUse,
+    PersonType,
     PhoneType,
     ProductApp,
     SourceType,
 )
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.services.identity import api_schemas, types
 from recidiviz.tests.services.identity.test_utils import (
     RECIDIVIZ_ID,
@@ -310,3 +315,112 @@ class SourcedSchemaDispatchTest(unittest.TestCase):
             ),
             "_SOURCED_SCHEMA_BY_VALUE_TYPE is out of sync with types.AttributeValue",
         )
+
+
+class CreateIdentityRequestSchemaTest(unittest.TestCase):
+    """Validation tests for the POST /identity request schema."""
+
+    @staticmethod
+    def _full_body() -> dict:
+        return {
+            "tenant": "US_OZ",
+            "person_type": "JII",
+            "external_ids": [{"external_id": "A123", "id_type": "US_OZ_LOTR_ID"}],
+            "names": [
+                {
+                    "surname": "Gale",
+                    "given_name": "Dorothy",
+                    "middle_names": ["Q"],
+                    "use": "OFFICIAL",
+                }
+            ],
+            "date_of_birth": "1990-01-01",
+            "phone_numbers": [
+                {"number": "5551234567", "type": "CELL", "preferred": True}
+            ],
+            "emails": [{"address": "dorothy@fake.com"}],
+        }
+
+    def test_load_full_body(self) -> None:
+        loaded = api_schemas.CreateIdentityRequestSchema().load(self._full_body())
+        self.assertEqual(Tenant.US_OZ, loaded["tenant"])
+        self.assertEqual(PersonType.JII, loaded["person_type"])
+        self.assertEqual(
+            [{"external_id": "A123", "id_type": IdentifierType.US_OZ_LOTR_ID}],
+            loaded["external_ids"],
+        )
+        self.assertEqual(
+            [
+                {
+                    "surname": "Gale",
+                    "given_name": "Dorothy",
+                    "middle_names": ["Q"],
+                    "name_suffix": None,
+                    "use": NameUse.OFFICIAL,
+                }
+            ],
+            loaded["names"],
+        )
+        self.assertEqual(datetime.date(1990, 1, 1), loaded["date_of_birth"])
+        self.assertEqual(
+            [{"number": "5551234567", "type": PhoneType.CELL, "preferred": True}],
+            loaded["phone_numbers"],
+        )
+        self.assertEqual([{"address": "dorothy@fake.com"}], loaded["emails"])
+
+    def test_load_minimal_body(self) -> None:
+        loaded = api_schemas.CreateIdentityRequestSchema().load(
+            {"tenant": "US_OZ", "person_type": "JII"}
+        )
+        self.assertEqual([], loaded["external_ids"])
+        self.assertEqual([], loaded["names"])
+        self.assertIsNone(loaded["date_of_birth"])
+        self.assertEqual([], loaded["phone_numbers"])
+        self.assertEqual([], loaded["emails"])
+
+    def test_missing_tenant_rejected(self) -> None:
+        with self.assertRaises(marshmallow.ValidationError):
+            api_schemas.CreateIdentityRequestSchema().load({"person_type": "JII"})
+
+    def test_bad_person_type_rejected(self) -> None:
+        with self.assertRaises(marshmallow.ValidationError):
+            api_schemas.CreateIdentityRequestSchema().load(
+                {"tenant": "US_OZ", "person_type": "NOT_A_TYPE"}
+            )
+
+    def test_invalid_email_address_rejected(self) -> None:
+        body = self._full_body()
+        body["emails"] = [{"address": "not-an-email"}]
+        with self.assertRaises(marshmallow.ValidationError):
+            api_schemas.CreateIdentityRequestSchema().load(body)
+
+    def test_duplicate_emails_rejected_case_insensitively(self) -> None:
+        body = self._full_body()
+        body["emails"] = [
+            {"address": "dorothy@fake.com"},
+            {"address": "DOROTHY@fake.com"},
+        ]
+        with self.assertRaisesRegex(
+            marshmallow.ValidationError, "Duplicate email addresses"
+        ):
+            api_schemas.CreateIdentityRequestSchema().load(body)
+
+    def test_duplicate_external_id_pairs_rejected(self) -> None:
+        body = self._full_body()
+        body["external_ids"] = [
+            {"external_id": "A123", "id_type": "US_OZ_LOTR_ID"},
+            {"external_id": "A123", "id_type": "US_OZ_LOTR_ID"},
+        ]
+        with self.assertRaisesRegex(
+            marshmallow.ValidationError, "Duplicate external IDs"
+        ):
+            api_schemas.CreateIdentityRequestSchema().load(body)
+
+    def test_same_external_id_different_type_allowed(self) -> None:
+        body = self._full_body()
+        body["external_ids"] = [
+            {"external_id": "A123", "id_type": "US_OZ_LOTR_ID"},
+            {"external_id": "A123", "id_type": "US_OZ_KDS_PERSON_ID"},
+        ]
+        loaded = api_schemas.CreateIdentityRequestSchema().load(body)
+        self.assertEqual(2, len(loaded["external_ids"]))

@@ -21,9 +21,11 @@ import unittest
 import uuid
 from typing import Any
 
+import attr
 import pytest
 from sqlalchemy import event, text
 
+from recidiviz.common import demographics
 from recidiviz.common.constants.identity import (
     AttributeType,
     IdentifierType,
@@ -31,6 +33,9 @@ from recidiviz.common.constants.identity import (
     MergeTrigger,
     NameUse,
     PersonType,
+    PhoneType,
+    ProductApp,
+    SourceType,
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
@@ -38,19 +43,28 @@ from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
+from recidiviz.services.identity.exceptions import (
+    DuplicateIdentityException,
+    IdentityHistoryIntegrityException,
+)
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 from recidiviz.services.identity.types import (
     AttributeConflict,
+    DateOfBirth,
     Email,
+    Ethnicity,
     ExternalId,
+    Gender,
     Identity,
     IdentityAttributes,
     IdentityHistory,
     IdentitySearchRequest,
     MergeEvent,
     Name,
+    PhoneNumber,
+    Race,
     RetiredHandlingMode,
+    Sex,
     SplitDestination,
     SplitEvent,
 )
@@ -77,6 +91,7 @@ UNKNOWN_ID = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
 CYCLED_ID = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
 SPLIT_DESTINATION_ID = uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
 OTHER_TENANT_ID = uuid.UUID("99999999-9999-9999-9999-999999999999")
+CREATE_ID = uuid.UUID("abcdabcd-abcd-abcd-abcd-abcdabcdabcd")
 
 
 def _bare_identity() -> Identity:
@@ -101,6 +116,76 @@ def _bare_identity() -> Identity:
             ethnicities=[],
             phone_numbers=[],
             emails=[],
+        ),
+    )
+
+
+def _new_identity_to_create(
+    *,
+    external_ids: list[ExternalId] | None = None,
+) -> Identity:
+    """A domain Identity shaped like Identity.from_request_dict output, for
+    create_identity tests."""
+    return Identity(
+        recidiviz_id=CREATE_ID,
+        tenant=Tenant.US_OZ,
+        person_type=PersonType.JII,
+        status=IdentityStatus.ACTIVE,
+        merged_into=None,
+        last_cluster_hash=None,
+        skip_demographic_guard=False,
+        created_utc=CREATED,
+        last_updated_utc=CREATED,
+        external_ids=external_ids if external_ids is not None else [],
+        attributes=IdentityAttributes(
+            names=[
+                make_sourced_attribute(
+                    Name(
+                        surname="Gale",
+                        given_name="Dorothy",
+                        middle_names=["Q"],
+                        name_suffix=None,
+                        use=NameUse.OFFICIAL,
+                    ),
+                    source_type=SourceType.PRODUCT_APP,
+                    source_product_app=ProductApp.ADMIN_PANEL,
+                    last_updated_utc=CREATED,
+                )
+            ],
+            dates_of_birth=[
+                make_sourced_attribute(
+                    DateOfBirth(
+                        date=datetime.date(1990, 1, 1),
+                        canonical=True,
+                        canonical_locked=False,
+                    ),
+                    source_type=SourceType.PRODUCT_APP,
+                    source_product_app=ProductApp.ADMIN_PANEL,
+                    last_updated_utc=CREATED,
+                )
+            ],
+            genders=[],
+            races=[],
+            sexes=[],
+            ethnicities=[],
+            phone_numbers=[
+                make_sourced_attribute(
+                    PhoneNumber(
+                        number="5551234567", type=PhoneType.CELL, preferred=True
+                    ),
+                    source_type=SourceType.PRODUCT_APP,
+                    source_product_app=ProductApp.ADMIN_PANEL,
+                    last_updated_utc=CREATED,
+                )
+            ],
+            emails=[
+                make_sourced_attribute(
+                    Email(address="dorothy@fake.com", address_hash="hash-new"),
+                    source_type=SourceType.PRODUCT_APP,
+                    source_product_app=ProductApp.ADMIN_PANEL,
+                    last_updated_utc=CREATED,
+                )
+            ],
         ),
     )
 
@@ -454,6 +539,197 @@ class IdentityServiceQuerierTest(unittest.TestCase):
             rf"revisited \[{CYCLED_ID}\]$",
         ):
             IdentityServiceQuerier().get_identity(CYCLED_ID, resolve_retired=True)
+
+
+@pytest.mark.uses_db
+class CreateIdentityTest(unittest.TestCase):
+    """Tests for IdentityServiceQuerier.create_identity."""
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
+
+    def test_create_identity_round_trips(self) -> None:
+        identity = _new_identity_to_create(
+            external_ids=[
+                ExternalId(
+                    external_id="NEW1",
+                    id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+                    is_active=True,
+                )
+            ]
+        )
+        created = IdentityServiceQuerier().create_identity(identity)
+        self.assertEqual(identity, created)
+
+    def test_create_identity_with_demographics_round_trips(self) -> None:
+        base = _new_identity_to_create()
+        identity = attr.evolve(
+            base,
+            attributes=attr.evolve(
+                base.attributes,
+                genders=[
+                    make_sourced_attribute(
+                        Gender(
+                            gender=demographics.Gender.FEMALE,
+                            canonical=True,
+                            canonical_locked=False,
+                        ),
+                        last_updated_utc=CREATED,
+                    )
+                ],
+                races=[
+                    make_sourced_attribute(
+                        Race(race=demographics.Race.WHITE),
+                        last_updated_utc=CREATED,
+                    ),
+                    make_sourced_attribute(
+                        Race(race=demographics.Race.ASIAN),
+                        last_updated_utc=CREATED,
+                    ),
+                ],
+                sexes=[
+                    make_sourced_attribute(
+                        Sex(
+                            sex=demographics.Sex.FEMALE,
+                            canonical=True,
+                            canonical_locked=True,
+                        ),
+                        last_updated_utc=CREATED,
+                    )
+                ],
+                ethnicities=[
+                    make_sourced_attribute(
+                        Ethnicity(
+                            ethnicity=demographics.Ethnicity.NOT_HISPANIC,
+                            canonical=False,
+                            canonical_locked=False,
+                        ),
+                        last_updated_utc=CREATED,
+                    )
+                ],
+            ),
+        )
+        created = IdentityServiceQuerier().create_identity(identity)
+        self.assertEqual(identity, created)
+
+    def test_create_identity_minimal_round_trips(self) -> None:
+        identity = Identity(
+            recidiviz_id=CREATE_ID,
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.STAFF,
+            status=IdentityStatus.ACTIVE,
+            merged_into=None,
+            last_cluster_hash=None,
+            skip_demographic_guard=False,
+            created_utc=CREATED,
+            last_updated_utc=CREATED,
+            external_ids=[],
+            attributes=IdentityAttributes(
+                names=[],
+                dates_of_birth=[],
+                genders=[],
+                races=[],
+                sexes=[],
+                ethnicities=[],
+                phone_numbers=[],
+                emails=[],
+            ),
+        )
+        created = IdentityServiceQuerier().create_identity(identity)
+        self.assertEqual(identity, created)
+
+    def test_create_identity_email_in_use_same_tenant_raises(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_email(recidiviz_id=RECIDIVIZ_ID, address_hash="hash-new")
+        with self.assertRaisesRegex(
+            DuplicateIdentityException,
+            r"^An email with address_hash \[hash-new\] already exists$",
+        ):
+            IdentityServiceQuerier().create_identity(_new_identity_to_create())
+
+    def test_create_identity_email_on_retired_identity_allowed(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_identity(
+            recidiviz_id=RETIRED_ID,
+            status=IdentityStatus.RETIRED,
+            merged_into=RECIDIVIZ_ID,
+        )
+        insert_email(recidiviz_id=RETIRED_ID, address_hash="hash-new")
+        created = IdentityServiceQuerier().create_identity(_new_identity_to_create())
+        self.assertEqual(CREATE_ID, created.recidiviz_id)
+
+    def test_create_identity_email_in_other_tenant_allowed(self) -> None:
+        insert_identity(recidiviz_id=OTHER_TENANT_ID, tenant=Tenant.US_XX)
+        insert_email(recidiviz_id=OTHER_TENANT_ID, address_hash="hash-new")
+        created = IdentityServiceQuerier().create_identity(_new_identity_to_create())
+        self.assertEqual(CREATE_ID, created.recidiviz_id)
+
+    def test_create_identity_active_external_id_in_use_raises(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_external_id(recidiviz_id=RECIDIVIZ_ID, external_id="NEW1")
+        identity = _new_identity_to_create(
+            external_ids=[
+                ExternalId(
+                    external_id="NEW1",
+                    id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+                    is_active=True,
+                )
+            ]
+        )
+        with self.assertRaisesRegex(
+            DuplicateIdentityException,
+            r"^An identifier of type \[US_OZ_KDS_PERSON_ID\] with value "
+            r"\[NEW1\] already exists$",
+        ):
+            IdentityServiceQuerier().create_identity(identity)
+
+    def test_create_identity_inactive_external_id_pair_allowed(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_external_id(
+            recidiviz_id=RECIDIVIZ_ID, external_id="NEW1", is_active=False
+        )
+        identity = _new_identity_to_create(
+            external_ids=[
+                ExternalId(
+                    external_id="NEW1",
+                    id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+                    is_active=True,
+                )
+            ]
+        )
+        created = IdentityServiceQuerier().create_identity(identity)
+        self.assertEqual(CREATE_ID, created.recidiviz_id)
+
+    def test_create_identity_nothing_persisted_on_conflict(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_email(recidiviz_id=RECIDIVIZ_ID, address_hash="hash-new")
+        with self.assertRaises(DuplicateIdentityException):
+            IdentityServiceQuerier().create_identity(_new_identity_to_create())
+        self.assertIsNone(
+            IdentityServiceQuerier().get_identity(CREATE_ID, resolve_retired=False)
+        )
 
 
 @pytest.mark.uses_db

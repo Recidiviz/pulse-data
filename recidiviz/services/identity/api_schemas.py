@@ -37,6 +37,7 @@ from recidiviz.common.constants.identity import (
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.services.identity import types
 from recidiviz.utils.api_schemas import CamelCaseSchema
+from recidiviz.utils.user_hash import normalize_email
 
 # Internal reconciliation bookkeeping stripped from the demographic attributes in the
 # default serialized form. Dotted paths reach into the nested `value` schema.
@@ -392,3 +393,64 @@ class IdentitySearchRequestSchema(marshmallow.Schema):
                 "At least one of name, tenant, person_type, or external_id must "
                 "be provided."
             )
+
+
+class ExternalIdInputSchema(marshmallow.Schema):
+    """One external identifier in a POST /identities request body."""
+
+    external_id = fields.Str(required=True)
+    id_type = fields.Enum(IdentifierType, by_value=True, required=True)
+
+
+class NameInputSchema(marshmallow.Schema):
+    """One name in a POST /identities request body."""
+
+    surname = fields.Str(load_default=None, allow_none=True)
+    given_name = fields.Str(load_default=None, allow_none=True)
+    middle_names = fields.List(fields.Str(), load_default=list)
+    name_suffix = fields.Str(load_default=None, allow_none=True)
+    use = fields.Enum(NameUse, by_value=True, load_default=None, allow_none=True)
+
+
+class PhoneNumberInputSchema(marshmallow.Schema):
+    """One phone number in a POST /identities request body."""
+
+    number = fields.Str(required=True)
+    type = fields.Enum(PhoneType, by_value=True, load_default=None, allow_none=True)
+    preferred = fields.Bool(load_default=None, allow_none=True)
+
+
+class EmailInputSchema(marshmallow.Schema):
+    """One email address in a POST /identities request body."""
+
+    address = fields.Email(required=True)
+
+
+class CreateIdentityRequestSchema(marshmallow.Schema):
+    """Validates the JSON body for POST /identities."""
+
+    tenant = fields.Enum(Tenant, by_value=True, required=True)
+    person_type = fields.Enum(PersonType, by_value=True, required=True)
+    external_ids = fields.List(
+        fields.Nested(ExternalIdInputSchema()), load_default=list
+    )
+    names = fields.List(fields.Nested(NameInputSchema()), load_default=list)
+    date_of_birth = fields.Date(load_default=None, allow_none=True)
+    phone_numbers = fields.List(
+        fields.Nested(PhoneNumberInputSchema()), load_default=list
+    )
+    emails = fields.List(fields.Nested(EmailInputSchema()), load_default=list)
+
+    @marshmallow.validates_schema
+    def validate_no_duplicates(self, data: dict, **_kwargs: Any) -> None:
+        """Rejects duplicate emails (case-insensitive) and duplicate
+        (external_id, id_type) pairs within a single request."""
+        addresses = [normalize_email(email["address"]) for email in data["emails"]]
+        if len(addresses) != len(set(addresses)):
+            raise marshmallow.ValidationError("Duplicate email addresses in request.")
+        pairs = [
+            (external_id["external_id"], external_id["id_type"])
+            for external_id in data["external_ids"]
+        ]
+        if len(pairs) != len(set(pairs)):
+            raise marshmallow.ValidationError("Duplicate external IDs in request.")

@@ -23,8 +23,14 @@ from unittest.mock import patch
 from google.auth.exceptions import GoogleAuthError
 from werkzeug.test import TestResponse
 
-from recidiviz.common.constants.identity import IdentifierType, PersonType
+from recidiviz.common.constants.identity import (
+    IdentifierType,
+    PersonType,
+    ProductApp,
+    SourceType,
+)
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.services.identity import types
 from recidiviz.services.identity.authorization import CallerRole
 from recidiviz.services.identity.constants import (
     DEV_CALLER_EMAIL_HEADER,
@@ -36,6 +42,7 @@ from recidiviz.services.identity.constants import (
 )
 from recidiviz.services.identity.exceptions import (
     ClusterSnapshotNotFoundError,
+    DuplicateIdentityException,
     IdentityHistoryIntegrityException,
 )
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
@@ -60,6 +67,8 @@ from recidiviz.tests.services.identity.test_utils import (
     build_full_identity,
     mock_iap_environment,
 )
+from recidiviz.utils.types import assert_type
+from recidiviz.utils.user_hash import generate_user_hash
 
 IAP_HEADERS = {"x-goog-iap-jwt-assertion": "anything"}
 
@@ -1060,3 +1069,126 @@ class SearchIdentityEndpointTest(TestCase):
             )
 
         self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+
+
+class CreateIdentityEndpointTest(TestCase):
+    """Tests for POST /identities, with the querier mocked out."""
+
+    def setUp(self) -> None:
+        self.client = app.test_client()
+        self.valid_body = {
+            "tenant": "US_OZ",
+            "person_type": "JII",
+            "external_ids": [{"external_id": "A123", "id_type": "US_OZ_LOTR_ID"}],
+            "names": [{"surname": "Gale", "given_name": "Dorothy"}],
+            "date_of_birth": "1990-01-01",
+            "phone_numbers": [{"number": "5551234567"}],
+            "emails": [{"address": "Dorothy@fake.com"}],
+        }
+
+    def test_creates_identity_and_returns_201(self) -> None:
+        created = build_full_identity().identity
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.create_identity.return_value = created
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.CREATED, response.status_code)
+        body = response.get_json()
+        self.assertEqual(str(RECIDIVIZ_ID), body["recidivizId"])
+        self.assertEqual("ACTIVE", body["status"])
+        self.assertNotIn("mergeEvents", body)
+
+        persisted = mock_querier_cls.return_value.create_identity.call_args.args[0]
+        self.assertEqual(Tenant.US_OZ, persisted.tenant)
+        self.assertEqual(PersonType.JII, persisted.person_type)
+        sourced_email = persisted.attributes.emails[0]
+        self.assertEqual(SourceType.PRODUCT_APP, sourced_email.source_type)
+        self.assertEqual(ProductApp.ADMIN_PANEL, sourced_email.source_product_app)
+        email = assert_type(sourced_email.value, types.Email)
+        self.assertEqual("Dorothy@fake.com", email.address)
+        self.assertEqual(generate_user_hash("dorothy@fake.com"), email.address_hash)
+        dob = assert_type(
+            persisted.attributes.dates_of_birth[0].value, types.DateOfBirth
+        )
+        self.assertTrue(dob.canonical)
+        self.assertFalse(dob.canonical_locked)
+
+    def test_reader_caller_returns_403(self) -> None:
+        # The reader role may read identities but not create them.
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=READER_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        mock_querier_cls.return_value.create_identity.assert_not_called()
+
+    def test_importer_caller_returns_403(self) -> None:
+        # The importer role unlocks only trigger_import, not identity creation.
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        mock_querier_cls.return_value.create_identity.assert_not_called()
+
+    def test_returns_403_for_unmapped_caller(self) -> None:
+        with mock_iap_environment(authenticated_as=STRANGER_SERVICE_ACCOUNT), patch(
+            QUERIER_PATH
+        ) as mock_querier_cls:
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.FORBIDDEN, response.status_code)
+        mock_querier_cls.return_value.create_identity.assert_not_called()
+
+    def test_email_in_use_returns_409(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.create_identity.side_effect = (
+                DuplicateIdentityException(
+                    "Email with address_hash [h] already belongs ..."
+                )
+            )
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.CONFLICT, response.status_code)
+
+    def test_external_id_in_use_returns_409(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            mock_querier_cls.return_value.create_identity.side_effect = (
+                DuplicateIdentityException("External ID [A123] ... already active ...")
+            )
+            response = self.client.post(
+                IDENTITIES_ROUTE, json=self.valid_body, headers=IAP_HEADERS
+            )
+
+        self.assertEqual(HTTPStatus.CONFLICT, response.status_code)
+
+    def test_malformed_body_returns_400(self) -> None:
+        with mock_iap_environment(
+            mapping=DEFAULT_MAPPING, authenticated_as=EDITOR_SERVICE_ACCOUNT
+        ), patch(QUERIER_PATH) as mock_querier_cls:
+            response = self.client.post(
+                IDENTITIES_ROUTE,
+                json={"person_type": "JII"},
+                headers=IAP_HEADERS,
+            )
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        mock_querier_cls.return_value.create_identity.assert_not_called()

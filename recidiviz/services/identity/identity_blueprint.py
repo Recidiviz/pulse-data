@@ -18,11 +18,14 @@
 import uuid
 from http import HTTPStatus
 
-from flask import Response, current_app, jsonify
+from flask import Response, current_app, g, jsonify
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
+from recidiviz.common.constants.identity import ProductApp
+from recidiviz.services.identity import types
 from recidiviz.services.identity.api_schemas import (
+    CreateIdentityRequestSchema,
     IdentityByQueryParametersRequestSchema,
     IdentityByUuidRequestSchema,
     IdentityHistorySchema,
@@ -37,13 +40,16 @@ from recidiviz.services.identity.constants import (
     IDENTITIES_BLUEPRINT_ROUTE,
     TRIGGER_IMPORT_BLUEPRINT_ROUTE,
 )
-from recidiviz.services.identity.exceptions import ClusterSnapshotNotFoundError
+from recidiviz.services.identity.exceptions import (
+    ClusterSnapshotNotFoundError,
+    DuplicateIdentityException,
+)
 from recidiviz.services.identity.import_processing.import_task_enqueuer import (
     enqueue_import_task,
 )
 from recidiviz.services.identity.querier import IdentityServiceQuerier
-from recidiviz.services.identity.types import IdentitySearchRequest
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.types import assert_type
 
 identity_blueprint = Blueprint("identity", "identity")
 
@@ -108,7 +114,7 @@ class IdentitySearchAPI(MethodView):
         `limit` results (max 100, default 50); pass the response's
         `next_cursor` back as `cursor` to retrieve the next page.
         """
-        search_request = IdentitySearchRequest(
+        search_request = types.IdentitySearchRequest(
             name=params["name"],
             tenant=params["tenant"],
             person_type=params["person_type"],
@@ -127,6 +133,7 @@ class IdentityAPI(MethodView):
 
     ALLOWED_ROLES_BY_METHOD: dict[str, frozenset[CallerRole]] = {
         "GET": IDENTITY_READ_ROLES,
+        "POST": frozenset({CallerRole.EDITOR}),
     }
 
     @identity_blueprint.arguments(
@@ -165,6 +172,29 @@ class IdentityAPI(MethodView):
             history = querier.get_identity_history(identity_record)
             return jsonify(IdentityHistorySchema().dump(history))
         return jsonify(IdentitySchema().dump(identity_record))
+
+    @identity_blueprint.arguments(
+        CreateIdentityRequestSchema,
+        location="json",
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @identity_blueprint.response(HTTPStatus.CREATED, IdentitySchema)
+    def post(self, params: dict) -> types.Identity:
+        """Creates a new identity from the provided attributes and returns it.
+
+        Rejects with 409 if a provided email already belongs to a non-RETIRED identity
+        in the same tenant, or if a provided external ID pair is already active on
+        another identity.
+        """
+        identity = types.Identity.from_request_dict(
+            params,
+            source_product_app=assert_type(g.source_product_app, ProductApp),
+        )
+        try:
+            identity_record = IdentityServiceQuerier().create_identity(identity)
+        except DuplicateIdentityException as e:
+            abort(HTTPStatus.CONFLICT, message=str(e))
+        return identity_record
 
 
 @identity_blueprint.route(TRIGGER_IMPORT_BLUEPRINT_ROUTE)

@@ -44,6 +44,7 @@ from recidiviz.common.constants.identity import (
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.utils.types import assert_type
+from recidiviz.utils.user_hash import normalized_email_hash
 
 # ---------------------------------------------------------------------------
 # Value types — the leaf objects carried inside SourcedAttributeValue.
@@ -578,6 +579,96 @@ class Identity:
                 f"Identity [{self.recidiviz_id}] has merged_into=[{self.merged_into}] "
                 f"but status [{self.status}] is not RETIRED"
             )
+
+    @classmethod
+    def from_request_dict(
+        cls, params: dict, *, source_product_app: ProductApp
+    ) -> "Identity":
+        """Returns a new ACTIVE Identity built from a validated POST /identities
+        request body: mints a new recidiviz_id, sets both timestamps to now,
+        stamps every provided attribute with source type PRODUCT_APP and the
+        caller's product app, and marks the provided date of birth canonical."""
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+
+        def _to_sourced_value(value: AttributeValue) -> SourcedAttributeValue:
+            return SourcedAttributeValue(
+                value=value,
+                source_type=SourceType.PRODUCT_APP,
+                source_product_app=source_product_app,
+                last_updated_utc=now,
+            )
+
+        dates_of_birth = (
+            [
+                _to_sourced_value(
+                    DateOfBirth(
+                        date=params["date_of_birth"],
+                        canonical=True,
+                        canonical_locked=False,
+                    )
+                )
+            ]
+            if params["date_of_birth"] is not None
+            else []
+        )
+
+        return cls(
+            recidiviz_id=uuid.uuid4(),
+            created_utc=now,
+            last_updated_utc=now,
+            tenant=params["tenant"],
+            person_type=params["person_type"],
+            status=IdentityStatus.ACTIVE,
+            merged_into=None,
+            last_cluster_hash=None,
+            skip_demographic_guard=False,
+            external_ids=[
+                ExternalId(
+                    external_id=external_id["external_id"],
+                    id_type=external_id["id_type"],
+                    is_active=True,
+                )
+                for external_id in params["external_ids"]
+            ],
+            attributes=IdentityAttributes(
+                names=[
+                    _to_sourced_value(
+                        Name(
+                            surname=name["surname"],
+                            given_name=name["given_name"],
+                            middle_names=name["middle_names"],
+                            name_suffix=name["name_suffix"],
+                            use=name["use"],
+                        )
+                    )
+                    for name in params["names"]
+                ],
+                dates_of_birth=dates_of_birth,
+                genders=[],
+                races=[],
+                sexes=[],
+                ethnicities=[],
+                phone_numbers=[
+                    _to_sourced_value(
+                        PhoneNumber(
+                            number=phone["number"],
+                            type=phone["type"],
+                            preferred=phone["preferred"],
+                        )
+                    )
+                    for phone in params["phone_numbers"]
+                ],
+                emails=[
+                    _to_sourced_value(
+                        Email(
+                            address=email["address"],
+                            address_hash=normalized_email_hash(email["address"]),
+                        )
+                    )
+                    for email in params["emails"]
+                ],
+            ),
+        )
 
 
 @attr.define(frozen=True, kw_only=True)

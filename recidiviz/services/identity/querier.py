@@ -19,20 +19,30 @@ Identity Postgres database. Methods return typed domain objects.
 """
 import base64
 import binascii
+import datetime
 import uuid
 from collections import defaultdict
+from typing import Protocol
 
 from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
-from recidiviz.common.constants.identity import IdentifierType, IdentityStatus
+from recidiviz.common.constants.identity import (
+    IdentifierType,
+    IdentityStatus,
+    ProductApp,
+    SourceType,
+)
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity import types
+from recidiviz.services.identity.exceptions import DuplicateIdentityException
 from recidiviz.services.identity.resolution_helpers import resolve_surviving_ids
+from recidiviz.utils.types import assert_type
 
 
 def _to_external_id(row: schema.ExternalId) -> types.ExternalId:
@@ -43,101 +53,104 @@ def _to_external_id(row: schema.ExternalId) -> types.ExternalId:
     )
 
 
-def _to_sourced_name(row: schema.Name) -> types.SourcedAttributeValue:
+class _SourcedRow(Protocol):
+    """Structural type for the provenance columns shared by every sourced
+    attribute schema row (Name, DateOfBirth, Gender, Race, Sex, Ethnicity,
+    PhoneNumber, Email)."""
+
+    source_type: SourceType
+    source_product_app: ProductApp | None
+    last_updated_utc: datetime.datetime
+
+
+def _to_sourced_row(
+    row: _SourcedRow, value: types.AttributeValue
+) -> types.SourcedAttributeValue:
+    """Wraps a leaf attribute value with the provenance columns shared by every
+    sourced attribute row."""
     return types.SourcedAttributeValue(
-        value=types.Name(
+        value=value,
+        source_type=row.source_type,
+        source_product_app=row.source_product_app,
+        last_updated_utc=row.last_updated_utc,
+    )
+
+
+def _to_sourced_name(row: schema.Name) -> types.SourcedAttributeValue:
+    return _to_sourced_row(
+        row,
+        types.Name(
             surname=row.surname,
             given_name=row.given_name,
             middle_names=list(row.middle_names),
             name_suffix=row.name_suffix,
             use=row.use,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_date_of_birth(row: schema.DateOfBirth) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.DateOfBirth(
+    return _to_sourced_row(
+        row,
+        types.DateOfBirth(
             date=row.date,
             canonical=row.canonical,
             canonical_locked=row.canonical_locked,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_gender(row: schema.Gender) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.Gender(
+    return _to_sourced_row(
+        row,
+        types.Gender(
             gender=row.gender,
             canonical=row.canonical,
             canonical_locked=row.canonical_locked,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_race(row: schema.Race) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.Race(race=row.race),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
-    )
+    return _to_sourced_row(row, types.Race(race=row.race))
 
 
 def _to_sourced_sex(row: schema.Sex) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.Sex(
+    return _to_sourced_row(
+        row,
+        types.Sex(
             sex=row.sex,
             canonical=row.canonical,
             canonical_locked=row.canonical_locked,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_ethnicity(row: schema.Ethnicity) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.Ethnicity(
+    return _to_sourced_row(
+        row,
+        types.Ethnicity(
             ethnicity=row.ethnicity,
             canonical=row.canonical,
             canonical_locked=row.canonical_locked,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_phone_number(row: schema.PhoneNumber) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.PhoneNumber(
+    return _to_sourced_row(
+        row,
+        types.PhoneNumber(
             number=row.number,
             type=row.type,
             preferred=row.preferred,
         ),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
     )
 
 
 def _to_sourced_email(row: schema.Email) -> types.SourcedAttributeValue:
-    return types.SourcedAttributeValue(
-        value=types.Email(address=row.address, address_hash=row.address_hash),
-        source_type=row.source_type,
-        source_product_app=row.source_product_app,
-        last_updated_utc=row.last_updated_utc,
+    return _to_sourced_row(
+        row, types.Email(address=row.address, address_hash=row.address_hash)
     )
 
 
@@ -166,6 +179,134 @@ def _to_identity(row: schema.Identity) -> types.Identity:
             emails=[_to_sourced_email(e) for e in row.emails],
         ),
     )
+
+
+def _to_identity_row(identity: types.Identity) -> schema.Identity:
+    """Builds the ORM identities row for a domain Identity (children excluded)."""
+    return schema.Identity(
+        recidiviz_id=identity.recidiviz_id,
+        created_utc=identity.created_utc,
+        last_updated_utc=identity.last_updated_utc,
+        tenant=identity.tenant,
+        person_type=identity.person_type,
+        status=identity.status,
+        merged_into=identity.merged_into,
+        last_cluster_hash=identity.last_cluster_hash,
+        skip_demographic_guard=identity.skip_demographic_guard,
+    )
+
+
+def _sourced_row_kwargs(
+    sourced: types.SourcedAttributeValue,
+) -> dict[str, SourceType | ProductApp | None | datetime.datetime]:
+    """Returns the provenance columns shared by every sourced attribute row, for
+    splatting into a schema row constructor alongside its type-specific fields."""
+    return {
+        "source_type": sourced.source_type,
+        "source_product_app": sourced.source_product_app,
+        "last_updated_utc": sourced.last_updated_utc,
+    }
+
+
+def _to_child_rows(identity: types.Identity) -> list[DatabaseEntity]:
+    """Builds the ORM rows for a domain Identity's external IDs and attributes."""
+    rows: list[DatabaseEntity] = [
+        schema.ExternalId(
+            recidiviz_id=identity.recidiviz_id,
+            external_id=external_id.external_id,
+            id_type=external_id.id_type,
+            is_active=external_id.is_active,
+        )
+        for external_id in identity.external_ids
+    ]
+    for sourced_name in identity.attributes.names:
+        name = assert_type(sourced_name.value, types.Name)
+        rows.append(
+            schema.Name(
+                recidiviz_id=identity.recidiviz_id,
+                surname=name.surname,
+                given_name=name.given_name,
+                middle_names=list(name.middle_names),
+                name_suffix=name.name_suffix,
+                use=name.use,
+                **_sourced_row_kwargs(sourced_name),
+            )
+        )
+    for sourced_dob in identity.attributes.dates_of_birth:
+        dob = assert_type(sourced_dob.value, types.DateOfBirth)
+        rows.append(
+            schema.DateOfBirth(
+                recidiviz_id=identity.recidiviz_id,
+                date=dob.date,
+                canonical=dob.canonical,
+                canonical_locked=dob.canonical_locked,
+                **_sourced_row_kwargs(sourced_dob),
+            )
+        )
+    for sourced_gender in identity.attributes.genders:
+        gender = assert_type(sourced_gender.value, types.Gender)
+        rows.append(
+            schema.Gender(
+                recidiviz_id=identity.recidiviz_id,
+                gender=gender.gender,
+                canonical=gender.canonical,
+                canonical_locked=gender.canonical_locked,
+                **_sourced_row_kwargs(sourced_gender),
+            )
+        )
+    for sourced_race in identity.attributes.races:
+        race = assert_type(sourced_race.value, types.Race)
+        rows.append(
+            schema.Race(
+                recidiviz_id=identity.recidiviz_id,
+                race=race.race,
+                **_sourced_row_kwargs(sourced_race),
+            )
+        )
+    for sourced_sex in identity.attributes.sexes:
+        sex = assert_type(sourced_sex.value, types.Sex)
+        rows.append(
+            schema.Sex(
+                recidiviz_id=identity.recidiviz_id,
+                sex=sex.sex,
+                canonical=sex.canonical,
+                canonical_locked=sex.canonical_locked,
+                **_sourced_row_kwargs(sourced_sex),
+            )
+        )
+    for sourced_ethnicity in identity.attributes.ethnicities:
+        ethnicity = assert_type(sourced_ethnicity.value, types.Ethnicity)
+        rows.append(
+            schema.Ethnicity(
+                recidiviz_id=identity.recidiviz_id,
+                ethnicity=ethnicity.ethnicity,
+                canonical=ethnicity.canonical,
+                canonical_locked=ethnicity.canonical_locked,
+                **_sourced_row_kwargs(sourced_ethnicity),
+            )
+        )
+    for sourced_phone in identity.attributes.phone_numbers:
+        phone = assert_type(sourced_phone.value, types.PhoneNumber)
+        rows.append(
+            schema.PhoneNumber(
+                recidiviz_id=identity.recidiviz_id,
+                number=phone.number,
+                type=phone.type,
+                preferred=phone.preferred,
+                **_sourced_row_kwargs(sourced_phone),
+            )
+        )
+    for sourced_email in identity.attributes.emails:
+        email = assert_type(sourced_email.value, types.Email)
+        rows.append(
+            schema.Email(
+                recidiviz_id=identity.recidiviz_id,
+                address=email.address,
+                address_hash=email.address_hash,
+                **_sourced_row_kwargs(sourced_email),
+            )
+        )
+    return rows
 
 
 def _to_attribute_conflict(row: schema.AttributeConflict) -> types.AttributeConflict:
@@ -503,3 +644,81 @@ class IdentityServiceQuerier:
                 else None
             )
             return types.SearchResult(results=results, next_cursor=next_cursor)
+
+    def create_identity(self, identity: types.Identity) -> types.Identity:
+        """Persists a brand-new identity and its child attributes, then returns
+        the stored record re-read through the standard read path.
+
+        Raises DuplicateIdentityException if any of the identity's emails
+        already belongs to a non-RETIRED identity in the same tenant, or if any
+        of its (external_id, id_type) pairs is already active on another
+        identity. Nothing is persisted when either check fails.
+
+        @TODO(OBT-50191): refactor this to be compatible with the constraints imposed by
+        the import process (caller-controlled transaction boundaries, in-memory email
+        dedupe, EXTERNAL_DATA_SYSTEM provenance)
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            self._check_emails_not_in_use(session, identity)
+            self._check_external_ids_not_in_use(session, identity)
+            session.add(_to_identity_row(identity))
+            for row in _to_child_rows(identity):
+                session.add(row)
+        created = self.get_identity(identity.recidiviz_id, resolve_retired=False)
+        if created is None:
+            raise ValueError(
+                f"Failed to re-read created identity [{identity.recidiviz_id}]"
+            )
+        return created
+
+    @staticmethod
+    def _check_emails_not_in_use(session: Session, identity: types.Identity) -> None:
+        """Raises DuplicateIdentityException if any email on `identity` already
+        belongs to a non-RETIRED identity in the same tenant."""
+        address_hashes = [
+            assert_type(sourced.value, types.Email).address_hash
+            for sourced in identity.attributes.emails
+        ]
+        if not address_hashes:
+            return
+        conflict = (
+            session.query(schema.Email.address_hash)
+            .join(
+                schema.Identity,
+                schema.Email.recidiviz_id == schema.Identity.recidiviz_id,
+            )
+            .filter(
+                schema.Email.address_hash.in_(address_hashes),
+                schema.Identity.tenant == identity.tenant,
+                schema.Identity.status != IdentityStatus.RETIRED,
+            )
+            .first()
+        )
+        if conflict is not None:
+            raise DuplicateIdentityException(
+                f"An email with address_hash [{conflict.address_hash}] "
+                "already exists"
+            )
+
+    @staticmethod
+    def _check_external_ids_not_in_use(
+        session: Session, identity: types.Identity
+    ) -> None:
+        """Raises DuplicateIdentityException if any (external_id, id_type) pair on
+        `identity` is already active on another identity."""
+        for external_id in identity.external_ids:
+            conflict_exists = (
+                session.query(schema.ExternalId)
+                .filter(
+                    schema.ExternalId.external_id == external_id.external_id,
+                    schema.ExternalId.id_type == external_id.id_type,
+                    schema.ExternalId.is_active.is_(True),
+                )
+                .first()
+                is not None
+            )
+            if conflict_exists:
+                raise DuplicateIdentityException(
+                    f"An identifier of type [{external_id.id_type.value}] "
+                    f"with value [{external_id.external_id}] already exists"
+                )
