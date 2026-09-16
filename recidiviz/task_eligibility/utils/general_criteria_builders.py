@@ -657,6 +657,58 @@ def custody_or_supervision_level_criteria_builder(
     )
 
 
+def custody_level_vs_recommended_criteria_view_builder(
+    *,
+    # Upper-case, `US_XX_`-prefixed name uniquely identifying this criteria. Must match
+    # the name of the file the builder is defined in.
+    criteria_name: str,
+    # Human-readable description of the spans this criteria describes.
+    description: str,
+    # The policy whose recommended levels this criteria compares against. Its state is
+    # the criteria's state, so the two cannot disagree.
+    recommended_classification_spans_view_builder: RecommendedClassificationSpansBigQueryViewBuilder,
+    # The comparison that satisfies this criteria (e.g. HIGHER_THAN_RECOMMENDED for a
+    # downgrade task).
+    comparison: CustodyLevelVsRecommended,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns the view builder for a criteria describing when a resident's current
+    custody level compares to their recommended level in the given way.
+
+    Pairs custody_level_vs_recommended_criteria with the reason fields that query
+    emits, and takes the state from the policy being compared against rather than
+    separately.
+    """
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=recommended_classification_spans_view_builder.state_code,
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=custody_level_vs_recommended_criteria(
+            recommended_classification_spans_view_builder=(
+                recommended_classification_spans_view_builder
+            ),
+            comparison=comparison,
+        ),
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="recommended_custody_level",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Recommended custody level",
+            ),
+            ReasonsField(
+                name="custody_level",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Custody level",
+            ),
+            ReasonsField(
+                name="upcoming_eligibility_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when client becomes eligible",
+            ),
+        ],
+    )
+
+
 def custody_level_vs_recommended_criteria(
     *,
     recommended_classification_spans_view_builder: RecommendedClassificationSpansBigQueryViewBuilder,
