@@ -27,7 +27,9 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 )
 from recidiviz.services.identity.constants import IDENTITY_IMPORT_QUEUE
 from recidiviz.services.identity.exceptions import ClusterSnapshotNotFoundError
-from recidiviz.services.identity.import_task_enqueuer import enqueue_import_task
+from recidiviz.services.identity.import_processing.import_task_enqueuer import (
+    enqueue_import_task,
+)
 from recidiviz.utils.metadata import CloudRunMetadata
 
 _SNAPSHOT = datetime.datetime(2026, 8, 8, tzinfo=datetime.timezone.utc)
@@ -41,7 +43,7 @@ _CLOUD_RUN_METADATA = CloudRunMetadata(
     service_account_email="identity-service-cr@fake-project.iam.gserviceaccount.com",
 )
 
-_ENQUEUER_MODULE = "recidiviz.services.identity.import_task_enqueuer"
+_ENQUEUER_MODULE = "recidiviz.services.identity.import_processing.import_task_enqueuer"
 
 
 class EnqueueImportTaskTest(TestCase):

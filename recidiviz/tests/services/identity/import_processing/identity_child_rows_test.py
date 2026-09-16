@@ -36,7 +36,7 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterRace,
     IdentityClusterSex,
 )
-from recidiviz.services.identity.identity_child_rows import (
+from recidiviz.services.identity.import_processing.identity_child_rows import (
     ATTRIBUTE_ROW_TYPES,
     build_attribute_rows,
 )

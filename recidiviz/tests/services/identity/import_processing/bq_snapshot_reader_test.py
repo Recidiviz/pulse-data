@@ -43,13 +43,13 @@ from recidiviz.persistence.entity.serialization import (
     serialize_entity_into_json,
     serialize_entity_tree_into_json,
 )
-from recidiviz.services.identity.bq_snapshot_reader import (
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
     ClusterSnapshot,
     read_cluster_snapshots,
 )
 
 _CTX = identity_cluster_entities_module_context.IDENTITY_CLUSTER_ENTITIES_CONTEXT
-_READER = "recidiviz.services.identity.bq_snapshot_reader"
+_READER = "recidiviz.services.identity.import_processing.bq_snapshot_reader"
 
 
 def _rich_cluster(tenant: Tenant) -> IdentityCluster:

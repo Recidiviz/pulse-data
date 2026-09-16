@@ -39,7 +39,7 @@ from recidiviz.services.identity.exceptions import (
     IdentityHistoryIntegrityException,
 )
 from recidiviz.services.identity.identity_blueprint import identity_blueprint
-from recidiviz.services.identity.import_task_enqueuer import (
+from recidiviz.services.identity.import_processing.import_task_enqueuer import (
     CLEAR_FIRST_BODY_KEY,
     SNAPSHOT_TIMESTAMP_BODY_KEY,
     TENANT_BODY_KEY,

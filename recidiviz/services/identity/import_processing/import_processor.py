@@ -36,13 +36,19 @@ from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.services.identity.bq_snapshot_reader import (
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
     ClusterSnapshot,
     read_cluster_snapshots,
 )
-from recidiviz.services.identity.create_pass import build_identity_rows
-from recidiviz.services.identity.demographic_guard import DemographicGuard
-from recidiviz.services.identity.update_pass import apply_identity_update
+from recidiviz.services.identity.import_processing.create_pass import (
+    build_identity_rows,
+)
+from recidiviz.services.identity.import_processing.demographic_guard import (
+    DemographicGuard,
+)
+from recidiviz.services.identity.import_processing.update_pass import (
+    apply_identity_update,
+)
 
 _IDENTITY_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
 

@@ -46,8 +46,12 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterSex,
 )
 from recidiviz.services.identity import types
-from recidiviz.services.identity.bq_snapshot_reader import ClusterSnapshot
-from recidiviz.services.identity.create_pass import build_identity_rows
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
+    ClusterSnapshot,
+)
+from recidiviz.services.identity.import_processing.create_pass import (
+    build_identity_rows,
+)
 from recidiviz.services.identity.querier import IdentityServiceQuerier
 from recidiviz.tests.services.identity.test_utils import make_sourced_attribute
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers

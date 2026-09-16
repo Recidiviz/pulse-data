@@ -27,8 +27,10 @@ from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
 )
-from recidiviz.services.identity.bq_snapshot_reader import ClusterSnapshot
-from recidiviz.services.identity.identity_child_rows import (
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
+    ClusterSnapshot,
+)
+from recidiviz.services.identity.import_processing.identity_child_rows import (
     ATTRIBUTE_ROW_TYPES,
     build_attribute_rows,
     build_external_id_rows,

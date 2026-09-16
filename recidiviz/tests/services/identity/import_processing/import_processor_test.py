@@ -38,9 +38,13 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityClusterExternalId,
     IdentityClusterName,
 )
-from recidiviz.services.identity.bq_snapshot_reader import ClusterSnapshot
-from recidiviz.services.identity.demographic_guard import DemographicGuard
-from recidiviz.services.identity.import_processor import (
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
+    ClusterSnapshot,
+)
+from recidiviz.services.identity.import_processing.demographic_guard import (
+    DemographicGuard,
+)
+from recidiviz.services.identity.import_processing.import_processor import (
     _IDENTITY_CHILD_TABLES,
     process_import,
 )
@@ -58,7 +62,7 @@ from recidiviz.utils.user_hash import generate_user_hash
 
 _SNAPSHOT = datetime.datetime(2026, 8, 8, tzinfo=datetime.timezone.utc)
 _ID_TYPE = IdentifierType.US_OZ_LOTR_ID
-_PROCESSOR_MODULE = "recidiviz.services.identity.import_processor"
+_PROCESSOR_MODULE = "recidiviz.services.identity.import_processing.import_processor"
 
 
 def _named_snapshot(

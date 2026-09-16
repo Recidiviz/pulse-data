@@ -21,8 +21,10 @@ import uuid
 
 from recidiviz.common.constants.identity import IdentityStatus
 from recidiviz.persistence.database.schema.identity import schema
-from recidiviz.services.identity.bq_snapshot_reader import ClusterSnapshot
-from recidiviz.services.identity.identity_child_rows import (
+from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
+    ClusterSnapshot,
+)
+from recidiviz.services.identity.import_processing.identity_child_rows import (
     build_attribute_rows,
     build_external_id_rows,
 )
