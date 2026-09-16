@@ -19,7 +19,16 @@ resource "google_project_iam_custom_role" "state-admin-role" {
   role_id     = "stateAdminRole"
   title       = "State Admin Role"
   description = "Role that gives external state agencies permissions to upload files with state data to GCS."
-  permissions = ["storage.objects.create", "storage.objects.get", "storage.objects.list"]
+  permissions = [
+    "storage.objects.create",
+    "storage.objects.get",
+    "storage.objects.list",
+    # Files too large for a single request are sent as XML API multipart
+    # uploads, which need these on top of storage.objects.create.
+    "storage.multipartUploads.abort",
+    "storage.multipartUploads.create",
+    "storage.multipartUploads.listParts",
+  ]
 }
 
 resource "google_project_iam_custom_role" "gcs-object-and-bucket-viewer" {
