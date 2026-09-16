@@ -137,7 +137,9 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_MINIMUM_FACILITY = "TRANSFER_TO_MINIMUM_FACILITY"
     INCARCERATION_ASSESSMENT_COMPLETED = "INCARCERATION_ASSESSMENT_COMPLETED"
     # TODO(#61946): Deprecate this completion event in favor of combining all reclass CAFs
-    # into a single completion event in TN
+    # into a single completion event in TN. Also used by MI's non-intake classification
+    # completion event (us_mi/incarceration_assessment_2026_policy_completed.py) -- confirm
+    # any resolution here doesn't change MI's behavior.
     INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED = (
         "INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED"
     )

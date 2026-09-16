@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when classification hearings that were scheduled have occurred 
-in TN using the new 2026 classification policy, regardless of whether they were on time. 
-Excludes classification hearings done during Intake.
+"""Defines a view that shows when a subsequent (non-intake) classification review has
+occurred for someone in Michigan, under the 2026 classification policy.
+
+TODO(MI-7750): This currently marks every non-intake classification decision as an
+event under the 2026 policy, since MI's classification data doesn't yet distinguish
+which policy version a decision was made under (unlike TN, whose equivalent completion
+event additionally filters on assessment_type = "RCAF" to isolate 2026-policy
+reclassification decisions). Add an equivalent filter here once MI's data supports it,
+so this doesn't fire for pre-2026-policy reclassifications. Same root cause as the
+identical caveat on incarceration_intake_assessment_2026_policy_completed.py.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
@@ -28,13 +35,11 @@ from recidiviz.task_eligibility.utils.general_completion_event_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
-# transfers into a single completion event in TN.
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = non_intake_classification_decision_completed_view_builder(
-    state_code=StateCode.US_TN,
-    description=__doc__,
-    # Filters to the 2026 reclassification CAF, TN's non-intake classification instrument.
-    additional_where_clause="c.assessment_type = 'RCAF'",
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    non_intake_classification_decision_completed_view_builder(
+        state_code=StateCode.US_MI,
+        description=__doc__,
+    )
 )
 
 if __name__ == "__main__":

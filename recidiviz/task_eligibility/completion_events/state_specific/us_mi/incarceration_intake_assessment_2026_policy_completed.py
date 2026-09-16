@@ -25,40 +25,21 @@ isolate 2026-policy intake decisions). Add an equivalent filter here once MI's
 data supports it, so this doesn't fire for pre-2026-policy first
 classifications.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
-    TaskCompletionEventType,
+)
+from recidiviz.task_eligibility.utils.general_completion_event_builders import (
+    intake_classification_decision_completed_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_QUERY_TEMPLATE = """
-    SELECT
-        c.state_code,
-        c.person_id,
-        c.classification_decision_date AS completion_event_date,
-    FROM `{project_id}.{analyst_views_dataset}.custody_classification_assessment_dates_materialized` c
-    -- This criteria only exists for spans where someone has received their first
-    -- classification after starting or re-starting state-prison custody, so joining
-    -- here limits to only intake completion events
-    INNER JOIN
-        `{project_id}.{task_eligibility_criteria_general_dataset}.has_initial_classification_in_state_prison_custody_materialized` i
-        ON c.person_id = i.person_id
-        AND c.state_code = i.state_code
-        AND c.classification_decision_date = i.start_date
-    WHERE c.state_code = 'US_MI'
-"""
-
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
-    state_code=StateCode.US_MI,
-    completion_event_type=TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
-    description=__doc__,
-    completion_event_query_template=_QUERY_TEMPLATE,
-    analyst_views_dataset=ANALYST_VIEWS_DATASET,
-    task_eligibility_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    intake_classification_decision_completed_view_builder(
+        state_code=StateCode.US_MI,
+        description=__doc__,
+    )
 )
 
 if __name__ == "__main__":

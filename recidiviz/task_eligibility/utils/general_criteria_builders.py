@@ -910,6 +910,79 @@ def custody_level_compared_to_recommended(
     """
 
 
+def at_least_x_time_since_latest_classification_assessment(
+    state_code: StateCode,
+    eligible_date_clause: str,
+) -> str:
+    """
+    The span's start, classification_decision_date, reflects TN's "submitted
+    form, pending hearing/decision" workflow; for MI, it's simply the assessment
+    date, since MI has no separate hearing/decision step. The WHERE-clause guard
+    below is a no-op for MI, whose assessment_due_date is always exactly 12
+    months after classification_decision_date -- revisit its threshold if a
+    future state's eligible_date_clause sits close to classification_decision_date.
+
+    Args:
+        state_code (StateCode): State to filter `custody_classification_assessment_dates`
+            spans to.
+        eligible_date_clause (str): SQL expression (may reference `assessment_due_date`)
+            computing the date a span becomes eligible again following a classification
+            assessment. This is the only piece of the criteria's timing that varies by
+            state; the WHERE-clause guard below is independent of it and does not vary.
+    Returns:
+        f-string: Spans of time when at least 12 months have passed since a resident's
+            last classification assessment.
+    """
+    return f"""
+    WITH assessment_sessions_cte AS
+    (
+        SELECT
+            state_code,
+            person_id,
+            -- The span when someone is ineligible begins on classification_decision_date
+            -- and ends, making them eligible again, per eligible_date_clause.
+            classification_decision_date AS start_date,
+            {eligible_date_clause} AS end_date,
+            FALSE AS meets_criteria,
+            assessment_date,
+            assessment_due_date,
+            DATE_TRUNC(assessment_due_date, MONTH) AS assessment_due_month,
+        FROM
+            `{{project_id}}.analyst_data.custody_classification_assessment_dates_materialized`
+        WHERE
+            state_code = '{state_code.value}'
+            -- Removes a small number of spans where classification_decision_date appears to be 1 year after the classification date.
+            AND DATE_SUB(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 WEEK) > classification_decision_date
+    )
+    ,
+    {create_sub_sessions_with_attributes('assessment_sessions_cte')}
+    ,
+    dedup_cte AS
+    (
+        SELECT
+            *,
+        FROM sub_sessions_with_attributes
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date
+            ORDER BY assessment_date DESC) = 1
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(assessment_date AS most_recent_assessment_date,
+                        assessment_due_date AS assessment_due_date,
+                        assessment_due_month AS assessment_due_month
+                        )
+                ) AS reason,
+        assessment_date AS most_recent_assessment_date,
+        assessment_due_date AS assessment_due_date,
+        assessment_due_month AS assessment_due_month,
+    FROM dedup_cte
+    """
+
+
 def num_events_within_time_interval_spans(
     events_cte: str,
     date_interval: Optional[int] = None,

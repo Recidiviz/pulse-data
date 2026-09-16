@@ -21,36 +21,20 @@ use the new 2026 classification policy.
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
-    TaskCompletionEventType,
+)
+from recidiviz.task_eligibility.utils.general_completion_event_builders import (
+    intake_classification_decision_completed_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_QUERY_TEMPLATE = """
-    SELECT c.state_code,
-           c.person_id,
-           c.classification_decision_date AS completion_event_date, 
-    FROM
-        `{project_id}.analyst_data.custody_classification_assessment_dates_materialized` c
-    -- This criteria only exists for spans where someone has received their first classification after starting
-    -- or re-starting state-prison custody, so joining here limits to only intake completion events
-    INNER JOIN 
-        `{project_id}.task_eligibility_criteria_general.has_initial_classification_in_state_prison_custody_materialized` i
-    ON c.person_id = i.person_id
-    AND c.state_code = i.state_code
-    AND c.classification_decision_date = i.start_date  
-    -- filter only to 2026 diagnostic CAF
-    WHERE c.assessment_type = "DCAF"
-
-"""
-
 # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
 # transfers into a single completion event in TN.
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = intake_classification_decision_completed_view_builder(
     state_code=StateCode.US_TN,
-    completion_event_type=TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
     description=__doc__,
-    completion_event_query_template=_QUERY_TEMPLATE,
+    # Filters to the 2026 diagnostic CAF, TN's intake classification instrument.
+    additional_where_clause="c.assessment_type = 'DCAF'",
 )
 
 if __name__ == "__main__":

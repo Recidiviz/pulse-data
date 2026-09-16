@@ -591,7 +591,7 @@ def get_states_with_document_collections_existing_in_env(
     config_module: ModuleType | None = None,
 ) -> list[StateCode]:
     """Returns the states that both have document collection configs and exist in
-    the current environment.
+    the current environment, ordered by state code.
     """
     states_existing_in_env = set(get_direct_ingest_states_existing_in_env())
     states_with_document_collections = {
@@ -601,7 +601,10 @@ def get_states_with_document_collections_existing_in_env(
             sc, config_module=config_module or default_config_module
         )
     }
-    return list(states_with_document_collections & states_existing_in_env)
+    return sorted(
+        states_with_document_collections & states_existing_in_env,
+        key=lambda state_code: state_code.value,
+    )
 
 
 def load_first_order_document_collection_configs(
