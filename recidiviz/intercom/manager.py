@@ -64,12 +64,9 @@ class IntercomAPIManager:
     ) -> IntercomExportJobResponse:
         """Create Intercom export job for the window within the given datetimes."""
 
-        created_at_after = start_datetime_inclusive
-        created_at_before = end_datetime_inclusive
-
-        export_job = self.client.create_data_export(created_at_after, created_at_before)
-
-        return export_job
+        return self.client.create_data_export(
+            start_datetime_inclusive, end_datetime_inclusive
+        )
 
     def poll_export_status(
         self, job_identifier: str, max_attempts: int = DEFAULT_MAX_POLL_ATTEMPTS

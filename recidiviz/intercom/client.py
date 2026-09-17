@@ -105,9 +105,8 @@ class IntercomAPIClient:
         wait=wait_exponential(multiplier=1, min=4, max=10),
         reraise=True,
     )
-    # TODO(OBT-27442): Change args to start_datetime_inclusive and end_datetime_inclusive
     def create_data_export(
-        self, created_at_after: datetime, created_at_before: datetime
+        self, start_datetime_inclusive: datetime, end_datetime_inclusive: datetime
     ) -> IntercomExportJobResponse:
         """Creates a job to export message delivery and engagement statistics for outbound content (Emails, Posts, Custom Bots, Surveys, Tours, Series, and more) sent in a given timeframe.
         The exported data includes who received each message, when they received it, and how they engaged with it (opens, clicks, replies, completions, dismissals, unsubscribes, and bounces).
@@ -117,30 +116,30 @@ class IntercomAPIClient:
         https://developers.intercom.com/docs/references/rest-api/api.intercom.io/data-export/createdataexport
 
                 Args:
-                    created_at_after: UTC datetime for start of date range, inclusive
-                    created_at_before: UTC datetime for end of date range, inclusive
+                    start_datetime_inclusive: UTC datetime for start of date range, inclusive
+                    end_datetime_inclusive: UTC datetime for end of date range, inclusive
 
                 Returns:
                     IntercomExportJobResponse with job_identifier and initial status
         """
-        if created_at_after >= created_at_before:
+        if start_datetime_inclusive >= end_datetime_inclusive:
             raise ValueError(
-                "created_at_after must be before created_at_before. "
-                f"Got {created_at_after} and {created_at_before}"
+                "start_datetime_inclusive must be before end_datetime_inclusive. "
+                f"Got {start_datetime_inclusive} and {end_datetime_inclusive}"
             )
         if (
-            created_at_after.tzinfo is not timezone.utc
-            or created_at_before.tzinfo is not timezone.utc
+            start_datetime_inclusive.tzinfo is not timezone.utc
+            or end_datetime_inclusive.tzinfo is not timezone.utc
         ):
             raise ValueError(
-                "created_at_after and created_at_before must be timezone-aware UTC datetimes. "
-                f"Got {created_at_after} and {created_at_before}"
+                "start_datetime_inclusive and end_datetime_inclusive must be timezone-aware UTC datetimes. "
+                f"Got {start_datetime_inclusive} and {end_datetime_inclusive}"
             )
 
         url = f"{self._BASE_URL}/export/content/data"
         payload = {
-            "created_at_after": int(created_at_after.timestamp()),
-            "created_at_before": int(created_at_before.timestamp()),
+            "created_at_after": int(start_datetime_inclusive.timestamp()),
+            "created_at_before": int(end_datetime_inclusive.timestamp()),
         }
 
         response = self._session.post(

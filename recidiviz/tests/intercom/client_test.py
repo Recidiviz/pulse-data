@@ -181,7 +181,7 @@ def test_create_ticket_fails(
 
 
 @pytest.mark.parametrize(
-    "created_at_after,created_at_before",
+    "start_datetime_inclusive,end_datetime_inclusive",
     [
         (TIME_2018, TIME_NOW),
         (TIME_HOUR_AGO, TIME_NOW),
@@ -190,15 +190,15 @@ def test_create_ticket_fails(
 )
 def test_create_data_export(
     intercom_api_client: IntercomAPIClient,
-    created_at_after: datetime,
-    created_at_before: datetime,
+    start_datetime_inclusive: datetime,
+    end_datetime_inclusive: datetime,
 ) -> None:
     """
     Test IntercomAPIClient.create_data_export to ensure the data export is created.
     """
 
     result_export_job_response = intercom_api_client.create_data_export(
-        created_at_after, created_at_before
+        start_datetime_inclusive, end_datetime_inclusive
     )
 
     # Assert
