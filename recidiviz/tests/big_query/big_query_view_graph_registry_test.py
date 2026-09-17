@@ -492,3 +492,88 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                     ),
                 ],
             )
+
+    def test_three_graph_cycle_raises(self) -> None:
+        # g_a -> g_b -> g_c -> g_a via their boundary datasets.
+        g_a = _graph(
+            "g_a",
+            [
+                _view_builder(
+                    "boundary_a",
+                    "out",
+                    should_materialize=True,
+                    reads_from_address="boundary_c.out_materialized",
+                ),
+            ],
+        )
+        g_b = _graph(
+            "g_b",
+            [
+                _view_builder(
+                    "boundary_b",
+                    "out",
+                    should_materialize=True,
+                    reads_from_address="boundary_a.out_materialized",
+                ),
+            ],
+        )
+        g_c = _graph(
+            "g_c",
+            [
+                _view_builder(
+                    "boundary_c",
+                    "out",
+                    should_materialize=True,
+                    reads_from_address="boundary_b.out_materialized",
+                ),
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^View graphs form a cycle: dataset:\[boundary_a\] -> view_graph:\[g_a\] "
+            r"-> dataset:\[boundary_c\] -> view_graph:\[g_c\] -> dataset:\[boundary_b\] "
+            r"-> view_graph:\[g_b\] -> dataset:\[boundary_a\]\.$",
+        ):
+            BigQueryViewGraphRegistry.build(
+                project_id=_PROJECT_ID,
+                view_graphs=[g_a, g_b, g_c],
+                candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+            )
+
+    def test_graph_reading_dataset_it_materializes_into_is_not_a_cycle(self) -> None:
+        # g_a both materializes into `boundary` (via out) and reads a different
+        # table from `boundary` (out reads boundary.other), so it is its own
+        # writer and reader of that dataset. This self-edge is not a cross-graph
+        # cycle, so build succeeds and resolves g_a's input to the derived
+        # boundary collection for its own output.
+        g_a = _graph(
+            "g_a",
+            [
+                _view_builder(
+                    "boundary",
+                    "out",
+                    should_materialize=True,
+                    reads_from_address="boundary.other",
+                ),
+            ],
+        )
+
+        registry = BigQueryViewGraphRegistry.build(
+            project_id=_PROJECT_ID,
+            view_graphs=[g_a],
+            candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+        )
+
+        expected_boundary_collection = view_derived_source_table_collection(
+            dataset_id="boundary",
+            update_groups={SourceTableUpdateGroup.CALC},
+            source_tables_by_address={
+                config.address: config
+                for config in g_a.output_source_table_configs_by_dataset["boundary"]
+            },
+        )
+        self.assertEqual(
+            [expected_boundary_collection],
+            registry.graph_for_name("g_a").input_source_table_collections,
+        )

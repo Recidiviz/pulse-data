@@ -34,6 +34,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
     SourceTableUpdateGroup,
 )
+from recidiviz.utils.graph_algorithms import find_cycle
 from recidiviz.utils.list_helpers import flatten_values_for_keys, group_by
 
 
@@ -70,6 +71,47 @@ def _map_datasets_to_writer_reader_graphs(
         for dataset_id in graph.root_datasets:
             reader_graphs_by_dataset[dataset_id].append(graph)
     return dict(writer_graphs_by_dataset), dict(reader_graphs_by_dataset)
+
+
+_VIEW_GRAPH_NODE_PREFIX = "view_graph:"
+_DATASET_NODE_PREFIX = "dataset:"
+
+
+def _assert_view_graphs_acyclic(
+    writer_graphs_by_dataset: dict[str, list[BigQueryViewGraph]],
+    reader_graphs_by_dataset: dict[str, list[BigQueryViewGraph]],
+) -> None:
+    """Raises if the graph-of-graphs has a dataset-level cycle. An inter-graph edge exists when
+    one graph reads a dataset another graph materializes into. The graph-of-graphs is modeled
+    as graph of view graphs and datasets. Ex:
+
+    "view_graph:llm" -> dataset:llm_outputs -> "view_graph:calc"
+
+    A real cycle is a table-level property, so this dataset-level check is stricter than necessary.
+    It can reject for example:
+
+    graph_a: source_dataset.table_a -> target_dataset.table_b
+    graph_b: target_dataset.table_b -> source_dataset.table_b
+
+    which is not a true cycle.
+
+    That over-strictness is fine because a graph resolves its inputs at dataset granularity, so we
+    never want two graphs to depend on each other's outputs in the same dataset regardless of
+    which individual tables are involved.
+    """
+    edges: dict[str, set[str]] = defaultdict(set)
+    for dataset_id, readers in reader_graphs_by_dataset.items():
+        dataset_node = f"{_DATASET_NODE_PREFIX}[{dataset_id}]"
+        for reader in readers:
+            for writer in writer_graphs_by_dataset.get(dataset_id, []):
+                # A graph that reads a dataset it also materializes into is not a
+                # cross-graph dependency, so it never forms a cycle; skip the
+                # self-edge that would otherwise trip find_cycle.
+                if reader.name != writer.name:
+                    edges[f"{_VIEW_GRAPH_NODE_PREFIX}[{reader.name}]"].add(dataset_node)
+                    edges[dataset_node].add(f"{_VIEW_GRAPH_NODE_PREFIX}[{writer.name}]")
+    if cycle := find_cycle(edges):
+        raise ValueError(f"View graphs form a cycle: {' -> '.join(cycle)}.")
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -174,8 +216,7 @@ class BigQueryViewGraphRegistry:
             writer_graphs_by_dataset,
             reader_graphs_by_dataset,
         ) = _map_datasets_to_writer_reader_graphs(view_graphs)
-        # TODO(OBT-44681) Implement
-        # _assert_view_graphs_acyclic(writers_by_dataset, readers_by_dataset)
+        _assert_view_graphs_acyclic(writer_graphs_by_dataset, reader_graphs_by_dataset)
 
         # A boundary dataset is materialized into by some graph and read by some graph
         # (possibly the same graph). Sorted for test determinism.
