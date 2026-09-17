@@ -18,6 +18,8 @@
 project.
 """
 
+from collections import defaultdict
+
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -26,22 +28,62 @@ from recidiviz.big_query.big_query_view_graph import (
     ResolvedBigQueryViewGraph,
 )
 from recidiviz.common import attr_validators
-from recidiviz.source_tables.source_table_config import SourceTableCollection
-from recidiviz.utils.types import assert_type
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+    SourceTableConfig,
+    SourceTableUpdateGroup,
+)
+from recidiviz.utils.list_helpers import flatten_values_for_keys, group_by
+
+
+def view_derived_source_table_collection(
+    dataset_id: str,
+    update_groups: set[SourceTableUpdateGroup],
+    source_tables_by_address: dict[BigQueryAddress, SourceTableConfig],
+) -> SourceTableCollection:
+    """Returns a source table collection for a boundary dataset, whose tables are
+    derived from the views other graphs materialize into it.
+    """
+    return SourceTableCollection(
+        dataset_id=dataset_id,
+        description=f"View-derived source tables materialized into [{dataset_id}].",
+        # TODO(OBT-50266) Decide if we should make this protected() instead.
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        update_groups=update_groups,
+        source_tables_by_address=source_tables_by_address,
+    )
+
+
+def _map_datasets_to_writer_reader_graphs(
+    view_graphs: list[BigQueryViewGraph],
+) -> tuple[dict[str, list[BigQueryViewGraph]], dict[str, list[BigQueryViewGraph]]]:
+    """Returns a tuple of two dictionaries:
+    - The first maps dataset IDs to the graphs that materialize into them.
+    - The second maps dataset IDs to the graphs that read from them.
+    """
+    writer_graphs_by_dataset: dict[str, list[BigQueryViewGraph]] = defaultdict(list)
+    reader_graphs_by_dataset: dict[str, list[BigQueryViewGraph]] = defaultdict(list)
+    for graph in view_graphs:
+        for dataset_id in graph.output_datasets:
+            writer_graphs_by_dataset[dataset_id].append(graph)
+        for dataset_id in graph.root_datasets:
+            reader_graphs_by_dataset[dataset_id].append(graph)
+    return dict(writer_graphs_by_dataset), dict(reader_graphs_by_dataset)
 
 
 @attr.define(frozen=True, kw_only=True)
 class BigQueryViewGraphRegistry:
-    """The collection of view graphs defined within a single project. Enforces
-    that graph names are unique and that no view or materialized address belongs
-    to more than one graph.
-    """
+    """The collection of view graphs defined within a single project."""
 
     project_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The project every registered graph is resolved for."""
 
     view_graphs: list[ResolvedBigQueryViewGraph] = attr.ib(
-        validator=attr_validators.is_list_of(ResolvedBigQueryViewGraph)
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(ResolvedBigQueryViewGraph),
+        ]
     )
     """All registered view graphs."""
 
@@ -103,9 +145,17 @@ class BigQueryViewGraphRegistry:
         view_graphs: list[BigQueryViewGraph],
         candidate_source_table_collections: list[SourceTableCollection],
     ) -> "BigQueryViewGraphRegistry":
-        """Resolves each graph for project_id and registers the results. A graph's
-        inputs are the candidate collections whose update groups include the
-        graph's input_source_table_update_group.
+        """Resolves each view graph's input source table collections and returns
+        the registry.
+
+        A graph's input source tables come from two places: the
+        |candidate_source_table_collections| (plain source tables hydrated outside
+        any graph, e.g. raw data or ingest output),
+        and boundary datasets — datasets one graph materializes into and another
+        reads from, whose tables are derived from the writing graph's outputs.
+
+        For each boundary dataset, builds a view-derived source table collection
+        that is then attached to each graph that reads from that dataset.
         """
         materialized_table_datasets = {
             ds for graph in view_graphs for ds in graph.output_datasets
@@ -119,23 +169,89 @@ class BigQueryViewGraphRegistry:
                 f"graph and present as plain source table collections. A dataset must "
                 f"hold either view-derived or plain source tables, not both."
             )
-        # TODO(OBT-44681): Resolve each graph's inputs from the datasets its views
-        #  actually reference, and derive the collections for tables that one
-        #  graph materializes and another reads.
-        return cls(
-            project_id=project_id,
-            view_graphs=[
-                ResolvedBigQueryViewGraph(
-                    view_graph=graph,
-                    input_source_table_collections=[
-                        c
-                        for c in candidate_source_table_collections
-                        if graph.input_source_table_update_group
-                        in assert_type(c.update_groups, set)
-                    ],
-                )
-                for graph in view_graphs
+
+        (
+            writer_graphs_by_dataset,
+            reader_graphs_by_dataset,
+        ) = _map_datasets_to_writer_reader_graphs(view_graphs)
+        # TODO(OBT-44681) Implement
+        # _assert_view_graphs_acyclic(writers_by_dataset, readers_by_dataset)
+
+        # A boundary dataset is materialized into by some graph and read by some graph
+        # (possibly the same graph). Sorted for test determinism.
+        boundary_datasets = sorted(
+            set(writer_graphs_by_dataset) & set(reader_graphs_by_dataset)
+        )
+        derived_source_table_collections = [
+            view_derived_source_table_collection(
+                dataset_id=dataset_id,
+                # The update group of every graph that reads this dataset: the DAGs whose
+                # tasks consume these tables, so this source table collection must be updated
+                # whenever a reading graph's DAG runs. We do not include update groups from the
+                # graphs that materialize into this dataset because they will update this source table
+                # collection during the materialization process.
+                update_groups={
+                    graph.input_source_table_update_group
+                    for graph in reader_graphs_by_dataset[dataset_id]
+                },
+                # One source table config per materialized view that any graph writes to this dataset
+                source_tables_by_address={
+                    config.address: config
+                    for writer in writer_graphs_by_dataset[dataset_id]
+                    for config in writer.output_source_table_configs_by_dataset[
+                        dataset_id
+                    ]
+                },
+            )
+            for dataset_id in boundary_datasets
+        ]
+        # TODO(OBT-46919) One we remove all _DATASETS_WITH_MULTIPLE_COLLECTIONS this can
+        # be a dict[str, SourceTableCollection]
+        source_table_collections_by_dataset: dict[
+            str, list[SourceTableCollection]
+        ] = group_by(
+            items=[
+                *candidate_source_table_collections,
+                *derived_source_table_collections,
             ],
+            key_fn=lambda c: c.dataset_id,
+        )
+
+        resolved_graphs = [
+            ResolvedBigQueryViewGraph(
+                view_graph=graph,
+                input_source_table_collections=cls._resolve_input_collections(
+                    graph, source_table_collections_by_dataset
+                ),
+            )
+            for graph in view_graphs
+        ]
+
+        return cls(project_id=project_id, view_graphs=resolved_graphs)
+
+    @staticmethod
+    def _resolve_input_collections(
+        graph: BigQueryViewGraph,
+        source_table_collections_by_dataset: dict[str, list[SourceTableCollection]],
+    ) -> list[SourceTableCollection]:
+        """Returns the source table collections for the datasets |graph| reads,
+        raising if any read dataset has neither a plain candidate collection nor a
+        graph that materializes into it.
+        """
+        if unregistered_datasets := graph.root_datasets - set(
+            source_table_collections_by_dataset
+        ):
+            raise ValueError(
+                f"Graph [{graph.name}] reads datasets {sorted(unregistered_datasets)} "
+                f"that no source table collection provides and no view graph "
+                f"materializes into. Add a source table collection for them to "
+                f"collect_source_table_collections_hydrated_outside_view_graphs, or "
+                f"remove the views that reference them."
+            )
+        return flatten_values_for_keys(
+            # Sort for test determinism
+            keys=sorted(graph.root_datasets),
+            values_by_key=source_table_collections_by_dataset,
         )
 
     def graph_for_name(self, name: str) -> ResolvedBigQueryViewGraph:
