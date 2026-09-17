@@ -27,13 +27,14 @@ from recidiviz.utils.metadata import local_project_id_override
 _QUERY_TEMPLATE = """
 -- TODO(OBT-45606): This criterion uses the Tasks view case_type_supervision_level_spans_materialized because Texas's case_type only gets properly configured at that stage. If case_type gets configured earlier on in ingest, then change the source for this criterion to be whichever view is most upstream and encodes case_type correctly. 
 WITH ordered_spans AS (
-    SELECT 
+    SELECT
         person_id,
         state_code,
         case_type,
         start_date,
         end_date,
         LEAD(case_type) OVER (PARTITION BY person_id, state_code ORDER BY start_date) AS next_case_type,
+        LEAD(supervision_level) OVER (PARTITION BY person_id, state_code ORDER BY start_date) AS next_supervision_level,
         LEAD(start_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date) AS next_start_date,
     FROM `{project_id}.{tasks_dataset}.case_type_supervision_level_spans_materialized`
     WHERE state_code = 'US_TX'
@@ -46,8 +47,12 @@ FROM ordered_spans
 WHERE case_type = 'ELECTRONIC_MONITORING'
     AND end_date IS NOT NULL
     AND (
-        -- Case type changed to something else, immediately (no gap in the data)
-        (next_case_type NOT IN ('ELECTRONIC_MONITORING', 'INTENSE_SUPERVISION') AND next_start_date = end_date)
+        -- Case type changed to something else, immediately (no gap in the data), and the
+        -- next span isn't a custody or warrant/absconsion status.
+        (next_case_type NOT IN ('ELECTRONIC_MONITORING', 'INTENSE_SUPERVISION')
+            AND next_start_date = end_date
+            AND (next_supervision_level IS NULL
+                OR next_supervision_level NOT IN ('IN_CUSTODY', 'WARRANT', 'ABSCONSION')))
         -- Or the EM span closed with nothing after it -- i.e. left supervision entirely
         OR next_case_type IS NULL
     )
