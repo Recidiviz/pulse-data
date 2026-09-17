@@ -17,6 +17,8 @@
 """Tests for big_query_view_graph_registry.py"""
 
 import unittest
+from typing import Any
+from unittest.mock import patch
 
 from google.cloud import bigquery
 
@@ -36,7 +38,6 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableUpdateGroup,
 )
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 def _view_builder(
@@ -60,7 +61,7 @@ def _view_builder(
     )
 
 
-def _collection(
+def _source_table_collection(
     dataset_id: str, update_groups: set[SourceTableUpdateGroup]
 ) -> SourceTableCollection:
     return SourceTableCollection(
@@ -71,41 +72,61 @@ def _collection(
     )
 
 
-_CALC_COLLECTION = _collection("source_dataset", {SourceTableUpdateGroup.CALC})
-_LLM_COLLECTION = _collection(
-    "llm_dataset", {SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION}
+_PROJECT_ID = "recidiviz-testing"
+_OTHER_PROJECT_ID = "recidiviz-testing-2"
+
+_CALC_SOURCE_TABLE_COLLECTION = _source_table_collection(
+    dataset_id="source_dataset", update_groups={SourceTableUpdateGroup.CALC}
 )
-_SHARED_COLLECTION = _collection(
-    "shared_dataset",
-    {SourceTableUpdateGroup.CALC, SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION},
+_LLM_SOURCE_TABLE_COLLECTION = _source_table_collection(
+    dataset_id="llm_dataset",
+    update_groups={SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION},
+)
+_SHARED_SOURCE_TABLE_COLLECTION = _source_table_collection(
+    dataset_id="shared_dataset",
+    update_groups={
+        SourceTableUpdateGroup.CALC,
+        SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+    },
 )
 
 
 def _graph(
     name: str,
-    view_builder_candidates: list[BigQueryViewBuilder],
+    view_builders: list[BigQueryViewBuilder],
     input_source_table_update_group: SourceTableUpdateGroup = SourceTableUpdateGroup.CALC,
-    project_id: str = GCP_PROJECT_STAGING,
+    project_id: str = _PROJECT_ID,
 ) -> BigQueryViewGraph:
-    return BigQueryViewGraph.build(
+    return BigQueryViewGraph(
         project_id=project_id,
         name=name,
         input_source_table_update_group=input_source_table_update_group,
-        view_builder_candidates=view_builder_candidates,
+        view_builders=view_builders,
     )
 
 
-def _resolved(
+def _resolved_graph(
     graph: BigQueryViewGraph,
 ) -> ResolvedBigQueryViewGraph:
     return ResolvedBigQueryViewGraph(
         view_graph=graph,
-        input_source_table_collections=[_CALC_COLLECTION],
+        input_source_table_collections=[_CALC_SOURCE_TABLE_COLLECTION],
     )
 
 
-class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
-    """Tests for BigQueryViewGraphRegistry.build()."""
+class TestBigQueryViewGraphRegistry(unittest.TestCase):
+    """Tests for BigQueryViewGraphRegistry."""
+
+    project_id_patcher: Any
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.project_id_patcher = patch(
+            "recidiviz.utils.metadata.project_id", return_value=_PROJECT_ID
+        )
+        cls.project_id_patcher.start()
+        cls.addClassCleanup(cls.project_id_patcher.stop)
+        super().setUpClass()
 
     def test_build_resolves_each_graph(self) -> None:
         calc_graph = _graph("calc_graph", [_view_builder("dataset_1", "table_1")])
@@ -116,87 +137,34 @@ class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
         )
 
         registry = BigQueryViewGraphRegistry.build(
-            project_id=GCP_PROJECT_STAGING,
+            project_id=_PROJECT_ID,
             view_graphs=[calc_graph, llm_graph],
-            candidate_collections=[
-                _CALC_COLLECTION,
-                _LLM_COLLECTION,
-                _SHARED_COLLECTION,
+            candidate_source_table_collections=[
+                _CALC_SOURCE_TABLE_COLLECTION,
+                _LLM_SOURCE_TABLE_COLLECTION,
+                _SHARED_SOURCE_TABLE_COLLECTION,
             ],
         )
 
-        self.assertEqual(GCP_PROJECT_STAGING, registry.project_id)
+        self.assertEqual(_PROJECT_ID, registry.project_id)
         self.assertEqual(
             [
                 ResolvedBigQueryViewGraph(
                     view_graph=calc_graph,
                     input_source_table_collections=[
-                        _CALC_COLLECTION,
-                        _SHARED_COLLECTION,
+                        _CALC_SOURCE_TABLE_COLLECTION,
+                        _SHARED_SOURCE_TABLE_COLLECTION,
                     ],
                 ),
                 ResolvedBigQueryViewGraph(
                     view_graph=llm_graph,
                     input_source_table_collections=[
-                        _LLM_COLLECTION,
-                        _SHARED_COLLECTION,
+                        _LLM_SOURCE_TABLE_COLLECTION,
+                        _SHARED_SOURCE_TABLE_COLLECTION,
                     ],
                 ),
             ],
             registry.view_graphs,
-        )
-
-    def test_build_filters_view_builders_to_project(self) -> None:
-        staging_registry = BigQueryViewGraphRegistry.build(
-            project_id=GCP_PROJECT_STAGING,
-            view_graphs=[
-                _graph(
-                    "my_graph",
-                    [
-                        _view_builder("dataset_1", "everywhere"),
-                        _view_builder(
-                            "dataset_1",
-                            "staging_only",
-                            projects_to_deploy={GCP_PROJECT_STAGING},
-                        ),
-                    ],
-                    project_id=GCP_PROJECT_STAGING,
-                )
-            ],
-            candidate_collections=[_CALC_COLLECTION],
-        )
-        production_registry = BigQueryViewGraphRegistry.build(
-            project_id=GCP_PROJECT_PRODUCTION,
-            view_graphs=[
-                _graph(
-                    "my_graph",
-                    [
-                        _view_builder("dataset_1", "everywhere"),
-                        _view_builder(
-                            "dataset_1",
-                            "staging_only",
-                            projects_to_deploy={GCP_PROJECT_STAGING},
-                        ),
-                    ],
-                    project_id=GCP_PROJECT_PRODUCTION,
-                )
-            ],
-            candidate_collections=[_CALC_COLLECTION],
-        )
-
-        self.assertEqual(
-            {"everywhere", "staging_only"},
-            {
-                b.view_id
-                for b in staging_registry.graph_for_name("my_graph").view_builders
-            },
-        )
-        self.assertEqual(
-            {"everywhere"},
-            {
-                b.view_id
-                for b in production_registry.graph_for_name("my_graph").view_builders
-            },
         )
 
     def test_build_graph_with_no_input_collections_raises(self) -> None:
@@ -208,20 +176,40 @@ class TestBigQueryViewGraphRegistryBuild(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             BigQueryViewGraphRegistry.build(
-                project_id=GCP_PROJECT_STAGING,
+                project_id=_PROJECT_ID,
                 view_graphs=[graph],
-                candidate_collections=[_CALC_COLLECTION],
+                candidate_source_table_collections=[_CALC_SOURCE_TABLE_COLLECTION],
             )
 
+    def test_build_dataset_both_materialized_and_source_raises(self) -> None:
+        # _CALC_COLLECTION is a plain source collection on "source_dataset"; the
+        # graph also materializes a view into "source_dataset".
+        graph = _graph(
+            "my_graph",
+            [_view_builder("source_dataset", "table_1", should_materialize=True)],
+        )
 
-class TestBigQueryViewGraphRegistry(unittest.TestCase):
-    """Tests for BigQueryViewGraphRegistry."""
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Datasets \['source_dataset'\] are both materialized into by a view "
+            r"graph and present as plain source table collections\. A dataset must "
+            r"hold either view-derived or plain source tables, not both\.$",
+        ):
+            BigQueryViewGraphRegistry.build(
+                project_id=_PROJECT_ID,
+                view_graphs=[graph],
+                candidate_source_table_collections=[_CALC_SOURCE_TABLE_COLLECTION],
+            )
 
     def test_graph_for_name(self) -> None:
-        graph_1 = _resolved(_graph("graph_1", [_view_builder("dataset_1", "table_1")]))
-        graph_2 = _resolved(_graph("graph_2", [_view_builder("dataset_2", "table_2")]))
+        graph_1 = _resolved_graph(
+            _graph("graph_1", [_view_builder("dataset_1", "table_1")])
+        )
+        graph_2 = _resolved_graph(
+            _graph("graph_2", [_view_builder("dataset_2", "table_2")])
+        )
         registry = BigQueryViewGraphRegistry(
-            project_id=GCP_PROJECT_STAGING, view_graphs=[graph_1, graph_2]
+            project_id=_PROJECT_ID, view_graphs=[graph_1, graph_2]
         )
 
         self.assertEqual(graph_1, registry.graph_for_name("graph_1"))
@@ -229,9 +217,11 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
 
     def test_graph_for_name_unknown_name_raises(self) -> None:
         registry = BigQueryViewGraphRegistry(
-            project_id=GCP_PROJECT_STAGING,
+            project_id=_PROJECT_ID,
             view_graphs=[
-                _resolved(_graph("graph_1", [_view_builder("dataset_1", "table_1")]))
+                _resolved_graph(
+                    _graph("graph_1", [_view_builder("dataset_1", "table_1")])
+                )
             ],
         )
 
@@ -243,17 +233,17 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
     def test_project_id_mismatch_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            rf"^View graph \[graph_1\] is resolved for project \[{GCP_PROJECT_PRODUCTION}\] "
-            rf"but the registry is for project \[{GCP_PROJECT_STAGING}\]$",
+            rf"^View graph \[graph_1\] is resolved for project \[{_OTHER_PROJECT_ID}\] "
+            rf"but the registry is for project \[{_PROJECT_ID}\]$",
         ):
             BigQueryViewGraphRegistry(
-                project_id=GCP_PROJECT_STAGING,
+                project_id=_PROJECT_ID,
                 view_graphs=[
-                    _resolved(
+                    _resolved_graph(
                         _graph(
                             "graph_1",
                             [_view_builder("dataset_1", "table_1")],
-                            project_id=GCP_PROJECT_PRODUCTION,
+                            project_id=_OTHER_PROJECT_ID,
                         ),
                     )
                 ],
@@ -264,23 +254,27 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
             ValueError, r"^Found more than one view graph with name \[graph_1\]$"
         ):
             BigQueryViewGraphRegistry(
-                project_id=GCP_PROJECT_STAGING,
+                project_id=_PROJECT_ID,
                 view_graphs=[
-                    _resolved(
+                    _resolved_graph(
                         _graph("graph_1", [_view_builder("dataset_1", "table_1")])
                     ),
-                    _resolved(
+                    _resolved_graph(
                         _graph("graph_1", [_view_builder("dataset_2", "table_2")])
                     ),
                 ],
             )
 
     def test_collection_in_multiple_graphs_allowed(self) -> None:
-        graph_1 = _resolved(_graph("graph_1", [_view_builder("dataset_1", "table_1")]))
-        graph_2 = _resolved(_graph("graph_2", [_view_builder("dataset_2", "table_2")]))
+        graph_1 = _resolved_graph(
+            _graph("graph_1", [_view_builder("dataset_1", "table_1")])
+        )
+        graph_2 = _resolved_graph(
+            _graph("graph_2", [_view_builder("dataset_2", "table_2")])
+        )
 
         registry = BigQueryViewGraphRegistry(
-            project_id=GCP_PROJECT_STAGING, view_graphs=[graph_1, graph_2]
+            project_id=_PROJECT_ID, view_graphs=[graph_1, graph_2]
         )
         self.assertEqual([graph_1, graph_2], registry.view_graphs)
 
@@ -291,27 +285,29 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
             r"belongs to view graph \[graph_1\]$",
         ):
             BigQueryViewGraphRegistry(
-                project_id=GCP_PROJECT_STAGING,
+                project_id=_PROJECT_ID,
                 view_graphs=[
-                    _resolved(
+                    _resolved_graph(
                         _graph("graph_1", [_view_builder("dataset_1", "table_1")])
                     ),
-                    _resolved(
+                    _resolved_graph(
                         _graph("graph_2", [_view_builder("dataset_1", "table_1")])
                     ),
                 ],
             )
 
     def test_graph_name_for_address(self) -> None:
-        graph_1 = _resolved(
+        graph_1 = _resolved_graph(
             _graph(
                 "graph_1",
                 [_view_builder("dataset_1", "table_1", should_materialize=True)],
             )
         )
-        graph_2 = _resolved(_graph("graph_2", [_view_builder("dataset_2", "table_2")]))
+        graph_2 = _resolved_graph(
+            _graph("graph_2", [_view_builder("dataset_2", "table_2")])
+        )
         registry = BigQueryViewGraphRegistry(
-            project_id=GCP_PROJECT_STAGING, view_graphs=[graph_1, graph_2]
+            project_id=_PROJECT_ID, view_graphs=[graph_1, graph_2]
         )
 
         self.assertEqual(
@@ -335,9 +331,11 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
 
     def test_graph_name_for_address_unknown_address_returns_none(self) -> None:
         registry = BigQueryViewGraphRegistry(
-            project_id=GCP_PROJECT_STAGING,
+            project_id=_PROJECT_ID,
             view_graphs=[
-                _resolved(_graph("graph_1", [_view_builder("dataset_1", "table_1")]))
+                _resolved_graph(
+                    _graph("graph_1", [_view_builder("dataset_1", "table_1")])
+                )
             ],
         )
 
@@ -354,9 +352,9 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
             r"already belongs to view graph \[graph_1\]$",
         ):
             BigQueryViewGraphRegistry(
-                project_id=GCP_PROJECT_STAGING,
+                project_id=_PROJECT_ID,
                 view_graphs=[
-                    _resolved(
+                    _resolved_graph(
                         _graph(
                             "graph_1",
                             [
@@ -366,7 +364,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                             ],
                         )
                     ),
-                    _resolved(
+                    _resolved_graph(
                         _graph(
                             "graph_2",
                             [

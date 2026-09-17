@@ -101,12 +101,24 @@ class BigQueryViewGraphRegistry:
         *,
         project_id: str,
         view_graphs: list[BigQueryViewGraph],
-        candidate_collections: list[SourceTableCollection],
+        candidate_source_table_collections: list[SourceTableCollection],
     ) -> "BigQueryViewGraphRegistry":
         """Resolves each graph for project_id and registers the results. A graph's
         inputs are the candidate collections whose update groups include the
         graph's input_source_table_update_group.
         """
+        materialized_table_datasets = {
+            ds for graph in view_graphs for ds in graph.output_datasets
+        }
+        externally_hydrated_datasets = {
+            c.dataset_id for c in candidate_source_table_collections
+        }
+        if collisions := materialized_table_datasets & externally_hydrated_datasets:
+            raise ValueError(
+                f"Datasets {sorted(collisions)} are both materialized into by a view "
+                f"graph and present as plain source table collections. A dataset must "
+                f"hold either view-derived or plain source tables, not both."
+            )
         # TODO(OBT-44681): Resolve each graph's inputs from the datasets its views
         #  actually reference, and derive the collections for tables that one
         #  graph materializes and another reads.
@@ -117,7 +129,7 @@ class BigQueryViewGraphRegistry:
                     view_graph=graph,
                     input_source_table_collections=[
                         c
-                        for c in candidate_collections
+                        for c in candidate_source_table_collections
                         if graph.input_source_table_update_group
                         in assert_type(c.update_groups, set)
                     ],

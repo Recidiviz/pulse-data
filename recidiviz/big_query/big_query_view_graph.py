@@ -35,6 +35,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
     SourceTableUpdateGroup,
 )
+from recidiviz.utils import metadata
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -121,6 +122,14 @@ class BigQueryViewGraph:
         """Dataset to the SourceTableConfigs for the views this graph materializes
         into it. Empty if the graph materializes nothing.
         """
+        # View builder build will read ambient project metadata, so we must ensure
+        # the graph is being built for the current project.
+        if self.project_id != metadata.project_id():
+            raise ValueError(
+                f"View graph [{self.name}] belongs to project "
+                f"[{self.project_id}] but the current project is "
+                f"[{metadata.project_id()}]"
+            )
         configs_by_dataset: dict[str, list[SourceTableConfig]] = defaultdict(list)
         for builder in self.view_builders:
             view = builder.build()

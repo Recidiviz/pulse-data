@@ -97,7 +97,7 @@ def deployed_view_graph_registry(
     return BigQueryViewGraphRegistry.build(
         project_id=project_id,
         view_graphs=_all_view_graphs(project_id),
-        candidate_collections=collect_source_table_collections_hydrated_outside_view_graphs(
+        candidate_source_table_collections=collect_source_table_collections_hydrated_outside_view_graphs(
             project_id
         ),
     )

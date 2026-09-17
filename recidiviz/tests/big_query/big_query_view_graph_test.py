@@ -277,7 +277,7 @@ class TestBigQueryViewGraph(unittest.TestCase):
             ],
         )
 
-        with local_project_id_override("recidiviz-456"):
+        with local_project_id_override(GCP_PROJECT_STAGING):
             with self.assertRaisesRegex(
                 ValueError,
                 r"^Graph \[my_graph\] materializes partitioned view "
