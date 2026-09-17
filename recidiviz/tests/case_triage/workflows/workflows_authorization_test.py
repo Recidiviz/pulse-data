@@ -23,9 +23,12 @@ from unittest.mock import MagicMock
 from flask import Flask, Response, make_response
 
 from recidiviz.case_triage.workflows.workflows_authorization import (
+    get_allowed_workflows_system_types,
     on_successful_authorization,
+    require_workflows_system_type_permission,
 )
 from recidiviz.utils.auth.auth0 import AuthorizationError, FlaskException
+from recidiviz.workflows.types import WorkflowsSystemType
 
 test_app = Flask("test_workflows_authorization")
 
@@ -56,11 +59,14 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
         user_state_code: str,
         allowed_states: Optional[list[str]] = None,
         feature_variants: Optional[dict[str, Any]] = None,
+        routes: Optional[dict[str, bool]] = None,
     ) -> None:
         if allowed_states is None:
             allowed_states = []
         if feature_variants is None:
             feature_variants = {}
+        if routes is None:
+            routes = {}
         return cls._process_claims(
             path,
             {
@@ -68,6 +74,7 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
                     "stateCode": user_state_code,
                     "allowedStates": allowed_states,
                     "featureVariants": feature_variants,
+                    "routes": routes,
                 }
             },
         )
@@ -137,3 +144,90 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
                 "external_request/US_WY/enqueue_sms_request", user_state_code="US_WY"
             )
             self.assertEqual(assertion.exception.code, "external_requests_not_enabled")
+
+
+@mock.patch.dict(os.environ, {"AUTH0_CLAIM_NAMESPACE": "https://recidiviz-test"})
+@mock.patch(
+    "recidiviz.case_triage.workflows.workflows_authorization.get_workflows_enabled_states",
+    return_value=["US_TN"],
+)
+class WorkflowsSystemTypePermissionsTestCase(TestCase):
+    """Tests for get_allowed_workflows_system_types and
+    require_workflows_system_type_permission."""
+
+    @staticmethod
+    def _authorize(
+        user_state_code: str,
+        routes: Optional[Dict[str, bool]] = None,
+        allowed_states: Optional[list[str]] = None,
+    ) -> None:
+        on_successful_authorization(
+            {
+                "https://recidiviz-test/app_metadata": {
+                    "stateCode": user_state_code,
+                    "allowedStates": allowed_states or [],
+                    "routes": routes or {},
+                }
+            }
+        )
+
+    def test_recidiviz_user_is_allowed_every_system_type(
+        self, _mock_enabled_states: MagicMock
+    ) -> None:
+        with test_app.test_request_context(
+            path="external_request/US_TN/enqueue_sms_request"
+        ):
+            self._authorize("recidiviz", allowed_states=["US_TN"])
+            self.assertEqual(
+                [WorkflowsSystemType.INCARCERATION, WorkflowsSystemType.SUPERVISION],
+                get_allowed_workflows_system_types(),
+            )
+            require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+            require_workflows_system_type_permission(WorkflowsSystemType.INCARCERATION)
+
+    def test_supervision_only_route_allows_only_supervision(
+        self, _mock_enabled_states: MagicMock
+    ) -> None:
+        with test_app.test_request_context(
+            path="external_request/US_TN/enqueue_sms_request"
+        ):
+            self._authorize("US_TN", routes={"workflowsSupervision": True})
+            self.assertEqual(
+                [WorkflowsSystemType.SUPERVISION],
+                get_allowed_workflows_system_types(),
+            )
+            require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+            with self.assertRaises(AuthorizationError):
+                require_workflows_system_type_permission(
+                    WorkflowsSystemType.INCARCERATION
+                )
+
+    def test_facilities_only_route_allows_only_incarceration(
+        self, _mock_enabled_states: MagicMock
+    ) -> None:
+        with test_app.test_request_context(
+            path="external_request/US_TN/enqueue_sms_request"
+        ):
+            self._authorize("US_TN", routes={"workflowsFacilities": True})
+            self.assertEqual(
+                [WorkflowsSystemType.INCARCERATION],
+                get_allowed_workflows_system_types(),
+            )
+            require_workflows_system_type_permission(WorkflowsSystemType.INCARCERATION)
+            with self.assertRaises(AuthorizationError):
+                require_workflows_system_type_permission(
+                    WorkflowsSystemType.SUPERVISION
+                )
+
+    def test_no_routes_claim_allows_no_system_types(
+        self, _mock_enabled_states: MagicMock
+    ) -> None:
+        with test_app.test_request_context(
+            path="external_request/US_TN/enqueue_sms_request"
+        ):
+            self._authorize("US_TN")
+            self.assertEqual([], get_allowed_workflows_system_types())
+            with self.assertRaises(AuthorizationError):
+                require_workflows_system_type_permission(
+                    WorkflowsSystemType.SUPERVISION
+                )

@@ -108,9 +108,12 @@ class WorkflowsBlueprintTestCase(TestCase):
         allowed_states: Optional[list[str]] = None,
         successful_authorization_handler: Callable = on_successful_authorization,
         external_id: Optional[str] = None,
+        routes: Optional[Dict[str, bool]] = None,
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
+        if routes is None:
+            routes = {}
 
         return lambda: successful_authorization_handler(
             {
@@ -118,6 +121,7 @@ class WorkflowsBlueprintTestCase(TestCase):
                     "stateCode": f"{state_code.lower()}",
                     "allowedStates": allowed_states,
                     "externalId": external_id,
+                    "routes": routes,
                 },
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
             }
@@ -287,6 +291,25 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
+    def test_insert_tepe_contact_note_facilities_only_denied(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID, routes={"workflowsFacilities": True}
+        )
+
+        request_body = {
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "staffId": STAFF_ID,
+            "contactNoteDateTime": str(datetime.datetime.now()),
+            "contactNote": {1: ["Line 1", "Line 2"]},
+        }
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TN/insert_tepe_contact_note",
+            headers={"Origin": "http://localhost:3000"},
+            json=request_body,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
         autospec=True,
@@ -301,7 +324,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         expected_task_body = {
@@ -359,7 +382,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -408,7 +431,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -446,7 +469,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         # No contactNoteDateTime
@@ -490,7 +513,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -518,7 +541,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self, mock_interface: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -561,7 +584,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self, mock_interface: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         mock_interface.return_value.execute.side_effect = Exception("It broke!")
@@ -588,7 +611,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     def test_insert_contact_note_state_mismatch(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -613,7 +636,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     def test_insert_contact_note_missing_state_code(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -647,7 +670,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -690,7 +713,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -742,7 +765,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
+            "us_tn", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -796,7 +819,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_co", external_id=STAFF_ID
+            "us_co", external_id=STAFF_ID, routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -832,7 +855,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_insert_contact_note_unsupported_state(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_nd")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", routes={"workflowsSupervision": True}
+        )
 
         request_body = {
             "stateCode": "US_ND",
@@ -857,6 +882,29 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         response = self.test_client.post(
             "/workflows/external_request/US_TN/insert_contact_note", json={}
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    def test_insert_contact_note_facilities_only_denied(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", external_id=STAFF_ID, routes={"workflowsFacilities": True}
+        )
+
+        request_body = {
+            "stateCode": "US_TN",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_TN_DOC",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_TN_STAFF_TOMIS",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "contactNote": {1: ["Line 1", "Line 2"]},
+            "contactTypeCodes": ["TEPE"],
+        }
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TN/insert_contact_note",
+            headers={"Origin": "http://localhost:3000"},
+            json=request_body,
         )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
@@ -1719,7 +1767,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         expected_task_body = {
@@ -1772,7 +1820,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -1821,7 +1869,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         mock_interface.return_value.execute.side_effect = Exception("It broke!")
@@ -1871,7 +1919,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         expected_task_body = {
@@ -1925,7 +1973,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", "foo@tn.gov"
+            "us_tn", "foo@tn.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -1996,7 +2044,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -2028,7 +2076,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -2074,7 +2122,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         mock_interface.return_value.execute.side_effect = Exception("It broke!")
@@ -2121,7 +2169,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -2154,7 +2202,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     ) -> None:
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "foo@nd.gov"
+            "us_nd", "foo@nd.gov", routes={"workflowsSupervision": True}
         )
 
         request_body = {
@@ -2176,6 +2224,27 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         mock_interface.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_update_docstars_early_termination_date_facilities_only_denied(
+        self,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov", routes={"workflowsFacilities": True}
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+            headers={"Origin": "http://localhost:3000"},
+            json=request_body,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     # ------------------------------------------------------------------
     # US_IA early discharge routes
@@ -2204,7 +2273,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_executor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_ia", "po@ia.gov"
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         expected_payload = {**self._IA_REQUEST_BODY, "should_queue_task": False}
         mock_executor.return_value.to_cloud_task_payload.return_value = expected_payload
@@ -2240,7 +2309,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_executor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_ia", "po@ia.gov"
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
 
@@ -2267,7 +2336,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self, mock_executor: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_nd", "po@nd.gov"
+            "us_nd", "po@nd.gov", routes={"workflowsSupervision": True}
         )
         with self.test_app.test_request_context():
             response = self.test_client.post(
@@ -2283,11 +2352,31 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
         autospec=True,
     )
+    def test_submit_early_discharge_form_facilities_only_denied(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov", routes={"workflowsFacilities": True}
+        )
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_IA/submit_early_discharge_form",
+            headers={"Origin": "http://localhost:3000"},
+            json=self._IA_REQUEST_BODY,
+        )
+
+        mock_executor.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
     def test_submit_early_discharge_form_missing_field_returns_400(
         self, mock_executor: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_ia", "po@ia.gov"
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         body = {
             k: v
@@ -2313,7 +2402,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self, mock_executor: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_ia", "po@ia.gov"
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
 
@@ -2340,7 +2429,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self, mock_executor: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_ia", "po@ia.gov"
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         mock_executor.return_value.execute.side_effect = Exception("MCP unreachable")
         body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
@@ -2555,9 +2644,75 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore.return_value.set_document.assert_not_called()
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
+    def test_get_opportunities_facilities_only_user_sees_incarceration_only(
+        self, mock_workflows_querier: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id", "foo@id.gov", routes={"workflowsFacilities": True}
+        )
+        mock_workflows_querier.return_value.get_enabled_opportunities.return_value = []
+        mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = (
+            {}
+        )
+
+        response = self.test_client.get(
+            "/workflows/US_ID/opportunities",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_workflows_querier.return_value.get_enabled_opportunities.assert_called_once_with(
+            [WorkflowsSystemType.INCARCERATION], []
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
+    def test_get_opportunities_supervision_only_user_sees_supervision_only(
+        self, mock_workflows_querier: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id", "foo@id.gov", routes={"workflowsSupervision": True}
+        )
+        mock_workflows_querier.return_value.get_enabled_opportunities.return_value = []
+        mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = (
+            {}
+        )
+
+        response = self.test_client.get(
+            "/workflows/US_ID/opportunities",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_workflows_querier.return_value.get_enabled_opportunities.assert_called_once_with(
+            [WorkflowsSystemType.SUPERVISION], []
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
+    def test_get_opportunities_recidiviz_user_sees_both_system_types(
+        self, mock_workflows_querier: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", "foo@recidiviz.org", allowed_states=["US_ID"]
+        )
+        mock_workflows_querier.return_value.get_enabled_opportunities.return_value = []
+        mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = (
+            {}
+        )
+
+        response = self.test_client.get(
+            "/workflows/US_ID/opportunities",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_workflows_querier.return_value.get_enabled_opportunities.assert_called_once_with(
+            [WorkflowsSystemType.INCARCERATION, WorkflowsSystemType.SUPERVISION], []
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
     def test_workflows_config_response(self, mock_workflows_querier: MagicMock) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_id", "foo@id.gov"
+            "us_id", "foo@id.gov", routes={"workflowsSupervision": True}
         )
 
         mock_workflows_querier.return_value.get_enabled_opportunities.return_value = [

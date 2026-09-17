@@ -70,8 +70,10 @@ from recidiviz.case_triage.workflows.utils import (
 )
 from recidiviz.case_triage.workflows.workflows_analytics import WorkflowsSegmentClient
 from recidiviz.case_triage.workflows.workflows_authorization import (
+    get_allowed_workflows_system_types,
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
+    require_workflows_system_type_permission,
 )
 from recidiviz.case_triage.workflows.writeback.contact_note import (
     ContactNoteRequestData,
@@ -261,6 +263,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
         parsed_request_body: UsTnTEPEContactNoteRequestData,
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
@@ -302,6 +306,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
         parsed_request_body: UsTnTEPEContactNoteRequestData,
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
@@ -332,6 +338,8 @@ def create_workflows_api_blueprint() -> Blueprint:
     def insert_contact_note(
         state: str, parsed_request_body: ContactNoteRequestData
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         if state.upper() != parsed_request_body.state_code:
             return jsonify_response(
                 f"State code from path ({state.upper()}) does not match state code in "
@@ -699,6 +707,8 @@ def create_workflows_api_blueprint() -> Blueprint:
     def update_docstars_early_termination_date(
         state: str, parsed_request_body: UsNdEarlyTerminationRequestData
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         if state.upper() != StateCode.US_ND.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
@@ -734,6 +744,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
         parsed_request_body: UsNdEarlyTerminationRequestData,
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         if state.upper() != StateCode.US_ND.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
@@ -970,6 +982,8 @@ def create_workflows_api_blueprint() -> Blueprint:
     def submit_early_discharge_form(
         state: str, parsed_request_body: UsIaEarlyDischargeRequestData
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         # Frontend entry point. Either runs the writeback synchronously or enqueues
         # a Cloud Task that calls handle_early_discharge_form to do it asynchronously.
         if state.upper() != StateCode.US_IA.value:
@@ -994,6 +1008,8 @@ def create_workflows_api_blueprint() -> Blueprint:
     def handle_early_discharge_form(
         state: str, parsed_request_body: UsIaEarlyDischargeRequestData
     ) -> Response:
+        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
         # Cloud Tasks target. Only called by the task queue, never directly by the frontend.
         if state.upper() != StateCode.US_IA.value:
             return jsonify_response(
@@ -1126,7 +1142,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         querier = WorkflowsQuerier(StateCode(state_code))
 
         opps = querier.get_enabled_opportunities(
-            [WorkflowsSystemType.INCARCERATION, WorkflowsSystemType.SUPERVISION],
+            get_allowed_workflows_system_types(),
             feature_variants,
         )
 

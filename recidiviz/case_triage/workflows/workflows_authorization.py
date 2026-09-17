@@ -17,7 +17,7 @@
 """Implements user validations for workflows APIs."""
 
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from flask import g
 
@@ -29,6 +29,14 @@ from recidiviz.case_triage.authorization_utils import (
     on_successful_authorization_requested_state,
 )
 from recidiviz.utils.auth.auth0 import AuthorizationError
+from recidiviz.workflows.types import WorkflowsSystemType
+
+# Maps each WorkflowsSystemType to the Auth0 routes claim that grants a user
+# access to it.
+_ROUTE_CLAIM_BY_WORKFLOWS_SYSTEM_TYPE: Dict[WorkflowsSystemType, str] = {
+    WorkflowsSystemType.SUPERVISION: "workflowsSupervision",
+    WorkflowsSystemType.INCARCERATION: "workflowsFacilities",
+}
 
 
 def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
@@ -76,3 +84,31 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
         app_metadata.get("featureVariants", {}),
         app_metadata.get("pseudonymizedId", None),
     )
+    g.routes = app_metadata.get("routes", {})
+
+
+def get_allowed_workflows_system_types() -> List[WorkflowsSystemType]:
+    """Returns the WorkflowsSystemTypes the authenticated caller's routes claim
+    grants access to. Recidiviz users are exempt and are always allowed every
+    system type."""
+    if g.is_recidiviz_user:
+        return list(WorkflowsSystemType)
+
+    return [
+        system_type
+        for system_type, route_claim in _ROUTE_CLAIM_BY_WORKFLOWS_SYSTEM_TYPE.items()
+        if g.routes.get(route_claim, False)
+    ]
+
+
+def require_workflows_system_type_permission(system_type: WorkflowsSystemType) -> None:
+    """Raises AuthorizationError unless the authenticated caller's routes claim
+    grants access to the given WorkflowsSystemType. Recidiviz users are exempt."""
+    if system_type not in get_allowed_workflows_system_types():
+        raise AuthorizationError(
+            code="not_authorized",
+            description=(
+                f"Access denied: [{_ROUTE_CLAIM_BY_WORKFLOWS_SYSTEM_TYPE[system_type]}] "
+                "permission required"
+            ),
+        )
