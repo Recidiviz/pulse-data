@@ -162,7 +162,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
 ] = {
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.BoardAction_latest"): {
         US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: "TODO(TN-1969): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        CLIENT_RECORD_VIEW_BUILDER.address: "TODO(TN-1970): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.CAFScore_latest"): {
         US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER.address: "TODO(TN-1971): Migrate this reference off of legacy TOMIS 1.0 raw data",
