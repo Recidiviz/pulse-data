@@ -328,10 +328,12 @@ MICASE_FILE_TAGS: frozenset[str] = frozenset(
 )
 
 
-def legacy_tomis_deprecated_addresses() -> frozenset[BigQueryAddress]:
-    """Returns the addresses of all BigQuery tables and views generated from
-    legacy TOMIS 1.0 raw data files: for each legacy file tag, the raw data
-    table, the *_latest view, and the *_all view.
+def legacy_tomis_deprecated_addresses_by_file_tag() -> dict[
+    str, frozenset[BigQueryAddress]
+]:
+    """Returns, for each legacy TOMIS 1.0 file tag, the addresses of the
+    BigQuery tables and views generated from it: the raw data table, the
+    *_latest view, and the *_all view.
     """
     raw_data_dataset = raw_tables_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
@@ -342,18 +344,27 @@ def legacy_tomis_deprecated_addresses() -> frozenset[BigQueryAddress]:
     all_views_dataset = raw_data_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     )
-    return frozenset(
-        address
-        for file_tag in LEGACY_TOMIS_FILE_TAGS
-        for address in (
-            BigQueryAddress(dataset_id=raw_data_dataset, table_id=file_tag),
-            BigQueryAddress(
-                dataset_id=latest_views_dataset,
-                table_id=f"{file_tag}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}",
-            ),
-            BigQueryAddress(
-                dataset_id=all_views_dataset,
-                table_id=f"{file_tag}{RAW_DATA_ALL_VIEW_ID_SUFFIX}",
-            ),
+    return {
+        file_tag: frozenset(
+            (
+                BigQueryAddress(dataset_id=raw_data_dataset, table_id=file_tag),
+                BigQueryAddress(
+                    dataset_id=latest_views_dataset,
+                    table_id=f"{file_tag}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}",
+                ),
+                BigQueryAddress(
+                    dataset_id=all_views_dataset,
+                    table_id=f"{file_tag}{RAW_DATA_ALL_VIEW_ID_SUFFIX}",
+                ),
+            )
         )
-    )
+        for file_tag in LEGACY_TOMIS_FILE_TAGS
+    }
+
+
+def legacy_tomis_deprecated_addresses() -> frozenset[BigQueryAddress]:
+    """Returns the addresses of all BigQuery tables and views generated from
+    legacy TOMIS 1.0 raw data files: for each legacy file tag, the raw data
+    table, the *_latest view, and the *_all view.
+    """
+    return frozenset().union(*legacy_tomis_deprecated_addresses_by_file_tag().values())

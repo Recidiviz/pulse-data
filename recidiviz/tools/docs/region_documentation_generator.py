@@ -46,11 +46,35 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.us_tn_tomis1_burndown.us_tn_tomis1_burndown_markdown_generator import (
+    generate_burndown_markdown,
+)
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 INGEST_CATALOG_ROOT = os.path.join(DOCS_ROOT_PATH, "ingest")
+
+# The US_TN TOMIS 1.0 -> TOMIS 2.0 (MiCase) deprecation burndown doc (see
+# TN-1939) lives alongside the rest of US_TN's generated ingest docs, even
+# though it isn't produced by DirectIngestDocumentationGenerator.
+US_TN_TOMIS1_BURNDOWN_MD_PATH = os.path.join(
+    INGEST_CATALOG_ROOT, "us_tn", "us_tn_tomis1_burndown.md"
+)
+
+# Files outside recidiviz/ingest/direct/regions/us_tn/ that should also
+# trigger regenerating the US_TN TOMIS 1.0 -> TOMIS 2.0 burndown doc: the two
+# manually-maintained tracking dicts it reads. (A third tracking dict,
+# us_tn_tomis_migration_exemptions.py, lives under recidiviz/tests/ and is
+# deliberately not read by the generator or listed here -- it's a proxy
+# signal for calculator/ changes relevant to the migration, not an input to
+# this doc.)
+US_TN_TOMIS1_BURNDOWN_TRACKING_FILES = frozenset(
+    {
+        "recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_ingest_view_migration_pairs.py",
+        "recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_raw_data_migration_statuses.py",
+    }
+)
 
 
 def generate_raw_data_documentation_for_region(region_code: str) -> bool:
@@ -173,6 +197,43 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
     }
 
 
+def generate_us_tn_tomis1_burndown_documentation() -> bool:
+    """Regenerates docs/ingest/us_tn/us_tn_tomis1_burndown.md (see TN-1939)
+    from live repo/registry state plus the manually-maintained tracking
+    dicts it reads. Returns True if the file's contents changed.
+    """
+    return persist_file_contents(
+        generate_burndown_markdown(), US_TN_TOMIS1_BURNDOWN_MD_PATH
+    )
+
+
+def us_tn_tomis1_burndown_relevant_files_touched(
+    touched_files: Optional[List[str]],
+) -> bool:
+    """Returns whether `touched_files` includes anything relevant to the
+    US_TN TOMIS 1.0 -> TOMIS 2.0 burndown doc: US_TN's raw data directory, or
+    either of its manually-maintained tracking dicts
+    (US_TN_TOMIS1_BURNDOWN_TRACKING_FILES). If no files are given, returns
+    True so the doc is regenerated to be safe, matching the same fallback
+    posture as get_touched_raw_data_regions.
+    """
+    if not touched_files:
+        return True
+    us_tn_raw_data_dir = os.path.join(
+        os.path.relpath(
+            os.path.dirname(regions_module.__file__),
+            os.path.dirname(os.path.dirname(recidiviz.__file__)),
+        ),
+        StateCode.US_TN.value.lower(),
+        "",
+    )
+    return any(
+        file.startswith(us_tn_raw_data_dir)
+        or file in US_TN_TOMIS1_BURNDOWN_TRACKING_FILES
+        for file in touched_files
+    )
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Generates direct ingest region documentation."""
     parser = argparse.ArgumentParser()
@@ -212,11 +273,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "Generating raw data documentation for region [%s]", region_code
             )
             modified |= generate_raw_data_documentation_for_region(region_code)
-        if modified:
-            update_summary_file(
-                _create_ingest_catalog_summary(), "## State Ingest Catalog"
-            )
-        return 1 if modified else 0
+
+    # Outside the local_project_id_override above: the burndown doc's
+    # reporting functions manage their own per-project override internally
+    # (each is a pure function of an explicit project_id), so they can't run
+    # inside another active override.
+    if args.force_all or us_tn_tomis1_burndown_relevant_files_touched(args.filenames):
+        logging.info("Generating US_TN TOMIS 1.0 deprecation burndown documentation")
+        modified |= generate_us_tn_tomis1_burndown_documentation()
+
+    if modified:
+        update_summary_file(_create_ingest_catalog_summary(), "## State Ingest Catalog")
+    return 1 if modified else 0
 
 
 if __name__ == "__main__":

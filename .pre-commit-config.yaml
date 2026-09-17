@@ -85,7 +85,7 @@ repos:
         entry: uv run python -m
           recidiviz.tools.docs.region_documentation_generator
         language: system
-        files: ^recidiviz/ingest/direct/regions/|^recidiviz/view_registry/raw_data_reference_reasons.yaml
+        files: ^recidiviz/ingest/direct/regions/|^recidiviz/view_registry/raw_data_reference_reasons.yaml|^recidiviz/tests/view_registry/us_tn_tomis_migration_burndown/us_tn_tomis_migration_exemptions.py|^recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_ingest_view_migration_pairs.py|^recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_raw_data_migration_statuses.py
         require_serial: true
       - id: generate_docs_for_endpoint
         name: generate_docs_for_endpoint

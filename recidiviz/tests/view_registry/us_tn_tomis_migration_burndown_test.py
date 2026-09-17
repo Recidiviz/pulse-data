@@ -18,68 +18,21 @@
 1.0 raw data as part of the US_TN migration to the MiCase OMS (TOMIS 2.0).
 """
 import unittest
-from collections import defaultdict
-from functools import cache
-from unittest import mock
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.regions.us_tn.us_tn_tomis_migration_file_tags import (
     LEGACY_TOMIS_FILE_TAGS,
     MICASE_FILE_TAGS,
-    legacy_tomis_deprecated_addresses,
 )
 from recidiviz.tests.view_registry.us_tn_tomis_migration_exemptions import (
     US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.deployed_view_graphs import (
-    builders_for_all_deployed_view_graphs,
+from recidiviz.tools.docs.us_tn_tomis1_burndown.us_tn_tomis_migration_reporting import (
+    legacy_tomis_references_for_project,
 )
-
-
-@cache
-def _legacy_tomis_references_for_project(
-    project_id: str,
-) -> dict[BigQueryAddress, frozenset[BigQueryAddress]]:
-    """Returns, for each legacy TOMIS 1.0 address, the deployed views in the
-    given project whose queries would reference it if the tomis_2_0_enabled
-    feature flag were turned on.
-
-    NOTE: For the patch below to take effect, any view builder logic that gates
-    its generated SQL on the flag must resolve the flag when the view is built
-    (i.e. inside build(), not at module import time) and must read it via the
-    feature_flags_registry module (e.g.
-    `feature_flags_registry.is_tomis_2_0_enabled(...)`) rather than a name
-    imported directly into the calling module.
-    """
-    with mock.patch(
-        "recidiviz.ingest.direct.feature_flags_registry.is_tomis_2_0_enabled",
-        return_value=True,
-    ), local_project_id_override(project_id):
-        views = build_views_to_update(
-            candidate_view_builders=builders_for_all_deployed_view_graphs(),
-            sandbox_context=None,
-        )
-
-    deprecated_addresses = legacy_tomis_deprecated_addresses()
-    references: dict[BigQueryAddress, set[BigQueryAddress]] = defaultdict(set)
-    for view in views:
-        if view.address in deprecated_addresses:
-            # The *_latest / *_all views for legacy files are themselves
-            # deprecated. They are deleted along with the legacy raw data
-            # configs at the end of the migration rather than migrated.
-            continue
-        for parent_address in view.parent_tables:
-            if parent_address in deprecated_addresses:
-                references[parent_address].add(view.address)
-    return {
-        deprecated_address: frozenset(referencing_addresses)
-        for deprecated_address, referencing_addresses in references.items()
-    }
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class UsTnTomisFileTagClassificationTest(unittest.TestCase):
@@ -139,7 +92,7 @@ class UsTnTomisMigrationBurndownTestBase(unittest.TestCase):
         feature flag were turned on, unless that reference is explicitly
         exempted in US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS.
         """
-        actual_references = _legacy_tomis_references_for_project(self.project_id)
+        actual_references = legacy_tomis_references_for_project(self.project_id)
 
         errors = []
         for deprecated_address in sorted(actual_references, key=lambda a: a.to_str()):
@@ -189,7 +142,7 @@ class UsTnTomisStaleExemptionsTest(unittest.TestCase):
         others.
         """
         references_by_project = [
-            _legacy_tomis_references_for_project(project_id)
+            legacy_tomis_references_for_project(project_id)
             for project_id in (GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION)
         ]
 
