@@ -6,6 +6,19 @@ description: >
 labelstudio_project_ids:
   recidiviz-staging: 7
 gcs_export_prefix: "cni-labeling/accuracy_per_field"
+task_import_source_uri: "gs://{project_id}-label-studio/task_imports/cni/*"
+
+# The bucket nests task type below round, so the tree looks like:
+#
+#     task_imports/cni/<round>/accuracy_per_field/   <- this task
+#     task_imports/cni/<round>/relevancy/            <- a different Label Studio project
+#     task_imports/cni/<round>/summary/              <- a different Label Studio project
+#
+# Selecting one task type would need task_imports/cni/*/accuracy_per_field/*, but BigQuery
+# rejects that: "Using multiple asterisks in Google Cloud Storage source URI is not
+# supported." So the source URI above reads the whole prefix with one wildcard, and the
+# submitted tasks view filters to this task type on the substring below.
+task_import_path_contains: "/accuracy_per_field/"
 
 task_data_fields:
   - column_name: "state_code"

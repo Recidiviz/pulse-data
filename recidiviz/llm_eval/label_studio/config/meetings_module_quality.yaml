@@ -6,6 +6,26 @@ labelstudio_project_ids:
   recidiviz-123: 1
   recidiviz-staging: 2
 gcs_export_prefix: "meetings"
+task_import_source_uri: "gs://{project_id}-meetings-audio-data/*label-studio-task.json"
+task_import_path_contains: "label-studio-task.json"
+
+# US_DEMO is demo data staged into the same bucket. It matches the path shape of a real
+# meeting but is nobody's labeling work, so it must not land in the coverage denominator.
+task_import_path_excludes:
+  - "/US_DEMO/"
+
+# Import objects are named {state_code}/{meeting_id}/label-studio-task.json, and the payload
+# grew these two keys over time: the oldest objects carry neither, later ones carry only
+# meeting_id, and current ones carry both. Without the path as a fallback, every object
+# predating meeting_id extracts an all-NULL key and the whole set collapses into one phantom
+# task, and every object predating state_code leaves the view unable to scope by state.
+# Where both sources are present they agree on every object in the bucket.
+task_import_path_field_segments:
+  state_code: 0
+  meeting_id: 1
+task_import_source_project_mapping:
+  recidiviz-staging: recidiviz-dashboard-staging
+  recidiviz-123: recidiviz-dashboard-production
 
 primary_key_fields:
   - "meeting_id"

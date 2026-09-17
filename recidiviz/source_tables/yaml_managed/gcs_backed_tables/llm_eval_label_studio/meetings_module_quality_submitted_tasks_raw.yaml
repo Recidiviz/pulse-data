@@ -1,0 +1,29 @@
+address:
+  dataset_id: label_studio
+  table_id: meetings_module_quality_submitted_tasks_raw
+description:
+  Task files staged for import into Label Studio for the meetings_module_quality
+  task, one row per LINE of each file. Read as text rather than parsed JSON because
+  the files are pretty-printed and BigQuery's NDJSON reader cannot read them; the
+  meetings_module_quality_submitted_tasks view groups these lines back into one row
+  per task. Auto-generated from recidiviz/llm_eval/label_studio/config/meetings_module_quality.yaml
+  — do not edit manually.
+schema:
+  - name: line
+    type: STRING
+    mode: NULLABLE
+    description: One raw line of a task file, unparsed.
+source_project_mapping:
+  recidiviz-staging: recidiviz-dashboard-staging
+  recidiviz-123: recidiviz-dashboard-production
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-meetings-audio-data/*label-studio-task.json
+  sourceFormat: CSV
+  ignoreUnknownValues: true
+  compression: NONE
+  csvOptions:
+    fieldDelimiter: "\x01"
+    quote: ""
+    allowJaggedRows: true
+    skipLeadingRows: 0

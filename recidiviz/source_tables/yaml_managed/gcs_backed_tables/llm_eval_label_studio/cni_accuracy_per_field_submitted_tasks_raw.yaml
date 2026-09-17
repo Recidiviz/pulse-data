@@ -1,0 +1,26 @@
+address:
+  dataset_id: label_studio
+  table_id: cni_accuracy_per_field_submitted_tasks_raw
+description:
+  Task files staged for import into Label Studio for the cni_accuracy_per_field
+  task, one row per LINE of each file. Read as text rather than parsed JSON because
+  the files are pretty-printed and BigQuery's NDJSON reader cannot read them; the
+  cni_accuracy_per_field_submitted_tasks view groups these lines back into one row
+  per task. Auto-generated from recidiviz/llm_eval/label_studio/config/cni_accuracy_per_field.yaml
+  — do not edit manually.
+schema:
+  - name: line
+    type: STRING
+    mode: NULLABLE
+    description: One raw line of a task file, unparsed.
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-label-studio/task_imports/cni/*
+  sourceFormat: CSV
+  ignoreUnknownValues: true
+  compression: NONE
+  csvOptions:
+    fieldDelimiter: "\x01"
+    quote: ""
+    allowJaggedRows: true
+    skipLeadingRows: 0

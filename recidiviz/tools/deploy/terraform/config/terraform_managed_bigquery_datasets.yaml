@@ -36,7 +36,7 @@ datasets:
   intercom_export_metadata:
     description: Dataset that contains metadata related to Intercom exports
   label_studio:
-    description: Stores raw Label Studio annotation exports as GCS-backed external tables.
+    description: "Stores Label Studio task data as GCS-backed external tables: raw annotation exports and the task files staged for import."
   operations:
     description: Internal Recidiviz operations data loaded from the operations CloudSQL instance.
   population_projection_output_data:

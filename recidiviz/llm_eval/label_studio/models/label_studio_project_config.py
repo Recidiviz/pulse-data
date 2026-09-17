@@ -39,6 +39,15 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 _CONFIGS_DIR = os.path.join(os.path.dirname(_label_studio_pkg.__file__), "config")
 
+# Name of the task_data_field every config must declare, since every deployed view has to
+# output a state_code column.
+STATE_CODE_COLUMN_NAME = "state_code"
+
+# Name of the single column the submitted tasks external table exposes: one raw line of a
+# task file. generate_raw_table_yamls.py declares the column and the submitted tasks view
+# reads it, so it lives here rather than in either of them.
+SUBMITTED_TASKS_LINE_COLUMN_NAME = "line"
+
 
 @attr.define(frozen=True, kw_only=True)
 class LabelStudioProjectConfig:
@@ -63,6 +72,46 @@ class LabelStudioProjectConfig:
 
     gcs_export_prefix: str = attr.ib(validator=attr_validators.is_str)
     """GCS path prefix (within the runtime project's bucket) for this project's exports."""
+
+    task_import_source_uri: str = attr.ib(validator=attr_validators.is_str)
+    """Source URI pattern for the GCS objects Label Studio imports this task's tasks from,
+    one object per task. Must contain a {project_id} format argument, which the source table
+    framework substitutes per environment, and exactly one '*' wildcard, which is all
+    BigQuery accepts per sourceUris entry."""
+
+    task_import_source_project_mapping: dict[str, str] = attr.ib(
+        validator=attr_validators.is_dict_of(str, str)
+    )
+    """GCP project the import objects live in, keyed by runtime GCP project, for tasks whose
+    files another project writes. Empty when the objects live in the runtime project's own
+    bucket."""
+
+    task_import_path_contains: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Substring every one of this task's import objects has in its path, used to scope the
+    view when the import URI necessarily matches more than this task.
+
+    See the WHERE clause in submitted_tasks.py for why a source URI cannot narrow to one
+    task type on its own."""
+
+    task_import_path_excludes: list[str] = attr.ib(
+        validator=attr_validators.is_list_of(str)
+    )
+    """Substrings that disqualify an import object, applied after task_import_path_contains.
+    Empty for a task whose prefix holds nothing but real tasks. Use this for objects that
+    match the task's own path shape but are not work anyone should be measured on, such as
+    demo data staged into the same bucket."""
+
+    task_import_path_field_segments: dict[str, int] = attr.ib(
+        validator=attr_validators.is_dict_of(str, int)
+    )
+    """0-indexed segment of the import object's path holding each named key field, for
+    fields the task payload may omit. The segments are counted from the first segment after
+    the bucket name.
+
+    Used only as a fallback: a value the payload carries always wins, so declaring a field
+    here never overrides what the task itself says. Declare a field only when older objects
+    in the prefix predate its addition to the payload, and only for fields the path really
+    does carry. Empty for a task whose payloads have always been complete."""
 
     task_data_fields: list[LabelStudioTaskDataField] = attr.ib(
         validator=[
@@ -101,6 +150,72 @@ class LabelStudioProjectConfig:
             raise ValueError(
                 f"Task [{self.task_name}] has primary_key_fields that are not in "
                 f"task_data_fields: {unknown}"
+            )
+        if "{project_id}" not in self.task_import_source_uri:
+            raise ValueError(
+                f"Task [{self.task_name}] has task_import_source_uri "
+                f"[{self.task_import_source_uri}], which has no {{project_id}} format "
+                f"argument. The source table framework substitutes {{project_id}} per "
+                f"environment and fails on a URI without it."
+            )
+        wildcard_count = self.task_import_source_uri.count("*")
+        if wildcard_count != 1:
+            raise ValueError(
+                f"Task [{self.task_name}] has task_import_source_uri "
+                f"[{self.task_import_source_uri}] with {wildcard_count} '*' wildcards, but "
+                f"BigQuery accepts exactly one per sourceUris entry and rejects more with "
+                f"'Using multiple asterisks in Google Cloud Storage source URI is not "
+                f"supported'. Use a single '*', which matches across '/' in BigQuery, so "
+                f"one wildcard spans every directory beneath it. Fix the URI in "
+                f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
+            )
+        if STATE_CODE_COLUMN_NAME not in data_field_names:
+            raise ValueError(
+                f"Task [{self.task_name}] has no task_data_field named "
+                f"[{STATE_CODE_COLUMN_NAME}], which every deployed view must output. Add it "
+                f"to task_data_fields."
+            )
+        reserved_primary_key_fields = sorted(
+            {STATE_CODE_COLUMN_NAME} & set(self.primary_key_fields)
+        )
+        if reserved_primary_key_fields:
+            raise ValueError(
+                f"Task [{self.task_name}] has primary_key_fields "
+                f"{reserved_primary_key_fields} that duplicate columns the submitted "
+                f"tasks view always projects. Remove {reserved_primary_key_fields} from "
+                f"primary_key_fields."
+            )
+        if blank_excludes := [
+            s for s in self.task_import_path_excludes if not s.strip()
+        ]:
+            raise ValueError(
+                f"Task [{self.task_name}] has blank entries in task_import_path_excludes "
+                f"{blank_excludes}, which would exclude every import object. Remove them "
+                f"from recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
+            )
+        key_fields = set(self.task_key_fields)
+        if unknown_segment_fields := sorted(
+            set(self.task_import_path_field_segments) - key_fields
+        ):
+            raise ValueError(
+                f"Task [{self.task_name}] declares task_import_path_field_segments for "
+                f"{unknown_segment_fields}, which are not key fields "
+                f"{sorted(key_fields)}. The submitted tasks view only reads key fields "
+                f"from the import path, so a segment declared for any other field does "
+                f"nothing. Remove it from "
+                f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
+            )
+        if negative_segments := sorted(
+            name
+            for name, segment in self.task_import_path_field_segments.items()
+            if segment < 0
+        ):
+            raise ValueError(
+                f"Task [{self.task_name}] declares negative "
+                f"task_import_path_field_segments for {negative_segments}. Path segments "
+                f"are counted forward from the first segment after the bucket name, so "
+                f"the index must be 0 or greater. Fix it in "
+                f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
             )
 
     def validate_task_data(self, task_data: Mapping[str, object]) -> None:
@@ -152,9 +267,26 @@ class LabelStudioProjectConfig:
         return [f for f in self.annotation_fields if f.irr_included]
 
     @property
+    def task_key_fields(self) -> list[str]:
+        """Returns the columns that identify one logical task, and so the columns the
+        submitted tasks view dedupes on: the task's primary key plus state_code.
+        """
+        return [*self.primary_key_fields, STATE_CODE_COLUMN_NAME]
+
+    @property
     def raw_table_id(self) -> str:
         """Returns the BQ table ID for the raw annotations table."""
         return f"{self.task_name}_annotations_raw"
+
+    @property
+    def submitted_tasks_raw_table_id(self) -> str:
+        """Returns the BQ table ID for the raw submitted tasks external table."""
+        return f"{self.task_name}_submitted_tasks_raw"
+
+    @property
+    def submitted_tasks_view_id(self) -> str:
+        """Returns the BQ view ID for the submitted tasks view."""
+        return f"{self.task_name}_submitted_tasks"
 
     @property
     def annotations_view_id(self) -> str:
@@ -175,6 +307,23 @@ class LabelStudioProjectConfig:
         project_ids_raw = d.pop("labelstudio_project_ids", dict)
         project_ids = {str(k): int(v) for k, v in project_ids_raw.items()}
         prefix = d.pop("gcs_export_prefix", str)
+        import_source_uri = d.pop("task_import_source_uri", str)
+        import_project_mapping_raw = (
+            d.pop_optional("task_import_source_project_mapping", dict) or {}
+        )
+        import_project_mapping = {
+            str(k): str(v) for k, v in import_project_mapping_raw.items()
+        }
+        path_contains = d.pop("task_import_path_contains", str)
+        path_excludes = [
+            str(e) for e in d.pop_optional("task_import_path_excludes", list) or []
+        ]
+        path_field_segments_raw = (
+            d.pop_optional("task_import_path_field_segments", dict) or {}
+        )
+        path_field_segments = {
+            str(k): int(v) for k, v in path_field_segments_raw.items()
+        }
         task_data_fields = [
             LabelStudioTaskDataField.from_yaml_dict(fd)
             for fd in d.pop_dicts("task_data_fields")
@@ -193,6 +342,11 @@ class LabelStudioProjectConfig:
             description=description,
             labelstudio_project_ids=project_ids,
             gcs_export_prefix=prefix,
+            task_import_source_uri=import_source_uri,
+            task_import_source_project_mapping=import_project_mapping,
+            task_import_path_contains=path_contains,
+            task_import_path_excludes=path_excludes,
+            task_import_path_field_segments=path_field_segments,
             task_data_fields=task_data_fields,
             annotation_fields=annotation_fields,
             primary_key_fields=primary_key_fields,

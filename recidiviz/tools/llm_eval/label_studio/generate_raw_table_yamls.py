@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Generates source table YAML files for Label Studio raw annotation tables from the
-corresponding task config YAMLs.
+"""Generates source table YAML files for Label Studio raw annotation tables and raw
+submitted-tasks tables from the corresponding task config YAMLs.
 
 Run to regenerate after adding or modifying a task config:
 
@@ -27,12 +27,14 @@ import yaml
 
 import recidiviz.source_tables.yaml_managed as _yaml_managed_pkg
 from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
+    SUBMITTED_TASKS_LINE_COLUMN_NAME,
     LabelStudioProjectConfig,
     collect_label_studio_project_configs,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
     LabelStudioTaskDataField,
 )
+from recidiviz.source_tables.yaml_managed.datasets import LABEL_STUDIO_DATASET
 
 _OUTPUT_DIR = os.path.join(
     os.path.dirname(_yaml_managed_pkg.__file__),
@@ -198,7 +200,7 @@ def build_raw_table_yaml_dict(config: LabelStudioProjectConfig) -> dict:
     }
     return {
         "address": {
-            "dataset_id": "label_studio",
+            "dataset_id": LABEL_STUDIO_DATASET,
             "table_id": config.raw_table_id,
         },
         "description": (
@@ -220,18 +222,78 @@ def build_raw_table_yaml_dict(config: LabelStudioProjectConfig) -> dict:
     }
 
 
+# Field delimiter for the submitted tasks external table. The table reads each LINE of a
+# task file as one row of text rather than parsing it, so the delimiter has to be a byte
+# that can never occur in the file. 0x01 qualifies: JSON escapes control characters, so a
+# raw 0x01 cannot appear inside a JSON string, and these files are JSON.
+_LINE_READER_FIELD_DELIMITER = chr(1)
+
+
+def build_import_table_yaml_dict(config: LabelStudioProjectConfig) -> dict:
+    """Returns the YAML dict for the submitted tasks external table for |config|.
+
+    Reads the same objects Label Studio's Source Storage imports, one object per task, but
+    as lines of text rather than as parsed JSON. That is deliberate: the task files are
+    pretty-printed, and BigQuery's NEWLINE_DELIMITED_JSON reader requires one JSON object
+    per line, so it cannot read them at all. Reading them as CSV with a delimiter that
+    cannot occur in JSON yields one row per line, which the view groups back into one row
+    per file. This means the files never have to be rewritten to be queryable, and it works
+    unchanged whether a producer writes pretty-printed or compact JSON.
+    """
+    yaml_dict: dict = {
+        "address": {
+            "dataset_id": LABEL_STUDIO_DATASET,
+            "table_id": config.submitted_tasks_raw_table_id,
+        },
+        "description": (
+            f"Task files staged for import into Label Studio for the {config.task_name} "
+            f"task, one row per LINE of each file. Read as text rather than parsed JSON "
+            f"because the files are pretty-printed and BigQuery's NDJSON reader cannot "
+            f"read them; the {config.submitted_tasks_view_id} view groups these lines back "
+            f"into one row per task. Auto-generated from "
+            f"recidiviz/llm_eval/label_studio/config/{config.task_name}.yaml "
+            f"— do not edit manually."
+        ),
+        "schema": [
+            {
+                "name": SUBMITTED_TASKS_LINE_COLUMN_NAME,
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "One raw line of a task file, unparsed.",
+            }
+        ],
+    }
+    if config.task_import_source_project_mapping:
+        yaml_dict["source_project_mapping"] = dict(
+            config.task_import_source_project_mapping
+        )
+    yaml_dict["external_data_configuration"] = {
+        "sourceUris": [config.task_import_source_uri],
+        "sourceFormat": "CSV",
+        "ignoreUnknownValues": True,
+        "compression": "NONE",
+        "csvOptions": {
+            "fieldDelimiter": _LINE_READER_FIELD_DELIMITER,
+            "quote": "",
+            "allowJaggedRows": True,
+            "skipLeadingRows": 0,
+        },
+    }
+    return yaml_dict
+
+
 def generate_raw_table_yamls(output_dir: str = _OUTPUT_DIR) -> None:
-    """Writes one raw table YAML per task config into |output_dir|."""
+    """Writes the annotations and submitted tasks table YAMLs for each task config into
+    |output_dir|."""
     configs = collect_label_studio_project_configs()
     for config in configs.values():
-        output_path = os.path.join(output_dir, f"{config.raw_table_id}.yaml")
-        with open(output_path, "w", encoding="utf-8") as f:
-            yaml.dump(
-                build_raw_table_yaml_dict(config),
-                f,
-                sort_keys=False,
-                allow_unicode=True,
-            )
+        for table_id, yaml_dict in (
+            (config.raw_table_id, build_raw_table_yaml_dict(config)),
+            (config.submitted_tasks_raw_table_id, build_import_table_yaml_dict(config)),
+        ):
+            output_path = os.path.join(output_dir, f"{table_id}.yaml")
+            with open(output_path, "w", encoding="utf-8") as f:
+                yaml.dump(yaml_dict, f, sort_keys=False, allow_unicode=True)
 
 
 if __name__ == "__main__":

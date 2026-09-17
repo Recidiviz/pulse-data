@@ -365,6 +365,17 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "meetings_module_quality_irr_trend",
         ]
     },
+    **{
+        BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
+            "Label Studio submitted-tasks views, the coverage/backlog denominator "
+            "for the annotation views. Not yet consumed downstream; consumers are "
+            "tracked in OBT-46570 and OBT-49399. (Ben Packer, 2026-09-16)"
+        )
+        for table_id in [
+            "cni_accuracy_per_field_submitted_tasks",
+            "meetings_module_quality_submitted_tasks",
+        ]
+    },
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"

@@ -23,9 +23,11 @@ import yaml
 
 import recidiviz.source_tables.yaml_managed as _yaml_managed_pkg
 from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
+    SUBMITTED_TASKS_LINE_COLUMN_NAME,
     collect_label_studio_project_configs,
 )
 from recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls import (
+    build_import_table_yaml_dict,
     generate_raw_table_yamls,
 )
 
@@ -50,42 +52,48 @@ class GenerateRawTableYamlsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             generate_raw_table_yamls(output_dir=tmpdir)
             for config in configs.values():
-                filename = f"{config.raw_table_id}.yaml"
-                generated_path = os.path.join(tmpdir, filename)
-                committed_path = os.path.join(_COMMITTED_DIR, filename)
+                for filename in (
+                    f"{config.raw_table_id}.yaml",
+                    f"{config.submitted_tasks_raw_table_id}.yaml",
+                ):
+                    generated_path = os.path.join(tmpdir, filename)
+                    committed_path = os.path.join(_COMMITTED_DIR, filename)
 
-                with open(generated_path, encoding="utf-8") as f:
-                    generated = yaml.safe_load(f)
+                    with open(generated_path, encoding="utf-8") as f:
+                        generated = yaml.safe_load(f)
 
-                self.assertTrue(
-                    os.path.exists(committed_path),
-                    msg=(
-                        f"Missing committed YAML [{committed_path}]. "
-                        f"Run: python -m recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls"
-                    ),
-                )
-                with open(committed_path, encoding="utf-8") as f:
-                    committed = yaml.safe_load(f)
+                    self.assertTrue(
+                        os.path.exists(committed_path),
+                        msg=(
+                            f"Missing committed YAML [{committed_path}]. "
+                            f"Run: python -m recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls"
+                        ),
+                    )
+                    with open(committed_path, encoding="utf-8") as f:
+                        committed = yaml.safe_load(f)
 
-                self.assertEqual(
-                    generated,
-                    committed,
-                    msg=(
-                        f"Committed YAML [{filename}] is out of sync with the task config. "
-                        f"Run: python -m recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls"
-                    ),
-                )
+                    self.assertEqual(
+                        generated,
+                        committed,
+                        msg=(
+                            f"Committed YAML [{filename}] is out of sync with the task config. "
+                            f"Run: python -m recidiviz.tools.llm_eval.label_studio.generate_raw_table_yamls"
+                        ),
+                    )
 
     def test_no_extra_committed_yamls(self) -> None:
         """Fails if there are committed raw table YAMLs with no corresponding task config."""
         configs = collect_label_studio_project_configs()
         expected_filenames = {
             f"{config.raw_table_id}.yaml" for config in configs.values()
+        } | {
+            f"{config.submitted_tasks_raw_table_id}.yaml" for config in configs.values()
         }
         committed_yaml_files = {
             name
             for name in os.listdir(_COMMITTED_DIR)
             if name.endswith("_annotations_raw.yaml")
+            or name.endswith("_submitted_tasks_raw.yaml")
         }
         extra = committed_yaml_files - expected_filenames
         self.assertFalse(
@@ -95,3 +103,91 @@ class GenerateRawTableYamlsTest(unittest.TestCase):
                 f"Delete them or add a matching task config."
             ),
         )
+
+    def test_import_table_yaml_for_a_cross_project_config(self) -> None:
+        """A config whose task files another project writes emits source_project_mapping, so
+        the source table framework resolves the bucket in that project.
+        """
+        config = collect_label_studio_project_configs()["meetings_module_quality"]
+        generated = build_import_table_yaml_dict(config)
+
+        self.assertEqual(
+            {
+                "dataset_id": "label_studio",
+                "table_id": "meetings_module_quality_submitted_tasks_raw",
+            },
+            generated["address"],
+        )
+        self.assertEqual(
+            {
+                "recidiviz-staging": "recidiviz-dashboard-staging",
+                "recidiviz-123": "recidiviz-dashboard-production",
+            },
+            generated["source_project_mapping"],
+        )
+        self.assertEqual(
+            {
+                "sourceUris": [
+                    "gs://{project_id}-meetings-audio-data/*label-studio-task.json"
+                ],
+                "sourceFormat": "CSV",
+                "ignoreUnknownValues": True,
+                "compression": "NONE",
+                "csvOptions": {
+                    "fieldDelimiter": "\x01",
+                    "quote": "",
+                    "allowJaggedRows": True,
+                    "skipLeadingRows": 0,
+                },
+            },
+            generated["external_data_configuration"],
+        )
+
+    def test_import_table_reads_task_files_as_one_row_per_line(self) -> None:
+        """The task files are pretty-printed, which BigQuery's NDJSON reader cannot read at
+        all, so the external table declares a single text column and a field delimiter that
+        cannot occur in JSON -- 0x01, since JSON escapes control characters. That yields one
+        row per line of each file, which the submitted tasks view groups back into one row
+        per task, so the files never have to be rewritten to be queryable.
+        """
+        generated = build_import_table_yaml_dict(
+            collect_label_studio_project_configs()["cni_accuracy_per_field"]
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "name": SUBMITTED_TASKS_LINE_COLUMN_NAME,
+                    "type": "STRING",
+                    "mode": "NULLABLE",
+                    "description": "One raw line of a task file, unparsed.",
+                }
+            ],
+            generated["schema"],
+        )
+        self.assertEqual(
+            {
+                "sourceUris": [
+                    "gs://{project_id}-label-studio/task_imports/cni/*",
+                ],
+                "sourceFormat": "CSV",
+                "ignoreUnknownValues": True,
+                "compression": "NONE",
+                "csvOptions": {
+                    "fieldDelimiter": "\x01",
+                    "quote": "",
+                    "allowJaggedRows": True,
+                    "skipLeadingRows": 0,
+                },
+            },
+            generated["external_data_configuration"],
+        )
+
+    def test_import_table_yaml_omits_empty_source_project_mapping(self) -> None:
+        """A config whose task files live in the runtime project's own bucket omits
+        source_project_mapping entirely, rather than emitting an empty mapping.
+        """
+        generated = build_import_table_yaml_dict(
+            collect_label_studio_project_configs()["cni_accuracy_per_field"]
+        )
+        self.assertNotIn("source_project_mapping", generated)

@@ -83,7 +83,10 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
     INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data from Intercom",
-    LABEL_STUDIO_DATASET: "Stores raw Label Studio annotation exports as GCS-backed external tables.",
+    LABEL_STUDIO_DATASET: (
+        "Stores Label Studio task data as GCS-backed external tables: raw "
+        "annotation exports and the task files staged for import."
+    ),
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."
     ),
