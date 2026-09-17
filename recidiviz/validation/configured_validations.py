@@ -392,6 +392,27 @@ from recidiviz.validation.views.state.us_ar_ged_writeback_no_double_writes impor
 from recidiviz.validation.views.state.us_ar_ged_writeback_no_failed_actions import (
     US_AR_GED_WRITEBACK_NO_FAILED_ACTIONS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_high_unexplained_no_match_rate import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_HIGH_UNEXPLAINED_NO_MATCH_RATE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_no_double_claimed_credit import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_DOUBLE_CLAIMED_CREDIT_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_no_duplicate_certificate_awards import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_DUPLICATE_CERTIFICATE_AWARDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_no_match_has_nonzero_recommended_credit import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_MATCH_HAS_NONZERO_RECOMMENDED_CREDIT_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_recommended_credit_diverges_from_source_amount import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_RECOMMENDED_CREDIT_DIVERGES_FROM_SOURCE_AMOUNT_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_recommended_credit_is_negative import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_RECOMMENDED_CREDIT_IS_NEGATIVE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_voided_or_ineligible_has_nonzero_recommended_credit import (
+    US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VOIDED_OR_INELIGIBLE_HAS_NONZERO_RECOMMENDED_CREDIT_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_co_edovo_program_map_no_duplicate_course_ids import (
     US_CO_EDOVO_PROGRAM_MAP_NO_DUPLICATE_COURSE_IDS_VIEW_BUILDER,
 )
@@ -1382,6 +1403,34 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AR_GED_WRITEBACK_EXPECTED_VS_ACTUAL_ACTION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_DOUBLE_CLAIMED_CREDIT_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_HIGH_UNEXPLAINED_NO_MATCH_RATE_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_DUPLICATE_CERTIFICATE_AWARDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VOIDED_OR_INELIGIBLE_HAS_NONZERO_RECOMMENDED_CREDIT_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_NO_MATCH_HAS_NONZERO_RECOMMENDED_CREDIT_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_RECOMMENDED_CREDIT_DIVERGES_FROM_SOURCE_AMOUNT_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_RECOMMENDED_CREDIT_IS_NEGATIVE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
