@@ -246,7 +246,7 @@ class BigQueryViewGraphRegistry:
             )
             for dataset_id in boundary_datasets
         ]
-        # TODO(OBT-46919) One we remove all _DATASETS_WITH_MULTIPLE_COLLECTIONS this can
+        # TODO(OBT-50580) One we remove all _DATASETS_WITH_MULTIPLE_COLLECTIONS this can
         # be a dict[str, SourceTableCollection]
         source_table_collections_by_dataset: dict[
             str, list[SourceTableCollection]
