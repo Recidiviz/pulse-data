@@ -20,10 +20,16 @@ import datetime
 
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata import (
     SequentiallyChunkedFileMetadata,
+    SingleFileMetadata,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
     RawFileChunkingMetadataHistory,
 )
+
+# MiCase delivered every one of its file tags' historical backfill as numbered
+# chunks on this date (except IN_CASE_NOTE_TYPES, a day later), then switched to
+# delivering daily incremental files as a single unchunked file with no suffix.
+_MICASE_BACKFILL_END_DATE_EXCLUSIVE = datetime.date(2026, 8, 7)
 
 US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] = {
     "ContactNoteComment": RawFileChunkingMetadataHistory(
@@ -45,12 +51,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="AD_LOCATION",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 150 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -58,12 +67,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="BOP_PAROLE_STAFF_ACTION",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -71,12 +83,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CCR_CRIMINAL_HISTORY",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -84,12 +99,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CD_HEARING_REPORT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -97,12 +115,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CD_HEARING_SANCTION",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -110,12 +131,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CD_STAFF_REVIEW",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -123,12 +147,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CL_CAF_SCORING",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 150 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -136,12 +163,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="CL_CLASSIFICATION",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -149,12 +179,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="EV_EVENT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -162,12 +195,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="EV_INCIDENT_REPORT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -175,12 +211,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="EV_INVOLVED_INMATE",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -188,12 +227,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="EV_INVOLVED_NON_INMATE",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -201,12 +243,16 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="IN_CASE_NOTE_TYPES",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered a day later than the
+                # other MiCase tags, as 999 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=datetime.date(2026, 8, 8),
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=datetime.date(2026, 8, 8),
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -214,12 +260,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="PERSON",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -227,12 +276,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="PM_BED_ASSIGNMENT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -240,12 +292,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="PM_EXTERNAL_MOVEMENT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -253,12 +308,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_CONVERTED_CREDIT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -266,12 +324,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_CREDIT_LAW_WAIVER",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -279,12 +340,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_SENTENCE",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -292,12 +356,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_SENTENCEACTION",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 400 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -305,12 +372,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_SENTENCE_COMMENT",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -318,12 +388,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="SC_SENTENCINGNOTE",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -331,12 +404,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="VIC_VICTIM",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
@@ -344,12 +420,15 @@ US_TN_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] =
         file_tag="VIC_VICTIM_PERSON",
         chunking_metadata_history=[
             SequentiallyChunkedFileMetadata(
-                # MiCase sizes each nightly delivery by volume, so the chunk count varies
-                # between runs (the initial load ranged from 50 to 999 chunks across tags).
+                # One-time historical backfill, delivered as 50 numbered chunks.
                 known_chunk_count=None,
                 start_date=None,
-                end_date_exclusive=None,
+                end_date_exclusive=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
                 zero_indexed=True,
+            ),
+            SingleFileMetadata(
+                start_date=_MICASE_BACKFILL_END_DATE_EXCLUSIVE,
+                end_date_exclusive=None,
             ),
         ],
     ),
