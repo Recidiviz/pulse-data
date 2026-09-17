@@ -207,6 +207,19 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             sorted(branching_topological_sorted_groups)
         )
 
+    def test_rekey_task_downstream_of_initialize_dag(self) -> None:
+        """Tests that the re-key task runs after initialize_dag, whose
+        record_dag_run_metadata task snapshots the app_engine_image XCom that
+        every pod task reads.
+        """
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        initialize_dag = dag.task_group_dict["initialize_dag"]
+
+        self.assertIn(
+            "rekey_legacy_tables_to_cmek",
+            initialize_dag.downstream_task_ids,
+        )
+
     def test_schema_update_gates_state_branches(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
         self.assertIn(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID, dag.task_ids)

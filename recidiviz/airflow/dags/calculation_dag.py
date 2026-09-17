@@ -293,10 +293,11 @@ def create_calculation_dag() -> None:
     3. Trigger BigQuery exports for each state and other datasets."""
 
     # Temporary CJIS migration task (Recidiviz/zenhub-tasks#2606): re-keys this
-    # DAG's legacy output tables to CMEK, time-boxed per run. The ALL_DONE
-    # barrier below orders it before any pipeline write (a copy racing a
-    # write would silently drop the write) while a failed re-key still cannot
-    # block the pipelines. No-ops outside staging; deletes with the migration.
+    # DAG's legacy output tables to CMEK, time-boxed per run. It must run after
+    # record_dag_run_metadata, whose app_engine_image XCom every pod task reads,
+    # and before any pipeline write, since a copy racing a write would silently
+    # drop the write. A failed re-key cannot block the pipelines. No-ops outside
+    # staging; deletes with the migration.
     rekey_legacy_tables_to_cmek = build_kubernetes_pod_task(
         task_id="rekey_legacy_tables_to_cmek",
         container_name="rekey_legacy_tables_to_cmek",
@@ -344,8 +345,13 @@ def create_calculation_dag() -> None:
         )
 
     initialize_dag = initialize_calculation_dag_group()
-    rekey_barrier >> initialize_dag
-    initialize_dag >> update_big_query_table_schemata >> bq_refresh
+    # Keep the direct initialize_dag edge so update_big_query_table_schemata
+    # gates on initialization once TODO(OBT-46918) flips it to ALL_SUCCESS; the
+    # ALL_DONE rekey_barrier succeeds even when initialize_dag fails.
+    initialize_dag >> rekey_legacy_tables_to_cmek
+    initialize_dag >> update_big_query_table_schemata
+    rekey_barrier >> update_big_query_table_schemata
+    update_big_query_table_schemata >> bq_refresh
 
     # Once the source-table datasets exist, tag the protect-tier ones so the catastrophic-delete
     # deny policy protects them. Runs off to the side (non-fatal in the entrypoint) so it never

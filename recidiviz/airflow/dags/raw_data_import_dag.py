@@ -609,10 +609,11 @@ def create_raw_data_import_dag() -> None:
     """DAG configuration to run raw data imports"""
 
     # Temporary CJIS migration task (Recidiviz/zenhub-tasks#2606): re-keys this
-    # DAG's legacy raw-data tables to CMEK, time-boxed per run. The ALL_DONE
-    # barrier below orders it before any import write (a copy racing a load
-    # job would silently drop the load) while a failed re-key still cannot
-    # block ingest. No-ops outside staging; deletes with the migration.
+    # DAG's legacy raw-data tables to CMEK, time-boxed per run. It must run after
+    # record_dag_run_metadata, whose app_engine_image XCom every pod task reads,
+    # and before any import write, since a copy racing a load job would silently
+    # drop the load. A failed re-key cannot block ingest. No-ops outside staging;
+    # deletes with the migration.
     rekey_legacy_tables_to_cmek = build_kubernetes_pod_task(
         task_id="rekey_legacy_tables_to_cmek",
         container_name="rekey_legacy_tables_to_cmek",
@@ -671,7 +672,10 @@ def create_raw_data_import_dag() -> None:
     # 48-pod placeholder burst for fresh-node provisioning. It's small and quick, so
     # sequencing it first costs little and removes the contention.
     initialize_raw_data = initialize_raw_data_dag_group()
-    rekey_barrier >> initialize_raw_data
+    # update_big_query_table_schemata needs its direct initialize_raw_data edge:
+    # the ALL_DONE barrier succeeds even when initialize_raw_data fails.
+    initialize_raw_data >> rekey_legacy_tables_to_cmek
+    rekey_barrier >> update_big_query_table_schemata
     (
         initialize_raw_data
         >> update_big_query_table_schemata

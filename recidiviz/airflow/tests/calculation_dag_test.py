@@ -209,6 +209,22 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             bq_refresh_group.upstream_task_ids,
         )
 
+    def test_rekey_task_downstream_of_initialize_dag(self) -> None:
+        """Tests that the re-key task runs after initialize_dag, whose
+        record_dag_run_metadata task snapshots the app_engine_image XCom that
+        every pod task reads.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        initialize_dag = dag.task_group_dict["initialize_dag"]
+
+        self.assertIn(
+            "rekey_legacy_tables_to_cmek",
+            initialize_dag.downstream_task_ids,
+        )
+
     def test_update_all_views_branch_upstream_of_all_exports(
         self,
     ) -> None:
@@ -944,8 +960,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "some_parameter": "foo",
                 },
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
-                    "rekey_barrier",
                     r"^initialize_dag.handle_params_check",
                 ],
                 expected_failure_task_id_regexes=[
@@ -953,6 +967,10 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.verify_parameters",
                 ],
                 expected_skipped_task_id_regexes=[
+                    # The re-key is downstream of initialize_dag, whose failed
+                    # parameter check skips everything downstream.
+                    "rekey_legacy_tables_to_cmek",
+                    "rekey_barrier",
                     r"^initialize_dag.record_dag_run_metadata",
                     r"^initialize_dag.wait_to_continue_or_cancel",
                     r"^initialize_dag.handle_queueing_result",
