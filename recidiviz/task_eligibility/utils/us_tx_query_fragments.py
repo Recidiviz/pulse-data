@@ -980,45 +980,39 @@ CASE
 END AS contact_type,"""
 
 
-def _us_tx_fees_no_records_fallback_select(*, criteria: str) -> str:
-    """Returns a SQL SELECT producing a 'No records found' fallback row.
+def _us_tx_fees_no_records_fallback_select(
+    *, criteria: str, fallback_population_cte: str
+) -> str:
+    """Returns a SQL SELECT ... FROM producing a "No records found" fallback row
+    for every person in fallback_population_cte.
 
-    Caller is responsible for appending the FROM/LEFT JOIN/WHERE to complete
-    the UNION ALL block — this function only produces the SELECT columns.
+    Caller is responsible for appending the LEFT JOIN/WHERE that excludes clients
+    with real data, to complete the UNION ALL block.
     """
     return f"""SELECT
-        pilot_and_region_5_clients.person_id,
+        fallback_clients.person_id,
         "{criteria}"                                                    AS criteria,
         "No records found"                                              AS note_title,
         "If this is inconsistent with OIMS, please let us know via feedback@recidiviz.org or the browser's chat feature."                          AS note_body,
-        CAST(CURRENT_DATE('US/Eastern') AS DATE)                        AS event_date,"""
+        CAST(CURRENT_DATE('US/Eastern') AS DATE)                        AS event_date,
+    FROM (SELECT DISTINCT person_id FROM {fallback_population_cte}) fallback_clients"""
 
 
-# TODO(OBT-33896): Drop this constant when we FSL.
-# Note: TDCJ "region" is stored as `district` on supervision_current_staff.
-_US_TX_FEES_PILOT_AND_REGION_5_CLIENTS_SUBQUERY = """(
-    SELECT DISTINCT sc.person_id
-    FROM `{project_id}.analyst_data.us_tx_supervision_staff_reporting_chain_materialized` sc
-    INNER JOIN `{project_id}.static_reference_tables.us_tx_ers_ars_fines_fees_pilot_users` pilot
-        ON pilot.staff_id = sc.staff_id
-    UNION DISTINCT
-    SELECT DISTINCT sc.person_id
-    FROM `{project_id}.analyst_data.us_tx_supervision_staff_reporting_chain_materialized` sc
-    INNER JOIN `{project_id}.reference_views.supervision_current_staff_materialized` staff
-        ON staff.staff_id = sc.staff_id
-    WHERE staff.state_code = "US_TX"
-        AND staff.district = "5"
-)"""
-
-
-def us_tx_fines_fees_balances_case_notes() -> str:
+def us_tx_fines_fees_balances_case_notes(*, fallback_population_cte: str) -> str:
     """Returns a SQL fragment selecting active fines/fees balances as case notes.
 
     Produces one row per active fee type with a non-zero assessed amount, plus a
-    "No records found" fallback row for pilot/region 5 clients with no qualifying fee records.
-    Columns: person_id, criteria ('Current Fees'), note_title (fee type), note_body (assessed amount and remaining balance), event_date (date of last fee-related interaction).
+    "No records found" fallback row for every person in fallback_population_cte
+    with no qualifying fee records.
+    Columns: person_id, criteria ("Current Fees"), note_title (fee type), note_body (assessed amount and remaining balance), event_date (date of last fee-related interaction).
+
+    Args:
+        fallback_population_cte: Name of an already-defined CTE with a person_id
+            column to source fallback rows from. Pass the same CTE name given to
+            array_agg_case_notes_by_person_id's filtered_tes_cte for this view,
+            since that join is what filters these rows down to the opportunity
+            population.
     """
-    pilot_and_region_5_clients = _US_TX_FEES_PILOT_AND_REGION_5_CLIENTS_SUBQUERY
     return f"""
     SELECT
         person_id,
@@ -1034,19 +1028,17 @@ def us_tx_fines_fees_balances_case_notes() -> str:
         -- TODO(#78182): Hydrate fees sessions data with real spans and remove above comment.
         fees.start_date                                                 AS event_date,
     FROM `{{project_id}}.analyst_data.us_tx_fines_fees_sessions_preprocessed` fees
-    INNER JOIN {pilot_and_region_5_clients} pilot_and_region_5_clients
-        USING (person_id)
     WHERE state_code = "US_TX"
         AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
         AND fee_type NOT IN ("ALL", "ALL_NON_RESTITUTION")
         AND assessed_amount != 0
 
-    -- TODO(OBT-33896): Drop this block when we FSL.
-    -- If a person in the pilot/region 5 population does not have fee balances data, then we implement the no-records fallback JSON.
+    -- If a TX client does not have fee balances data, then we implement the no-records fallback JSON.
     UNION ALL
 
-    {_us_tx_fees_no_records_fallback_select(criteria="Current Fees")}
-    FROM {pilot_and_region_5_clients} pilot_and_region_5_clients
+    {_us_tx_fees_no_records_fallback_select(
+        criteria="Current Fees", fallback_population_cte=fallback_population_cte
+    )}
     LEFT JOIN (
         SELECT DISTINCT person_id
         FROM `{{project_id}}.analyst_data.us_tx_fines_fees_sessions_preprocessed`
@@ -1074,6 +1066,7 @@ def us_tx_fee_type_case_sql(*, column: str) -> str:
 
 def us_tx_fines_fees_recent_payments_case_notes(
     *,
+    fallback_population_cte: str,
     n_distinct_transaction_dates: int = 3,
     max_transactions: int = 15,
 ) -> str:
@@ -1081,11 +1074,20 @@ def us_tx_fines_fees_recent_payments_case_notes(
 
     Produces one row per transaction on the most recent N distinct payment dates
     (capped at max_transactions total), plus a "No records found" fallback row for
-    pilot/region 5 clients with no transaction records.
-    Columns: person_id, criteria ('Most Recent Payments'), note_title, note_body, event_date.
-    """
-    pilot_and_region_5_clients = _US_TX_FEES_PILOT_AND_REGION_5_CLIENTS_SUBQUERY
+    every person in fallback_population_cte with no transaction records.
+    Columns: person_id, criteria ("Most Recent Payments"), note_title, note_body, event_date.
 
+    Args:
+        fallback_population_cte: Name of an already-defined CTE with a person_id
+            column to source fallback rows from. Pass the same CTE name given to
+            array_agg_case_notes_by_person_id's filtered_tes_cte for this view,
+            since that join is what filters these rows down to the opportunity
+            population.
+        n_distinct_transaction_dates: Number of most recent distinct payment
+            dates to include transactions from.
+        max_transactions: Overall cap on the number of transaction rows
+            returned per person.
+    """
     # Obtains all recent payments that happened on the last three distinct transaction dates, up to a total of 15 transactions.
     recent_payments_subquery = f"""(
         SELECT
@@ -1120,9 +1122,6 @@ def us_tx_fines_fees_recent_payments_case_notes(
             WHERE id_type = 'US_TX_SID'
         ) ext_id
             ON ext_id.external_id = trans.FTRN_DPS_NO
-        -- TODO(OBT-33896): Drop this inner join when we FSL.
-        INNER JOIN {pilot_and_region_5_clients} pilot_and_region_5_clients
-            USING (person_id)
         QUALIFY
             DENSE_RANK() OVER (
                 PARTITION BY ext_id.person_id
@@ -1138,10 +1137,10 @@ def us_tx_fines_fees_recent_payments_case_notes(
     return f"""
     SELECT person_id, criteria, note_title, note_body, event_date
     FROM {recent_payments_subquery}
-    -- TODO(OBT-33896): Drop this block when we FSL.
     UNION ALL
-    {_us_tx_fees_no_records_fallback_select(criteria="Most Recent Payments")}
-    FROM {pilot_and_region_5_clients} pilot_and_region_5_clients
+    {_us_tx_fees_no_records_fallback_select(
+        criteria="Most Recent Payments", fallback_population_cte=fallback_population_cte
+    )}
     LEFT JOIN (SELECT DISTINCT person_id FROM {recent_payments_subquery}) rp
         USING(person_id)
     WHERE rp.person_id IS NULL
