@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_OffenderName_v2` (MiCase / TOMIS 2.0 source tables) to the same
+# `StatePerson` fields as `us_tn_OffenderName.yaml` (TOMIS 1.0). See the
+# "Migration Spec: OffenderName view migration (TOMIS 1.0 -> 2.0)" Notion
+# page for the full rewrite spec and the open questions referenced below.
+manifest_language: 1.0.0
+# Runs in tests/local only until the Sec 6 open questions below are resolved
+# and this view is deliberately promoted to staging/production.
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  PERSON_ID: STRING
+  OffenderID: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  Race: STRING
+  Ethnicity: STRING
+  Gender: STRING
+  BirthDate: STRING
+  AddressLine1: STRING
+  AddressLine2: STRING
+  AddressCity: STRING
+  AddressState: STRING
+  AddressZip: STRING
+  PhoneNumber: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_TN_PERSON_ID")
+      # 33 people have a PERSON_ID but no corresponding OffenderID
+      - $conditional:
+          - $if:
+              $not_null: OffenderID
+            $then:
+              StatePersonExternalId:
+                external_id: OffenderID
+                id_type: $literal("US_TN_DOC")
+    birthdate: BirthDate
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
+    sex:
+      $enum_mapping:
+        $raw_text: Gender
+        $mappings:
+          StateSex.MALE:
+            - Male
+          StateSex.FEMALE:
+            - Female
+          StateSex.OTHER:
+            - "Gender Diverse"
+          StateSex.EXTERNAL_UNKNOWN:
+            - "Both/Unknown"
+            - "Unknown"
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.WHITE:
+                  - WHITE
+                StateRace.BLACK:
+                  - BLACK
+                StateRace.ASIAN:
+                  - "ASIAN OR PACIFIC ISLANDER"
+                  - "A (Asian or Pacific Islander)"
+                StateRace.INTERNAL_UNKNOWN:
+                  - HISPANIC
+                  - "MULTI-CULTURAL"
+                  - "MULTIPLE RACES, NOT HISPANIC"
+                StateRace.OTHER:
+                  - OTHER
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
+                  - "AMERICAN INDIAN OR ALASKAN NATIVE"
+                  - "NATIVE AMERICAN INDIAN"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
+                  - "NATIVE HAWAIIA OR PACIFIC ISL"
+                  - "PACIFIC ISLANDER"
+                StateRace.EXTERNAL_UNKNOWN:
+                  - UNKNOWN
+                  - "Unknown at conversion"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: Ethnicity
+        $mappings:
+          StateEthnicity.HISPANIC:
+            - HISPANIC
+          StateEthnicity.NOT_HISPANIC:
+            - NONHISPANIC
+          StateEthnicity.EXTERNAL_UNKNOWN:
+            - UNKNOWN
+    current_address:
+      $physical_address:
+        $address_1: AddressLine1
+        $address_2: AddressLine2
+        $city: AddressCity
+        $state: AddressState
+        $zip: AddressZip
+    current_phone_number: PhoneNumber
