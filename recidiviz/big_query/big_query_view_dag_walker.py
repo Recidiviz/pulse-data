@@ -1054,30 +1054,20 @@ class BigQueryViewDagWalker:
         )
 
     def get_referenced_source_tables(self) -> frozenset[BigQueryAddress]:
-        """Returns the addresses referenced by a view in the DAG that are not
-        themselves DAG nodes. When the DAG contains all existing views, these are the
-        source tables the DAG reads.
+        """Returns the addresses referenced by any view in the DAG that are not
+        themselves DAG nodes.
         """
         if self._referenced_source_tables is None:
-            referenced_source_tables: set[BigQueryAddress] = set()
-
-            def add_child_nodes_to_referenced_source_tables(
-                view: BigQueryView,
-                _previous_level_results: dict[BigQueryView, None],
-            ) -> None:
-                node = self.node_for_view(view)
-                referenced_source_tables.update(set(node.source_addresses))
-
-            self.process_dag(
-                view_process_fn=add_child_nodes_to_referenced_source_tables,
-                synchronous=True,
+            # source_addresses is populated for every node during _prepare_dag, so we
+            # union it directly rather than walking the DAG to collect it.
+            self._referenced_source_tables = frozenset(
+                {
+                    source_address
+                    for node in self.nodes_by_address.values()
+                    for source_address in node.source_addresses
+                }
             )
-            self._referenced_source_tables = frozenset(referenced_source_tables)
         return self._referenced_source_tables
-
-    def get_referenced_source_table_dataset_ids(self) -> set[str]:
-        """Returns the dataset ids of all source tables this DAG reads."""
-        return {a.dataset_id for a in self.get_referenced_source_tables()}
 
     def get_edges(self) -> List[Tuple[BigQueryView, BigQueryView]]:
         """Get all parent-child relationships in the DAG.

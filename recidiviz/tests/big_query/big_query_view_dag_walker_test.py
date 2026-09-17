@@ -2641,34 +2641,6 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             },
         )
 
-    def test_referenced_source_table_dataset_ids(self) -> None:
-        # Two source tables in source_dataset_1, one in source_dataset_2, so the
-        # deduplicated dataset ids are exactly those two datasets.
-        view = SimpleBigQueryViewBuilder(
-            dataset_id="my_dataset",
-            view_id="my_view_id",
-            description="my view description",
-            view_query_template="""SELECT * FROM `{project_id}.source_dataset_1.some_table`
-            LEFT OUTER JOIN `{project_id}.source_dataset_1.other_table`
-            USING (some_col);
-            """,
-            schema=MINIMAL_SCHEMA,
-        ).build()
-        child_view = SimpleBigQueryViewBuilder(
-            dataset_id="my_dataset",
-            view_id="child_view",
-            description="my view description",
-            view_query_template="""SELECT * FROM `{project_id}.my_dataset.my_view_id`
-            JOIN `{project_id}.source_dataset_2.some_table`
-            USING (some_col)""",
-            schema=MINIMAL_SCHEMA,
-        ).build()
-        walker = BigQueryViewDagWalker([view, child_view])
-        self.assertEqual(
-            walker.get_referenced_source_table_dataset_ids(),
-            {"source_dataset_1", "source_dataset_2"},
-        )
-
 
 class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
     """DAG walker tests run with asynchronous processing"""

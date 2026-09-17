@@ -26,7 +26,7 @@ from functools import cached_property
 
 import attr
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.common import attr_validators
@@ -105,15 +105,18 @@ class BigQueryViewGraph:
         )
 
     @cached_property
-    def dag_walker(self) -> BigQueryViewDagWalker:
-        """The DAG over this graph's views."""
-        return BigQueryViewDagWalker(
-            list(
-                build_views_to_update(
-                    candidate_view_builders=self.view_builders, sandbox_context=None
-                )
+    def views(self) -> list[BigQueryView]:
+        """The built views for this graph's builders."""
+        return list(
+            build_views_to_update(
+                candidate_view_builders=self.view_builders, sandbox_context=None
             )
         )
+
+    @cached_property
+    def dag_walker(self) -> BigQueryViewDagWalker:
+        """The DAG over this graph's views."""
+        return BigQueryViewDagWalker(self.views)
 
     @cached_property
     def output_source_table_configs_by_dataset(
@@ -131,8 +134,7 @@ class BigQueryViewGraph:
                 f"[{metadata.project_id()}]"
             )
         configs_by_dataset: dict[str, list[SourceTableConfig]] = defaultdict(list)
-        for builder in self.view_builders:
-            view = builder.build()
+        for view in self.views:
             if view.materialized_address is None:
                 continue
             # TODO(OBT-47853): Support deriving source tables from time-partitioned
