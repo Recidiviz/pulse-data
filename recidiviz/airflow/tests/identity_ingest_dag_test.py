@@ -127,6 +127,21 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
     def test_dag_id(self) -> None:
         self.assertEqual(_DAG_ID, self._build_dag().dag_id)
 
+    def test_initialize_dag_gates_schema_update(self) -> None:
+        """The initialize group (parameter check, run-metadata snapshot, run
+        queueing) runs before the schema update task: the schema update uses
+        RecidivizKubernetesPodOperator, which fails unless the version and image
+        that record_dag_run_metadata snapshots to XCom are already present."""
+        dag = self._build_dag()
+        self.assertIn("initialize_dag.verify_parameters", dag.task_ids)
+        self.assertIn("initialize_dag.record_dag_run_metadata", dag.task_ids)
+        self.assertIn("initialize_dag.wait_to_continue_or_cancel", dag.task_ids)
+        initialize_group = dag.task_group_dict["initialize_dag"]
+        self.assertIn(
+            UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+            initialize_group.downstream_task_ids,
+        )
+
     def test_per_tenant_branches_created(self) -> None:
         """Each launched tenant gets a branch under the top-level
         identity_ingest_pipelines group."""

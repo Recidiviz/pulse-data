@@ -34,6 +34,9 @@ from recidiviz.airflow.dags.identity_ingest.call_identity_service_trigger_import
 from recidiviz.airflow.dags.identity_ingest.identity_ingest_dataflow_pipeline_task_group_delegate import (
     IdentityIngestDataflowPipelineTaskGroupDelegate,
 )
+from recidiviz.airflow.dags.identity_ingest.initialize_identity_ingest_dag_group import (
+    initialize_identity_ingest_dag_group,
+)
 from recidiviz.airflow.dags.monitoring.dag_registry import get_identity_ingest_dag_id
 from recidiviz.airflow.dags.utils.branching_by_key import (
     create_branching_by_key,
@@ -65,6 +68,8 @@ from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineTyp
 )
 def create_identity_ingest_dag() -> None:
     """Identity ingest Dataflow pipeline branched per tenant."""
+    initialize_dag = initialize_identity_ingest_dag_group()
+
     update_big_query_table_schemata = execute_update_big_query_table_schemata()
 
     with TaskGroup(group_id="identity_ingest_pipelines") as identity_ingest_pipelines:
@@ -84,7 +89,7 @@ def create_identity_ingest_dag() -> None:
             select_tenant_parameter_branch,
         )
 
-    update_big_query_table_schemata >> identity_ingest_pipelines
+    initialize_dag >> update_big_query_table_schemata >> identity_ingest_pipelines
 
 
 identity_ingest_dag = create_identity_ingest_dag()
