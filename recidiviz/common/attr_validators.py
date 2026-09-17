@@ -651,6 +651,16 @@ def is_numerical_strict(instance: Any, attribute: attr.Attribute, value: float) 
         )
 
 
+def is_opt_numerical_strict(
+    instance: Any, attribute: attr.Attribute, value: float | None
+) -> None:
+    """Validator that ensures the field's value is None or a numerical value (not a
+    value like boolean that can be implicitly cast to a numerical value)."""
+    if value is None:
+        return
+    is_numerical_strict(instance, attribute, value)
+
+
 def is_positive_float(instance: Any, attribute: attr.Attribute, value: float) -> None:
     """Validator that ensures the field value is a positive number."""
     is_numerical_strict(instance, attribute, value)

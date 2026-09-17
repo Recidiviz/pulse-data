@@ -173,6 +173,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_tn_tomis_1_0_analog_views",
     "public_dashboard_views",
     "recommended_classification_spans_us_ix",
+    "recommended_classification_spans_us_mi",
     "recommended_classification_spans_us_tn",
     "reference_views",
     "observations__officer_event",
