@@ -2572,8 +2572,10 @@ class BigQueryClientImpl(BigQueryClient):
                 f" {address.to_str()} but field deletions is not allowed."
             )
 
+        # DROP COLUMN IF EXISTS so that a column another writer has already dropped
+        # in a concurrent schema update is a no-op rather than a BadRequest error.
         drop_statements = ", ".join(
-            [f"DROP COLUMN {field.name}" for field in deprecated_fields]
+            [f"DROP COLUMN IF EXISTS {field.name}" for field in deprecated_fields]
         )
 
         project_specific_address = address.to_project_specific_address(self.project_id)

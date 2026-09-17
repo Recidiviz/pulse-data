@@ -1730,7 +1730,7 @@ class TestSourceTableUpdateManagerConcurrentWriters(unittest.TestCase):
     """Tests that update() tolerates a benign race with another deploy applying the same
     declared schema.
 
-    TODO(OBT-44670): Re-implement these scenarios against the BigQuery emulator once it
+    TODO(OBT-50427): Re-implement these scenarios against the BigQuery emulator once it
     supports in-place update_schema requests."""
 
     ADDRESS = BigQueryAddress(dataset_id="dataset", table_id="table")

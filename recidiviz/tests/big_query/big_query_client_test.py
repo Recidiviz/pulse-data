@@ -1720,10 +1720,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             def result(self) -> None:
                 pass
 
+        # TODO(OBT-50427): Cover the DROP COLUMN IF EXISTS path against the emulator
+        # once it is supported
         def mock_query(query: str, **kwargs: Any) -> FakeQueryJob:
-            self.assertTrue("DROP COLUMN field_2" in query)
+            self.assertTrue("DROP COLUMN IF EXISTS field_2" in query)
             fields_removed.add("field_2")
-            self.assertTrue("DROP COLUMN field_3" in query)
+            self.assertTrue("DROP COLUMN IF EXISTS field_3" in query)
             fields_removed.add("field_3")
             return FakeQueryJob()
 
