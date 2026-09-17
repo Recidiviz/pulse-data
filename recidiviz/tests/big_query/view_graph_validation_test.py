@@ -17,7 +17,7 @@
 """Tests for verifying view graph syntax and column names"""
 import logging
 from concurrent import futures
-from typing import Literal, NamedTuple, Sequence
+from typing import AbstractSet, Literal, NamedTuple, Sequence
 from unittest.mock import patch
 
 import attr
@@ -129,7 +129,7 @@ class _ViewGraphTestSpec:
 
 def _filter_collections_to_addresses(
     collections: list[SourceTableCollection],
-    addresses: set[BigQueryAddress],
+    addresses: AbstractSet[BigQueryAddress],
 ) -> list[SourceTableCollection]:
     """Returns copies of these collections that contain only the tables at the given
     addresses, dropping collections left with no tables.

@@ -92,7 +92,7 @@ class SandboxOverridesTest(unittest.TestCase):
 
     def _referenced_source_tables(
         self, view_builders: Sequence[BigQueryViewBuilder]
-    ) -> set[BigQueryAddress]:
+    ) -> frozenset[BigQueryAddress]:
         """Returns every source table the views in |view_builders| read."""
         dag = BigQueryViewDagWalker([builder.build() for builder in view_builders])
         return dag.get_referenced_source_tables()

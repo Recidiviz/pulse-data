@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements a class that allows us to walk across a DAG of BigQueryViews
 and perform actions on each of them in some order."""
+
 import heapq
 import logging
 import time
@@ -32,7 +33,6 @@ from typing import (
     Generator,
     Generic,
     Iterable,
-    Iterator,
     List,
     Optional,
     Set,
@@ -48,6 +48,7 @@ from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.monitoring import trace
 from recidiviz.utils import environment, metadata, structured_logging
+from recidiviz.utils.graph_algorithms import find_cycle
 from recidiviz.view_registry.deployed_source_table_repository import (
     get_source_table_addresses,
 )
@@ -550,6 +551,8 @@ class BigQueryViewDagWalker:
 
         self._check_for_cycles()
 
+        self._referenced_source_tables: frozenset[BigQueryAddress] | None = None
+
     def _prepare_dag(self) -> None:
         """
         Prepares for processing the full DAG by identifying root nodes and
@@ -598,39 +601,12 @@ class BigQueryViewDagWalker:
                     node.add_source_address(parent_address)
 
     def _check_for_cycles(self) -> None:
-        """
-        The textbook implementation of a DFS cycle check might look something like:
+        """Raises if the view DAG contains a cycle.
 
-            def cycle_check(graph):
-                def dfs(graph, vertex, visited, onpath):
-                    visited[vertex] = True
-                    onpath[vertex] = True
-                    for child in graph.childrenof(vertex):
-                        if not visited[child]:
-                            dfs(graph, child, visited, onpath)
-                        else if onpath[child]:
-                            raise ValueError
-                    onpath[vertex] = False
-
-                visited = [False] * len(graph)
-                onpath = [False] * len(graph)
-                for vertex in graph:
-                    if not visited[vertex]:
-                        dfs(graph, vertex, visited, onpath)
-
-        In our implementation, we use an explicit stack instead of implicit
-        (recursion). We are interested in the vertex post-order
-        (after the recursive calls in the text book example), because only
-        after processing all children can we remove a vertex from the current
-        path. Thus, with an explicit stack, as we process each child, we keep the parent
-        on the stack until all children have been processed, at which point
-        it is safe to remove the parent from the path.
-
-        Because we are working with string-based keys we use hashing for
-        fast indexing, instead of integer-indexed lists.
-
-        Once a vertex has been explored in a DFS fashion, there is no need
-        to process that vertex again when only looking for a cycle.
+        Uses our own find_cycle rather than networkx.find_cycle: the latter's
+        edge_dfs rebuilds a per-node edge view on every traversal step, which on
+        the full deployed view graph (~8k nodes, ~12k edges) is ~250x slower
+        (seconds vs. milliseconds), and this runs on every DagWalker construction.
         """
         if not self.nodes_by_address:
             return
@@ -638,56 +614,15 @@ class BigQueryViewDagWalker:
         if not self.roots:
             raise ValueError("No roots detected. Input views contain a cycle.")
 
-        visited = set()
-        # Mapping of nodes in the current path to the child for that node.
-        current_path_edges: Dict[BigQueryAddress, BigQueryAddress] = {}
-        for start_address in self.nodes_by_address:
-            if start_address in visited:
-                continue
-
-            stack: Deque[Tuple[BigQueryAddress, Deque[BigQueryAddress]]] = deque()
-
-            next_address = start_address
-            while True:
-                if next_address not in visited:
-                    child_addresses = self.nodes_by_address[
-                        next_address
-                    ].child_node_addresses
-                    if child_addresses:
-                        stack.append((next_address, deque(child_addresses)))
-                    visited.add(next_address)
-
-                if not stack:
-                    break
-
-                # Peek at the top of the stack to get current node
-                current_address, current_address_children = stack[-1]
-
-                if not current_address_children:
-                    # We have explored all children of the address and found no
-                    # cycles - pop this address.
-                    stack.pop()
-                    current_path_edges.pop(current_address)
-                    continue
-
-                next_address = current_address_children.pop()
-                if next_address in current_path_edges:
-                    raise ValueError(
-                        f"Detected cycle in graph reachable from "
-                        f"{start_address.to_str()}: "
-                        f"{[e.to_str() for e in self._get_cycle_path(start_address, current_path_edges)]}"
-                    )
-                current_path_edges[current_address] = next_address
-
-    def _get_cycle_path(
-        self,
-        start_node_address: BigQueryAddress,
-        current_path_edges: Dict[BigQueryAddress, BigQueryAddress],
-    ) -> Iterator[BigQueryAddress]:
-        address = start_node_address
-        while address in current_path_edges:
-            address = current_path_edges[address]
-            yield address
+        edges = {
+            address: node.child_node_addresses
+            for address, node in self.nodes_by_address.items()
+        }
+        if cycle := find_cycle(edges):
+            raise ValueError(
+                "Detected cycle in view graph: "
+                f"{' -> '.join(address.to_str() for address in cycle)}"
+            )
 
     def view_for_address(self, view_address: BigQueryAddress) -> BigQueryView:
         return self.nodes_by_address[view_address].view
@@ -1118,21 +1053,31 @@ class BigQueryViewDagWalker:
             traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
         )
 
-    def get_referenced_source_tables(self) -> set[BigQueryAddress]:
-        referenced_source_tables: set[BigQueryAddress] = set()
+    def get_referenced_source_tables(self) -> frozenset[BigQueryAddress]:
+        """Returns the addresses referenced by a view in the DAG that are not
+        themselves DAG nodes. When the DAG contains all existing views, these are the
+        source tables the DAG reads.
+        """
+        if self._referenced_source_tables is None:
+            referenced_source_tables: set[BigQueryAddress] = set()
 
-        def add_child_nodes_to_referenced_source_tables(
-            view: BigQueryView,
-            _previous_level_results: dict[BigQueryView, None],
-        ) -> None:
-            node = self.node_for_view(view)
-            referenced_source_tables.update(set(node.source_addresses))
+            def add_child_nodes_to_referenced_source_tables(
+                view: BigQueryView,
+                _previous_level_results: dict[BigQueryView, None],
+            ) -> None:
+                node = self.node_for_view(view)
+                referenced_source_tables.update(set(node.source_addresses))
 
-        self.process_dag(
-            view_process_fn=add_child_nodes_to_referenced_source_tables,
-            synchronous=True,
-        )
-        return referenced_source_tables
+            self.process_dag(
+                view_process_fn=add_child_nodes_to_referenced_source_tables,
+                synchronous=True,
+            )
+            self._referenced_source_tables = frozenset(referenced_source_tables)
+        return self._referenced_source_tables
+
+    def get_referenced_source_table_dataset_ids(self) -> set[str]:
+        """Returns the dataset ids of all source tables this DAG reads."""
+        return {a.dataset_id for a in self.get_referenced_source_tables()}
 
     def get_edges(self) -> List[Tuple[BigQueryView, BigQueryView]]:
         """Get all parent-child relationships in the DAG.

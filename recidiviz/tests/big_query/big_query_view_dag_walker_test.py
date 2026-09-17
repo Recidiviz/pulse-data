@@ -360,8 +360,8 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Detected cycle in graph reachable from dataset_1.table_1: "
-            r"\['dataset_2.table_2']$",
+            r"^Detected cycle in view graph: "
+            r"dataset_1.table_1 -> dataset_2.table_2 -> dataset_1.table_1$",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -392,8 +392,8 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         ).build()
         with self.assertRaisesRegex(
             ValueError,
-            r"^Detected cycle in graph reachable from dataset_1.table_1: "
-            r"\['dataset_2.table_2', 'dataset_3.table_3'\]$",
+            r"^Detected cycle in view graph: "
+            r"dataset_2.table_2 -> dataset_3.table_3 -> dataset_2.table_2$",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -423,6 +423,34 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             schema=MINIMAL_SCHEMA,
         ).build()
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
+
+    def test_view_referencing_itself_is_a_cycle(self) -> None:
+        # A view that reads its own table is a self-edge that process_dag cannot
+        # handle (the node would be its own unmet parent), so it must fail loudly
+        # at construction rather than be silently skipped at processing time.
+        root = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
+        ).build()
+        self_referencing = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_1.table_1`
+            JOIN `{project_id}.dataset_2.table_2`
+            USING (col)""",
+            schema=MINIMAL_SCHEMA,
+        ).build()
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Detected cycle in view graph: "
+            r"dataset_2.table_2 -> dataset_2.table_2$",
+        ):
+            _ = BigQueryViewDagWalker([root, self_referencing])
 
     def test_populate_ancestors_sub_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
@@ -1518,8 +1546,8 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 view_id="table_8",
                 description="table_8 description",
                 view_query_template="""
-            SELECT * FROM `{project_id}.dataset_7.table_7`
-            JOIN `{project_id}.dataset_8.table_8`
+            SELECT * FROM `{project_id}.dataset_6.table_6`
+            JOIN `{project_id}.dataset_7.table_7`
             USING (col)""",
                 schema=MINIMAL_SCHEMA,
             ),
@@ -2611,6 +2639,34 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 BigQueryAddress(dataset_id="some_dataset", table_id="some_table"),
                 BigQueryAddress(dataset_id="some_dataset", table_id="other_table"),
             },
+        )
+
+    def test_referenced_source_table_dataset_ids(self) -> None:
+        # Two source tables in source_dataset_1, one in source_dataset_2, so the
+        # deduplicated dataset ids are exactly those two datasets.
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="my_dataset",
+            view_id="my_view_id",
+            description="my view description",
+            view_query_template="""SELECT * FROM `{project_id}.source_dataset_1.some_table`
+            LEFT OUTER JOIN `{project_id}.source_dataset_1.other_table`
+            USING (some_col);
+            """,
+            schema=MINIMAL_SCHEMA,
+        ).build()
+        child_view = SimpleBigQueryViewBuilder(
+            dataset_id="my_dataset",
+            view_id="child_view",
+            description="my view description",
+            view_query_template="""SELECT * FROM `{project_id}.my_dataset.my_view_id`
+            JOIN `{project_id}.source_dataset_2.some_table`
+            USING (some_col)""",
+            schema=MINIMAL_SCHEMA,
+        ).build()
+        walker = BigQueryViewDagWalker([view, child_view])
+        self.assertEqual(
+            walker.get_referenced_source_table_dataset_ids(),
+            {"source_dataset_1", "source_dataset_2"},
         )
 
 
