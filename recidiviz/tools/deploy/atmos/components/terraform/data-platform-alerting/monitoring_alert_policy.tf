@@ -731,10 +731,6 @@ resource "google_monitoring_alert_policy" "bq_deployed_view_too_expensive" {
   alert_strategy {
     auto_close           = "604800s"
     notification_prompts = ["OPENED"]
-
-    notification_rate_limit {
-      period = "3600s"
-    }
   }
 
   combiner = "OR"
