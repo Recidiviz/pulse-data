@@ -590,9 +590,9 @@ def meets_mandatory_literacy(opp_name: str) -> str:
     """Returns spans of time during which someone has either completed or been exempted
     from completing a mandatory literacy program.
 
-    Exemptions from mandatory literacy only apply during the specific incarceration period
-    (DOC_ID) where they were granted. Actual completions (program completions and TABE passes)
-    apply in perpetuity across all future incarcerations.
+    Exemptions from mandatory literacy only apply during the continuous incarceration stay
+    (incarceration super-session) where they were granted. Actual completions (program
+    completions and TABE passes) apply in perpetuity across all future incarcerations.
     """
     # TODO(#53389): Move this logic to ingest.
     assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
@@ -605,20 +605,21 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         _ELIG_TABLE = "AZ_DOC_DRUG_TRAN_PRG_ELIG"
         _ID_MAP = "DRUG_TRAN_PRG_ELIGIBILITY_ID"
     return f"""
-    WITH 
+    WITH
     /*
-    INCARCERATION PERIODS: Used to bound exemption spans to specific incarceration sessions.
+    INCARCERATION SUPER-SESSIONS: Used to bound exemption spans to the person's continuous
+    incarceration stay.
     */
-    sentence_serving_period AS (
-        SELECT 
+    incarceration_super_session AS (
+        SELECT
             state_code,
             person_id,
             start_date,
             end_date_exclusive,
-        FROM `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` ss
+        FROM `{{project_id}}.sessions.incarceration_super_sessions_materialized`
         WHERE state_code = 'US_AZ'
     ),
-    
+
     /*
     PROGRAM ASSIGNMENTS - ACTUAL COMPLETIONS (not exemptions)
     These are people who successfully completed the functional literacy program.
@@ -721,17 +722,19 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           pa.state_code,
           pa.person_id,
           discharge_date as start_date,
-          ssp.end_date_exclusive as end_date,
+          iss.end_date_exclusive as end_date,
           TRUE AS meets_criteria,
           discharge_date AS latest_functional_literacy_date,
           'Program Assignment - Exemption' AS data_location
         #TODO(#33858): Ingest into state task deadline or find some way to view this historically
         FROM
           `{{project_id}}.normalized_state.state_program_assignment` pa
-        JOIN sentence_serving_period ssp
-        ON(pa.person_id = ssp.person_id and pa.state_code = ssp.state_code 
-        -- Use the end date of the incarceration span being served when this exemption was introduced
-        AND pa.start_date BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")})
+        JOIN incarceration_super_session iss
+        ON(pa.person_id = iss.person_id and pa.state_code = iss.state_code
+        -- Use the end date of the incarceration stay being served when this exemption was introduced.
+        -- The upper bound is inclusive of end_date_exclusive itself because a discharge/exemption
+        -- event dated on the person's release day otherwise falls just outside the stay.
+        AND pa.start_date BETWEEN iss.start_date and {nonnull_end_date_clause("iss.end_date_exclusive")})
         WHERE pa.state_code = 'US_AZ'
         AND program_id LIKE '%LITERACY%'
         AND JSON_EXTRACT(referral_metadata, '$.EXEMPTION') != '""' 
@@ -749,13 +752,13 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           pei.state_code,
           pei.person_id,
           PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) AS exemption_date,
-          ssp.end_date_exclusive,
+          iss.end_date_exclusive,
           TRUE AS meets_criteria,
           PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) AS latest_functional_literacy_date,
           'Program Evaluation - Exemption' AS data_location
         FROM
           `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest` eval
-        INNER JOIN 
+        INNER JOIN
         `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest` map_to_docid
         USING ({_ID_MAP})
         LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
@@ -764,10 +767,12 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             ON doc_ep.PERSON_ID = pei.external_id
             AND pei.state_code = 'US_AZ'
             AND pei.id_type = 'US_AZ_PERSON_ID'
-        JOIN sentence_serving_period ssp
-            ON(pei.person_id = ssp.person_id and pei.state_code = ssp.state_code 
-            -- Use the end date of the incarceration span being served when this exemption was introduced
-            AND  PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")})
+        JOIN incarceration_super_session iss
+            ON(pei.person_id = iss.person_id and pei.state_code = iss.state_code
+            -- Use the end date of the incarceration stay being served when this exemption was introduced.
+            -- The upper bound is inclusive of end_date_exclusive itself because a discharge/exemption
+            -- event dated on the person's release day otherwise falls just outside the stay.
+            AND  PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) BETWEEN iss.start_date and {nonnull_end_date_clause("iss.end_date_exclusive")})
         WHERE LITERACY_EXCEPTION = 'Y'
         -- Take earliest exemption per person per DOC_ID
         QUALIFY ROW_NUMBER() OVER (
@@ -802,7 +807,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             pei.person_id, 
             -- Use the earliest date someone was marked as meeting the standard
             DATE_CREATED AS start_date,
-            ssp.end_date_exclusive AS end_date,  -- NULL = applies forever
+            iss.end_date_exclusive AS end_date,  -- NULL = applies forever
             TRUE AS meets_criteria,
             DATE_CREATED AS latest_functional_literacy_date,
             'PRIORITY_REPORT - Exemption' AS data_location,
@@ -811,13 +816,15 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
             USING(DOC_ID)
         LEFT JOIN `{{project_id}}.us_az_normalized_state.state_person_external_id` pei
-            ON doc_ep.PERSON_ID = pei.external_id 
+            ON doc_ep.PERSON_ID = pei.external_id
             AND pei.state_code = 'US_AZ'
             AND pei.id_type = 'US_AZ_PERSON_ID'
-        JOIN sentence_serving_period ssp
-            ON(pei.person_id = ssp.person_id and pei.state_code = ssp.state_code 
-            -- Use the end date of the incarceration span being served when this exemption was introduced
-            AND (priority_report_cleaned.DATE_CREATED BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")}))
+        JOIN incarceration_super_session iss
+            ON(pei.person_id = iss.person_id and pei.state_code = iss.state_code
+            -- Use the end date of the incarceration stay being served when this exemption was introduced.
+            -- The upper bound is inclusive of end_date_exclusive itself because a discharge/exemption
+            -- event dated on the person's release day otherwise falls just outside the stay.
+            AND (priority_report_cleaned.DATE_CREATED BETWEEN iss.start_date and {nonnull_end_date_clause("iss.end_date_exclusive")}))
         WHERE 
         -- Filter to exemption-based "passes": people marked as meeting the standard
         -- when they don't have a literacy standard.
