@@ -11,6 +11,7 @@ input_columns:
   inState: STRING
   TermId: STRING
   SentenceOrderTypeId: STRING
+  parent_sentence_external_id_array: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -50,6 +51,7 @@ output:
                     $args:
                       proj_completion_date: CorrectionsCompactEndDate
           external_id: SentenceId # Never null in scl_Sentence table
+          parent_sentence_external_id_array: parent_sentence_external_id_array
           sentence_type:
             $enum_mapping:
               $raw_text: SentenceOrderTypeId
