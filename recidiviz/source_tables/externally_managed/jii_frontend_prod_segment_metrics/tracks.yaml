@@ -101,6 +101,10 @@ schema:
     description: "Timestamp used for deduplication by Segment"
     type: TIMESTAMP
     mode: NULLABLE
+  - name: context_page_search
+    description: "Query string of the URL where the event was triggered"
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
