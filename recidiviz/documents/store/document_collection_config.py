@@ -587,6 +587,8 @@ def collect_document_collection_config_yaml_paths(
     return list(state_dir.glob("*.yaml"))
 
 
+# TODO(OBT-46612): Gate on LLM-specific launch_env config rather than
+# on whether the state has direct-ingest infrastructure in this env.
 def get_states_with_document_collections_existing_in_env(
     config_module: ModuleType | None = None,
 ) -> list[StateCode]:
