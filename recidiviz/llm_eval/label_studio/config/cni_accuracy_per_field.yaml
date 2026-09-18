@@ -57,6 +57,11 @@ primary_key_fields:
   - "field_name"
   - "group"
 
+# Batch key fields disaggregate IRR metrics beyond state_code. For CNI,
+# extractor_version_id lets us compare annotator agreement across extractor versions.
+irr_batch_key_fields:
+  - "extractor_version_id"
+
 annotation_fields:
   - column_name: "is_correct"
     description: "Whether the LLM-extracted field value is correct."

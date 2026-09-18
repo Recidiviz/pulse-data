@@ -48,6 +48,24 @@ STATE_CODE_COLUMN_NAME = "state_code"
 # reads it, so it lives here rather than in either of them.
 SUBMITTED_TASKS_LINE_COLUMN_NAME = "line"
 
+# Column names that the IRR summary and trend views always emit at the outermost SELECT.
+# A batch key field whose name collides with any of these would produce a duplicate column
+# in the output.
+IRR_RESERVED_COLUMN_NAMES: frozenset[str] = frozenset(
+    {
+        # Fixed dimensions always present (state_code via group_by_state_code=True).
+        STATE_CODE_COLUMN_NAME,
+        # Fixed dimension in irr_trend (group_by_month=True).
+        "month",
+        # Per-field identifier emitted as a literal in every kappa/agreement SELECT.
+        "field_name",
+        # Aggregate output columns common to all IRR metric types.
+        "pair_count",
+        "percent_agreement",
+        "cohens_kappa",
+    }
+)
+
 
 @attr.define(frozen=True, kw_only=True)
 class LabelStudioProjectConfig:
@@ -138,6 +156,15 @@ class LabelStudioProjectConfig:
     """Column names (from task_data_fields) that form the natural key for coverage
     analysis. Used to generate the annotation summary view grouped by these columns."""
 
+    irr_batch_key_fields: list[str] = attr.ib(
+        default=attr.Factory(list),
+        validator=attr_validators.is_list_of(str),
+    )
+    """Column names (from task_data_fields) to use as additional group dimensions in
+    IRR summary and trend views, on top of state_code. Lets you compare annotator
+    agreement across values of these fields — e.g. [extractor_version_id] for CNI.
+    Must not include state_code, which is always a group dimension."""
+
     def __attrs_post_init__(self) -> None:
         data_field_names = {f.column_name for f in self.task_data_fields}
         if not any(f.irr_included for f in self.annotation_fields):
@@ -216,6 +243,24 @@ class LabelStudioProjectConfig:
                 f"are counted forward from the first segment after the bucket name, so "
                 f"the index must be 0 or greater. Fix it in "
                 f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
+            )
+        unknown_batch = [
+            k for k in self.irr_batch_key_fields if k not in data_field_names
+        ]
+        if unknown_batch:
+            raise ValueError(
+                f"Task [{self.task_name}] has irr_batch_key_fields that are not in "
+                f"task_data_fields: {unknown_batch}"
+            )
+        reserved_batch = sorted(
+            set(self.irr_batch_key_fields) & IRR_RESERVED_COLUMN_NAMES
+        )
+        if reserved_batch:
+            raise ValueError(
+                f"Task [{self.task_name}] has irr_batch_key_fields {reserved_batch} "
+                f"that collide with fixed IRR output column names "
+                f"{sorted(IRR_RESERVED_COLUMN_NAMES)}. Remove {reserved_batch} from "
+                f"irr_batch_key_fields."
             )
 
     def validate_task_data(self, task_data: Mapping[str, object]) -> None:
@@ -333,6 +378,9 @@ class LabelStudioProjectConfig:
             for sd in d.pop_dicts("annotation_fields")
         ]
         primary_key_fields = [str(k) for k in d.pop("primary_key_fields", list)]
+        irr_batch_key_fields = [
+            str(k) for k in d.pop_optional("irr_batch_key_fields", list) or []
+        ]
         if d:
             raise ValueError(
                 f"Unexpected keys in task config [{task_name}]: {repr(d.get())}"
@@ -350,6 +398,7 @@ class LabelStudioProjectConfig:
             task_data_fields=task_data_fields,
             annotation_fields=annotation_fields,
             primary_key_fields=primary_key_fields,
+            irr_batch_key_fields=irr_batch_key_fields,
         )
 
 
