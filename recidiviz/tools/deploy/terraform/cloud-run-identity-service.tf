@@ -176,6 +176,12 @@ module "identity_service_load_balancer" {
   managed_ssl_certificate_domains = [local.identity_service_domain]
   https_redirect                  = true
 
+  # The module creates a replacement cert before destroying the cert it
+  # replaces, so the two must briefly coexist. Cert names must be unique, so
+  # without the random suffix every cert gets the same static name and any
+  # replacement fails.
+  random_certificate_suffix = true
+
   backends = {
     default = {
       description = null
