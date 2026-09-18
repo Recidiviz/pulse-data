@@ -63,7 +63,6 @@ from recidiviz.calculator.query.state.dataset_config import SENDGRID_EMAIL_DATA_
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -139,15 +138,14 @@ def upload_raw_file_to_gcs(
 ) -> None:
     """Upload raw Sendgrid CSV to GCS"""
 
-    fs.upload_from_contents_handle_stream(
-        path=GcsfsFilePath(
+    fs.upload_local_file(
+        local_file_path=local_filepath,
+        dst_path=GcsfsFilePath(
             bucket_name=bucket_name,
             blob_name=date.today().strftime(DATE_FORMAT),
         ),
-        contents_handle=LocalFileContentsHandle(
-            local_file_path=local_filepath, cleanup_file=False
-        ),
         content_type="text/csv",
+        cleanup_local_file=False,
     )
     logging.info(
         "Uploaded file [%s] to Google Cloud Storage bucket name=[%s] blob name=[%s]",

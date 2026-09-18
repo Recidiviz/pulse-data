@@ -37,7 +37,6 @@ from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.public_pathways.individual_level_export import (
     build_csv_for_date,
@@ -182,12 +181,11 @@ def build_and_upload_bulk_individual_level_export(
     with tempfile.NamedTemporaryFile(suffix=".zip") as temp_file:
         temp_file.write(zip_bytes)
         temp_file.flush()
-        GcsfsFactory.build().upload_from_contents_handle_stream(
-            path=bulk_export_gcs_path(state_code=state_code),
-            contents_handle=LocalFileContentsHandle(
-                local_file_path=temp_file.name, cleanup_file=False
-            ),
+        GcsfsFactory.build().upload_local_file(
+            local_file_path=temp_file.name,
+            dst_path=bulk_export_gcs_path(state_code=state_code),
             content_type=_BULK_EXPORT_ZIP_CONTENT_TYPE,
+            cleanup_local_file=False,
             metadata={_LAST_UPDATED_METADATA_KEY: last_updated.isoformat()},
         )
 

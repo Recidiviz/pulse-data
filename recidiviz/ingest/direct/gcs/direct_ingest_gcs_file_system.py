@@ -256,6 +256,25 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             path, contents_handle, content_type, timeout, metadata
         )
 
+    def upload_local_file(
+        self,
+        *,
+        local_file_path: str,
+        dst_path: GcsfsFilePath,
+        content_type: str,
+        cleanup_local_file: bool,
+        timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> None:
+        return self.gcs_file_system.upload_local_file(
+            local_file_path=local_file_path,
+            dst_path=dst_path,
+            content_type=content_type,
+            cleanup_local_file=cleanup_local_file,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
     def ls(
         self,
         bucket_name: str,

@@ -431,6 +431,26 @@ class GCSFileSystemImpl(GCSFileSystem):
                 file_stream, content_type=content_type, timeout=timeout
             )
 
+    def upload_local_file(
+        self,
+        *,
+        local_file_path: str,
+        dst_path: GcsfsFilePath,
+        content_type: str,
+        cleanup_local_file: bool,
+        timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> None:
+        self.upload_from_contents_handle_stream(
+            path=dst_path,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path, cleanup_file=cleanup_local_file
+            ),
+            content_type=content_type,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
     @retry.Retry(predicate=google_api_retry_predicate)
     def ls(
         self,

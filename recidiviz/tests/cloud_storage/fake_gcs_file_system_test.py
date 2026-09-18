@@ -16,14 +16,61 @@
 # =============================================================================
 """Tests for our test-only impl of GCSFileSystem"""
 
+import os
 from unittest import TestCase
 
+from recidiviz.cloud_storage.gcs_file_system_impl import generate_random_temp_path
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestFakeGCSFileSystem(TestCase):
     """Unit tests for FakeGCSFileSystem"""
+
+    def test_upload_local_file(self) -> None:
+        # upload_local_file is a concrete method on GCSFileSystem exercised here
+        # through the fake, which really copies the local file to GCS.
+        fs = FakeGCSFileSystem()
+        dst_path = GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name="fake-bucket", blob_name="dir/uploaded.csv"
+        )
+
+        local_file_path = generate_random_temp_path("upload.csv")
+        with open(local_file_path, "w", encoding="utf-8") as f:
+            f.write("a,b\n1,2\n")
+
+        fs.upload_local_file(
+            local_file_path=local_file_path,
+            dst_path=dst_path,
+            content_type="text/csv",
+            cleanup_local_file=False,
+            metadata={"key": "value"},
+        )
+
+        self.assertEqual("a,b\n1,2\n", fs.download_as_string(dst_path))
+        self.assertEqual({"key": "value"}, fs.get_metadata(dst_path))
+        # cleanup_local_file=False leaves the source file on disk.
+        self.assertTrue(os.path.exists(local_file_path))
+
+    def test_upload_local_file_cleans_up_source(self) -> None:
+        fs = FakeGCSFileSystem()
+        dst_path = GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name="fake-bucket", blob_name="dir/uploaded.csv"
+        )
+
+        local_file_path = generate_random_temp_path("upload.csv")
+        with open(local_file_path, "w", encoding="utf-8") as f:
+            f.write("contents")
+
+        fs.upload_local_file(
+            local_file_path=local_file_path,
+            dst_path=dst_path,
+            content_type="text/csv",
+            cleanup_local_file=True,
+        )
+
+        self.assertEqual("contents", fs.download_as_string(dst_path))
+        self.assertFalse(os.path.exists(local_file_path))
 
     def test_list_dirs(self) -> None:
         bucket = "fake-bucket"

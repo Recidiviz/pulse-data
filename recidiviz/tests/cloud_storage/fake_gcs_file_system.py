@@ -247,6 +247,26 @@ class FakeGCSFileSystem(GCSFileSystem):
         if metadata:
             self.metadata_store[path.abs_path()] = metadata
 
+    def upload_local_file(
+        self,
+        *,
+        local_file_path: str,
+        dst_path: GcsfsFilePath,
+        content_type: str,
+        cleanup_local_file: bool,
+        timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> None:
+        self.upload_from_contents_handle_stream(
+            path=dst_path,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path, cleanup_file=cleanup_local_file
+            ),
+            content_type=content_type,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
     def mv_file_to_directory_safe(
         self, src_path: GcsfsFilePath, dst_directory: GcsfsDirectoryPath
     ) -> GcsfsFilePath:

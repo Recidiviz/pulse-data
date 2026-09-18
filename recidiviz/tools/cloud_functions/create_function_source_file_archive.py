@@ -40,7 +40,6 @@ from io import BytesIO
 import recidiviz
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.tools.file_dependencies import get_entrypoint_source_files
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -117,10 +116,11 @@ def upload_if_md5_differs(destination: GcsfsFilePath, source_file_path: str) -> 
 
     logging.info("Uploading file to GCS: %s", destination)
     # Upload the file to GCS
-    client.upload_from_contents_handle_stream(
-        path=destination,
-        contents_handle=LocalFileContentsHandle(local_file_path=source_file_path),
+    client.upload_local_file(
+        local_file_path=source_file_path,
+        dst_path=destination,
         content_type="application/zip",
+        cleanup_local_file=True,
         metadata={"md5_hash": local_md5},
     )
 

@@ -120,7 +120,7 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         mock_connection_manager.commit_transaction.assert_not_called()
         mock_connection_manager.close_connection.assert_not_called()
 
-        mock_gcsfs.upload_from_contents_handle_stream.assert_not_called()
+        mock_gcsfs.upload_local_file.assert_not_called()
 
         self.assertEqual(successful_exports, export_tasks)
         self.assertEqual(failed_exports, [])

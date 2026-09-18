@@ -148,6 +148,21 @@ class GCSFileSystem:
         """Uploads contents in handle via a file stream to a file path."""
 
     @abc.abstractmethod
+    def upload_local_file(
+        self,
+        *,
+        local_file_path: str,
+        dst_path: GcsfsFilePath,
+        content_type: str,
+        cleanup_local_file: bool,
+        timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Uploads the contents of the local file at |local_file_path| to |dst_path|.
+        Deletes the local file afterwards if |cleanup_local_file| is True.
+        """
+
+    @abc.abstractmethod
     def ls(
         self,
         bucket_name: str,

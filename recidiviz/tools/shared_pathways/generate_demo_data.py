@@ -39,7 +39,6 @@ from sqlalchemy.inspection import inspect
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -334,12 +333,13 @@ def main(
                     f.seek(0)
                     object_name = f"{state_code}/{table_name}.csv"
                     logging.info("Uploading to %s/%s", bucket, object_name)
-                    gcsfs.upload_from_contents_handle_stream(
-                        path=GcsfsFilePath(bucket_name=bucket, blob_name=object_name),
-                        contents_handle=LocalFileContentsHandle(
-                            local_file_path=f.name, cleanup_file=False
+                    gcsfs.upload_local_file(
+                        local_file_path=f.name,
+                        dst_path=GcsfsFilePath(
+                            bucket_name=bucket, blob_name=object_name
                         ),
                         content_type="text/csv",
+                        cleanup_local_file=False,
                         timeout=300,
                         metadata=metadata,
                     )
