@@ -104,6 +104,7 @@ class TestUpdateManagedViewGraphEntrypoint(unittest.TestCase):
             return_value=BigQueryViewGraphRegistry(
                 project_id=_PROJECT_ID,
                 view_graphs=[self.graph_1, self.graph_2, self.llm_graph],
+                view_derived_source_table_collections=[],
             ),
         )
         self.registry_patcher.start()

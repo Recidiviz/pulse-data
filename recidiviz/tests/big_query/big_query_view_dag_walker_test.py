@@ -2434,47 +2434,6 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
         self.assertEqual(len(edges), 0)
         self.assertEqual(edges, [])
 
-    def test_get_number_of_edges_including_source_tables(self) -> None:
-        """Test get_number_of_edges_including_source_tables method."""
-        # Create a view that references a source table
-        view_with_source = SimpleBigQueryViewBuilder(
-            dataset_id="test_dataset",
-            view_id="view_with_source",
-            description="View that references source tables",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-            schema=MINIMAL_SCHEMA,
-        ).build()
-
-        # Create a view that depends on the first view
-        dependent_view = SimpleBigQueryViewBuilder(
-            dataset_id="test_dataset",
-            view_id="dependent_view",
-            description="View that depends on another view",
-            view_query_template="SELECT * FROM `{project_id}.test_dataset.view_with_source`",
-            schema=MINIMAL_SCHEMA,
-        ).build()
-
-        dag_walker = BigQueryViewDagWalker([view_with_source, dependent_view])
-
-        # Mock the get_source_table_addresses function
-        with patch(
-            "recidiviz.big_query.big_query_view_dag_walker.get_source_table_addresses"
-        ) as mock_get_source_tables:
-            mock_get_source_tables.return_value = {
-                BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
-            }
-
-            # Get counts
-            view_to_view_edges = len(dag_walker.get_edges())
-            total_edges_including_sources = (
-                dag_walker.get_number_of_edges_including_source_tables()
-            )
-
-            # Should have 1 view-to-view edge (view_with_source -> dependent_view)
-            # Plus 1 source-to-view edge (source_table -> view_with_source)
-            self.assertEqual(view_to_view_edges, 1)
-            self.assertEqual(total_edges_including_sources, 2)
-
     def test_dag_init(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
 

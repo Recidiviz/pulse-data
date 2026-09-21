@@ -129,6 +129,14 @@ class BigQueryViewGraphRegistry:
     )
     """All registered view graphs."""
 
+    view_derived_source_table_collections: list[SourceTableCollection] = attr.ib(
+        validator=attr_validators.is_list_of(SourceTableCollection)
+    )
+    """Source table collections for the boundary datasets one graph materializes
+    into and another reads from, whose tables are derived from the writing graph's
+    outputs. Empty when no dataset is both written and read across graphs.
+    """
+
     _view_graphs_by_name: dict[str, ResolvedBigQueryViewGraph] = attr.ib(init=False)
     """View graphs keyed by graph name."""
 
@@ -268,7 +276,11 @@ class BigQueryViewGraphRegistry:
             for graph in view_graphs
         ]
 
-        return cls(project_id=project_id, view_graphs=resolved_graphs)
+        return cls(
+            project_id=project_id,
+            view_graphs=resolved_graphs,
+            view_derived_source_table_collections=derived_source_table_collections,
+        )
 
     @staticmethod
     def _resolve_input_collections(

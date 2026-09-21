@@ -74,6 +74,13 @@ class TestDeployedViewGraphRegistry(unittest.TestCase):
                     )
 
     def test_project_id_mismatch_raises(self) -> None:
+        # Other tests populate the cache for every project, which would satisfy the
+        # call below without re-checking the project. We need this check because
+        # `deployed_view_graph_registry` will use the ambient project_id in the view
+        # graph registry construction so we need to ensure they match. However, if we are
+        # serving from cache then we don't actually care if they match because the registry
+        # will have already been constructed.
+        deployed_view_graph_registry.cache_clear()
         with local_project_id_override(GCP_PROJECT_STAGING):
             with self.assertRaisesRegex(
                 ValueError,

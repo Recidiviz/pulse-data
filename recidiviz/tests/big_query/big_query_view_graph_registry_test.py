@@ -367,6 +367,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                     _graph("graph_1", [_view_builder("dataset_1", "table_1")])
                 )
             ],
+            view_derived_source_table_collections=[],
         )
 
         with self.assertRaisesRegex(
@@ -391,6 +392,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                         ),
                     )
                 ],
+                view_derived_source_table_collections=[],
             )
 
     def test_duplicate_graph_name_raises(self) -> None:
@@ -407,6 +409,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                         _graph("graph_1", [_view_builder("dataset_2", "table_2")])
                     ),
                 ],
+                view_derived_source_table_collections=[],
             )
 
     def test_empty_view_graphs_raises(self) -> None:
@@ -415,7 +418,11 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
             r"^Field \[view_graphs\] on \[BigQueryViewGraphRegistry\] must be a "
             r"non-empty list\. Found value \[\[\]\]$",
         ):
-            BigQueryViewGraphRegistry(project_id=_PROJECT_ID, view_graphs=[])
+            BigQueryViewGraphRegistry(
+                project_id=_PROJECT_ID,
+                view_graphs=[],
+                view_derived_source_table_collections=[],
+            )
 
     def test_graph_name_for_address_unknown_address_returns_none(self) -> None:
         registry = BigQueryViewGraphRegistry(
@@ -425,6 +432,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                     _graph("graph_1", [_view_builder("dataset_1", "table_1")])
                 )
             ],
+            view_derived_source_table_collections=[],
         )
 
         self.assertIsNone(
@@ -449,6 +457,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                         _graph("graph_2", [_view_builder("dataset_1", "table_1")])
                     ),
                 ],
+                view_derived_source_table_collections=[],
             )
 
     def test_materialized_address_in_two_graphs_raises(self) -> None:
@@ -491,6 +500,7 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                         )
                     ),
                 ],
+                view_derived_source_table_collections=[],
             )
 
     def test_three_graph_cycle_raises(self) -> None:

@@ -26,6 +26,7 @@ from recidiviz.source_tables.source_table_repository import SourceTableRepositor
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.deployed_view_graphs import deployed_view_graph_registry
 
 
 @cache
@@ -35,17 +36,26 @@ def build_source_table_repository_for_collected_schemata(
     """Builds a source table repository for all source tables deployed to the given
     project's BigQuery graph.
 
+    The repository combines source tables hydrated outside any view graph (e.g.
+    raw data, ingest and Dataflow output, external integrations) with the
+    view-derived source tables for boundary datasets one view graph materializes
+    into and another reads from.
+
     Tables written by Python code (not YAML-managed) must be registered in one
-    of the collections in this file — view-graph validation only materializes
-    tables found in this repository, so views over an unregistered table fail
-    view_graph_validation_test.py. Choose the update_config per the guidance on
-    SourceTableCollectionUpdateConfig (regenerable only if the table can be
-    rebuilt from its source).
+    of the collections in
+    collect_source_table_collections_hydrated_outside_view_graphs — view-graph
+    validation only materializes tables found in this repository, so views over
+    an unregistered table fail view_graph_validation_test.py. Choose the
+    update_config per the guidance on SourceTableCollectionUpdateConfig
+    (regenerable only if the table can be rebuilt from its source).
     """
     return SourceTableRepository(
-        source_table_collections=collect_source_table_collections_hydrated_outside_view_graphs(
-            project_id
-        )
+        source_table_collections=[
+            *collect_source_table_collections_hydrated_outside_view_graphs(project_id),
+            *deployed_view_graph_registry(
+                project_id
+            ).view_derived_source_table_collections,
+        ]
     )
 
 

@@ -47,11 +47,8 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.monitoring import trace
-from recidiviz.utils import environment, metadata, structured_logging
+from recidiviz.utils import environment, structured_logging
 from recidiviz.utils.graph_algorithms import find_cycle
-from recidiviz.view_registry.deployed_source_table_repository import (
-    get_source_table_addresses,
-)
 
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
@@ -1169,10 +1166,3 @@ class BigQueryViewDagWalker:
     def get_number_of_edges(self) -> int:
         """Returns the number of unique edges for this DAG, not including edges to source tables"""
         return len(self.get_edges())
-
-    def get_number_of_edges_including_source_tables(self) -> int:
-        """Returns the number of unique edges for this DAG, including edges to source tables"""
-        source_table_addresses = get_source_table_addresses(metadata.project_id())
-        return len(self.get_edges()) + len(
-            self.get_edges_to_source_tables(source_table_addresses)
-        )
