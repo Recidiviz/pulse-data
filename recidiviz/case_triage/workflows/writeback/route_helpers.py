@@ -68,6 +68,7 @@ def handle_writeback_enqueue(
     writeback_executor: WritebackExecutorInterface[RequestDataT],
     base_url: str,
     handler_path: str,
+    service_account_email: str,
 ) -> Response:
     """Enqueues a Cloud Task to perform the writeback separately.
 
@@ -75,6 +76,8 @@ def handle_writeback_enqueue(
         writeback_executor: The executor to use to perform writeback.
         base_url: Base URL of the service (for Cloud Task Referer header and handler URL).
         handler_path: Relative path to the Cloud Task handler endpoint.
+        service_account_email: Service account Cloud Tasks uses to mint the OIDC
+            token the handler endpoint authenticates against.
     """
     status_tracker = writeback_executor.create_status_tracker()
 
@@ -84,13 +87,19 @@ def handle_writeback_enqueue(
             queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
         )
 
-        headers_copy = dict(request.headers)
+        # Drop the caller's own bearer token rather than carrying it through the
+        # queue: the handler endpoint authenticates the Cloud Tasks OIDC token
+        # Google attaches for service_account_email, not a forwarded credential.
+        headers_copy = {
+            k: v for k, v in request.headers.items() if k.lower() != "authorization"
+        }
         headers_copy["Referer"] = base_url
 
         cloud_task_manager.create_task(
             absolute_uri=f"{base_url}{handler_path}",
             body=writeback_executor.to_cloud_task_payload(),
             headers=headers_copy,
+            service_account_email=service_account_email,
         )
     except Exception as e:
         logging.error(

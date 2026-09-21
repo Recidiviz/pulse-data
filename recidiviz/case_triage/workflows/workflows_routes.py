@@ -292,6 +292,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data),
                 base_url=cloud_run_metadata.url,
                 handler_path=f"/workflows/external_request/{state.upper()}/insert_contact_note",
+                service_account_email=cloud_run_metadata.service_account_email,
             )
         return handle_writeback(
             writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data)
@@ -306,28 +307,10 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
         parsed_request_body: UsTnTEPEContactNoteRequestData,
     ) -> Response:
-        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
-
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
-
-        # We can expect authenticated_user_external_id because TN supervision uses roster sync
-        if not g.is_recidiviz_user:
-            authenticated_external_id = getattr(
-                g, "authenticated_user_external_id", None
-            )
-            if authenticated_external_id is None:
-                return jsonify_response(
-                    "User external ID not found in authentication context",
-                    HTTPStatus.UNAUTHORIZED,
-                )
-            if parsed_request_body.staff_id != authenticated_external_id:
-                return jsonify_response(
-                    "staff_id does not match authenticated user",
-                    HTTPStatus.UNAUTHORIZED,
-                )
 
         return handle_writeback(
             UsTnContactNoteWritebackExecutor(parsed_request_body.to_new_request_data())
@@ -338,8 +321,6 @@ def create_workflows_api_blueprint() -> Blueprint:
     def insert_contact_note(
         state: str, parsed_request_body: ContactNoteRequestData
     ) -> Response:
-        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
-
         if state.upper() != parsed_request_body.state_code:
             return jsonify_response(
                 f"State code from path ({state.upper()}) does not match state code in "
@@ -347,21 +328,28 @@ def create_workflows_api_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        # We can expect authenticated_user_external_id because TN supervision uses roster sync
-        if not g.is_recidiviz_user:
-            authenticated_external_id = getattr(
-                g, "authenticated_user_external_id", None
-            )
-            if authenticated_external_id is None:
-                return jsonify_response(
-                    "User external ID not found in authentication context",
-                    HTTPStatus.UNAUTHORIZED,
+        # The Cloud Tasks redelivery of this same route carries no Auth0 identity
+        # to check permissions or staff_id against; the producer call already
+        # validated both below before enqueueing, so the redelivery trusts the
+        # queued payload instead.
+        if not g.is_cloud_task_request:
+            require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
+
+            # We can expect authenticated_user_external_id because TN supervision uses roster sync
+            if not g.is_recidiviz_user:
+                authenticated_external_id = getattr(
+                    g, "authenticated_user_external_id", None
                 )
-            if parsed_request_body.staff_id != authenticated_external_id:
-                return jsonify_response(
-                    "staff_id does not match authenticated user",
-                    HTTPStatus.UNAUTHORIZED,
-                )
+                if authenticated_external_id is None:
+                    return jsonify_response(
+                        "User external ID not found in authentication context",
+                        HTTPStatus.UNAUTHORIZED,
+                    )
+                if parsed_request_body.staff_id != authenticated_external_id:
+                    return jsonify_response(
+                        "staff_id does not match authenticated user",
+                        HTTPStatus.UNAUTHORIZED,
+                    )
 
         writeback_or_enqueue_fn = (
             (
@@ -369,6 +357,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                     executor,
                     cloud_run_metadata.url,
                     f"/workflows/external_request/{parsed_request_body.state_code}/insert_contact_note",
+                    cloud_run_metadata.service_account_email,
                 )
             )
             if parsed_request_body.should_queue_task
@@ -433,7 +422,12 @@ def create_workflows_api_blueprint() -> Blueprint:
                 queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
             )
 
-            headers_copy = dict(request.headers)
+            # Drop the caller's own bearer token rather than carrying it through
+            # the queue: send_sms_request authenticates the Cloud Tasks OIDC
+            # token Google attaches below, not a forwarded credential.
+            headers_copy = {
+                k: v for k, v in request.headers.items() if k.lower() != "authorization"
+            }
             headers_copy["Referer"] = cloud_run_metadata.url
 
             cloud_task_manager.create_task(
@@ -446,6 +440,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "recipient_external_id": recipient_external_id,
                 },
                 headers=headers_copy,
+                service_account_email=cloud_run_metadata.service_account_email,
             )
         except Exception as e:
             logging.error(e)
@@ -727,6 +722,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 ),
                 base_url=cloud_run_metadata.url,
                 handler_path="/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                service_account_email=cloud_run_metadata.service_account_email,
             )
         return handle_writeback(
             writeback_executor=UsNdEarlyTerminationWritebackExecutor(
@@ -744,8 +740,6 @@ def create_workflows_api_blueprint() -> Blueprint:
         state: str,
         parsed_request_body: UsNdEarlyTerminationRequestData,
     ) -> Response:
-        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
-
         if state.upper() != StateCode.US_ND.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
@@ -998,6 +992,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 ),
                 base_url=cloud_run_metadata.url,
                 handler_path="/workflows/external_request/US_IA/handle_early_discharge_form",
+                service_account_email=cloud_run_metadata.service_account_email,
             )
         return handle_writeback(
             writeback_executor=UsIaEarlyDischargeWritebackExecutor(parsed_request_body)
@@ -1008,8 +1003,6 @@ def create_workflows_api_blueprint() -> Blueprint:
     def handle_early_discharge_form(
         state: str, parsed_request_body: UsIaEarlyDischargeRequestData
     ) -> Response:
-        require_workflows_system_type_permission(WorkflowsSystemType.SUPERVISION)
-
         # Cloud Tasks target. Only called by the task queue, never directly by the frontend.
         if state.upper() != StateCode.US_IA.value:
             return jsonify_response(

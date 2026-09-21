@@ -490,11 +490,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_interface.return_value.execute.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
-    def test_handle_insert_tepe_contact_note_state_not_enabled(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
-        )
-
+    def test_handle_insert_tepe_contact_note_unsupported_state(self) -> None:
+        # This route is a Cloud Tasks target only, authenticated via
+        # validate_cloud_task_request rather than the mocked Auth0 handler, so
+        # an unsupported state falls through to the route's own state check.
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
             "staff_id": STAFF_ID,
@@ -505,9 +504,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_ID/handle_insert_tepe_contact_note",
+                headers={"Origin": "http://localhost:3000"},
                 json=request_body,
             )
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_handle_insert_tepe_contact_note_missing_param(
         self,
@@ -1155,47 +1155,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_twilio_messages.assert_called()
         mock_get_secret.assert_called()
 
-    def test_send_sms_request_unauthorized_from_recidiviz_user(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "recidiviz", allowed_states=["US_TN"]
-        )
-
-        response = self.test_client.post(
-            "/workflows/external_request/us_ca/send_sms_request",
-            headers={"Origin": "http://localhost:3000"},
-            json={
-                "message": "Message!",
-                "recipient": "+12223334444",
-                "recipient_external_id": PERSON_EXTERNAL_ID,
-                "client_firestore_id": "us_ca_123",
-            },
-        )
-        assert_type(response.get_json(), dict)
-        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
-
     def test_send_sms_request_invalid_state_code(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("CA")
-
+        # This route is a Cloud Tasks target only, authenticated via
+        # validate_cloud_task_request rather than the mocked Auth0 handler, so
+        # an unsupported state falls through to the route's own state check.
         response = self.test_client.post(
             "/workflows/external_request/us_tn/send_sms_request",
-            headers={"Origin": "http://localhost:3000"},
-            json={
-                "message": "Message!",
-                "recipient": "+12223334444",
-                "recipient_external_id": PERSON_EXTERNAL_ID,
-                "client_firestore_id": "us_ca_123",
-            },
-        )
-        assert_type(response.get_json(), dict)
-        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
-
-    def test_send_sms_request_mismatched_state_code(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_tn", external_id=STAFF_ID
-        )
-
-        response = self.test_client.post(
-            "/workflows/external_request/us_ca/send_sms_request",
             headers={"Origin": "http://localhost:3000"},
             json={
                 "message": "Message!",
