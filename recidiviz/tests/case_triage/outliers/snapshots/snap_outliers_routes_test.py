@@ -223,10 +223,7 @@ snapshots[
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"] = {
     "officers": [
         {
-            "avgDailyPopulation": None,
             "district": "Hogwarts",
-            "earliestPersonAssignmentDate": None,
-            "email": "officer123@recidiviz.org",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -234,20 +231,9 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"]
                 "nameSuffix": None,
                 "surname": "Potter",
             },
-            "hasConsistentLoginActivity": None,
-            "hasEligibleCaseloadInPastYear": None,
-            "includeInOutcomes": True,
-            "latestLoginDate": None,
-            "pseudonymizedId": "hashhash",
-            "supervisorExternalId": "102",
-            "supervisorExternalIds": ["102"],
-            "zeroGrantOpportunities": None,
         },
         {
-            "avgDailyPopulation": None,
             "district": "Hogwarts",
-            "earliestPersonAssignmentDate": None,
-            "email": "officer456@recidiviz.org",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -255,14 +241,6 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"]
                 "nameSuffix": None,
                 "surname": "Weasley",
             },
-            "hasConsistentLoginActivity": None,
-            "hasEligibleCaseloadInPastYear": None,
-            "includeInOutcomes": True,
-            "latestLoginDate": None,
-            "pseudonymizedId": "hashhashhash",
-            "supervisorExternalId": "102",
-            "supervisorExternalIds": ["103"],
-            "zeroGrantOpportunities": None,
         },
     ]
 }

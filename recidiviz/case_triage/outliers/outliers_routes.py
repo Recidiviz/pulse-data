@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes for the Outliers Flask blueprint."""
+
 import logging
 import re
 from datetime import datetime
 from http import HTTPStatus
 from typing import List, Optional
 
+import cattrs
 import werkzeug
 from flask import Blueprint, Response, g, jsonify, make_response, request
 from werkzeug.http import parse_set_header
@@ -577,6 +579,8 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         user_external_id: str = user_context.user_external_id
 
+        # This endpoint is accessible to all supervisors as well as leadership.
+        # It returns a limited set of info to power the Report Incorrect Rosters modal.
         if (
             user_external_id != "RECIDIVIZ"
             and not user_context.can_access_all_supervisors
@@ -595,7 +599,11 @@ def create_outliers_api_blueprint() -> Blueprint:
             {
                 "officers": [
                     convert_nested_dictionary_keys(
-                        officer.to_json(),
+                        {
+                            "full_name": cattrs.unstructure(officer.full_name),
+                            "external_id": officer.external_id,
+                            "district": officer.district,
+                        },
                         snake_to_camel,
                     )
                     for officer in officers

@@ -994,24 +994,14 @@ class OutliersQuerier:
             List[SupervisionOfficerEntity]: A list of SupervisionOfficerEntity instances.
         """
         with self.insights_database_session() as session:
+            # Only officers with a latest-period include_in_outcomes metric row should
+            # be returned; the metric's value itself isn't part of the returned info.
             include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
-            login_consistency_subquery = self._login_consistency_subquery(session)
-            eligible_caseload_subquery = self._eligible_caseload_subquery(session)
             officers = (
                 session.query(SupervisionOfficer)
                 .join(
                     include_in_outcomes_subquery,
                     include_in_outcomes_subquery.c.officer_id
-                    == SupervisionOfficer.external_id,
-                )
-                .outerjoin(
-                    login_consistency_subquery,
-                    login_consistency_subquery.c.officer_id
-                    == SupervisionOfficer.external_id,
-                )
-                .outerjoin(
-                    eligible_caseload_subquery,
-                    eligible_caseload_subquery.c.officer_id
                     == SupervisionOfficer.external_id,
                 )
                 .with_entities(
@@ -1022,10 +1012,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     include_in_outcomes_subquery.c.include_in_outcomes,
-                    login_consistency_subquery.c.has_consistent_login_activity,
-                    eligible_caseload_subquery.c.has_eligible_caseload_in_past_year,
                     SupervisionOfficer.email,
-                    SupervisionOfficer.latest_login_date,
                 )
             ).all()
 
@@ -1038,16 +1025,6 @@ class OutliersQuerier:
                     supervisor_external_ids=officer.supervisor_external_ids,
                     district=officer.supervision_district,
                     include_in_outcomes=bool(officer.include_in_outcomes),
-                    has_consistent_login_activity=(
-                        bool(officer.has_consistent_login_activity)
-                        if officer.has_consistent_login_activity is not None
-                        else None
-                    ),
-                    has_eligible_caseload_in_past_year=(
-                        bool(officer.has_eligible_caseload_in_past_year)
-                        if officer.has_eligible_caseload_in_past_year is not None
-                        else None
-                    ),
                     email=officer.email,
                 )
                 for officer in officers
