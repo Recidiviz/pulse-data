@@ -2864,12 +2864,6 @@ class BigQueryClientImpl(BigQueryClient):
             table.table_id
             for table in self.list_tables_excluding_views(source_dataset_id)
         }
-        source_tables_by_id = {
-            table_id: self.get_table(
-                BigQueryAddress(dataset_id=source_dataset_id, table_id=table_id)
-            )
-            for table_id in source_table_ids
-        }
 
         # Check existing destination tables
         initial_destination_table_ids = {
@@ -2961,45 +2955,40 @@ class BigQueryClientImpl(BigQueryClient):
             while True:
                 logging.info("Checking status of transfer run [%s]", run.name)
 
-                destination_table_ids = {
-                    table.table_id
-                    for table in self.list_tables_excluding_views(
-                        destination_dataset_id
-                    )
-                }
-                missing_tables = source_table_ids - destination_table_ids
+                run = transfer_client.get_transfer_run(
+                    request={"name": run.name},
+                    timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC,
+                )
 
-                stale_tables = set()
-                for destination_table_id in destination_table_ids:
-                    destination_address = BigQueryAddress(
-                        dataset_id=destination_dataset_id, table_id=destination_table_id
-                    )
-                    destination_table = self.get_table(destination_address)
-                    source_table = source_tables_by_id[destination_table.table_id]
-                    # We compare against the time that the source table was last
-                    # modified, not the time that the transfer began, because the
-                    # transfer may not update the destination table at all if the source
-                    # table has not changed since the last refresh:
+                if run.state is TransferState.SUCCEEDED:
+                    # The transfer run only copies tables whose source changed since the
+                    # last copy, so we cannot infer completion from destination table
+                    # modified times (an unchanged table is skipped and keeps its old
+                    # timestamp forever):
                     # https://cloud.google.com/bigquery/docs/copying-datasets#table_limitations
-                    if destination_table.modified <= source_table.modified:
-                        stale_tables.add(destination_table.table_id)
-
-                if not missing_tables and not stale_tables:
-                    logging.info("Transfer run succeeded")
-
-                    run = transfer_client.get_transfer_run(
-                        request={"name": run.name},
-                        timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC,
-                    )
-
-                    if run.state != TransferState.SUCCEEDED:
-                        logging.error(
-                            "All expected tables found in destination "
-                            "dataset [%s], but transfer run has state [%s].",
-                            destination_dataset_id,
-                            run.state,
+                    # A succeeded run means every changed table was copied; verify the
+                    # skipped ones are at least present.
+                    destination_table_ids = {
+                        table.table_id
+                        for table in self.list_tables_excluding_views(
+                            destination_dataset_id
                         )
+                    }
+                    if missing_tables := source_table_ids - destination_table_ids:
+                        raise ValueError(
+                            f"Transfer run [{run.name}] succeeded but destination "
+                            f"dataset [{destination_dataset_id}] is missing tables "
+                            f"[{missing_tables}]."
+                        )
+                    logging.info("Transfer run [%s] succeeded", run.name)
                     break
+
+                if run.state in (TransferState.FAILED, TransferState.CANCELLED):
+                    raise ValueError(
+                        f"Transfer run [{run.name}] ended in state "
+                        f"[{TransferState(run.state).name}] copying "
+                        f"[{source_dataset_id}] to [{destination_dataset_id}]."
+                    )
 
                 if timeout_time < datetime.datetime.now():
                     raise TimeoutError(
@@ -3008,10 +2997,8 @@ class BigQueryClientImpl(BigQueryClient):
                     )
 
                 logging.info(
-                    "Transfer run in progress, missing [%s] tables and [%s] tables are "
-                    "stale - sleeping for %s seconds",
-                    missing_tables,
-                    stale_tables,
+                    "Transfer run in state [%s] - sleeping for %s seconds",
+                    TransferState(run.state).name,
                     CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC,
                 )
                 time.sleep(CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC)
