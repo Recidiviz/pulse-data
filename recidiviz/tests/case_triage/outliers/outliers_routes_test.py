@@ -2775,11 +2775,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status/message
+        # can't be used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
             {
-                "message": "User cannot access all supervisors and does not supervise the requested officer.",
+                "message": "Officer with pseudonymized id not found: hashhash",
             },
         )
 
@@ -3526,11 +3529,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status/message
+        # can't be used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
             {
-                "message": "User cannot access the requested officer.",
+                "message": "Officer with pseudonymized id not found: hashhash",
             },
         )
 
@@ -3725,11 +3731,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status/message
+        # can't be used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
             {
-                "message": "User cannot access the requested officer.",
+                "message": f"Officer with pseudonymized id not found: {target_officer_pseudonymized_id}",
             },
         )
 
@@ -3908,11 +3917,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status/message
+        # can't be used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
             {
-                "message": "User cannot access all supervisors and does not supervise the requested officer.",
+                "message": "Officer with pseudonymized id not found: hashhash",
             },
         )
 
@@ -5506,7 +5518,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             f"outliers/us_xx/officer/{officer_pseudo_id}/vitals",
             headers={"Origin": "http://localhost:3000"},
         )
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status can't be
+        # used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
@@ -5848,4 +5863,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             "outliers/us_xx/officer/unauthorized_pseudo_id/vitals/contacts_drilldown",
             headers={"Origin": "http://localhost:3000"},
         )
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        # Unauthorized and not-found both return the same NOT_FOUND response
+        # (rather than a distinguishable UNAUTHORIZED) so the status can't be
+        # used to enumerate valid officer pseudonymized ids.
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

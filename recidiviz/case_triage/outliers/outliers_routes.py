@@ -306,16 +306,19 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context
         ).primary_category_type
 
-        # Check officer exists
         officer = querier.get_supervision_officer_from_pseudonymized_id(
             pseudonymized_officer_id
         )
+        # Authorization is checked jointly with existence below: unauthorized and
+        # not-found both return the same NOT_FOUND response so the status code
+        # cannot be used to enumerate valid pseudonymized officer ids.
+        officer_not_found_response = jsonify_response(
+            f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+            HTTPStatus.NOT_FOUND,
+        )
 
         if officer is None:
-            return jsonify_response(
-                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return officer_not_found_response
 
         # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
         if not user_context.can_access_all_supervisors and (
@@ -324,10 +327,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             )
             or user_context.user_external_id not in officer.supervisor_external_ids
         ):
-            return jsonify_response(
-                "User cannot access all supervisors and does not supervise the requested officer.",
-                HTTPStatus.UNAUTHORIZED,
-            )
+            return officer_not_found_response
 
         # Retrieve requested outcomes info
         officer_outcomes = querier.get_supervision_officer_outcomes(
@@ -454,11 +454,16 @@ def create_outliers_api_blueprint() -> Blueprint:
             include_workflows_info=user_context.can_access_supervision_workflows,
             num_lookback_periods=0,
         )
+        # Authorization is checked jointly with existence below: unauthorized and
+        # not-found both return the same NOT_FOUND response so the status code
+        # cannot be used to enumerate valid pseudonymized officer ids.
+        officer_not_found_response = jsonify_response(
+            f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+            HTTPStatus.NOT_FOUND,
+        )
+
         if officer_entity is None:
-            return jsonify_response(
-                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return officer_not_found_response
 
         # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
         if not user_context.can_access_all_supervisors and (
@@ -470,10 +475,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 not in officer_entity.supervisor_external_ids
             )
         ):
-            return jsonify_response(
-                "User cannot access all supervisors and does not supervise the requested officer.",
-                HTTPStatus.UNAUTHORIZED,
-            )
+            return officer_not_found_response
 
         # Check that the officer outcomes exist for the period.
         officer_outcomes = querier.get_supervision_officer_outcomes(
@@ -641,12 +643,16 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context.can_access_supervision_workflows,
             num_lookback_periods,
         )
+        # Authorization is checked jointly with existence below: unauthorized and
+        # not-found both return the same NOT_FOUND response so the status code
+        # cannot be used to enumerate valid pseudonymized officer ids.
+        officer_not_found_response = jsonify_response(
+            f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+            HTTPStatus.NOT_FOUND,
+        )
 
         if officer_entity is None:
-            return jsonify_response(
-                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return officer_not_found_response
 
         # Check if user has appropriate access permissions
         is_user_requested_officer = (
@@ -675,10 +681,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 }
             )
 
-        return jsonify_response(
-            "User cannot access the requested officer.",
-            HTTPStatus.UNAUTHORIZED,
-        )
+        return officer_not_found_response
 
     @api.get("/<state>/user-info/<pseudonymized_id>")
     def user_info(state: str, pseudonymized_id: str) -> Response:
@@ -1077,17 +1080,19 @@ def create_outliers_api_blueprint() -> Blueprint:
         user_context: UserContext = g.user_context
         querier = OutliersQuerier(state_code, user_context.feature_variants)
 
-        user_pseudonymized_id = user_context.pseudonymized_id
-
         officer = querier.get_supervision_officer_from_pseudonymized_id(
             pseudonymized_officer_id
         )
+        # Authorization is checked jointly with existence below: unauthorized and
+        # not-found both return the same NOT_FOUND response so the status code
+        # cannot be used to enumerate valid pseudonymized officer ids.
+        officer_not_found_response = jsonify_response(
+            f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+            HTTPStatus.NOT_FOUND,
+        )
 
         if officer is None:
-            return jsonify_response(
-                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return officer_not_found_response
 
         is_user_requested_officer = (
             user_context.pseudonymized_id is not None
@@ -1103,12 +1108,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             and not is_user_supervising_officer
             and not user_context.can_access_all_supervisors
         ):
-            # Return an unauthorized error if the requesting user is requesting information about someone else
-            # and the requesting user is not a Recidiviz user
-            return jsonify_response(
-                f" User with pseudonymized_id {user_pseudonymized_id} is requesting vitals for officers they do not have access to: {pseudonymized_officer_id}",
-                HTTPStatus.UNAUTHORIZED,
-            )
+            return officer_not_found_response
 
         vitals_metrics: List[
             VitalsMetric
@@ -1135,6 +1135,19 @@ def create_outliers_api_blueprint() -> Blueprint:
         has_feature_variant = "reportIncorrectRosters" in user_context.feature_variants
         user_pseudonymized_id = user_context.pseudonymized_id
 
+        # Authorization is checked before resolving the target supervisor entity
+        # (and depends only on the caller's own context, not the target) so that
+        # an unauthorized caller cannot use the response status to enumerate
+        # valid supervisor pseudonymized ids.
+        if (not has_feature_variant and user_external_id != "RECIDIVIZ") or (
+            not user_context.can_access_all_supervisors
+            and not querier.supervisor_exists_with_external_id(user_external_id)
+        ):
+            return jsonify_response(
+                f"User with pseudonymized_id {user_pseudonymized_id} cannot make roster change request.",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
         target_supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
         )
@@ -1143,15 +1156,6 @@ def create_outliers_api_blueprint() -> Blueprint:
             return jsonify_response(
                 f"Target supervisor with pseudonymized_id, {supervisor_pseudonymized_id}, not found.",
                 HTTPStatus.NOT_FOUND,
-            )
-
-        if (not has_feature_variant and user_external_id != "RECIDIVIZ") or (
-            not user_context.can_access_all_supervisors
-            and not querier.supervisor_exists_with_external_id(user_external_id)
-        ):
-            return jsonify_response(
-                f"User with pseudonymized_id {user_pseudonymized_id} cannot make roster change request.",
-                HTTPStatus.UNAUTHORIZED,
             )
 
         if not request.json:
@@ -1193,17 +1197,19 @@ def create_outliers_api_blueprint() -> Blueprint:
         user_context: UserContext = g.user_context
         querier = OutliersQuerier(state_code, user_context.feature_variants)
 
-        user_pseudonymized_id = user_context.pseudonymized_id
-
         officer = querier.get_supervision_officer_from_pseudonymized_id(
             pseudonymized_officer_id
         )
+        # Authorization is checked jointly with existence below: unauthorized and
+        # not-found both return the same NOT_FOUND response so the status code
+        # cannot be used to enumerate valid pseudonymized officer ids.
+        officer_not_found_response = jsonify_response(
+            f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+            HTTPStatus.NOT_FOUND,
+        )
 
         if officer is None:
-            return jsonify_response(
-                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return officer_not_found_response
 
         is_user_requested_officer = (
             user_context.pseudonymized_id is not None
@@ -1219,12 +1225,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             and not is_user_supervising_officer
             and not user_context.can_access_all_supervisors
         ):
-            # Return an unauthorized error if the requesting user is requesting information about someone else
-            # and the requesting user is not a Recidiviz user
-            return jsonify_response(
-                f" User with pseudonymized_id {user_pseudonymized_id} is requesting vitals for officers they do not have access to: {pseudonymized_officer_id}",
-                HTTPStatus.UNAUTHORIZED,
-            )
+            return officer_not_found_response
 
         contacts_drilldown: List[
             SupervisionContactsDrilldownEntity
