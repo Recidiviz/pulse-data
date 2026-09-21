@@ -69,7 +69,19 @@ locals {
           # login opens no browser, which is what lets this job run in the
           # deployed image at all. Without the flag the job falls back to the
           # passkey login, which needs a display.
-          args      = ["--flow=co_edovo", "--flow=co_work", "--account=svc"]
+          # --workers gives each worker its own eOMIS login, which is what
+          # lets a full pass finish: the service account holds several sessions
+          # at once, and a per-offender screen answers for whoever *that*
+          # session selected. Set it to 1 to put the job back to one at a time.
+          args = [
+            "--flow=co_edovo",
+            "--flow=co_work",
+            "--account=svc",
+            "--workers=8",
+          ]
+          # Six hours. A full committing pass over the work candidates runs for
+          # about four at eight workers, and the default hour cannot finish one.
+          timeout   = "21600s"
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
           env       = {}
@@ -169,8 +181,9 @@ resource "google_cloud_run_v2_job" "eomis_writeback" {
       execution_environment = "EXECUTION_ENVIRONMENT_GEN2"
       service_account       = local.eomis_writeback_sa_email
       max_retries           = 0
-      # Above the 600s default: the runner paces per candidate with no wall-clock cap.
-      timeout = "3600s"
+      # Above the 600s default: the runner paces per candidate with no wall-clock
+      # cap. A job that works a large population sets its own; see the CO entry.
+      timeout = lookup(each.value, "timeout", "3600s")
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["uv"]
