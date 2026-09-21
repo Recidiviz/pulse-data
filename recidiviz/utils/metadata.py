@@ -20,6 +20,7 @@ import enum
 import json
 import logging
 import os
+import time
 from typing import Any, Dict, Optional
 
 import attr
@@ -193,10 +194,25 @@ class CloudRunMetadata:
         CASE_TRIAGE = "case-triage-web"
         IDENTITY_SERVICE = "identity-service"
 
+    # Attempts and backoff for fetching this service's own metadata. The fetch
+    # runs while a server boots, when several gunicorn workers issue it
+    # simultaneously on a CPU-starved cold-starting container; without retries,
+    # one transient error response crashes the worker and with it the whole
+    # container boot. The delay before attempt N is N - 1 times the backoff
+    # constant (2s, 4s, 6s, ...).
+    _BUILD_METADATA_ATTEMPTS = 5
+    _BUILD_METADATA_BACKOFF_SECONDS = 2
+
     @classmethod
-    def build_from_metadata_server(cls, service_name: Service | None):
+    def build_from_metadata_server(
+        cls, service_name: Service | None
+    ) -> "CloudRunMetadata":
         """Builds the CloudRunMetadata from the googleapis
         https://cloud.google.com/run/docs/reference/rest/v1/namespaces.services/get
+
+        Retries transient failures with backoff, since a raised exception here
+        fails the calling server's boot. Fails immediately on a definitive 4xx
+        response (other than 429), which retrying cannot fix.
         """
         _project_id = project_id()
         _region = region()
@@ -205,20 +221,71 @@ class CloudRunMetadata:
             if service_name is not None
             else CloudRunEnvironment.get_service_name()
         )
-        service_metadata = requests.get(
-            f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
-            headers={"Authorization": f"Bearer {service_token()}"},
-            timeout=TIMEOUT,
-        ).json()
-
-        return cls(
-            project_id=_project_id,
-            region=_region,
-            url=service_metadata["status"]["url"],
-            service_account_email=service_metadata["spec"]["template"]["spec"][
-                "serviceAccountName"
-            ],
-        )
+        last_error: Exception | None = None
+        for attempt in range(cls._BUILD_METADATA_ATTEMPTS):
+            if attempt > 0:
+                time.sleep(cls._BUILD_METADATA_BACKOFF_SECONDS * attempt)
+            try:
+                response = requests.get(
+                    f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
+                    headers={"Authorization": f"Bearer {service_token()}"},
+                    timeout=TIMEOUT,
+                )
+                response.raise_for_status()
+                service_metadata = response.json()
+            except requests.RequestException as e:
+                error_response = e.response
+                if (
+                    error_response is not None
+                    and 400 <= error_response.status_code < 500
+                    and error_response.status_code != 429
+                ):
+                    # A 4xx is a definitive rejection that retrying cannot fix,
+                    # e.g. the 403 a service gets when its account lacks
+                    # roles/run.viewer.
+                    raise RuntimeError(
+                        f"Request for Cloud Run service metadata for "
+                        f"[{service_name}] failed with HTTP "
+                        f"[{error_response.status_code}]: [{error_response.text}]"
+                    ) from e
+                logging.warning(
+                    "Attempt [%s] to fetch Cloud Run service metadata for [%s] "
+                    "failed: %s",
+                    attempt + 1,
+                    service_name,
+                    e,
+                )
+                last_error = e
+                continue
+            try:
+                url = service_metadata["status"]["url"]
+                service_account_email = service_metadata["spec"]["template"]["spec"][
+                    "serviceAccountName"
+                ]
+            except KeyError as e:
+                logging.warning(
+                    "Attempt [%s] to fetch Cloud Run service metadata for [%s] "
+                    "returned an incomplete response missing key [%s]: [%s]",
+                    attempt + 1,
+                    service_name,
+                    e,
+                    service_metadata,
+                )
+                last_error = ValueError(
+                    f"Cloud Run service metadata response for [{service_name}] "
+                    f"is missing key [{e}]: [{service_metadata}]"
+                )
+                continue
+            return cls(
+                project_id=_project_id,
+                region=_region,
+                url=url,
+                service_account_email=service_account_email,
+            )
+        raise RuntimeError(
+            f"Unable to fetch Cloud Run service metadata for [{service_name}] "
+            f"after [{cls._BUILD_METADATA_ATTEMPTS}] attempts"
+        ) from last_error
 
 
 def running_against(project: str, *, log_hint: Optional[bool] = True) -> bool:

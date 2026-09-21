@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for utils/metadata.py."""
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import responses
 from responses import matchers
@@ -106,7 +106,11 @@ class MetadataTest(unittest.TestCase):
             json={
                 "status": {"url": "http://test-service.cloudrun"},
                 "spec": {
-                    "template": {"spec": {"serviceAccountName": "test-sa@iam.com"}}
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "test-sa@fake-project.iam.gserviceaccount.com"
+                        }
+                    }
                 },
             },
             match=[matchers.header_matcher({"Authorization": "Bearer fake-token"})],
@@ -120,6 +124,179 @@ class MetadataTest(unittest.TestCase):
                 project_id="fake-project",
                 region="us-east1",
                 url="http://test-service.cloudrun",
-                service_account_email="test-sa@iam.com",
+                service_account_email="test-sa@fake-project.iam.gserviceaccount.com",
             ),
         )
+
+    @responses.activate
+    @patch("recidiviz.utils.metadata.time.sleep")
+    @patch("recidiviz.utils.metadata.project_id", return_value="fake-project")
+    @patch("recidiviz.utils.metadata.region", return_value="us-east1")
+    def test_service_metadata_retries_transient_error_then_succeeds(
+        self, _mock_region: Mock, _mock_project_id: Mock, mock_sleep: Mock
+    ) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/service-accounts/default/token",
+            json={"access_token": "fake-token"},
+        )
+
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            status=500,
+            body="internal error",
+        )
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            json={
+                "status": {"url": "http://test-service.cloudrun"},
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "test-sa@fake-project.iam.gserviceaccount.com"
+                        }
+                    }
+                },
+            },
+        )
+
+        self.assertEqual(
+            CloudRunMetadata.build_from_metadata_server(
+                CloudRunMetadata.Service.ADMIN_PANEL
+            ),
+            CloudRunMetadata(
+                project_id="fake-project",
+                region="us-east1",
+                url="http://test-service.cloudrun",
+                service_account_email="test-sa@fake-project.iam.gserviceaccount.com",
+            ),
+        )
+        mock_sleep.assert_called_once_with(2)
+
+    @responses.activate
+    @patch("recidiviz.utils.metadata.time.sleep")
+    @patch("recidiviz.utils.metadata.project_id", return_value="fake-project")
+    @patch("recidiviz.utils.metadata.region", return_value="us-east1")
+    def test_service_metadata_retries_response_missing_keys(
+        self, _mock_region: Mock, _mock_project_id: Mock, mock_sleep: Mock
+    ) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/service-accounts/default/token",
+            json={"access_token": "fake-token"},
+        )
+
+        # A 200 response missing the status key entirely.
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            json={
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "test-sa@fake-project.iam.gserviceaccount.com"
+                        }
+                    }
+                },
+            },
+        )
+        # A 200 response with status but an incomplete spec.
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            json={
+                "status": {"url": "http://test-service.cloudrun"},
+                "spec": {"template": {"spec": {}}},
+            },
+        )
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            json={
+                "status": {"url": "http://test-service.cloudrun"},
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "test-sa@fake-project.iam.gserviceaccount.com"
+                        }
+                    }
+                },
+            },
+        )
+
+        self.assertEqual(
+            CloudRunMetadata.build_from_metadata_server(
+                CloudRunMetadata.Service.ADMIN_PANEL
+            ),
+            CloudRunMetadata(
+                project_id="fake-project",
+                region="us-east1",
+                url="http://test-service.cloudrun",
+                service_account_email="test-sa@fake-project.iam.gserviceaccount.com",
+            ),
+        )
+        mock_sleep.assert_has_calls([call(2), call(4)])
+
+    @responses.activate
+    @patch("recidiviz.utils.metadata.time.sleep")
+    @patch("recidiviz.utils.metadata.project_id", return_value="fake-project")
+    @patch("recidiviz.utils.metadata.region", return_value="us-east1")
+    def test_service_metadata_fails_fast_on_definitive_4xx(
+        self, _mock_region: Mock, _mock_project_id: Mock, mock_sleep: Mock
+    ) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/service-accounts/default/token",
+            json={"access_token": "fake-token"},
+        )
+
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            status=403,
+            body="Permission denied",
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"^Request for Cloud Run service metadata for \[admin-panel\] failed "
+            r"with HTTP \[403\]: \[Permission denied\]$",
+        ):
+            CloudRunMetadata.build_from_metadata_server(
+                CloudRunMetadata.Service.ADMIN_PANEL
+            )
+        mock_sleep.assert_not_called()
+
+    @responses.activate
+    @patch("recidiviz.utils.metadata.time.sleep")
+    @patch("recidiviz.utils.metadata.project_id", return_value="fake-project")
+    @patch("recidiviz.utils.metadata.region", return_value="us-east1")
+    def test_service_metadata_raises_after_exhausting_attempts(
+        self, _mock_region: Mock, _mock_project_id: Mock, mock_sleep: Mock
+    ) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/service-accounts/default/token",
+            json={"access_token": "fake-token"},
+        )
+
+        # The responses library replays the last registered response once
+        # registrations are exhausted, so this covers all five attempts.
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
+            status=500,
+            body="internal error",
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"^Unable to fetch Cloud Run service metadata for \[admin-panel\] "
+            r"after \[5\] attempts$",
+        ):
+            CloudRunMetadata.build_from_metadata_server(
+                CloudRunMetadata.Service.ADMIN_PANEL
+            )
+        mock_sleep.assert_has_calls([call(2), call(4), call(6), call(8)])

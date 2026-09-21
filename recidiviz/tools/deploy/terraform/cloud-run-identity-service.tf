@@ -53,6 +53,10 @@ resource "google_project_iam_member" "identity_service_iam" {
     # task's dedupe key). The reader lists rows directly rather than running
     # query jobs, so no job-running role is needed.
     "roles/bigquery.dataViewer",
+    # Read this service's own Cloud Run metadata at boot
+    # (CloudRunMetadata.build_from_metadata_server); without it the metadata
+    # call 403s and every worker fails to boot.
+    "roles/run.viewer",
   ])
 
   project = var.project_id
@@ -131,9 +135,11 @@ resource "google_cloud_run_service" "identity_service" {
         }
 
         resources {
+          # The import processes a tenant's whole cluster snapshot in one
+          # request.
           limits = {
-            cpu    = "1000m"
-            memory = "1Gi"
+            cpu    = "2000m"
+            memory = "8Gi"
           }
         }
       }
