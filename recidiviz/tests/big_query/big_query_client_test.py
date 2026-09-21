@@ -42,6 +42,7 @@ from google.cloud.bigquery_datatransfer import (
     TransferRun,
     TransferState,
 )
+from more_itertools import one
 
 from recidiviz.big_query import big_query_client
 from recidiviz.big_query.big_query_address import (
@@ -2281,6 +2282,110 @@ class BigQueryClientImplTest(unittest.TestCase):
             ]
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
+
+    def _run_cross_region_copy_of_one_table(
+        self, mock_transfer_client_fn: MagicMock
+    ) -> TransferConfig:
+        """Runs a cross-region copy of a single already-fresh table and returns the
+        TransferConfig the client handed to the Data Transfer Service."""
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        source_table = create_autospec(bigquery.Table)
+        source_table.table_type = "TABLE"
+        source_table.table_id = "my_table"
+        source_table.modified = datetime.datetime(2020, 1, 1)
+
+        destination_table = create_autospec(bigquery.Table)
+        destination_table.table_type = "TABLE"
+        destination_table.table_id = "my_table"
+        destination_table.modified = datetime.datetime(2020, 1, 2)
+
+        mock_transfer_client.check_valid_creds.return_value = CheckValidCredsResponse(
+            has_valid_creds=True
+        )
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+        created_configs = []
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            created_configs.append(transfer_config)
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_info = create_autospec(TransferRun)
+        run_info.name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+        run_info.state = TransferState.SUCCEEDED
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info]
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        self.mock_client.list_tables.side_effect = [
+            # Source tables
+            [source_table],
+            # Initial destination tables
+            [],
+            # Destination tables once the transfer has landed
+            [destination_table],
+        ]
+        self.mock_client.get_table.side_effect = [source_table, destination_table]
+        mock_transfer_client.get_transfer_run.side_effect = [run_info]
+
+        self.bq_client.copy_dataset_tables_across_regions(
+            source_dataset_id="my_src_dataset", destination_dataset_id="my_dst_dataset"
+        )
+
+        return one(created_configs)
+
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_copy_dataset_tables_across_regions_uses_project_default_cmek_key(
+        self, mock_transfer_client_fn: MagicMock
+    ) -> None:
+        kms_key_name = (
+            "projects/fake-cmek-project/locations/us/keyRings/data-cjis"
+            "/cryptoKeys/fake-recidiviz-project-bq-default"
+        )
+        self.mock_client.query.return_value.result.return_value = [
+            {"option_value": kms_key_name}
+        ]
+
+        transfer_config = self._run_cross_region_copy_of_one_table(
+            mock_transfer_client_fn
+        )
+
+        self.assertEqual(
+            kms_key_name, transfer_config.encryption_configuration.kms_key_name
+        )
+
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_copy_dataset_tables_across_regions_region_has_no_cmek_key(
+        self, mock_transfer_client_fn: MagicMock
+    ) -> None:
+        self.mock_client.query.return_value.result.return_value = []
+
+        transfer_config = self._run_cross_region_copy_of_one_table(
+            mock_transfer_client_fn
+        )
+
+        self.assertIsNone(transfer_config.encryption_configuration.kms_key_name)
 
     @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
     @patch(

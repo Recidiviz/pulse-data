@@ -54,6 +54,7 @@ from google.cloud.bigquery import ExternalConfig
 from google.cloud.bigquery_datatransfer import (
     CheckValidCredsRequest,
     DataTransferServiceClient,
+    EncryptionConfiguration,
     ScheduleOptions,
     StartManualTransferRunsRequest,
     TransferConfig,
@@ -193,6 +194,9 @@ CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
 CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
     "Cross-region copy {source_dataset_id} -> {destination_dataset_id} [{ts}]"
 )
+# Name of the INFORMATION_SCHEMA.EFFECTIVE_PROJECT_OPTIONS row holding a region's
+# project-level default CMEK key.
+_DEFAULT_KMS_KEY_OPTION_NAME = "default_kms_key_name"
 
 # Stored in a constant to test
 UPDATE_DESCRIPTION_RETRY = default_bq_retry_with_additions(
@@ -2851,6 +2855,28 @@ class BigQueryClientImpl(BigQueryClient):
                 results.append(f.result())
         return results
 
+    def _default_kms_key_name(self) -> str | None:
+        """Returns the project-level default CMEK key for this client's region, or
+        None if the region has no default key set.
+
+        BigQuery applies this key to every table it creates in the region, so the
+        Data Transfer Service must be handed the same key to write CMEK destination
+        tables. Regions are configured independently, and a region with no key set
+        returns no row at all.
+        """
+        query_job = self.run_query_async(
+            query_str=f"""
+            SELECT option_value
+            FROM `region-{self.region.lower()}`.INFORMATION_SCHEMA.EFFECTIVE_PROJECT_OPTIONS
+            WHERE option_name = '{_DEFAULT_KMS_KEY_OPTION_NAME}'
+            """,
+            use_query_cache=False,
+        )
+        rows = list(query_job.result())
+        if not rows:
+            return None
+        return one(rows)["option_value"]
+
     def copy_dataset_tables_across_regions(
         self,
         *,
@@ -2912,6 +2938,17 @@ class BigQueryClientImpl(BigQueryClient):
             destination_dataset_id=destination_dataset_id,
             ts=datetime.datetime.now(pytz.UTC).isoformat(),
         )
+        # A CMEK source table can only be copied cross-region when the transfer
+        # itself names a key. Without one the Data Transfer Service skips the table
+        # rather than failing it, so the copy finishes with the table silently
+        # missing from the destination.
+        destination_kms_key_name = self._default_kms_key_name()
+        logging.info(
+            "Copying into [%s] with default CMEK key [%s]",
+            destination_dataset_id,
+            destination_kms_key_name,
+        )
+
         transfer_config = TransferConfig(
             destination_dataset_id=destination_dataset_id,
             display_name=display_name,
@@ -2922,6 +2959,11 @@ class BigQueryClientImpl(BigQueryClient):
                 "overwrite_destination_table": overwrite_destination_tables,
             },
             schedule_options=ScheduleOptions(disable_auto_scheduling=True),
+            encryption_configuration=(
+                EncryptionConfiguration(kms_key_name=destination_kms_key_name)
+                if destination_kms_key_name
+                else None
+            ),
         )
         transfer_config = transfer_client.create_transfer_config(
             parent=f"projects/{self.project_id}",
