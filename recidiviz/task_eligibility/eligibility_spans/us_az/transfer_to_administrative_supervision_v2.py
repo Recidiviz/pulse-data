@@ -35,7 +35,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_ineligible_offense_conviction_for_admin_supervision,
     not_in_halfway_house_or_new_freedom,
-    not_serving_expanded_ineligible_offense_for_admin_supervision,
+    not_serving_ineligible_offense_for_admin_supervision,
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
@@ -58,7 +58,7 @@ _MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBu
     criteria_name="US_AZ_NO_INELIGIBLE_CURRENT_OR_PRIOR_OFFENSE",
     sub_criteria_list=[
         no_ineligible_offense_conviction_for_admin_supervision.VIEW_BUILDER,
-        not_serving_expanded_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 )
