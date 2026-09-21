@@ -121,16 +121,35 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
 
         assert ticket == self.intercom_search_ticket
 
-    def test_flatten_ticket_unexpected_contact_count(self) -> None:
-        """flatten_ticket() raises when a ticket has other than one contact."""
+    def test_flatten_ticket_no_contacts(self) -> None:
+        """flatten_ticket() raises when a ticket has no contacts."""
 
-        for contacts in ([], [{"id": "a"}, {"id": "b"}]):
-            ticket_json = {**self.ticket_json}
-            ticket_json["contacts"] = {"type": "contact.list", "contacts": contacts}
-            with self.assertRaisesRegex(
-                ValueError, r"Expected exactly one contact for ticket"
-            ):
-                self.json_to_csv_converter.flatten_ticket(ticket_json=ticket_json)
+        ticket_json = {**self.ticket_json}
+        ticket_json["contacts"] = {"type": "contact.list", "contacts": []}
+        with self.assertRaisesRegex(
+            ValueError, r"Expected at least one contact for ticket"
+        ):
+            self.json_to_csv_converter.flatten_ticket(ticket_json=ticket_json)
+
+    def test_flatten_ticket_multiple_contacts_records_first(self) -> None:
+        """flatten_ticket() records the first contact and warns when a ticket has several."""
+
+        ticket_json = {**self.ticket_json}
+        ticket_json["contacts"] = {
+            "type": "contact.list",
+            "contacts": [
+                {"type": "contact", "id": "5ba682d23d7cf92bef87bfd4"},
+                {"type": "contact", "id": "6cb793e34e8da03cfa98cae5"},
+            ],
+        }
+
+        with self.assertLogs(level="WARNING") as logs:
+            ticket = self.json_to_csv_converter.flatten_ticket(ticket_json=ticket_json)
+
+        assert ticket.contact_id == "5ba682d23d7cf92bef87bfd4"
+        # Both contacts stay recoverable from the raw JSON we persist.
+        assert len(ticket.raw_ticket_json["contacts"]["contacts"]) == 2
+        assert "has [2] contacts" in "".join(logs.output)
 
     def test_flatten_contact(self) -> None:
         """Tests that flatten_contact() properly parses the contact JSON"""

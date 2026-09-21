@@ -16,6 +16,7 @@
 # =============================================================================
 """Translates JSON from inbound Intercom data into fields that match the corresponding BQ tables."""
 
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -64,17 +65,22 @@ class IntercomJsonToCsvConverter:
         created_at_timestamp = ticket_json[CREATED_AT]
         updated_at_timestamp = ticket_json[UPDATED_AT]
 
-        # As of 8/25/26, all tickets have a single contact, except one 'Gina Test Double Contact (failed)'
-        # that was created for testing in 2024.
         # We pull contact info from this array instead of from the author info blob because that author
         # is usually recorded as a bot
         # A ticket's contacts are nested as ticket["contacts"]["contacts"], a list of
         # contact objects each with an "id".
         ticket_contacts = ticket_json[CONTACTS][CONTACTS]
-        if len(ticket_contacts) != 1:
+        if not ticket_contacts:
             raise ValueError(
-                f"Expected exactly one contact for ticket "
-                f"[{ticket_json[TICKET_ID]}], found [{len(ticket_contacts)}]."
+                f"Expected at least one contact for ticket "
+                f"[{ticket_json[TICKET_ID]}], found none."
+            )
+        if len(ticket_contacts) > 1:
+            # Intercom lists the ticket author first; later entries are people tagged in afterwards.
+            logging.warning(
+                "Ticket [%s] has [%s] contacts; recording the first as contact_id.",
+                ticket_json[TICKET_ID],
+                len(ticket_contacts),
             )
 
         # As of 8/14/26, all tickets for the past two years have all of these fields,
