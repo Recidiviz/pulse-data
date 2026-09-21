@@ -34,13 +34,13 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_ineligible_offense_conviction_for_admin_supervision,
-    not_in_halfway_house_or_new_freedom,
     not_serving_ineligible_offense_for_admin_supervision,
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
     oras_risk_level_is_low,
     risk_release_assessment_is_completed,
+    stable_housing_not_in_halfway_house_or_new_freedom,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -118,8 +118,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
-        # Not in a Halfway House or New Freedom (in service of 1.4)
-        not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
+        # 1.4 Has stable housing documented in Home Plan, not in a Halfway House or New Freedom
+        stable_housing_not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
         # 1.6 Not SMI-C

@@ -34,13 +34,13 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
     no_ineligible_offense_conviction_for_admin_supervision,
-    not_in_halfway_house_or_new_freedom,
     not_serving_ineligible_offense_for_admin_supervision,
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
     oras_risk_level_is_low,
     risk_release_assessment_is_completed,
+    stable_housing_not_in_halfway_house_or_new_freedom,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -134,7 +134,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1.8 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
         oras_has_substance_use_issues.VIEW_BUILDER,
         # Not in a Halfway House or New Freedom (in service of 1.4)
-        not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
+        stable_housing_not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
         # Internal Criteria, created solely for configuring Maybe Eligible accurately
         oras_community_supervision_completed.VIEW_BUILDER,
     ],
