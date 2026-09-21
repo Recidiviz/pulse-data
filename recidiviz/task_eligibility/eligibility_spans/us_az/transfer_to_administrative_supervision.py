@@ -27,6 +27,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    no_supervision_violation_within_15_months,
+    on_supervision_at_least_15_months,
     oras_community_supervision_completed,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
@@ -37,30 +39,20 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
-    oras_risk_level_is_medium_or_lower,
+    oras_risk_level_is_low,
     risk_release_assessment_is_completed,
-    risk_release_assessment_level_is_minimum,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
     TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_RISK_SCORE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.OR,
-    criteria_name="US_AZ_ELIGIBLE_RISK_LEVEL",
-    sub_criteria_list=[
-        risk_release_assessment_level_is_minimum.VIEW_BUILDER,
-        oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
-)
 
 _MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
@@ -72,17 +64,17 @@ _MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBu
     allowed_duplicate_reasons_keys=[],
 )
 
-# _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE = (
-#     StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
-#         logic_type=TaskCriteriaGroupLogicType.AND,
-#         criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
-#         sub_criteria_list=[
-#             no_supervision_violation_within_15_months.VIEW_BUILDER,
-#             on_supervision_at_least_15_months.VIEW_BUILDER,
-#         ],
-#         allowed_duplicate_reasons_keys=[],
-#     )
-# )
+_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE = (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
+        sub_criteria_list=[
+            no_supervision_violation_within_15_months.VIEW_BUILDER,
+            on_supervision_at_least_15_months.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    )
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
@@ -103,10 +95,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_AZ_ANY_RISK_SCORE_BUT_15_MONTHS_VIOLATION_FREE",
             sub_criteria_list=[
-                _RISK_SCORE_CRITERIA,
+                oras_risk_level_is_low.VIEW_BUILDER,
                 # Temporarily remove the option for a person to be eligible with any risk
                 # score if they are 15-months violation free.
-                # _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
             ],
             allowed_duplicate_reasons_keys=[],
         ),
@@ -127,7 +119,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 _MEET_INELIGIBLE_OFFENSE_CRITERIA,
                 # Temporarily remove the option for person to be eligible with ineligible
                 # convictions if they are 15-months violation free.
-                # _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
             ],
             allowed_duplicate_reasons_keys=[],
         ),

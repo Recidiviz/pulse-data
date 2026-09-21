@@ -27,24 +27,26 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    no_supervision_violation_within_15_months,
+    on_supervision_at_least_15_months,
     oras_community_supervision_completed,
     within_3_months_of_oras_assessment_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
-    mental_health_score_3_or_below,
     no_ineligible_offense_conviction_for_admin_supervision,
     not_in_halfway_house_or_new_freedom,
     not_serving_expanded_ineligible_offense_for_admin_supervision,
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
-    oras_risk_level_is_medium_or_lower,
+    oras_risk_level_is_low,
     risk_release_assessment_is_completed,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
     TaskCriteriaGroupLogicType,
 )
@@ -60,30 +62,70 @@ _MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBu
     ],
     allowed_duplicate_reasons_keys=[],
 )
-
+_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE = (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
+        sub_criteria_list=[
+            no_supervision_violation_within_15_months.VIEW_BUILDER,
+            on_supervision_at_least_15_months.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    )
+)
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_V2",
     description=__doc__,
     candidate_population_view_builder=active_supervision_population_not_limited_level.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # 1.1 Risk and needs assessment shows a risk determination of moderate or lower
-        oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
+        # 1.1 Risk and needs assessment shows a low-risk determination, unless the client
+        # qualifies for administrative supervision under section 8.1.8.
+        # 1.8 15 consecutive months of supervision with no formal sanctions or interventions.
+        # If a person has a HIGH risk score and has been on supervision for 2 months, they will
+        # not be eligible under this criteria.
+        # If a person has a HIGH risk score and has been on supervision and violation-free for 3 years,
+        # they will be eligible under this criteria.
+        # If a person has a low risk score, as outlined in the policy, they will be eligible
+        # regardless of how long they have been on supervision.
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_AZ_ANY_RISK_SCORE_BUT_15_MONTHS_VIOLATION_FREE",
+            sub_criteria_list=[
+                oras_risk_level_is_low.VIEW_BUILDER,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
         # 1.2 No current or prior convictions of a registerable sex offense or felony
-        # domestic violence offense, or current convictions of felony arson or murder
-        _MEET_INELIGIBLE_OFFENSE_CRITERIA,
+        # domestic violence offense, or current convictions of felony arson or murder,
+        # unless the client qualifies for administrative supervision under section 8.1.8.
+        # 1.8 15 consecutive months of supervision with no formal sanctions or interventions.
+        # If a person has an ineligible offense and has been on supervision for 2 months, they will
+        # not be eligible under this criteria.
+        # If a person has an ineligible offense and has been on supervision and violation-free for 3 years,
+        # they will be eligible under this criteria.
+        # If a person does not have an ineligible offense, as outlined in the policy,
+        # they will be eligible regardless of how long they have been on supervision.
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
+            sub_criteria_list=[
+                _MEET_INELIGIBLE_OFFENSE_CRITERIA,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
-        # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
-        oras_employed_disabled_retired_or_student.VIEW_BUILDER,
-        # 1.6 Mental Health Score of 3 or below.
-        mental_health_score_3_or_below.VIEW_BUILDER,
-        # 1.7 Not SMI-C
-        not_severely_mentally_ill.VIEW_BUILDER,
-        # 1.8 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
-        oras_has_substance_use_issues.VIEW_BUILDER,
         # Not in a Halfway House or New Freedom (in service of 1.4)
         not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
+        # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
+        oras_employed_disabled_retired_or_student.VIEW_BUILDER,
+        # 1.6 Not SMI-C
+        not_severely_mentally_ill.VIEW_BUILDER,
+        # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
+        oras_has_substance_use_issues.VIEW_BUILDER,
         # Internal Criteria for validation purposes
         oras_community_supervision_completed.VIEW_BUILDER,
         # Internal Criteria added b/c ADM v1 Audit suggested ORAS staleness as a factor in denials
