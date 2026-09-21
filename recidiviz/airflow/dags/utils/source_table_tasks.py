@@ -14,13 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shared builder for the source table schema-update task run by multiple DAGs.
-
-The task is identical across DAGs: the entrypoint derives which update group to
-update from the id of the DAG that launched its pod, so there are no per-DAG
-arguments. Only the trigger rule varies with where the task sits in each DAG's
-graph.
-"""
+"""Shared builders for the per-DAG source-table pod tasks run by multiple DAGs."""
 
 from airflow.utils.trigger_rule import TriggerRule
 

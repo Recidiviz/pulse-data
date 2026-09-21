@@ -2713,7 +2713,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # The schema-update task is built via the constructor rather than .partial,
         # so it needs its own no-op patch.
         self.schema_update_operator_patcher = patch(
-            "recidiviz.airflow.dags.utils.update_source_table_schemata.build_kubernetes_pod_task",
+            "recidiviz.airflow.dags.utils.source_table_tasks.build_kubernetes_pod_task",
             side_effect=fake_operator_constructor,
         )
         self.schema_update_operator_patcher.start()

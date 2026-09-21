@@ -60,7 +60,7 @@ from recidiviz.airflow.dags.utils.constants import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
 )
 from recidiviz.common.constants.states import StateCode

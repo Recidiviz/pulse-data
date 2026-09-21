@@ -593,7 +593,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         )
 
         self.kubernetes_pod_operator_patcher_3 = patch(
-            "recidiviz.airflow.dags.utils.update_source_table_schemata.build_kubernetes_pod_task",
+            "recidiviz.airflow.dags.utils.source_table_tasks.build_kubernetes_pod_task",
             side_effect=fake_operator_constructor,
         )
         self.mock_kubernetes_pod_operator_3 = (

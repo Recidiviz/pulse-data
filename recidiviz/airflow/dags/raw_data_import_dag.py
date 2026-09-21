@@ -141,7 +141,7 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups import (
     kubernetes_pod_operator_mapped_task_with_output,
 )
-from recidiviz.airflow.dags.utils.update_source_table_schemata import (
+from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
 )
 from recidiviz.airflow.dags.utils.warm_pool import (
