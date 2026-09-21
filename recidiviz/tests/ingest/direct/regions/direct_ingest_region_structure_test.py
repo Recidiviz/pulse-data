@@ -34,10 +34,14 @@ from parameterized import parameterized
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.identity import IdentifierType
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
+from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
+)
 from recidiviz.ingest.direct.feature_flags_registry import all_feature_flag_names
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
@@ -678,6 +682,69 @@ class DirectIngestRegionDirStructure(
                 region_code, region_module_override=self.region_module_override
             )
             self.assertTrue(region.playground)
+
+    def test_identity_mapping_id_types_are_registered_identifier_types(self) -> None:
+        """Guards against a crash when the identity import calls
+        IdentifierType(external_id.id_type) on an id_type an identity mapping
+        emits but IdentifierType is missing."""
+        registered_id_types = {
+            identifier_type.value for identifier_type in IdentifierType
+        }
+        for region_code in self.region_dir_names:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            for ingest_view_name, manifest in collector.ingest_view_to_manifest.items():
+                unregistered_id_types = (
+                    manifest.root_entity_external_id_types - registered_id_types
+                )
+                with self.test.subTest(
+                    region_code=region_code, ingest_view_name=ingest_view_name
+                ):
+                    self.test.assertFalse(
+                        unregistered_id_types,
+                        f"Identity ingest view [{ingest_view_name}] for region "
+                        f"[{region_code}] emits id_type(s) "
+                        f"{sorted(unregistered_id_types)} with no matching member in "
+                        f"IdentifierType. Add the missing type(s) to IdentifierType "
+                        f"in recidiviz/common/constants/identity.py.",
+                    )
+
+    def test_identity_mapping_id_types_are_registered_external_id_types(self) -> None:
+        """Checks each id_type an identity mapping emits is registered for its
+        state in external_id_types.py, mirroring the activity pipeline check
+        in _run_ingest_mapping_test."""
+        for region_code in self.region_dir_names:
+            state_code = StateCode(region_code.upper())
+            allowed_id_types = external_id_types_by_state_code()[state_code]
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
+                ingest_pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            for ingest_view_name, manifest in collector.ingest_view_to_manifest.items():
+                unregistered_id_types = (
+                    manifest.root_entity_external_id_types - allowed_id_types
+                )
+                with self.test.subTest(
+                    region_code=region_code, ingest_view_name=ingest_view_name
+                ):
+                    self.test.assertFalse(
+                        unregistered_id_types,
+                        f"Identity ingest view [{ingest_view_name}] for region "
+                        f"[{region_code}] emits id_type(s) "
+                        f"{sorted(unregistered_id_types)} not registered for "
+                        f"[{state_code.value}] in external_id_types.py. Add the "
+                        f"missing type(s) there.",
+                    )
 
 
 class DirectIngestRegionTemplateDirStructure(

@@ -28,12 +28,17 @@ class IdentifierType(enum.Enum):
     constants in recidiviz/common/constants/state/external_id_types.py.
     """
 
-    # TODO(#81647): Populate this with real identifier types
     US_OZ_LOTR_ID = external_id_types.US_OZ_LOTR_ID
     US_OZ_KDS_PERSON_ID = external_id_types.US_OZ_KDS_PERSON_ID
     US_OZ_IDENTITY_PERSON_ID = external_id_types.US_OZ_IDENTITY_PERSON_ID
     US_OZ_IDENTITY_STAFF_ID = external_id_types.US_OZ_IDENTITY_STAFF_ID
     US_OZ_IDENTITY_BADGE_ID = external_id_types.US_OZ_IDENTITY_BADGE_ID
+    US_ND_SID = external_id_types.US_ND_SID
+    US_ND_ELITE = external_id_types.US_ND_ELITE
+    US_ND_ELITE_BOOKING = external_id_types.US_ND_ELITE_BOOKING
+    US_ND_ELITE_OFFICER = external_id_types.US_ND_ELITE_OFFICER
+    US_ND_DOCSTARS_OFFICER = external_id_types.US_ND_DOCSTARS_OFFICER
+    US_ND_DOCSTARS_EMAIL = external_id_types.US_ND_DOCSTARS_EMAIL
 
 
 class PersonType(enum.Enum):
