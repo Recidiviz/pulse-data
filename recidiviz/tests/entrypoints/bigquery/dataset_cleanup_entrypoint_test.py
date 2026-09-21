@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the DatasetCleanupAndValidationEntrypoint."""
+"""Tests the DatasetCleanupEntrypoint."""
 import datetime
 import unittest
 from unittest.mock import MagicMock, Mock, patch
@@ -25,10 +25,10 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.common.constants.states import StateCode
-from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
+from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
     EMPTY_DATASET_DELETION_MIN_SECONDS,
     NON_EMPTY_TEMP_DATASET_DELETION_MIN_SECONDS,
-    DatasetCleanupAndValidationEntrypoint,
+    DatasetCleanupEntrypoint,
 )
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -101,8 +101,8 @@ def _labels_fake(_self: MagicMock, dataset: Dataset, _cls: type[Dataset]) -> dic
     return _DATASET_LABELS.get(dataset.dataset_id, {})
 
 
-class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
-    """Tests for DatasetCleanupAndValidationEntrypointTest"""
+class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
+    """Tests for DatasetCleanupEntrypoint"""
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
@@ -175,15 +175,12 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
         ]
 
     @patch(
-        "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED",
+        "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED",
         _FAKE_MANAGED_DATASETS,
     )
     @patch(
-        "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.build_dag_walker_for_all_deployed_view_graphs",
+        "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.build_dag_walker_for_all_deployed_view_graphs",
         new=_build_fake_managed_dag_walker,
-    )
-    @patch(
-        "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.validate_clean_source_table_datasets",
     )
     @patch(
         "google.cloud.bigquery.dataset.Dataset.created",
@@ -200,7 +197,6 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
         _mock_routines: Mock,
         _mock_labels: Mock,
         _mock_created: Mock,
-        _mock_validate: Mock,
     ) -> None:
         """Test that _delete_empty_or_temp_datasets does:
         - not delete a dataset if it has tables in it
@@ -227,8 +223,8 @@ class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
             [dataset.dataset_id for dataset in self.bq_client.list_datasets()]
         ) == sorted(all_datasets)
 
-        args = DatasetCleanupAndValidationEntrypoint.get_parser().parse_args([])
-        DatasetCleanupAndValidationEntrypoint.run_entrypoint(args=args)
+        args = DatasetCleanupEntrypoint.get_parser().parse_args([])
+        DatasetCleanupEntrypoint.run_entrypoint(args=args)
 
         assert sorted(
             [dataset.dataset_id for dataset in self.bq_client.list_datasets()]
@@ -245,7 +241,7 @@ _EXPECTED_FAKE_MANAGED_VIEWS_MAP = {
 }
 
 
-class DatasetCleanupAndValidationEntrypointCleanupDispatchTest(unittest.TestCase):
+class DatasetCleanupEntrypointCleanupDispatchTest(unittest.TestCase):
     """Tests that run_entrypoint dispatches cleanup of unmanaged views/datasets using
     the managed view map derived from the deployed view graph registry.
     """
@@ -254,49 +250,37 @@ class DatasetCleanupAndValidationEntrypointCleanupDispatchTest(unittest.TestCase
         self.mock_bq_client = MagicMock()
 
         client_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.BigQueryClientImpl",
+            "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.BigQueryClientImpl",
             return_value=self.mock_bq_client,
         )
         client_patcher.start()
         self.addCleanup(client_patcher.stop)
 
         dag_walker_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.build_dag_walker_for_all_deployed_view_graphs",
+            "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.build_dag_walker_for_all_deployed_view_graphs",
             new=_build_fake_managed_dag_walker,
         )
         dag_walker_patcher.start()
         self.addCleanup(dag_walker_patcher.stop)
 
         managed_datasets_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED",
+            "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED",
             new=_FAKE_MANAGED_DATASETS,
         )
         managed_datasets_patcher.start()
         self.addCleanup(managed_datasets_patcher.stop)
 
         cleanup_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.cleanup_datasets_and_delete_unmanaged_views"
+            "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint.cleanup_datasets_and_delete_unmanaged_views"
         )
         self.mock_cleanup = cleanup_patcher.start()
         self.addCleanup(cleanup_patcher.stop)
 
         delete_empty_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint._delete_empty_or_temp_datasets"
+            "recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint._delete_empty_or_temp_datasets"
         )
         delete_empty_patcher.start()
         self.addCleanup(delete_empty_patcher.stop)
-
-        validate_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.validate_clean_source_table_datasets"
-        )
-        validate_patcher.start()
-        self.addCleanup(validate_patcher.stop)
-
-        repository_patcher = patch(
-            "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.build_source_table_repository_for_collected_schemata"
-        )
-        repository_patcher.start()
-        self.addCleanup(repository_patcher.stop)
 
         project_id_patcher = patch(
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-staging"
@@ -305,8 +289,8 @@ class DatasetCleanupAndValidationEntrypointCleanupDispatchTest(unittest.TestCase
         self.addCleanup(project_id_patcher.stop)
 
     def test_cleanup_called_once_with_dry_run_false(self) -> None:
-        args = DatasetCleanupAndValidationEntrypoint.get_parser().parse_args([])
-        DatasetCleanupAndValidationEntrypoint.run_entrypoint(args=args)
+        args = DatasetCleanupEntrypoint.get_parser().parse_args([])
+        DatasetCleanupEntrypoint.run_entrypoint(args=args)
 
         self.mock_cleanup.assert_called_once_with(
             bq_client=self.mock_bq_client,
@@ -316,10 +300,8 @@ class DatasetCleanupAndValidationEntrypointCleanupDispatchTest(unittest.TestCase
         )
 
     def test_cleanup_called_once_with_dry_run_true(self) -> None:
-        args = DatasetCleanupAndValidationEntrypoint.get_parser().parse_args(
-            ["--dry-run"]
-        )
-        DatasetCleanupAndValidationEntrypoint.run_entrypoint(args=args)
+        args = DatasetCleanupEntrypoint.get_parser().parse_args(["--dry-run"])
+        DatasetCleanupEntrypoint.run_entrypoint(args=args)
 
         self.mock_cleanup.assert_called_once_with(
             bq_client=self.mock_bq_client,

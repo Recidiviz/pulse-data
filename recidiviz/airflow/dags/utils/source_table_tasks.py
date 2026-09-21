@@ -24,7 +24,21 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.constants import (
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
+
+
+def _build_source_table_pod_task(
+    *, task_id: str, entrypoint: str, trigger_rule: TriggerRule
+) -> RecidivizKubernetesPodOperator:
+    """Builds a pod task that runs a source-table entrypoint against the update group
+    owned by the DAG this task runs in."""
+    return build_kubernetes_pod_task(
+        task_id=task_id,
+        container_name=task_id,
+        arguments=[f"--entrypoint={entrypoint}"],
+        trigger_rule=trigger_rule,
+    )
 
 
 def execute_update_big_query_table_schemata(
@@ -32,9 +46,20 @@ def execute_update_big_query_table_schemata(
 ) -> RecidivizKubernetesPodOperator:
     """Builds the task that updates the schemas of the source table collections belonging
     to the update group owned by the DAG this task runs in."""
-    return build_kubernetes_pod_task(
+    return _build_source_table_pod_task(
         task_id=UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
-        container_name=UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
-        arguments=["--entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint"],
+        entrypoint="UpdateBigQuerySourceTableSchemataEntrypoint",
+        trigger_rule=trigger_rule,
+    )
+
+
+def execute_validate_source_table_datasets(
+    trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
+) -> RecidivizKubernetesPodOperator:
+    """Builds the task that validates the source table datasets belonging to the update
+    group owned by the DAG this task runs in."""
+    return _build_source_table_pod_task(
+        task_id=VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
+        entrypoint="ValidateSourceTableDatasetsEntrypoint",
         trigger_rule=trigger_rule,
     )

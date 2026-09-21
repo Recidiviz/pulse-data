@@ -78,7 +78,9 @@ _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_export
 _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID = (
     "validations_and_metric_exports_completed"
 )
-_DATASET_CLEANUP_AND_VALIDATION_TASK_ID = "dataset_cleanup_and_validation"
+_DATASET_CLEANUP_TASK_ID = "dataset_cleanup"
+_VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID = "validate_source_table_datasets"
+_UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID = "update_big_query_table_schemata"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
@@ -260,26 +262,22 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
     def test_dataset_cleanup_gated_on_view_update_not_validations_or_exports(
         self,
     ) -> None:
-        """Tests that dataset_cleanup_and_validation requires
-        update_managed_calculation_views to succeed, but only waits for validations
-        and metric_exports to finish (regardless of their outcome).
+        """Tests that dataset_cleanup requires update_managed_calculation_views to
+        succeed, but only waits for validations and metric_exports to finish
+        (regardless of their outcome).
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        dataset_cleanup_and_validation = dag.get_task(
-            _DATASET_CLEANUP_AND_VALIDATION_TASK_ID
-        )
-        self.assertEqual(
-            TriggerRule.ALL_SUCCESS, dataset_cleanup_and_validation.trigger_rule
-        )
+        dataset_cleanup = dag.get_task(_DATASET_CLEANUP_TASK_ID)
+        self.assertEqual(TriggerRule.ALL_SUCCESS, dataset_cleanup.trigger_rule)
         self.assertEqual(
             {
                 _UPDATE_MANAGED_CALCULATION_VIEWS_TASK_ID,
                 _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID,
             },
-            dataset_cleanup_and_validation.upstream_task_ids,
+            dataset_cleanup.upstream_task_ids,
         )
 
         validations_group: TaskGroup = dag.task_group_dict["validations"]
@@ -292,6 +290,21 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             _VALIDATIONS_AND_METRIC_EXPORTS_COMPLETED_TASK_ID,
             metric_exports_group.downstream_task_ids,
         )
+
+    def test_source_table_validation_is_non_blocking_side_branch(self) -> None:
+        """Validation runs after the schema update (so the group's tables exist) but is
+        a leaf: nothing downstream depends on it, so a validation failure surfaces the
+        run as failed without blocking the pipelines."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+
+        self.assertIn(_VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID, dag.task_ids)
+        validate_task = dag.get_task(_VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID)
+        self.assertEqual(
+            {_UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID},
+            validate_task.upstream_task_ids,
+        )
+        self.assertEqual(set(), validate_task.downstream_task_ids)
 
     def test_view_update_downstream_of_all_pipelines(
         self,
@@ -628,6 +641,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             return_value=_PROJECT_ID,
         )
         self.metadata_patcher.start()
+
         self.found_pipelines_to_fail: list[tuple[StateCode, str]] = []
 
     def tearDown(self) -> None:
@@ -689,7 +703,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^validations.*",
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
+                    r"^validate_source_table_datasets",
                     r"^apply_row_access_policies",
                     r"^apply_dataset_protection_tags",
                 ],
@@ -746,7 +761,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # Metric exports for US_XX (no failures) should run
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports",
                     r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
+                    r"^validate_source_table_datasets",
                     r"^apply_row_access_policies",
                     r"^apply_dataset_protection_tags",
                 ],
@@ -801,7 +817,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports\.",
                     r"^validations.*",
                     r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
+                    r"^validate_source_table_datasets",
                     r"^apply_row_access_policies",
                     r"^apply_dataset_protection_tags",
                 ],
@@ -813,7 +830,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             )
 
     def test_calculation_dag_fails_on_view_update_failure(self) -> None:
-        """Tests that dataset_cleanup_and_validation does not run when
+        """Tests that dataset_cleanup does not run when
         update_managed_calculation_views fails, but apply_row_access_policies still
         runs because it triggers on ALL_DONE.
         """
@@ -838,19 +855,22 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.*",
                     # ALL_SUCCESS requires update_managed_calculation_views to
                     # succeed, so this is upstream_failed too.
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
                 ],
                 expected_success_task_id_regexes=[
                     "rekey_legacy_tables_to_cmek",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
+                    # Runs off the schema update, which succeeded, so it is unaffected
+                    # by the view update failure.
+                    r"^validate_source_table_datasets",
                     r"^bq_refresh.*",
                     r"^dataflow_pipelines.*",
                     r"^dataflow_metric_pruning",
                     # ALL_DONE fires regardless of validations/metric_exports outcome.
                     r"^validations_and_metric_exports_completed",
-                    # ALL_DONE fires even though dataset_cleanup_and_validation failed.
+                    # ALL_DONE fires even though dataset_cleanup failed.
                     r"^apply_row_access_policies",
                     r"^apply_dataset_protection_tags",
                 ],
@@ -888,7 +908,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.*",
                     # ALL_SUCCESS requires update_managed_calculation_views to
                     # succeed, so this is upstream_failed too.
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
+                    # ALL_SUCCESS on the failed schema update, so upstream_failed too.
+                    r"^validate_source_table_datasets",
                 ],
                 expected_skipped_task_id_regexes=[],
                 # These indicate their respective groups completed,
@@ -975,13 +997,14 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.wait_to_continue_or_cancel",
                     r"^initialize_dag.handle_queueing_result",
                     r"^update_big_query_table_schemata",
+                    r"^validate_source_table_datasets",
                     r"^dataflow_pipelines.*",
                     r"^bq_refresh.*",
                     r"^update_managed_calculation_views",
                     r"^validations.*",
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup_and_validation",
+                    r"^dataset_cleanup",
                     r"^apply_row_access_policies",
                     r"^apply_dataset_protection_tags",
                 ],

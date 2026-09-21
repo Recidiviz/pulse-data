@@ -62,6 +62,7 @@ from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
+    execute_validate_source_table_datasets,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -325,6 +326,7 @@ def create_calculation_dag() -> None:
         trigger_rule=TriggerRule.ALL_DONE
     )
     apply_dataset_protection_tags = execute_apply_dataset_protection_tags()
+    validate_source_tables = execute_validate_source_table_datasets()
 
     with TaskGroup("bq_refresh") as bq_refresh:
         operations_bq_refresh_completion = refresh_bq_dataset_operator(
@@ -357,6 +359,11 @@ def create_calculation_dag() -> None:
     # deny policy protects them. Runs off to the side (non-fatal in the entrypoint) so it never
     # blocks the critical path.
     update_big_query_table_schemata >> apply_dataset_protection_tags
+
+    # Validate that the source-table datasets contain exactly the expected tables, off to
+    # the side so a validation failure surfaces the run as failed without blocking the
+    # critical path.
+    update_big_query_table_schemata >> validate_source_tables
 
     # --- step 2: dataflow_pipelines -----------------------------------
     with TaskGroup(group_id="dataflow_pipelines") as dataflow_pipelines_task_group:
@@ -459,11 +466,11 @@ def create_calculation_dag() -> None:
     # Deletes unmanaged views and tables, so it must not run after a failed view
     # update. ALL_SUCCESS gates it on update_all_views; the empty operator above is
     # its only other direct upstream.
-    dataset_cleanup_and_validation_task_id = "dataset_cleanup_and_validation"
-    dataset_cleanup_and_validation = build_kubernetes_pod_task(
-        task_id=dataset_cleanup_and_validation_task_id,
-        container_name=dataset_cleanup_and_validation_task_id,
-        arguments=["--entrypoint=DatasetCleanupAndValidationEntrypoint"],
+    dataset_cleanup_task_id = "dataset_cleanup"
+    dataset_cleanup = build_kubernetes_pod_task(
+        task_id=dataset_cleanup_task_id,
+        container_name=dataset_cleanup_task_id,
+        arguments=["--entrypoint=DatasetCleanupEntrypoint"],
         trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
@@ -484,7 +491,7 @@ def create_calculation_dag() -> None:
     )
     (
         [update_all_views, validations_and_metric_exports_completed]
-        >> dataset_cleanup_and_validation
+        >> dataset_cleanup
         >> apply_row_access_policies
     )
 

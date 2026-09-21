@@ -30,6 +30,9 @@ CHECK_FOR_VALID_WATERMARKS_TASK_ID = "check_for_valid_watermarks"
 # Task id for updating the schemas of the source table collections needed by the DAG.
 UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID = "update_big_query_table_schemata"
 
+# Task id for validating the source table datasets owned by the DAG's update group.
+VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID = "validate_source_table_datasets"
+
 
 # Task id for the task in raw data for files that fail to register with the operations
 # db -- we WANT to report these errors

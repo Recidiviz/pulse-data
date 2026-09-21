@@ -109,7 +109,13 @@ RawDataFileChunkingEntrypoint:
       cpu: 1000m
       memory: 1Gi
 
-DatasetCleanupAndValidationEntrypoint:
+DatasetCleanupEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
+ValidateSourceTableDatasetsEntrypoint:
   default_resources:
     limits:
       cpu: 500m

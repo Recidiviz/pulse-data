@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Entrypoint for deleting unmanaged views, tables, and datasets and validating
-source table datasets.
-"""
+"""Entrypoint for deleting unmanaged views, tables, and datasets."""
 import argparse
 import datetime
 import enum
@@ -37,12 +35,8 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.source_table_cleanup_validation import (
-    validate_clean_source_table_datasets,
-)
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
-    build_source_table_repository_for_collected_schemata,
     get_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_view_graphs import (
@@ -67,14 +61,12 @@ TEMP_DATASET_PREFIXES_TO_CLEAN_UP = [
 ]
 
 
-class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
-    """Entrypoint for deleting unmanaged views, tables, and datasets and validating
-    source table datasets.
-    """
+class DatasetCleanupEntrypoint(EntrypointInterface):
+    """Entrypoint for deleting unmanaged views, tables, and datasets."""
 
     @staticmethod
     def get_parser() -> argparse.ArgumentParser:
-        """Parses arguments for the dataset cleanup and validation process."""
+        """Parses arguments for the dataset cleanup process."""
         parser = argparse.ArgumentParser()
         parser.add_argument("--dry-run", action="store_true")
 
@@ -87,15 +79,6 @@ class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
         _delete_unmanaged_views_and_datasets(bq_client, dry_run=args.dry_run)
 
         _delete_empty_or_temp_datasets(dry_run=args.dry_run)
-
-        project_id = metadata.project_id()
-        source_table_repository = build_source_table_repository_for_collected_schemata(
-            project_id=project_id
-        )
-        validate_clean_source_table_datasets(
-            bq_client=bq_client,
-            source_table_repository=source_table_repository,
-        )
 
 
 def _delete_unmanaged_views_and_datasets(

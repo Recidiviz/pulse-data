@@ -872,7 +872,7 @@ class SourceTableUpdateManager:
         )
 
     # TODO(#33293): Delete tables in `regenerable()` collection datasets that do not exist in code anymore. We
-    #  validate all source table datasets in a separate `dataset_cleanup_and_validation` process.
+    #  validate all source table datasets in a separate `validate_source_table_datasets` process.
     def get_changes_to_apply_to_source_tables(
         self, source_table_collections: list[SourceTableCollection], log_file: str
     ) -> dict[BigQueryAddress, SourceTableWithRequiredUpdateTypes]:
@@ -1129,7 +1129,7 @@ class SourceTableUpdateManager:
             self._update_table_with_retries(source_table_collection, updates)
 
     # TODO(#33293): Delete tables in `regenerable()` collection datasets that do not exist in code anymore. We
-    #  validate all source table datasets in a separate `dataset_cleanup_and_validation` process.
+    #  validate all source table datasets in a separate `validate_source_table_datasets` process.
     def update_async(
         self,
         source_table_collections: list[SourceTableCollection],

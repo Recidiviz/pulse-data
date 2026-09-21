@@ -23,13 +23,13 @@ python -m recidiviz.entrypoints.entrypoint_executor \
 
 Example:
 python -m recidiviz.entrypoints.entrypoint_executor \
-    --entrypoint DatasetCleanupAndValidationEntrypoint \
+    --entrypoint DatasetCleanupEntrypoint \
     --dry-run
 
 Running locally, set the following environment variables:
 IS_DEV=true GOOGLE_CLOUD_PROJECT=[PROJECT] python \
     -m recidiviz.entrypoints.entrypoint_executor \
-    --entrypoint DatasetCleanupAndValidationEntrypoint \
+    --entrypoint DatasetCleanupEntrypoint \
     --dry-run
 """
 import argparse
@@ -56,11 +56,14 @@ from recidiviz.entrypoints.bigquery.cloud_sql_to_bq_refresh import (
 from recidiviz.entrypoints.bigquery.dataflow_metric_pruning_entrypoint import (
     DataflowMetricPruningEntrypoint,
 )
-from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
-    DatasetCleanupAndValidationEntrypoint,
+from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
+    DatasetCleanupEntrypoint,
 )
 from recidiviz.entrypoints.bigquery.rekey_tables_to_cmek_entrypoint import (
     RekeyTablesToCmekEntrypoint,
+)
+from recidiviz.entrypoints.bigquery.validate_source_table_datasets_entrypoint import (
+    ValidateSourceTableDatasetsEntrypoint,
 )
 from recidiviz.entrypoints.document_store.document_upload import (
     DocumentUploadEntrypoint,
@@ -113,7 +116,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     ApplyRowLevelPermissionsEntrypoint,
     BigQueryRefreshEntrypoint,
     DataflowMetricPruningEntrypoint,
-    DatasetCleanupAndValidationEntrypoint,
+    DatasetCleanupEntrypoint,
     DocumentUploadEntrypoint,
     IdentityServiceExportEntrypoint,
     RekeyTablesToCmekEntrypoint,
@@ -124,6 +127,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     RawDataChunkNormalizationEntrypoint,
     RawDataFileChunkingEntrypoint,
     UpdateBigQuerySourceTableSchemataEntrypoint,
+    ValidateSourceTableDatasetsEntrypoint,
     ValidationEntrypoint,
     UpdateManagedViewGraphEntrypoint,
     IngestCheckRawDataFlashingEntrypoint,

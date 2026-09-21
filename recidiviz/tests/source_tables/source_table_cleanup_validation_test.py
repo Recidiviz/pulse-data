@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for validate_clean_source_table_datasets"""
+
 import unittest
+from collections import defaultdict
 from collections.abc import Iterator
 from unittest.mock import MagicMock, create_autospec, patch
 
@@ -36,7 +38,10 @@ from recidiviz.source_tables.source_table_repository import SourceTableRepositor
 from recidiviz.source_tables.untracked_source_table_exemptions import (
     get_allowed_tables_in_source_table_datasets_with_no_config,
 )
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_source_table_repository import (
+    build_source_table_repository_for_collected_schemata,
     get_all_source_table_addresses,
 )
 
@@ -280,3 +285,48 @@ class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):
             "untracked_source_table_exemptions.py. Please remove them from "
             f"the exemption list:{BigQueryAddress.addresses_to_str(overlapping, indent_level=2)}",
         )
+
+
+# TODO(OBT-50580) Remove this test once _DATASETS_WITH_MULTIPLE_COLLECTIONS is deleted
+class TestDatasetsDoNotSpanUpdateGroups(unittest.TestCase):
+    """Guards the invariant that lets validate_clean_source_table_datasets run against a
+    repository filtered to a single update group.
+
+    validate_clean_source_table_datasets compares every actual table in a dataset against
+    the expected tables from the filtered repository. If two collections sharing a
+    dataset_id carried different update_groups, filtering to one group would leave that
+    dataset with a partial expected-table set, and the other group's tables would be
+    falsely reported as unexpected. This asserts that never happens.
+    """
+
+    def test_collections_sharing_a_dataset_agree_on_update_groups(self) -> None:
+        # Collections whose tables expire are skipped by the validation entirely, so they
+        # can't cause a false "unexpected tables" error and are excluded here.
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                repository = build_source_table_repository_for_collected_schemata(
+                    project_id=project_id
+                )
+
+            update_groups_by_dataset: dict[
+                str, set[frozenset[SourceTableUpdateGroup]]
+            ] = defaultdict(set)
+            for collection in repository.source_table_collections:
+                if collection.default_table_expiration_ms is not None:
+                    continue
+                update_groups_by_dataset[collection.dataset_id].add(
+                    frozenset(collection.update_groups or set())
+                )
+
+            datasets_spanning_groups = {
+                dataset_id: memberships
+                for dataset_id, memberships in update_groups_by_dataset.items()
+                if len(memberships) > 1
+            }
+            self.assertEqual(
+                {},
+                datasets_spanning_groups,
+                f"In project [{project_id}], these datasets have collections with "
+                f"differing update_groups, which would break per-update-group source "
+                f"table validation: {datasets_spanning_groups}",
+            )
