@@ -12,6 +12,16 @@ input_columns:
   TermId: STRING
   SentenceOrderTypeId: STRING
   parent_sentence_external_id_array: STRING
+  SentenceDetailUpdateDate: STRING
+  SegmentEndDate: DATE
+  SegmentPED: DATE
+  SegmentMaxYears: STRING
+  SegmentMaxMonths: STRING
+  SegmentMaxDays: STRING
+  SegmentYears: STRING
+  SegmentMonths: STRING
+  SegmentDays: STRING
+  projected_completion_date_max: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -52,6 +62,47 @@ output:
                       proj_completion_date: CorrectionsCompactEndDate
           external_id: SentenceId # Never null in scl_Sentence table
           parent_sentence_external_id_array: parent_sentence_external_id_array
+          sentence_lengths:
+            # A few sentences have no scl_SentenceDetail row, so no update datetime.
+            - $conditional:
+                - $if:
+                    $not_null: SentenceDetailUpdateDate
+                  $then:
+                    StateSentenceLength:
+                      # One row per sentence, so this is the current length, not a series.
+                      length_update_datetime: SentenceDetailUpdateDate
+                      projected_completion_date_max_external: projected_completion_date_max
+                      # SegmentEndDate is the sentence start plus its minimum length.
+                      projected_completion_date_min_external: SegmentEndDate
+                      parole_eligibility_date_external: SegmentPED
+                      sentence_length_days_max:
+                        $conditional:
+                          - $if:
+                              $or:
+                                - $not_null: SegmentMaxYears
+                                - $not_null: SegmentMaxMonths
+                                - $not_null: SegmentMaxDays
+                            $then:
+                              $custom:
+                                $function: us_ix_custom_parsers.max_and_min_lengths_days
+                                $args:
+                                  years_str: SegmentMaxYears
+                                  months_str: SegmentMaxMonths
+                                  days_str: SegmentMaxDays
+                      sentence_length_days_min:
+                        $conditional:
+                          - $if:
+                              $or:
+                                - $not_null: SegmentYears
+                                - $not_null: SegmentMonths
+                                - $not_null: SegmentDays
+                            $then:
+                              $custom:
+                                $function: us_ix_custom_parsers.max_and_min_lengths_days
+                                $args:
+                                  years_str: SegmentYears
+                                  months_str: SegmentMonths
+                                  days_str: SegmentDays
           sentence_type:
             $enum_mapping:
               $raw_text: SentenceOrderTypeId
