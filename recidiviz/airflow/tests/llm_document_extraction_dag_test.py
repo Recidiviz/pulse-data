@@ -37,6 +37,7 @@ from recidiviz.airflow.dags.utils.constants import (
     RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID,
     RUN_DOCUMENT_DISCOVERY_TASK_ID,
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
@@ -135,6 +136,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_fake_case_notes_frame_success_regexes = [
             r"^initialize_dag\..*$",
             rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+            rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
             r"^extraction_branching\.branch_(start|end)$",
             rf"^{self.us_xx_branch}\.document_collections_branching\.branch_(start|end)$",
             *self.non_target_document_collection_always_succeeds_regexes,
@@ -145,6 +147,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends = [
             r"^initialize_dag\..*$",
             rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+            rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
             r"^extraction_branching\.branch_start$",
             rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
             *self.non_target_document_collection_always_succeeds_regexes,
@@ -296,6 +299,19 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             for c in self.mock_bq_client.run_query_async.call_args_list
             if "INSERT INTO" in c.kwargs["query_str"]
         ]
+
+    def test_source_table_validation_is_non_blocking_side_branch(self) -> None:
+        """Validation runs after the schema update (so the group's tables exist) but is
+        a leaf: nothing downstream depends on it, so a validation failure surfaces the
+        run as failed without blocking the extraction branches."""
+        dag = self._create_dag()
+        self.assertIn(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID, dag.task_ids)
+        validate_task = dag.get_task(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID)
+        self.assertEqual(
+            {UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID},
+            validate_task.upstream_task_ids,
+        )
+        self.assertEqual(set(), validate_task.downstream_task_ids)
 
     def test_no_discovery_results(self) -> None:
         """When discovery finds no metadata updates, check_has_updates
@@ -519,6 +535,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                         r"^initialize_dag\.(record_dag_run_metadata|"
                         r"wait_to_continue_or_cancel|handle_queueing_result)$",
                         rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                        rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
                         r"^extraction_branching\..*$",
                     ],
                     expected_success_task_id_regexes=[
@@ -549,6 +566,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 ),
                 expected_failure_task_id_regexes=[
                     rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    # The validation side branch depends on the schema update, so it
+                    # upstream-fails alongside the branches.
+                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
                     # Everything under extraction_branching upstream-fails except the
                     # ALL_DONE after_upload_noop tasks below. The branch_end scaffolding
                     # tasks also upstream-fail (their inputs failed rather than skipped).
@@ -662,6 +682,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
                     rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
                     r"^extraction_branching\.branch_start$",
                     # All us_xx document collection branches' after_upload_noop tasks
                     # succeed (ALL_DONE).
@@ -692,6 +713,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     r"^initialize_dag\.(record_dag_run_metadata|"
                     r"wait_to_continue_or_cancel|handle_queueing_result)$",
                     rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
                     r"^extraction_branching\..*$",
                 ],
                 expected_success_task_id_regexes=[

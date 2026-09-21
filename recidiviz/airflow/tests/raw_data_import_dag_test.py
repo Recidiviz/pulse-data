@@ -49,6 +49,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 from recidiviz.airflow.dags.utils.branch_utils import BRANCH_START_TASK_NAME
 from recidiviz.airflow.dags.utils.constants import (
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
 from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
 from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
@@ -226,11 +227,28 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         schema_update_task = dag.get_task(UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID)
         # Schema update runs before the warm pool so its pod doesn't race the
         # placeholder burst for node provisioning; branching then gates on the pool.
-        self.assertEqual({"scale_up_warm_pool"}, schema_update_task.downstream_task_ids)
+        # It also fans out to the non-blocking source table validation side branch.
+        self.assertEqual(
+            {"scale_up_warm_pool", VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID},
+            schema_update_task.downstream_task_ids,
+        )
         self.assertIn(
             f"{RAW_DATA_BRANCHING}.{BRANCH_START_TASK_NAME}",
             dag.get_task("scale_up_warm_pool").downstream_task_ids,
         )
+
+    def test_source_table_validation_is_non_blocking_side_branch(self) -> None:
+        """Validation runs after the schema update (so the group's tables exist) but is
+        a leaf: nothing downstream depends on it, so a validation failure surfaces the
+        run as failed without blocking the import branches."""
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        self.assertIn(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID, dag.task_ids)
+        validate_task = dag.get_task(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID)
+        self.assertEqual(
+            {UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID},
+            validate_task.upstream_task_ids,
+        )
+        self.assertEqual(set(), validate_task.downstream_task_ids)
 
     def test_lock_before_anything_else(self) -> None:
         """Tests that we acquire the resource locks before we do anything else in
@@ -2710,13 +2728,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
-        # The schema-update task is built via the constructor rather than .partial,
-        # so it needs its own no-op patch.
-        self.schema_update_operator_patcher = patch(
+        # The source-table tasks (schema update, validation) are built via the
+        # constructor rather than .partial, so they need their own no-op patch.
+        self.source_table_tasks_operator_patcher = patch(
             "recidiviz.airflow.dags.utils.source_table_tasks.build_kubernetes_pod_task",
             side_effect=fake_operator_constructor,
         )
-        self.schema_update_operator_patcher.start()
+        self.source_table_tasks_operator_patcher.start()
 
         self.dag_kick_off_patcher = patch(
             "recidiviz.airflow.dags.raw_data.sequencing_tasks.trigger_dag"
@@ -2803,7 +2821,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # operators ---
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
-        self.schema_update_operator_patcher.stop()
+        self.source_table_tasks_operator_patcher.stop()
         self.dag_kick_off_patcher.stop()
         self.chunking_metadata_patcher.stop()
         # task interactions
@@ -2910,6 +2928,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
                     "update_big_query_table_schemata",
+                    "validate_source_table_datasets",
                     "raw_data_branching.branch_start",
                     "scale_up_warm_pool",
                     "scale_down_warm_pool",
@@ -2948,6 +2967,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
                     "update_big_query_table_schemata",
+                    "validate_source_table_datasets",
                     "raw_data_branching.branch_start",
                     "scale_up_warm_pool",
                     "scale_down_warm_pool",

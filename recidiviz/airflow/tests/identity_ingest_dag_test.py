@@ -28,6 +28,7 @@ from recidiviz.airflow.dags.utils.config_utils import TENANT_FILTER
 from recidiviz.airflow.dags.utils.constants import (
     DATAFLOW_OPERATOR_TASK_ID,
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
@@ -91,12 +92,11 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
         )
         self.kubernetes_pod_operator_patcher.start()
 
-        self.schema_update_operator_patcher = patch(
-            "recidiviz.airflow.dags.utils.source_table_tasks."
-            "build_kubernetes_pod_task",
+        self.source_table_tasks_operator_patcher = patch(
+            "recidiviz.airflow.dags.utils.source_table_tasks.build_kubernetes_pod_task",
             side_effect=fake_operator_constructor,
         )
-        self.schema_update_operator_patcher.start()
+        self.source_table_tasks_operator_patcher.start()
 
         self.dataflow_operator_patcher = patch(
             "recidiviz.airflow.dags.utils.dataflow_pipeline_group."
@@ -110,7 +110,7 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
         self.ingest_regions_patcher.stop()
         self.cloud_sql_operator_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
-        self.schema_update_operator_patcher.stop()
+        self.source_table_tasks_operator_patcher.stop()
         self.dataflow_operator_patcher.stop()
         super().tearDown()
 
@@ -165,6 +165,19 @@ class TestIdentityIngestDag(AirflowIntegrationTest):
             f"identity_ingest_pipelines.{BRANCH_START_TASK_NAME}",
             schema_update_task.downstream_task_ids,
         )
+
+    def test_source_table_validation_is_non_blocking_side_branch(self) -> None:
+        """Validation runs after the schema update (so the group's tables exist) but is
+        a leaf: nothing downstream depends on it, so a validation failure surfaces the
+        run as failed without blocking the tenant pipelines."""
+        dag = self._build_dag()
+        self.assertIn(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID, dag.task_ids)
+        validate_task = dag.get_task(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID)
+        self.assertEqual(
+            {UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID},
+            validate_task.upstream_task_ids,
+        )
+        self.assertEqual(set(), validate_task.downstream_task_ids)
 
     def test_each_branch_has_max_update_datetimes_task(self) -> None:
         """Each per-tenant branch reads raw data upper bound dates from operations

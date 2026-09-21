@@ -46,6 +46,7 @@ from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
+    execute_validate_source_table_datasets,
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -72,6 +73,8 @@ def create_identity_ingest_dag() -> None:
 
     update_big_query_table_schemata = execute_update_big_query_table_schemata()
 
+    validate_source_tables = execute_validate_source_table_datasets()
+
     with TaskGroup(group_id="identity_ingest_pipelines") as identity_ingest_pipelines:
         branches_by_tenant = {}
         for state_code in get_direct_ingest_states_launched_in_env():
@@ -90,6 +93,11 @@ def create_identity_ingest_dag() -> None:
         )
 
     initialize_dag >> update_big_query_table_schemata >> identity_ingest_pipelines
+
+    # Side branch off the schemata update so a validation failure surfaces the run as
+    # failed without blocking the pipelines. It runs after the schemata update so the
+    # group's tables exist.
+    update_big_query_table_schemata >> validate_source_tables
 
 
 identity_ingest_dag = create_identity_ingest_dag()

@@ -62,6 +62,7 @@ from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
+    execute_validate_source_table_datasets,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
@@ -220,9 +221,12 @@ def create_llm_document_extraction_branch_map() -> dict[str, list[DAGNode] | DAG
     render_template_as_native_obj=True,
 )
 def create_llm_document_extraction_dag() -> None:
+    """Creates the LLM document extraction DAG."""
     initialize_dag = initialize_llm_document_extraction_dag_group()
 
     update_big_query_table_schemata = execute_update_big_query_table_schemata()
+
+    validate_source_tables = execute_validate_source_table_datasets()
 
     with TaskGroup(
         LLM_DOCUMENT_EXTRACTION_BRANCHING
@@ -237,6 +241,11 @@ def create_llm_document_extraction_dag() -> None:
         >> update_big_query_table_schemata
         >> llm_document_extraction_branching
     )
+
+    # Side branch off the schemata update so a validation failure surfaces the run as
+    # failed without blocking the pipelines. It runs after the schemata update so the
+    # group's tables exist.
+    update_big_query_table_schemata >> validate_source_tables
 
 
 llm_document_extraction_dag = create_llm_document_extraction_dag()

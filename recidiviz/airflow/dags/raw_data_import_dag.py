@@ -143,6 +143,7 @@ from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups import (
 )
 from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_update_big_query_table_schemata,
+    execute_validate_source_table_datasets,
 )
 from recidiviz.airflow.dags.utils.warm_pool import (
     WarmPoolSpec,
@@ -647,6 +648,8 @@ def create_raw_data_import_dag() -> None:
 
     update_big_query_table_schemata = execute_update_big_query_table_schemata()
 
+    validate_source_tables = execute_validate_source_table_datasets()
+
     # Pre-warm node capacity before the branches run, then release it once the
     # run is done, to avoid pod-preemption. (OBT-2245)
     warm_pool_setup, warm_pool_teardown = build_warm_pool_setup_and_teardown(
@@ -683,6 +686,11 @@ def create_raw_data_import_dag() -> None:
         >> raw_data_branching
         >> warm_pool_teardown
     )
+
+    # Side branch off the schemata update so a validation failure surfaces the run as
+    # failed without blocking the pipelines. It runs after the schemata update so the
+    # group's tables exist.
+    update_big_query_table_schemata >> validate_source_tables
 
     # ---------------------------------------------------------------------------------
 
