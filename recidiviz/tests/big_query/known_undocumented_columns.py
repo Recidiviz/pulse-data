@@ -5169,9 +5169,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "district",
         "state_code",
     ],
-    BigQueryAddress.from_str("sentencing_views.sentencing_staff_record"): [
-        "supervises_all",
-    ],
     BigQueryAddress.from_str(
         "sentencing_views.us_ix_sentencing_case_disposition_preprocessed"
     ): [
