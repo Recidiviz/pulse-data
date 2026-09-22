@@ -76,13 +76,6 @@ schema:
     description: "Whether the user is a Recidiviz employee"
     type: BOOLEAN
     mode: NULLABLE
-  - name: justice_involved_person_pseudo_id
-    description:
-      "Pseudonymized identifier of the justice-involved person who triggered
-      the event. Matches user_id, since the JII app authenticates residents by
-      their pseudonymized ID."
-    type: STRING
-    mode: NULLABLE
   - name: loaded_at
     description: "Timestamp when the record was loaded into the data warehouse"
     type: TIMESTAMP
