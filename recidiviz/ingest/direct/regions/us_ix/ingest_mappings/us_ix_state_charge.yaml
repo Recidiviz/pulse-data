@@ -7,6 +7,7 @@ input_columns:
   OffenseId: STRING
   OffenseDate: DATE
   Count: STRING
+  OffenseTypeId: STRING
   OffenseTypeDesc: STRING
   Offense_statute: STRING
   VIOLENT_OFFENSE_IND: STRING
@@ -50,6 +51,7 @@ output:
                 county_code: CountyId
                 statute: Offense_statute
                 description: OffenseTypeDesc
+                offense_type: OffenseTypeId # The id for a specific crime, not a crime category
                 is_violent: $variable(violent_bool)
                 is_sex_offense: $variable(sex_offense_bool)
                 counts: Count

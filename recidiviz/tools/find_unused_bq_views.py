@@ -129,9 +129,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions.most_severe_senten
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
-    CONSECUTIVE_SENTENCES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
     SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
 )
@@ -398,10 +395,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     },
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in partners summit analysis (Andrew Gaidus, 2025-07-02)"
-    ),
-    CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
-        "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
-        "(Nick Tallant, 2024-09-11)"
     ),
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
         "This is a generic view that helps understand LSI-R scoring which may be "

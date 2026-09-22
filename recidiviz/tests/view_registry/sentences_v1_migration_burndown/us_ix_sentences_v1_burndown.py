@@ -17,21 +17,6 @@
 """US_IX exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.jii_texting.jii_to_text import (
-    JII_TO_TEXT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.meetings.clients import (
-    MEETINGS_CLIENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
-    METRIC_BENCHMARKS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
-    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
-    SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
     SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
 )
@@ -47,22 +32,6 @@ from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summ
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
-    US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
-    state_specific_supervision_projected_completion_date_spans_address,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
-    US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.common.constants.states import StateCode
 
 # For each US_IX metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -71,50 +40,6 @@ from recidiviz.common.constants.states import StateCode
 US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
-    "INSIGHTS": {
-        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "JII_TEXTING": {
-        JII_TO_TEXT_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
     "SENTENCING": {
         SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: {
             COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
@@ -125,32 +50,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "WORKFLOWS_FIRESTORE": {
-        CLIENT_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-        },
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: {
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "MEETINGS": {
-        MEETINGS_CLIENTS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_IX
-                ),
-            },
-            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
         },
     },

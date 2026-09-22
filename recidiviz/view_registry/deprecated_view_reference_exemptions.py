@@ -76,9 +76,6 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
-    US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_consecutive_sentences_preprocessed import (
     US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -96,9 +93,6 @@ from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision
 )
 from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
-    US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
@@ -251,22 +245,10 @@ _ALL_SCHEMA_TABLE_VIEWS = [
 ]
 
 # These are views that still reference state-specific sentences v1 tables and have been
-# exempted. For example the views listed under (StateCode.US_IX, StateIncarcerationSentence)
-# are views that reference the us_ix_normalized_state.state_incarceration_sentence table
+# exempted. For example the views listed under (StateCode.US_ND, StateIncarcerationSentence)
+# are views that reference the us_nd_normalized_state.state_incarceration_sentence table
 # directly.
 _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
-    (StateCode.US_IX, StateIncarcerationSentence): {
-        US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_incarceration_sentence reference as "
-            "part of the v2 sentences migration"
-        ),
-    },
-    (StateCode.US_IX, StateSupervisionSentence): {
-        US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-    },
     (StateCode.US_ND, StateIncarcerationSentence): {
         US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46257): This view should be deleted once ND no longer "
@@ -768,16 +750,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
-        ),
-    },
-    # TODO(#46255): Delete `us_ix_consecutive_sentences_preprocessed` once US_IX is
-    #  migrated to v2 infra
-    US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#46257): Delete `us_nd_consecutive_sentences_preprocessed` once US_ND is

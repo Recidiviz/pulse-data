@@ -6555,14 +6555,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "supervision_district",
         "supervision_office",
     ],
-    BigQueryAddress.from_str("sessions.us_ix_consecutive_sentences_preprocessed"): [
-        "consecutive_sentence_id",
-        "parent_sentence_order",
-        "person_id",
-        "sentence_id",
-        "sentence_type",
-        "state_code",
-    ],
     BigQueryAddress.from_str("sessions.us_ix_drug_screens_preprocessed"): [
         "drug_screen_date",
         "earliest_drug_screen_date",
