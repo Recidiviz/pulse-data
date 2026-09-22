@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Entrypoint for applying row level permissions to all tables in our deployed datasets."""
+
 import argparse
 import logging
 from concurrent import futures
@@ -36,7 +37,7 @@ from recidiviz.big_query.row_access_policy_query_builder import (
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
-    get_source_table_datasets,
+    get_externally_hydrated_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
@@ -111,7 +112,9 @@ def _apply_row_level_permissions_to_all_tables() -> None:
 
     client = BigQueryClientImpl()
 
-    managed_source_table_datasets = get_source_table_datasets(metadata.project_id())
+    managed_source_table_datasets = get_externally_hydrated_source_table_datasets(
+        metadata.project_id()
+    )
     managed_view_datasets = DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED
     managed_datasets = managed_source_table_datasets.union(managed_view_datasets)
 

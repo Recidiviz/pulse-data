@@ -35,7 +35,7 @@ from recidiviz.big_query.big_query_view_update_sandbox_context import (
 )
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_source_table_repository import (
-    get_source_table_datasets,
+    get_externally_hydrated_source_table_datasets,
 )
 
 MIN_AGE_TO_DELETE_UNMANAGED_RESOURCES = datetime.timedelta(hours=12)
@@ -193,14 +193,16 @@ def cleanup_datasets_and_delete_unmanaged_views(
 
 def validate_builders_not_in_current_source_datasets(
     view_builders: Sequence[BigQueryViewBuilder],
-    sandbox_context: BigQueryViewSandboxContext
-    | BigQueryViewUpdateSandboxContext
-    | None,
+    sandbox_context: (
+        BigQueryViewSandboxContext | BigQueryViewUpdateSandboxContext | None
+    ),
 ) -> None:
     """Validates that no |view_builders| have an overlapping dataset name with the
     defined source table repository for the current project.
     """
-    source_table_datasets = get_source_table_datasets(metadata.project_id())
+    source_table_datasets = get_externally_hydrated_source_table_datasets(
+        metadata.project_id()
+    )
     validate_builders_not_in_source_datasets(
         source_table_datasets, view_builders, sandbox_context=sandbox_context
     )
@@ -209,9 +211,9 @@ def validate_builders_not_in_current_source_datasets(
 def validate_builders_not_in_source_datasets(
     source_table_datasets: set[str],
     view_builders: Sequence[BigQueryViewBuilder],
-    sandbox_context: BigQueryViewSandboxContext
-    | BigQueryViewUpdateSandboxContext
-    | None,
+    sandbox_context: (
+        BigQueryViewSandboxContext | BigQueryViewUpdateSandboxContext | None
+    ),
 ) -> None:
     """Validates that |view_builders| have no overlapping dataset names with
     |source_table_datasets|, throwing if any do.

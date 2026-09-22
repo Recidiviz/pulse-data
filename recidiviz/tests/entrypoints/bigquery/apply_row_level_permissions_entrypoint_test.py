@@ -96,7 +96,10 @@ class TestTableMayNeedRowAccessPolicies(unittest.TestCase):
 # public pulse-data mirror, where the group config files are excluded.
 @patch(f"{_ENTRYPOINT_MODULE}.access_group_configs_are_loaded", new=lambda: True)
 @patch(f"{_ENTRYPOINT_MODULE}.DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED", set())
-@patch(f"{_ENTRYPOINT_MODULE}.get_source_table_datasets", return_value=set())
+@patch(
+    f"{_ENTRYPOINT_MODULE}.get_externally_hydrated_source_table_datasets",
+    return_value=set(),
+)
 @patch(f"{_ENTRYPOINT_MODULE}.metadata")
 @patch(f"{_ENTRYPOINT_MODULE}.BigQueryClientImpl")
 class TestApplyRowLevelPermissionsEntrypoint(unittest.TestCase):
