@@ -47,7 +47,7 @@ from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.deployed_source_table_repository import (
-    get_source_table_datasets,
+    get_externally_hydrated_source_table_datasets,
 )
 from recidiviz.view_registry.deployed_view_graphs import (
     builders_for_all_view_graphs_across_projects,
@@ -95,8 +95,8 @@ class ViewManagerTest(unittest.TestCase):
             fake_materialize_view_to_table
         )
 
-        self.view_source_table_datasets = get_source_table_datasets(
-            metadata.project_id()
+        self.externally_hydrated_source_table_datasets = (
+            get_externally_hydrated_source_table_datasets(metadata.project_id())
         )
 
     def tearDown(self) -> None:
@@ -726,7 +726,7 @@ class ViewManagerTest(unittest.TestCase):
         for view_builder in builders_for_all_view_graphs_across_projects():
             self.assertNotIn(
                 view_builder.dataset_id,
-                self.view_source_table_datasets,
+                self.externally_hydrated_source_table_datasets,
                 f"Found view [{view_builder.view_id}] in source-table-only "
                 f"dataset [{view_builder.dataset_id}]",
             )
@@ -767,7 +767,7 @@ class ViewManagerTest(unittest.TestCase):
                 )
 
     def test_no_source_table_datasets_registered_as_managed(self) -> None:
-        for source_table_dataset_id in self.view_source_table_datasets:
+        for source_table_dataset_id in self.externally_hydrated_source_table_datasets:
             self.assertNotIn(
                 source_table_dataset_id,
                 DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,

@@ -16,6 +16,7 @@
 # =============================================================================
 """Builds the source table repository of all source tables deployed to a project's
 BigQuery graph, along with helpers to query its addresses and datasets."""
+
 from functools import cache
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -125,6 +126,21 @@ def get_source_table_datasets(
     return {
         source_table_collection.dataset_id
         for source_table_collection in source_table_repository.source_table_collections
+    }
+
+
+@cache
+def get_externally_hydrated_source_table_datasets(
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
+) -> set[str]:
+    """Returns the dataset ids of source tables hydrated outside any view graph."""
+    return {
+        collection.dataset_id
+        for collection in collect_source_table_collections_hydrated_outside_view_graphs(
+            project_id
+        )
     }
 
 
