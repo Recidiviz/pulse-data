@@ -70,6 +70,8 @@ ALERT_EMOJIS = [
     ":shrimp:",
     ":llama:",
     ":tropical_fish:",
+    ":dodo:",
+    ":lizard:",
     # Food
     ":taco:",
     ":pizza:",
@@ -82,6 +84,8 @@ ALERT_EMOJIS = [
     ":cookie:",
     ":croissant:",
     ":tea:",
+    ":corn:",
+    ":egg:",
     # Nature/Space
     ":rainbow:",
     ":sparkles:",
@@ -98,7 +102,6 @@ ALERT_EMOJIS = [
     ":comet:",
     # Random
     ":ghost:",
-    ":corn:",
     ":rock:",
     ":roller_coaster:",
     ":bus:",
@@ -113,6 +116,12 @@ ALERT_EMOJIS = [
     ":bucket:",
     ":chair:",
     ":shopping_trolley:",
+    ":taxi:",
+    ":socks:",
+    ":gift:",
+    ":banjo:",
+    ":paperclip:",
+    ":ladder:",
 ]
 
 _CONFIG_PATH = VALIDATION_ALERTING_CONFIG_PATH
