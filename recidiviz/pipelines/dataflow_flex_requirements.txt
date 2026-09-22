@@ -57,7 +57,7 @@ opentelemetry-semantic-conventions==0.54b1
 # Must stay up-to-date with latest protobuf version in the pyproject.toml
 protobuf==5.29.6
 # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
-python-Levenshtein==0.27.4
+python-Levenshtein==0.27.5
 psycopg2-binary==2.9.13
 SQLAlchemy==1.4.54
 thefuzz==0.22.1
