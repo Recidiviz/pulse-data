@@ -17,6 +17,7 @@ input_columns:
   WTSK_USER_ID: STRING
   RMF_RELEASE_TYPE: STRING
   termination_reason: STRING
+  is_interstate_compact_in: BOOLEAN
   start_date: DATE
   end_date: DATE
   rn: INTEGER
@@ -122,6 +123,9 @@ output:
               special_conditions: active_special_conditions
               case_type_reason: CTH_CASE_CAT_REAS
               supervision_level_reason: SLH_SUP_LEVEL_REAS
+              # TODO(TX-1067): Replace with a dated compact source once ITD names one;
+              # TAMaster carries no history, so every period takes today's value.
+              is_interstate_compact_in: is_interstate_compact_in
           supervision_site: supervision_site
           supervising_officer_staff_external_id: WTSK_USER_ID
           supervising_officer_staff_external_id_type:
