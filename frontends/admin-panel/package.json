@@ -20,7 +20,7 @@
     "handlebars": "^4.7.9",
     "history": "^5.0.1",
     "http-status": "^1.8.1",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "moment-timezone": "^0.6.3",
     "new-github-issue-url": "^1.1.0",
     "polished": "^4.1.3",
