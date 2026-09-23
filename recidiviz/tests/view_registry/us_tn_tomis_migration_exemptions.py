@@ -79,9 +79,6 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_pr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_sessions import (
-    US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
@@ -224,9 +221,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2009): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2009): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2009): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Hearing_latest"): {
-        US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER.address: "TODO(TN-2010): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.IncompatiblePair_latest"
