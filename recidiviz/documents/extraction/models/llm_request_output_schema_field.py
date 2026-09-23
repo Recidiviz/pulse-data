@@ -63,6 +63,8 @@ from recidiviz.documents.extraction.extraction_results_columns import (
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     COMPANION_METADATA_COLUMN_NAMES,
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     VALUE_FIELD_NAME,
 )
@@ -95,6 +97,12 @@ RESERVED_OUTPUT_SCHEMA_FIELD_NAMES = frozenset(
         *COMPANION_METADATA_COLUMN_NAMES,
     }
 )
+
+
+_ENTITY_RESOLUTION_RESERVED_FIELD_NAMES = frozenset(
+    {ENTITY_ID_FIELD_NAME, ENTRY_NUMS_FIELD_NAME}
+)
+"""Names of reserved fields the entity-resolution process adds to a schema."""
 
 
 def _is_not_reserved_view_column_name(
@@ -571,8 +579,8 @@ class LLMRequestOutputSchemaField(abc.ABC):
         """Builds a collection of sibling fields from their YAMLs, constructing
         each field only after the fields its semantic-consistency constraints
         reference, and returning them in their original (YAML) order. Raises on
-        duplicate names, references to unknown fields in constraints, self-references,
-        or dependency cycles.
+        duplicate names, reserved names, references to unknown fields in constraints,
+        self-references, or dependency cycles.
         """
         names_in_order = []
         field_yaml_by_name = {}
@@ -589,6 +597,15 @@ class LLMRequestOutputSchemaField(abc.ABC):
             field_dependency_names_by_name[
                 field_name
             ] = cls._constraint_dependency_names(field_name, field_yaml)
+
+        if reserved_names_used := sorted(
+            set(names_in_order) & _ENTITY_RESOLUTION_RESERVED_FIELD_NAMES
+        ):
+            raise ValueError(
+                f"Output schema may not define field(s) named "
+                f"{reserved_names_used} — they are auto-injected by the "
+                f"framework onto every resolved entity."
+            )
 
         for field_name, dependency_names in field_dependency_names_by_name.items():
             if unknown_names := dependency_names - set(names_in_order):

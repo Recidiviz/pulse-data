@@ -31,13 +31,19 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
     ENTITIES_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     LLMRequestOutputSchema,
+    LLMRequestOutputSchemaType,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ApplicableWhenValueConstraint,
+    ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     LLMOutputFieldMode,
     LLMOutputFieldType,
     PrimitiveScalarLLMRequestOutputSchemaField,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
 )
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -145,6 +151,20 @@ class LLMRequestOutputSchemaTest(TestCase):
             ).has_inferred_fields
         )
 
+    def test_schema_type_is_first_order_when_relevance_criteria_set(self) -> None:
+        self.assertEqual(
+            LLMRequestOutputSchemaType.FIRST_ORDER,
+            _build_schema(_field("a")).schema_type,
+        )
+
+    def test_schema_type_is_entity_resolution_when_relevance_criteria_unset(
+        self,
+    ) -> None:
+        schema = attr.evolve(_build_schema(_field("a")), relevance_criteria=None)
+        self.assertEqual(
+            LLMRequestOutputSchemaType.ENTITY_RESOLUTION, schema.schema_type
+        )
+
     def test_none_relevance_criteria_has_no_is_relevant_field(self) -> None:
         # A None relevance_criteria declares a schema with no is_relevant field
         # (the entity-resolution shape); the property returns None and all_fields
@@ -186,8 +206,9 @@ class LLMRequestOutputSchemaTest(TestCase):
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
-                "Output schema is not an entity-resolution schema — it declares "
-                "relevance criteria — so it has no [entities] field to read."
+                "Output schema is a [first_order] schema, not an "
+                "entity-resolution schema, so it has no [entities] field to "
+                "read."
             ),
         ):
             _ = schema.entities_field
@@ -229,6 +250,47 @@ class LLMRequestOutputSchemaTest(TestCase):
                     )
                 ],
             )
+
+    def test_entity_resolution_shape_may_use_entity_id_and_entry_nums(self) -> None:
+        # The entity_id/entry_nums reserved-name check lives in
+        # build_output_schema_fields (llm_request_output_schema_field_test.py),
+        # which only a YAML parse goes through. A schema built directly from
+        # already-built fields, the way build_entity_resolution_output_schema
+        # does, bypasses it and may carry entity_id and entry_nums. This
+        # constructs the entities field the same way.
+        def _structural_field(
+            name: str, scalar_type: LLMOutputFieldType
+        ) -> PrimitiveScalarLLMRequestOutputSchemaField:
+            return PrimitiveScalarLLMRequestOutputSchemaField(
+                name=name,
+                description=_DESCRIPTION,
+                required=True,
+                inferred_field_config=None,
+                scalar_type=scalar_type,
+            )
+
+        entities_field = ArrayOfStructLLMRequestOutputSchemaField(
+            name=ENTITIES_FIELD_NAME,
+            description=_DESCRIPTION,
+            required=True,
+            inferred_field_config=None,
+            fields=[
+                _structural_field(ENTITY_ID_FIELD_NAME, LLMOutputFieldType.INTEGER),
+                _structural_field("employer_name", LLMOutputFieldType.STRING),
+                _structural_field(ENTRY_NUMS_FIELD_NAME, LLMOutputFieldType.INTEGER),
+            ],
+            primary_keys=["employer_name"],
+        )
+        schema = LLMRequestOutputSchema(
+            full_batch_description=_DESCRIPTION,
+            result_level_description=_DESCRIPTION,
+            relevance_criteria=None,
+            user_defined_fields=[entities_field],
+        )
+        self.assertEqual(
+            [ENTITY_ID_FIELD_NAME, "employer_name", ENTRY_NUMS_FIELD_NAME],
+            [field.name for field in schema.entities_field.fields],
+        )
 
     def test_duplicate_top_level_field_names_raise(self) -> None:
         # Raised by the scope builder before the container is constructed.

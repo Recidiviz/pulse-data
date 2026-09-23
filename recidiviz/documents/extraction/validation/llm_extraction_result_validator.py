@@ -52,8 +52,8 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
 from recidiviz.documents.extraction.validation.adversarial_interpretation_consistency_check import (
     AdversarialInterpretationConsistencyCheck,
 )
-from recidiviz.documents.extraction.validation.all_null_entity_check import (
-    AllNullEntityCheck,
+from recidiviz.documents.extraction.validation.all_null_array_entry_check import (
+    AllNullArrayEntryCheck,
 )
 from recidiviz.documents.extraction.validation.citation_grounding_check import (
     CitationGroundingCheck,
@@ -217,6 +217,7 @@ class LLMExtractionResultValidator:
             *RequiredFieldConfidenceCheck.issues(output=raw_output),
             *RelevantButNoValuesPresentCheck.issues(output=raw_output),
             *AdversarialInterpretationConsistencyCheck.issues(output=raw_output),
+            *AllNullArrayEntryCheck.issues(output=raw_output),
             *CitationGroundingCheck.issues(
                 output=raw_output, source_document_text=document_text
             ),
@@ -245,7 +246,6 @@ class LLMExtractionResultValidator:
                 output=raw_output, expected_entry_nums=expected_entry_nums
             ),
             *DuplicateEntityCheck.issues(output=raw_output),
-            *AllNullEntityCheck.issues(output=raw_output),
         ]
 
     @staticmethod

@@ -72,7 +72,7 @@ class ValidationCheckType(StrEnum):
     CITATION_OFFSET_DRIFT = "CITATION_OFFSET_DRIFT"
     ENTRY_PARTITION_VIOLATION = "ENTRY_PARTITION_VIOLATION"
     DUPLICATE_ENTITY = "DUPLICATE_ENTITY"
-    ALL_NULL_ENTITY = "ALL_NULL_ENTITY"
+    ALL_NULL_ARRAY_ENTRY = "ALL_NULL_ARRAY_ENTRY"
 
     @property
     def category(self) -> ValidationCheckCategory:
@@ -86,7 +86,7 @@ class ValidationCheckType(StrEnum):
             ValidationCheckType.HALLUCINATED_CITATION,
             ValidationCheckType.ENTRY_PARTITION_VIOLATION,
             ValidationCheckType.DUPLICATE_ENTITY,
-            ValidationCheckType.ALL_NULL_ENTITY,
+            ValidationCheckType.ALL_NULL_ARRAY_ENTRY,
         ):
             return ValidationCheckCategory.EXTRACTION_ERROR
         if self in (

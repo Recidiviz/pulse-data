@@ -515,7 +515,7 @@ class ArrayOfIntegerSchemaTest(TestCase):
 
     def _generate_field(self, *, min_items: int | None) -> dict[str, Any]:
         field = ArrayOfIntegerLLMRequestOutputSchemaField(
-            name="entry_nums",
+            name="page_numbers",
             description=_DESCRIPTION,
             required=True,
             inferred_field_config=None,
@@ -525,7 +525,7 @@ class ArrayOfIntegerSchemaTest(TestCase):
             LLMJsonSchemaGenerator.generate(
                 _schema_with_fields(field, relevance_criteria=_RELEVANCE_CRITERIA)
             )
-        )["properties"]["entry_nums"]
+        )["properties"]["page_numbers"]
 
     def test_array_of_integer_with_min_items(self) -> None:
         self.assertEqual(

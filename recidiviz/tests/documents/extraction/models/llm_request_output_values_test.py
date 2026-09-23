@@ -964,8 +964,9 @@ class LLMRequestOutputValuesEntityResolutionSchemaTest(TestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"^Output schema is not an entity-resolution schema — it declares "
-            r"relevance criteria — so it has no \[entities\] field to read\.$",
+            r"^Output schema is a \[first_order\] schema, not an "
+            r"entity-resolution schema, so it has no \[entities\] field to "
+            r"read\.$",
         ):
             first_order_values.resolved_entities()
 

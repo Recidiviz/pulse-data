@@ -50,6 +50,8 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     description_with_enum_value_guidance,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    ENTITY_ID_FIELD_NAME,
+    ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -146,6 +148,8 @@ class ReservedFieldNamesTest(TestCase):
     the framework constructs the injected is_relevant field — and is instead
     rejected wherever user fields are aggregated (see the array sub-field test
     here and the schema-container tests in llm_request_output_schema_test.py).
+    Names that collide with entity-resolution framework fields are rejected by
+    build_output_schema_fields at every nesting level.
     """
 
     def test_every_reserved_name_raises_at_parse(self) -> None:
@@ -216,6 +220,37 @@ class ReservedFieldNamesTest(TestCase):
                     fields=[
                         _field("employer"),
                         _field("is_relevant", field_type="BOOLEAN"),
+                    ],
+                )
+            )
+
+    def test_entity_resolution_reserved_name_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema may not define field(s) named ['entity_id'] — "
+                "they are auto-injected by the framework onto every resolved "
+                "entity."
+            ),
+        ):
+            _build(_field(ENTITY_ID_FIELD_NAME, field_type="INTEGER"))
+
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Output schema may not define field(s) named ['entry_nums'] — "
+                "they are auto-injected by the framework onto every resolved "
+                "entity."
+            ),
+        ):
+            _build(
+                _field(
+                    "employers",
+                    field_type="ARRAY_OF_STRUCT",
+                    primary_keys=["employer_name"],
+                    fields=[
+                        _field("employer_name"),
+                        _field(ENTRY_NUMS_FIELD_NAME, field_type="INTEGER"),
                     ],
                 )
             )

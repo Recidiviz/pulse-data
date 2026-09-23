@@ -155,6 +155,17 @@ def _no_required_fields_config() -> LLMExtractorConfig:
             default_minimum_confidence_level=ConfidenceLevel.INFERRED,
         ),
     )
+    return _rebind_output_schema(output_schema)
+
+
+_OPTIONAL_ARRAY_FIELD_NAME = "notes"
+_OPTIONAL_ARRAY_SUB_FIELD_NAMES = ["note_title", "note_body"]
+
+
+def _rebind_output_schema(output_schema: LLMRequestOutputSchema) -> LLMExtractorConfig:
+    """Returns the fake first-order config rebound to |output_schema|, with no
+    entity groups.
+    """
     config = get_first_order_llm_extractor_config(
         _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
     )
@@ -1171,12 +1182,12 @@ class LLMRelevanceFreeExtractionResultValidatorTest(_ValidatorTestBase):
                     )
 
 
-class LLMAllNullEntityValidatorWiringTest(_ValidatorTestBase):
-    """Wires AllNullEntityCheck through the validator against the ER collection
-    synthesized from the fake collection's `location` entity group. Its single
-    entity field is optional, so an all-null entity is structurally conformant —
-    under the `assignment` group the required `assignment_name` would fail
-    structural conformance first, and the check would never be reached.
+class LLMAllNullArrayEntryValidatorWiringTest(_ValidatorTestBase):
+    """Wires AllNullArrayEntryCheck through the validator against the ER
+    collection synthesized from the fake collection's `location` entity group.
+    Its single entity field is optional, so an all-null entity is structurally
+    conformant; under the `assignment` group the required `assignment_name` would
+    fail structural conformance first, and the check would never be reached.
     """
 
     def setUp(self) -> None:
@@ -1202,7 +1213,7 @@ class LLMAllNullEntityValidatorWiringTest(_ValidatorTestBase):
         )
         self.assertTrue(validation.will_retry)
         [issue] = validation.audit_issues
-        self.assertEqual(ValidationCheckType.ALL_NULL_ENTITY, issue.check_type)
+        self.assertEqual(ValidationCheckType.ALL_NULL_ARRAY_ENTRY, issue.check_type)
         self.assertEqual("entities[0]", issue.field_name)
 
 

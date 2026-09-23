@@ -21,6 +21,8 @@ must return, which of them are required, the enum values they may take, and
 the semantic-consistency constraints between them. The fields themselves are
 modeled in `llm_request_output_schema_field`.
 """
+from enum import Enum
+
 import attr
 
 from recidiviz.common import attr_validators, recidiviz_attr_validators
@@ -38,6 +40,18 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field_names
 )
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
+
+
+class LLMRequestOutputSchemaType(Enum):
+    """The kind of extractor collection an output schema belongs to."""
+
+    FIRST_ORDER = "first_order"
+    """A schema parsed from a collection's collection.yaml."""
+
+    ENTITY_RESOLUTION = "entity_resolution"
+    """A schema built on top of a first-order schema, which declares the entity-resolution
+    output structure for that schema.
+    """
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -63,9 +77,8 @@ class LLMRequestOutputSchema:
     """The owning collection's full relevance statement — a "Whether the document
     ..." clause (e.g. "Whether the document mentions jobs, work, pay, employers,
     or job searching"). Used verbatim as the description of the framework-injected
-    `is_relevant` field. `None` declares a schema with no `is_relevant` field (its
-    presence is the `is_relevant` signal). This is used for the entity resolution
-    extractor schemas, where every composite document is relevant by construction.
+    `is_relevant` field. This is always None in entity-resolution schemas, since 
+    entity-resolved documents are always relevant.
     """
 
     user_defined_fields: list[LLMRequestOutputSchemaField] = attr.ib(
@@ -102,6 +115,13 @@ class LLMRequestOutputSchema:
                 f"Output schema may not define a [{IS_RELEVANT_FIELD_NAME}] "
                 f"field — it is auto-injected by the framework."
             )
+
+    @property
+    def schema_type(self) -> LLMRequestOutputSchemaType:
+        """Returns the kind of collection this schema belongs to."""
+        if self.relevance_criteria is None:
+            return LLMRequestOutputSchemaType.ENTITY_RESOLUTION
+        return LLMRequestOutputSchemaType.FIRST_ORDER
 
     @property
     def is_relevant_field(self) -> PrimitiveScalarLLMRequestOutputSchemaField | None:
@@ -197,10 +217,10 @@ class LLMRequestOutputSchema:
         when this schema is not an entity-resolution schema — a first-order
         schema is relevance-bearing and declares no `entities` field.
         """
-        if self.relevance_criteria is not None:
+        if self.schema_type is not LLMRequestOutputSchemaType.ENTITY_RESOLUTION:
             raise ValueError(
-                f"Output schema is not an entity-resolution schema — it "
-                f"declares relevance criteria — so it has no "
+                f"Output schema is a [{self.schema_type.value}] schema, not an "
+                f"entity-resolution schema, so it has no "
                 f"[{ENTITIES_FIELD_NAME}] field to read."
             )
         return assert_type(
