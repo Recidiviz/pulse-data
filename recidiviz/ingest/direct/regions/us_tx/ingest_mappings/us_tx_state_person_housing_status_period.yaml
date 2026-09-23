@@ -6,7 +6,7 @@ input_columns:
   SID_NO: STRING
   start_date: DATE
   end_date: DATE
-  in_rrc: STRING
+  facility_label: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -20,16 +20,5 @@ output:
           housing_status_end_date: end_date
           housing_status_type:
             $enum_mapping:
-              $raw_text: in_rrc
-              $mappings:
-                StatePersonHousingStatusType.INTERNAL_UNKNOWN:
-                  - "NOT IN RRC"
-                StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
-                  - "RRC - HOUSTON"
-                  - "RRC - DALLAS"
-                  - "RRC - BEAUMONT"
-                  - "RRC - AUSTIN"
-                  - "RRC - EDINBURG"
-                  - "RRC - EL_PASO_NORTH"
-                  - "RRC - EL_PASO_SOUTH"
-                  - "RRC - FORT_WORTH"
+              $raw_text: facility_label
+              $custom_parser: us_tx_custom_enum_parsers.parse_housing_status_type

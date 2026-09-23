@@ -25,6 +25,9 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_person_housing_status_period import (
+    StatePersonHousingStatusType,
+)
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
@@ -36,6 +39,9 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+
+# Label the housing status period view gives a span where someone was in no facility.
+NOT_IN_FACILITY_LABEL = "NOT IN FACILITY"
 
 
 def parse_custodial_auth(
@@ -256,3 +262,19 @@ def parse_contact_reason(
         return StateSupervisionContactReason.GENERAL_CONTACT
 
     return StateSupervisionContactReason.INTERNAL_UNKNOWN
+
+
+def parse_housing_status_type(
+    raw_text: str,
+) -> StatePersonHousingStatusType:
+    """Returns the housing status a facility label denotes.
+
+    "HALFWAY HOUSES@@BEAUMONT CENTER" and "SUBSTANCE ABUSE - THERAPEUTIC COMMUNITY -
+    RESIDENTIAL@@EL PASO TTC" both give TEMPORARY_OR_SUPPORTIVE_HOUSING; "NOT IN
+    FACILITY" gives INTERNAL_UNKNOWN. Which facility someone was in, and what kind it
+    was, stays in the raw text rather than splitting the enum.
+    """
+    if raw_text == NOT_IN_FACILITY_LABEL:
+        return StatePersonHousingStatusType.INTERNAL_UNKNOWN
+
+    return StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING
