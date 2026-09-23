@@ -19,6 +19,8 @@ import os
 import unittest
 from unittest import mock
 
+from google.cloud import bigquery
+
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
@@ -40,6 +42,23 @@ _BODY_WITH_BANNER = (
     "<!-- pii-doc-linked -->\n\n#### What is the issue?\n"
 )
 _BODY_WITHOUT_BANNER = "#### What is the issue?\n\nThe task never cleared."
+
+
+_EXTERNAL_ID_COLUMNS = {
+    "person_id": 0,
+    "external_id": 1,
+    "id_type": 2,
+    "state_code": 3,
+}
+
+
+def _external_id_row(
+    *, person_id: int, external_id: str, id_type: str, state_code: str
+) -> bigquery.table.Row:
+    """Build one state_person_external_id row as _query_rows would return it."""
+    return bigquery.table.Row(
+        (person_id, external_id, id_type, state_code), _EXTERNAL_ID_COLUMNS
+    )
 
 
 def _doc_from_lines(lines: list[str]) -> dict:
@@ -405,3 +424,139 @@ class TestResolveLinearIdForIssue(unittest.TestCase):
         # tickets).
         mock_build_client.side_effect = KeyError("no linear api key secret")
         self.assertIsNone(run_pg.resolve_linear_id_for_issue(_ISSUE))
+
+
+class TestLookUpPersonIds(unittest.TestCase):
+    """Tests for look_up_person_ids — resolving PII-doc IDs to internal person_ids.
+
+    We store most states' external IDs zero-padded (US_TX_TDCJ, US_TN_DOC and
+    US_MI_DOC are entirely padded) while a reporter writes the number as it
+    appears on their screen, so the comparison ignores leading zeros on both
+    sides. These tests pin that, and pin that a genuine miss still aborts the run.
+    """
+
+    STATE_CODE = "US_TN"
+    BQ_PROJECT = "recidiviz-staging"
+    STORED_ID = "00123456"
+    UNPADDED_ID = "123456"
+    PERSON_ID = 487200000000000001
+
+    def setUp(self) -> None:
+        self.ctx = run_pg.DiagnosisContext()
+
+    def _look_up(self, external_ids: list[str]) -> str:
+        return run_pg.look_up_person_ids(
+            external_ids, self.STATE_CODE, self.BQ_PROJECT, self.ctx
+        )
+
+    @staticmethod
+    def _passes(mock_query: mock.MagicMock) -> list[bool]:
+        """Returns the ignore_leading_zeros flag of each lookup pass that ran."""
+        return [
+            call.kwargs["ignore_leading_zeros"] for call in mock_query.call_args_list
+        ]
+
+    def test_unpadded_id_resolves_against_a_padded_stored_id(self) -> None:
+        # The reported failure: the PII doc holds the number without its leading
+        # zeros, so the exact pass finds nobody and the fallback rescues it.
+        row = _external_id_row(
+            person_id=self.PERSON_ID,
+            external_id=self.STORED_ID,
+            id_type="US_TN_DOC",
+            state_code=self.STATE_CODE,
+        )
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", side_effect=[[], [row]]
+        ) as mock_query:
+            result = self._look_up([self.UNPADDED_ID])
+
+        self.assertEqual([False, True], self._passes(mock_query))
+        self.assertIn(str(self.PERSON_ID), result)
+        self.assertTrue(self.ctx.person_ids_resolved)
+
+    def test_an_exact_match_never_reaches_the_zero_stripped_pass(self) -> None:
+        # US_MI issues both a padded and an unpadded id type whose values collide
+        # once zeros are stripped, so a hit on the exact pass must be final.
+        row = _external_id_row(
+            person_id=self.PERSON_ID,
+            external_id="0123456",
+            id_type="US_MI_DOC",
+            state_code="US_MI",
+        )
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", return_value=[row]
+        ) as mock_query:
+            run_pg.look_up_person_ids(["0123456"], "US_MI", self.BQ_PROJECT, self.ctx)
+
+        self.assertEqual([False], self._passes(mock_query))
+
+    def test_every_matching_row_is_returned(self) -> None:
+        # One submitted id can be registered under several id_types; the agent
+        # disambiguates by name, so it needs to see all the candidates.
+        rows = [
+            _external_id_row(
+                person_id=self.PERSON_ID,
+                external_id=self.STORED_ID,
+                id_type="US_TN_DOC",
+                state_code=self.STATE_CODE,
+            ),
+            _external_id_row(
+                person_id=487200000000000002,
+                external_id=self.STORED_ID,
+                id_type="US_TN_OTHER",
+                state_code=self.STATE_CODE,
+            ),
+        ]
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", return_value=rows
+        ):
+            result = self._look_up([self.UNPADDED_ID])
+
+        self.assertIn("487200000000000001", result)
+        self.assertIn("487200000000000002", result)
+
+    def test_a_genuine_miss_still_raises(self) -> None:
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", return_value=[]
+        ) as mock_query:
+            with self.assertRaises(run_pg.PersonIDLookupError):
+                self._look_up([self.UNPADDED_ID])
+
+        # Both passes ran before giving up.
+        self.assertEqual([False, True], self._passes(mock_query))
+        self.assertFalse(self.ctx.person_ids_resolved)
+
+    def test_the_failure_message_omits_the_ids_themselves(self) -> None:
+        # It is surfaced verbatim in a public GitHub comment.
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", return_value=[]
+        ):
+            with self.assertRaises(run_pg.PersonIDLookupError) as raised:
+                self._look_up([self.UNPADDED_ID])
+
+        self.assertNotIn(self.UNPADDED_ID, str(raised.exception))
+        self.assertIn(self.STATE_CODE, str(raised.exception))
+
+    def test_blank_ids_raise_without_querying(self) -> None:
+        with mock.patch.object(run_pg, "_query_person_external_id_rows") as mock_query:
+            with self.assertRaises(run_pg.PersonIDLookupError):
+                self._look_up(["", "   "])
+
+        mock_query.assert_not_called()
+
+    def test_both_the_submitted_and_the_stored_form_are_registered(self) -> None:
+        # The redaction sweep replaces known external ids by exact match, so it
+        # needs whichever spelling ends up in the draft comment.
+        row = _external_id_row(
+            person_id=self.PERSON_ID,
+            external_id=self.STORED_ID,
+            id_type="US_TN_DOC",
+            state_code=self.STATE_CODE,
+        )
+        with mock.patch.object(
+            run_pg, "_query_person_external_id_rows", side_effect=[[], [row]]
+        ):
+            self._look_up([self.UNPADDED_ID])
+
+        self.assertIn(self.UNPADDED_ID, self.ctx.known_external_ids)
+        self.assertIn(self.STORED_ID, self.ctx.known_external_ids)

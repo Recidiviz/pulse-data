@@ -82,6 +82,11 @@ import requests
 from google.auth import impersonated_credentials
 from google.cloud import bigquery, secretmanager
 
+from recidiviz.case_triage.edovo.external_id_matching import (
+    PERSON_EXTERNAL_ID_ADDRESS,
+    strip_leading_zeros,
+    zero_stripped,
+)
 from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
@@ -103,7 +108,7 @@ from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils i
     parse_doc,
     section_has_content,
 )
-from recidiviz.utils.string_formatting import truncate_string_if_necessary
+from recidiviz.utils.string_formatting import fix_indent, truncate_string_if_necessary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -400,10 +405,14 @@ class PersonIDLookupError(DiagnosisFailure):
         "**could not be resolved to person IDs in BigQuery**."
     )
     GUIDANCE = (
-        "Possible causes:\n"
+        "Leading zeros are matched loosely, so a padding mismatch is not the "
+        "cause. Possible causes:\n"
         "- The IDs in the PII doc linked at the top of this ticket (or, for a "
-        "ticket filed before per-ticket docs existed, in go/github-pii) are "
-        "incorrect or malformed.\n"
+        "ticket filed before per-ticket docs existed, in go/github-pii) were "
+        "mistyped, or belong to a different state than the ticket is labelled "
+        "for.\n"
+        "- The client has not reached `normalized_state` yet — check whether "
+        "ingest has run for this state since they were added.\n"
         "- The diagnosis service account is not a member of this state's "
         "row-access-policy group. Add the state to "
         "`pg_diagnosis_data_access_states` in "
@@ -594,10 +603,22 @@ def _fetch_shared_pii_doc_section(
 
 
 def _query_rows(
-    sql: str, ctx: DiagnosisContext, limit: int = 51
+    sql: str,
+    ctx: DiagnosisContext,
+    limit: int = 51,
+    job_config: bigquery.QueryJobConfig | None = None,
 ) -> list[bigquery.table.Row]:
-    """Run a BQ query and return up to `limit` rows. Raises on any BQ error."""
-    return list(islice(ctx.get_bq_client().query(sql).result(), limit))
+    """Run a BQ query and return up to `limit` rows. Raises on any BQ error.
+
+    Args:
+        sql: The query to run.
+        ctx: Per-run context supplying the BigQuery client.
+        limit: Maximum number of rows to pull off the result iterator.
+        job_config: Job config carrying query parameters, for callers that bind
+            values rather than interpolating them into the SQL.
+    """
+    job = ctx.get_bq_client().query(sql, job_config=job_config)
+    return list(islice(job.result(), limit))
 
 
 def _format_rows_as_table(rows: list[bigquery.table.Row]) -> str:
@@ -730,29 +751,114 @@ def read_repo_file(path: str, repo_path: str) -> str:
         return f"Read error: {e}"
 
 
+def _query_person_external_id_rows(
+    *,
+    external_ids: list[str],
+    state_code: str,
+    bq_project: str,
+    ctx: DiagnosisContext,
+    ignore_leading_zeros: bool,
+) -> list[bigquery.table.Row]:
+    """Returns state_person_external_id rows for the given IDs within one state.
+
+    With ignore_leading_zeros, both sides of the comparison are zero-stripped, so
+    "123456" matches a stored "00123456". Without it the comparison is exact.
+    """
+    if ignore_leading_zeros:
+        match_values = sorted({strip_leading_zeros(eid) for eid in external_ids})
+        match_column = zero_stripped("external_id")
+    else:
+        match_values = sorted(set(external_ids))
+        match_column = "external_id"
+
+    sql = fix_indent(
+        f"""
+        SELECT person_id, external_id, id_type, state_code
+        FROM `{bq_project}.{PERSON_EXTERNAL_ID_ADDRESS.to_str()}`
+        WHERE state_code = @state_code
+            AND {match_column} IN UNNEST(@match_values)
+        """,
+        indent_level=0,
+    )
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("state_code", "STRING", state_code),
+            bigquery.ArrayQueryParameter("match_values", "STRING", match_values),
+        ]
+    )
+    return _query_rows(sql, ctx, job_config=job_config)
+
+
 def look_up_person_ids(
     external_ids: list[str],
     state_code: str,
     bq_project: str,
     ctx: DiagnosisContext,
 ) -> str:
-    """Look up person_ids from external IDs. Raises PersonIDLookupError if none found."""
+    """Returns a table of person_ids for the given external IDs.
+
+    Matches exactly first, and only when that finds nobody retries ignoring
+    leading zeros. The retry exists because we store most states' IDs zero-padded
+    while a reporter writes the number as it appears on their screen, so a US_TN
+    doc number written "123456" has to reach the stored "00123456" and returns:
+
+        person_id | external_id | id_type   | state_code
+        487200000000000001 | 00123456 | US_TN_DOC | US_TN
+
+    The exact pass has to come first, because zero-stripping is not safe to apply
+    everywhere: US_MI issues both US_MI_DOC (padded to 7) and US_MI_DOC_ID
+    (unpadded), whose values collide once zeros are stripped. Stripping up front
+    turns 74.7% of otherwise unambiguous US_MI lookups into multi-candidate ones.
+
+    Every row matching any of the given IDs comes back, so one ID can still
+    produce several rows -- one per id_type it is registered under. The caller
+    picks between them.
+
+    Raises PersonIDLookupError when neither pass matches, which aborts the agent
+    loop: a diagnosis that never reached the reported client is worse than none.
+
+    Args:
+        external_ids: IDs read out of the ticket's PII doc, in whatever form the
+            reporter wrote them.
+        state_code: State whose IDs these are. Use US_IX for Idaho.
+        bq_project: GCP project holding normalized_state.
+        ctx: Per-run context, used for the BigQuery client and to record every ID
+            seen so the redaction sweep can find it later.
+    """
     ctx.register_external_ids(external_ids)
-    quoted = ", ".join(f"'{eid}'" for eid in external_ids)
-    sql = (
-        f"SELECT person_id, external_id, id_type, state_code "
-        f"FROM `{bq_project}.normalized_state.state_person_external_id` "
-        f"WHERE external_id IN ({quoted}) AND state_code = '{state_code}'"
-    )
+    cleaned_external_ids = sorted({eid.strip() for eid in external_ids if eid.strip()})
+    if not cleaned_external_ids:
+        raise PersonIDLookupError(
+            f"No usable external IDs to look up in state [{state_code}]: the PII "
+            f"doc yielded [{len(external_ids)}] value(s), all of them blank."
+        )
+
     try:
-        rows = _query_rows(sql, ctx)
+        rows = _query_person_external_id_rows(
+            external_ids=cleaned_external_ids,
+            state_code=state_code,
+            bq_project=bq_project,
+            ctx=ctx,
+            ignore_leading_zeros=False,
+        )
+        if not rows:
+            rows = _query_person_external_id_rows(
+                external_ids=cleaned_external_ids,
+                state_code=state_code,
+                bq_project=bq_project,
+                ctx=ctx,
+                ignore_leading_zeros=True,
+            )
     except Exception as e:
         logger.exception("BigQuery query failed")
         return f"BigQuery error: {e}"
     if not rows:
+        # The IDs themselves stay out of the message: it is surfaced verbatim in
+        # a public GitHub comment, and the count is what a reader can act on.
         raise PersonIDLookupError(
-            f"No person IDs found for external_ids={external_ids}, "
-            f"state_code={state_code}"
+            f"No person IDs found in state [{state_code}] for the "
+            f"[{len(cleaned_external_ids)}] external ID(s) read from the PII "
+            f"doc, with or without leading zeros."
         )
     ctx.register_external_ids([str(r["external_id"]) for r in rows])
     ctx.person_ids_resolved = True
@@ -844,7 +950,7 @@ TOOLS = [
                 "external_ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of external IDs from the PII doc (e.g. ['02636448', '02297793']).",
+                    "description": "List of external IDs from the PII doc, exactly as written there (e.g. ['00EXAMPLE1', 'EXAMPLE-0002']). Leading zeros do not need to match how the ID is stored.",
                 },
                 "state_code": {
                     "type": "string",
@@ -976,6 +1082,10 @@ If you're not confident which task/opportunity is the right match, pick the best
 Use the look_up_person_ids tool with the external IDs from the PII doc and the state code.
 For US_ID tickets, use state_code 'US_IX' (they share the same data).
 The tool returns person_id, external_id, id_type, and state_code for each match.
+
+Pass the IDs exactly as the PII doc writes them. The tool ignores leading zeros on
+both sides, so do not pad, strip, or otherwise reformat an ID and retry it — a miss
+means the ID is wrong or the person is absent, not that the padding was off.
 
 In some cases, two `person_id` values may be associated with the same
 `(state_code, external_id)` pair (different `id_type`s). If this happens,
