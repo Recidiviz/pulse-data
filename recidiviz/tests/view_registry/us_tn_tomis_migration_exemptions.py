@@ -423,9 +423,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Violations_latest"): {
         NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-2053): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
-    BigQueryAddress.from_str("us_tn_raw_data_views.AssignedStaff_all"): {
-        SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER.address: "TODO(TN-1968): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
     BigQueryAddress.from_str("us_tn_raw_data_views.OffenderCredit_all"): {
         US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address: "TODO(TN-2021): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address: "TODO(TN-2022): Migrate this reference off of legacy TOMIS 1.0 raw data",

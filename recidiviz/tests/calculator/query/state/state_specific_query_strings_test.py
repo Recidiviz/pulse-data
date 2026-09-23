@@ -117,11 +117,13 @@ class GetPathwaysLastUpdatedDateTests(unittest.TestCase):
     def test_supervision_us_tn_uses_both_tables(self) -> None:
         result = get_pathways_supervision_last_updated_date()
         self.assertIn("us_tn_raw_data_views.SupervisionPlan_all", result)
-        self.assertIn("us_tn_raw_data_views.AssignedStaff_all", result)
+        # AssignedStaff is covered by its own canonical TOMIS 1.0/2.0 analog
+        # view (TN-1968) rather than referenced directly.
+        self.assertIn("us_tn_tomis_1_0_analog_views.AssignedStaff_materialized", result)
 
     def test_supervision_us_tn_subquery_takes_max_across_tables(self) -> None:
         result = get_pathways_supervision_last_updated_date()
-        # Both US_TN tables appear as flat inner SELECTs in the UNION ALL
+        # Both US_TN sources appear as flat inner SELECTs in the UNION ALL
         self.assertIn(
             "SELECT 'US_TN' AS state_code, update_datetime"
             " FROM `{project_id}.us_tn_raw_data_views.SupervisionPlan_all`",
@@ -129,7 +131,7 @@ class GetPathwaysLastUpdatedDateTests(unittest.TestCase):
         )
         self.assertIn(
             "SELECT 'US_TN' AS state_code, update_datetime"
-            " FROM `{project_id}.us_tn_raw_data_views.AssignedStaff_all`",
+            " FROM `{project_id}.us_tn_tomis_1_0_analog_views.AssignedStaff_materialized`",
             result,
         )
         # The outer GROUP BY drives the MAX across all tables for each state
