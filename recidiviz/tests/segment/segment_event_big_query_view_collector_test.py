@@ -109,19 +109,10 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
         }
         # Segment event tables tracked via source-table config that currently have no
         # SegmentEventBigQueryViewBuilder.
-        # TODO(OBT-51598): decide whether these need view builders or should move to
-        # excluded_table_ids.
-        events_without_view_builders = {
-            "frontend_cre_category_selected",
-            "frontend_cre_filters_updated",
-            "frontend_cre_resource_viewed",
-            "frontend_cre_subcategory_selected",
-            "frontend_us_ma_spanish_launch_banner_viewed",
-        }
         yaml_addresses = {
             address
             for address in segment_event_source_table_addresses
-            if address.table_id not in excluded_table_ids | events_without_view_builders
+            if address.table_id not in excluded_table_ids
         }
 
         # Check for YAMLs without view builders

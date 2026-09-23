@@ -77,14 +77,6 @@ COMMON_VESTIGES = [
     # As of 7/23/25 this is unused, but we may still want to reference Day Zero info in
     # the future.
     "static_reference_tables.day_zero_reports",
-    # Tracked via source-table config (OBT-51456) but not referenced by any view.
-    # TODO(OBT-51598): resolve via view builders (which would remove these) or confirm
-    # they should stay tracked-but-unreferenced.
-    "jii_frontend_prod_segment_metrics.frontend_cre_category_selected",
-    "jii_frontend_prod_segment_metrics.frontend_cre_filters_updated",
-    "jii_frontend_prod_segment_metrics.frontend_cre_resource_viewed",
-    "jii_frontend_prod_segment_metrics.frontend_cre_subcategory_selected",
-    "jii_frontend_prod_segment_metrics.frontend_us_ma_spanish_launch_banner_viewed",
     # Segment infrastructure tables (tracks/identifies/users/pages) and event tables that
     # are not currently referenced in the view graph but are tracked for source table coverage.
     "auth0_events.failed_login",
