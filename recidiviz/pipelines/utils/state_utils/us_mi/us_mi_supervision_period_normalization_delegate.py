@@ -15,18 +15,40 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_MI implementation of the StateSpecificSupervisionNormalizationDelegate."""
-from typing import List, Optional
+from copy import copy
+from typing import Dict, List, Optional
 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import CriticalRangesBuilder
 from recidiviz.ingest.direct.regions.us_mi.constants import COMS_MIGRATION_DATE
-from recidiviz.persistence.entity.activity.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.activity.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import SUCCESSFUL_TERMINATIONS
+
+# Prefixes used to preserve the overlapping incarceration period's own admission/
+# release reason as context on inferred IN_CUSTODY periods, since neither
+# StateSupervisionPeriodAdmissionReason nor StateSupervisionPeriodTerminationReason
+# has a value describing "became in-custody while remaining nominally supervised".
+_INFERRED_ADMISSION_REASON_RAW_TEXT_PREFIX = (
+    "INFERRED_FROM_INCARCERATION_ADMISSION_REASON"
+)
+_INFERRED_TERMINATION_REASON_RAW_TEXT_PREFIX = (
+    "INFERRED_FROM_INCARCERATION_RELEASE_REASON"
+)
 
 
 class UsMiSupervisionNormalizationDelegate(
@@ -76,3 +98,118 @@ class UsMiSupervisionNormalizationDelegate(
             return StateSupervisionLevel.IN_CUSTODY
 
         return sp.supervision_level
+
+    def infer_additional_periods(
+        self,
+        person_id: int,
+        supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateSupervisionPeriod]:
+        """Infers additional supervision periods with a supervision_level of
+        IN_CUSTODY for any span of time where a supervision period overlaps with an
+        incarceration period, so that a client who is simultaneously supervised and
+        incarcerated shows an IN_CUSTODY supervision level for that span. The
+        original supervision periods are left unmodified; each inferred period is a
+        new, separate period covering just the overlapping sub-span."""
+        return supervision_periods + self._infer_in_custody_periods(
+            person_id, supervision_periods, incarceration_periods
+        )
+
+    @staticmethod
+    def _infer_in_custody_periods(
+        person_id: int,
+        supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateSupervisionPeriod]:
+        """Returns a new, separate StateSupervisionPeriod with a supervision_level of
+        IN_CUSTODY for each critical range where a supervision period and an
+        incarceration period overlap. Uses the CriticalRangesBuilder to create a set
+        of key spans that either have no periods, an SP, an IP, or overlapping
+        SPs/IPs, then infers an IN_CUSTODY period for any span with both an
+        overlapping SP and an overlapping IP."""
+        if not supervision_periods or not incarceration_periods:
+            return []
+
+        critical_range_builder = CriticalRangesBuilder(
+            [*supervision_periods, *incarceration_periods]
+        )
+
+        inferred_periods: List[StateSupervisionPeriod] = []
+
+        # The number of periods that have been inferred so far from the supervision
+        # period with external_id=key, used to build a unique external_id suffix.
+        inferred_period_count_by_sp_external_id: Dict[str, int] = {}
+
+        for critical_range in critical_range_builder.get_sorted_critical_ranges():
+            overlapping_sps = (
+                critical_range_builder.get_objects_overlapping_with_critical_range(
+                    critical_range, StateSupervisionPeriod
+                )
+            )
+            overlapping_ips = (
+                critical_range_builder.get_objects_overlapping_with_critical_range(
+                    critical_range, StateIncarcerationPeriod
+                )
+            )
+            if not overlapping_sps or not overlapping_ips:
+                continue
+
+            # It's rare, but a person could have more than one overlapping
+            # supervision or incarceration period for the same span (e.g. dual
+            # supervision types). Arbitrarily use the first of each, mirroring the
+            # same simplification made in infer_incarceration_periods_from_in_custody_sps.
+            source_sp = overlapping_sps[0]
+            source_ip = overlapping_ips[0]
+
+            if source_sp.supervision_level == StateSupervisionLevel.IN_CUSTODY:
+                continue
+
+            inferred_period_count = inferred_period_count_by_sp_external_id.get(
+                source_sp.external_id, 0
+            )
+            inferred_period_count_by_sp_external_id[source_sp.external_id] = (
+                inferred_period_count + 1
+            )
+
+            is_open = critical_range.upper_bound_exclusive_date is None
+
+            # Note: this is a plain shallow copy, not copy_entities_and_add_unique_ids
+            # - the unique id is generated further down, once the segment's own
+            # distinguishing fields (external_id, dates) are set. Generating it here,
+            # from the still-source_sp-identical copy, would give every segment split
+            # off of the same source_sp an identical (non-unique) id.
+            segment_sp = copy(source_sp)
+            segment_sp = deep_entity_update(
+                segment_sp,
+                external_id=f"{source_sp.external_id}-{inferred_period_count}-IN-CUSTODY",
+                start_date=critical_range.lower_bound_inclusive_date,
+                termination_date=critical_range.upper_bound_exclusive_date,
+                supervision_level=StateSupervisionLevel.IN_CUSTODY,
+                supervision_level_raw_text=None,
+                admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                admission_reason_raw_text=(
+                    f"{_INFERRED_ADMISSION_REASON_RAW_TEXT_PREFIX}_"
+                    f"{source_ip.admission_reason.value if source_ip.admission_reason else 'UNKNOWN'}"
+                ),
+                termination_reason=(
+                    None
+                    if is_open
+                    else StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+                ),
+                termination_reason_raw_text=(
+                    None
+                    if is_open
+                    else (
+                        f"{_INFERRED_TERMINATION_REASON_RAW_TEXT_PREFIX}_"
+                        f"{source_ip.release_reason.value if source_ip.release_reason else 'UNKNOWN'}"
+                    )
+                ),
+                case_type_entries=[],
+            )
+            update_entity_with_globally_unique_id(
+                root_entity_id=person_id, entity=segment_sp
+            )
+
+            inferred_periods.append(segment_sp)
+
+        return inferred_periods

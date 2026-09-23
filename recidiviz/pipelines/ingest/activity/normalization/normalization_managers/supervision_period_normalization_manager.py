@@ -140,9 +140,11 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         # pylint: disable=unused-argument
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateSupervisionPeriod]:
         """Some states may require additional supervision periods to be inserted
-        based on gaps in information. For instance, periods that represent active absconsions.
+        based on gaps in information. For instance, periods that represent active
+        absconsions, or periods that represent overlap with incarceration.
         """
         return supervision_periods
 
@@ -232,7 +234,9 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 )
 
             mid_processing_periods = self.delegate.infer_additional_periods(
-                self._person_id, mid_processing_periods
+                self._person_id,
+                mid_processing_periods,
+                self._incarceration_periods,
             )
 
             mid_processing_periods = (
