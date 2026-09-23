@@ -3742,6 +3742,45 @@ DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS = EventDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_REGISTERED_PRIMARY_INSIGHTS_USERS_WHO_SUPERVISE_USERS_WITH_ELIGIBLE_CASELOADS_IN_PAST_YEAR = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_insights_users_who_supervise_users_with_eligible_caseloads_in_past_year",
+    display_name="Distinct Registered Primary Supervisor Homepage Users Who Supervise Users With Eligible Caseloads In Past Year",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who have signed up/logged into "
+    "Supervisor Homepage at least once and supervise at least one officer who has had an eligible caseload in the past year",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={
+            "user_supervises_users_with_eligible_caseloads_in_past_year": ["true"],
+        },
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_INSIGHTS_USERS_WHO_SUPERVISE_USERS_WITH_ELIGIBLE_CASELOADS_IN_PAST_YEAR = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_insights_users_who_supervise_users_with_eligible_caseloads_in_past_year",
+    display_name="Distinct Logged In Primary Supervisor Homepage Users Who Supervise Users With Eligible Caseloads In Past Year",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who logged into Supervisor Homepage "
+    "and supervise at least one officer who has had an eligible caseload in the past year",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_USER_LOGIN,
+        event_conditions_dict={
+            "user_supervises_users_with_eligible_caseloads_in_past_year": ["true"],
+        },
+    ),
+)
+
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WHO_SUPERVISE_USERS_WITH_ELIGIBLE_CASELOADS_IN_PAST_YEAR = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users_who_supervise_users_with_eligible_caseloads_in_past_year",
+    display_name="Distinct Active Primary Supervisor Homepage Users Who Supervise Users With Eligible Caseloads In Past Year",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users having at least one active usage "
+    "event during the time period who supervise at least one officer who has had an eligible caseload in the past year",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "user_supervises_users_with_eligible_caseloads_in_past_year": ["true"],
+        },
+    ),
+)
+
 DISTINCT_PROVISIONED_PRIMARY_SHP_OPERATIONS_USERS = SpanDistinctUnitCountMetric(
     name="distinct_provisioned_primary_shp_operations_users",
     display_name="Distinct Provisioned Primary Supervisor Homepage Operations Module Users",
