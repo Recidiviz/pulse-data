@@ -42,6 +42,9 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationResultStatus,
 )
+from recidiviz.validation.views.classification.recommended_custody_level_future_score_increase import (
+    RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_NAME,
+)
 
 DEFAULT_GITHUB_LABELS = [VALIDATION_LABEL, TEAM_STATE_POD_LABEL]
 PASSING_VALIDATION_STATUSES = {
@@ -124,6 +127,12 @@ ALERT_EMOJIS = [
     ":ladder:",
 ]
 
+# Validations that should always use a specific emoji in Slack alert messages
+# instead of a random one from ALERT_EMOJIS.
+SPECIAL_VALIDATION_EMOJIS: dict[str, str] = {
+    RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_NAME: ":maggie-h:",
+}
+
 _CONFIG_PATH = VALIDATION_ALERTING_CONFIG_PATH
 
 
@@ -140,6 +149,17 @@ class ValidationFailureGithubIssue:
 def _load_alerting_config() -> ValidationAlertingConfig:
     """Loads and caches the typed validation alerting configuration."""
     return ValidationAlertingConfig.from_yaml(_CONFIG_PATH)
+
+
+def _emoji_for_issues(created_issues: list[ValidationFailureGithubIssue]) -> str:
+    """Returns the fixed emoji for a special-cased validation if one of
+    |created_issues| is for that validation, otherwise a random emoji.
+    """
+    for issue in created_issues:
+        special_emoji = SPECIAL_VALIDATION_EMOJIS.get(issue.validation_name)
+        if special_emoji:
+            return special_emoji
+    return random.choice(ALERT_EMOJIS)
 
 
 def post_issues_to_slack(
@@ -182,7 +202,7 @@ def post_issues_to_slack(
         for issue in sorted_issues
     )
 
-    emoji = random.choice(ALERT_EMOJIS)
+    emoji = _emoji_for_issues(created_issues)
     text = (
         f"{emoji} *New Validation Failures for {state_code.value}* {emoji}\n"
         f"{owner_mention}"
