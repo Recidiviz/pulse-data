@@ -233,7 +233,6 @@ def generate_test_charge(
 def generate_test_supervision_sentence(
     person_id: int,
     charges: List[state_schema.StateCharge],
-    early_discharges: Optional[List[state_schema.StateEarlyDischarge]] = None,
 ) -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
@@ -242,7 +241,6 @@ def generate_test_supervision_sentence(
         state_code="US_XX",
         person_id=person_id,
         charges=charges,
-        early_discharges=(early_discharges if early_discharges else []),
     )
 
     return instance
@@ -251,7 +249,6 @@ def generate_test_supervision_sentence(
 def generate_test_incarceration_sentence(
     person_id: int,
     charges: Optional[List[state_schema.StateCharge]] = None,
-    early_discharges: Optional[List[state_schema.StateEarlyDischarge]] = None,
 ) -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -261,7 +258,6 @@ def generate_test_incarceration_sentence(
         person_id=person_id,
         is_capital_punishment=False,
         charges=(charges if charges else []),
-        early_discharges=(early_discharges if early_discharges else []),
     )
 
     return instance
@@ -331,6 +327,7 @@ def generate_test_person(
     supervision_contacts: List[state_schema.StateSupervisionContact],
     incarceration_sentences: List[state_schema.StateIncarcerationSentence],
     supervision_sentences: List[state_schema.StateSupervisionSentence],
+    early_discharges: List[state_schema.StateEarlyDischarge],
     incarceration_periods: List[state_schema.StateIncarcerationPeriod],
     supervision_periods: List[state_schema.StateSupervisionPeriod],
 ) -> state_schema.StatePerson:
@@ -373,6 +370,7 @@ def generate_test_person(
         supervision_contacts=supervision_contacts,
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences,
+        early_discharges=early_discharges,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         assessments=[
@@ -432,7 +430,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_supervision_sentence = generate_test_supervision_sentence(
         test_person_id,
         [test_charge_1, test_charge_2],
-        [test_early_discharge],
     )
 
     test_incarceration_sentence = generate_test_incarceration_sentence(
@@ -468,6 +465,7 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         supervision_contacts=[test_contact],
         incarceration_sentences=[test_incarceration_sentence],
         supervision_sentences=[test_supervision_sentence],
+        early_discharges=[test_early_discharge],
         incarceration_periods=[test_incarceration_period],
         supervision_periods=[test_supervision_period],
     )

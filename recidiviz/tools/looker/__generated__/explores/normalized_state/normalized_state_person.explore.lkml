@@ -6,6 +6,7 @@ explore: normalized_state_person_template {
   extends: [
     normalized_state_assessment,
     normalized_state_drug_screen,
+    normalized_state_early_discharge,
     normalized_state_employment_period,
     normalized_state_incarceration_incident,
     normalized_state_incarceration_period,
@@ -45,6 +46,11 @@ explore: normalized_state_person_template {
 
   join: normalized_state_drug_screen {
     sql_on: ${normalized_state_person.person_id} = ${normalized_state_drug_screen.person_id};;
+    relationship: one_to_many
+  }
+
+  join: normalized_state_early_discharge {
+    sql_on: ${normalized_state_person.person_id} = ${normalized_state_early_discharge.person_id};;
     relationship: one_to_many
   }
 
@@ -162,6 +168,10 @@ explore: normalized_state_drug_screen {
   extension: required
 
 }
+explore: normalized_state_early_discharge {
+  extension: required
+
+}
 explore: normalized_state_employment_period {
   extension: required
 
@@ -189,17 +199,11 @@ explore: normalized_state_incarceration_period {
 explore: normalized_state_incarceration_sentence {
   extension: required
   extends: [
-    normalized_state_charge_incarceration_sentence_association,
-    normalized_state_early_discharge
+    normalized_state_charge_incarceration_sentence_association
   ]
 
   join: normalized_state_charge_incarceration_sentence_association {
     sql_on: ${normalized_state_incarceration_sentence.incarceration_sentence_id} = ${normalized_state_charge_incarceration_sentence_association.incarceration_sentence_id};;
-    relationship: one_to_many
-  }
-
-  join: normalized_state_early_discharge {
-    sql_on: ${normalized_state_incarceration_sentence.incarceration_sentence_id} = ${normalized_state_early_discharge.incarceration_sentence_id};;
     relationship: one_to_many
   }
 
@@ -211,10 +215,6 @@ explore: normalized_state_charge_incarceration_sentence_association {
     sql_on: ${normalized_state_charge_incarceration_sentence_association.charge_id} = ${normalized_state_charge.charge_id};;
     relationship: many_to_one
   }
-
-}
-explore: normalized_state_early_discharge {
-  extension: required
 
 }
 explore: normalized_state_person_address_period {
@@ -337,17 +337,11 @@ explore: normalized_state_supervision_case_type_entry {
 explore: normalized_state_supervision_sentence {
   extension: required
   extends: [
-    normalized_state_charge_supervision_sentence_association,
-    normalized_state_early_discharge
+    normalized_state_charge_supervision_sentence_association
   ]
 
   join: normalized_state_charge_supervision_sentence_association {
     sql_on: ${normalized_state_supervision_sentence.supervision_sentence_id} = ${normalized_state_charge_supervision_sentence_association.supervision_sentence_id};;
-    relationship: one_to_many
-  }
-
-  join: normalized_state_early_discharge {
-    sql_on: ${normalized_state_supervision_sentence.supervision_sentence_id} = ${normalized_state_early_discharge.supervision_sentence_id};;
     relationship: one_to_many
   }
 

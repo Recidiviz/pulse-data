@@ -32,7 +32,6 @@ from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateCharge,
     StateChargeV2,
-    StateEarlyDischarge,
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
@@ -546,7 +545,7 @@ class TestEntityUtils(TestCase):
         entities_module_context = entities_module_context_for_module(state_entities)
 
         self.assertEqual(
-            {StateCharge, StateEarlyDischarge},
+            {StateCharge},
             get_child_entity_classes(
                 StateIncarcerationSentence, entities_module_context
             ),

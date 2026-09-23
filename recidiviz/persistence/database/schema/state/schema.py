@@ -1183,6 +1183,9 @@ class StatePerson(StateBase):
     supervision_sentences = relationship(
         "StateSupervisionSentence", backref="person", lazy="selectin"
     )
+    early_discharges = relationship(
+        "StateEarlyDischarge", backref="person", lazy="selectin"
+    )
     incarceration_periods = relationship(
         "StateIncarcerationPeriod", backref="person", lazy="selectin"
     )
@@ -1332,9 +1335,6 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
         backref="supervision_sentences",
         lazy="selectin",
     )
-    early_discharges = relationship(
-        "StateEarlyDischarge", backref="supervision_sentence", lazy="selectin"
-    )
 
 
 class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns):
@@ -1385,9 +1385,6 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
         secondary=state_charge_incarceration_sentence_association_table,
         backref="incarceration_sentences",
         lazy="selectin",
-    )
-    early_discharges = relationship(
-        "StateEarlyDischarge", backref="incarceration_sentence", lazy="selectin"
     )
 
 
@@ -1823,34 +1820,6 @@ class StateEarlyDischarge(StateBase, _ReferencesStatePersonSharedColumns):
     request_date = Column(Date)
     requesting_body_type = Column(state_acting_body_type)
     requesting_body_type_raw_text = Column(String(255))
-
-    @declared_attr
-    def supervision_sentence_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey(
-                "state_supervision_sentence.supervision_sentence_id",
-                deferrable=True,
-                initially="DEFERRED",
-            ),
-            index=True,
-            nullable=True,
-        )
-
-    @declared_attr
-    def incarceration_sentence_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey(
-                "state_incarceration_sentence.incarceration_sentence_id",
-                deferrable=True,
-                initially="DEFERRED",
-            ),
-            index=True,
-            nullable=True,
-        )
-
-    person = relationship("StatePerson", uselist=False)
 
 
 class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):

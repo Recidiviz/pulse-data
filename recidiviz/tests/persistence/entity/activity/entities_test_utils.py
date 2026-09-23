@@ -756,8 +756,7 @@ def generate_full_graph_state_person(
         state_code="US_XX",
         county_code="COUNTY",
     )
-    supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
-    incarceration_sentence.early_discharges = [early_discharge_3]
+    person.early_discharges = [early_discharge_1, early_discharge_2, early_discharge_3]
 
     supervision_case_type_entry = (
         entities.StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -1381,9 +1380,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         state_code="US_XX",
         county_code="COUNTY",
     )
-    supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
-    incarceration_sentence.early_discharges = [early_discharge_3]
-
     supervision_case_type_entry = (
         normalized_entities.NormalizedStateSupervisionCaseTypeEntry(
             supervision_case_type_entry_id=1,
@@ -1607,6 +1603,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         scheduled_supervision_contacts=[scheduled_supervision_contact],
         incarceration_sentences=[incarceration_sentence],
         supervision_sentences=[supervision_sentence],
+        early_discharges=[early_discharge_1, early_discharge_2, early_discharge_3],
         incarceration_periods=[incarceration_period],
         task_deadlines=[task_deadline],
         sentences=[sentence],

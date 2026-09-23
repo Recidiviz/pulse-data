@@ -56,8 +56,8 @@ class EntityDashboardElementFactory:
             title="Disclaimer",
             name="disclaimer",
             type=LookMLElementType.TEXT,
-            body_text="__Note:__ Multi-parent tables state_charge and state_early_discharge may be missing results."
-            " Please migrate to sentences v2 and charges v2 for accurate results.",
+            body_text="__Note:__ Multi-parent table state_charge may be missing results."
+            " Please migrate to charges v2 for accurate results.",
             height=X_SMALL_ELEMENT_HEIGHT,
             width=FULL_SCREEN_WIDTH,
         )

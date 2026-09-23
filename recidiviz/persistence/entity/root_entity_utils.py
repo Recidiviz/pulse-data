@@ -175,8 +175,8 @@ def entity_class_for_foreign_key_column(
       an `identity_fragment_id` column.
     * The field references the tree's root entity without a direct
       relationship (the root has no field pointing back at this entity): the
-      column holds the root's id. E.g. `StateEarlyDischarge.person` returns
-      `StatePerson` even though `StatePerson` has no `early_discharges` field.
+      column holds the root's id. E.g. `StateCharge.person` returns
+      `StatePerson` even though `StatePerson` has no `charges` field.
       (A field referencing an entity this class has no direct relationship
       with must point at this class's own root; anything else raises.)
     * Anything else: no column, returns None. This covers parent-side fields

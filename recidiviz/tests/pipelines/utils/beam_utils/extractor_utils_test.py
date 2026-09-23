@@ -557,7 +557,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id,
             charges=[schema_charge_1, schema_charge_2],
-            early_discharges=[],
         )
 
         person_data = [normalized_database_base_dict(schema_person)]
@@ -683,13 +682,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sup_sentence = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id,
             charges=[schema_charge_1],
-            early_discharges=[],
         )
 
         schema_inc_sentence = database_test_utils.generate_test_incarceration_sentence(
             person_id=person_id,
             charges=[schema_charge_1],
-            early_discharges=[],
         )
 
         person_data = [normalized_database_base_dict(schema_person)]
@@ -1024,7 +1021,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence_1 = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id_1,
             charges=[schema_charge_1, schema_charge_2],
-            early_discharges=[],
         )
 
         person_id_2 = 67890
@@ -1050,7 +1046,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence_2 = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id_2,
             charges=[schema_charge_2, schema_charge_4],
-            early_discharges=[],
         )
 
         schema_sentence_2.supervision_sentence_id = 2222
@@ -1750,6 +1745,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 supervision_contacts=[],
                 incarceration_sentences=[],
                 supervision_sentences=[],
+                early_discharges=[],
                 incarceration_periods=[],
                 supervision_periods=[],
             )

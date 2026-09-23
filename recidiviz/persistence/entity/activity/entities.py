@@ -583,6 +583,9 @@ class StatePerson(
     supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    early_discharges: List["StateEarlyDischarge"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -943,9 +946,6 @@ class StateSupervisionSentence(
     charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    early_discharges: List["StateEarlyDischarge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1065,9 +1065,6 @@ class StateIncarcerationSentence(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     charges: List["StateCharge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    early_discharges: List["StateEarlyDischarge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 
@@ -2108,12 +2105,6 @@ class StateEarlyDischarge(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-
-    # Should only be one of incarceration or supervision sentences on this.
-    incarceration_sentence: Optional["StateIncarcerationSentence"] = attr.ib(
-        default=None
-    )
-    supervision_sentence: Optional["StateSupervisionSentence"] = attr.ib(default=None)
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:

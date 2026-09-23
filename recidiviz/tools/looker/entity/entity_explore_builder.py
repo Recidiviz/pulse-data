@@ -50,10 +50,6 @@ DEPRECATED_MULTIPARENT_ENTITIES = {
     # TODO(#51203) Remove once multi-parent entities are supported or state_charge is fully deprecated
     "state_charge",
     "normalized_state_charge",
-    # TODO(#20526) Remove once multi-parent entities are supported or state_early_discharge is migrated
-    # to hang off state_person
-    "state_early_discharge",
-    "normalized_state_early_discharge",
 }
 
 

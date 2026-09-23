@@ -68,7 +68,7 @@
   - name: disclaimer
     title: Disclaimer
     type: text
-    body_text: __Note:__ Multi-parent tables state_charge and state_early_discharge may be missing results. Please migrate to sentences v2 and charges v2 for accurate results.
+    body_text: __Note:__ Multi-parent table state_charge may be missing results. Please migrate to charges v2 for accurate results.
     row: 1
     col: 0
     width: 24
@@ -280,12 +280,10 @@
       normalized_state_early_discharge.decision_status_raw_text,
       normalized_state_early_discharge.early_discharge_id,
       normalized_state_early_discharge.external_id,
-      normalized_state_early_discharge.incarceration_sentence_id,
       normalized_state_early_discharge.request_date,
       normalized_state_early_discharge.requesting_body_type,
       normalized_state_early_discharge.requesting_body_type_raw_text,
-      normalized_state_early_discharge.state_code,
-      normalized_state_early_discharge.supervision_sentence_id]
+      normalized_state_early_discharge.state_code]
     sorts: [normalized_state_early_discharge.decision_date desc, normalized_state_early_discharge.request_date desc]
     listen: 
       Person Id: normalized_state_person.person_id

@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.activity.entities import (
     StateCharge,
-    StateEarlyDischarge,
     StateIncarcerationSentence,
     StateSentence,
     StateSentenceStatusSnapshot,
@@ -438,7 +437,6 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             StateCharge,
             StateSupervisionSentence,
             StateIncarcerationSentence,
-            StateEarlyDischarge,
         ]
 
     @staticmethod

@@ -726,39 +726,12 @@ def _get_state_person_specific_errors(
     return error_messages
 
 
-def _legacy_sentencing_entities_checks(
-    state_person: normalized_entities.NormalizedStatePerson,
-) -> Iterable[Error]:
-    """Yields errors for entities related to the legacy sentencing schema, namely:
-    - If there are NormalizedStateEarlyDischarge objects with no backedges set
-    """
-
-    early_discharges: list[normalized_entities.NormalizedStateEarlyDischarge] = [
-        *[
-            ed
-            for s in state_person.incarceration_sentences
-            for ed in s.early_discharges
-        ],
-        *[ed for s in state_person.supervision_sentences for ed in s.early_discharges],
-    ]
-    for early_discharge in early_discharges:
-        if (
-            early_discharge.incarceration_sentence is None
-            and early_discharge.supervision_sentence is None
-        ):
-            yield (
-                f"Found entity {early_discharge.limited_pii_repr()} with neither one "
-                f"of incarceration_sentence or supervision_sentence backedges set."
-            )
-
-
 def _get_normalized_state_person_specific_errors(
     root_entity: normalized_entities.NormalizedStatePerson,
 ) -> List[str]:
     assert_type(root_entity, normalized_entities.NormalizedStatePerson)
     error_messages: list[str] = []
     error_messages.extend(_normalized_person_external_id_checks(root_entity))
-    error_messages.extend(_legacy_sentencing_entities_checks(root_entity))
     error_messages.extend(
         _normalized_person_staff_relationship_period_checks(root_entity)
     )

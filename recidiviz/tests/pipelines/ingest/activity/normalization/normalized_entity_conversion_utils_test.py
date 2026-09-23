@@ -35,7 +35,6 @@ from recidiviz.persistence.entity.activity.entities import (
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateCharge,
-    NormalizedStateEarlyDischarge,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionSentence,
@@ -199,18 +198,12 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
-        early_discharge = entities.StateEarlyDischarge.new_with_defaults(
-            early_discharge_id=1,
-            state_code="US_XX",
-            external_id="ed1",
-        )
         ss1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             external_id="ss1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentence_id=1,
             charges=[charge],
-            early_discharges=[early_discharge],
         )
         ss2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
@@ -219,7 +212,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             supervision_sentence_id=2,
             charges=[charge],
         )
-        early_discharge.supervision_sentence = ss1
 
         charge.supervision_sentences = [ss1, ss2]
 
@@ -229,7 +221,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             additional_attributes_map={
                 entities.StateSupervisionSentence.__name__: {},
                 entities.StateCharge.__name__: {},
-                entities.StateEarlyDischarge.__name__: {},
             },
         )
 
@@ -239,18 +230,12 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
-        expected_early_discharge = NormalizedStateEarlyDischarge(
-            early_discharge_id=1,
-            state_code="US_XX",
-            external_id="ed1",
-        )
         expected_ss1 = NormalizedStateSupervisionSentence(
             state_code="US_XX",
             external_id="ss1",
             supervision_sentence_id=1,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[expected_charge],
-            early_discharges=[expected_early_discharge],
         )
         expected_ss2 = NormalizedStateSupervisionSentence(
             state_code="US_XX",
@@ -258,10 +243,8 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             supervision_sentence_id=2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[expected_charge],
-            early_discharges=[],
         )
         expected_charge.supervision_sentences = [expected_ss1, expected_ss2]
-        expected_early_discharge.supervision_sentence = expected_ss1
         self.assertListEqual(
             [expected_ss1, expected_ss2],
             normalized_trees,

@@ -239,24 +239,6 @@ class IsNormalizedSupervisionSentenceBackedgeValidator(EntityBackedgeValidator):
         return NormalizedStateSupervisionSentence
 
 
-class IsOptionalNormalizedIncarcerationSentenceBackedgeValidator(
-    EntityBackedgeValidator
-):
-    def allow_nulls(self) -> bool:
-        return True
-
-    def get_backedge_type(self) -> Type:
-        return NormalizedStateIncarcerationSentence
-
-
-class IsOptionalNormalizedSupervisionSentenceBackedgeValidator(EntityBackedgeValidator):
-    def allow_nulls(self) -> bool:
-        return True
-
-    def get_backedge_type(self) -> Type:
-        return NormalizedStateSupervisionSentence
-
-
 class IsNormalizedSupervisionPeriodBackedgeValidator(EntityBackedgeValidator):
     def get_backedge_type(self) -> Type:
         return NormalizedStateSupervisionPeriod
@@ -1409,17 +1391,6 @@ class NormalizedStateEarlyDischarge(NormalizedStateEntity, HasExternalIdEntity):
         default=None, validator=IsNormalizedPersonBackedgeValidator()
     )
 
-    # Should only be one of incarceration or supervision sentences on this.
-    incarceration_sentence: Optional["NormalizedStateIncarcerationSentence"] = attr.ib(
-        default=None,
-        validator=IsOptionalNormalizedIncarcerationSentenceBackedgeValidator(),
-    )
-
-    supervision_sentence: Optional["NormalizedStateSupervisionSentence"] = attr.ib(
-        default=None,
-        validator=IsOptionalNormalizedSupervisionSentenceBackedgeValidator(),
-    )
-
     @classmethod
     def global_unique_constraints(cls) -> list[UniqueConstraint]:
         return [
@@ -1659,10 +1630,6 @@ class NormalizedStateSupervisionSentence(NormalizedStateEntity, HasExternalIdEnt
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateCharge),
     )
-    early_discharges: list["NormalizedStateEarlyDischarge"] = attr.ib(
-        factory=list,
-        validator=attr_validators.is_list_of(NormalizedStateEarlyDischarge),
-    )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1765,10 +1732,6 @@ class NormalizedStateIncarcerationSentence(NormalizedStateEntity, HasExternalIdE
     charges: list["NormalizedStateCharge"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateCharge),
-    )
-    early_discharges: list["NormalizedStateEarlyDischarge"] = attr.ib(
-        factory=list,
-        validator=attr_validators.is_list_of(NormalizedStateEarlyDischarge),
     )
 
     @classmethod
@@ -3524,6 +3487,10 @@ class NormalizedStatePerson(
     supervision_sentences: list["NormalizedStateSupervisionSentence"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSupervisionSentence),
+    )
+    early_discharges: list["NormalizedStateEarlyDischarge"] = attr.ib(
+        factory=list,
+        validator=attr_validators.is_list_of(NormalizedStateEarlyDischarge),
     )
     incarceration_periods: list["NormalizedStateIncarcerationPeriod"] = attr.ib(
         factory=list,
