@@ -37,19 +37,13 @@ To test end-to-end, fire the Cloud Build webhook trigger directly:
     PROJECT_NUMBER=$(gcloud projects describe recidiviz-staging \\
       --format='value(projectNumber)')
     NUMBER=<issue number>
-    ENCODED_TITLE=$(gh issue view $NUMBER --repo Recidiviz/pulse-data \\
-      --json title --jq '.title' | base64 -w 0)
-    ENCODED_BODY=$(gh issue view $NUMBER --repo Recidiviz/pulse-data \\
-      --json body --jq '.body' | base64 -w 0)
     jq -n \\
       --arg issue_number "$NUMBER" \\
-      --arg issue_title "$ENCODED_TITLE" \\
-      --arg issue_body "$ENCODED_BODY" \\
       --arg issue_repo "Recidiviz/pulse-data" \\
       --arg repo_branch "main" \\
       --arg product_areas "workflows" \\
       --arg force_rerun "1" \\
-      '{ISSUE_NUMBER: $issue_number, ISSUE_TITLE: $issue_title, ISSUE_BODY: $issue_body, ISSUE_REPO: $issue_repo, REPO_BRANCH: $repo_branch, PRODUCT_AREAS: $product_areas, FORCE_RERUN: $force_rerun}' \\
+      '{ISSUE_NUMBER: $issue_number, ISSUE_REPO: $issue_repo, REPO_BRANCH: $repo_branch, PRODUCT_AREAS: $product_areas, FORCE_RERUN: $force_rerun}' \\
       | curl -X POST -H "Content-Type: application/json" --data @- \\
         "https://cloudbuild.googleapis.com/v1/projects/${PROJECT_NUMBER}/locations/us-west1/triggers/pg-diagnosis:webhook?key=<API_KEY>&secret=${SECRET}"
 
@@ -62,7 +56,6 @@ Alternatively, fire the `workflow_dispatch` event on
 .github/workflows/pg-diagnosis.yml from the GitHub Actions UI — that wraps
 the same webhook call.
 """
-import base64
 import logging
 import os
 import re
@@ -206,15 +199,6 @@ def get_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
-
-
-def _decode_base64_env(name: str) -> str:
-    """Read a required env var, base64-decoding it if possible."""
-    raw = get_env(name)
-    try:
-        return base64.b64decode(raw).decode()
-    except Exception:
-        return raw
 
 
 def get_secret(name: str, gcp_project: str) -> str:
@@ -453,37 +437,45 @@ def _fetch_doc(*, doc_id: str, sa_email: str) -> dict:
         raise PIIFetchError(f"Error fetching PII doc [{doc_id}]: {e}") from e
 
 
-def resolve_pii_doc_id(
-    issue: GithubIssue, fallback_body: str
-) -> tuple[str | None, str]:
-    """Returns the ticket's private PII doc ID (if any) and the issue body to use.
+@dataclass(frozen=True)
+class FetchedIssueContent:
+    """What the agent needs from a ticket, read live from GitHub."""
 
-    Re-reads the body from GitHub rather than trusting `fallback_body` (which
-    comes from the webhook payload): the doc is created — and the banner linking
-    it prepended — a few seconds after the issue itself, so the payload body
-    predates the link. Retries a few times before giving up, since the agent can
-    start before the automation finishes.
+    title: str
+    body: str
+    # None for a ticket filed before every ticket got its own PII doc; its PII
+    # lives in the shared go/github-pii doc instead.
+    pii_doc_id: str | None
 
-    A None doc ID means this is a pre-cutover ticket whose PII lives in the
-    shared go/github-pii doc.
+
+def fetch_issue_content(issue: GithubIssue) -> FetchedIssueContent:
+    """Returns the issue's title, body, and the ID of its private PII doc.
+
+    The body is read from GitHub rather than carried through the Cloud Build
+    webhook. A substitution value caps at 4000 characters and base64 inflates by
+    a third, so a body over roughly 3000 characters failed the build before any
+    step ran. Reading it here also means an edited ticket is diagnosed from its
+    current text.
+
+    Retries a few times, because the per-ticket PII doc is created -- and the
+    banner linking it prepended -- a few seconds after the issue itself, so the
+    agent can start before the automation finishes.
+
+    Raises whatever the GitHub client raises. There is no local copy to fall back
+    to, and a run that cannot reach GitHub cannot post its diagnosis either.
     """
-    body = fallback_body
+    # PyGithub returns None for a title or body GitHub holds as empty.
+    title = ""
+    body = ""
     for attempt in range(1, PII_DOC_LOOKUP_ATTEMPTS + 1):
-        try:
-            live_issue = (
-                github_helperbot_client().get_repo(issue.repo).get_issue(issue.number)
-            )
-            body = live_issue.body or ""
-        except Exception:
-            logger.warning(
-                "Could not read live body for %s; using the webhook payload body",
-                issue,
-                exc_info=True,
-            )
-            break
+        live_issue = (
+            github_helperbot_client().get_repo(issue.repo).get_issue(issue.number)
+        )
+        title = live_issue.title or ""
+        body = live_issue.body or ""
         if doc_id := extract_pii_doc_id(body):
             logger.info("Resolved per-ticket PII doc %s for %s", doc_id, issue)
-            return doc_id, body
+            return FetchedIssueContent(title=title, body=body, pii_doc_id=doc_id)
         if attempt < PII_DOC_LOOKUP_ATTEMPTS:
             logger.info(
                 "No PII doc link in %s yet (attempt %d/%d); waiting %ds",
@@ -494,17 +486,8 @@ def resolve_pii_doc_id(
             )
             time.sleep(PII_DOC_LOOKUP_DELAY_SECONDS)
 
-    # Reached either by exhausting the retries or by breaking out on a GitHub
-    # read failure, in which case `body` is the webhook payload body — which for
-    # a manual workflow_dispatch run may well carry the banner.
-    doc_id = extract_pii_doc_id(body)
-    if doc_id:
-        logger.info("Resolved per-ticket PII doc %s for %s", doc_id, issue)
-    else:
-        logger.info(
-            "No per-ticket PII doc for %s; falling back to go/github-pii", issue
-        )
-    return doc_id, body
+    logger.info("No per-ticket PII doc for %s; falling back to go/github-pii", issue)
+    return FetchedIssueContent(title=title, body=body, pii_doc_id=None)
 
 
 def fetch_pii_for_issue(
@@ -1238,11 +1221,6 @@ def main() -> None:
         number=int(get_env("ISSUE_NUMBER")),
     )
 
-    # Title and body are base64-encoded in Cloud Build substitutions to avoid
-    # breakage from commas, equals signs, or other special characters.
-    issue_title = _decode_base64_env("ISSUE_TITLE")
-    issue_body = _decode_base64_env("ISSUE_BODY")
-
     raw_areas = os.environ.get("PRODUCT_AREAS", "")
     product_areas = [a.strip().lower() for a in raw_areas.split(",") if a.strip()]
 
@@ -1271,7 +1249,7 @@ def main() -> None:
         logger.info("Posted/updated follow-up notice for %s", issue)
         return
 
-    pii_doc_id, issue_body = resolve_pii_doc_id(issue, issue_body)
+    issue_content = fetch_issue_content(issue)
 
     # Needed to key the shared doc, which is read even when the ticket has its
     # own PII doc — see fetch_pii_for_issue.
@@ -1284,14 +1262,14 @@ def main() -> None:
         logger.info("Starting diagnosis for %s", issue)
         result = run_agent(
             issue,
-            issue_title,
-            issue_body,
+            issue_content.title,
+            issue_content.body,
             product_areas,
             config,
             anthropic_api_key,
             ctx,
             linear_id,
-            pii_doc_id,
+            issue_content.pii_doc_id,
         )
         # A run that finished normally but never resolved the ticket's PII to a
         # person didn't diagnose this client's problem, whatever it wrote — post

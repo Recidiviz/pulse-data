@@ -42,6 +42,7 @@ _BODY_WITH_BANNER = (
     "<!-- pii-doc-linked -->\n\n#### What is the issue?\n"
 )
 _BODY_WITHOUT_BANNER = "#### What is the issue?\n\nThe task never cleared."
+_ISSUE_TITLE = "[US_TX] Virtual Contacts Aren't Clearing"
 
 
 _EXTERNAL_ID_COLUMNS = {
@@ -73,31 +74,35 @@ def _doc_from_lines(lines: list[str]) -> dict:
     }
 
 
-class TestResolvePiiDocId(unittest.TestCase):
-    """Tests for resolve_pii_doc_id — finding the ticket's own PII doc.
+class TestFetchIssueContent(unittest.TestCase):
+    """Tests for fetch_issue_content — reading the ticket back from GitHub.
 
-    The doc is created (and the banner prepended) seconds after the issue, so the
-    live body is authoritative and the webhook payload body is not.
+    The body is no longer carried through the Cloud Build webhook, because a long
+    one overflowed a substitution and failed the build before any step ran. It is
+    read live instead, which also means the banner linking the ticket's PII doc is
+    visible once the doc automation has run.
     """
 
     @staticmethod
     def _mock_get_issue(mock_client: mock.MagicMock) -> mock.MagicMock:
-        """Returns the mocked repo.get_issue() that resolve_pii_doc_id calls.
+        """Returns the mocked repo.get_issue() that fetch_issue_content calls.
 
-        resolve_pii_doc_id reads the body via
-        github_helperbot_client().get_repo(repo).get_issue(number).body, so tests
-        drive it by setting return_value/side_effect on that innermost call.
+        fetch_issue_content reads the issue via
+        github_helperbot_client().get_repo(repo).get_issue(number), so tests drive
+        it by setting return_value/side_effect on that innermost call.
         """
         return mock_client.return_value.get_repo.return_value.get_issue
 
     @mock.patch(f"{_MODULE}.github_helperbot_client")
-    def test_returns_doc_id_from_live_body(self, mock_client: mock.MagicMock) -> None:
+    def test_returns_title_body_and_doc_id(self, mock_client: mock.MagicMock) -> None:
         get_issue = self._mock_get_issue(mock_client)
-        get_issue.return_value = mock.MagicMock(body=_BODY_WITH_BANNER)
-        # The payload body predates the banner — the live body must win.
-        doc_id, body = run_pg.resolve_pii_doc_id(_ISSUE, _BODY_WITHOUT_BANNER)
-        self.assertEqual(doc_id, _DOC_ID)
-        self.assertEqual(body, _BODY_WITH_BANNER)
+        get_issue.return_value = mock.MagicMock(
+            title=_ISSUE_TITLE, body=_BODY_WITH_BANNER
+        )
+        content = run_pg.fetch_issue_content(_ISSUE)
+        self.assertEqual(content.title, _ISSUE_TITLE)
+        self.assertEqual(content.body, _BODY_WITH_BANNER)
+        self.assertEqual(content.pii_doc_id, _DOC_ID)
         mock_client.return_value.get_repo.assert_called_once_with(_ISSUE.repo)
         get_issue.assert_called_once_with(_ISSUE.number)
 
@@ -107,10 +112,14 @@ class TestResolvePiiDocId(unittest.TestCase):
         self, mock_client: mock.MagicMock, mock_sleep: mock.MagicMock
     ) -> None:
         get_issue = self._mock_get_issue(mock_client)
-        get_issue.return_value = mock.MagicMock(body=_BODY_WITHOUT_BANNER)
-        doc_id, body = run_pg.resolve_pii_doc_id(_ISSUE, _BODY_WITHOUT_BANNER)
-        self.assertIsNone(doc_id)
-        self.assertEqual(body, _BODY_WITHOUT_BANNER)
+        get_issue.return_value = mock.MagicMock(
+            title=_ISSUE_TITLE, body=_BODY_WITHOUT_BANNER
+        )
+        content = run_pg.fetch_issue_content(_ISSUE)
+        self.assertIsNone(content.pii_doc_id)
+        # The body still comes back, so a pre-cutover ticket is still diagnosable
+        # off the shared go/github-pii doc.
+        self.assertEqual(content.body, _BODY_WITHOUT_BANNER)
         self.assertEqual(get_issue.call_count, run_pg.PII_DOC_LOOKUP_ATTEMPTS)
         # Sleeps between attempts, not after the last one.
         self.assertEqual(mock_sleep.call_count, run_pg.PII_DOC_LOOKUP_ATTEMPTS - 1)
@@ -122,35 +131,38 @@ class TestResolvePiiDocId(unittest.TestCase):
     ) -> None:
         get_issue = self._mock_get_issue(mock_client)
         get_issue.side_effect = [
-            mock.MagicMock(body=_BODY_WITHOUT_BANNER),
-            mock.MagicMock(body=_BODY_WITH_BANNER),
+            mock.MagicMock(title=_ISSUE_TITLE, body=_BODY_WITHOUT_BANNER),
+            mock.MagicMock(title=_ISSUE_TITLE, body=_BODY_WITH_BANNER),
         ]
-        doc_id, _ = run_pg.resolve_pii_doc_id(_ISSUE, _BODY_WITHOUT_BANNER)
-        self.assertEqual(doc_id, _DOC_ID)
+        content = run_pg.fetch_issue_content(_ISSUE)
+        self.assertEqual(content.pii_doc_id, _DOC_ID)
         self.assertEqual(get_issue.call_count, 2)
         mock_sleep.assert_called_once()
 
     @mock.patch(f"{_MODULE}.github_helperbot_client")
-    def test_falls_back_to_payload_body_when_github_read_fails(
+    def test_a_github_failure_is_not_swallowed(
         self, mock_client: mock.MagicMock
     ) -> None:
-        # A manual workflow_dispatch run can pass a body that already has the
-        # banner, so the payload is still worth reading.
+        # There is no payload copy to fall back to any more, and a run that cannot
+        # read GitHub cannot post its diagnosis either — so fail loudly rather
+        # than diagnose from nothing.
         self._mock_get_issue(mock_client).side_effect = RuntimeError("GitHub is down")
-        doc_id, body = run_pg.resolve_pii_doc_id(_ISSUE, _BODY_WITH_BANNER)
-        self.assertEqual(doc_id, _DOC_ID)
-        self.assertEqual(body, _BODY_WITH_BANNER)
+        with self.assertRaises(RuntimeError):
+            run_pg.fetch_issue_content(_ISSUE)
 
     @mock.patch(f"{_MODULE}.time.sleep")
     @mock.patch(f"{_MODULE}.github_helperbot_client")
-    def test_issue_with_no_body_is_treated_as_empty(
+    def test_missing_title_and_body_are_treated_as_empty(
         self, mock_client: mock.MagicMock, _mock_sleep: mock.MagicMock
     ) -> None:
         # PyGithub returns None for an issue filed with an empty body.
-        self._mock_get_issue(mock_client).return_value = mock.MagicMock(body=None)
-        doc_id, body = run_pg.resolve_pii_doc_id(_ISSUE, _BODY_WITHOUT_BANNER)
-        self.assertIsNone(doc_id)
-        self.assertEqual(body, "")
+        self._mock_get_issue(mock_client).return_value = mock.MagicMock(
+            title=None, body=None
+        )
+        content = run_pg.fetch_issue_content(_ISSUE)
+        self.assertEqual(content.title, "")
+        self.assertEqual(content.body, "")
+        self.assertIsNone(content.pii_doc_id)
 
 
 class TestFetchPiiForIssue(unittest.TestCase):
@@ -292,16 +304,18 @@ class TestFetchPiiForIssue(unittest.TestCase):
         "BUILD_ID": "test-build",
         "ISSUE_NUMBER": str(_ISSUE.number),
         "ISSUE_REPO": _ISSUE.repo,
-        "ISSUE_TITLE": "[US_TX] Virtual Contacts Aren't Clearing",
-        "ISSUE_BODY": _BODY_WITH_BANNER,
         "PRODUCT_AREAS": "tasks",
     },
 )
 @mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
 @mock.patch(f"{_MODULE}.issue_has_marker", mock.MagicMock(return_value=False))
 @mock.patch(
-    f"{_MODULE}.resolve_pii_doc_id",
-    mock.MagicMock(return_value=(_DOC_ID, _BODY_WITH_BANNER)),
+    f"{_MODULE}.fetch_issue_content",
+    mock.MagicMock(
+        return_value=run_pg.FetchedIssueContent(
+            title=_ISSUE_TITLE, body=_BODY_WITH_BANNER, pii_doc_id=_DOC_ID
+        )
+    ),
 )
 class TestMainRefusesUnresolvedDiagnosis(unittest.TestCase):
     """Tests the post-loop guard in main().
