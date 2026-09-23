@@ -73,6 +73,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_jii_texts_metrics_configur
 from recidiviz.tools.looker.aggregated_metrics.custom_meetings_metrics_configurations import (
     MEETINGS_ASSIGNMENT_NAMES_TO_TYPES,
     MEETINGS_IMPACT_LOOKER_METRICS,
+    MEETINGS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     build_assignments_by_time_period_lookml_view,
@@ -267,7 +268,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=MEETINGS_IMPACT_LOOKER_METRICS,
             assignment_types_dict=MEETINGS_ASSIGNMENT_NAMES_TO_TYPES,
-            json_field_filters_with_suggestions={},
+            json_field_filters_with_suggestions=MEETINGS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )
 
         # JII Texts
