@@ -15,7 +15,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^4.22.2",
+    "express": "^4.22.3",
     "express-jwt": "^7.7.8",
     "express-rate-limit": "^8.7.0",
     "firebase-admin": "^14.4.0",
