@@ -109,9 +109,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_custody_le
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_custody_level_downgrade_record import (
     US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
-    US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_initial_classification_review_2026_policy_record import (
     US_TN_INITIAL_CLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER,
 )
@@ -306,7 +303,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         "us_tn_raw_data_up_to_date_views.OffenderStatute_latest"
     ): {
         US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2029): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: "TODO(TN-2031): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderTreatment_latest"
