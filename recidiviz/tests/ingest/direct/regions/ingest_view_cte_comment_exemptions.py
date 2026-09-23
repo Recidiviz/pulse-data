@@ -203,11 +203,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "security_level_periods_cte",
             "transfer_periods_incarceration_cte",
         ],
-        "incarceration_sentence_v2": [
-            "RelatedSentence",
-            "SentenceBase",
-            "final_sentences",
-        ],
         "state_staff": ["unioned"],
         "state_staff_caseload_type_periods": [
             "aggregated_periods",
@@ -232,12 +227,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "supervision_period": [
             "supervision_periods",
             "transfer_periods_supervision_cte",
-        ],
-        "supervision_sentence_v2": [
-            "ProbationSupervision",
-            "RelatedSentence",
-            "SentenceBase",
-            "final_sentences",
         ],
         "supervision_violation_legacy": ["stacked"],
         "transfer_to_supervision_deadline": ["SentenceBase", "lag_cte"],
