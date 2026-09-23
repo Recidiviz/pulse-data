@@ -21,6 +21,7 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
 
   template {
     template {
+      timeout = "900s"
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["uv"]
@@ -38,7 +39,7 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "768Mi"
+            memory = "2Gi"
           }
         }
       }
