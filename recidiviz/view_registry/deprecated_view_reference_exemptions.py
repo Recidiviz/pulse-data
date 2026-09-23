@@ -40,9 +40,6 @@ from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
 from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
     SENTENCE_COHORT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
-    US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
     CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -305,10 +302,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
         ),
@@ -485,10 +478,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
     },
     # TODO(#33402): Delete `compartment_sessions_closest_sentence_imposed_group` once
     # all states are migrated to v2 infra
@@ -502,10 +491,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "sentence_sessions view"
         ),
         SENTENCE_COHORT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),

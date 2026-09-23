@@ -17,21 +17,6 @@
 """US_IX exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
-    SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
-    US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
-    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
-    SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 
 # For each US_IX metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -39,18 +24,4 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 #   this product view, with all places they are referenced.
 US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
-] = {
-    "SENTENCING": {
-        SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
-            },
-        },
-    },
-}
+] = {}

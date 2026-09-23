@@ -123,9 +123,6 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.most_severe_sentence_and_charge_spans import (
-    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -393,9 +390,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "current_person_prison_projected_dates",
         ]
     },
-    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
-        "This is a new table in the sentence_sessions dataset which will soon be used in partners summit analysis (Andrew Gaidus, 2025-07-02)"
-    ),
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
         "This is a generic view that helps understand LSI-R scoring which may be "
         "useful for future analysis. (Anna 5/16/24)"
