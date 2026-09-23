@@ -15,6 +15,7 @@ input_columns:
   BS_DO: STRING
   BS_COD: STRING
   BS_CRC: STRING
+  standardized_description_with_inchoate_flags: STRING
   parent_sentence_external_id_array: STRING
   BT_SD: STRING
   BT_CRR: STRING
@@ -107,6 +108,7 @@ output:
                       county_code: BS_CNT
                 statute: BS_ASO
                 description: BS_COD
+                offense_type: standardized_description_with_inchoate_flags
                 classification_type:
                   $enum_mapping:
                     $raw_text: BS_CLT
