@@ -107,6 +107,42 @@ def projected_csbd_date_expr() -> str:
     return f"DATE_SUB({ercd}, INTERVAL {_ERCD_TO_PROJECTED_CSBD_DAYS} DAY)"
 
 
+def us_az_sentence_spans_open_until_next_liberty_exit_query_template() -> str:
+    """Returns a query template with one span per AZ sentence, covering the time the AZ
+    criteria count it as being served: from imposed_date until the person's first exit
+    to liberty or death after that date, open when there has been none.
+
+    These are the spans sessions.sentences_preprocessed used to infer for AZ sentences,
+    rebuilt here so the criteria that read them produce the same output they did before.
+
+    TODO(OBT-51664): Delete this helper and read sentence_sessions.sentence_serving_period
+    in the three criteria that call it. That changes who counts as currently serving
+    (sentences that ended mid-stay close, and arrest-history convictions with no ADCRR
+    status stop counting); the ticket has the measured impact and the open questions.
+    """
+    return """
+    SELECT
+        sent.state_code,
+        sent.person_id,
+        sent.sentence_id,
+        sent.imposed_date AS start_date,
+        MIN(liberty_exit.end_date_exclusive) AS end_date_exclusive,
+    FROM (
+        SELECT DISTINCT state_code, person_id, sentence_id, imposed_date
+        FROM `{project_id}.{sentence_sessions_dataset}.sentences_and_charges_materialized`
+        WHERE state_code = 'US_AZ'
+            AND imposed_date IS NOT NULL
+    ) sent
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` liberty_exit
+        ON liberty_exit.state_code = sent.state_code
+        AND liberty_exit.person_id = sent.person_id
+        AND liberty_exit.outflow_to_level_1 IN ('LIBERTY', 'DEATH')
+        AND IFNULL(liberty_exit.end_reason, 'EXTERNAL_UNKNOWN') != 'TEMPORARY_RELEASE'
+        AND sent.imposed_date < liberty_exit.end_date_exclusive
+    GROUP BY 1, 2, 3, 4
+"""
+
+
 def no_current_or_prior_convictions(
     statutes_list: Optional[list] = None,
     exclude_statutes: bool = False,
@@ -114,83 +150,105 @@ def no_current_or_prior_convictions(
     reasons_field_name: str = "ineligible_offenses",
     past_convictions_cause_ineligibility: bool = True,
 ) -> str:
-    """
-    Returns a query template that describes spans of time when someone is ineligible due to a current or
-    past conviction for a specific offense.
+    """Returns a query template for the spans of time when someone in AZ is ineligible
+    because of a conviction for a specific offense.
+
+    Sentences and their charges come from sentence_sessions.sentences_and_charges,
+    aliased sent, so additional_where_clauses can reference its columns
+    (sent.statute, sent.is_violent, sent.is_sex_offense, sent.sentence_metadata).
+    Every row of the output has meets_criteria FALSE; the view builder's
+    meets_criteria_default covers everyone else.
 
     Args:
-        statutes_list (list): The statute(s) to be included in the where clause
-        additional_where_clauses (str): Any additional logic not captured by a statutes filter
-        exclude_statutes (bool): If True, the statutes in statutes_list will be excluded from the query.
-            This means they will be not be marked ineligible and their eligibility will be
-            determined by the meets_criteria_default clause in the view builder.
-        reasons_field_name (str): The name of the field in the output that contains the reasons
-        past_convictions_cause_ineligibility (bool): If True, past convictions will cause
-            someone to become ineligible forever. If False, only convictions when
-            served will cause ineligibility.
+        statutes_list: Statutes matched with LIKE against sent.statute. May be empty
+            when additional_where_clauses selects the offenses instead.
+        exclude_statutes: If True, sentences whose statute matches statutes_list are
+            left out of the ineligible spans instead of selected.
+        additional_where_clauses: Extra predicate, starting with AND or OR, combined
+            with the statutes filter. It must start with AND when statutes_list is
+            empty.
+        reasons_field_name: Name of the output field that lists the offense
+            descriptions behind each span.
+        past_convictions_cause_ineligibility: If True, a span opens on the sentence's
+            imposed_date and never closes, so any past conviction disqualifies. This
+            includes AZ's prior county and out-of-state convictions, which are
+            ingested as sentences without statuses and so never have a serving
+            period. If False, the span is the one returned by
+            us_az_sentence_spans_open_until_next_liberty_exit_query_template(), so only
+            a sentence still counted as being served disqualifies.
     """
-    if additional_where_clauses:
-        if not (
-            additional_where_clauses.startswith("AND")
-            or additional_where_clauses.startswith("OR")
-        ):
-            raise ValueError(
-                "additional_where_clauses must start with 'AND' or 'OR' to ensure proper SQL syntax"
-            )
-    # If statutes_list is None, we will not filter on statutes
+    if additional_where_clauses and not (
+        additional_where_clauses.startswith("AND")
+        or additional_where_clauses.startswith("OR")
+    ):
+        raise ValueError(
+            "additional_where_clauses must start with 'AND' or 'OR' to ensure proper SQL syntax"
+        )
     if statutes_list is None:
         statutes_list = []
-    assert isinstance(statutes_list, list), "statutes_list must be of type list"
-    # If exclude_statutes_list is True, we will exclude the statutes in the list
-    not_clause = ""
-    if exclude_statutes:
-        not_clause = "NOT"
-    # If neither statutes_list nor additional_where_clause are provided, raise an error
+    if not isinstance(statutes_list, list):
+        raise ValueError(
+            f"statutes_list must be of type list, found [{type(statutes_list)}]"
+        )
     if not statutes_list and not additional_where_clauses:
         raise ValueError(
-            "Either 'statutes_list' or 'additional_where_clause' must be provided."
+            "Either 'statutes_list' or 'additional_where_clauses' must be provided."
         )
-    # If no_past_convictions is True, we will only look at current convictions
-    if past_convictions_cause_ineligibility:
-        end_date = "CAST(NULL AS DATE)"
-    else:
-        end_date = "span.end_date"
+    if (
+        not statutes_list
+        and additional_where_clauses
+        and additional_where_clauses.startswith("OR")
+    ):
+        raise ValueError(
+            "additional_where_clauses must start with 'AND' when statutes_list is empty"
+        )
 
-    return f"""
-    WITH
-      ineligible_spans AS (
+    if statutes_list:
+        not_clause = "NOT " if exclude_statutes else ""
+        statutes_filter = (
+            not_clause
+            + "("
+            + " OR ".join([f"sent.statute LIKE '%{s}%'" for s in statutes_list])
+            + ")"
+        )
+    else:
+        statutes_filter = "TRUE"
+    offense_filter = f"""{statutes_filter}
+            {additional_where_clauses or ""}"""
+
+    if past_convictions_cause_ineligibility:
+        ineligible_spans_query = f"""
+          SELECT
+            sent.state_code,
+            sent.person_id,
+            sent.imposed_date AS start_date,
+            CAST(NULL AS DATE) AS end_date,
+            sent.description,
+            FALSE AS meets_criteria,
+          FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
+          WHERE sent.state_code = 'US_AZ'
+            AND sent.imposed_date IS NOT NULL
+            AND ({offense_filter})"""
+    else:
+        ineligible_spans_query = f"""
           SELECT
             span.state_code,
             span.person_id,
             span.start_date,
-            {end_date} AS end_date,
-            charge.description,
+            span.end_date_exclusive AS end_date,
+            sent.description,
             FALSE AS meets_criteria,
-          FROM
-            `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-            UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-          INNER JOIN
-            `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-          USING
-            (state_code,
-              person_id,
-              sentences_preprocessed_id)
-          LEFT JOIN
-              `{{project_id}}.{{normalized_state_dataset}}.state_charge_v2_state_sentence_association` assoc
-            ON
-              assoc.state_code = sent.state_code
-              AND assoc.sentence_id = sent.sentence_id
-            LEFT JOIN
-              `{{project_id}}.{{sessions_dataset}}.charges_preprocessed` charge
-            ON
-              charge.state_code = assoc.state_code
-              AND charge.charge_v2_id = assoc.charge_v2_id
-          WHERE
-            span.state_code = 'US_AZ'
-            -- Statutes filter
-            {f"AND {not_clause} (" + " OR ".join([f"charge.statute LIKE '%{s}%'" for s in statutes_list]) + ")" if statutes_list else ""}
-            -- Additional where clauses
-            {f"{additional_where_clauses}" if additional_where_clauses else ""}),
+          -- TODO(OBT-51664): Read sentence_sessions.sentence_serving_period instead.
+          FROM ({us_az_sentence_spans_open_until_next_liberty_exit_query_template()}) span
+          INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
+            USING (state_code, person_id, sentence_id)
+          WHERE span.state_code = 'US_AZ'
+            AND ({offense_filter})"""
+
+    return f"""
+    WITH
+      ineligible_spans AS ({ineligible_spans_query}
+      ),
 
     {create_sub_sessions_with_attributes('ineligible_spans')}
 
@@ -233,10 +291,11 @@ WHERE release_type = "{release_type}"
 """
 
 
-def us_az_sentences_preprocessed_query_template() -> str:
-    """Returns the query template used for AZ sentences preprocessed"""
+def us_az_state_prison_serving_periods_query_template() -> str:
+    """Returns a query template with one row per serving period of an AZ state
+    prison sentence, carrying the sentence's statute and description."""
     return """
-    SELECT 
+    SELECT
         sent.state_code,
         sent.person_id,
         sent.sentence_group_external_id,
