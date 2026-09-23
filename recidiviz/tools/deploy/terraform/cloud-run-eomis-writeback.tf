@@ -73,15 +73,40 @@ locals {
           # lets a full pass finish: the service account holds several sessions
           # at once, and a per-offender screen answers for whoever *that*
           # session selected. Set it to 1 to put the job back to one at a time.
+          # --max-writes raises the flow's own circuit breaker, which the runner
+          # applies per pathway and only on a committing run:
+          # MAX_WRITES_PER_RUN is 25, and a --commit run of more candidates than
+          # that raises before writing anything. 25 suits an attended CLI
+          # rehearsal and not a pass over the backlog, which is 13,885 work
+          # candidates as of 2026-09-23. Set high enough to clear that with room
+          # and still low enough to stop a run that proposed, say, the whole CO
+          # population -- 175,584 people hold an ADC number.
+          #
+          # Inert while these args carry no --commit. It is set here so the
+          # first committing staging run does not have to discover the ceiling,
+          # and should come down to the steady state's few hundred once the
+          # backlog is written.
           args = [
             "--flow=co_edovo",
             "--flow=co_work",
             "--account=svc",
             "--workers=8",
+            "--max-writes=15000",
           ]
-          # Six hours. A full committing pass over the work candidates runs for
-          # about four at eight workers, and the default hour cannot finish one.
-          timeout   = "21600s"
+          # Twelve hours, sized for the first pass rather than the steady state.
+          # That pass writes the whole backlog -- 13,885 work candidates as of
+          # 2026-09-23 -- where every later run carries only the day's new
+          # credit, on the order of a few hundred. A measured dry run over the
+          # full backlog took 2h at eight workers; a committing pass submits a
+          # form per candidate on top of that, and the flow's re-read of a
+          # continuous pathway can no longer narrow by entry date, so both are
+          # slower than the figure this was first sized against.
+          #
+          # A task that outruns its timeout dies partway. The re-read makes a
+          # resumed run write only what is still owed, so nothing is lost or
+          # doubled, but a half-finished production pass is worth avoiding for
+          # the sake of a larger number here. Cloud Run allows up to 24h.
+          timeout   = "43200s"
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
           env       = {}
