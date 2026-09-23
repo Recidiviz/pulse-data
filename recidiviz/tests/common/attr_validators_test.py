@@ -29,6 +29,7 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_validators import (
     is_dict_of,
     is_list_of,
+    is_non_empty_list_of,
     is_non_empty_set,
     is_non_empty_set_of,
     is_not_set_along_with,
@@ -1474,6 +1475,49 @@ class TestIsSetOfValidator(unittest.TestCase):
                 set_of_str_field=set(),
                 set_of_class_field={None},  # type: ignore[arg-type]
             )
+
+
+class TestIsNonEmptyListValidators(unittest.TestCase):
+    """Tests for the is_non_empty_list_of validator."""
+
+    @attr.define
+    class TestClass:
+        non_empty_list_of_str_field: list[str] = attr.ib(
+            validator=is_non_empty_list_of(str)
+        )
+
+    def test_correct_values(self) -> None:
+        _ = self.TestClass(non_empty_list_of_str_field=["a", "b"])
+
+    def test_non_list_input(self) -> None:
+        with self.assertRaises(TypeError):
+            _ = self.TestClass(
+                non_empty_list_of_str_field={"a"},  # type: ignore[arg-type]
+            )
+
+    def test_wrong_element_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in list type field [non_empty_list_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test."
+                "TestIsNonEmptyListValidators.TestClass'>] which is not the expected "
+                "type [<class 'str'>]: <class 'int'>"
+            ),
+        ):
+            _ = self.TestClass(
+                non_empty_list_of_str_field=[1],  # type: ignore[list-item]
+            )
+
+    def test_empty_list(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Field [non_empty_list_of_str_field] on [TestClass] must be a "
+                "non-empty list. Found value [[]]"
+            ),
+        ):
+            _ = self.TestClass(non_empty_list_of_str_field=[])
 
 
 class TestIsNonEmptySetValidators(unittest.TestCase):

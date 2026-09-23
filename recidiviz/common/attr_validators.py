@@ -805,6 +805,18 @@ def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> 
         )
 
 
+def is_non_empty_list_of(list_item_expected_type: Type) -> AttrValidator:
+    """Returns a validator that checks the value is a non-empty list whose every element
+    is an instance of |list_item_expected_type|."""
+    element_validator = is_list_of(list_item_expected_type)
+
+    def _validate(instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        is_non_empty_list(instance, attribute, value)
+        element_validator(instance, attribute, value)
+
+    return _validate
+
+
 def is_list_where_each(
     member_validator: AttrValidator | Sequence[AttrValidator],
 ) -> AttrValidator:

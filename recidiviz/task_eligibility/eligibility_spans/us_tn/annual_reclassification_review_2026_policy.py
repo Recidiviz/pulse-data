@@ -27,11 +27,11 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     incarceration_assessment_2026_policy_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    custody_level_compared_to_recommended,
     has_initial_classification_in_state_prison_custody,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     at_least_12_months_since_latest_assessment,
+    custody_level_compared_to_recommended,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (

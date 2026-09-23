@@ -24,11 +24,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     custody_level_downgrade,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_higher_than_recommended,
-    custody_level_is_not_max,
-)
+from recidiviz.task_eligibility.criteria.general import custody_level_is_not_max
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    custody_level_higher_than_recommended,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
     latest_caf_assessment_not_override,

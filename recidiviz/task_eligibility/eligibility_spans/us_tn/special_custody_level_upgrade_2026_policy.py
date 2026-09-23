@@ -26,17 +26,15 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     custody_level_upgrade_2026_policy,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_lower_than_recommended,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    custody_level_lower_than_recommended,
     custody_level_lower_than_recommended_2026_policy,
     has_not_been_classified_under_2026_policy,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -45,7 +43,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 custody_level_not_lower_than_recommended_previous_policy_view_builder = (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=custody_level_lower_than_recommended.VIEW_BUILDER
     )
 )

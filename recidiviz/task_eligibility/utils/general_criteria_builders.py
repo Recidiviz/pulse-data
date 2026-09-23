@@ -712,7 +712,7 @@ def custody_level_vs_recommended_criteria_view_builder(
 def custody_level_vs_recommended_criteria(
     *,
     recommended_classification_spans_view_builder: RecommendedClassificationSpansBigQueryViewBuilder,
-    comparison: CustodyLevelVsRecommended,
+    comparison: CustodyLevelVsRecommended | None,
 ) -> str:
     """Returns spans of time where a resident's current custody level compares to their
     recommended custody level in the given way, along with the date they next become
@@ -724,7 +724,9 @@ def custody_level_vs_recommended_criteria(
             current-vs-recommended comparison, so this only selects the direction of
             interest.
         comparison: The comparison that satisfies this criteria (e.g.
-            HIGHER_THAN_RECOMMENDED for a downgrade task).
+            HIGHER_THAN_RECOMMENDED for a downgrade task). None satisfies the criteria
+            for every span the policy covers, which is how a task carries a policy's
+            current and recommended levels as reasons without gating on them.
 
     TODO(#63762): The next_eligibility_spans CTE and final SELECT below duplicate the
     tail of custody_level_compared_to_recommended, which the policies still on
@@ -737,6 +739,11 @@ def custody_level_vs_recommended_criteria(
     spans_address = (
         recommended_classification_spans_view_builder.table_for_query.format_address_for_query_template()
     )
+    meets_criteria_expression = (
+        "TRUE"
+        if comparison is None
+        else f"{CUSTODY_LEVEL_VS_RECOMMENDED_COLUMN_NAME} = '{comparison.value}'"
+    )
     return f"""
     WITH meets_criteria_spans AS (
         SELECT
@@ -746,7 +753,7 @@ def custody_level_vs_recommended_criteria(
             {END_DATE_EXCLUSIVE_COLUMN_NAME},
             {CUSTODY_LEVEL_COLUMN_NAME},
             {RECOMMENDED_CUSTODY_LEVEL_COLUMN_NAME},
-            {CUSTODY_LEVEL_VS_RECOMMENDED_COLUMN_NAME} = '{comparison.value}' AS meets_criteria,
+            {meets_criteria_expression} AS meets_criteria,
         FROM `{spans_address}`
     ),
     /* This CTE aggregates meets_criteria_spans for rows where custody_level,
@@ -795,29 +802,25 @@ def custody_level_vs_recommended_criteria(
 
 def custody_level_compared_to_recommended(
     criteria: str,
-    score_type_by_state: Optional[dict] = None,
+    score_type_by_state: dict[str, str],
 ) -> str:
-    """
-    Args:
-        criteria (str): The criteria for comparing current custody level to recommended level
-        score_type_by_state (dict, optional): Dictionary mapping state_code to score_type for filtering
-            recommended_custody_level_spans. If state is not provided, defaults to "DEFAULT" for that
-            state. Example: {"US_TN": "RECLASSIFICATION_2026_POLICY"}
-    Returns:
-        f-string: Spans of time where a given criteria comparing current and recommended custody level is met
-    """
+    """Returns spans of time where a given criteria comparing current and recommended
+    custody level is met, for policies whose recommended levels still come from a
+    hand-written view rather than a RecommendedClassificationSpansBigQueryViewBuilder.
+    A policy on that builder should use custody_level_vs_recommended_criteria instead,
+    which reads the policy view by builder rather than by score_type.
 
-    # Build WHERE clause for score type filtering if provided
-    if score_type_by_state:
-        score_type_conditions = []
-        for state_code, score_type in score_type_by_state.items():
-            score_type_conditions.append(
-                f"(state_code = '{state_code}' AND score_type = '{score_type}')"
-            )
-        score_type_filter = f"WHERE ({' OR '.join(score_type_conditions)}) OR (state_code NOT IN ({list_to_query_string(list(score_type_by_state.keys()), quoted=True)}) AND score_type = 'DEFAULT')"
-    else:
-        # Default to "DEFAULT" score type for all states
-        score_type_filter = "WHERE score_type = 'DEFAULT'"
+    Args:
+        criteria: The criteria for comparing current custody level to recommended level.
+        score_type_by_state: Maps each state code to the score_type to read its
+            recommended levels from, e.g. {"US_MI": "RECLASS_2026_POLICY"}. Every state
+            this criteria covers needs an entry; a state with none is filtered out.
+    """
+    score_type_conditions = [
+        f"(state_code = '{state_code}' AND score_type = '{score_type}')"
+        for state_code, score_type in score_type_by_state.items()
+    ]
+    score_type_filter = f"WHERE ({' OR '.join(score_type_conditions)})"
 
     return f"""
     WITH critical_dates AS (
