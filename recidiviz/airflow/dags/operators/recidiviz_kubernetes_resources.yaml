@@ -131,13 +131,11 @@ DataflowMetricPruningEntrypoint:
       cpu: 500m
       memory: 500Mi
 
-# TODO(#105132): Drop back to 500Mi once the source table repository no longer
-# builds every view in every deployed graph.
 ApplyRowLevelPermissionsEntrypoint:
   default_resources:
     limits:
       cpu: 500m
-      memory: 2Gi
+      memory: 500Mi
 
 DocumentUploadEntrypoint:
   default_resources:
