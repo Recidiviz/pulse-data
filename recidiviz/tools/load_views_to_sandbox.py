@@ -479,7 +479,6 @@ def _get_deployed_view_signatures_by_address() -> (
             metadata.project_id()
         )
     )
-    # TODO(OBT-48947): Remove the view_graph_name filter after backfilling existing rows
     signatures_query = f"""
     SELECT
         success_timestamp,
@@ -491,7 +490,6 @@ def _get_deployed_view_signatures_by_address() -> (
         clustering_fields_string,
         time_partitioning_string
     FROM {update_stats_address.format_address_for_query()}
-    WHERE view_graph_name IS NOT NULL
     QUALIFY RANK() OVER (
         PARTITION BY view_graph_name ORDER BY success_timestamp DESC
     ) = 1

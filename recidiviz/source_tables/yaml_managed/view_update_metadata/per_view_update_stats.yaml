@@ -17,8 +17,7 @@ schema:
     description: The version of the deployed code running this update (e.g. "v1.123.0-alpha.1").
   - name: view_graph_name
     type: STRING
-    # TODO(OBT-48947): Make this REQUIRED after existing rows have been backfilled
-    mode: NULLABLE
+    mode: REQUIRED
     description: The name of the view graph this view was updated as part of.
   - name: dataset_id
     type: STRING
