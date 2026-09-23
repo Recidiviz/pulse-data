@@ -49,11 +49,11 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
 )
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
-from recidiviz.observations.observation_big_query_view_collector import (
-    ObservationBigQueryViewCollector,
-)
 from recidiviz.observations.observation_selector import ObservationSelector
-from recidiviz.observations.observation_type_utils import ObservationTypeT
+from recidiviz.observations.observation_type_utils import (
+    ObservationTypeT,
+    attribute_col_names_for_observation_type,
+)
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
@@ -426,12 +426,9 @@ def build_single_observation_type_aggregated_metric_query_template(
     # fill with NULL
     if not disaggregate_by_observation_attributes:
         disaggregate_by_observation_attributes = []
-    observation_attribute_col_names = {
-        c.name
-        for c in ObservationBigQueryViewCollector()
-        .get_view_builder_for_observation_type(observation_type)
-        .attribute_cols
-    }
+    observation_attribute_col_names = set(
+        attribute_col_names_for_observation_type(observation_type)
+    )
     observation_attribute_columns = [
         col
         if col in observation_attribute_col_names
