@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shared util functions dealing with direct ingest of regions."""
+
 import os
 from typing import List, Set
 
@@ -63,6 +64,19 @@ def get_direct_ingest_states_existing_in_env() -> List[StateCode]:
         if direct_ingest_regions.get_direct_ingest_region(
             state_code.value.lower()
         ).exists_in_env()
+    ]
+
+
+def get_direct_ingest_states_existing_in_project(project_id: str) -> List[StateCode]:
+    """Returns list of states that have existing direct ingest infrastructure in the
+    given project.
+    """
+    return [
+        state_code
+        for state_code in get_existing_direct_ingest_states()
+        if direct_ingest_regions.get_direct_ingest_region(
+            state_code.value.lower()
+        ).exists_in_project(project_id=project_id)
     ]
 
 

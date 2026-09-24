@@ -23,6 +23,7 @@ These live above `models/llm_extractor_config.py` (which defines the config
 object itself) so the combined enumeration can compose the entity-resolution
 builders without the model module depending on the entity_resolution package.
 """
+
 from functools import cache
 from types import ModuleType
 
@@ -124,6 +125,19 @@ def load_first_order_llm_extractor_configs(
             state_configs[collection_name] = config
         configs_by_state[state_code] = state_configs
     return configs_by_state
+
+
+def load_all_first_order_llm_extractor_configs(
+    config_module: ModuleType | None = None,
+) -> list[LLMExtractorConfig]:
+    """Returns every first-order extractor config across all states."""
+    return [
+        config
+        for configs_by_name in load_first_order_llm_extractor_configs(
+            config_module
+        ).values()
+        for config in configs_by_name.values()
+    ]
 
 
 def get_first_order_llm_extractor_config(

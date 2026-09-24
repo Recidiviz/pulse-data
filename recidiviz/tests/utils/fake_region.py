@@ -58,6 +58,11 @@ def fake_region(
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env
 
+    def fake_exists_in_project(project_id: str) -> bool:
+        return DirectIngestRegion.exists_in_project(region, project_id)
+
+    region.exists_in_project = fake_exists_in_project
+
     def fake_has_launchable_activity_ingest_views(project_id: str) -> bool:
         return DirectIngestRegion.has_launchable_activity_ingest_views(
             region, project_id

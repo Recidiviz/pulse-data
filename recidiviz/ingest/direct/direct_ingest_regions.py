@@ -20,6 +20,7 @@
 Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
+
 import os
 from collections import defaultdict
 from types import ModuleType
@@ -89,6 +90,12 @@ class DirectIngestRegion:
             )
             or not self.playground
         )
+
+    def exists_in_project(self, project_id: str) -> bool:
+        """Returns true if the ingest infrastructure for this region exists in the
+        given project. We don't create infrastructure for the playground regions in prod.
+        """
+        return project_id != GCP_PROJECT_PRODUCTION or not self.playground
 
     def has_launchable_activity_ingest_views(self, project_id: str) -> bool:
         """Returns whether this region has any activity ingest views that are
