@@ -125,6 +125,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -141,6 +142,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=3600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -157,6 +159,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -171,6 +174,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -185,6 +189,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -201,6 +206,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -217,6 +223,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -233,6 +240,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -249,6 +257,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -265,6 +274,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -279,6 +289,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -293,6 +304,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -309,6 +321,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
             ],
             msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",
@@ -373,6 +386,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -389,6 +403,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=3600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -405,6 +420,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -419,6 +435,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -433,6 +450,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -449,6 +467,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -465,6 +484,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -481,6 +501,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -497,6 +518,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -513,6 +535,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -527,6 +550,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -541,6 +565,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
                 call(
                     URL.create(
@@ -557,6 +582,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
+                    pool_pre_ping=True,
                 ),
             ],
             msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",

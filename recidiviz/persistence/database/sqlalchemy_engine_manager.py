@@ -64,6 +64,10 @@ class SQLAlchemyEngineManager(BaseEngineManager):
             # prints every pool event twice.
             echo_pool=environment.in_gcp(),
             pool_recycle=database_key.pool_recycle,
+            # Ping the connection on checkout so one Cloud SQL closed server-side
+            # (maintenance, a brief network blip) reconnects transparently instead
+            # of surfacing an OperationalError to the request.
+            pool_pre_ping=True,
             **additional_kwargs,
         )
 
