@@ -60,8 +60,8 @@ The bot only runs on issues whose labels pass the `if:` check in
 (mirrored in recidiviz-dashboards' `pg-diagnosis-dispatch.yml`). Read it rather
 than assuming its contents. At the time of writing it requires `Team: State Pod`,
 a `Region:` label for one of the covered states, and `Project: Workflows`,
-`Project: Tasks`, or `Project: Insights`. If the state isn't in the check, stop
-and tell the user the bot doesn't cover it.
+`Project: Tasks`, or `Project: Supervisor Homepage/Insights`. If the state isn't
+in the check, stop and tell the user the bot doesn't cover it.
 
 ### Step 2: Find the tickets in scope
 

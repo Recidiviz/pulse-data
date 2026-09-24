@@ -11,7 +11,7 @@ user (use AskUserQuestion tool)** with common state codes as options.
 #### b. Determine the product area
 
 Look for the product area in the ticket title (e.g. `[Workflows]`), body ("Product" field),
-or labels (e.g. `Project: Workflows`, `Project: Tasks`, `Project: Insights`).
+or labels (e.g. `Project: Workflows`, `Project: Tasks`, `Project: Supervisor Homepage/Insights`).
 
 If neither the title nor the body contains a recognizable product area, **ASK
 the user (use AskUserQuestion tool)** with options like "Tasks - contacts",
