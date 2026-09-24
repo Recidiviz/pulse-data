@@ -521,7 +521,7 @@ class _SyncProcessNodeQueue(Generic[ViewResultT]):
     ) -> Tuple[Callable, BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float,]:
         node, parent_results, entered_queue_time = self.queue.pop()
         return (
-            lambda: trace.time_and_trace(
+            lambda: trace.time_execution(
                 structured_logging.with_context(self.view_process_fn)
             )(node.view, parent_results),
             node,
