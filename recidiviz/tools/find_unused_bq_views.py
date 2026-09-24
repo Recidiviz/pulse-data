@@ -196,6 +196,9 @@ from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_e
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.dataset_config import (
+    document_extraction_results_unvalidated_dataset_for_region,
+)
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
     raw_latest_views_dataset_for_region,
@@ -270,11 +273,29 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
 }
 
+
 # List of views that are not referenced in Looker but should still be kept around,
 # listed along with the reason we still need to keep them. Please be as descriptive
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    **{
+        BigQueryAddress.from_str(f"us_co_document_extraction_results.{table_id}"): (
+            "Public LLM document extraction results view. The cross-state union "
+            "views that read these are added to the calculation graph in #98833. "
+            "(Emily Turner, 2026-09-18)"
+        )
+        for table_id in [
+            "case_note_employment_info",
+            "case_note_employment_info_employer_entities",
+            "case_note_employment_info_employers",
+            "case_note_employment_info_employment_changes",
+            "case_note_housing_info",
+            "case_note_housing_info_housing_entities",
+            "case_note_payment_info",
+            "case_note_payment_info_payments",
+        ]
+    },
     **{
         BigQueryAddress(
             dataset_id=STATE_BASE_VIEWS_DATASET,
@@ -744,6 +765,12 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
             raw_data_views_dataset_for_region(state_code, instance)
             for state_code in StateCode
             for instance in DirectIngestInstance
+        },
+        # Unvalidated LLM extraction results views exist for debugging extraction
+        # output before validation; nothing downstream reads them.
+        *{
+            document_extraction_results_unvalidated_dataset_for_region(state_code)
+            for state_code in StateCode
         },
     }:
         return True

@@ -37,6 +37,8 @@ datasets:
     description: Dataset that contains metadata related to Intercom exports
   label_studio:
     description: "Stores Label Studio task data as GCS-backed external tables: raw annotation exports and the task files staged for import."
+  normalized_state:
+    description: View-derived source tables materialized into [normalized_state].
   operations:
     description: Internal Recidiviz operations data loaded from the operations CloudSQL instance.
   population_projection_output_data:
@@ -188,6 +190,8 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_CA.
   us_co_document_contents:
     description: Document contents tables for Colorado
+  us_co_document_extraction_results__pre_resolution:
+    description: View-derived source tables materialized into [us_co_document_extraction_results__pre_resolution].
   us_co_document_extraction_results__raw:
     description: Raw LLM document-extraction result tables for Colorado
   us_co_document_extraction_results__validated:
@@ -816,6 +820,10 @@ datasets:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_OR.
   us_oz_document_contents:
     description: Document contents tables for Oz
+    projects:
+      - recidiviz-staging
+  us_oz_document_extraction_results__pre_resolution:
+    description: View-derived source tables materialized into [us_oz_document_extraction_results__pre_resolution].
     projects:
       - recidiviz-staging
   us_oz_document_extraction_results__raw:

@@ -40,6 +40,9 @@ from recidiviz.calculator.query.state.view_config import (
 from recidiviz.datasets.static_data.views.view_config import (
     get_static_data_view_builders,
 )
+from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
+    deployed_llm_extraction_view_graphs,
+)
 from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
 )
@@ -108,7 +111,8 @@ def _all_view_graphs(project_id: str) -> list[BigQueryViewGraph]:
     return [
         _calculation_view_graph(
             project_id, _calculation_view_builders_across_projects()
-        )
+        ),
+        *deployed_llm_extraction_view_graphs(project_id),
     ]
 
 
@@ -170,7 +174,8 @@ def builders_for_all_view_graphs_across_projects() -> list[BigQueryViewBuilder]:
     calculation_view_builder_candidates = _calculation_view_builders_across_projects()
     for project_id in environment.DATA_PLATFORM_GCP_PROJECTS:
         all_graphs = [
-            _calculation_view_graph(project_id, calculation_view_builder_candidates)
+            _calculation_view_graph(project_id, calculation_view_builder_candidates),
+            *deployed_llm_extraction_view_graphs(project_id),
         ]
         for graph in all_graphs:
             for builder in graph.view_builders:
