@@ -24,6 +24,9 @@ from functools import cache
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.notion_linear_roadmap_latest import (
+    NOTION_LINEAR_ROADMAP_LATEST_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_education_records_preprocessed import (
     VIEW_BUILDER as US_AR_EDUCATION_RECORDS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -377,6 +380,9 @@ def state_agnostic_deployed_views_without_state_code_column(
         DAG_RUNTIMES_VIEW_BUILDER.address,
         # These views calculate cross-state metrics for orgwide impact tracking
         *_get_breadth_depth_addresses_without_state_code(),
+        # This view joins the Notion roadmap's free-text "state" column with Linear
+        # project data; it isn't keyed by StateCode and spans all states in one row set.
+        NOTION_LINEAR_ROADMAP_LATEST_VIEW_BUILDER.address,
     }
 
     return {

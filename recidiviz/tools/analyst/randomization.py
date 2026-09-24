@@ -18,7 +18,6 @@
 
 import numpy as np
 import pandas as pd
-from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
 from scipy import stats
 
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
@@ -31,6 +30,9 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
     build_source_table_repository_for_yaml_managed_tables,
 )
 from recidiviz.source_tables.yaml_managed.datasets import EXPERIMENT_ASSIGNMENTS_DATASET
+from recidiviz.tools.analyst.source_table_upload_utils import (
+    validate_and_convert_df_columns_to_schema,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
@@ -193,7 +195,7 @@ def upload_assignments_to_gbq(
     df_copy.loc[:, EXPERIMENT_ASSIGNMENTS_UPLOAD_DATETIME_COLUMN] = pd.to_datetime(
         "today"
     )
-    _validate_assignment_df_columns(df_copy, experiments_table_config)
+    validate_and_convert_df_columns_to_schema(df_copy, experiments_table_config)
     _validate_unique_id_and_variant_per_day(df_copy)
 
     num_rows = len(df_copy)
@@ -220,70 +222,6 @@ def upload_assignments_to_gbq(
             )
     else:
         print("DataFrame was validated, but not uploaded to BigQuery.")
-
-
-def _convert_df_column_to_type_if_necessary(
-    df: pd.DataFrame, column_name: str, desired_type: BigQueryFieldType
-) -> None:
-    """Converts the values in the column with name |column_name| in the provided
-    DataFrame to a type that is compatible for uploading to a BQ table with the
-    |desired_type|.
-    """
-    try:
-        if desired_type == BigQueryFieldType.STRING:
-            if pd.api.types.is_string_dtype(df[column_name]):
-                # No modification needed
-                return
-            df[column_name] = df[column_name].astype(str)
-        elif desired_type == BigQueryFieldType.INT64:
-            if pd.api.types.is_integer_dtype(df[column_name]):
-                # No modification needed
-                return
-            df[column_name] = pd.to_numeric(df[column_name], downcast="integer")
-        elif desired_type in (BigQueryFieldType.DATE, BigQueryFieldType.TIMESTAMP):
-            if pd.api.types.is_datetime64_any_dtype(df[column_name]):
-                # No modification needed
-                return
-            df[column_name] = pd.to_datetime(df[column_name])
-        else:
-            raise ValueError(
-                f"Unsupported column type for column [{column_name}]: {desired_type}"
-            )
-    except Exception as e:
-        raise ValueError(
-            f"Column [{column_name}] cannot be converted to type [{desired_type}]: {e}"
-        ) from e
-
-
-def _validate_assignment_df_columns(
-    df: pd.DataFrame, experiments_table_config: SourceTableConfig
-) -> None:
-    """Raises a ValueError if the DataFrame does not contain the required columns, if
-    the columns are not in the correct format (or cannot be reasonably converted to the
-    correct format), or if there are extra columns.
-
-    Where possible, converts columns to the appropriate type to match the BQ schema.
-    """
-    required_columns = {
-        column.name for column in experiments_table_config.schema_fields
-    }
-    df_columns = set(df.columns)
-
-    # Check for extra columns
-    extra_columns = df_columns - required_columns
-    if extra_columns:
-        raise ValueError(f"Extra columns present: {extra_columns}")
-
-    # Check for missing columns
-    missing_columns = required_columns - df_columns
-    if missing_columns:
-        raise ValueError(f"Missing required columns: {missing_columns}")
-
-    # Validate column types
-    for col in experiments_table_config.schema_fields:
-        _convert_df_column_to_type_if_necessary(
-            df, column_name=col.name, desired_type=BigQueryFieldType(col.field_type)
-        )
 
 
 def _validate_unique_id_and_variant_per_day(df: pd.DataFrame) -> None:

@@ -1,0 +1,309 @@
+address:
+  dataset_id: linear_snapshots
+  table_id: notion_linear_roadmap_snapshots
+description:
+  Append-only historical snapshot log combining the Notion state-initiative
+  roadmap export with live Linear project and milestone data, uploaded via
+  recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py. Each run appends
+  one row per initiative tagged with that run's snapshot_date. Query the
+  analyst_data.notion_linear_roadmap_latest view for latest-snapshot-only
+  rows.
+schema:
+  - name: initiative
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Initiative" column.
+  - name: global_prio_flag
+    type: STRING
+    mode: NULLABLE
+    description: Notion "*Global Prio Flag" column.
+  - name: actual_fs_launch
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Actual FS Launch" column.
+  - name: actual_l_n_ig_scoping_validation_start
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Actual L->N IG/Scoping+Validation Start" column.
+  - name: actual_n_n
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Actual N->N " column.
+  - name: actual_tt_launch
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Actual TT Launch" column.
+  - name: all_state_prio_rank
+    type: STRING
+    mode: NULLABLE
+    description: Notion "All State Prio Rank" column.
+  - name: contract_to_data_weeks
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Contract to Data (weeks)" column.
+  - name: contract_dsa_signed
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Contract/DSA Signed" column.
+  - name: created_time
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Created time" column.
+  - name: current_owner_s
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Current Owner(s)" column.
+  - name: da_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "DA Work Points" column.
+  - name: data_analysts
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Data Analysts" column.
+  - name: data_received
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Data Received" column.
+  - name: data_to_fully_scoped_weeks
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Data to Fully Scoped (weeks)" column.
+  - name: design_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Design Work Points" column.
+  - name: dev_time_per_da_work_point
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Dev Time per DA Work Point" column.
+  - name: exclude_from_launch_momentum
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Exclude from Launch Momentum" column.
+  - name: fde_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "FDE Work Points" column.
+  - name: fs_launch_quarter
+    type: STRING
+    mode: NULLABLE
+    description: Notion "FS Launch Quarter" column.
+  - name: fully_scoped_to_tt_weeks
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Fully Scoped to TT (weeks)" column.
+  - name: ie_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "IE Work Points" column.
+  - name: initiative_documentation
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Initiative Documentation" column.
+  - name: last_edited_time
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Last edited time" column.
+  - name: linear_project
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Linear Project" column (the raw Linear project URL).
+  - name: opportunities
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Opportunities" column.
+  - name: pg_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "PG Work Points" column.
+  - name: problem_statement
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Problem statement" column.
+  - name: product_category
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Product Category" column.
+  - name: projected_fsl
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Projected FSL" column.
+  - name: projected_n_n
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Projected N->N " column.
+  - name: projected_tt_launch
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Projected TT Launch" column.
+  - name: q3_intra_state_prio
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Q3 Intra-State Prio" column.
+  - name: risks_to_target_launch_date
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Risks to Target Launch Date" column.
+  - name: roadmap_2026
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Roadmap 2026" column.
+  - name: roadmap_status
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Roadmap Status" column.
+  - name: swe_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "SWE Work Points" column.
+  - name: sanity_suggestion
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Sanity Suggestion" column.
+  - name: scoped_to_fsl
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Scoped to FSL" column.
+  - name: scoping_lead_s
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Scoping Lead(s)" column.
+  - name: scoping_start_to_fully_scoped_weeks
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Scoping Start to Fully Scoped (weeks)" column.
+  - name: scoping_work_points
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Scoping Work Points" column.
+  - name: state
+    type: STRING
+    mode: NULLABLE
+    description: Notion "State" column.
+  - name: state_risk_status
+    type: STRING
+    mode: NULLABLE
+    description: Notion "State Risk Status" column.
+  - name: t_shirt_size
+    type: STRING
+    mode: NULLABLE
+    description: Notion "T-Shirt Size" column.
+  - name: tt_to_fsl_weeks
+    type: STRING
+    mode: NULLABLE
+    description: Notion "TT to FSL (weeks)" column.
+  - name: target_fsl
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Target FSL" column.
+  - name: target_n_n
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Target N->N" column.
+  - name: target_tt_launch
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Target TT Launch" column.
+  - name: teams_for_q3_2026
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Teams for Q3 2026" column.
+  - name: ticket_link
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Ticket Link" column.
+  - name: timeline_status
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Timeline Status" column.
+  - name: upcoming_launch_review_s
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Upcoming Launch Review(s)" column.
+  - name: users_have_access_to_live_tool_in_prod
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Users Have Access To Live Tool In Prod" column.
+  - name: working_period
+    type: STRING
+    mode: NULLABLE
+    description: Notion "Working Period" column.
+  - name: product_growth_rollout_tracker
+    type: STRING
+    mode: NULLABLE
+    description: Notion "🚀 Product Growth Rollout Tracker " column.
+  - name: linear_project_slug_id
+    type: STRING
+    mode: NULLABLE
+    description: slugId extracted from the Notion "Linear Project" URL column.
+  - name: linear_project_id
+    type: STRING
+    mode: NULLABLE
+    description: Linear project UUID, joined by slugId. Null if unmatched.
+  - name: linear_project_name
+    type: STRING
+    mode: NULLABLE
+    description: Linear project name, joined by slugId. Null if unmatched.
+  - name: linear_project_state
+    type: STRING
+    mode: NULLABLE
+    description: Linear project state (e.g. "started", "completed"), joined by slugId.
+  - name: linear_project_start_date
+    type: DATE
+    mode: NULLABLE
+    description: Linear project's own top-level start date (not tied to a specific launch stage).
+  - name: linear_project_target_date
+    type: DATE
+    mode: NULLABLE
+    description: Linear project's own top-level target date (not tied to a specific launch stage).
+  - name: linear_project_health
+    type: STRING
+    mode: NULLABLE
+    description: Latest project health status from Linear (e.g. "onTrack", "atRisk", "offTrack"). Null if no update has been posted.
+  - name: linear_project_health_updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: Timestamp the latest project health status was posted. Null if no update has been posted.
+  - name: fsl_date
+    type: DATE
+    mode: NULLABLE
+    description: Target date of the Linear milestone matched to the Full State Launch (FSL) stage.
+  - name: fsl_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the FSL stage.
+  - name: tt_date
+    type: DATE
+    mode: NULLABLE
+    description: Target date of the Linear milestone matched to the Trusted Tester (TT) launch stage.
+  - name: tt_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the TT stage.
+  - name: partial_date
+    type: DATE
+    mode: NULLABLE
+    description: Target date of the Linear milestone matched to the Partial launch stage.
+  - name: partial_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the Partial stage.
+  - name: core_scoping_complete_date
+    type: DATE
+    mode: NULLABLE
+    description: Target date of the Linear milestone matched to the Core Scoping Complete stage.
+  - name: core_scoping_complete_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the Core Scoping Complete stage.
+  - name: snapshot_date
+    type: DATE
+    mode: REQUIRED
+    description: Date this row was uploaded, i.e. which script run it belongs to.
+  - name: upload_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: Timestamp this row was uploaded.
+clustering_fields:
+  - snapshot_date

@@ -1578,6 +1578,197 @@ class GetIssuesForMilestoneTest(unittest.TestCase):
             client.get_issues_for_milestone(milestone_id="milestone-uuid")
 
 
+class GetAllProjectsWithMilestonesTest(unittest.TestCase):
+    """Tests for LinearClient.get_all_projects_with_milestones()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_projects_with_milestones(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [
+                            {
+                                "id": "proj-1",
+                                "slugId": "abc123def456",
+                                "name": "US_MO Tasks V2",
+                                "state": "started",
+                                "targetDate": "2026-06-01",
+                                "milestones": {
+                                    "nodes": [
+                                        {
+                                            "name": "TT Launch",
+                                            "description": "",
+                                            "targetDate": "2026-03-01",
+                                        },
+                                    ],
+                                    "pageInfo": {"hasNextPage": False},
+                                },
+                            },
+                        ],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_all_projects_with_milestones()
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "id": "proj-1",
+                    "slugId": "abc123def456",
+                    "name": "US_MO Tasks V2",
+                    "state": "started",
+                    "targetDate": "2026-06-01",
+                    "milestones": {
+                        "nodes": [
+                            {
+                                "name": "TT Launch",
+                                "description": "",
+                                "targetDate": "2026-03-01",
+                            },
+                        ],
+                        "pageInfo": {"hasNextPage": False},
+                    },
+                },
+            ],
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_handles_pagination(self, mock_post: MagicMock) -> None:
+        mock_post.side_effect = [
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "projects": {
+                            "nodes": [
+                                {
+                                    "id": "proj-1",
+                                    "slugId": "abc123def456",
+                                    "name": "First",
+                                    "state": "started",
+                                    "targetDate": None,
+                                    "milestones": {
+                                        "nodes": [],
+                                        "pageInfo": {"hasNextPage": False},
+                                    },
+                                },
+                            ],
+                            "pageInfo": {
+                                "hasNextPage": True,
+                                "endCursor": "cursor-1",
+                            },
+                        }
+                    }
+                },
+            ),
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "data": {
+                        "projects": {
+                            "nodes": [
+                                {
+                                    "id": "proj-2",
+                                    "slugId": "789abc012def",
+                                    "name": "Second",
+                                    "state": "completed",
+                                    "targetDate": None,
+                                    "milestones": {
+                                        "nodes": [],
+                                        "pageInfo": {"hasNextPage": False},
+                                    },
+                                },
+                            ],
+                            "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        }
+                    }
+                },
+            ),
+        ]
+
+        client = LinearClient(FAKE_API_KEY)
+        result = client.get_all_projects_with_milestones()
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(mock_post.call_count, 2)
+        second_call_body = (
+            mock_post.call_args_list[1].kwargs.get("json")
+            or mock_post.call_args_list[1][1]["json"]
+        )
+        self.assertEqual(second_call_body["variables"]["after"], "cursor-1")
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_returns_empty_for_no_projects(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        self.assertEqual(client.get_all_projects_with_milestones(), [])
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=500, text="Internal Server Error"
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaises(LinearApiError):
+            client.get_all_projects_with_milestones()
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_when_a_projects_milestones_are_truncated(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [
+                            {
+                                "id": "proj-1",
+                                "slugId": "abc123def456",
+                                "name": "US_MO Tasks V2",
+                                "state": "started",
+                                "targetDate": None,
+                                "milestones": {
+                                    "nodes": [],
+                                    "pageInfo": {"hasNextPage": True},
+                                },
+                            },
+                        ],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Milestones were truncated for projects: \['US_MO Tasks V2'\]\. "
+            r"get_all_projects_with_milestones does not paginate milestones "
+            r"within a project\.$",
+        ):
+            client.get_all_projects_with_milestones()
+
+
 class LinearClientFromSecretTest(unittest.TestCase):
     """Tests for linear_client_from_secret()."""
 

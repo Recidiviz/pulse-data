@@ -37,6 +37,8 @@ datasets:
     description: Dataset that contains metadata related to Intercom exports
   label_studio:
     description: "Stores Label Studio task data as GCS-backed external tables: raw annotation exports and the task files staged for import."
+  linear_snapshots:
+    description: Stores a snapshot log of the Notion state-initiative roadmap joined with Linear project data, uploaded via recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py.
   normalized_state:
     description: View-derived source tables materialized into [normalized_state].
   operations:

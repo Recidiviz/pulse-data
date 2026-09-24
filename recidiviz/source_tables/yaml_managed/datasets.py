@@ -35,6 +35,10 @@ CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID: str = "cloud_sql_to_bq_refresh"
 # means and uploaded via recidiviz/tools/analyst/randomization.py
 EXPERIMENT_ASSIGNMENTS_DATASET: str = "experiment_assignments"
 
+# Snapshot log of the Notion state-initiative roadmap joined with Linear project
+# data, uploaded via recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py
+LINEAR_SNAPSHOTS_DATASET: str = "linear_snapshots"
+
 VERA_DATASET: str = "vera_data"
 
 VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
@@ -86,6 +90,11 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     LABEL_STUDIO_DATASET: (
         "Stores Label Studio task data as GCS-backed external tables: raw "
         "annotation exports and the task files staged for import."
+    ),
+    LINEAR_SNAPSHOTS_DATASET: (
+        "Stores a snapshot log of the Notion state-initiative roadmap joined with "
+        "Linear project data, uploaded via "
+        "recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py."
     ),
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."

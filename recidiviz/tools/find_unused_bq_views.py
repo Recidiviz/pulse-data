@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
+from recidiviz.calculator.query.state.views.analyst_data.notion_linear_roadmap_latest import (
+    NOTION_LINEAR_ROADMAP_LATEST_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -261,6 +264,7 @@ from recidiviz.view_registry.deployed_view_graphs import (
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     OFFICER_ASSIGNMENTS_VIEW_BUILDER.address,
     STATE_ASSIGNMENTS_VIEW_BUILDER.address,
+    NOTION_LINEAR_ROADMAP_LATEST_VIEW_BUILDER.address,
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address,
     COHORT_MONTH_INDEX_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker

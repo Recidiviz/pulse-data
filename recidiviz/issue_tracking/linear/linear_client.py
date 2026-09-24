@@ -18,6 +18,7 @@
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -502,6 +503,67 @@ class LinearClient:
             for node in nodes
         ]
 
+    def get_all_projects_with_milestones(self) -> list[dict]:
+        """Fetch every Linear project, including its id, slugId, name,
+        state, startDate, targetDate, health, healthUpdatedAt, and nested
+        milestones (each with name, description, and targetDate).
+
+        Milestones live on the API's `projectMilestones` field (there is no
+        `milestones` field on `Project`); the query aliases it to
+        `milestones` so the returned dict always has that key regardless of
+        the underlying API field name.
+
+        Milestones are fetched as a single, unpaginated page per project
+        (Linear's default page size, 50). Raises a ValueError naming any
+        project whose milestones were truncated, rather than silently
+        dropping milestones past the first page.
+        """
+        query = """
+        query($after: String) {
+            projects(first: 50, after: $after) {
+                nodes {
+                    id
+                    slugId
+                    name
+                    state
+                    startDate
+                    targetDate
+                    health
+                    healthUpdatedAt
+                    milestones: projectMilestones {
+                        nodes {
+                            name
+                            description
+                            targetDate
+                        }
+                        pageInfo {
+                            hasNextPage
+                        }
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+        """
+        projects = self._paginated_query(query, {}, ("projects",))
+
+        truncated_project_names = [
+            project["name"]
+            for project in projects
+            if project["milestones"]["pageInfo"]["hasNextPage"]
+        ]
+        if truncated_project_names:
+            raise ValueError(
+                f"Milestones were truncated for projects: {truncated_project_names}. "
+                "get_all_projects_with_milestones does not paginate milestones "
+                "within a project."
+            )
+
+        return projects
+
     def _get_state_id_for_type(
         self, team_key: LinearTeamKey, state_type: LinearStateType
     ) -> str:
@@ -724,5 +786,40 @@ def linear_client_from_secret() -> LinearClient:
     if api_key is None:
         raise KeyError(
             f"Couldn't locate Linear API key secret [{LINEAR_API_KEY_SECRET_NAME}]"
+        )
+    return LinearClient(api_key)
+
+
+# Environment variable holding a personal Linear API key, for local runs where
+# Secret Manager access to LINEAR_API_KEY_SECRET_NAME isn't available.
+LINEAR_API_KEY_ENV_VAR = "LINEAR_API_KEY"
+
+
+def linear_client_from_secret_or_env() -> LinearClient:
+    """Returns a LinearClient, preferring linear_client_from_secret() and
+    falling back to the LINEAR_API_KEY_ENV_VAR environment variable.
+
+    linear_client_from_secret()'s key is provisioned for server-side jobs
+    (Cloud Build, GitHub Actions) via a service account; an individual
+    engineer running a script locally under their own gcloud identity
+    generally cannot read it from Secret Manager. The environment variable
+    (a personal Linear API key from https://linear.app/settings/api) is the
+    supported fallback for local runs.
+    """
+    try:
+        return linear_client_from_secret()
+    except KeyError as e:
+        logger.warning(
+            "Could not load Linear API key from Secret Manager (%s), falling "
+            "back to the %s environment variable",
+            e,
+            LINEAR_API_KEY_ENV_VAR,
+        )
+
+    api_key = os.environ.get(LINEAR_API_KEY_ENV_VAR)
+    if not api_key:
+        raise ValueError(
+            "No Linear API key available: Secret Manager access failed and "
+            f"the [{LINEAR_API_KEY_ENV_VAR}] environment variable is not set."
         )
     return LinearClient(api_key)
