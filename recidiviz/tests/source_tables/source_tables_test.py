@@ -35,7 +35,7 @@ from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.view_registry.deployed_view_graphs import (
-    builders_for_all_view_graphs_across_projects,
+    builders_for_all_deployed_view_graphs,
 )
 
 COMMON_VESTIGES = [
@@ -189,8 +189,7 @@ class SourceTablesTest(unittest.TestCase):
             referenced_source_tables = BigQueryViewDagWalker(
                 [
                     view_builder.build()
-                    for view_builder in builders_for_all_view_graphs_across_projects()
-                    if view_builder.should_deploy_in_project(project_id)
+                    for view_builder in builders_for_all_deployed_view_graphs()
                 ]
             ).get_referenced_source_tables()
 

@@ -1279,11 +1279,7 @@ class ViewQueryFormatTest(unittest.TestCase):
             repository = build_source_table_repository_for_collected_schemata(
                 project_id
             )
-            project_view_builders = [
-                vb
-                for vb in builders_for_all_view_graphs_across_projects()
-                if vb.should_deploy_in_project(project_id)
-            ]
+            project_view_builders = builders_for_all_deployed_view_graphs()
             views_by_address = {vb.address: vb.build() for vb in project_view_builders}
 
         parsed_view_trees_by_address = {
