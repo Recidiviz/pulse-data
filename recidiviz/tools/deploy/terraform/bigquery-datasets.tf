@@ -129,3 +129,12 @@ moved {
   from = module.user_mgmt_logs_dataset
   to   = module.terraform_managed_bigquery_dataset["user_mgmt_logs"]
 }
+
+# normalized_state predates the registry: it has existed outside Terraform in
+# both recidiviz-staging and recidiviz-123 since 2022, so a plain create fails
+# with Already Exists. The registry adopts the existing dataset instead. This
+# block can be removed once both projects have applied it.
+import {
+  to = module.terraform_managed_bigquery_dataset["normalized_state"].google_bigquery_dataset.dataset
+  id = "projects/${var.project_id}/datasets/normalized_state"
+}
