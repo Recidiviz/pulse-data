@@ -45,11 +45,7 @@ import sys
 from typing import Any
 
 import google.auth
-from python_http_client.exceptions import (
-    GatewayTimeoutError,
-    ServiceUnavailableError,
-    TooManyRequestsError,
-)
+from python_http_client.exceptions import HTTPError
 from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
     ClickTracking,
     DynamicTemplateData,
@@ -62,7 +58,7 @@ from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
 from tenacity import (
     before_sleep_log,
     retry,
-    retry_if_exception_type,
+    retry_if_exception,
     stop_after_attempt,
     wait_exponential,
 )
@@ -307,10 +303,20 @@ def send_email(
     return True
 
 
+# SendGrid's SDK only defines an exception subclass for the statuses in its err_dict, so 499
+# and 502 arrive as the base HTTPError. Match on status code rather than on exception class.
+TRANSIENT_SENDGRID_STATUS_CODES = frozenset({429, 499, 500, 502, 503, 504})
+
+
+def _is_transient_sendgrid_error(exception: BaseException) -> bool:
+    return (
+        isinstance(exception, HTTPError)
+        and getattr(exception, "status_code", None) in TRANSIENT_SENDGRID_STATUS_CODES
+    )
+
+
 @retry(
-    retry=retry_if_exception_type(
-        (ServiceUnavailableError, TooManyRequestsError, GatewayTimeoutError)
-    ),
+    retry=retry_if_exception(_is_transient_sendgrid_error),
     wait=wait_exponential(multiplier=1, min=2, max=30),
     stop=stop_after_attempt(4),
     before_sleep=before_sleep_log(logger, logging.WARNING),
