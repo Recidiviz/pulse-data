@@ -55,9 +55,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.classification.score_components.us_tn.caf_q8 import (
-    VIEW_BUILDER as CAF_Q8_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.classification.score_components.us_tn.dcaf_rcaf_q7_v1 import (
     VIEW_BUILDER as DCAF_RCAF_Q7_V1_VIEW_BUILDER,
 )
@@ -191,12 +188,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
     ): {
         US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2001): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Detainer_latest"): {
-        CAF_Q8_VIEW_BUILDER.address: "TODO(TN-2002): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-2003): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: "TODO(TN-2003): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-2003): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Disciplinary_latest"): {
         US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2004): Migrate this reference off of legacy TOMIS 1.0 raw data",

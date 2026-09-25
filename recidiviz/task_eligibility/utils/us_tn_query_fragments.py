@@ -384,7 +384,7 @@ def detainers_cte() -> str:
             OffenseDescription AS description,
             ChargePendingFlag AS charge_pending,
         FROM
-            `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Detainer_latest`
+            `{{project_id}}.{{us_tn_tomis_detainer_analog_table}}`
         ) dis
     INNER JOIN
         `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
