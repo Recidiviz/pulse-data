@@ -73,6 +73,21 @@ from recidiviz.calculator.query.state.views.reference.product_roster_archive imp
 from recidiviz.calculator.query.state.views.reference.supervision_current_staff import (
     SUPERVISION_CURRENT_STAFF_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_ar_edovo_id_match import (
+    US_AR_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_co_edovo_id_match import (
+    US_CO_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_nd_edovo_id_match import (
+    US_ND_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_ne_edovo_id_match import (
+    US_NE_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_nyc_edovo_id_match import (
+    US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
 )
@@ -333,6 +348,12 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, st
     # analyst_data views
     US_CO_EDOVO_RECORDS_PREPROCESSED_VIEW_BUILDER.address: "TODO(OBT-39522): Both columns are the audit trail for ADCNUMBER classification -- they are what distinguishes an expected merge of two Edovo ids for one person from a real collision between two people. Remove this exemption once the Edovo raw data has a productionized source whose ids need no classification.",
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    # reference_views views
+    US_AR_EDOVO_ID_MATCH_VIEW_BUILDER.address: "TODO(OBT-52080): This view exists to map Edovo-reported IDs to person_id, so person_external_id is the join key its consumers need. Remove this exemption once the identity ingest pipeline provides Edovo ID matching and this view is deleted.",
+    US_CO_EDOVO_ID_MATCH_VIEW_BUILDER.address: "TODO(OBT-52080): This view exists to map Edovo-reported IDs to person_id, so person_external_id is the join key its consumers need. Remove this exemption once the identity ingest pipeline provides Edovo ID matching and this view is deleted.",
+    US_ND_EDOVO_ID_MATCH_VIEW_BUILDER.address: "TODO(OBT-52080): This view exists to map Edovo-reported IDs to person_id, so person_external_id is the join key its consumers need. Remove this exemption once the identity ingest pipeline provides Edovo ID matching and this view is deleted.",
+    US_NE_EDOVO_ID_MATCH_VIEW_BUILDER.address: "TODO(OBT-52080): This view exists to map Edovo-reported IDs to person_id, so person_external_id is the join key its consumers need. Remove this exemption once the identity ingest pipeline provides Edovo ID matching and this view is deleted.",
+    US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER.address: "TODO(OBT-52080): This view exists to map Edovo-reported IDs to person_id, so person_external_id is the join key its consumers need. Remove this exemption once the identity ingest pipeline provides Edovo ID matching and this view is deleted.",
     # jii_texting views
     US_IX_LSU_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     US_TX_SCHEDULED_CONTACTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",

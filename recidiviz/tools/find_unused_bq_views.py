@@ -120,6 +120,21 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_ar_edovo_id_match import (
+    US_AR_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_co_edovo_id_match import (
+    US_CO_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_nd_edovo_id_match import (
+    US_ND_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_ne_edovo_id_match import (
+    US_NE_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_nyc_edovo_id_match import (
+    US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -331,6 +346,20 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "CO Work Credit Writeback File #2 for new Earned Credit Policy. Work tracked in OBT-37777."
         "(Shalin Brahmbhatt, 2026-08-26)"
     ),
+    **{
+        builder.address: (
+            "Per-state lookup of Edovo-reported IDs to person_id. No downstream "
+            "consumer yet; wiring one up is tracked in OBT-52080. "
+            "(Kris Gerig, 2026-09-25)"
+        )
+        for builder in [
+            US_AR_EDOVO_ID_MATCH_VIEW_BUILDER,
+            US_CO_EDOVO_ID_MATCH_VIEW_BUILDER,
+            US_ND_EDOVO_ID_MATCH_VIEW_BUILDER,
+            US_NE_EDOVO_ID_MATCH_VIEW_BUILDER,
+            US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
+        ]
+    },
     US_CO_WORK_PROPOSED_CREDIT_VIEW_BUILDER.address: (
         "CO work-credit candidates for the eOMIS writeback. The consumer is "
         "CoSentenceCreditFlow, which reads the materialized table from Python, so "
