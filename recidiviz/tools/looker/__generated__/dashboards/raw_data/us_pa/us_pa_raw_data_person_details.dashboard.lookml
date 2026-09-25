@@ -327,7 +327,7 @@
       us_pa_dbo_DeActivateParoleNumber.InActiveParoleNumber,
       us_pa_dbo_DeActivateParoleNumber.file_id,
       us_pa_dbo_DeActivateParoleNumber.is_deleted]
-    sorts: [us_pa_dbo_DeActivateParoleNumber.ParoleNumber]
+    sorts: [us_pa_dbo_DeActivateParoleNumber.ParoleNumber, us_pa_dbo_DeActivateParoleNumber.InActiveParoleNumber]
     note_display: hover
     note_text: "A table containing information about supervision identifiers that have been deactivated by PBPP along with the new idtentifierthat should be used instead."
     listen: 
