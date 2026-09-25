@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://recidiviz.org/ingest_mappings/yaml_schema/1.0.0/schema.json",
+  "$id": "schema.json",
   "title": "Recidiviz Ingest Mappings Manifest 1.0.0",
   "description": "Ingest mapping YAML syntax schema.",
   "type": "object",

@@ -629,12 +629,12 @@ def generate_documentation() -> int:
     """Generates documentation for the ingest mappings yaml schema. Returns 1 if any
     changes were made to existing docs, returns 0 if no changes were made.
     """
-    versions = [
+    versions = sorted(
         v
         for v in os.listdir(ALL_SCHEMAS_PATH)
-        # Filter out hidden files like .DS_Store / __pycache__
-        if is_valid_code_path(v)
-    ]
+        # Each version is a directory; skip __init__.py, .DS_Store, and __pycache__
+        if is_valid_code_path(v) and os.path.isdir(os.path.join(ALL_SCHEMAS_PATH, v))
+    )
     modified = False
 
     summary_lines = ["## Ingest mapping schema\n\n"]
