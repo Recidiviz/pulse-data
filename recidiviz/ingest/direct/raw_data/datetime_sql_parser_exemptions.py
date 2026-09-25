@@ -88,6 +88,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "OffenseDateTime",
             "UpdateDate",
         ],
+        "dsc_DADecisionOfficer": ["DaDecisionDate", "InsertDate", "UpdateDate"],
         "dsc_DAProcedure": ["InsertDate", "UpdateDate"],
         "ind_LegalStatus": ["InsertDate", "UpdateDate"],
         "ind_LegalStatusObjectCharge": ["InsertDate", "UpdateDate"],
@@ -371,7 +372,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "com_TransferReason": ["InsertDate", "UpdateDate"],
         "com_TransferType": ["InsertDate", "UpdateDate"],
         "drg_DrugTestResult": ["CollectionDate", "DateReturnedFromEx", "DateSentToEx"],
-        "dsc_DADecisionOfficer": ["DaDecisionDate", "InsertDate", "UpdateDate"],
         "dsc_DAProcedureStatus": ["InsertDate", "UpdateDate"],
         "early_discharge": [
             "created_by_dt",
@@ -1337,7 +1337,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
         "gsm_Event_Participant": ["EndDate", "InsertDate", "StartDate", "UpdateDate"],
         "gsm_Movement": ["InsertDate", "UpdateDate"],
-        "gsm_ParticipantOffender": ["InsertDate", "UpdateDate"],
         "hsn_CounselorAssignmentClass": ["InsertDate", "UpdateDate"],
         "ind_HomelessType": ["InsertDate", "UpdateDate"],
         "ind_LegalStatusChangeReason": ["InsertDate", "UpdateDate"],
