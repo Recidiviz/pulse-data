@@ -9,6 +9,7 @@ input_columns:
   Count: STRING
   OffenseTypeId: STRING
   OffenseTypeDesc: STRING
+  OffenseCategoryId: STRING
   Offense_statute: STRING
   VIOLENT_OFFENSE_IND: STRING
   JudgeLegistId: STRING
@@ -51,6 +52,18 @@ output:
                 county_code: CountyId
                 statute: Offense_statute
                 description: OffenseTypeDesc
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: OffenseCategoryId
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - "700"
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - "701"
+                      StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
+                        - "702"
+                      StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                        - "703" # Unknown
                 offense_type: OffenseTypeId # The id for a specific crime, not a crime category
                 is_violent: $variable(violent_bool)
                 is_sex_offense: $variable(sex_offense_bool)
