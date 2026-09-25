@@ -50,18 +50,6 @@ schema:
     description: "User-Agent string of the client browser"
     type: STRING
     mode: NULLABLE
-  - name: context_user_agent_data_brands
-    description: "Browser brand information from client hints"
-    type: STRING
-    mode: NULLABLE
-  - name: context_user_agent_data_mobile
-    description: "Whether the client is a mobile device"
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: context_user_agent_data_platform
-    description: "Platform information from client hints"
-    type: STRING
-    mode: NULLABLE
   - name: event
     description: "Snake-cased event name as stored by Segment"
     type: STRING
