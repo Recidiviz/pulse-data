@@ -206,8 +206,6 @@ resource "google_cloudbuild_trigger" "pg_diagnosis" {
   # Webhook-supplied values, mapped onto the build's substitutions.
   substitutions = {
     _ISSUE_NUMBER  = "$(body.ISSUE_NUMBER)"
-    _ISSUE_TITLE   = "$(body.ISSUE_TITLE)"
-    _ISSUE_BODY    = "$(body.ISSUE_BODY)"
     _ISSUE_REPO    = "$(body.ISSUE_REPO)"
     _REPO_BRANCH   = "$(body.REPO_BRANCH)"
     _PRODUCT_AREAS = "$(body.PRODUCT_AREAS)"

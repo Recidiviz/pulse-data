@@ -22,8 +22,6 @@ steps:
     env:
       - "HOME=/home/recidiviz"
       - "ISSUE_NUMBER=${_ISSUE_NUMBER}"
-      - "ISSUE_TITLE=${_ISSUE_TITLE}"
-      - "ISSUE_BODY=${_ISSUE_BODY}"
       - "ISSUE_REPO=${_ISSUE_REPO}"
       - "GCP_PROJECT_ID=$PROJECT_ID"
       - "GOOGLE_CLOUD_PROJECT=$PROJECT_ID"
@@ -49,8 +47,6 @@ availableSecrets:
 
 substitutions:
   _ISSUE_NUMBER: ""
-  _ISSUE_TITLE: ""
-  _ISSUE_BODY: ""
   # Should match recidiviz.github.github_client.RECIDIVIZ_DATA_REPO.
   _ISSUE_REPO: "Recidiviz/pulse-data"
   _REPO_BRANCH: "main"
