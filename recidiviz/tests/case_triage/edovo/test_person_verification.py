@@ -24,11 +24,11 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     FIRST_NAME_FIELD,
     LAST_NAME_FIELD,
     CourseCompletionRequest,
+    MismatchedNameField,
 )
 from recidiviz.case_triage.edovo.external_id_matching import PERSON_EXTERNAL_ID_ADDRESS
 from recidiviz.case_triage.edovo.person_verification import (
     PERSON_ADDRESS,
-    PersonNameMismatchError,
     PersonNotFoundError,
     verify_person_identity,
 )
@@ -68,18 +68,19 @@ class TestMismatchedFieldNames(TestCase):
 
 
 class TestVerifyPersonIdentity(TestCase):
-    """Tests for confirming an Edovo external id resolves to the named person."""
+    """Tests for DOC id lookup and name comparison."""
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
-    def test_does_not_raise_when_name_matches(self, _mock_pid: MagicMock) -> None:
+    def test_reports_no_mismatch_when_name_matches(self, _mock_pid: MagicMock) -> None:
         bq_client = _make_bq_client([_name_row("JANE", "DOE")])
-        verify_person_identity(
+        mismatched_fields = verify_person_identity(
             bq_client=bq_client,
             state_code=StateCode.US_CO,
             person_external_id=_EXTERNAL_ID,
             first_name=_FIRST_NAME,
             last_name=_LAST_NAME,
         )
+        self.assertEqual([], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_raises_not_found_when_no_record(self, _mock_pid: MagicMock) -> None:
@@ -97,12 +98,24 @@ class TestVerifyPersonIdentity(TestCase):
         self.assertEqual(cm.exception.person_external_id, _EXTERNAL_ID)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
-    def test_raises_mismatch_on_different_surname(self, _mock_pid: MagicMock) -> None:
+    def test_reports_mismatch_on_different_surname(self, _mock_pid: MagicMock) -> None:
         bq_client = _make_bq_client([_name_row("JANE", "SMITH")])
-        with self.assertRaisesRegex(
-            PersonNameMismatchError,
-            r"^The provided name does not match our record for this external_id\.$",
-        ) as cm:
+        mismatched_fields = verify_person_identity(
+            bq_client=bq_client,
+            state_code=StateCode.US_CO,
+            person_external_id=_EXTERNAL_ID,
+            first_name=_FIRST_NAME,
+            last_name=_LAST_NAME,
+        )
+        self.assertEqual(["last_name"], mismatched_fields)
+
+    @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
+    def test_logs_mismatch_as_identifier_drift_without_the_names(
+        self, _mock_pid: MagicMock
+    ) -> None:
+        """Log mismatched fields without logging names or DOC ids."""
+        bq_client = _make_bq_client([_name_row("ROBERT", "SMITH")])
+        with self.assertLogs(level="WARNING") as logs:
             verify_person_identity(
                 bq_client=bq_client,
                 state_code=StateCode.US_CO,
@@ -110,79 +123,77 @@ class TestVerifyPersonIdentity(TestCase):
                 first_name=_FIRST_NAME,
                 last_name=_LAST_NAME,
             )
-        self.assertEqual(cm.exception.person_external_id, _EXTERNAL_ID)
-        self.assertEqual(["last_name"], cm.exception.mismatched_fields)
+        emitted = "\n".join(logs.output)
+
+        self.assertIn("Edovo identifier drift", emitted)
+        self.assertIn("first_name, last_name", emitted)
+        for name in [_FIRST_NAME, _LAST_NAME, "ROBERT", "SMITH", _EXTERNAL_ID]:
+            self.assertNotIn(name, emitted)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
-    def test_raises_mismatch_on_different_first_name(
+    def test_reports_mismatch_on_different_first_name(
         self, _mock_pid: MagicMock
     ) -> None:
         bq_client = _make_bq_client([_name_row("ROBERT", "DOE")])
-        with self.assertRaisesRegex(
-            PersonNameMismatchError,
-            r"^The provided name does not match our record for this external_id\.$",
-        ) as cm:
-            verify_person_identity(
-                bq_client=bq_client,
-                state_code=StateCode.US_CO,
-                person_external_id=_EXTERNAL_ID,
-                first_name=_FIRST_NAME,
-                last_name=_LAST_NAME,
-            )
-        self.assertEqual(["first_name"], cm.exception.mismatched_fields)
+        mismatched_fields = verify_person_identity(
+            bq_client=bq_client,
+            state_code=StateCode.US_CO,
+            person_external_id=_EXTERNAL_ID,
+            first_name=_FIRST_NAME,
+            last_name=_LAST_NAME,
+        )
+        self.assertEqual(["first_name"], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
-    def test_raises_mismatch_naming_both_fields(self, _mock_pid: MagicMock) -> None:
+    def test_reports_mismatch_naming_both_fields(self, _mock_pid: MagicMock) -> None:
         bq_client = _make_bq_client([_name_row("ROBERT", "SMITH")])
-        with self.assertRaisesRegex(
-            PersonNameMismatchError,
-            r"^The provided name does not match our record for this external_id\.$",
-        ) as cm:
-            verify_person_identity(
-                bq_client=bq_client,
-                state_code=StateCode.US_CO,
-                person_external_id=_EXTERNAL_ID,
-                first_name=_FIRST_NAME,
-                last_name=_LAST_NAME,
-            )
-        self.assertEqual(["first_name", "last_name"], cm.exception.mismatched_fields)
+        mismatched_fields = verify_person_identity(
+            bq_client=bq_client,
+            state_code=StateCode.US_CO,
+            person_external_id=_EXTERNAL_ID,
+            first_name=_FIRST_NAME,
+            last_name=_LAST_NAME,
+        )
+        self.assertEqual(["first_name", "last_name"], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_matches_when_stored_given_names_include_a_middle_name(
         self, _mock_pid: MagicMock
     ) -> None:
         bq_client = _make_bq_client([_name_row("JANE MARIE", "DOE")])
-        verify_person_identity(
+        mismatched_fields = verify_person_identity(
             bq_client=bq_client,
             state_code=StateCode.US_CO,
             person_external_id=_EXTERNAL_ID,
             first_name=_FIRST_NAME,
             last_name=_LAST_NAME,
         )
+        self.assertEqual([], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_matches_across_punctuation_and_case(self, _mock_pid: MagicMock) -> None:
         bq_client = _make_bq_client([_name_row("jane", "o'brien-doe")])
-        verify_person_identity(
+        mismatched_fields = verify_person_identity(
             bq_client=bq_client,
             state_code=StateCode.US_CO,
             person_external_id=_EXTERNAL_ID,
             first_name="JANE",
             last_name="OBrien Doe",
         )
+        self.assertEqual([], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_matches_when_we_hold_no_name(self, _mock_pid: MagicMock) -> None:
-        """An incomplete record on our side is not identifier drift on Edovo's,
-        so a name part we hold no value for cannot fail the check."""
+        """Skip comparison for name fields missing from our records."""
         bq_client = _make_bq_client([_name_row("", "")])
-        verify_person_identity(
+        mismatched_fields = verify_person_identity(
             bq_client=bq_client,
             state_code=StateCode.US_CO,
             person_external_id=_EXTERNAL_ID,
             first_name=_FIRST_NAME,
             last_name=_LAST_NAME,
         )
+        self.assertEqual([], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_matches_when_any_candidate_matches(self, _mock_pid: MagicMock) -> None:
@@ -191,13 +202,14 @@ class TestVerifyPersonIdentity(TestCase):
         bq_client = _make_bq_client(
             [_name_row("ROBERT", "SMITH"), _name_row("JANE", "DOE")]
         )
-        verify_person_identity(
+        mismatched_fields = verify_person_identity(
             bq_client=bq_client,
             state_code=StateCode.US_CO,
             person_external_id=_EXTERNAL_ID,
             first_name=_FIRST_NAME,
             last_name=_LAST_NAME,
         )
+        self.assertEqual([], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_reports_both_fields_when_no_single_candidate_matches_both(
@@ -208,18 +220,14 @@ class TestVerifyPersonIdentity(TestCase):
         bq_client = _make_bq_client(
             [_name_row("JANE", "SMITH"), _name_row("ROBERT", "DOE")]
         )
-        with self.assertRaisesRegex(
-            PersonNameMismatchError,
-            r"^The provided name does not match our record for this external_id\.$",
-        ) as cm:
-            verify_person_identity(
-                bq_client=bq_client,
-                state_code=StateCode.US_CO,
-                person_external_id=_EXTERNAL_ID,
-                first_name=_FIRST_NAME,
-                last_name=_LAST_NAME,
-            )
-        self.assertEqual(["first_name", "last_name"], cm.exception.mismatched_fields)
+        mismatched_fields = verify_person_identity(
+            bq_client=bq_client,
+            state_code=StateCode.US_CO,
+            person_external_id=_EXTERNAL_ID,
+            first_name=_FIRST_NAME,
+            last_name=_LAST_NAME,
+        )
+        self.assertEqual(["first_name", "last_name"], mismatched_fields)
 
     @patch(f"{MODULE}.project_id", return_value="recidiviz-123")
     def test_query_uses_correct_parameters(self, _mock_pid: MagicMock) -> None:
@@ -370,8 +378,8 @@ class TestVerifyPersonIdentityAgainstEmulator(BigQueryEmulatorTestCase):
             ],
         )
 
-    def _verify(self, submitted_id: str) -> None:
-        verify_person_identity(
+    def _verify(self, submitted_id: str) -> list[MismatchedNameField]:
+        return verify_person_identity(
             bq_client=self.bq_client,
             state_code=StateCode.US_CO,
             person_external_id=submitted_id,
@@ -381,7 +389,7 @@ class TestVerifyPersonIdentityAgainstEmulator(BigQueryEmulatorTestCase):
 
     def test_stored_name_is_extracted_from_full_name_json(self) -> None:
         self._load_person(external_id="123456", given_names="JANE", surname="DOE")
-        self._verify("123456")
+        self.assertEqual([], self._verify("123456"))
 
     def test_external_id_with_no_person_row_is_still_found(self) -> None:
         """Before this check compared names it read one table, so an external id
@@ -400,27 +408,23 @@ class TestVerifyPersonIdentityAgainstEmulator(BigQueryEmulatorTestCase):
             ],
         )
 
-        self._verify("123456")
+        self.assertEqual([], self._verify("123456"))
 
-    def test_raises_mismatch_when_stored_name_is_another_person(self) -> None:
+    def test_reports_mismatch_when_stored_name_is_another_person(self) -> None:
         self._load_person(external_id="123456", given_names="ROBERT", surname="SMITH")
-        with self.assertRaisesRegex(
-            PersonNameMismatchError,
-            r"^The provided name does not match our record for this external_id\.$",
-        ):
-            self._verify("123456")
+        self.assertEqual(["first_name", "last_name"], self._verify("123456"))
 
     def test_padded_submitted_id_matches_unpadded_stored_id(self) -> None:
         self._load_person(
             external_id="123456", given_names=_FIRST_NAME, surname=_LAST_NAME
         )
-        self._verify("000123456")
+        self.assertEqual([], self._verify("000123456"))
 
     def test_unpadded_submitted_id_matches_padded_stored_id(self) -> None:
         self._load_person(
             external_id="000123456", given_names=_FIRST_NAME, surname=_LAST_NAME
         )
-        self._verify("123456")
+        self.assertEqual([], self._verify("123456"))
 
     def test_raises_when_id_differs_by_more_than_leading_zeros(self) -> None:
         self._load_person(
@@ -462,7 +466,7 @@ class TestVerifyPersonIdentityAgainstEmulator(BigQueryEmulatorTestCase):
         self._load_person(
             external_id="000000", given_names=_FIRST_NAME, surname=_LAST_NAME
         )
-        self._verify("000000")
+        self.assertEqual([], self._verify("000000"))
 
     def test_shorter_zero_id_does_not_match_all_zero_stored_id(self) -> None:
         """Collapsing every all-zero id to one value would let these match, which

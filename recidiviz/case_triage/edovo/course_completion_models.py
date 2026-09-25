@@ -19,7 +19,7 @@
 Request shape: POST /edovo/course-completions
 Response shapes: accepted (201), duplicate (200), validation error (400),
 unauthenticated (401), forbidden (403), person not found (422),
-person name mismatch (422), already completed (422).
+already completed (422).
 """
 from decimal import Decimal
 from typing import Literal
@@ -31,8 +31,7 @@ from recidiviz.case_triage.edovo.supported_states import SUPPORTED_STATES
 from recidiviz.common.constants.states import StateCode
 
 MismatchedNameField = Literal["first_name", "last_name"]
-"""A submitted field that the name check can report as disagreeing with our
-records. Only the name fields verify the id, so only they can mismatch."""
+"""Name fields that can differ from our records."""
 
 FIRST_NAME_FIELD: MismatchedNameField = "first_name"
 LAST_NAME_FIELD: MismatchedNameField = "last_name"
@@ -50,8 +49,7 @@ class CourseCompletionRequest(BaseModel):
     course_name: str
     content_hours: Decimal
     completed_at: AwareDatetime
-    # The name verifies the person_external_id match rather than resolving a
-    # person itself; the facility says which system issued the id.
+    # Compare names for logging, without requiring a match.
     first_name: str
     last_name: str
     facility: str
@@ -59,19 +57,7 @@ class CourseCompletionRequest(BaseModel):
     @field_validator("first_name", "last_name")
     @classmethod
     def must_be_a_usable_name(cls, v: str) -> str:
-        """Rejects a name the comparison could not use.
-
-        A name with no letters — blank, whitespace, or punctuation like '--' —
-        still reaches the name check and still fails it, but it fails as a
-        *mismatch*, telling Edovo their record disagrees with ours when in fact
-        they sent us nothing usable. That would send them to reconcile a
-        discrepancy that does not exist, so it is refused here as the malformed
-        request it is.
-
-        Usability is judged with the same normalization the comparison uses, so
-        the two cannot disagree about what counts as a name. This mirrors how a
-        stored name with no letters is treated: see ``name_matching``.
-        """
+        """Reject names with no letters using the same normalization as the name check."""
         if not normalized_name(v):
             raise ValueError("must contain at least one letter")
         return v
@@ -194,23 +180,6 @@ class CourseCompletionAlreadyCompletedResponse(CourseCompletionErrorResponse):
     message: str = "This person has already received credit for this course."
     completion_id: str
     originally_received_at: AwareDatetime
-
-
-class CourseCompletionPersonNameMismatchResponse(CourseCompletionErrorResponse):
-    """422 Unprocessable Content — the external id resolves, but to another name.
-
-    This is the identifier-drift signal Edovo asked for: we hold this id, but
-    against a different person than the one they sent. ``mismatched_fields``
-    names the submitted fields that matched no record we hold, and echoes
-    neither name back.
-    """
-
-    error_code: Literal["PERSON_NAME_MISMATCH"] = "PERSON_NAME_MISMATCH"
-    message: str = (
-        "The provided person_external_id belongs to a person with a different "
-        "name in our records."
-    )
-    mismatched_fields: list[MismatchedNameField]
 
 
 class CourseCompletionUnauthenticatedResponse(CourseCompletionErrorResponse):

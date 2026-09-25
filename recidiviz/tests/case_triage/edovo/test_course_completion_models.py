@@ -25,7 +25,6 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     CourseCompletionAcceptedResponse,
     CourseCompletionAlreadyCompletedResponse,
     CourseCompletionDuplicateResponse,
-    CourseCompletionPersonNameMismatchResponse,
     CourseCompletionPersonNotFoundResponse,
     CourseCompletionRequest,
     CourseCompletionValidationErrorResponse,
@@ -314,15 +313,3 @@ class TestResponseModels(TestCase):
         self.assertEqual(
             resp.message, "This person has already received credit for this course."
         )
-
-    def test_person_name_mismatch_response(self) -> None:
-        resp = CourseCompletionPersonNameMismatchResponse(
-            message=(
-                "The provided person_external_id belongs to a person with a "
-                "different name in our records."
-            ),
-            mismatched_fields=["last_name"],
-        )
-        self.assertEqual(resp.status, "error")
-        self.assertEqual(resp.error_code, "PERSON_NAME_MISMATCH")
-        self.assertEqual(["last_name"], resp.mismatched_fields)

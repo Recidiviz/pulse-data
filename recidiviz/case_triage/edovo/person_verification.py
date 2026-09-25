@@ -14,21 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identity verification for the Edovo course-completion API.
+"""Check that Edovo's DOC id matches a known person in BigQuery.
 
-Confirms that the external, DOC-facing identifier Edovo sends resolves to a
-known person in the normalized state BigQuery dataset, and that the name Edovo
-sends is that person's name. The external-id type to match is looked up per
-state from ``SUPPORTED_STATES``.
-
-The two failure modes are reported separately because they mean different things
-to Edovo: an id we hold no record of (``PersonNotFoundError``) versus an id we do
-hold that belongs to someone else (``PersonNameMismatchError``). The second is
-the identifier drift Edovo asked to be told about — their record and ours
-disagree about who this id is, and only they can reconcile it.
-
-This verifies identity only; we persist the external id and resolve the internal
-person_id downstream during earned-time credit processing.
+Name mismatches are returned for logging and do not block completions.
+The internal person_id is resolved downstream when calculating credit.
 """
 import logging
 
@@ -63,25 +52,6 @@ class PersonNotFoundError(Exception):
         # Kept off the message string so the external id (PII) stays out of logs.
         self.person_external_id = person_external_id
         super().__init__("No person found for the provided external_id.")
-
-
-class PersonNameMismatchError(Exception):
-    """Raised when the external id resolves, but to a person of another name.
-
-    ``mismatched_fields`` names the submitted fields that matched no candidate
-    person, so the endpoint can tell Edovo which part of the name disagrees
-    without echoing either name back.
-    """
-
-    def __init__(
-        self, *, person_external_id: str, mismatched_fields: list[MismatchedNameField]
-    ) -> None:
-        # As above, the id and names stay off the message string.
-        self.person_external_id = person_external_id
-        self.mismatched_fields = mismatched_fields
-        super().__init__(
-            "The provided name does not match our record for this external_id."
-        )
 
 
 def _fetch_stored_names(
@@ -145,12 +115,10 @@ def verify_person_identity(
     person_external_id: str,
     first_name: str,
     last_name: str,
-) -> None:
-    """Verify that |person_external_id| resolves to a person named |first_name| |last_name|.
+) -> list[MismatchedNameField]:
+    """Look up the DOC id and return any name differences for logging.
 
-    Raises PersonNotFoundError if the external id matches no person, and
-    PersonNameMismatchError if it matches a person whose name is not the one
-    submitted.
+    Raise PersonNotFoundError if the id is unknown. Return [] if a name matches.
     """
     id_type = SUPPORTED_STATES[state_code]
     stored_names = _fetch_stored_names(
@@ -179,10 +147,9 @@ def verify_person_identity(
         first_ok and last_ok
         for first_ok, last_ok in zip(first_name_agrees, surname_agrees)
     ):
-        return
+        return []
 
-    # Report only the parts that matched nothing, so a part that does line up
-    # is not blamed.
+    # Report fields that matched no candidate.
     mismatched_fields: list[MismatchedNameField] = []
     if not any(first_name_agrees):
         mismatched_fields.append(FIRST_NAME_FIELD)
@@ -201,6 +168,4 @@ def verify_person_identity(
         len(stored_names),
         ", ".join(mismatched_fields),
     )
-    raise PersonNameMismatchError(
-        person_external_id=person_external_id, mismatched_fields=mismatched_fields
-    )
+    return mismatched_fields

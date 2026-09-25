@@ -125,7 +125,7 @@ def main() -> None:
     headers = {"Authorization": _AUTH_HEADER}
 
     with patch(f"{_MODULE}.BigQueryClientImpl") as mock_bq_cls, patch(
-        f"{_MODULE}.verify_person_identity", return_value=None
+        f"{_MODULE}.verify_person_identity", return_value=[]
     ), patch(f"{_WIF_MODULE}.requests.get", return_value=_mock_tokeninfo()), patch.dict(
         os.environ, {"EDOVO_WIF_SA_UNIQUE_ID": _FAKE_SA_UNIQUE_ID}
     ):

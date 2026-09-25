@@ -32,11 +32,10 @@ person+course pair under a *different* key is rejected as a double-credit
 attempt (per the API spec).  Both duplicate answers name the original
 submission, so Edovo can find what we already hold.
 
-Identity: the submitted ``person_external_id`` must resolve to a person we know,
-and the submitted name must be that person's name.  An id we hold no record of
-is a PERSON_NOT_FOUND; an id we do hold against someone else is a
-PERSON_NAME_MISMATCH — the identifier drift Edovo asked to be told about, so
-they can reconcile their records against ours.
+Identity: look up the person by DOC id. In the Arkansas discussion, Edovo
+explained that names are saved at account creation and require manual updates.
+We therefore expect some name differences and log them for follow-up without
+rejecting the completion.
 
 Scope: this endpoint validates, authenticates, and durably captures each
 completion, with idempotent and no-double-credit dedup enforced via database
@@ -62,7 +61,6 @@ from recidiviz.case_triage.edovo.course_completion_models import (
     CourseCompletionAlreadyCompletedResponse,
     CourseCompletionDuplicateResponse,
     CourseCompletionForbiddenResponse,
-    CourseCompletionPersonNameMismatchResponse,
     CourseCompletionPersonNotFoundResponse,
     CourseCompletionRequest,
     CourseCompletionUnauthenticatedResponse,
@@ -75,7 +73,6 @@ from recidiviz.case_triage.edovo.persistence import (
     persist_completion,
 )
 from recidiviz.case_triage.edovo.person_verification import (
-    PersonNameMismatchError,
     PersonNotFoundError,
     verify_person_identity,
 )
@@ -173,17 +170,10 @@ def _log_audit(
     outcome: RequestOutcome,
     reason: str | None = None,
 ) -> None:
-    """Emit a single structured audit record for an inbound Edovo request.
+    """Log the request outcome with names redacted.
 
-    Covers every terminal outcome (accepted / duplicate / rejected + reason) per
-    the API spec's audit-logging requirement, capturing the received timestamp,
-    the idempotency key, and the request body with the learner's name redacted
-    (see ``_redacted_body``). Earned-time credit is computed downstream (this
-    endpoint only captures completions), so no credit summary is recorded here.
-
-    ``idempotency_key`` is always the raw value received in the
-    ``Idempotency-Key`` header (or None if absent), so the audit log records
-    exactly what Edovo sent regardless of whether the value parsed as a UUID.
+    Include name mismatches in the reason, even for accepted completions.
+    Keep the raw Idempotency-Key header, or None if absent.
     """
     logging.info(
         "Edovo course-completion request: received_at=[%s] idempotency_key=[%s] "
@@ -389,28 +379,12 @@ def create_edovo_api_blueprint() -> Blueprint:
             )
 
         try:
-            verify_person_identity(
+            mismatched_name_fields = verify_person_identity(
                 bq_client=BigQueryClientImpl(),
                 state_code=StateCode(completion_request.state_code),
                 person_external_id=completion_request.person_external_id,
                 first_name=completion_request.first_name,
                 last_name=completion_request.last_name,
-            )
-        except PersonNameMismatchError as mismatch:
-            # We hold this id, but against someone else. Report which fields
-            # matched nothing without echoing either name back.
-            name_mismatch = CourseCompletionPersonNameMismatchResponse(
-                mismatched_fields=mismatch.mismatched_fields
-            )
-            _log_audit(
-                received_at=received_at,
-                idempotency_key=idempotency_key_header or None,
-                raw_body=body,
-                outcome=RequestOutcome.REJECTED,
-                reason=f"person_name_mismatch:{','.join(mismatch.mismatched_fields)}",
-            )
-            return make_response(
-                jsonify(name_mismatch.model_dump()), HTTPStatus.UNPROCESSABLE_ENTITY
             )
         except PersonNotFoundError:
             not_found = CourseCompletionPersonNotFoundResponse(
@@ -493,6 +467,11 @@ def create_edovo_api_blueprint() -> Blueprint:
             idempotency_key=idempotency_key_header or None,
             raw_body=body,
             outcome=RequestOutcome.ACCEPTED if is_new else RequestOutcome.DUPLICATE,
+            reason=(
+                f"person_name_mismatch:{','.join(mismatched_name_fields)}"
+                if mismatched_name_fields
+                else None
+            ),
         )
 
         if is_new:

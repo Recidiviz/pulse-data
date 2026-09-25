@@ -38,7 +38,6 @@ from recidiviz.case_triage.edovo.edovo_routes import (
     create_edovo_api_blueprint,
 )
 from recidiviz.case_triage.edovo.person_verification import (
-    PersonNameMismatchError,
     PersonNotFoundError,
     verify_person_identity,
 )
@@ -127,7 +126,7 @@ class TestEdovoRoutes(TestCase):
 
         self.resolve_patcher = patch(f"{MODULE}.verify_person_identity")
         self.mock_resolve = self.resolve_patcher.start()
-        self.mock_resolve.return_value = None
+        self.mock_resolve.return_value = []
 
     def tearDown(self) -> None:
         self.wif_patcher.stop()
@@ -289,50 +288,37 @@ class TestEdovoRoutes(TestCase):
             "No person found for the provided person_external_id.", data["message"]
         )
 
-    def test_name_mismatch_returns_422(self) -> None:
-        self.mock_resolve.side_effect = PersonNameMismatchError(
-            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
-        )
+    def test_name_mismatch_is_accepted(self) -> None:
+        """Accept completions even when names differ."""
+        self.mock_resolve.return_value = ["last_name"]
         response = self._post()
-        self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
-        data = response.get_json()
-        self.assertEqual(data["error_code"], "PERSON_NAME_MISMATCH")
-        self.assertEqual(["last_name"], data["mismatched_fields"])
-        self.assertEqual(
-            "The provided person_external_id belongs to a person with a "
-            "different name in our records.",
-            data["message"],
-        )
-
-    def test_name_mismatch_does_not_echo_the_submitted_name_or_id(self) -> None:
-        self.mock_resolve.side_effect = PersonNameMismatchError(
-            person_external_id=_DOC_ID,
-            mismatched_fields=["first_name", "last_name"],
-        )
-        response = self._post()
-        body = response.get_data(as_text=True)
-        self.assertNotIn(_DOC_ID, body)
-        self.assertNotIn(_FIRST_NAME, body)
-        self.assertNotIn(_LAST_NAME, body)
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual("accepted", response.get_json()["status"])
 
     def test_name_mismatch_is_audited_with_the_mismatched_fields(self) -> None:
-        self.mock_resolve.side_effect = PersonNameMismatchError(
-            person_external_id=_DOC_ID,
-            mismatched_fields=["first_name", "last_name"],
-        )
+        self.mock_resolve.return_value = ["first_name", "last_name"]
         with patch(f"{MODULE}._log_audit") as mock_audit:
             self._post()
+        self.assertEqual(
+            RequestOutcome.ACCEPTED, mock_audit.call_args.kwargs["outcome"]
+        )
         self.assertEqual(
             "person_name_mismatch:first_name,last_name",
             mock_audit.call_args.kwargs["reason"],
         )
 
-    def test_name_mismatch_persists_nothing(self) -> None:
-        self.mock_resolve.side_effect = PersonNameMismatchError(
-            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
+    def test_matching_name_is_audited_without_a_reason(self) -> None:
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            self._post()
+        self.assertEqual(
+            RequestOutcome.ACCEPTED, mock_audit.call_args.kwargs["outcome"]
         )
+        self.assertIsNone(mock_audit.call_args.kwargs["reason"])
+
+    def test_name_mismatch_persists_the_completion(self) -> None:
+        self.mock_resolve.return_value = ["last_name"]
         self._post()
-        self.assertEqual([], self._stored_external_ids())
+        self.assertEqual([_DOC_ID], self._stored_external_ids())
 
     def test_already_completed_returns_422(self) -> None:
         self._post()
@@ -368,20 +354,6 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual("duplicate", response.get_json()["status"])
         self.mock_resolve.assert_not_called()
-
-    def test_replay_survives_a_name_change_on_our_side(self) -> None:
-        """Our stored name can change after we accept a completion (a
-        correction, a re-ingest). Re-verifying a replay would turn a settled
-        completion into a 422, breaking the idempotency guarantee."""
-        self._post()
-        self.mock_resolve.side_effect = PersonNameMismatchError(
-            person_external_id=_DOC_ID, mismatched_fields=["last_name"]
-        )
-
-        response = self._post()
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual("duplicate", response.get_json()["status"])
 
     def test_replay_of_a_malformed_body_still_returns_the_original(self) -> None:
         """The Idempotency-Key identifies the request, so once a key names a
@@ -637,21 +609,22 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(response.get_json()["status"], "accepted")
         self.assertEqual(["000123456"], self._stored_external_ids())
 
-    def test_end_to_end_name_mismatch_returns_422_and_persists_nothing(self) -> None:
-        """The id resolves, but to someone else: the drift signal Edovo asked
-        for, and no credit captured."""
-        response = self._post_through_real_verification(
-            person_exists=True,
-            submitted_external_id="000123456",
-            stored_given_names="Robert",
-            stored_surname="Smith",
-        )
+    def test_end_to_end_name_mismatch_is_accepted_and_persisted(self) -> None:
+        """Save the completion and log the name mismatch."""
+        with patch(f"{MODULE}._log_audit") as mock_audit:
+            response = self._post_through_real_verification(
+                person_exists=True,
+                submitted_external_id="000123456",
+                stored_given_names="Robert",
+                stored_surname="Smith",
+            )
 
-        self.assertEqual(response.status_code, HTTPStatus.UNPROCESSABLE_ENTITY)
-        data = response.get_json()
-        self.assertEqual("PERSON_NAME_MISMATCH", data["error_code"])
-        self.assertEqual(["first_name", "last_name"], data["mismatched_fields"])
-        self.assertEqual([], self._stored_external_ids())
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(["000123456"], self._stored_external_ids())
+        self.assertEqual(
+            "person_name_mismatch:first_name,last_name",
+            mock_audit.call_args.kwargs["reason"],
+        )
 
     def test_end_to_end_unknown_person_returns_422_and_persists_nothing(self) -> None:
         response = self._post_through_real_verification(
