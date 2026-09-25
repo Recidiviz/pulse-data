@@ -452,6 +452,9 @@ from recidiviz.validation.views.state.us_co_work_proposed_credit_no_duplicate_of
 from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
     US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.user_metrics.intercom_email_sent_to_unprovisioned_user import (
+    INTERCOM_EMAIL_SENT_TO_UNPROVISIONED_USER_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_actions_without_logins import (
     OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
 )
@@ -857,6 +860,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=STALE_RAW_DATA_BASED_ON_SENTINEL_DATES_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INTERCOM_EMAIL_SENT_TO_UNPROVISIONED_USER_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
