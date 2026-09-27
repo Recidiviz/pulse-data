@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_lengths` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  offender_booking_id: STRING
+  offender_sentence_id: STRING
+  expiration_date: DATE
+  min_length_days: STRING
+  min_length_months: STRING
+  min_length_years: STRING
+  max_length_days: STRING
+  max_length_months: STRING
+  max_length_years: STRING
+  update_datetime: DATETIME
+  earliest_release_date: DATE
+  maximum_release_date: DATE
+  sentence_type_id: STRING
+  seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    sentences:
+      - StateSentence:
+          external_id: offender_sentence_id
+          sentence_lengths:
+            - StateSentenceLength:
+                sequence_num: seq_num
+                length_update_datetime: update_datetime
+                projected_completion_date_max_external:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - sentence_type_id
+                          - $literal("430")
+                      $then: maximum_release_date
+                    - $else: expiration_date
+                projected_completion_date_min_external:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - sentence_type_id
+                          - $literal("430")
+                      $then: earliest_release_date
+                sentence_length_days_min:
+                  $custom:
+                    $function: us_mi_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: min_length_years
+                      months_str: min_length_months
+                      days_str: min_length_days
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_mi_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: max_length_years
+                      months_str: max_length_months
+                      days_str: max_length_days

@@ -22,6 +22,8 @@ input_columns:
   offense_code: STRING
   min_life_flag: STRING
   max_life_flag: STRING
+  earliest_release_date: DATE
+  maximum_release_date: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -71,13 +73,16 @@ output:
                   - $equal:
                       - max_life_flag
                       - $literal("1")
-              # Let's also set it to true if we see an end date of 2999-12-31 (which we see a high count of in the data)
+              # In ingest, we look for end dates with date 9999 and 2999 (which appear in the data with high frequency)
+              # and in these cases we interpret these dates as life sentences and standardize them to "9999-12-31"
               - $equal:
                   - expiration_date
-                  - $literal("2999-12-31")
-              # Let's also set it to true if we see an end date of 9999-12-31 (which we see some cases of in the data)
+                  - $literal("9999-12-31")
               - $equal:
-                  - expiration_date
+                  - earliest_release_date # only hydrated for prison sentences
+                  - $literal("9999-12-31")
+              - $equal:
+                  - maximum_release_date # only hydrated for prison sentences
                   - $literal("9999-12-31")
           parole_possible:
             $conditional:
