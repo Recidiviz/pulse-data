@@ -42,7 +42,7 @@ output:
                       - $literal("1720") # Interstate Compact Probation
                       - $literal("3162") # Other State's Prison
                 $then: $literal_enum(StateSentencingAuthority.OTHER_STATE)
-              - $else: $literal_enum(StateSentencingAuthority.COUNTY)
+              - $else: $literal_enum(StateSentencingAuthority.STATE)
           county_code: county
           is_life:
             $or:
@@ -90,11 +90,18 @@ output:
                       min_life: min_life_flag
                       attempt: attempted_id
                       mcl: offense_code
-          imposed_date: sentenced_date
+          imposed_date:
+            $conditional:
+              # For parole sentences, let's use effective_date as imposed_date instead of sentenced_date since sentenced_date is only valued for probation and incarceration sentences
+              - $if:
+                  $equal:
+                    - sentence_type_id
+                    - $literal("2165")
+                $then: effective_date
+              - $else: sentenced_date
           current_state_provided_start_date: effective_date
           conditions: special_condition_id_list
-          # TODO(#45846): Add PAROLE 'sentences' and other sentence types.
-          # ADH_LEGAL_ORDER has a field "order_type_id" may be useful in hydrating this field.
+          # TODO(MI-8303): Add remaining sentence types, e.g. Delayed + Jail Only when we move to COMS data
           sentence_type:
             $enum_mapping:
               $raw_text: sentence_type_id
@@ -103,3 +110,5 @@ output:
                   - "430" # Prison
                 StateSentenceType.PROBATION:
                   - "431" # Probation
+                StateSentenceType.PAROLE:
+                  - "2165" # Parole
