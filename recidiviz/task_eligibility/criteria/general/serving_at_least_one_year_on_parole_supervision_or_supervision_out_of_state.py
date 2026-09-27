@@ -21,10 +21,14 @@ This query is only relevant for states who have parole sentencing data stored se
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_serving_periods_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -41,12 +45,26 @@ _QUERY_TEMPLATE = f"""
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
-        CAST(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY) AS INT64) >= 365 AS meets_criteria,
-        TO_JSON(STRUCT(MAX(sent.projected_completion_date_max) AS projected_completion_date_max)) AS reason,
-        MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"])}
-    WHERE sent.sentence_sub_type = "PAROLE" 
+        span.end_date_exclusive AS end_date,
+        CAST(DATE_DIFF(
+            MAX(pds.projected_full_term_release_date_max),
+            MAX(sent.imposed_date),
+            DAY
+        ) AS INT64) >= 365 AS meets_criteria,
+        TO_JSON(STRUCT(
+            MAX(pds.projected_full_term_release_date_max) AS projected_completion_date_max
+        )) AS reason,
+        MAX(pds.projected_full_term_release_date_max) AS projected_completion_date_max,
+    {join_sentence_serving_periods_to_compartment_sessions(
+        compartment_level_1_to_overlap=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"]
+    )}
+    LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_projected_date_sessions_materialized` pds
+        ON sent.state_code = pds.state_code
+        AND sent.person_id = pds.person_id
+        AND sent.sentence_id = pds.sentence_id
+        AND span.start_date < {nonnull_end_date_clause("pds.end_date_exclusive")}
+        AND pds.start_date < {nonnull_end_date_clause("span.end_date_exclusive")}
+    WHERE sent.sentence_type = "PAROLE"
     GROUP BY 1, 2, 3, 4
 """
 
@@ -55,6 +73,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
             name="projected_completion_date_max",
