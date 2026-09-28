@@ -40,8 +40,7 @@ class ViolationMetricProducer(
     ]
 ):
     def __init__(self) -> None:
-        # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
-        self.metric_class = ViolationMetric  # type: ignore
+        self.metric_class = ViolationMetric  # type: ignore[type-abstract]
 
     @property
     def result_class_to_metric_classes_mapping(

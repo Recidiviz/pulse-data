@@ -48,8 +48,7 @@ class PopulationSpanMetricProducer(
     """Calculates PopulationSpanMetrics from Spans."""
 
     def __init__(self) -> None:
-        # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
-        self.metric_class = PopulationSpanMetric  # type: ignore
+        self.metric_class = PopulationSpanMetric  # type: ignore[type-abstract]
         self.event_to_metric_classes = {
             IncarcerationPopulationSpan: [IncarcerationPopulationSpanMetric],
             SupervisionPopulationSpan: [SupervisionPopulationSpanMetric],

@@ -127,8 +127,6 @@ class TestConfiguredValidations(unittest.TestCase):
     def test_all_validation_builders_configured_in_a_validation(self) -> None:
         found_builders = set(
             BigQueryViewCollector.collect_view_builders_in_module(
-                # TODO(python/mypy#5374): Remove the ignore type when abstract class
-                #  assignments are supported.
                 builder_type=BigQueryViewBuilder,  # type: ignore[type-abstract]
                 view_dir_module=views_module,
                 recurse=True,
