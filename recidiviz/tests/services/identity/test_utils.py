@@ -20,6 +20,7 @@ import uuid
 from collections.abc import Mapping
 from contextlib import contextmanager
 from typing import Iterator
+from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.common import demographics
@@ -47,6 +48,8 @@ from recidiviz.services.identity.constants import (
     DEV_IMPORTER_SERVICE_ACCOUNT,
     DEV_READER_SERVICE_ACCOUNT,
 )
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 TEST_CALLER_BY_SERVICE_ACCOUNT: dict[str, IdentityServiceCaller] = {
     DEV_READER_SERVICE_ACCOUNT: IdentityServiceCaller(
@@ -322,6 +325,41 @@ def build_full_identity() -> types.IdentityHistory:
             )
         ],
     )
+
+
+# ---------------------------------------------------------------------------
+# Database test case shared across the identity service test modules.
+# ---------------------------------------------------------------------------
+
+
+class IdentityDatabaseTestCase(TestCase):
+    """Base test case that runs each test against a fresh identity schema in an
+    on-disk Postgres started once per test class."""
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
 
 
 # ---------------------------------------------------------------------------

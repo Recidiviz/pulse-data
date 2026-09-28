@@ -17,7 +17,6 @@
 """Tests for the Identity Service querier."""
 import datetime
 import os
-import unittest
 import uuid
 from typing import Any
 
@@ -42,7 +41,6 @@ from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity.exceptions import (
     DuplicateIdentityException,
     IdentityHistoryIntegrityException,
@@ -73,14 +71,13 @@ from recidiviz.tests.services.identity.test_utils import (
     NEW_ID,
     RECIDIVIZ_ID,
     RETIRED_ID,
+    IdentityDatabaseTestCase,
     insert_email,
     insert_external_id,
     insert_identity,
     insert_name,
     make_sourced_attribute,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.services.identity import fixtures as identity_fixtures
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
@@ -191,33 +188,8 @@ def _new_identity_to_create(
 
 
 @pytest.mark.uses_db
-class IdentityServiceQuerierTest(unittest.TestCase):
+class IdentityServiceQuerierTest(IdentityDatabaseTestCase):
     """Tests for IdentityServiceQuerier session-management wiring."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def test_database_key_targets_identity_schema(self) -> None:
         querier = IdentityServiceQuerier()
@@ -542,33 +514,8 @@ class IdentityServiceQuerierTest(unittest.TestCase):
 
 
 @pytest.mark.uses_db
-class CreateIdentityTest(unittest.TestCase):
+class CreateIdentityTest(IdentityDatabaseTestCase):
     """Tests for IdentityServiceQuerier.create_identity."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def test_create_identity_round_trips(self) -> None:
         identity = _new_identity_to_create(
@@ -733,33 +680,8 @@ class CreateIdentityTest(unittest.TestCase):
 
 
 @pytest.mark.uses_db
-class GetByExternalIdTest(unittest.TestCase):
+class GetByExternalIdTest(IdentityDatabaseTestCase):
     """Tests for IdentityServiceQuerier.get_by_external_id."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def test_get_by_external_id_active_returns_identity(self) -> None:
         reset_fixtures(
@@ -848,33 +770,8 @@ class GetByExternalIdTest(unittest.TestCase):
 
 
 @pytest.mark.uses_db
-class GetByEmailHashTest(unittest.TestCase):
+class GetByEmailHashTest(IdentityDatabaseTestCase):
     """Tests for IdentityServiceQuerier.get_by_email_hash."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def test_get_by_email_hash_filters_by_tenant(self) -> None:
         reset_fixtures(
@@ -966,33 +863,8 @@ SEARCH_ID_3 = uuid.UUID("30000000-0000-0000-0000-000000000000")
 
 
 @pytest.mark.uses_db
-class SearchTest(unittest.TestCase):
+class SearchTest(IdentityDatabaseTestCase):
     """Tests for IdentityServiceQuerier.search."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def test_search_by_name_substring_case_insensitive(self) -> None:
         insert_identity(recidiviz_id=SEARCH_ID_1)

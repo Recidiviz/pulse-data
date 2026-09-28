@@ -29,9 +29,7 @@ from recidiviz.common.constants.identity import (
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterEmail,
@@ -49,6 +47,7 @@ from recidiviz.services.identity.import_processing.import_processor import (
     process_import,
 )
 from recidiviz.tests.services.identity.test_utils import (
+    IdentityDatabaseTestCase,
     insert_date_of_birth,
     insert_email,
     insert_external_id,
@@ -56,8 +55,6 @@ from recidiviz.tests.services.identity.test_utils import (
     insert_name,
     insert_phone_number,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.user_hash import generate_user_hash
 
 _SNAPSHOT = datetime.datetime(2026, 8, 8, tzinfo=datetime.timezone.utc)
@@ -96,38 +93,16 @@ def _named_snapshot(
 
 
 @pytest.mark.uses_db
-class ImportProcessorTestCase(TestCase):
-    """Shared Postgres setup for process_import tests. Only the BigQuery
-    snapshot read is mocked; the clear and the create pass run for real
-    against the test Postgres."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
+class ImportProcessorTestCase(IdentityDatabaseTestCase):
+    """Shared setup for process_import tests: the identity Postgres from
+    IdentityDatabaseTestCase, with only the BigQuery snapshot read mocked; the
+    import passes run for real against the test Postgres."""
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
+        super().setUp()
         self.read_patcher = patch(f"{_PROCESSOR_MODULE}.read_cluster_snapshots")
         self.mock_read = self.read_patcher.start()
         self.addCleanup(self.read_patcher.stop)
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def _run(self, *snapshots: ClusterSnapshot, should_clear_first: bool) -> None:
         self.mock_read.return_value = list(snapshots)

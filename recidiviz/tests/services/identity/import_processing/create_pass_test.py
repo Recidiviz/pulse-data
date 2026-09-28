@@ -30,9 +30,7 @@ from recidiviz.common.constants.identity import (
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterAlias,
@@ -53,9 +51,10 @@ from recidiviz.services.identity.import_processing.create_pass import (
     build_identity_rows,
 )
 from recidiviz.services.identity.querier import IdentityServiceQuerier
-from recidiviz.tests.services.identity.test_utils import make_sourced_attribute
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+from recidiviz.tests.services.identity.test_utils import (
+    IdentityDatabaseTestCase,
+    make_sourced_attribute,
+)
 from recidiviz.utils.user_hash import normalized_email_hash
 
 _TENANT = Tenant.US_OZ
@@ -157,34 +156,12 @@ class BuildIdentityRowsEmailExclusionTest(TestCase):
 
 
 @pytest.mark.uses_db
-class BuildIdentityRowsMappingTest(TestCase):
+class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
     """Tests that build_identity_rows' output persists into a queryable identity."""
 
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
+        super().setUp()
         self.querier = IdentityServiceQuerier()
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def _persist(self, snapshot: ClusterSnapshot) -> None:
         with SessionFactory.using_database(self.database_key) as session:

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for batched merged_into chain resolution."""
-import unittest
 import uuid
 from typing import Any
 
@@ -24,14 +23,13 @@ from sqlalchemy import event, text
 
 from recidiviz.common.constants.identity import IdentityStatus
 from recidiviz.persistence.database.schema.identity import schema
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.services.identity.exceptions import IdentityHistoryIntegrityException
 from recidiviz.services.identity.resolution_helpers import resolve_surviving_ids
-from recidiviz.tests.services.identity.test_utils import insert_identity
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+from recidiviz.tests.services.identity.test_utils import (
+    IdentityDatabaseTestCase,
+    insert_identity,
+)
 
 SURVIVING_ID = uuid.UUID("a0000000-0000-0000-0000-000000000000")
 MID_CHAIN_ID = uuid.UUID("b0000000-0000-0000-0000-000000000000")
@@ -44,33 +42,8 @@ CYCLE_ID_B = uuid.UUID("f2000000-0000-0000-0000-000000000000")
 
 
 @pytest.mark.uses_db
-class ResolveSurvivingIdsTest(unittest.TestCase):
+class ResolveSurvivingIdsTest(IdentityDatabaseTestCase):
     """Tests for resolve_surviving_ids."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
-        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
-            self.postgres_launch_result, self.database_key
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
 
     def _resolve(
         self, recidiviz_ids: list[uuid.UUID]
