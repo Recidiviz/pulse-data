@@ -799,7 +799,14 @@ def get_warrants_and_detainers_query(
         AND e.OFFENSE_STATUS != 'C'
         -- Removing misdemeanor detainers if specified
         {"AND e.OFFENSE_DESC NOT LIKE '%(M)%' AND e.OFFENSE_DESC NOT LIKE '%(MisA)%' AND e.OFFENSE_DESC NOT LIKE '%(Mis A)%' AND e.OFFENSE_DESC NOT LIKE '%(Misd)%'" if remove_misdemeanor_detainers else ""}
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE ORDER BY {nonnull_end_date_exclusive_clause('iss.end_date')} ASC) = 1
+    QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE
+        ORDER BY
+            {nonnull_end_date_exclusive_clause('iss.end_date')} ASC,
+            -- Orders on the same offense date are broken alphabetically, so every run keeps the same one
+            e.OFFENSE_DESC,
+            e.ORDER_TYPE
+    ) = 1
     
 ),
 {create_sub_sessions_with_attributes(table_name='warrants_and_detainers')}
