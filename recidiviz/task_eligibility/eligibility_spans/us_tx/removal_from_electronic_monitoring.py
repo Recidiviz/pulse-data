@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     at_least_30_days_since_last_rejection_for_em_removal,
+    at_least_60_days_since_facility_or_temporary_housing_ended,
     electronic_monitoring_for_at_least_60_days,
     not_interstate_compact_in,
 )
@@ -53,28 +54,53 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
         at_least_30_days_since_last_rejection_for_em_removal.VIEW_BUILDER,
+        at_least_60_days_since_facility_or_temporary_housing_ended.VIEW_BUILDER,
         at_least_60_days_since_negative_drug_test_streak_began.VIEW_BUILDER,
         no_supervision_violation_within_30_days.VIEW_BUILDER,
         not_interstate_compact_in.VIEW_BUILDER,
     ],
     completion_event_builder=case_type_downgrade_from_electronic_monitoring.VIEW_BUILDER,
-    # Electronic monitoring duration is the one criterion that resolves purely by
-    # waiting, so it's the only one that drives the almost-eligible countdown here.
+    # Two criteria resolve purely by waiting: the electronic monitoring duration and the
+    # wait after a facility or temporary or supportive housing. Someone counts as almost
+    # eligible only when every one of those clocks is either already met or within 30
+    # days, so a person who is days away on one but two months away on the other is not
+    # surfaced.
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
-            TimeDependentCriteriaCondition(
-                criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
-                reasons_date_field="eligible_date",
-                interval_length=30,
-                interval_date_part=BigQueryDateInterval.DAY,
-                description="Within 30 days of being on electronic monitoring for 60 days",
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    EligibleCriteriaCondition(
+                        criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
+                        description="On electronic monitoring for at least 60 days",
+                    ),
+                    TimeDependentCriteriaCondition(
+                        criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
+                        reasons_date_field="eligible_date",
+                        interval_length=30,
+                        interval_date_part=BigQueryDateInterval.DAY,
+                        description="Within 30 days of being on electronic monitoring for 60 days",
+                    ),
+                ],
+                at_least_n_conditions_true=1,
             ),
-            EligibleCriteriaCondition(
-                criteria=electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
-                description="On electronic monitoring for at least 60 days",
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    EligibleCriteriaCondition(
+                        criteria=at_least_60_days_since_facility_or_temporary_housing_ended.VIEW_BUILDER,
+                        description="Out of a facility or temporary or supportive housing for at least 60 days",
+                    ),
+                    TimeDependentCriteriaCondition(
+                        criteria=at_least_60_days_since_facility_or_temporary_housing_ended.VIEW_BUILDER,
+                        reasons_date_field="eligible_date",
+                        interval_length=30,
+                        interval_date_part=BigQueryDateInterval.DAY,
+                        description="Within 30 days of being out of a facility or temporary or supportive housing for 60 days",
+                    ),
+                ],
+                at_least_n_conditions_true=1,
             ),
         ],
-        at_least_n_conditions_true=1,
+        at_least_n_conditions_true=2,
     ),
 )
 
