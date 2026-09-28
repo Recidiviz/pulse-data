@@ -81,9 +81,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
-from recidiviz.calculator.query.state.views.earned_time.us_co_work_credit import (
-    US_CO_WORK_CREDIT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
 )
@@ -340,10 +337,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER.address: (
         "CO Work Credit Writeback File #1 for new Earned Credit Policy. Work tracked in OBT-37777."
-        "(Shalin Brahmbhatt, 2026-08-26)"
-    ),
-    US_CO_WORK_CREDIT_VIEW_BUILDER.address: (
-        "CO Work Credit Writeback File #2 for new Earned Credit Policy. Work tracked in OBT-37777."
         "(Shalin Brahmbhatt, 2026-08-26)"
     ),
     **{
