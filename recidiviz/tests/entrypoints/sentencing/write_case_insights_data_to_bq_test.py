@@ -3148,6 +3148,17 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         pd.testing.assert_frame_equal(expected_final_table, final_table)
 
+    def test_extract_cohort_attributes_multi_word_sentence_type(self) -> None:
+        cohort_attributes = write_case_insights_data_to_bq.extract_cohort_attributes(
+            "recidivism_TREATMENT_IN_PRISON_series",
+            write_case_insights_data_to_bq.RECIDIVISM_SERIES_COLUMN_REGEX,
+        )
+
+        self.assertEqual(
+            {"sentence_type": "Treatment In Prison"},
+            cohort_attributes,
+        )
+
     def test_consolidate_cohort_columns(self) -> None:
         mock_inclusion_ci_thresholds = {"US_ND": 0.6}
         final_table = pd.DataFrame(
@@ -3278,6 +3289,55 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                                 {"event_rate": 0.4, "ci_size": 0.5},
                                 {"event_rate": 0.7, "ci_size": 0.5},
                             ],
+                        },
+                    ]
+                ),
+            ]
+        )
+
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.INCLUSION_CI_THRESHOLDS",
+            mock_inclusion_ci_thresholds,
+        ):
+            recidivism_series = (
+                write_case_insights_data_to_bq.consolidate_cohort_columns(
+                    final_table,
+                    "US_ND",
+                    write_case_insights_data_to_bq.RECIDIVISM_SERIES_COLUMN_REGEX,
+                    "data_points",
+                )
+            )
+
+        pd.testing.assert_series_equal(expected_recidivism_series, recidivism_series)
+
+    def test_consolidate_cohort_columns_excludes_other_sentence_type(self) -> None:
+        """OTHER_SENTENCE_TYPE cohorts are excluded from the consolidated output. This
+        exclusion check is a hardcoded string comparison against
+        extract_cohort_attributes' output, so it needs its own regression test to
+        catch it going stale if that transform ever changes again."""
+        mock_inclusion_ci_thresholds = {"US_ND": 0.6}
+        final_table = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    '[{"event_rate": 0.1, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.5, "ci_size": 0.1}]',
+                ],
+            ],
+            columns=[
+                "state_code",
+                "recidivism_PROBATION_series",
+                "recidivism_OTHER_SENTENCE_TYPE_series",
+            ],
+        )
+
+        expected_recidivism_series = pd.Series(
+            [
+                json.dumps(
+                    [
+                        {
+                            "sentence_type": "Probation",
+                            "data_points": [{"event_rate": 0.1, "ci_size": 0.1}],
                         },
                     ]
                 ),

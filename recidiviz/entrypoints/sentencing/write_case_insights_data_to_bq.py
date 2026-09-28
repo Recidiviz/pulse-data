@@ -1034,9 +1034,13 @@ def extract_cohort_attributes(cohort_column_name: str, columns_regex: str) -> Di
     cohort_attributes = {}
     if len(type_and_length) == 1:
         # If there is no sentence length, only set the sentence type
-        cohort_attributes["sentence_type"] = type_and_length[0].capitalize()
+        cohort_attributes["sentence_type"] = (
+            type_and_length[0].replace("_", " ").title()
+        )
     elif len(type_and_length) == 2:
-        cohort_attributes["sentence_type"] = type_and_length[0].capitalize()
+        cohort_attributes["sentence_type"] = (
+            type_and_length[0].replace("_", " ").title()
+        )
         (
             cohort_attributes["sentence_length_bucket_start"],
             cohort_attributes["sentence_length_bucket_end"],
@@ -1087,7 +1091,7 @@ def consolidate_cohort_columns(
             return None
 
         # If the sentence type is "Other_sentence_type", return None so that it's not included
-        if cohort_attributes["sentence_type"] == "Other_sentence_type":
+        if cohort_attributes["sentence_type"] == "Other Sentence Type":
             return None
 
         return cohort_attributes | {column_name: column_val}
