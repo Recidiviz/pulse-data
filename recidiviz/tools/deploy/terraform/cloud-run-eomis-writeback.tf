@@ -116,9 +116,15 @@ locals {
       recidiviz_env = "staging"
     }
     production = {
-      # Empty until the writeback is productized: an empty jobs map is what
-      # keeps every eOMIS resource from being created in prod.
-      jobs          = {}
+      jobs = {
+        "us-ar-ged" = {
+          args      = ["--flow=ar_ged", "--commit", "--allow-prod-write"]
+          schedule  = "0 0 * * *"
+          time_zone = "Etc/UTC"
+          env       = {}
+          paused    = true
+        }
+      }
       recidiviz_env = "production"
     }
   }
@@ -254,15 +260,14 @@ resource "google_cloud_run_v2_job" "eomis_writeback" {
   }
 }
 
-# Paused: deploys the full trigger + IAM wiring without auto-executing. Runs are
-# triggered manually in staging.
+# Paused unless the job sets `paused = false`.
 resource "google_cloud_scheduler_job" "eomis_writeback" {
   for_each         = local.eomis_writeback.jobs
   name             = "eomis-writeback-${each.key}"
   schedule         = each.value.schedule
   time_zone        = each.value.time_zone
-  paused           = true
-  description      = "[eOMIS writeback] Trigger the ${each.key} writeback Cloud Run job (dry-run)"
+  paused           = lookup(each.value, "paused", true)
+  description      = "[eOMIS writeback] Trigger the ${each.key} writeback Cloud Run job"
   attempt_deadline = "320s"
 
   retry_config {
