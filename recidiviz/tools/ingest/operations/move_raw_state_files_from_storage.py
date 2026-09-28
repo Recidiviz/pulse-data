@@ -267,7 +267,7 @@ class OperateOnRawStorageFilesController:
         ]
 
         Will run:
-        gsutil mv/cp
+        gcloud storage mv/cp
             gs://storage_bucket/path/to/processed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv \
             unprocessed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv
         """

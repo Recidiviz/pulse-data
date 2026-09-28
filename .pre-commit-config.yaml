@@ -80,6 +80,15 @@ repos:
         language: system
         files: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
         require_serial: true
+      # gsutil is removed from the gcloud CLI package after March 2027. The repo
+      # was migrated to `gcloud storage`; this keeps new invocations out. It runs
+      # on the files a PR changes, so it never demands a repo-wide cleanup.
+      - id: check_no_gsutil
+        name: check_no_gsutil
+        entry: uv run python -m recidiviz.tools.lint.check_no_gsutil
+        language: system
+        types_or: [python, shell, yaml, markdown, json, text]
+        require_serial: true
       - id: generate_docs_for_region
         name: generate_docs_for_region
         entry: uv run python -m
