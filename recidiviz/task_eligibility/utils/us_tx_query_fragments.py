@@ -986,8 +986,20 @@ def _us_tx_fees_no_records_fallback_select(
     """Returns a SQL SELECT ... FROM producing a "No records found" fallback row
     for every person in fallback_population_cte.
 
+    Returns fallback client IDs and copy for the population not covered by fees data.
+
     Caller is responsible for appending the LEFT JOIN/WHERE that excludes clients
     with real data, to complete the UNION ALL block.
+
+    Args:
+        criteria: Value to populate the criteria column with, identifying which
+            case notes section this fallback row belongs to (e.g. "Current Fees").
+        fallback_population_cte: Name of a CTE that covers eligible clients for an
+            opportunity, or all clients with a task eligibility span, depending on
+            the caller. Only people in this population who lack matching fee
+            records get the "No records found" fallback row. Should be the same
+            CTE name passed as filtered_tes_cte to array_agg_case_notes_by_person_id
+            for this view.
     """
     return f"""SELECT
         fallback_clients.person_id,
@@ -1007,11 +1019,12 @@ def us_tx_fines_fees_balances_case_notes(*, fallback_population_cte: str) -> str
     Columns: person_id, criteria ("Current Fees"), note_title (fee type), note_body (assessed amount and remaining balance), event_date (date of last fee-related interaction).
 
     Args:
-        fallback_population_cte: Name of an already-defined CTE with a person_id
-            column to source fallback rows from. Pass the same CTE name given to
-            array_agg_case_notes_by_person_id's filtered_tes_cte for this view,
-            since that join is what filters these rows down to the opportunity
-            population.
+        fallback_population_cte: Name of a CTE that covers eligible clients for an
+            opportunity, or all clients with a task eligibility span, depending on
+            the caller. Only people in this population who lack matching fee
+            records get the "No records found" fallback row. Should be the same
+            CTE name passed as filtered_tes_cte to array_agg_case_notes_by_person_id
+            for this view.
     """
     return f"""
     SELECT
@@ -1078,11 +1091,11 @@ def us_tx_fines_fees_recent_payments_case_notes(
     Columns: person_id, criteria ("Most Recent Payments"), note_title, note_body, event_date.
 
     Args:
-        fallback_population_cte: Name of an already-defined CTE with a person_id
-            column to source fallback rows from. Pass the same CTE name given to
-            array_agg_case_notes_by_person_id's filtered_tes_cte for this view,
-            since that join is what filters these rows down to the opportunity
-            population.
+        fallback_population_cte: Name of a CTE that covers eligible clients for an opportunity, or all clients with a task eligibility
+            span, depending on the caller. Only people in this population who lack
+            matching fee records get the "No records found" fallback row. Should be
+            the same CTE name passed as filtered_tes_cte to
+            array_agg_case_notes_by_person_id for this view.
         n_distinct_transaction_dates: Number of most recent distinct payment
             dates to include transactions from.
         max_transactions: Overall cap on the number of transaction rows
@@ -1095,16 +1108,11 @@ def us_tx_fines_fees_recent_payments_case_notes(
             "Most Recent Payments"                                          AS criteria,
             -- Maps FTRN_TRANS_TYPE single-letter codes to readable fee type names.
             -- Excludes V (void) and O; rows with unknown types are pre-filtered out in the inner subquery.
-            -- TODO(OBT-35355): Update when ITD confirms what FTRN_TRANS_TYPE = 'O' represents.
             {us_tx_fee_type_case_sql(column="trans.FTRN_TRANS_TYPE")}       AS note_title,
             FORMAT("$%.2f", SAFE_CAST(trans.FTRN_TRANS_AMT AS NUMERIC))    AS note_body,
             DATE(trans.FTRN_DATE_POSTED)                                    AS event_date,
         FROM (
-            -- TODO(OBT-35387): Create a preprocessed transactions view that accounts for TODO(OBT-35356) and TODO(OBT-35355)
-            -- TODO(OBT-35356): Clarify with ITD which columns can deduplicate transaction rows and how to identify voided transactions.
-            -- Pre-filter to known fee types so that DENSE_RANK and ROW_NUMBER window functions
-            -- in QUALIFY only count valid rows. Without this, large batches of void (V) rows on a
-            -- single date can consume all ROW_NUMBER slots and push valid rows past the cap.
+            -- TODO(OBT-35387): Create a preprocessed transactions view.
             SELECT DISTINCT
                 FTRN_DPS_NO,
                 FTRN_TERM_ID,
