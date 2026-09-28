@@ -71,7 +71,7 @@ output:
    source recidiviz/tools/deploy/deploy_helpers.sh
    last_deployed_version_tag <project_id>   # e.g. recidiviz-123 or recidiviz-staging
    ```
-   Under the hood: a direct `gsutil cat "gs://<project_id>-tf-state/default.tfstate" | jq '.outputs.docker_image_tag.value'`
+   Under the hood: a direct `gcloud storage cat "gs://<project_id>-tf-state/default.tfstate" | jq '.outputs.docker_image_tag.value'`
    — no `terraform init`, so the read takes ~1–2s.
 
 2. **Latest version tag on the branch that feeds this project**:

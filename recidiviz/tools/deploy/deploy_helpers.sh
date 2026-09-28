@@ -37,14 +37,14 @@ function upload_deployment_log {
   local LOG_OBJECT_URI
   LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/$(date '+%Y/%m/%d')/${LOG_FILE_NAME}"
 
-  gsutil cp "${DEPLOYMENT_LOG_PATH}" "${LOG_OBJECT_URI}" > /dev/null 2>&1
+  gcloud storage cp "${DEPLOYMENT_LOG_PATH}" "${LOG_OBJECT_URI}" > /dev/null 2>&1
 
   local MESSAGE
   # sed is used to strip ANSI codes such as [34m and [0;10m
   MESSAGE=$(
 cat <<- EOM
 \`\`\`
-gsutil cat ${LOG_OBJECT_URI}
+gcloud storage cat ${LOG_OBJECT_URI}
 \`\`\`
 
 \`\`\`
@@ -135,7 +135,7 @@ function last_deployed_version_tag {
     # remains visible to the user.
     echo "Getting last deployed version tag from Terraform state for project ${PROJECT_ID}..." >&2
 
-    DOCKER_IMAGE_TAG="$(gsutil cat "gs://${PROJECT_ID}-tf-state/default.tfstate" \
+    DOCKER_IMAGE_TAG="$(gcloud storage cat "gs://${PROJECT_ID}-tf-state/default.tfstate" \
         | jq -r '.outputs.docker_image_tag.value')" || exit_on_fail
     echo "Retrieved last deployed version: ${DOCKER_IMAGE_TAG}" >&2
     echo "${DOCKER_IMAGE_TAG}"
