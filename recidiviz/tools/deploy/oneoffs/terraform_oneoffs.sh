@@ -10,7 +10,7 @@
 # 
 # To test the import script, copy the existing state file into a subdirectory and run the script
 # against that state file. Example:
-# $ gsutil cp gs://recidiviz-staging-tf-state/default.tfstate gs://recidiviz-staging-tf-state/dev-danawillow/default.tfstate
+# $ gcloud storage cp gs://recidiviz-staging-tf-state/default.tfstate gs://recidiviz-staging-tf-state/dev-danawillow/default.tfstate
 # $ ./recidiviz/tools/deploy/oneoffs/import_external_ip_address.sh (Project ID: recidiviz-staging, TF state file prefix: dev-danawillow)
 # $ ./recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging dev-danawillow (check that the resource you imported is not being added or modified)
 

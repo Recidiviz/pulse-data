@@ -23,7 +23,7 @@
       "Bash(gcloud builds describe:*)",
       "Bash(gcloud dataflow jobs list:*)",
 
-      "Bash(gsutil ls:*)",
+      "Bash(gcloud storage ls:*)",
 
 
       "Bash(bq ls:*)",

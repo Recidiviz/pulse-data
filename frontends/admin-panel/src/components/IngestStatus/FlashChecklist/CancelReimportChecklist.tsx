@@ -167,7 +167,7 @@ const CancelReimportChecklist = (): JSX.Element => {
                   CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
-                gsutil -m mv &#39;gs://{projectId}
+                gcloud storage mv &#39;gs://{projectId}
                 -direct-ingest-state-
                 {stateCode.toLowerCase().replaceAll("_", "-")}
                 -secondary/*_raw_*&#39; gs://

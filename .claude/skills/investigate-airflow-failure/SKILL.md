@@ -130,11 +130,11 @@ gs://<bucket>/logs/dag_id=<DAG_ID>/run_id=<RUN_ID>/task_id=<TASK_ID>/attempt=<TR
 ```
 
 ```bash
-gsutil cat 'gs://<bucket>/logs/dag_id=<DAG_ID>/run_id=<RUN_ID>/task_id=<TASK_ID>/attempt=<TRY_NUMBER>.log' \
+gcloud storage cat 'gs://<bucket>/logs/dag_id=<DAG_ID>/run_id=<RUN_ID>/task_id=<TASK_ID>/attempt=<TRY_NUMBER>.log' \
   | head -500
 ```
 
-If the object is missing, check the parent directory with `gsutil ls` — the
+If the object is missing, check the parent directory with `gcloud storage ls` — the
 DAG or task may have been renamed, or the try number may be wrong.
 
 ## Step 5: Extract the first real error
@@ -145,7 +145,7 @@ row in the failed batch (hundreds of lines of empty-message noise following the
 actual error). Always grep for the first real signal:
 
 ```bash
-gsutil cat '<LOG_PATH>' | grep -n -E "Traceback|ERROR|Exception|reason.*(invalid|schema|out of range|bad|notFound|accessDenied)" | head -20
+gcloud storage cat '<LOG_PATH>' | grep -n -E "Traceback|ERROR|Exception|reason.*(invalid|schema|out of range|bad|notFound|accessDenied)" | head -20
 ```
 
 Then read a ~35-line window starting around the first `Traceback` or

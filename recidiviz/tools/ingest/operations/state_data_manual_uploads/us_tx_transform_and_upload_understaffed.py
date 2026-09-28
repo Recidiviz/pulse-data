@@ -174,16 +174,16 @@ def upload_to_gcs(csv_path: str, upload_date: str, dry_run: bool) -> None:
     gcs_filename = f"unprocessed_{upload_date}T00:00:00:000000_raw_{FILE_TAG}.csv"
     for bucket in [STAGING_BUCKET, PROD_BUCKET]:
         dest = f"gs://{bucket}/{gcs_filename}"
-        cmd = f"gsutil cp {csv_path} {dest}"
+        cmd = f"gcloud storage cp {csv_path} {dest}"
         if dry_run:
             print(f"[DRY RUN] Would run: {cmd}")
         else:
             print(f"Uploading to {dest}...")
             result = subprocess.run(  # nosec B603 B607
-                ["gsutil", "cp", csv_path, dest], check=False
+                ["gcloud", "storage", "cp", csv_path, dest], check=False
             )
             if result.returncode != 0:
-                raise RuntimeError(f"gsutil cp failed for {dest}")
+                raise RuntimeError(f"gcloud storage cp failed for {dest}")
             print(f"  ✓ Uploaded to {dest}")
 
 
