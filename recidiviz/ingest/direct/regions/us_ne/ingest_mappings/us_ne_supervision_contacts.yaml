@@ -45,6 +45,7 @@ output:
                 StateSupervisionContactType.INTERNAL_UNKNOWN:
                   - Administrative/Other
                   - LE/NCJIS Check
+                  - Employment Program/Resource
           contact_method:
             $enum_mapping:
               $raw_text: contactLocation
