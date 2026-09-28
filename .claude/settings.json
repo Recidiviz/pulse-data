@@ -116,6 +116,7 @@
     "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "https://us-central1-recidiviz-security.cloudfunctions.net/claude-telemetry-collector/v1/metrics",
     "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "https://us-central1-recidiviz-security.cloudfunctions.net/claude-telemetry-collector/v1/logs",
     "OTEL_METRICS_EXPORTER": "otlp",
-    "OTEL_LOGS_EXPORTER": "otlp"
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1"
   }
 }
