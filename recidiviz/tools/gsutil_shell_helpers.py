@@ -14,7 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for calling gsutil commands inside of Python scripts."""
+"""Helpers for running gcloud storage CLI commands from Python scripts.
+
+TODO(AUR-235): the gsutil_ prefix on these function names is historical as they were
+migrated off gsutil ahead of its removal from the Google Cloud CLI in March 2027;
+rename them and their ~48 call sites to match.
+"""
 import logging
 import os
 from multiprocessing.pool import ThreadPool
@@ -26,11 +31,33 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
 from recidiviz.tools.utils.script_helpers import RunCommandUnsuccessful, run_command
 
+# Neither CLI gives "nothing matched" its own exit code, so this has to match on
+# stderr text. gsutil and `gcloud storage` word it differently, and they differ
+# differently per verb. Measured against a real bucket on 2026-09-16:
+#
+#   verb  gsutil                                     gcloud storage
+#   ls    CommandException: One or more URLs         ERROR: (gcloud.storage.ls) One or more
+#         matched no objects.                        URLs matched no objects.
+#   cp    CommandException: No URLs matched: <url>   ERROR: (gcloud.storage.cp) The following
+#   mv                                               URLs matched no objects or files:
+#
+# For `ls` the two share a substring. For `cp` and `mv` they share nothing at
+# all, so dropping the gsutil wording alone would not have been enough. Both
+# tools' markers stay listed: gsutil is only removed from the gcloud CLI package
+# after March 2027, so a contributor on an older SDK still sees the old text.
+_EMPTY_RESPONSE_MARKERS = (
+    # Shared by `gsutil ls` and `gcloud storage ls`.
+    "One or more URLs matched no objects.",
+    # `gsutil cp` and `gsutil mv`.
+    "CommandException: No URLs matched",
+    # `gcloud storage` cp, mv, and objects update.
+    "The following URLs matched no objects or files:",
+)
+
 
 def is_empty_response(e: RuntimeError) -> bool:
-    return "CommandException: One or more URLs matched no objects." in str(
-        e
-    ) or "CommandException: No URLs matched" in str(e)
+    message = str(e)
+    return any(marker in message for marker in _EMPTY_RESPONSE_MARKERS)
 
 
 GSUTIL_DEFAULT_TIMEOUT_SEC = 60 * 20  # 20 minutes
@@ -43,27 +70,35 @@ def gsutil_ls(
     files_only: bool = False,
     allow_empty: bool = False,
 ) -> List[str]:
-    """Returns list of paths returned by 'gsutil ls <gs_path>.
+    """Returns list of paths returned by 'gcloud storage ls <gs_path>'.
     E.g.
     gsutil_ls('gs://recidiviz-123-state-storage') ->
         ['gs://recidiviz-123-state-storage/us_nd']
 
     See more documentation here:
-    https://cloud.google.com/storage/docs/gsutil/commands/ls
+    https://cloud.google.com/sdk/gcloud/reference/storage/ls
     """
     if directories_only and files_only:
         raise ValueError("files_only and directories_only cannot both be True.")
 
-    flags = ""
     if directories_only:
         if "**" in gs_path:
             raise ValueError(
-                "Double-wildcard searches are not compatible with the -d flag and "
-                "will return paths other than directories."
+                "Double-wildcard searches are not compatible with directories_only "
+                "and will return paths other than directories."
             )
-        flags = "-d"
+        return _ls_directories(gs_path, allow_empty=allow_empty)
 
-    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} ls {flags} "{gs_path}"'
+    paths = _run_ls(gs_path, allow_empty=allow_empty)
+    if files_only:
+        return [p for p in paths if not p.endswith("/")]
+
+    return paths
+
+
+def _run_ls(gs_path: str, *, allow_empty: bool) -> List[str]:
+    """Runs `gcloud storage ls` and returns the object and prefix paths it printed."""
+    command = f'gcloud storage ls "{gs_path}"'
     try:
         res = run_command(
             command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
@@ -73,26 +108,40 @@ def gsutil_ls(
             return []
         raise e
 
-    paths = [p for p in res.splitlines() if p != gs_path]
-    if files_only:
-        return [p for p in paths if not p.endswith("/")]
+    # When a wildcard matches a prefix, `gcloud storage ls` descends into it and
+    # announces each one with a header line that ends in "/:", followed by a blank
+    # line. An object name can never end in "/", so dropping those two shapes only
+    # ever removes formatting, never a real result.
+    return [p for p in res.splitlines() if p and p != gs_path and not p.endswith("/:")]
 
-    return paths
 
+def _ls_directories(gs_path: str, *, allow_empty: bool) -> List[str]:
+    """Returns only the immediate subdirectories of |gs_path|.
 
-# See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
-_GSUTIL_PARALLEL_COMMAND_OPTIONS = (
-    "-q -m -o GSUtil:parallel_process_count=1 -o GSUtil:parallel_thread_count=24"
-)
+    `gsutil ls -d "gs://bucket/prefix/*"` printed one line per matched prefix.
+    `gcloud storage ls` has no -d flag, and given the same wildcard it descends one
+    level into every match and prints the contents instead. Callers index that list
+    (see get_last_stored_date_for_states), so a naive swap returns a FILE where a
+    directory is expected, with no error. Verified against a real bucket on
+    2026-09-16.
+
+    Listing the plain prefix, with no wildcard, reproduces the old output exactly,
+    so that is what this does.
+    """
+    prefix = gs_path[:-1] if gs_path.endswith("*") else gs_path
+    if not prefix.endswith("/"):
+        prefix = f"{prefix}/"
+
+    return [p for p in _run_ls(prefix, allow_empty=allow_empty) if p.endswith("/")]
 
 
 def gsutil_cp(from_path: str, to_path: str, allow_empty: bool = False) -> None:
-    """Copies a file/files via 'gsutil cp'.
+    """Copies a file/files via 'gcloud storage cp'.
 
     See more documentation here:
-    https://cloud.google.com/storage/docs/gsutil/commands/cp
+    https://cloud.google.com/sdk/gcloud/reference/storage/cp
     """
-    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp "{from_path}" "{to_path}"'
+    command = f'gcloud storage cp "{from_path}" "{to_path}"'
     logging.debug(command)
     try:
         run_command(
@@ -105,13 +154,13 @@ def gsutil_cp(from_path: str, to_path: str, allow_empty: bool = False) -> None:
 
 
 def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
-    """Moves a file/files via 'gsutil mv'.
+    """Moves a file/files via 'gcloud storage mv'.
 
     See more documentation here:
-    https://cloud.google.com/storage/docs/gsutil/commands/mv
+    https://cloud.google.com/sdk/gcloud/reference/storage/mv
     """
 
-    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"'
+    command = f'gcloud storage mv "{from_path}" "{to_path}"'
     logging.debug(command)
     try:
         run_command(
@@ -214,7 +263,7 @@ def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     return f"{parts[-3]}-{parts[-2]}-{parts[-1]}"
 
 
-# TODO(##37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead
+# TODO(#37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead
 def _subdir_is_in_date_range(
     subdir: str, upper_bound_date: Optional[str], lower_bound_date: Optional[str]
 ) -> bool:
