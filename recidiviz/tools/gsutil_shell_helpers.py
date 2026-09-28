@@ -222,27 +222,17 @@ def gcloud_storage_rsync_command(
 
 
 def gcloud_storage_rsync_airflow_command(
-    directory: str, gcs_uri: str, *, use_gsutil: bool = False, dry_run: bool = False
+    directory: str, gcs_uri: str, *, dry_run: bool = False
 ) -> list[str]:
-    """Returns the options for rsyncing a composer environment"""
-    if use_gsutil:
-        return [
-            "gsutil",
-            # Enable multiprocessing
-            "-m",
-            "rsync",
-            # Sync subdirectories
-            "-r",
-            # Ignore mtime of files and use checksums to determine if files are different
-            "-c",
-            # Delete files that are no longer in the source manifest
-            "-d",
-            "-x",
-            "airflow_monitoring\\.py",
-            directory,
-            gcs_uri,
-        ]
+    """Returns the gcloud storage rsync command for syncing a Composer environment.
 
+    Uses --checksums-only so a file whose mtime moved but whose content is unchanged
+    is not re-uploaded; the residual cost is one metadata patch per moved file (about
+    one per file per deploy across ~225 files, no data transfer). Validated on SDK
+    531 (2026-09): object generation unchanged, no re-upload. That trade holds at this
+    file count but not at large scale, which is why the ~26.5k-object Colab mirror
+    avoids rsync entirely (see sync_repo_to_colab_mirror.sh).
+    """
     base_command = gcloud_storage_rsync_command(directory, gcs_uri, dry_run=dry_run)
     additional_options = [
         # Sync subdirectories

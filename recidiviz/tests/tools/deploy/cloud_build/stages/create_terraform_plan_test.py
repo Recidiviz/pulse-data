@@ -87,5 +87,7 @@ class CreateTerraformPlanTest(unittest.TestCase):
         _, gcloud_command = sync_airflow_source_step.args
         self.assertEqual(
             gcloud_command,
-            "gsutil -m rsync -r -c -d -x airflow_monitoring\\.py /workspace/airflow_source_files gs://test-bucket",
+            "gcloud storage rsync /workspace/airflow_source_files gs://test-bucket "
+            "--recursive --checksums-only --delete-unmatched-destination-objects "
+            "--exclude=airflow_monitoring\\.py",
         )

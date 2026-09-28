@@ -53,9 +53,7 @@ def copy_source_files_to_experiment(
     with tempfile.TemporaryDirectory() as directory:
         get_airflow_source_files(dry_run=False, output_path=directory)
         subprocess.run(
-            gcloud_storage_rsync_airflow_command(
-                directory, gcs_uri, dry_run=dry_run, use_gsutil=False
-            ),
+            gcloud_storage_rsync_airflow_command(directory, gcs_uri, dry_run=dry_run),
             stdout=subprocess.PIPE,
             check=True,
         )  # nosec B603
