@@ -281,6 +281,16 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
         self.assertEqual(task.project_id, _PROJECT_ID)
         self.assertEqual(task.body.operator.task_id, f"{task_group_id}.create_flex_template")  # type: ignore
 
+    def test_ingest_pipeline_max_num_workers(self) -> None:
+        delegate = IngestDataflowPipelineTaskGroupDelegate(
+            state_code=StateCode.US_XX,
+            max_update_datetimes_operator=MagicMock(),
+        )
+        environment = delegate.get_default_parameters().flex_template_launch_body()[
+            "launchParameter"
+        ]["environment"]
+        self.assertEqual(4, environment["maxWorkers"])
+
 
 def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
     raise ValueError("Fake failure")

@@ -122,6 +122,51 @@ class TestValidPipelineParameters(unittest.TestCase):
             ],
         )
 
+    def test_max_num_workers_unset_omits_max_workers(self) -> None:
+        parameters = MetricsPipelineParameters(
+            project=self.PROJECT_ID,
+            region="us-central1",
+            state_code="US_XX",
+            pipeline="incarceration_metrics",
+            metric_types="INCARCERATION_ADMISSION",
+        )
+        self.assertIsNone(parameters.max_num_workers)
+        self.assertNotIn(
+            "maxWorkers",
+            parameters.flex_template_launch_body()["launchParameter"]["environment"],
+        )
+
+    def test_max_num_workers_is_honored(self) -> None:
+        parameters = MetricsPipelineParameters(
+            project=self.PROJECT_ID,
+            region="us-central1",
+            state_code="US_XX",
+            pipeline="incarceration_metrics",
+            metric_types="INCARCERATION_ADMISSION",
+            max_num_workers=4,
+        )
+        self.assertEqual(
+            4,
+            parameters.flex_template_launch_body()["launchParameter"]["environment"][
+                "maxWorkers"
+            ],
+        )
+
+    def test_max_num_workers_must_be_positive(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[max_num_workers\] on \[MetricsPipelineParameters\] must be a "
+            r"positive integer. Found value \[0\]$",
+        ):
+            MetricsPipelineParameters(
+                project=self.PROJECT_ID,
+                region="us-central1",
+                state_code="US_XX",
+                pipeline="incarceration_metrics",
+                metric_types="INCARCERATION_ADMISSION",
+                max_num_workers=0,
+            )
+
     def test_valid_get_input_dataset_property_names(self) -> None:
         for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
             # These are values that can be passed as a keyword to the class

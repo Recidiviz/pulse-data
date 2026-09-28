@@ -166,6 +166,11 @@ class PipelineParameters:
     disk_gb_size: int = attr.ib(
         default=200, validator=attr_validators.is_int, converter=int
     )
+    # Optional cap on the number of workers Dataflow autoscaling may scale up to. When
+    # unset (the default), autoscaling is bounded only by the Dataflow service limit.
+    max_num_workers: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_positive_int
+    )
     staging_only: bool = attr.ib(
         default=False, validator=attr_validators.is_bool, converter=bool
     )
@@ -567,6 +572,8 @@ class PipelineParameters:
         # regional placement and selects a zone with available capacity at launch.
         if self.worker_zone is not None:
             environment["workerZone"] = self.worker_zone
+        if self.max_num_workers is not None:
+            environment["maxWorkers"] = self.max_num_workers
         return {
             "launchParameter": {
                 "containerSpecGcsPath": self.template_gcs_path(project_id),

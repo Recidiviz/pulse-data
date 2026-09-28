@@ -41,6 +41,8 @@ from recidiviz.pipelines.ingest.activity.pipeline_utils import (
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.utils.types import assert_type
 
+INGEST_PIPELINE_MAX_NUM_WORKERS = 4
+
 
 class IngestDataflowPipelineTaskGroupDelegate(
     DataflowPipelineTaskGroupDelegate[IngestPipelineParameters]
@@ -67,6 +69,10 @@ class IngestDataflowPipelineTaskGroupDelegate(
             raw_data_source_instance=DirectIngestInstance.PRIMARY.value,
             # Ingest pipelines require additional memory; use standard family instead of highcpu
             machine_type="c4a-standard-32",
+            # Uncapped autoscaling bursts to 20+ workers for a few minutes but keeps
+            # under 10% of them busy; a sandbox US_TN run capped at 4 workers finished
+            # in the same wall time with ~40% fewer vCPU-hours.
+            max_num_workers=INGEST_PIPELINE_MAX_NUM_WORKERS,
             region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[self._state_code],
         )
 
