@@ -28,9 +28,23 @@ from recidiviz.entrypoints.bigquery.rekey_tables_to_cmek_entrypoint import (
 class RekeyEntrypointScopingTest(unittest.TestCase):
     """The pilot allowlist must bound what any run can touch."""
 
-    def test_pilot_allowlist_bounds_calculation_scope(self) -> None:
+    def test_pilot_allowlist_bounds_raw_data_scope(self) -> None:
+        datasets = _pilot_filtered(_datasets_for_scope("raw_data"))
+        self.assertEqual(
+            [
+                "us_ma_raw_data",
+                "us_ma_raw_data_secondary",
+                "us_ny_raw_data",
+                "us_ny_raw_data_secondary",
+                "us_oz_raw_data",
+                "us_oz_raw_data_secondary",
+            ],
+            sorted(datasets),
+        )
+
+    def test_pilot_allowlist_covers_calculation_scope(self) -> None:
         datasets = _pilot_filtered(_datasets_for_scope("calculation_outputs"))
-        self.assertEqual(["supplemental_data"], datasets)
+        self.assertEqual(["dataflow_metrics", "supplemental_data"], datasets)
 
     def test_removing_the_allowlist_widens_the_scope(self) -> None:
         with patch.object(
