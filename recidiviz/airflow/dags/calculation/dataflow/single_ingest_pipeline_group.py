@@ -177,6 +177,10 @@ def _verify_raw_data_flashing_not_in_progress(
             f"--state_code={state_code.value}",
         ],
         cloud_sql_connections=[SchemaType.OPERATIONS],
+        # Retry once so a transient Cloud SQL Auth Proxy connection blip doesn't
+        # fail the whole state's ingest pipeline for the day (PagerDuty
+        # incident #30822).
+        retries=1,
     )
 
 
