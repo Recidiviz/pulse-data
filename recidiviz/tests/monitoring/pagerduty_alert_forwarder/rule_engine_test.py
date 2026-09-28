@@ -1030,6 +1030,40 @@ class TestRuleEngineIntegration(unittest.TestCase):
         # Title should have production prefix and the DAG parse error title
         self.assertEqual(result["title"], "🚨 [PRODUCTION] Airflow - DAG Parse Error")
 
+    def test_production_unmapped_enum_values_routes_to_ie_service(self) -> None:
+        """Test production unmapped enum alert routes to the IE on-call service."""
+        alert = {
+            "incident": {
+                "incident_id": "test-405",
+                "policy_name": "Unmapped Enum Values in Ingest Pipeline",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                    }
+                },
+                "metric": {
+                    "labels": {
+                        "region": "US_XX",
+                        "enum_type": "StateChargeClassificationType",
+                        "enum_field_name": "classification_type",
+                    }
+                },
+                "summary": "Unmapped enum value",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(
+            result["pagerduty_service"], "[IE On Call] General Raw Data Alerting"
+        )
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] [US_XX] Unmapped enum: "
+            "StateChargeClassificationType.classification_type",
+        )
+
     def test_unmatched_alert_uses_defaults(self) -> None:
         """Test that alerts not matching any project or policy use defaults."""
         alert = {

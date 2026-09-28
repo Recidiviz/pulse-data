@@ -88,6 +88,7 @@ components:
           - "EOMIS Writeback"
           - "[PRODUCTION] JII Project"
           - "[STAGING] JII Project"
+          - "[IE On Call] General Raw Data Alerting"
 
     data-platform-alerting:
       metadata:

@@ -1640,8 +1640,9 @@ resource "google_monitoring_alert_policy" "has_unmapped_enum_values_in_ingest_pi
       # Must be non-zero when evaluation_missing_data is set (GCP API requirement).
       duration        = "60s"
       # This alert fires within Dataflow workers which use resource.type = "gce_instance"
+      # This project's metrics scope includes recidiviz-staging, so restrict to this project's own pipelines.
       filter          = <<-EOT
-        resource.type = "gce_instance" AND metric.type = "custom.googleapis.com/opencensus/ingest.has_unmapped_enum_value"
+        resource.type = "gce_instance" AND metric.type = "custom.googleapis.com/opencensus/ingest.has_unmapped_enum_value" AND resource.label.project_id = "${var.project_id}"
       EOT
       threshold_value = "0"
 
