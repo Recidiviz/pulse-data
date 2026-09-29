@@ -22,7 +22,7 @@ from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.validation import config
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -413,9 +413,6 @@ from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credi
 from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_voided_or_ineligible_has_nonzero_recommended_credit import (
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VOIDED_OR_INELIGIBLE_HAS_NONZERO_RECOMMENDED_CREDIT_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.us_co_edovo_program_map_no_duplicate_course_ids import (
-    US_CO_EDOVO_PROGRAM_MAP_NO_DUPLICATE_COURSE_IDS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.us_co_edovo_proposed_credit_no_duplicate_persons import (
     US_CO_EDOVO_PROPOSED_CREDIT_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
 )
@@ -430,9 +427,6 @@ from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_multip
 )
 from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_null_passed_date_when_has_passed import (
     US_CO_EDOVO_RECORDS_PREPROCESSED_NO_NULL_PASSED_DATE_WHEN_HAS_PASSED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_unaligned_or_unrecognized_passed_completions import (
-    US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNALIGNED_OR_UNRECOGNIZED_PASSED_COMPLETIONS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_unmatched_cdoc_completions import (
     US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_CDOC_COMPLETIONS_VIEW_BUILDER,
@@ -1439,60 +1433,28 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=US_CO_EDOVO_PROGRAM_MAP_NO_DUPLICATE_COURSE_IDS_VIEW_BUILDER,
-            validation_category=ValidationCategory.CONSISTENCY,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
-        ),
-        ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_PROPOSED_CREDIT_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_FUTURE_PASSED_DATES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_MULTIPLE_PERSON_IDS_PER_ADCNUMBER_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_MULTIPLE_RAW_IDS_PER_ADCNUMBER_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_NULL_PASSED_DATE_WHEN_HAS_PASSED_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNALIGNED_OR_UNRECOGNIZED_PASSED_COMPLETIONS_VIEW_BUILDER,
-            validation_category=ValidationCategory.CONSISTENCY,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_CDOC_COMPLETIONS_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
-            # TODO(OBT-39522): Remove once the view builder's raw data source
-            # has a real, non-sandbox ingestion path.
-            projects_to_deploy={GCP_PROJECT_STAGING},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_WORK_ENGAGEMENT_NO_DUPLICATE_PERSON_SESSION_MONTHS_VIEW_BUILDER,

@@ -40,13 +40,6 @@ ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
 JESSICALIU_US_AR_EDOVO_RAW_DATA: str = "jessicaliu_us_ar_edovo_raw_data"
 
-# TODO(OBT-39522): Temporary personal-sandbox placeholder dataset holding the
-# Edovo program map. Delete this constant, its
-# EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS entry below, and
-# externally_managed/jessicaliu_us_co_edovo_raw_data/edovo_program_map.yaml
-# once that ticket lands a real ingestion path.
-JESSICALIU_US_CO_EDOVO_RAW_DATA: str = "jessicaliu_us_co_edovo_raw_data"
-
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
 JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
 
@@ -94,9 +87,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     JESSICALIU_US_AR_EDOVO_RAW_DATA: (
         "Stores temporary AR Edovo data for staging validation."
-    ),
-    JESSICALIU_US_CO_EDOVO_RAW_DATA: (
-        "Stores the temporary CO Edovo course catalog for staging validation."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."
