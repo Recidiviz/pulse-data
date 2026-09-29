@@ -954,13 +954,23 @@ class MergeCandidate(IdentityBase):
     )
 
     detected_at_utc = Column(
-        UTCDateTime, nullable=False, comment="When the merge was first proposed."
+        UTCDateTime,
+        nullable=False,
+        comment=(
+            "Start time of the most recent import run that proposed this "
+            "merge. Refreshed on re-detection, so stale-candidate cleanup can "
+            "retire candidates that no current cluster proposes."
+        ),
     )
 
-    conflicting_attributes = Column(
+    review_context = Column(
         JSONB,
         nullable=False,
-        comment="JSONB description of the conflicts preventing an automatic merge.",
+        comment=(
+            "JSONB review context for the proposed merge: each identity's "
+            "person_type, any no_merge pairs among the identities, and the "
+            "external ids of the clusters that proposed the merge."
+        ),
     )
 
     status = Column(

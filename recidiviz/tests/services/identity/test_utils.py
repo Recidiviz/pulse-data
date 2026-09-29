@@ -26,6 +26,7 @@ from unittest.mock import patch
 from recidiviz.common import demographics
 from recidiviz.common.constants.identity import (
     AttributeType,
+    CandidateStatus,
     IdentifierType,
     IdentityStatus,
     MergeTrigger,
@@ -486,5 +487,51 @@ def insert_email(*, recidiviz_id: uuid.UUID, address_hash: str) -> None:
                 source_type=SourceType.EXTERNAL_DATA_SYSTEM,
                 source_product_app=None,
                 last_updated_utc=CREATED,
+            )
+        )
+
+
+def insert_merge_candidate(
+    *,
+    recidiviz_ids: list[uuid.UUID],
+    tenant: Tenant = Tenant.US_OZ,
+    status: CandidateStatus = CandidateStatus.PENDING,
+    detected_at_utc: datetime.datetime = CREATED,
+    review_context: dict[str, object] | None = None,
+) -> None:
+    """Inserts a MergeCandidate row directly into the identity schema, with one
+    MergeCandidateIdentity link row per given recidiviz_id."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        candidate = schema.MergeCandidate(
+            tenant=tenant,
+            detected_at_utc=detected_at_utc,
+            review_context=review_context or {},
+            status=status,
+        )
+        session.add(candidate)
+        # Assigns candidate.id so the link rows can reference it.
+        session.flush()
+        session.add_all(
+            [
+                schema.MergeCandidateIdentity(
+                    merge_candidate_id=candidate.id, recidiviz_id=recidiviz_id
+                )
+                for recidiviz_id in recidiviz_ids
+            ]
+        )
+
+
+def insert_no_merge(*, recidiviz_id_a: uuid.UUID, recidiviz_id_b: uuid.UUID) -> None:
+    """Inserts a NoMerge row directly into the identity schema, putting the
+    pair in the table's canonical (lower UUID first) order."""
+    first_id, second_id = sorted([recidiviz_id_a, recidiviz_id_b])
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.NoMerge(
+                recidiviz_id_a=first_id,
+                recidiviz_id_b=second_id,
+                reason=None,
+                created_by="test@recidiviz.org",
+                created_utc=CREATED,
             )
         )

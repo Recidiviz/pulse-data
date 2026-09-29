@@ -21,8 +21,11 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pytest
+from freezegun import freeze_time
+from more_itertools import one
 
 from recidiviz.common.constants.identity import (
+    CandidateStatus,
     IdentifierType,
     IdentityStatus,
     PersonType,
@@ -52,12 +55,15 @@ from recidiviz.tests.services.identity.test_utils import (
     insert_email,
     insert_external_id,
     insert_identity,
+    insert_merge_candidate,
     insert_name,
+    insert_no_merge,
     insert_phone_number,
 )
 from recidiviz.utils.user_hash import generate_user_hash
 
 _SNAPSHOT = datetime.datetime(2026, 8, 8, tzinfo=datetime.timezone.utc)
+_RUN_START = datetime.datetime(2026, 9, 10, 12, 0, tzinfo=datetime.timezone.utc)
 _ID_TYPE = IdentifierType.US_OZ_LOTR_ID
 _PROCESSOR_MODULE = "recidiviz.services.identity.import_processing.import_processor"
 
@@ -208,16 +214,67 @@ class ClearFirstImportTest(ImportProcessorTestCase):
         # Both identities land, but the shared address is attached only once.
         self.assertEqual(1, self._email_count())
 
+    def test_clear_removes_the_tenants_merge_candidates_and_no_merge_pairs(
+        self,
+    ) -> None:
+        """Merge candidates and no-merge pairs reference identities the clear
+        deletes, so the clear must delete them too or the identity delete
+        FK-fails."""
+        first_id = uuid.uuid4()
+        insert_identity(recidiviz_id=first_id)
+        second_id = uuid.uuid4()
+        insert_identity(recidiviz_id=second_id)
+        insert_merge_candidate(recidiviz_ids=[first_id, second_id])
+        insert_no_merge(recidiviz_id_a=first_id, recidiviz_id_b=second_id)
+        other_tenant_id = uuid.uuid4()
+        insert_identity(recidiviz_id=other_tenant_id, tenant=Tenant.US_XX)
+        second_other_tenant_id = uuid.uuid4()
+        insert_identity(recidiviz_id=second_other_tenant_id, tenant=Tenant.US_XX)
+        insert_merge_candidate(
+            recidiviz_ids=[other_tenant_id, second_other_tenant_id],
+            tenant=Tenant.US_XX,
+        )
+        insert_no_merge(
+            recidiviz_id_a=other_tenant_id, recidiviz_id_b=second_other_tenant_id
+        )
+
+        self._run(
+            _named_snapshot(external_id="A1", surname="Imported"),
+            should_clear_first=True,
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            candidate_tenants = [
+                tenant for (tenant,) in session.query(schema.MergeCandidate.tenant)
+            ]
+            linked_recidiviz_ids = [
+                recidiviz_id
+                for (recidiviz_id,) in session.query(
+                    schema.MergeCandidateIdentity.recidiviz_id
+                )
+            ]
+            no_merge_pairs = list(
+                session.query(
+                    schema.NoMerge.recidiviz_id_a, schema.NoMerge.recidiviz_id_b
+                )
+            )
+        self.assertEqual([Tenant.US_XX], candidate_tenants)
+        self.assertEqual(
+            {other_tenant_id, second_other_tenant_id}, set(linked_recidiviz_ids)
+        )
+        # The cleared tenant's pair is gone; the other tenant's pair survives.
+        lower_id, higher_id = sorted([other_tenant_id, second_other_tenant_id])
+        self.assertEqual([(lower_id, higher_id)], no_merge_pairs)
+
 
 @pytest.mark.uses_db
 class ImportWithoutClearFirstTest(ImportProcessorTestCase):
     """Tests for process_import without clear-first: clusters matching no
     existing identity create new identities, and existing identities not
     matched by any cluster are left untouched. Updates of matched identities
-    are covered by ImportUpdateTest.
-
-    TODO(OBT-37726): The multiple-identity skip case below changes once merge
-    detection flags those clusters instead of skipping them.
+    are covered by ImportUpdateTest. Clusters matching multiple identities are
+    routed to merge-candidate flagging (asserted here); the flagging behavior
+    itself is covered in merge_candidate_flagger_test.py.
     """
 
     def test_existing_identities_survive_and_new_cluster_is_created(self) -> None:
@@ -235,7 +292,13 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
             {"US_OZ": ["Untouched", "Imported"]}, self._surnames_by_tenant()
         )
 
-    def test_cluster_spanning_two_existing_identities_is_skipped(self) -> None:
+    @freeze_time(_RUN_START)
+    def test_cluster_spanning_two_existing_identities_is_flagged_not_applied(
+        self,
+    ) -> None:
+        """The import routes a cluster matching two identities to
+        merge-candidate flagging, passing the run's start time, and applies
+        none of the cluster's attributes."""
         first_id = uuid.uuid4()
         insert_identity(recidiviz_id=first_id)
         insert_name(recidiviz_id=first_id, given_name="Ada", surname="First")
@@ -269,6 +332,17 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
         )
 
         self.assertEqual({"US_OZ": ["First", "Second"]}, self._surnames_by_tenant())
+        with SessionFactory.using_database(self.database_key) as session:
+            candidate = one(session.query(schema.MergeCandidate).all())
+            self.assertEqual(CandidateStatus.PENDING, candidate.status)
+            self.assertEqual(_RUN_START, candidate.detected_at_utc)
+            linked_recidiviz_ids = {
+                recidiviz_id
+                for (recidiviz_id,) in session.query(
+                    schema.MergeCandidateIdentity.recidiviz_id
+                )
+            }
+        self.assertEqual({first_id, second_id}, linked_recidiviz_ids)
 
     def test_retired_identitys_external_id_does_not_block_creation(self) -> None:
         # A RETIRED identity must point at the identity it was merged into, and
@@ -813,15 +887,13 @@ class ClearTenantChildTableCompletenessTest(TestCase):
     Without this guard, a new identity child table added later would silently
     FK-fail the identity delete in production instead of failing here."""
 
-    # Tables that FK identities.recidiviz_id but are intentionally NOT cleared by the
-    # clear-first import: the candidate and no-merge tables the create pass never
-    # writes. Each should join _IDENTITY_CHILD_TABLES once the pass that populates it
-    # lands.
+    # Tables that FK identities.recidiviz_id but are deliberately not cleared
+    # through the _IDENTITY_CHILD_TABLES loop; each entry carries its own
+    # reason.
     _CLEAR_EXEMPT_TABLES = {
         "update_attribute_candidates",  # TODO(OBT-37727): clear once the guard writes it.
-        "merge_candidate_identities",  # TODO(OBT-37726): clear once merge detection writes it.
         "split_candidates",  # TODO(OBT-37728): clear once split detection writes it.
-        "no_merge",  # TODO(OBT-37726): clear once merge detection writes it.
+        "no_merge",  # Cleared by a dedicated query: it FKs identities from two columns.
     }
 
     def _tables_referencing_identities(self) -> set[str]:

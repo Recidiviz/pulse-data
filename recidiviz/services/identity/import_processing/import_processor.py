@@ -28,6 +28,8 @@ from collections.abc import Callable
 from enum import Enum
 from typing import TypeVar
 
+import attr
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.identity import IdentityStatus
@@ -45,6 +47,10 @@ from recidiviz.services.identity.import_processing.create_pass import (
 )
 from recidiviz.services.identity.import_processing.demographic_guard import (
     DemographicGuard,
+)
+from recidiviz.services.identity.import_processing.merge_candidate_flagger import (
+    MergeToConsider,
+    flag_merge_candidates,
 )
 from recidiviz.services.identity.import_processing.update_pass import (
     apply_identity_update,
@@ -64,6 +70,7 @@ _IDENTITY_CHILD_TABLES = (
     schema.Ethnicity,
     schema.PhoneNumber,
     schema.Email,
+    schema.MergeCandidateIdentity,
 )
 
 # Number of clusters written per transaction. Committing in chunks rather than
@@ -73,9 +80,8 @@ _IDENTITY_CHILD_TABLES = (
 # isolated.
 _IMPORT_CHUNK_SIZE = 500
 
-# One pass's unit of per-cluster work handed to _apply_clusters_in_chunks: a
-# bare snapshot for the create pass, a (snapshot, recidiviz_id) pair for the
-# update pass.
+# One pass's unit of per-cluster work handed to _apply_clusters_in_chunks: an
+# IdentityToCreate for the create pass, an IdentityToUpdate for the update pass.
 _ClusterItemT = TypeVar("_ClusterItemT")
 
 
@@ -85,6 +91,31 @@ class _ImportPass(Enum):
 
     CREATE = "create"
     UPDATE = "update"
+
+
+@attr.define(frozen=True, kw_only=True)
+class IdentityToCreate:
+    """An identity to be created."""
+
+    snapshot: ClusterSnapshot = attr.ib(
+        validator=attr.validators.instance_of(ClusterSnapshot)
+    )
+    """The cluster to create the identity from."""
+
+
+@attr.define(frozen=True, kw_only=True)
+class IdentityToUpdate:
+    """An identity to be updated."""
+
+    recidiviz_id: uuid.UUID = attr.ib(validator=attr.validators.instance_of(uuid.UUID))
+    """The identity's recidiviz_id. A single id, never several:
+    _plan_cluster_actions routes a cluster matching more than one identity to
+    flag_merge_candidates instead."""
+
+    snapshot: ClusterSnapshot = attr.ib(
+        validator=attr.validators.instance_of(ClusterSnapshot)
+    )
+    """The cluster to update the identity from."""
 
 
 def process_import(
@@ -104,6 +135,10 @@ def process_import(
     an address to the exclusion only picks it up once the cluster's own content
     changes, since the import skips unchanged clusters. TODO(OBT-49081) tracks
     recording these exclusions as reviewable conflicts.
+
+    A cluster matching two or more identities is never applied; the run records
+    it as a PENDING merge candidate for human review instead (see
+    merge_candidate_flagger.py).
 
     TODO(OBT-37728): Run split detection before the update and create passes,
     so an identity whose external ids appear in more than one cluster is split
@@ -128,55 +163,74 @@ def process_import(
         snapshot_timestamp.isoformat(),
         should_clear_first,
     )
+    run_started_at = datetime.datetime.now(tz=datetime.timezone.utc)
     snapshots = read_cluster_snapshots(tenant)
     if should_clear_first:
         _clear_tenant_identities(tenant)
-        new_snapshots = snapshots
-        update_pairs: list[tuple[ClusterSnapshot, uuid.UUID]] = []
+        identities_to_create = [
+            IdentityToCreate(snapshot=snapshot) for snapshot in snapshots
+        ]
+        identities_to_update: list[IdentityToUpdate] = []
         # The tenant was just cleared, so it has no pre-existing emails.
         existing_email_hashes: set[str] = set()
     else:
-        new_snapshots, update_pairs = _categorize_clusters(
-            tenant=tenant, snapshots=snapshots
-        )
+        (
+            identities_to_create,
+            identities_to_update,
+            merges_to_consider,
+        ) = _plan_cluster_actions(tenant=tenant, snapshots=snapshots)
+        if merges_to_consider:
+            with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+                flag_merge_candidates(
+                    session=session,
+                    tenant=tenant,
+                    detected_at=run_started_at,
+                    merges_to_consider=merges_to_consider,
+                )
         existing_email_hashes = _existing_email_hashes(tenant)
     _update_identities(
         tenant=tenant,
-        update_pairs=update_pairs,
+        identities_to_update=identities_to_update,
         committed_email_hashes=existing_email_hashes,
     )
     _create_identities(
         tenant=tenant,
-        snapshots=new_snapshots,
+        identities_to_create=identities_to_create,
         committed_email_hashes=existing_email_hashes,
     )
 
 
-def _categorize_clusters(
+def _plan_cluster_actions(
     *, tenant: Tenant, snapshots: list[ClusterSnapshot]
-) -> tuple[list[ClusterSnapshot], list[tuple[ClusterSnapshot, uuid.UUID]]]:
-    """Categorizes the given ClusterSnapshots according to how many identities
-    they match, returning the new_snapshots and update_pairs lists described
-    below. The rules:
+) -> tuple[list[IdentityToCreate], list[IdentityToUpdate], list[MergeToConsider]]:
+    """Matches each ClusterSnapshot against the tenant's existing identities
+    and returns the action each cluster implies, as the identities_to_create,
+    identities_to_update, and merges_to_consider lists described below. The
+    rules:
 
     - A cluster matches an identity when the cluster carries an external id the
       identity holds as active; only the tenant's non-RETIRED identities count
       (see _identity_ids_by_external_id).
 
     - If a cluster matches no identity, it describes a person the service has
-      not seen and must create a new identity for; this function adds it to the
-      new_snapshots list.
+      not seen; this function adds an IdentityToCreate for it to the
+      identities_to_create list.
 
     - If a cluster matches exactly one identity, and no other cluster matches
       that identity, it carries the latest version of that identity's data;
-      this function adds it and the matched identity's recidiviz_id to the
-      update_pairs list.
+      this function adds an IdentityToUpdate for it to the
+      identities_to_update list. A cluster whose hash equals the identity's
+      last_cluster_hash is dropped instead (see _drop_unchanged_clusters): the
+      identity already applied that exact cluster in an earlier run, so it
+      implies no action.
 
     - If a cluster matches two or more identities, it is possible that two
-      identities in the service are actually one person. Since the service
-      cannot merge identities yet, this function skips the cluster.
-      TODO(OBT-37726): File a PENDING merge_candidates row for each such
-      cluster.
+      identities in the service are actually one person. Merging is not
+      automated yet (it is the hardest-to-reverse operation in the system), so
+      this function adds an MergeToConsider for the cluster to
+      the merges_to_consider list; process_import records each
+      as a PENDING merge candidate for human review (see
+      merge_candidate_flagger.py) and does not otherwise apply the cluster.
 
     - If a cluster matches exactly one identity, but another cluster also
       matches that identity, the identity's external ids appear in more than
@@ -184,13 +238,13 @@ def _categorize_clusters(
       the cluster and leaves the identity untouched, since applying it would
       replace the identity's attributes with values built from only some of
       its external ids. Split detection (OBT-37728) will eventually resolve
-      this case; it will run before this categorization.
+      this case; it will run before this planning.
     """
     identity_ids_by_external_id = _identity_ids_by_external_id(tenant)
-    new_snapshots: list[ClusterSnapshot] = []
-    single_match_pairs: list[tuple[ClusterSnapshot, uuid.UUID]] = []
+    identities_to_create: list[IdentityToCreate] = []
+    single_match_updates: list[IdentityToUpdate] = []
+    merges_to_consider: list[MergeToConsider] = []
     matched_cluster_counts: Counter[uuid.UUID] = Counter()
-    skipped_multiple_identity_count = 0
     for snapshot in snapshots:
         matched_identity_ids = {
             identity_ids_by_external_id[key]
@@ -200,29 +254,45 @@ def _categorize_clusters(
         }
         matched_cluster_counts.update(matched_identity_ids)
         if not matched_identity_ids:
-            new_snapshots.append(snapshot)
+            identities_to_create.append(IdentityToCreate(snapshot=snapshot))
         elif len(matched_identity_ids) == 1:
-            single_match_pairs.append((snapshot, matched_identity_ids.pop()))
+            single_match_updates.append(
+                IdentityToUpdate(
+                    recidiviz_id=matched_identity_ids.pop(), snapshot=snapshot
+                )
+            )
         else:
-            skipped_multiple_identity_count += 1
-    update_pairs = [
-        (snapshot, recidiviz_id)
-        for snapshot, recidiviz_id in single_match_pairs
-        if matched_cluster_counts[recidiviz_id] == 1
+            merges_to_consider.append(
+                MergeToConsider(
+                    recidiviz_ids=frozenset(matched_identity_ids), snapshot=snapshot
+                )
+            )
+    unshared_updates = [
+        identity_to_update
+        for identity_to_update in single_match_updates
+        if matched_cluster_counts[identity_to_update.recidiviz_id] == 1
     ]
-    skipped_shared_identity_cluster_count = len(single_match_pairs) - len(update_pairs)
+    skipped_shared_identity_cluster_count = len(single_match_updates) - len(
+        unshared_updates
+    )
+    identities_to_update = _drop_unchanged_clusters(
+        tenant=tenant, updates=unshared_updates
+    )
+    skipped_unchanged_cluster_count = len(unshared_updates) - len(identities_to_update)
     logging.info(
         "Of [%s] clusters for tenant [%s]: [%s] new, [%s] updating one existing "
-        "identity, [%s] matching multiple existing identities (skipped), [%s] "
-        "sharing a matched identity with another cluster (skipped).",
+        "identity, [%s] unchanged since their last import (skipped), [%s] matching "
+        "multiple existing identities (flagged for merge review), [%s] sharing a "
+        "matched identity with another cluster (skipped).",
         len(snapshots),
         tenant.value,
-        len(new_snapshots),
-        len(update_pairs),
-        skipped_multiple_identity_count,
+        len(identities_to_create),
+        len(identities_to_update),
+        skipped_unchanged_cluster_count,
+        len(merges_to_consider),
         skipped_shared_identity_cluster_count,
     )
-    return new_snapshots, update_pairs
+    return identities_to_create, identities_to_update, merges_to_consider
 
 
 def _identity_ids_by_external_id(
@@ -263,6 +333,29 @@ def _identity_ids_by_external_id(
     }
 
 
+def _drop_unchanged_clusters(
+    *,
+    tenant: Tenant,
+    updates: list[IdentityToUpdate],
+) -> list[IdentityToUpdate]:
+    """Returns the updates whose cluster changed since the identity's last
+    successful import, per its stored last_cluster_hash."""
+    if not updates:
+        return []
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        last_cluster_hash_by_identity_id = dict(
+            session.query(
+                schema.Identity.recidiviz_id, schema.Identity.last_cluster_hash
+            ).filter(schema.Identity.tenant == tenant)
+        )
+    return [
+        identity_to_update
+        for identity_to_update in updates
+        if last_cluster_hash_by_identity_id[identity_to_update.recidiviz_id]
+        != identity_to_update.snapshot.stored_cluster_hash
+    ]
+
+
 def _existing_email_hashes(tenant: Tenant) -> set[str]:
     """Returns the address hashes of the emails attached to the tenant's
     non-RETIRED identities, used to exclude an address a new identity would
@@ -286,45 +379,40 @@ def _existing_email_hashes(tenant: Tenant) -> set[str]:
 def _update_identities(
     *,
     tenant: Tenant,
-    update_pairs: list[tuple[ClusterSnapshot, uuid.UUID]],
+    identities_to_update: list[IdentityToUpdate],
     committed_email_hashes: set[str],
 ) -> None:
-    """Brings each matched identity up to date with its cluster.
+    """Brings each identity up to date with its cluster.
 
-    This function first skips every cluster whose hash matches its identity's
-    last_cluster_hash, meaning the identity already applied that exact cluster
-    in an earlier run and there is nothing to update (see
-    _drop_unchanged_clusters). It hands the remaining pairs to
-    _apply_clusters_in_chunks, which commits the updates in chunks and retries
-    a failed chunk one cluster at a time, so one bad cluster cannot block the
-    rest.
+    Hands the updates to _apply_clusters_in_chunks, which commits them in
+    chunks and retries a failed chunk one cluster at a time, so one bad
+    cluster cannot block the rest.
 
     Args:
         tenant: The tenant the clusters belong to, named in failure logs.
-        update_pairs: The clusters to apply, each with the recidiviz_id of the
-            identity its external ids matched.
+        identities_to_update: The updates to apply. _plan_cluster_actions has
+            already dropped clusters unchanged since their last import, so
+            every entry here needs work.
         committed_email_hashes: Hashes of addresses the tenant's identities
             already own; the pass excludes any address whose hash is here, and
             each committed chunk folds in the addresses it used, so an address
             reaches at most one identity.
     """
-    if not update_pairs:
+    if not identities_to_update:
         return
-    changed_pairs = _drop_unchanged_clusters(tenant=tenant, update_pairs=update_pairs)
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     guard = DemographicGuard()
 
     def apply_update(
         session: Session,
-        pair: tuple[ClusterSnapshot, uuid.UUID],
+        identity_to_update: IdentityToUpdate,
         committed_email_hashes: set[str],
         staged_email_hashes: set[str],
     ) -> None:
-        snapshot, recidiviz_id = pair
         _update_identity_in_session(
             session=session,
-            snapshot=snapshot,
-            recidiviz_id=recidiviz_id,
+            snapshot=identity_to_update.snapshot,
+            recidiviz_id=identity_to_update.recidiviz_id,
             guard=guard,
             now=now,
             committed_email_hashes=committed_email_hashes,
@@ -334,41 +422,13 @@ def _update_identities(
     _apply_clusters_in_chunks(
         tenant=tenant,
         import_pass=_ImportPass.UPDATE,
-        items=changed_pairs,
+        items=identities_to_update,
         committed_email_hashes=committed_email_hashes,
         apply_item=apply_update,
-        cluster_id_of=lambda pair: pair[0].cluster.identity_cluster_id,
+        cluster_id_of=lambda identity_to_update: (
+            identity_to_update.snapshot.cluster.identity_cluster_id
+        ),
     )
-
-
-def _drop_unchanged_clusters(
-    *,
-    tenant: Tenant,
-    update_pairs: list[tuple[ClusterSnapshot, uuid.UUID]],
-) -> list[tuple[ClusterSnapshot, uuid.UUID]]:
-    """Returns the pairs whose cluster changed since the identity's last
-    successful import, per its stored last_cluster_hash."""
-    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
-        last_cluster_hash_by_identity_id = dict(
-            session.query(
-                schema.Identity.recidiviz_id, schema.Identity.last_cluster_hash
-            ).filter(schema.Identity.tenant == tenant)
-        )
-    changed_pairs = [
-        (snapshot, recidiviz_id)
-        for snapshot, recidiviz_id in update_pairs
-        if last_cluster_hash_by_identity_id[recidiviz_id]
-        != snapshot.stored_cluster_hash
-    ]
-    logging.info(
-        "Of [%s] clusters matching one existing identity for tenant [%s], "
-        "updating [%s]; skipping [%s] unchanged since their last import.",
-        len(update_pairs),
-        tenant.value,
-        len(changed_pairs),
-        len(update_pairs) - len(changed_pairs),
-    )
-    return changed_pairs
 
 
 def _update_identity_in_session(
@@ -415,15 +475,15 @@ def _update_identity_in_session(
 def _create_identities(
     *,
     tenant: Tenant,
-    snapshots: list[ClusterSnapshot],
+    identities_to_create: list[IdentityToCreate],
     committed_email_hashes: set[str],
 ) -> None:
-    """Creates one identity per snapshot through _apply_clusters_in_chunks,
+    """Creates one identity per cluster through _apply_clusters_in_chunks,
     which chunks the transactions and isolates failing clusters.
 
     Args:
-        tenant: The tenant the snapshots belong to, named in failure logs.
-        snapshots: The clusters to create identities from.
+        tenant: The tenant the clusters belong to, named in failure logs.
+        identities_to_create: The clusters to create identities from.
         committed_email_hashes: Hashes of addresses the tenant's existing
             identities already own; the pass excludes any address whose hash is
             here, and each committed chunk folds in the addresses it used, so an
@@ -433,13 +493,13 @@ def _create_identities(
 
     def apply_creation(
         session: Session,
-        snapshot: ClusterSnapshot,
+        identity_to_create: IdentityToCreate,
         committed_email_hashes: set[str],
         staged_email_hashes: set[str],
     ) -> None:
         session.add_all(
             build_identity_rows(
-                snapshot=snapshot,
+                snapshot=identity_to_create.snapshot,
                 now=now,
                 committed_email_hashes=committed_email_hashes,
                 staged_email_hashes=staged_email_hashes,
@@ -449,10 +509,12 @@ def _create_identities(
     _apply_clusters_in_chunks(
         tenant=tenant,
         import_pass=_ImportPass.CREATE,
-        items=snapshots,
+        items=identities_to_create,
         committed_email_hashes=committed_email_hashes,
         apply_item=apply_creation,
-        cluster_id_of=lambda snapshot: snapshot.cluster.identity_cluster_id,
+        cluster_id_of=lambda identity_to_create: (
+            identity_to_create.snapshot.cluster.identity_cluster_id
+        ),
     )
 
 
@@ -543,19 +605,22 @@ def _apply_clusters_individually(
 
 
 def _clear_tenant_identities(tenant: Tenant) -> None:
-    """Deletes the tenant's identities and all of their child rows.
+    """Deletes the tenant's identities, all of their child rows, the tenant's
+    merge candidates, and its no-merge pairs.
 
     Runs when an import is processed with should_clear_first, so that the
     create pass alone rebuilds the tenant's identities from its clustering
     results; with the database empty, every cluster is new. A clear-first run
     regenerates the tenant's recidiviz_ids, so no caller may persist them
-    across one.
+    across one. Merge candidates and no-merge pairs reference identity rows the
+    clear deletes, so the clear deletes them too — including human-recorded
+    no-merge pairs, one more reason clear-first is temporary.
 
     TODO(OBT-48249): Clear-first stays the trigger endpoint's default until the
     update pass (plus merge and split detection) makes runs without it correct.
 
-    The candidate, audit, and no-merge tables are left untouched; they stay
-    empty until the passes that write them exist.
+    The update_attribute_candidates and split_candidates tables are left
+    untouched; they stay empty until the passes that write them exist.
     """
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
         tenant_identity_ids = (
@@ -567,6 +632,17 @@ def _clear_tenant_identities(tenant: Tenant) -> None:
             session.query(child_table).filter(
                 child_table.recidiviz_id.in_(tenant_identity_ids)
             ).delete(synchronize_session=False)
+        # The child-table loop above already removed the candidates'
+        # identity link rows, so the candidate rows themselves can go.
+        session.query(schema.MergeCandidate).filter(
+            schema.MergeCandidate.tenant == tenant
+        ).delete(synchronize_session=False)
+        session.query(schema.NoMerge).filter(
+            or_(
+                schema.NoMerge.recidiviz_id_a.in_(tenant_identity_ids),
+                schema.NoMerge.recidiviz_id_b.in_(tenant_identity_ids),
+            )
+        ).delete(synchronize_session=False)
         deleted_identity_count = (
             session.query(schema.Identity)
             .filter(schema.Identity.tenant == tenant)
