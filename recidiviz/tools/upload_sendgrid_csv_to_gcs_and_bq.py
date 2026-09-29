@@ -145,7 +145,9 @@ def upload_raw_file_to_gcs(
             blob_name=date.today().strftime(DATE_FORMAT),
         ),
         content_type="text/csv",
-        cleanup_local_file=False,
+        # Remove the local SendGrid CSV once it is safely in GCS, so the
+        # downloaded export does not linger on the operator's machine.
+        cleanup_local_file=True,
     )
     logging.info(
         "Uploaded file [%s] to Google Cloud Storage bucket name=[%s] blob name=[%s]",
