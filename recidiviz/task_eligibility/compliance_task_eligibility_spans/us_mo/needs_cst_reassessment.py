@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     is_missing_annual_cst_reassessment,
-    scored_low_risk_on_last_cst,
+    scored_low_risk_on_last_cst_or_csst,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
@@ -51,7 +51,7 @@ meets_cst_reassessment_eligibility_criteria = StateSpecificTaskCriteriaGroupBigQ
     sub_criteria_list=[
         is_missing_annual_cst_reassessment.VIEW_BUILDER,
         StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=scored_low_risk_on_last_cst.VIEW_BUILDER
+            sub_criteria=scored_low_risk_on_last_cst_or_csst.VIEW_BUILDER
         ),
         # TODO(MO-2): Reinstate a 120-day-before-max-expiration suppression
         # criterion once probation end-date ingest reliability for

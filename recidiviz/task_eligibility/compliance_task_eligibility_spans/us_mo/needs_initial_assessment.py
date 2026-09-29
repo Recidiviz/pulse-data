@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Initial ORAS assessment  Community Supervision Screening Tool (CSST) 
-or Community Supervision Tool (CST) required for active MO 
+"""Initial ORAS assessment  Community Supervision Screening Tool (CSST)
+or Community Supervision Tool (CST) required for active MO
 supervision population, as defined by P3-2.3"""
 
 from recidiviz.calculator.query.state.views.tasks.compliance_type import (
@@ -32,16 +32,42 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     meets_initial_assessment_trigger,
+    scored_low_risk_on_last_cst_or_csst,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+# A client who scored LOW on their most recent qualifying assessment (CST or
+# CSST) — including one completed during the pre-sentence SAR process, or one
+# that predates a suspension/reinstatement — is exempt from the
+# initial-assessment requirement (MO-11750), up until their next full
+# discharge from DOC custody and supervision.
+meets_initial_assessment_eligibility_criteria = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        criteria_name="US_MO_MEETS_INITIAL_ASSESSMENT_ELIGIBILITY_CRITERIA",
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        sub_criteria_list=[
+            meets_initial_assessment_trigger.VIEW_BUILDER,
+            StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                sub_criteria=scored_low_risk_on_last_cst_or_csst.VIEW_BUILDER
+            ),
+        ],
+    )
+)
 
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_initial_assessment",
     candidate_population_view_builder=assessment_tasks_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        meets_initial_assessment_trigger.VIEW_BUILDER,
+        meets_initial_assessment_eligibility_criteria,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     cadence_type=CadenceType.NONRECURRING,

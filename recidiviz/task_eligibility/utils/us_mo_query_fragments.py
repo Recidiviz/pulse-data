@@ -25,6 +25,7 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
+    nonnull_start_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -164,6 +165,18 @@ MO_PROGRESSIVE_DISCIPLINE_SANCTIONS = [
 # This is the earliest due date we'll show for any task, even if it's overdue by more
 # than that (i.e., has an even earlier due date that wasn't met).
 MO_SUPERVISION_TASKS_MIN_DUE_DATE_OVERRIDE = datetime(2026, 4, 30)
+
+# MO DOC procedure P3-2.3 §B.1: a CST/CSST assessment is valid for 1 year, so a
+# qualifying assessment up to this many days old still satisfies the initial-
+# assessment requirement and anchors the next annual reassessment's due date.
+US_MO_CST_CSST_VALIDITY_DAYS = 365
+
+# Assessment types that satisfy MO's CST/CSST requirement: the full Community
+# Supervision Tool (CST) or the Community Supervision Screening Tool (CSST).
+US_MO_CST_CSST_ASSESSMENT_TYPES = (
+    "ORAS_COMMUNITY_SUPERVISION",
+    "ORAS_COMMUNITY_SUPERVISION_SCREENING",
+)
 
 
 def classes_cte() -> str:
@@ -1191,16 +1204,17 @@ def us_mo_recurring_oras_assessment_criteria_view_builder(
     reassessment_cadence_months: int,
     supervision_spans_query: str,
     meets_criteria_leading_window_days: int = 0,
+    assessment_lookback_days: int = 0,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Build a US_MO recurring-assessment "is missing reassessment" criterion.
 
-    Produces spans where a client has had at least one prior assessment of the
-    given type within their current supervision episode but is now overdue for
-    the next one. Spans before any assessment fall through to
-    `meets_criteria_default=False`, so a companion `meets_initial_*_assessment_trigger`
-    criterion can cover that gap. Some callers combine the two via an OR-group
-    (e.g. NE's `needs_oras_assessment.py`); MO ships CST and CSST as two
-    independent compliance tasks instead, so no such combination is needed there.
+    Produces spans where a client has had at least one prior qualifying
+    assessment of the given type but is now overdue for the next one. Spans
+    before any assessment fall through to `meets_criteria_default=False`, so a
+    companion `meets_initial_*_assessment_trigger` criterion can cover that
+    gap. Some callers combine the two via an OR-group (e.g. NE's
+    `needs_oras_assessment.py`); MO ships CST and CSST as two independent
+    compliance tasks instead, so no such combination is needed there.
 
     Args:
         criteria_name: Name of the criterion view (e.g.
@@ -1217,13 +1231,36 @@ def us_mo_recurring_oras_assessment_criteria_view_builder(
             supervision episode. Must already be filtered to US_MO.
         meets_criteria_leading_window_days: Number of days before the prior
             assessment becomes overdue and appears as incoming for the user
+        assessment_lookback_days: When > 0, a qualifying assessment completed
+            this many days before a supervision episode's start date can also
+            satisfy the requirement for that episode (e.g. a pre-sentence SAR
+            assessment). The lookback is clamped so it never reaches past the
+            person's immediately preceding supervision episode's end date, so
+            one historical assessment can't satisfy two closely-spaced
+            episodes at once. Defaults to 0 (only assessments within the
+            episode itself count), preserving prior behavior.
     """
     cadence_unit = "MONTH" if reassessment_cadence_months == 1 else "MONTHS"
     contact_cadence_value = f"1 EVERY {reassessment_cadence_months} {cadence_unit}"
+    assessment_date_lower_bound = (
+        f"GREATEST("
+        f"DATE_SUB(ss.start_date, INTERVAL {assessment_lookback_days} DAY), "
+        f"{nonnull_start_date_clause('ss.prev_span_end_date')})"
+        if assessment_lookback_days
+        else "ss.start_date"
+    )
 
     query_template = f"""
 WITH supervision_spans AS (
-    {supervision_spans_query}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LAG(end_date) OVER (
+            PARTITION BY state_code, person_id ORDER BY start_date
+        ) AS prev_span_end_date,
+    FROM ({supervision_spans_query}) base
 ),
 
 assessments AS (
@@ -1233,20 +1270,42 @@ assessments AS (
         a.assessment_date,
         ss.start_date AS supervision_start_date,
         ss.end_date AS supervision_end_date,
-        a.assessment_date AS span_start
+        -- A pre-episode assessment can't start the span before supervision did,
+        -- but the true assessment_date (above) still drives the due-date math.
+        GREATEST(a.assessment_date, ss.start_date) AS span_start
     FROM `{{project_id}}.us_mo_normalized_state.state_assessment` a
     INNER JOIN supervision_spans ss
         ON ss.state_code = a.state_code
             AND ss.person_id = a.person_id
             AND a.assessment_date BETWEEN
-                ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date")}
+                {assessment_date_lower_bound}
+                AND {nonnull_end_date_exclusive_clause("ss.end_date")}
     WHERE a.state_code = 'US_MO'
         AND a.assessment_type = '{assessment_type}'
-    -- Within a single day, keep the latest assessment by sequence_num
+    -- Within a single day, keep the latest assessment by sequence_num.
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY a.person_id, a.assessment_date
         ORDER BY a.sequence_num DESC
     ) = 1
+),
+-- A pre-episode assessment's span_start gets clamped up to ss.start_date, so
+-- it can collide with another assessment that maps to the same clamped
+-- span_start -- either another pre-episode assessment also clamped to the
+-- same boundary, or an in-episode assessment that happens to fall exactly on
+-- ss.start_date. When that happens, keep only the one row per (person_id,
+-- supervision_start_date, span_start): the one with the latest real
+-- assessment_date, since that's the most current assessment as of that point.
+assessments_deduped AS (
+    SELECT * EXCEPT (rn) FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (
+                PARTITION BY person_id, supervision_start_date, span_start
+                ORDER BY assessment_date DESC
+            ) AS rn
+        FROM assessments
+    )
+    WHERE rn = 1
 ),
 critical_date_spans AS (
     SELECT
@@ -1267,7 +1326,7 @@ critical_date_spans AS (
             INTERVAL {reassessment_cadence_months} MONTH
         ) AS critical_date,
         assessment_date AS most_recent_assessment_date,
-    FROM assessments 
+    FROM assessments_deduped
 ),
 
 {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=meets_criteria_leading_window_days, attributes=["most_recent_assessment_date"])}
