@@ -81,8 +81,14 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
+from recidiviz.calculator.query.state.views.earned_time.us_co_certificate_proposed_credit import (
+    VIEW_BUILDER as US_CO_CERTIFICATE_PROPOSED_CREDIT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.earned_time.us_co_edovo_proposed_credit import (
     VIEW_BUILDER as US_CO_EDOVO_PROPOSED_CREDIT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.earned_time.us_co_ged_proposed_credit import (
+    VIEW_BUILDER as US_CO_GED_PROPOSED_CREDIT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
@@ -368,6 +374,20 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "references it. This view's only BQ-view parent, "
         "us_co_edovo_records_preprocessed, has no other consumer either. "
         "Tracked in CO-525. (Jessica Liu, 2026-09-25)"
+    ),
+    US_CO_CERTIFICATE_PROPOSED_CREDIT_VIEW_BUILDER.address: (
+        "CO certificate-award credit candidates for the eOMIS writeback, mirroring "
+        "us_co_work_proposed_credit above. The consumer is CoSentenceCreditFlow, "
+        "which reads the materialized table from Python, so no BQ view "
+        "references it. Tracked in CO-618. (Jessica Liu, 2026-09-28)"
+    ),
+    US_CO_GED_PROPOSED_CREDIT_VIEW_BUILDER.address: (
+        "CO GED grandfather-clause credit candidates for the eOMIS writeback, "
+        "mirroring us_co_work_proposed_credit above. The consumer is "
+        "CoSentenceCreditFlow, which reads the materialized table from Python, "
+        "so no BQ view references it. us_co_ged_credit_ledger, whose only "
+        "consumer is this view, has no other consumer either. Tracked in "
+        "CO-560. (Jessica Liu, 2026-09-28)"
     ),
     SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
         "Temporarily unused after being pulled out of needs_cst_reassessment.py "

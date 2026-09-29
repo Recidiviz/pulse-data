@@ -1,0 +1,64 @@
+address:
+  dataset_id: eomis_writeback_metadata
+  table_id: us_co_eomis_writeback_credit_details
+description: >-
+  CO-owned per-source detail behind each sentence-credit writeback candidate: which certificate awards (and, once their
+  own tickets upgrade the work/GED/Edovo pathways' candidate views, work months or courses) contributed to a person's
+  proposed credit, and how much each contributed, alongside what the write actually did. One row per (run_id,
+  eomis_offender_id, pathway, source_id); the candidate-level fields (proposed/existing/written credit, the skip reason,
+  the entry reference) are denormalized across every source row for that candidate. Written directly by CO's own flow,
+  via a new CoCreditDetailsRecorder -- not by the shared BigQueryAuditRecorder that eomis_writeback_candidates and
+  eomis_writeback_runs use. Only pathways whose candidate view emits a source_contributions array populate this table;
+  the others write nothing here yet.
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+    description: The run that produced this row. Joins to eomis_writeback_candidates and eomis_writeback_runs.
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: The state whose eOMIS instance this row concerns. Always "US_CO" today; included for consistency with eomis_writeback_candidates and eomis_writeback_runs.
+  - name: eomis_offender_id
+    type: STRING
+    mode: REQUIRED
+    description: The eOMIS offender ID of the person whose credit this row concerns. Joins to eomis_writeback_candidates.
+  - name: pathway
+    type: STRING
+    mode: REQUIRED
+    description: The CreditPathway name (e.g. "cert", "work", "ged", "edovo") that produced this candidate.
+  - name: source_id
+    type: STRING
+    mode: REQUIRED
+    description: One source that contributed to this candidate's proposed credit, e.g. a certificate_award_pk for the cert pathway.
+  - name: source_credit_units
+    type: NUMERIC
+    mode: NULLABLE
+    description: What this one source alone contributed toward the candidate's proposed credit.
+  - name: proposed_credit_units
+    type: NUMERIC
+    mode: NULLABLE
+    description: The candidate's total proposed credit across every source, repeated on every source row for that candidate.
+  - name: existing_credit_units
+    type: NUMERIC
+    mode: NULLABLE
+    description: This pathway's credit eOMIS already held, by marker, before the write (CoWriteResult.existing_days).
+  - name: written_credit_units
+    type: NUMERIC
+    mode: NULLABLE
+    description: Days this run wrote, or would have written on a dry run. Zero for a skip, an error, or a dry run.
+  - name: skip_reason_code
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      "ALREADY_SYNCED" or "WEDGED_ERROR" when the write did not land for one of those reasons; null on a verified
+      success or a dry run.
+  - name: eomis_entry_reference
+    type: STRING
+    mode: NULLABLE
+    description: CoWriteResult.entry_time, identifying the row eOMIS created, or null when nothing was written.
+  - name: recorded_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this row was recorded.
+clustering_fields: null
