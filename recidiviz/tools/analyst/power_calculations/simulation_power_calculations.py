@@ -485,6 +485,7 @@ def get_simulated_power_curve(
     post_rollout_periods: Optional[List[int]] = None,
     weight_column: Optional[str] = None,
     control_columns: Optional[List[str]] = None,
+    baseline_periods: int = 1,
     compliance: float = 1.0,
     plot: bool = True,
     power_level: float = 0.8,
@@ -527,7 +528,9 @@ def get_simulated_power_curve(
         all units are assumed to have equal weight.
     control_columns: Optional[List[str]], default = None
         List of column names of numeric control variables. If None, no control
-        variables are used. This could helb reduce our variance and gain statistical power.
+        variables are used. This could help reduce our variance and gain statistical power.
+    baseline_periods: int, default = 1
+        Number of most recent periods to include in the baseline period. Default is the most recent period only.
     compliance: float, default = 1.0
         Proportion of units that are treated AND respond to treatment. This parameter is
         useful if we are concerned a nontrivial proportion of units will ignore the
@@ -617,8 +620,23 @@ def get_simulated_power_curve(
     first_period = df[date_column].min()
     last_period = df[date_column].max()
 
-    # print weighted baseline mean in treatment group
-    dfsub = df.loc[df[treatment_column] & (df[date_column] == df[date_column].max())]
+    periods_desc = sorted(df[date_column].unique(), reverse=True)
+
+    # break baseline_periods if 0 or less:
+    if baseline_periods < 1:
+        raise ValueError(
+            f"baseline_periods must be a positive integer, found [{baseline_periods}]"
+        )
+    # break if baseline_periods > number of periods in data:
+    if baseline_periods > len(periods_desc):
+        raise ValueError(
+            f"baseline_periods [{baseline_periods}] is greater than number of periods in data [{len(periods_desc)}]."
+        )
+    # print weighted baseline mean in treatment group.
+    dfsub = df.loc[
+        df[treatment_column] & (df[date_column].isin(periods_desc[:baseline_periods]))
+    ]
+    # calculate mean
     baseline_mean = np.average(dfsub[outcome_column], weights=dfsub[weight_column])
 
     # Total simulation rounds = iters * len(post_rollout_periods)
@@ -628,7 +646,7 @@ def get_simulated_power_curve(
     if verbose:
         print(
             f"DATA PARAMETERS:\n"
-            f"Baseline (weighted) mean in treatment group: {baseline_mean:0.3g}\n"
+            f"Baseline (weighted) mean for last {baseline_periods} period(s) in treatment group: {baseline_mean:0.3g}\n"
             f"First pre-treatment {granularity}: {first_period}\n"
             f"Last pre-treatment {granularity}: {last_period}\n"
             f"Number of units: {number_of_units}\n"
