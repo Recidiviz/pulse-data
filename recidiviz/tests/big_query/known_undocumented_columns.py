@@ -16098,20 +16098,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "tr_to_add_date",
     ],
     BigQueryAddress.from_str(
-        "workflows_views.us_az_transfer_to_administrative_supervision_record"
-    ): [
-        "almost_eligible_date",
-        "eligible_date",
-        "external_id",
-        "ineligible_criteria",
-        "is_almost_eligible",
-        "is_eligible",
-        "metadata_is_maybe_eligible",
-        "person_id",
-        "reasons",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
         "workflows_views.us_az_transfer_to_administrative_supervision_record_v2"
     ): [
         "almost_eligible_date",
