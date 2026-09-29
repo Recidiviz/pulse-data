@@ -6,6 +6,14 @@ state_assessment:
     assessment_level: The final level output by the assessment, if applicable.
     assessment_level_raw_text: The raw text value of the assessment level
     assessment_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular assessment.
+    assessment_override_level: >-
+      The level staff assigned in place of the scored assessment_level when they
+      overrode the assessment result. Null when the assessment was not overridden,
+      or when the state records an override without the level it was changed to.
+    assessment_override_level_raw_text: The raw text value of the assessment override level.
+    assessment_override_reason: >-
+      The raw text code or reason the state recorded for overriding the assessment
+      result. An assessment was overridden if and only if this field is non-null.
     assessment_score: The final score output by the assessment, if applicable.
     assessment_type: The specific type of assessment that was conducted.
     assessment_type_raw_text: The raw text value of the assessment type.

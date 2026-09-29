@@ -1299,6 +1299,9 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     assessment_level = Column(state_assessment_level)
     assessment_level_raw_text = Column(String(255))
     assessment_metadata = Column(Text)
+    assessment_override_level = Column(state_assessment_level)
+    assessment_override_level_raw_text = Column(String(255))
+    assessment_override_reason = Column(String(255))
     conducting_staff_external_id = Column(String(255))
     conducting_staff_external_id_type = Column(String(255))
 

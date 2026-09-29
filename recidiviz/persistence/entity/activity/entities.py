@@ -819,6 +819,15 @@ class StateAssessment(
     assessment_metadata: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    assessment_override_level: Optional[StateAssessmentLevel] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateAssessmentLevel)
+    )
+    assessment_override_level_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    assessment_override_reason: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - Who
     # See |conducting_agent| below
