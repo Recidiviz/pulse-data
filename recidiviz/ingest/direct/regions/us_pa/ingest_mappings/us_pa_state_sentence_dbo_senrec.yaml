@@ -1,0 +1,189 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  curr_inmate_num: STRING
+  type_number: STRING
+  type_of_sent: STRING
+  sent_date: DATE
+  sent_status_date: DATE
+  sent_status_code: STRING
+  sentcing_cnty: STRING
+  class_of_sent: STRING
+  min_expir_date_final: STRING
+  offense_code: STRING
+  offense_description: STRING
+  Category: STRING
+  asca_category: STRING
+  SubCategory: STRING
+  Grade_Category: STRING
+  Grade: STRING
+  judge: STRING
+  charge_sequence_number: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: curr_inmate_num
+          id_type: $literal("US_PA_INMATE")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("SENREC")
+                - curr_inmate_num
+                - type_number
+          county_code: sentcing_cnty
+          imposed_date: sent_date
+          sentence_type:
+            $enum_mapping:
+              $raw_text: type_of_sent
+              $mappings:
+                StateSentenceType.COUNTY_JAIL:
+                  - C # County
+                  - CCIS # All CCIS periods are in contracted county facilities
+                StateSentenceType.FEDERAL_PRISON:
+                  - F # Federal
+                StateSentenceType.STATE_PRISON:
+                  - S # State
+                  - I # Transfer into Pennsylvania
+                  - T # County Transfer, i.e. transfer from county to state, usually for mental health services
+                  - P # SIP Program
+                  - E # SIP Evaluation
+                  - SCI # State Correctional Institution
+                  - O # Transfer out of Pennsylvania
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: type_of_sent
+              $mappings:
+                StateSentencingAuthority.COUNTY:
+                  - C # County
+                  - CCIS # All CCIS periods are in contracted county facilities
+                StateSentencingAuthority.FEDERAL:
+                  - F # Federal
+                StateSentencingAuthority.OTHER_STATE:
+                  - O # Transfer out of Pennsylvania
+                StateSentencingAuthority.STATE:
+                  - S # State
+                  - I # Transfer into Pennsylvania
+                  - T # County Transfer, i.e. transfer from county to state, usually for mental health services
+                  - P # SIP Program
+                  - E # SIP Evaluation
+                  - SCI # State Correctional Institution
+          is_life:
+            $in:
+              $value: class_of_sent
+              $options:
+                - $literal("CL")
+                - $literal("LF")
+          is_capital_punishment:
+            $in:
+              $value: class_of_sent
+              $options:
+                - $literal("EX")
+                - $literal("EP")
+          parole_possible:
+            $conditional:
+              - $if:
+                  $not_null: min_expir_date_final
+                $then: $literal_bool(True)
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: sent_date
+                sequence_num: $literal("1")
+                status: $literal_enum(StateSentenceStatus.SERVING)
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: sent_status_date
+                sequence_num: $literal("2")
+                status:
+                  $enum_mapping:
+                    $raw_text: sent_status_code
+                    $mappings:
+                      StateSentenceStatus.COMPLETED:
+                        # TODO(#10502): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
+                        # final.
+                        - B # Bailed
+                        - CS # Change other Sentence
+                        - DA # Deceased - Assault
+                        - DN # Deceased - Natural
+                        - DS # Deceased - Suicide
+                        - DX # Deceased - Accident
+                        - DZ # Deceased - Non DOC Location
+                        - EX # Executed
+                        - FR # Federal Release
+                        - NC # Non-Return CSC
+                        - NF # Non-Return Furlough
+                        - NR # [Unlisted]
+                        - NW # Non-Return Work Release
+                        - PC # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
+                        - SC # Sentence Complete
+                        - SP # Serve Previous
+                        - TC # Transfer to County
+                        - TS # Transfer to Other State
+                      StateSentenceStatus.COMMUTED:
+                        - RD # Release Detentioner
+                        - RE # Received in Error
+                      StateSentenceStatus.PARDONED:
+                        - PD # Pardoned
+                      StateSentenceStatus.SERVING:
+                        - AS # Actively Serving
+                        - CT # In Court
+                        - DC # Diag/Class (Diagnostics / Classification)
+                        - EC # Escape CSC
+                        - EI # Escape Institution
+                        - F # Furloughed
+                        # While they are paroled, they're still serving their incarceration sentence
+                        - P # Paroled
+                        - RP # Re-paroled (extremely rare)
+                        # TODO(#10502): What does it mean when someone else is in custody elsewhere? Does this mean they are no
+                        # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
+                        # What does it mean when this code is used with a county code?
+                        - IC # In Custody Elsewhere
+                        - MH # Mental Health
+                        - SH # State Hospital
+                        - W # Waiting
+                        - WT # WRIT/ATA
+                      StateSentenceStatus.VACATED:
+                        - VC # Vacated Conviction
+                        - VS # Vacated Sentence
+                      StateSentenceStatus.EXTERNAL_UNKNOWN:
+                        - O # ??? (this is PA's own label; it means unknown within their own system)
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("SENREC")
+                      - curr_inmate_num
+                      - type_number
+                      - charge_sequence_number
+                statute: offense_code
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                description: offense_description
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Grade_Category
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - Felony
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - Misdemeanor
+                classification_subtype: Grade
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: asca_category
+                      $then:
+                        $equal:
+                          - asca_category
+                          - $literal("1-Violent")
+                offense_type:
+                  $concat:
+                    $values:
+                      - Category
+                      - SubCategory
+                    $include_nulls: False
+                judge_full_name:
+                  $person_name:
+                    $full_name: judge

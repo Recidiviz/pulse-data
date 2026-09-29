@@ -393,7 +393,7 @@
       us_pa_dbo_Hist_Release.HReCntyRes,
       us_pa_dbo_Hist_Release.HReDo,
       us_pa_dbo_Hist_Release.HReOffense,
-      us_pa_dbo_Hist_Release.HReReldate,
+      us_pa_dbo_Hist_Release.HReReldate__raw,
       us_pa_dbo_Hist_Release.HReMaxDate__raw,
       us_pa_dbo_Hist_Release.HReSidNo,
       us_pa_dbo_Hist_Release.HReAgentName,
@@ -413,15 +413,15 @@
       us_pa_dbo_Hist_Release.HReGprProcDate__raw,
       us_pa_dbo_Hist_Release.HReOtna,
       us_pa_dbo_Hist_Release.HReMina,
-      us_pa_dbo_Hist_Release.HReMaxa,
+      us_pa_dbo_Hist_Release.HReMaxa__raw,
       us_pa_dbo_Hist_Release.HReOffa,
       us_pa_dbo_Hist_Release.HReOtnb,
       us_pa_dbo_Hist_Release.HReMinb,
-      us_pa_dbo_Hist_Release.HReMaxb,
+      us_pa_dbo_Hist_Release.HReMaxb__raw,
       us_pa_dbo_Hist_Release.HReOffb,
       us_pa_dbo_Hist_Release.HReOtnc,
       us_pa_dbo_Hist_Release.HReMinc,
-      us_pa_dbo_Hist_Release.HReMaxc,
+      us_pa_dbo_Hist_Release.HReMaxc__raw,
       us_pa_dbo_Hist_Release.HReOffc,
       us_pa_dbo_Hist_Release.HReDelCode,
       us_pa_dbo_Hist_Release.HReDelDate__raw,
@@ -447,7 +447,7 @@
       us_pa_dbo_Hist_Release.HRskAct97Other,
       us_pa_dbo_Hist_Release.file_id,
       us_pa_dbo_Hist_Release.is_deleted]
-    sorts: [us_pa_dbo_Hist_Release.HReMaxDate__raw]
+    sorts: [us_pa_dbo_Hist_Release.HReReldate__raw]
     note_display: hover
     note_text: "A table describing specific periods of supervision that were served in the past by a particular person under the authority of PADOC. Release in this context refers to the release of a person from incarceration to supervision, though a minority of these rows include, for example, stints of probation being served in lieu of incarceration.  This table is the historical version tying together all of `dbo_Release`, `dbo_ReleaseInfo`, `dbo_RelStatus`, and `dbo_RelEmployment`. When a period of supervision is terminated and the person is now at liberty or has been convicted of an entirely new offense with entirely new and separate sentences, the records from the aforementioned tables are consolidated together into a row in this table."
     listen: 
@@ -1294,9 +1294,9 @@
       us_pa_dbo_ReleaseInfo.RelOTN1,
       us_pa_dbo_ReleaseInfo.RelOTN2,
       us_pa_dbo_ReleaseInfo.RelOTN3,
-      us_pa_dbo_ReleaseInfo.RelMaxDate1,
-      us_pa_dbo_ReleaseInfo.RelMaxDate2,
-      us_pa_dbo_ReleaseInfo.RelMaxDate3,
+      us_pa_dbo_ReleaseInfo.RelMaxDate1__raw,
+      us_pa_dbo_ReleaseInfo.RelMaxDate2__raw,
+      us_pa_dbo_ReleaseInfo.RelMaxDate3__raw,
       us_pa_dbo_ReleaseInfo.RelMinDate1,
       us_pa_dbo_ReleaseInfo.RelMinDate2,
       us_pa_dbo_ReleaseInfo.RelMinDate3,
@@ -1402,7 +1402,7 @@
       us_pa_dbo_Senrec.escape_mths,
       us_pa_dbo_Senrec.escape_days,
       us_pa_dbo_Senrec.max_expir_date__raw,
-      us_pa_dbo_Senrec.min_expir_date,
+      us_pa_dbo_Senrec.min_expir_date__raw,
       us_pa_dbo_Senrec.max_fac_sent_yrs,
       us_pa_dbo_Senrec.max_fac_sent_mths,
       us_pa_dbo_Senrec.max_fac_sent_days,
@@ -1535,7 +1535,7 @@
       us_pa_dbo_SentenceGroup.senTrueMinDate__raw,
       us_pa_dbo_SentenceGroup.file_id,
       us_pa_dbo_SentenceGroup.is_deleted]
-    sorts: [us_pa_dbo_SentenceGroup.SenAddDate__raw]
+    sorts: [us_pa_dbo_SentenceGroup.SentEffectiveDate__raw]
     note_display: hover
     note_text: "A table containing \"roll-up\" information about all sentences in a group of sentences to incarceration or supervision to be served under the authority of PADOC. Because probation is administered almost entirely at the county level in Pennsylvania and PADOC/PBPP primarily deals with parole, the majority of sentences in this table are sentences to incarceration that in turn led to releases to parole. Consequently, much of this information is redundant of the information directly from the DOC side of PADOC via `dbo_Senrec` and may not be as reliable/consistent."
     listen: 

@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  Inmate_No: STRING
+  type_number: STRING
+  Parole_No: STRING
+  ParoleCountId: STRING
+  Code: STRING
+  Description: STRING
+  Grade: STRING
+  Disposition: STRING
+  seq_no: INTEGER
+unused_columns:
+  - Disposition
+variables:
+  - charge_external_id:
+      $conditional:
+        - $if:
+            $and:
+              - $not_null: Parole_No
+              - $not_null: ParoleCountId
+          $then:
+            $concat:
+              $values:
+                - Parole_No
+                - ParoleCountId
+        - $else:
+            $concat:
+              $values:
+                - Inmate_No
+                - type_number
+output:
+  StatePerson:
+    external_ids:
+      - $conditional:
+          - $if:
+              $and:
+                - $not_null: Parole_No
+                - $not_null: ParoleCountId
+            $then:
+              StatePersonExternalId:
+                external_id: Parole_No
+                id_type: $literal("US_PA_PBPP")
+          - $else:
+              StatePersonExternalId:
+                external_id: Inmate_No
+                id_type: $literal("US_PA_INMATE")
+    sentences:
+      - StateSentence:
+          external_id:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: Parole_No
+                    - $not_null: ParoleCountId
+                $then:
+                  $concat:
+                    $values:
+                      - $literal("PAROLE")
+                      - Parole_No
+                      - ParoleCountId
+              - $else:
+                  $concat:
+                    $values:
+                      - $literal("SENREC")
+                      - Inmate_No
+                      - type_number
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("CHARGE")
+                      - $variable(charge_external_id)
+                      - seq_no
+                # The view filters down to only convicted charges
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                statute: Code
+                description: Description
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Grade
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - F
+                        - F1
+                        - F2
+                        - F3
+                        - H
+                        - H1
+                        - H2
+                        - H3
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - M
+                        - M1
+                        - M2
+                        - M3
+                        - S
+                        - S1
+                        - S2
+                        - S3
+                        - S4
+                        - S5
+                        - S7
+                      StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
+                        - IC
+                        - NOGRD
+                classification_subtype:
+                  $conditional:
+                    - $if:
+                        $not_in:
+                          $value: Grade
+                          $options:
+                            - $literal("F")
+                            - $literal("H")
+                            - $literal("M")
+                            - $literal("S")
+                            - $literal("IC")
+                            - $literal("NOGRD")
+                      $then: Grade

@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  ParoleNumber: STRING
+  ParoleCountId: STRING
+  release_date: DATETIME
+  max_date_final: DATETIME
+  release_entry_code: STRING
+  offense_id_num: STRING
+  offense_description: STRING
+  offense_code: STRING
+  Category: STRING
+  asca_category: STRING
+  SubCategory: STRING
+  Grade_Category: STRING
+  Grade: STRING
+  update_datetime: DATETIME
+  HReDelCode: STRING
+  max_date_updated: DATETIME
+  seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("PAROLE")
+                - ParoleNumber
+                - ParoleCountId
+          imposed_date: release_date
+          sentence_type: $literal_enum(StateSentenceType.PAROLE)
+          is_life:
+            $equal:
+              - max_date_final
+              - $literal("2999-01-01")
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: release_entry_code
+                    $options:
+                      - $literal("4A") # ARD case - Sentenced by County Judge and Supervised by PBPP
+                      - $literal("4B") # PWV case - Sentenced by County Judge and Supervised by PBPP
+                      - $literal("04") # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
+                      - $literal("05") # Special Parole - Sentenced by County and Supervised by PBPP
+                $then: $literal_enum(StateSentencingAuthority.COUNTY)
+              - $else: $literal_enum(StateSentencingAuthority.STATE)
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: update_datetime
+                projected_completion_date_max_external: max_date_updated
+                sequence_num: seq_num
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: update_datetime
+                status:
+                  $conditional:
+                    - $if:
+                        $is_null: HReDelCode
+                      $then: $literal_enum(StateSentenceStatus.SERVING)
+                    - $else:
+                        $enum_mapping:
+                          $raw_text: HReDelCode
+                          $mappings:
+                            StateSentenceStatus.COMPLETED:
+                              - "43" # Successful completion of sentence at maximum expiration date
+                              - "47" # Death while under supervision of causes unrelated to crime.
+                              - "48" # Death while under supervision caused by criminal activity
+                              - "45" # Case closed for client with criminal charges pending that has reached maximum expiration of sentence on paroled offense # usually applies to absconders or unconvicted violators
+                              - "49" # Not an actually closed case - Case reached the Maximum Experiation Date for a State Sentence but has a county sentence of probation to finish. Closes the case and reopens it as a county probation case,
+                            StateSentenceStatus.REVOKED:
+                              - "40" # Recommitment to prison for new criminal convictions while under supervision
+                              - "41" # Recommitment to prison for adjudication of technical parole violations while under supervision
+                              - "42" # Recommitment to prison for convictions of new crimes and technical parole violations while under supervision
+                              - "44" # Conviction and return to prison to serve detainer sentence.
+                            StateSentenceStatus.PARDONED:
+                              - "46" # The Board of Pardons grants a pardon or commutation which terminates supervision, or early discharge is granted by a judge.
+                sequence_num: seq_num
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("RELEASE")
+                      - ParoleNumber
+                      - ParoleCountId
+                      - offense_id_num
+                    $include_nulls: True
+                statute: offense_code
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                description: offense_description
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Grade_Category
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - Felony
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - Misdemeanor
+                classification_subtype: Grade
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: asca_category
+                      $then:
+                        $equal:
+                          - asca_category
+                          - $literal("1-Violent")
+                offense_type:
+                  $concat:
+                    $values:
+                      - Category
+                      - SubCategory
+                    $include_nulls: False

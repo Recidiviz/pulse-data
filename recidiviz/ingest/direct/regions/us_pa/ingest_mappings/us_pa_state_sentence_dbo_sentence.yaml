@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  ParoleNumber: STRING
+  ParoleCountId: STRING
+  SentenceID: STRING
+  Sent16DGroupNumber: STRING
+  sentCodeSentOffense: STRING
+  offense_description: STRING
+  Category: STRING
+  asca_category: STRING
+  SubCategory: STRING
+  Grade_Category: STRING
+  Grade: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("PAROLE")
+                - ParoleNumber
+                - ParoleCountId
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("SENTENCE")
+                      - ParoleNumber
+                      - ParoleCountId
+                      - Sent16DGroupNumber
+                      - SentenceID
+                statute: sentCodeSentOffense
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                description: offense_description
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Grade_Category
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - Felony
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - Misdemeanor
+                classification_subtype: Grade
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: asca_category
+                      $then:
+                        $equal:
+                          - asca_category
+                          - $literal("1-Violent")
+                offense_type:
+                  $concat:
+                    $values:
+                      - Category
+                      - SubCategory
+                    $include_nulls: False
