@@ -91,12 +91,6 @@ from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision
 from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
-    US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
-    US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
@@ -146,12 +140,6 @@ from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_
 )
 from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_before_full_term_completion_date import (
     VIEW_BUILDER as SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circumstances_criteria_for_time_served import (
-    VIEW_BUILDER as US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_pa.not_serving_ineligible_offense_for_admin_supervision import (
-    VIEW_BUILDER as US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER,
 )
 from recidiviz.tools.find_unused_bq_views import PSA_RISK_SCORES_VIEW_BUILDER
 from recidiviz.utils.types import assert_subclass
@@ -221,16 +209,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
         US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address: (
             "TODO(#46257): Remove state_supervision_sentence reference as part "
             "of the v2 sentences migration"
-        ),
-    },
-    (StateCode.US_PA, StateCharge): {
-        US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove state_charge reference as part of the v2 "
-            "sentences migration"
         ),
     },
     (StateCode.US_MI, StateCharge): {
@@ -329,12 +307,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
-        ),
         SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -342,12 +314,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
-        ),
-        US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#33402): Delete `sentence_spans` once all states are migrated
@@ -374,15 +340,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
-        ),
-        US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#33402): Delete `charges_preprocessed` once all states are migrated

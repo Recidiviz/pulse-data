@@ -513,17 +513,17 @@ def adm_form_information_helper() -> str:
     """this pulls information used to complete form 402a, the drug addendum for admin supervision"""
     return """
         WITH sentences_and_charges AS (
-        /* combine sentences preprocessed (to get correct date info) and state charge (to get status of individual charges) */
+        /* combine sentences and charges (to get correct date info) and state charge v2 (to get status of individual charges) */
             SELECT sen.state_code,
                 sen.person_id,
-                sen.date_imposed,
+                sen.imposed_date,
                 sen.statute,
                 sen.description,
                 sen.offense_type,
                 sc.status,
-            FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
-            LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc
-                USING(person_id, charge_id)
+            FROM `{project_id}.{sentence_sessions_v2_all_dataset}.sentences_and_charges_materialized` sen
+            LEFT JOIN `{project_id}.normalized_state.state_charge_v2` sc
+                ON sen.charge_v2_id = sc.charge_v2_id AND sen.state_code = sc.state_code
             WHERE sen.state_code = 'US_PA'
         )
         SELECT person_id,
@@ -580,7 +580,7 @@ def adm_form_information_helper() -> str:
         
         (status = 'CONVICTED') AS guilty_charge_indicator,
         (status = 'EXTERNAL_UNKNOWN') as unreported_disposition_indicator,
-        date_imposed,
+        imposed_date,
     FROM sentences_and_charges
     WHERE state_code = 'US_PA'
     """
@@ -724,14 +724,14 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
     if filter_to_current_charges:
         # in order to filter to _just_ current charges, we pull in sentences to
         # filter out any sentences that are not currently being served
-        from_clause = f"""FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sen
-        USING (state_code, person_id, sentences_preprocessed_id)
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc 
-        USING(person_id, charge_id)
-    WHERE sen.state_code = 'US_PA' 
-      AND CURRENT_DATE('US/Eastern') BETWEEN span.start_date AND {nonnull_end_date_exclusive_clause('span.end_date')} 
+        from_clause = f"""FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentence_serving_period_materialized` ssp
+    INNER JOIN `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sen
+        USING (state_code, person_id, sentence_id)
+    INNER JOIN `{{project_id}}.normalized_state.state_charge_v2` sc
+        ON sen.charge_v2_id = sc.charge_v2_id AND sen.state_code = sc.state_code
+    WHERE sen.state_code = 'US_PA'
+      AND CURRENT_DATE('US/Eastern') >= ssp.start_date
+      AND CURRENT_DATE('US/Eastern') < {nonnull_end_date_exclusive_clause('ssp.end_date_exclusive')}
     """
     else:
         # for all charges, we just join sentences & charges
@@ -746,30 +746,30 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
       'Offense History' AS criteria,
       COALESCE(statute, 'NO STATUTE PROVIDED') AS note_title,
       CONCAT(COALESCE(INITCAP(description), 'No Description Provided'), source) AS note_body,
-      date_imposed as event_date,
+      imposed_date as event_date,
       FROM (
-        WITH 
+        WITH
         -- each row is a one charge with an attached statute, annotated with it's source
         all_statue_and_source_info AS (
-          SELECT 
-            person_id, 
+          SELECT
+            ssp.person_id,
             sen.statute,
             sen.description,
-            CASE 
+            CASE
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN ' (Source: CAPTOR - Criminal History)'
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN ' (Source: Supervisor Controls)'
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN ' (Source: CAPTOR - Sentence Summary)'
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN ' (Source: CalcRite)'
               ELSE ' (Source: CAPTOR - Other)'
             END as source,
-            CASE 
+            CASE
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN 1
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN 2
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN 3
               WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN 4
               ELSE 5
             END as source_sorting_rank,
-            sen.date_imposed,
+            sen.imposed_date,
           {from_clause}
           -- where clause
           AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
@@ -779,10 +779,10 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
         -- everything after the title in place (such as *'s, which can represent the offense
         -- count) to make sure that conflicting or differing info is not collapsed
         normalized_title_and_source_info AS (
-          SELECT 
+          SELECT
           *,
           CASE
-            WHEN title in ('18', 'CC', 'CS') THEN '18' -- title 18 = criminal offenses = CC or CS 
+            WHEN title in ('18', 'CC', 'CS') THEN '18' -- title 18 = criminal offenses = CC or CS
             WHEN title IN ('75', 'VC') THEN '75' -- vehicle
             WHEN title IN ('30', 'FB') THEN '30' -- fishing & boating
             WHEN title IN ('42', 'JC') THEN '42' -- judicial code
@@ -793,7 +793,7 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
               SUBSTR(statute_clean, 0, 2) AS title,
               SUBSTR(statute_clean, 3) AS statute_after_title,
             FROM (
-              SELECT *, 
+              SELECT *,
                   REGEXP_REPLACE(statute_split, r"\\.|-", '') AS statute_clean, -- remove periods, hyphens
               FROM all_statue_and_source_info
               LEFT JOIN UNNEST(SPLIT(REPLACE(statute, ',', ';'), ';')) AS statute_split -- split on commas and semicolons
@@ -803,29 +803,29 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
         normalized_title_and_source_info_deduplicated_by_statute as (
           SELECT *
           FROM normalized_title_and_source_info
-          QUALIFY 
-            -- duplicates of the same statute/date imposed exist because we pull offenses from different systems, 
+          QUALIFY
+            -- duplicates of the same statute/date imposed exist because we pull offenses from different systems,
             -- for each statue that has multiple entries on the same date, preferentially select
             -- the source we think the agent will be most familiar w/
-            -- we use RANK instead of ROW_NUMBER since duplicate title/date imposed from the same source might 
+            -- we use RANK instead of ROW_NUMBER since duplicate title/date imposed from the same source might
             -- be validly be two charges from the same date
-          RANK() OVER(PARTITION BY person_id, normalized_title, statute_after_title, date_imposed ORDER BY source_sorting_rank) = 1
+          RANK() OVER(PARTITION BY person_id, normalized_title, statute_after_title, imposed_date ORDER BY source_sorting_rank) = 1
         )
-        SELECT 
-          person_id, 
-          statute, 
-          description, 
+        SELECT
+          person_id,
+          statute,
+          description,
           source,
-          date_imposed
+          imposed_date
         FROM normalized_title_and_source_info_deduplicated_by_statute
         QUALIFY
-          -- duplicates of the same charge description/date imposed exist because we pull offenses from different systems, 
+          -- duplicates of the same charge description/date imposed exist because we pull offenses from different systems,
           -- for each charge that has the same description that has multiple entries on the same date, preferentially select
           -- the source we think the agent will be most familiar w/
           -- we separately deduplicate on description since CAPTOR - Other lacks statue/title info
           -- but will have a description for charges that sometimes don't exist in other systems. for overlapping
           -- charges, however, deduplicating on statute/title alone will not filter them out properly
-        RANK() OVER(PARTITION BY person_id, description, date_imposed ORDER BY source_sorting_rank) = 1
+        RANK() OVER(PARTITION BY person_id, description, imposed_date ORDER BY source_sorting_rank) = 1
       )
   """
 
@@ -1029,16 +1029,16 @@ def convert_roman_numerals(string: str) -> str:
 def adm_eligibility_unclear_helper() -> str:
     return f"""
     WITH sentences AS (
-    /* pulls all PA sentences */ 
+    /* pulls all PA sentences */
         SELECT person_id,
             statute,
-            date_imposed,
+            imposed_date,
             description,
             classification_type
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sent
         WHERE state_code = 'US_PA'
     ), sentences_clean AS (
-    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */ 
+    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */
         SELECT person_id,
             statute,
             title,
@@ -1047,10 +1047,10 @@ def adm_eligibility_unclear_helper() -> str:
             description,
             classification_type,
         FROM ({clean_and_split_statute('sentences')})
-        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
+        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems,
             preferentially select the records where we have information on subsections. using RANK instead of ROW_NUMBER
             here because we want to keep ALL subsection information */
-        QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
+        QUALIFY RANK() OVER(PARTITION BY person_id, section, imposed_date ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
     ), all_eligibility_unclear_text AS (
       -- this cte is one row for each case where a person's eligibility might be unclear
       {adm_missing_subsection_helper()}
@@ -1128,19 +1128,19 @@ def adm_dui_helper() -> str:
       'Potential Barriers to Eligibility' AS criteria,
       'DUI' AS note_title,
       'This reentrant has a DUI charge on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
-      sc.date_imposed AS event_date
+      sc.imposed_date AS event_date
     FROM (
        WITH sentences AS (
-    /* pulls all PA sentences */ 
+    /* pulls all PA sentences */
         SELECT person_id,
             statute,
-            date_imposed,
+            imposed_date,
             description,
             classification_type
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sent
         WHERE state_code = 'US_PA'
     )
-    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */ 
+    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */
         SELECT person_id,
             statute,
             title,
@@ -1148,12 +1148,12 @@ def adm_dui_helper() -> str:
             subsection,
             description,
             classification_type,
-            date_imposed
+            imposed_date
         FROM ({clean_and_split_statute('sentences')})
-        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
+        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems,
             preferentially select the records where we have information on subsections. using RANK instead of ROW_NUMBER
             here because we want to keep ALL subsection information */
-        QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
+        QUALIFY RANK() OVER(PARTITION BY person_id, section, imposed_date ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
     ) sc
     WHERE {dui_indicator()}
   """
@@ -1235,23 +1235,22 @@ def adm_marked_nae_in_oms_helper() -> str:
 def spc_eligibility_unclear_helper() -> str:
     return f"""
     WITH current_sentences AS (
-    /* pulls all currently serving, non-life sentences */ 
-      SELECT person_id,
-        statute,
-        date_imposed,
-        classification_type
-    FROM (SELECT * FROM `{{project_id}}.sessions.sentence_spans_materialized` WHERE state_code = "US_PA") span,
-    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    INNER JOIN (SELECT * FROM `{{project_id}}.sessions.sentences_preprocessed_materialized` WHERE state_code = "US_PA") sen
-      USING (state_code, person_id, sentences_preprocessed_id)
-    WHERE 
-      sen.state_code = 'US_PA' 
+    /* pulls all currently serving, non-life sentences */
+      SELECT sen.person_id,
+        sen.statute,
+        sen.imposed_date,
+        sen.classification_type
+    FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentence_serving_period_materialized` ssp
+    INNER JOIN `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sen
+      USING (state_code, person_id, sentence_id)
+    WHERE sen.state_code = "US_PA"
       -- violent/non-violent split only matters for non-life sentences
-      AND not sen.life_sentence
-      AND CURRENT_DATE('US/Eastern') BETWEEN span.start_date AND IFNULL(DATE_SUB(span.end_date, INTERVAL 1 DAY), "9999-12-31") 
-    ), 
+      AND NOT sen.is_life
+      AND CURRENT_DATE('US/Eastern') >= ssp.start_date
+      AND CURRENT_DATE('US/Eastern') < {nonnull_end_date_exclusive_clause('ssp.end_date_exclusive')}
+    ),
     sentences_clean AS (
-    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */ 
+    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */
         SELECT person_id,
             statute,
             title,
@@ -1259,10 +1258,10 @@ def spc_eligibility_unclear_helper() -> str:
             subsection,
             classification_type,
         FROM ({clean_and_split_statute('current_sentences')})
-        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
+        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems,
             preferentially select the records where we have information on subsections. using RANK instead of ROW_NUMBER
             here because we want to keep ALL subsection information */
-        QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
+        QUALIFY RANK() OVER(PARTITION BY person_id, section, imposed_date ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
     ),
     all_eligibility_unclear_text AS (
       {spc_violent_offenses_missing_subsection_helper()}
