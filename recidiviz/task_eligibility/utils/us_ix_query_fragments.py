@@ -262,6 +262,8 @@ def ix_general_case_notes(
     where_clause_addition: str = "",
     in_the_past_x_months: Optional[int] = None,
     indent_level: int = 8,
+    *,
+    include_note_type: bool = False,
 ) -> str:
     """
     Returns a SQL query that returns case notes for a specified contact mode in Idaho.
@@ -272,9 +274,19 @@ def ix_general_case_notes(
             Defaults to 6.
         where_clause_addition (str): Where clause to use in the query. Defaults to ''.
         indent_level (int): Indent level for the query. Defaults to 2.
+        include_note_type (bool): Whether to add a note_type column holding the
+            note's Atlas note type (e.g. Facility Notes, Supervision Notes). Off by
+            default, so callers that union this with other case note queries keep
+            the same columns.
     Returns:
         str: SQL query as a string.
     """
+    note_type_column = (
+        "\n                note_type.NoteTypeDesc AS note_type,"
+        if include_note_type
+        else ""
+    )
+    group_by_columns = "1,2,3,4,5,6" if include_note_type else "1,2,3,4,5"
     date_filter_clause = ""
     if in_the_past_x_months is not None:
         date_filter_clause = f"""
@@ -289,7 +301,7 @@ def ix_general_case_notes(
                 '{criteria_str}' AS criteria,
                 note_type_cm.ContactModeDesc AS note_title,
                 REGEXP_REPLACE(note.Details, r'{ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX}', '') AS note_body,
-                SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,
+                SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,{note_type_column}
             FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNote_latest` note
             LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_latest` info
                 USING (OffenderNoteInfoId)
@@ -301,7 +313,7 @@ def ix_general_case_notes(
                 USING (ContactModeId)
             WHERE OffenderNoteStatusId = '2' -- Posted
                 {where_clause_addition}
-            GROUP BY 1,2,3,4,5
+            GROUP BY {group_by_columns}
         )
         {date_filter_clause}"""
 
