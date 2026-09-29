@@ -1115,25 +1115,20 @@ resource "google_monitoring_alert_policy" "app_engine_too_many_serving_versions"
   combiner = "OR"
 
   conditions {
-    condition_monitoring_query_language {
-      duration                = "21600s"
-      evaluation_missing_data = "EVALUATION_MISSING_DATA_INACTIVE"
-      query                   = <<-EOT
-        fetch gae_instance
-        | metric 'appengine.googleapis.com/flex/instance/cpu/usage_time'
-        # For each instance that is reporting CPU utilization create a timeseries with the value of 1 per version id
-        | group_by [resource.project_id, resource.module_id, resource.version_id], [serving_version: mean(1)]
-        # Sum the number of serving versions
-        | group_by [resource.project_id, resource.module_id], [serving_version_count: sum(serving_version)]
-        | align next_older(1m)
-        | every 1m
-        | condition gt(serving_version_count, 1)
+    condition_prometheus_query_language {
+      duration            = "21600s"
+      evaluation_interval = "60s"
+      # system/instance_count covers both the standard and flexible environments.
+      # It emits one series per (version, zone), so the inner count collapses
+      # zones to one row per version before the outer count tallies versions
+      # per service.
+      query = <<-EOT
+        count by (project_id, module_id) (
+          count by (project_id, module_id, version_id) (
+            count_over_time(appengine_googleapis_com:system_instance_count{state="active"}[10m])
+          )
+        ) > 1
       EOT
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
     }
 
     display_name = "GAE - Versions Being Served"
