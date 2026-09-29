@@ -16,20 +16,20 @@
 # =============================================================================
 """BigQuery setup for a sandbox extraction run: creating the sandbox-prefixed
 result and document store tables, building the source-table overrides that
-re-point the parsed views at the tables the run reads, and deploying those views.
+re-point the parsed views at the tables the run reads, deploying those views, and
+promoting the run's results to the unprefixed result tables.
 """
 
-from types import ModuleType
+import logging
 from typing import Sequence
 
-from more_itertools import one
+from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import (
-    BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
@@ -38,18 +38,11 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
-from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
-    collect_state_agnostic_llm_extraction_results_view_builders,
-    collect_state_specific_llm_extraction_results_view_builders,
-)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
 from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentStoreSandboxContext,
-)
-from recidiviz.documents.views.view_config import (
-    collect_document_extraction_sessions_view_builders,
 )
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables_for_configs,
@@ -60,6 +53,11 @@ from recidiviz.source_tables.extraction_results_source_table_collection import (
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.load_views_to_sandbox import load_collected_views_to_sandbox
+from recidiviz.utils.types import assert_type
+
+# The only sandbox prefix whose results promote_sandbox_extraction_results copies to
+# the unprefixed result tables.
+PROMOTABLE_SANDBOX_PREFIX = "mayukas_co_tt_phase_1"
 
 
 def _create_sandbox_tables(
@@ -289,6 +287,111 @@ def post_entity_resolution_view_input_overrides(
     return builder.build()
 
 
+def promoted_extraction_results_addresses(
+    *,
+    config: LLMExtractorConfig,
+    er_configs: list[LLMExtractorConfig],
+) -> list[BigQueryAddress]:
+    """Returns the unprefixed address of every result table a sandbox run writes for
+    |config| and |er_configs|, the entity-resolution configs the run ran (one per
+    declared entity group, or empty when the run skipped entity resolution).
+    """
+    return [
+        address
+        for extractor_config in [config, *er_configs]
+        for address in _addresses_in(
+            collect_extraction_results_source_table_collections_for_config(
+                extractor_config
+            )
+        )
+    ]
+
+
+def promoted_entry_source_map_addresses(
+    *, config: LLMExtractorConfig
+) -> list[BigQueryAddress]:
+    """Returns the unprefixed address of the entry->source map table for each entity
+    group |config|'s collection declares."""
+    return EntityResolutionEntrySourceMapBQTable.addresses_for_collection(
+        state_code=config.state_code,
+        extractor_collection=config.extractor_collection,
+        sandbox_prefix=None,
+    )
+
+
+def _sandbox_address(address: BigQueryAddress, sandbox_prefix: str) -> BigQueryAddress:
+    """Returns the |sandbox_prefix|-scoped copy of |address|."""
+    return BigQueryAddress(
+        dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
+            sandbox_prefix, address.dataset_id
+        ),
+        table_id=address.table_id,
+    )
+
+
+def promote_sandbox_extraction_results(
+    *,
+    config: LLMExtractorConfig,
+    er_configs: list[LLMExtractorConfig],
+    results_sandbox_prefix: str,
+    bq_client: BigQueryClient,
+) -> None:
+    """Copies a sandbox run's results into the unprefixed tables, where the deployed
+    LLM extraction view graphs read them on their next update.
+
+    Replaces the contents of each result table and entry->source map table with the
+    sandbox copy, which holds every row from the sandbox prefix's runs.
+
+    Args:
+        config: The first-order config the run ran.
+        er_configs: The entity-resolution configs the run ran, one per declared entity
+            group, or empty when the run skipped entity resolution.
+        results_sandbox_prefix: The prefix scoping the run's result tables. Must be
+            PROMOTABLE_SANDBOX_PREFIX.
+        bq_client: The client used to copy the rows.
+    """
+    if results_sandbox_prefix != PROMOTABLE_SANDBOX_PREFIX:
+        raise ValueError(
+            f"Only results under sandbox prefix [{PROMOTABLE_SANDBOX_PREFIX}] can be "
+            f"promoted, found [{results_sandbox_prefix}]. Rerun with --sandbox-prefix "
+            f"{PROMOTABLE_SANDBOX_PREFIX}, or without --promote-results."
+        )
+    document_filter = config.document_filter
+    if (
+        document_filter.document_limit is not None
+        or document_filter.root_entity_narrowing is not None
+    ):
+        raise ValueError(
+            f"Cannot promote results for extractor [{config.extractor_id}] because the "
+            f"run is narrowed to a document limit or a set of root entities. Rerun "
+            f"without --document-limit and --root-entity-ids, or without "
+            f"--promote-results."
+        )
+
+    jobs: list[bigquery.job.CopyJob] = []
+    for address in [
+        *promoted_extraction_results_addresses(config=config, er_configs=er_configs),
+        *promoted_entry_source_map_addresses(config=config),
+    ]:
+        sandbox_address = _sandbox_address(address, results_sandbox_prefix)
+        logging.info(
+            "Replacing [%s] with [%s]...",
+            address.to_str(),
+            sandbox_address.to_str(),
+        )
+        jobs.append(
+            assert_type(
+                bq_client.copy_table(
+                    source_table_address=sandbox_address,
+                    destination_dataset_id=address.dataset_id,
+                    overwrite=True,
+                ),
+                bigquery.job.CopyJob,
+            )
+        )
+    bq_client.wait_for_big_query_jobs(jobs)
+
+
 def deploy_extraction_results_views(
     *,
     config: LLMExtractorConfig,
@@ -306,122 +409,6 @@ def deploy_extraction_results_views(
         collected_builders=list(view_builders),
         input_source_table_dataset_overrides_dict=None,
         input_source_table_overrides=input_source_table_overrides,
-        allow_slow_views=True,
-        rematerialize_changed_views_only=False,
-        failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
-        schemas_only=False,
-        default_table_expiration_ms=table_expiration_ms,
-    )
-
-
-def downstream_state_agnostic_view_input_overrides(
-    *,
-    first_order_configs: list[LLMExtractorConfig],
-    collected_builders: Sequence[BigQueryViewBuilder],
-    sandbox_dataset_prefix: str,
-    config_module: ModuleType | None = None,
-) -> BigQueryAddressOverrides:
-    """Returns the source-table overrides for the downstream state-agnostic views
-    (union-all extraction results and LLM sessions views) built on top of
-    |first_order_configs|' results.
-
-    Discovers every source table the |collected_builders| views reference via the
-    DAG walker, then registers a sandbox override for each table whose dataset
-    belongs to the extraction domain. Source tables in other datasets (e.g.
-    sessions.*) are left pointing at production.
-
-    The sandboxable datasets are the state-specific extraction results view
-    datasets (first-order and post-entity-resolution) that the union-all views
-    read from as external source tables, plus the datasets the |collected_builders|
-    themselves write to (e.g. document_extraction_results for union-all views).
-
-    |config_module| is forwarded to the state-specific view builder collectors
-    that need to resolve model configs; pass the fake config module in tests.
-    """
-    sandboxable_dataset_ids: set[str] = set()
-    for (
-        state_specific_builder
-    ) in collect_state_specific_llm_extraction_results_view_builders(
-        config_module, first_order_configs=first_order_configs
-    ):
-        sandboxable_dataset_ids.add(state_specific_builder.address.dataset_id)
-        if state_specific_builder.materialized_address is not None:
-            sandboxable_dataset_ids.add(
-                state_specific_builder.materialized_address.dataset_id
-            )
-    for builder in collected_builders:
-        sandboxable_dataset_ids.add(builder.address.dataset_id)
-        if builder.materialized_address is not None:
-            sandboxable_dataset_ids.add(builder.materialized_address.dataset_id)
-    dag_walker = BigQueryViewDagWalker(
-        [builder.build() for builder in collected_builders]
-    )
-    overrides_builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
-    for address in dag_walker.get_referenced_source_tables():
-        if address.dataset_id in sandboxable_dataset_ids:
-            overrides_builder.register_sandbox_override_for_address_with_prefix(
-                address, sandbox_dataset_prefix
-            )
-    return overrides_builder.build()
-
-
-def deploy_extraction_downstream_state_agnostic_views(
-    *,
-    sandbox_dataset_prefix: str,
-    table_expiration_ms: int,
-    first_order_configs: list[LLMExtractorConfig],
-) -> None:
-    """Deploys the cross-state UNION ALL extraction results views and LLM sessions
-    views to sandbox datasets.
-
-    Reads from the already-deployed state-specific extraction results views in
-    {prefix}_{state_code}_document_extraction_results. Must be called after the
-    state-specific VIEW_DEPLOY phase has completed for all extractors in
-    |first_order_configs|.
-
-    All configs in |first_order_configs| must share a single state code. Raises
-    if configs from multiple states are given, as cross-state runs are not
-    supported.
-    """
-    state_code = one(
-        {config.state_code for config in first_order_configs},
-        too_short=ValueError("first_order_configs must not be empty."),
-        too_long=ValueError(
-            "All configs must share a single state code; "
-            "cross-state runs are not supported."
-        ),
-    )
-    collection_names = [
-        config.extractor_collection.name for config in first_order_configs
-    ]
-
-    union_all_builders: list[BigQueryViewBuilder] = list(
-        collect_state_agnostic_llm_extraction_results_view_builders(
-            first_order_configs=first_order_configs
-        )
-    )
-    sessions_builders: list[BigQueryViewBuilder] = list(
-        collect_document_extraction_sessions_view_builders(
-            collection_names=collection_names
-        )
-    )
-    collected_builders = union_all_builders + sessions_builders
-    if not collected_builders:
-        raise ValueError(
-            f"No view builders found for collection names [{collection_names}]. "
-            f"Verify the collection names are correct."
-        )
-
-    load_collected_views_to_sandbox(
-        sandbox_dataset_prefix=sandbox_dataset_prefix,
-        state_code_filter=state_code,
-        collected_builders=collected_builders,
-        input_source_table_dataset_overrides_dict=None,
-        input_source_table_overrides=downstream_state_agnostic_view_input_overrides(
-            first_order_configs=first_order_configs,
-            collected_builders=collected_builders,
-            sandbox_dataset_prefix=sandbox_dataset_prefix,
-        ),
         allow_slow_views=True,
         rematerialize_changed_views_only=False,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,

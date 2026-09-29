@@ -21,7 +21,12 @@ It runs against job/document tracking in a local Postgres that this script spins
 up itself. The first-order extraction reads its input documents from the state's
 production document store, makes live Vertex AI calls, writes the extraction result
 rows into the --sandbox-prefix-scoped BigQuery result tables, and deploys the parsed
-views over them.
+views over them. With --promote-results, it then replaces the unprefixed result and
+entry->source map tables with the sandbox copies, where the deployed view graphs
+read them on their next update.
+
+TODO(OBT-52698): Delete --promote-results and promote_sandbox_extraction_results
+once extraction runs automatically in its own pipeline.
 
 TODO(OBT-42680): There is no way to point the first-order extraction at a sandbox
 document collection yet — it always reads the state's real document store.
@@ -131,12 +136,13 @@ from recidiviz.tools.documents.sandbox_document_extraction_processor import (
     SandboxExtractionSummary,
 )
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
+    PROMOTABLE_SANDBOX_PREFIX,
     create_document_store_tables,
     create_extraction_results_tables,
-    deploy_extraction_downstream_state_agnostic_views,
     deploy_extraction_results_views,
     first_order_view_input_overrides,
     post_entity_resolution_view_input_overrides,
+    promote_sandbox_extraction_results,
 )
 from recidiviz.tools.documents.sandbox_extraction_runners import (
     SandboxDocumentStoreRunner,
@@ -510,7 +516,30 @@ def parse_arguments() -> argparse.Namespace:
         "views, to give the result rows time to leave BigQuery's streaming buffer "
         "and become queryable. Defaults to 1 minute; 0 disables the wait.",
     )
+    parser.add_argument(
+        "--promote-results",
+        action="store_true",
+        help="Replace the unprefixed result tables and entry->source map tables in "
+        "--project-id with the sandbox copies. The deployed view graphs read them on "
+        "their next update. "
+        f"Requires --sandbox-prefix {PROMOTABLE_SANDBOX_PREFIX}, and cannot be "
+        "combined with --document-limit or --root-entity-ids.",
+    )
     args = parser.parse_args()
+
+    if args.promote_results and args.sandbox_prefix != PROMOTABLE_SANDBOX_PREFIX:
+        parser.error(
+            f"--promote-results requires --sandbox-prefix "
+            f"[{PROMOTABLE_SANDBOX_PREFIX}], found [{args.sandbox_prefix}]."
+        )
+    if args.promote_results and (
+        args.document_limit is not None or args.root_entity_ids is not None
+    ):
+        parser.error(
+            "--promote-results cannot be combined with --document-limit or "
+            "--root-entity-ids, because a narrowed run produces entry->source maps "
+            "for only part of the population."
+        )
 
     if args.external_id_type is not None:
         validate_external_id_types(
@@ -628,14 +657,14 @@ def run_sandbox_extraction(
             table_expiration_ms=table_expiration_ms,
         )
 
-    logging.info(
-        "Deploying union-all extraction results views and LLM sessions views..."
-    )
-    deploy_extraction_downstream_state_agnostic_views(
-        sandbox_dataset_prefix=args.sandbox_prefix,
-        table_expiration_ms=table_expiration_ms,
-        first_order_configs=[config],
-    )
+    if args.promote_results:
+        logging.info("Promoting extraction results from the sandbox...")
+        promote_sandbox_extraction_results(
+            config=config,
+            er_configs=er_configs,
+            results_sandbox_prefix=args.sandbox_prefix,
+            bq_client=bq_client,
+        )
 
     summaries: list[SandboxExtractionSummary] = []
     if first_order_summary is not None:

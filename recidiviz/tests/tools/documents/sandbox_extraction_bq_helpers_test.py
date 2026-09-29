@@ -18,22 +18,25 @@
 
 import unittest
 from typing import Sequence
+from unittest import mock
+
+from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.documents.extraction.views.llm_extraction_results_view_collector import (
     collect_first_order_llm_extraction_results_view_builders,
     collect_post_entity_resolution_llm_extraction_results_view_builders,
-    collect_state_agnostic_llm_extraction_results_view_builders,
 )
 from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentCollectionSandboxLocation,
     DocumentStoreSandboxContext,
 )
-from recidiviz.documents.views.view_config import (
-    collect_document_extraction_sessions_view_builders,
+from recidiviz.source_tables.extraction_results_source_table_collection import (
+    collect_extraction_results_source_table_collections_for_config,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
@@ -42,14 +45,24 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
-    downstream_state_agnostic_view_input_overrides,
+    PROMOTABLE_SANDBOX_PREFIX,
     first_order_view_input_overrides,
     post_entity_resolution_view_input_overrides,
+    promote_sandbox_extraction_results,
+    promoted_entry_source_map_addresses,
+    promoted_extraction_results_addresses,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
 _DOCUMENT_STORE_PREFIX = "doc_store_prefix"
 _RESULTS_PREFIX = "results_prefix"
+
+
+def _prefixed(prefix: str, address: BigQueryAddress) -> BigQueryAddress:
+    """Returns the |prefix|-scoped copy of |address|."""
+    return BigQueryAddress(
+        dataset_id=f"{prefix}_{address.dataset_id}", table_id=address.table_id
+    )
 
 
 def _addresses(*address_strs: str) -> set[BigQueryAddress]:
@@ -462,62 +475,161 @@ class SandboxOverridesTest(unittest.TestCase):
         )
 
 
-class DownstreamStateAgnosticViewInputOverridesTest(unittest.TestCase):
-    """Tests for downstream_state_agnostic_view_input_overrides."""
+class PromoteSandboxExtractionResultsTest(unittest.TestCase):
+    """Tests for promoted_extraction_results_addresses,
+    promoted_entry_source_map_addresses, and promote_sandbox_extraction_results."""
 
     def setUp(self) -> None:
         self.enterContext(local_project_id_override("recidiviz-staging"))
         self.enterContext(patch_fake_entity_resolution_model_config_name())
         self.first_order_config = fake_first_order_extractor_config()
-        union_all_builders = list(
-            collect_state_agnostic_llm_extraction_results_view_builders(
-                config_module=fake_config,
-                first_order_configs=[self.first_order_config],
+        self.er_configs = [
+            er_config
+            for _, er_config in fake_entity_resolution_extractor_config_pairs()
+        ]
+        self.mock_bq_client = mock.create_autospec(BigQueryClient, instance=True)
+        self.mock_bq_client.copy_table.return_value = mock.create_autospec(
+            bigquery.job.CopyJob, instance=True
+        )
+
+    def test_promoted_addresses_cover_every_table_the_views_read(self) -> None:
+        """Every source table the post-resolution overrides point at the results
+        prefix is promoted, except the tables the first-order view deploy writes."""
+        first_order_view_builders = (
+            collect_first_order_llm_extraction_results_view_builders(
+                [self.first_order_config]
             )
         )
-        sessions_builders = collect_document_extraction_sessions_view_builders()
-        self.collected_builders = union_all_builders + sessions_builders
+        post_resolution_view_builders = (
+            collect_post_entity_resolution_llm_extraction_results_view_builders(
+                [self.first_order_config], config_module=fake_config
+            )
+        )
+        overrides = post_entity_resolution_view_input_overrides(
+            config=self.first_order_config,
+            er_configs=self.er_configs,
+            first_order_view_builders=first_order_view_builders,
+            results_sandbox_prefix=_RESULTS_PREFIX,
+            document_store_sandbox=None,
+        )
+        first_order_view_outputs = {
+            address
+            for builder in first_order_view_builders
+            for address in (builder.address, builder.materialized_address)
+            if address is not None
+        }
+        dag = BigQueryViewDagWalker(
+            [
+                builder.build()
+                for builder in [
+                    *first_order_view_builders,
+                    *post_resolution_view_builders,
+                ]
+            ]
+        )
+        tables_read_by_views = {
+            address
+            for address in dag.get_referenced_source_tables()
+            if overrides.get_sandbox_address(address) is not None
+            and address not in first_order_view_outputs
+        }
 
-    def _addresses_by_override_prefix(
-        self, overrides: BigQueryAddressOverrides
-    ) -> dict[str | None, set[BigQueryAddress]]:
-        """Returns every source table the collected views read, grouped by the
-        sandbox dataset prefix |overrides| re-points it to. The None key holds
-        source tables |overrides| leaves pointing at production.
-        """
-        dag = BigQueryViewDagWalker([b.build() for b in self.collected_builders])
-        addresses_by_prefix: dict[str | None, set[BigQueryAddress]] = {}
-        for address in dag.get_referenced_source_tables():
-            sandbox_address = overrides.get_sandbox_address(address)
-            prefix: str | None
-            if sandbox_address is None:
-                prefix = None
-            else:
-                dataset_suffix = f"_{address.dataset_id}"
-                prefix = sandbox_address.dataset_id.removesuffix(dataset_suffix)
-            addresses_by_prefix.setdefault(prefix, set()).add(address)
-        return addresses_by_prefix
+        result_table_addresses = promoted_extraction_results_addresses(
+            config=self.first_order_config, er_configs=self.er_configs
+        )
+        entry_source_map_addresses = promoted_entry_source_map_addresses(
+            config=self.first_order_config
+        )
+        promoted_addresses = result_table_addresses + entry_source_map_addresses
 
-    def test_sessions_source_tables_are_only_unoverridden_tables(self) -> None:
-        """Verifies that sessions.compartment_sessions_materialized is the only
-        source table the downstream views reference that is intentionally left
-        pointing at production. Every extraction-domain table must be overridden
-        to a sandbox copy. If this test fails with extra addresses in the None
-        bucket, those datasets are missing from the domain set and would be read
-        from production in a sandbox run.
-        """
-        overrides = downstream_state_agnostic_view_input_overrides(
-            first_order_configs=[self.first_order_config],
-            collected_builders=self.collected_builders,
-            sandbox_dataset_prefix=_RESULTS_PREFIX,
-            config_module=fake_config,
-        )
-        addresses_by_prefix = self._addresses_by_override_prefix(overrides)
+        self.assertTrue(entry_source_map_addresses)
+        self.assertEqual(len(promoted_addresses), len(set(promoted_addresses)))
+        self.assertLessEqual(tables_read_by_views, set(promoted_addresses))
+        self.assertFalse(first_order_view_outputs & set(promoted_addresses))
+
+    def test_promoted_addresses_without_entity_resolution(self) -> None:
+        """A run that skipped entity resolution promotes only the first-order result
+        tables."""
+        expected_addresses = [
+            source_table.address
+            for collection in collect_extraction_results_source_table_collections_for_config(
+                self.first_order_config
+            )
+            for source_table in collection.source_tables
+        ]
+
         self.assertEqual(
-            {None, _RESULTS_PREFIX},
-            set(addresses_by_prefix),
+            expected_addresses,
+            promoted_extraction_results_addresses(
+                config=self.first_order_config, er_configs=[]
+            ),
         )
+
+    def test_promote_replaces_result_tables_and_entry_source_maps(
+        self,
+    ) -> None:
+        promote_sandbox_extraction_results(
+            config=self.first_order_config,
+            er_configs=self.er_configs,
+            results_sandbox_prefix=PROMOTABLE_SANDBOX_PREFIX,
+            bq_client=self.mock_bq_client,
+        )
+
+        promoted_addresses = [
+            *promoted_extraction_results_addresses(
+                config=self.first_order_config, er_configs=self.er_configs
+            ),
+            *promoted_entry_source_map_addresses(config=self.first_order_config),
+        ]
         self.assertEqual(
-            _addresses("sessions.compartment_sessions_materialized"),
-            addresses_by_prefix[None],
+            [
+                mock.call(
+                    source_table_address=_prefixed(PROMOTABLE_SANDBOX_PREFIX, address),
+                    destination_dataset_id=address.dataset_id,
+                    overwrite=True,
+                )
+                for address in promoted_addresses
+            ],
+            self.mock_bq_client.copy_table.call_args_list,
         )
+        self.mock_bq_client.insert_into_table_from_table_async.assert_not_called()
+        self.mock_bq_client.wait_for_big_query_jobs.assert_called_once()
+        self.assertEqual(
+            len(promoted_addresses),
+            len(self.mock_bq_client.wait_for_big_query_jobs.call_args.args[0]),
+        )
+
+    def test_promote_rejects_other_sandbox_prefix(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"Only results under sandbox prefix \[{PROMOTABLE_SANDBOX_PREFIX}\] "
+            rf"can be promoted, found \[{_RESULTS_PREFIX}\]",
+        ):
+            promote_sandbox_extraction_results(
+                config=self.first_order_config,
+                er_configs=self.er_configs,
+                results_sandbox_prefix=_RESULTS_PREFIX,
+                bq_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.insert_into_table_from_table_async.assert_not_called()
+        self.mock_bq_client.copy_table.assert_not_called()
+
+    def test_promote_rejects_narrowed_run(self) -> None:
+        narrowed_config = self.first_order_config.with_sandbox_narrowing(
+            document_limit=1, root_entity_ids=None, external_id_type=None
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot promote results for extractor .* because the run is narrowed",
+        ):
+            promote_sandbox_extraction_results(
+                config=narrowed_config,
+                er_configs=[],
+                results_sandbox_prefix=PROMOTABLE_SANDBOX_PREFIX,
+                bq_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.insert_into_table_from_table_async.assert_not_called()
+        self.mock_bq_client.copy_table.assert_not_called()

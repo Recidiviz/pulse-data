@@ -348,16 +348,6 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
                 return_value="test-user",
             )
         )
-        # The downstream view deploy step reads from state-specific sandbox-prefixed
-        # views that don't exist in the emulator (they're only deployed when the full
-        # view-deploy pipeline runs in BQ). Patch it out so the emulator tests focus
-        # on extraction logic.
-        self.enterContext(
-            mock.patch.object(
-                run_sandbox_extraction,
-                "deploy_extraction_downstream_state_agnostic_views",
-            )
-        )
         self._point_config_resolution_at_fake_module()
         # The ER composite-document generation query emits an entry_source_map
         # ARRAY<STRUCT<...TIMESTAMP...>>, which the BQ emulator cannot round-trip
@@ -462,7 +452,8 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
     def _args(
         self,
         *,
-        document_limit: int | None = None,
+        document_limit: int | None,
+        promote_results: bool,
     ) -> argparse.Namespace:
         return argparse.Namespace(
             state_code=STATE_CODE,
@@ -474,16 +465,23 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
             table_expiration_days=1,
             labels=[],
             pre_view_materialization_delay_minutes=0,
+            promote_results=promote_results,
         )
 
     def _run(
-        self, *, document_limit: int | None = None
+        self,
+        *,
+        document_limit: int | None = None,
+        promote_results: bool = False,
     ) -> list[SandboxExtractionSummary]:
         # project_id() reads the metadata server, which is disabled under test; the
         # override points it at the emulator project the way main() does locally.
         with local_project_id_override(BQ_EMULATOR_PROJECT_ID):
             return run_sandbox_extraction.run_sandbox_extraction(
-                self._args(document_limit=document_limit)
+                self._args(
+                    document_limit=document_limit,
+                    promote_results=promote_results,
+                )
             )
 
     def _seed_person_external_ids(self) -> None:
@@ -804,6 +802,51 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
         )
         with SessionFactory.using_database(self.database_key) as session:
             self.assertEqual(1, session.query(schema.LLMExtractionJob).count())
+
+    def test_promote_results(self) -> None:
+        # The flag promotes the first-order results and every entity group's
+        # entity-resolution results.
+        self._seed_document_store_tables()
+        self._seed_person_external_ids()
+        self._seed_entity_resolution_composites()
+        self._seed_gcs_for_documents()
+
+        with mock.patch.object(
+            run_sandbox_extraction, "promote_sandbox_extraction_results"
+        ) as mock_promote:
+            self._run(promote_results=True)
+
+        mock_promote.assert_called_once_with(
+            config=mock.ANY,
+            er_configs=mock.ANY,
+            results_sandbox_prefix=SANDBOX_PREFIX,
+            bq_client=self.bq_client,
+        )
+        call_kwargs = mock_promote.call_args.kwargs
+        self.assertEqual(
+            EXTRACTOR_COLLECTION_NAME, call_kwargs["config"].extractor_collection.name
+        )
+        self.assertEqual(
+            [
+                FAKE_LOCATION_ER_COLLECTION_NAME,
+                FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
+                FAKE_PAY_RATE_ER_COLLECTION_NAME,
+            ],
+            [
+                er_config.extractor_collection.name
+                for er_config in call_kwargs["er_configs"]
+            ],
+        )
+
+    def test_no_promotion_without_flag(self) -> None:
+        self._seed_person_external_ids()
+
+        with mock.patch.object(
+            run_sandbox_extraction, "promote_sandbox_extraction_results"
+        ) as mock_promote:
+            self._run()
+
+        mock_promote.assert_not_called()
 
     def test_no_eligible_documents_returns_empty(self) -> None:
         # No documents in the doc store, so the eligible-document query returns
