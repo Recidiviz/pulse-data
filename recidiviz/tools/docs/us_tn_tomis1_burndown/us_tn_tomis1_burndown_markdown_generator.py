@@ -206,7 +206,7 @@ def generate_raw_data_migrations_table() -> str:
     ]
     for file_tag in sorted(US_TN_RAW_DATA_MIGRATION_STATUSES):
         lines.append(
-            f"| `{file_tag}` | {US_TN_RAW_DATA_MIGRATION_STATUSES[file_tag]} |"
+            f"| `{file_tag}` | {US_TN_RAW_DATA_MIGRATION_STATUSES[file_tag].value} |"
         )
     lines.append("")
     return "\n".join(lines)

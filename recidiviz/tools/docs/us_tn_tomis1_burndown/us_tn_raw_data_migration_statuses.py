@@ -18,23 +18,41 @@
 (Tranche 1/Phase 1 of the TOMIS 1.0 -> TOMIS 2.0 migration, see TN-1939):
 whether the data-quality issue each migrations_<file_tag>.py module corrects
 has been confirmed to still exist (or not) in the corresponding MiCase data.
-
-
 """
-US_TN_RAW_DATA_MIGRATION_STATUSES: dict[str, str] = {
-    "AssignedStaff": "NEEDS INVESTIGATION",
-    "Classification": "NEEDS INVESTIGATION",
-    "Diversion": "NEEDS INVESTIGATION",
-    "JOCharge": "NEEDS INVESTIGATION",
-    "JOIdentification": "NEEDS INVESTIGATION",
-    "JOMiscellaneous": "NEEDS INVESTIGATION",
-    "JOSentence": "NEEDS INVESTIGATION",
-    "JOSpecialConditions": "NEEDS INVESTIGATION",
-    "OffenderMovement": "NEEDS INVESTIGATION",
-    "OffenderName": "NEEDS INVESTIGATION",
-    "Sentence": "NEEDS INVESTIGATION",
-    "SentenceAction": "NEEDS INVESTIGATION",
-    "SentenceMiscellaneous": "NEEDS INVESTIGATION",
-    "StaffEmailByAlias": "NEEDS INVESTIGATION",
-    "SupervisionPlan": "NEEDS INVESTIGATION",
+from enum import Enum
+
+
+class RawDataMigrationStatus(Enum):
+    """Completion status of a single US_TN raw data migration, tracked by file
+    tag in US_TN_RAW_DATA_MIGRATION_STATUSES.
+    """
+
+    # investigation needed to determine if we need to migrate the migrations for this file
+    # tag
+    NEEDS_INVESTIGATION = "NEEDS INVESTIGATION"
+    # we determined that we need to migrate the migrations for this file tag, but the work
+    # to actually migrate them is not yet complete
+    REQUIRES_MIGRATION = "REQUIRES MIGRATION"
+    # migration for this file tag is complete
+    MIGRATED = "MIGRATED"
+    # no migration is needed -- either it is fixed at the source data or no longer relevant
+    NO_MIGRATION_NEEDED = "NO MIGRATION NEEDED"
+
+
+US_TN_RAW_DATA_MIGRATION_STATUSES: dict[str, RawDataMigrationStatus] = {
+    "AssignedStaff": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "Classification": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "Diversion": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "JOCharge": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "JOIdentification": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "JOMiscellaneous": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "JOSentence": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "JOSpecialConditions": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "OffenderMovement": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "OffenderName": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "Sentence": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "SentenceAction": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "SentenceMiscellaneous": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "StaffEmailByAlias": RawDataMigrationStatus.NO_MIGRATION_NEEDED,
+    "SupervisionPlan": RawDataMigrationStatus.NEEDS_INVESTIGATION,
 }

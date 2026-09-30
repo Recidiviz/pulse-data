@@ -28,6 +28,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collecto
     DirectIngestRawTableMigrationCollector,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.docs.us_tn_tomis1_burndown.us_tn_raw_data_migration_statuses import (
+    RawDataMigrationStatus,
+)
 from recidiviz.tools.docs.us_tn_tomis1_burndown.us_tn_tomis_migration_reporting import (
     raise_if_names_untracked_or_stale,
 )
@@ -50,7 +53,9 @@ def us_tn_real_raw_data_migration_file_tags() -> frozenset[str]:
     )
 
 
-def validate_raw_data_migration_statuses(statuses: dict[str, str]) -> None:
+def validate_raw_data_migration_statuses(
+    statuses: dict[str, RawDataMigrationStatus]
+) -> None:
     """Raises ValueError unless `statuses` classifies every real US_TN raw
     data migration file tag (see us_tn_raw_data_migration_statuses.py): every
     real file tag with a migrations module must appear as a key, and every
