@@ -24,6 +24,7 @@ import attr
 from recidiviz.common import demographics
 from recidiviz.common.constants.identity import IdentifierType, NameUse, PersonType
 from recidiviz.common.constants.tenants import Tenant
+from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
     IdentityClusterAlias,
@@ -122,3 +123,60 @@ class AttributeRowTypesTest(TestCase):
                 "produce; if the field legitimately stays unpopulated, add it "
                 "to _UNPOPULATED_FIELD_EXEMPTIONS.",
             )
+
+
+class CanonicalFlagTest(TestCase):
+    """Tests which single-valued attribute rows build_attribute_rows marks
+    canonical."""
+
+    @staticmethod
+    def _build_rows(cluster: IdentityCluster) -> list[schema.IdentityBase]:
+        return build_attribute_rows(
+            cluster,
+            recidiviz_id=_RECIDIVIZ_ID,
+            now=_NOW,
+            committed_email_hashes=set(),
+            staged_email_hashes=set(),
+        )
+
+    @staticmethod
+    def _single_row(
+        rows: list[schema.IdentityBase], row_type: type[schema.IdentityBase]
+    ) -> schema.IdentityBase:
+        matches = [row for row in rows if isinstance(row, row_type)]
+        if len(matches) != 1:
+            raise ValueError(
+                f"Expected exactly one [{row_type.__name__}] row, found "
+                f"[{len(matches)}]."
+            )
+        return matches[0]
+
+    def test_known_values_are_canonical(self) -> None:
+        rows = self._build_rows(_FULLY_POPULATED_CLUSTER)
+        self.assertTrue(self._single_row(rows, schema.DateOfBirth).canonical)
+        self.assertTrue(self._single_row(rows, schema.Gender).canonical)
+        self.assertTrue(self._single_row(rows, schema.Sex).canonical)
+        self.assertTrue(self._single_row(rows, schema.Ethnicity).canonical)
+
+    def test_unknown_values_are_not_canonical(self) -> None:
+        for unknown_name in ("EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN"):
+            with self.subTest(unknown_name):
+                cluster = attr.evolve(
+                    _FULLY_POPULATED_CLUSTER,
+                    gender=IdentityClusterGender(
+                        tenant=_TENANT, gender=demographics.Gender[unknown_name]
+                    ),
+                    sex=IdentityClusterSex(
+                        tenant=_TENANT, sex=demographics.Sex[unknown_name]
+                    ),
+                    ethnicity=IdentityClusterEthnicity(
+                        tenant=_TENANT,
+                        ethnicity=demographics.Ethnicity[unknown_name],
+                    ),
+                )
+                rows = self._build_rows(cluster)
+                self.assertFalse(self._single_row(rows, schema.Gender).canonical)
+                self.assertFalse(self._single_row(rows, schema.Sex).canonical)
+                self.assertFalse(self._single_row(rows, schema.Ethnicity).canonical)
+                # A real date has no unknown variant, so it stays canonical.
+                self.assertTrue(self._single_row(rows, schema.DateOfBirth).canonical)

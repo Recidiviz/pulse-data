@@ -19,7 +19,9 @@ import datetime
 import logging
 import uuid
 
+from recidiviz.common import entity_enum_strings
 from recidiviz.common.constants.identity import IdentifierType, NameUse, SourceType
+from recidiviz.common.entity_enum import EntityEnum
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.persistence.entity.identity.identity_cluster_entities import (
     IdentityCluster,
@@ -40,6 +42,13 @@ ATTRIBUTE_ROW_TYPES: tuple[type[schema.IdentityBase], ...] = (
     schema.Ethnicity,
     schema.PhoneNumber,
     schema.Email,
+)
+
+# Internal/external "unknown" placeholders carry no real information, so a
+# gender, sex, or ethnicity with one of these values is left non-canonical
+# rather than surfaced as the identity's canonical value.
+_UNKNOWN_ATTRIBUTE_VALUES: frozenset[str] = frozenset(
+    {entity_enum_strings.internal_unknown, entity_enum_strings.external_unknown}
 )
 
 
@@ -75,7 +84,10 @@ def build_attribute_rows(
     All attribute rows carry source_type EXTERNAL_DATA_SYSTEM because the
     cluster's values come from the identity ingest pipeline. Canonical selection
     is trivial while that is the only source type writing to the service, so
-    each single-valued attribute row is marked canonical.
+    each single-valued attribute row is marked canonical. A gender, sex, or
+    ethnicity whose value is an internal or external unknown is the one
+    exception, left non-canonical because an unknown is not an authoritative
+    value to surface.
 
     Args:
         cluster: The cluster whose values become attribute rows.
@@ -106,7 +118,7 @@ def build_attribute_rows(
             schema.Gender(
                 recidiviz_id=recidiviz_id,
                 gender=cluster.gender.gender,
-                canonical=True,
+                canonical=_is_canonical_attribute_value(cluster.gender.gender),
                 canonical_locked=False,
                 source_type=SourceType.EXTERNAL_DATA_SYSTEM,
                 source_product_app=None,
@@ -118,7 +130,7 @@ def build_attribute_rows(
             schema.Sex(
                 recidiviz_id=recidiviz_id,
                 sex=cluster.sex.sex,
-                canonical=True,
+                canonical=_is_canonical_attribute_value(cluster.sex.sex),
                 canonical_locked=False,
                 source_type=SourceType.EXTERNAL_DATA_SYSTEM,
                 source_product_app=None,
@@ -130,7 +142,7 @@ def build_attribute_rows(
             schema.Ethnicity(
                 recidiviz_id=recidiviz_id,
                 ethnicity=cluster.ethnicity.ethnicity,
-                canonical=True,
+                canonical=_is_canonical_attribute_value(cluster.ethnicity.ethnicity),
                 canonical_locked=False,
                 source_type=SourceType.EXTERNAL_DATA_SYSTEM,
                 source_product_app=None,
@@ -230,6 +242,12 @@ def _build_name_rows(
             )
         )
     return rows
+
+
+def _is_canonical_attribute_value(value: EntityEnum) -> bool:
+    """Returns False for an internal or external unknown value, which should
+    not be surfaced as canonical, and True for any real value."""
+    return value.value not in _UNKNOWN_ATTRIBUTE_VALUES
 
 
 def _build_email_rows(

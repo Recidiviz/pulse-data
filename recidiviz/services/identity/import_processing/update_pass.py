@@ -151,7 +151,8 @@ def _replace_external_data_system_attributes(
     Only EXTERNAL_DATA_SYSTEM rows exist while import is the only writer; once
     other source types write locked rows, how a locked row of another source
     interacts with the incoming value is decided as part of cross-source
-    canonical selection (OBT-37723).
+    canonical selection, which is deferred until PRODUCT_APP or ADMIN_OVERRIDE
+    writers exist and there is more than one source to arbitrate between.
     """
     own_email_hashes = {
         row.address_hash
