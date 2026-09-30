@@ -9,7 +9,6 @@ tables:
     date_range:
       dynamic:
         type: "RANGE"
-        # TODO(#4934): Use YEAR instead
         converter: "CUSTOM"
         columns:
           Start: "MONTH"
