@@ -321,6 +321,11 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "state_task_deadline_dtp",
         "state_task_deadline_tpr",
     },
+    "us_ix_ingest_view_results": {
+        "charges",
+        "incarceration_sentence_v2",
+        "supervision_sentence_v2",
+    },
     "us_mi_ingest_view_results": {
         "sentences_v2",
         "state_charge_v2",
