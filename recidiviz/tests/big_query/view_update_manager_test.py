@@ -21,7 +21,7 @@ from typing import Optional, Set, Tuple
 from unittest import mock
 from unittest.mock import create_autospec, patch
 
-from google.cloud import bigquery
+from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -76,6 +76,7 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client_constructor = self.client_patcher.start()
         self.mock_client = self.mock_client_constructor.return_value
+        self.mock_client.get_table.return_value.table_type = "VIEW"
 
         def fake_materialize_view_to_table(
             view: BigQueryView,
@@ -107,9 +108,8 @@ class ViewManagerTest(unittest.TestCase):
         self,
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates
-        a dataset if necessary, and updates all views built by the view builders. The
-        only deleted table calls should be the ones from recreating views so changes
-        can be reflected in schema."""
+        a dataset if necessary, updates all views built by the view builders, and
+        does not delete existing views."""
         sample_views = [
             {
                 "view_id": "my_fake_view",
@@ -148,23 +148,8 @@ class ViewManagerTest(unittest.TestCase):
             [mock.call(view_builder.build()) for view_builder in mock_view_builders],
             any_order=True,
         )
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_other_fake_view"
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
+        self.mock_client.delete_table.assert_not_called()
         self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(
         self,
@@ -226,6 +211,7 @@ class ViewManagerTest(unittest.TestCase):
                 raise ValueError(f"Unexpected view id [{address.table_id}]")
             view = view_builder.build()
             return mock.MagicMock(
+                table_type="VIEW",
                 view_query=view.view_query,
                 schema=schema,
                 clustering_fields=None,
@@ -262,31 +248,8 @@ class ViewManagerTest(unittest.TestCase):
         # Materialize is not called!
         self.mock_client.materialize_view_to_table.assert_not_called()
 
-        # Only delete calls should be from recreating views to have changes updating
-        # in schema from the dag walker
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_fake_view_2"
-                    ),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_fake_view_3"
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
+        self.mock_client.delete_table.assert_not_called()
         self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 3)
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_materialize_children(
         self,
@@ -356,6 +319,7 @@ class ViewManagerTest(unittest.TestCase):
                 # Old view query is different for this view!
                 view_query = "SELECT 1 LIMIT 0"
             return mock.MagicMock(
+                table_type="VIEW",
                 view_query=view_query,
                 schema=schema,
                 clustering_fields=None,
@@ -416,31 +380,8 @@ class ViewManagerTest(unittest.TestCase):
             ],
             any_order=True,
         )
-        # Only delete calls should be from recreating views to have changes updating in
-        # schema from the dag walker
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_fake_view_2"
-                    ),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_fake_view_3"
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
+        self.mock_client.delete_table.assert_not_called()
         self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 3)
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_different_datasets(
         self,
@@ -489,25 +430,8 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
 
-        # Only delete calls should be from recreating views to have changes updating in
-        # schema from the dag walker
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME_2, table_id="my_fake_view_2"
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
+        self.mock_client.delete_table.assert_not_called()
         self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_dataset_override(
         self,
@@ -616,36 +540,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.delete_dataset.assert_not_called()
-        # Only delete calls should be from recreating views to have changes updating
-        # in schema from the dag walker
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id="test_prefix_" + _DATASET_NAME,
-                        table_id="my_fake_view",
-                    ),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id="test_prefix_" + _DATASET_NAME,
-                        table_id="my_other_fake_view",
-                    ),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id="test_prefix_" + _DATASET_NAME,
-                        table_id="materialized_view",
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
-        self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 3)
+        self.mock_client.delete_table.assert_not_called()
 
     def test_create_dataset_and_update_views(self) -> None:
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
@@ -690,25 +585,63 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(view) for view in mock_views], any_order=True
         )
-        # Only delete calls should be from recreating views to have changes updating
-        # in schema from the dag walker
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
-                    not_found_ok=True,
-                ),
-                mock.call(
-                    BigQueryAddress(
-                        dataset_id=_DATASET_NAME, table_id="my_other_fake_view"
-                    ),
-                    not_found_ok=True,
-                ),
-            ],
-            any_order=True,
-        )
+        self.mock_client.delete_table.assert_not_called()
         self.mock_client.delete_dataset.assert_not_called()
-        self.assertEqual(self.mock_client.delete_table.call_count, 2)
+
+    def _deploy_single_view_with_existing_table_type(
+        self, existing_table_type: str | None
+    ) -> SimpleBigQueryViewBuilder:
+        """Deploys one unmaterialized view whose address holds an existing object of
+        type existing_table_type, or nothing if existing_table_type is None. Returns
+        the deployed view builder.
+        """
+        view_builder = SimpleBigQueryViewBuilder(
+            dataset_id=_DATASET_NAME,
+            view_id="my_fake_view",
+            description="my_fake_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=False,
+            schema=MINIMAL_SCHEMA,
+        )
+        if existing_table_type is None:
+            self.mock_client.get_table.side_effect = exceptions.NotFound("not found")
+        else:
+            self.mock_client.get_table.return_value = mock.MagicMock(
+                table_type=existing_table_type
+            )
+
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
+            view_builders_to_update=[view_builder],
+            rematerialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+        )
+        return view_builder
+
+    def test_existing_table_at_view_address_is_deleted_before_create(self) -> None:
+        view_builder = self._deploy_single_view_with_existing_table_type("TABLE")
+
+        view_address = BigQueryAddress(
+            dataset_id=_DATASET_NAME, table_id="my_fake_view"
+        )
+        self.mock_client.delete_table.assert_called_once_with(
+            view_address, not_found_ok=True
+        )
+        call_names = [name for name, _, _ in self.mock_client.mock_calls]
+        self.assertLess(
+            call_names.index("delete_table"),
+            call_names.index("create_or_update_view"),
+        )
+        self.mock_client.create_or_update_view.assert_called_once_with(
+            view_builder.build()
+        )
+
+    def test_missing_view_is_not_deleted(self) -> None:
+        view_builder = self._deploy_single_view_with_existing_table_type(None)
+
+        self.mock_client.delete_table.assert_not_called()
+        self.mock_client.create_or_update_view.assert_called_once_with(
+            view_builder.build()
+        )
 
     def test_no_duplicate_views_in_update_list(self) -> None:
         all_views = [
@@ -844,6 +777,7 @@ class ViewManagerTest(unittest.TestCase):
             if address.table_id == mock_view_builders[0].view_id:
                 view = mock_view_builders[0].build()
                 return mock.MagicMock(
+                    table_type="VIEW",
                     view_query=view.view_query,
                     schema=schema,
                     clustering_fields=None,
@@ -853,6 +787,7 @@ class ViewManagerTest(unittest.TestCase):
             if address.table_id == mock_view_builders[1].view_id:
                 view = mock_view_builders[1].build()
                 return mock.MagicMock(
+                    table_type="VIEW",
                     view_query=view.view_query,
                     schema=schema,
                     clustering_fields=None,
@@ -973,6 +908,7 @@ class ViewManagerTest(unittest.TestCase):
             if address.table_id == mock_view_builders[0].view_id:
                 view = mock_view_builders[0].build()
                 return mock.MagicMock(
+                    table_type="VIEW",
                     view_query=view.view_query,
                     schema=schema,
                     clustering_fields=None,
@@ -982,6 +918,7 @@ class ViewManagerTest(unittest.TestCase):
             if address.table_id == mock_view_builders[1].view_id:
                 view = mock_view_builders[1].build()
                 return mock.MagicMock(
+                    table_type="VIEW",
                     view_query=view.view_query,
                     schema=schema,
                     clustering_fields=None,
@@ -1056,6 +993,7 @@ class ViewManagerTest(unittest.TestCase):
                     time_partitioning=None,
                 )
             return mock.MagicMock(
+                table_type="VIEW",
                 view_query=view.view_query,
                 schema=deployed_bq_schema,
                 clustering_fields=None,

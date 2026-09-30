@@ -366,14 +366,9 @@ def _create_or_update_view_and_materialize_if_necessary(
         except exceptions.NotFound:
             pass
 
-    # TODO(#59021): The below TO-DO might not be relevant now that we use
-    # CREATE OR REPLACE VIEW
-    # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to
-    # delete and recreate the view for changes from underlying tables to be reflected in
-    # its schema.
-    # TODO(#30446): Once `parent_changed` reflects changes to the schemas of source
-    # tables as well, only delete this `if existing_view is not None and parent_changed`.
-    if existing_view is not None:
+    # CREATE OR REPLACE VIEW fails if a non-view object, such as a table, exists at
+    # the view address.
+    if existing_view is not None and existing_view.table_type != "VIEW":
         # If there is a network blip and this delete retries, we still want it to
         # succeed so as to not halt the view update, so we set `not_found_ok=True`. If
         # for some reason someone else deleted it out from under us, it is also okay to
