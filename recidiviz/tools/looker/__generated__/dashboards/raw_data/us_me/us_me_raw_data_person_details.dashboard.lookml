@@ -393,8 +393,8 @@
     type: looker_grid
     fields: [us_me_CIS_128_EMPLOYMENT_HISTORY.primary_key,
       us_me_CIS_128_EMPLOYMENT_HISTORY.EMPLOYMENT_HISTORY_ID,
-      us_me_CIS_128_EMPLOYMENT_HISTORY.START_DATE__raw,
-      us_me_CIS_128_EMPLOYMENT_HISTORY.END_DATE__raw,
+      us_me_CIS_128_EMPLOYMENT_HISTORY.START_DATE,
+      us_me_CIS_128_EMPLOYMENT_HISTORY.END_DATE,
       us_me_CIS_128_EMPLOYMENT_HISTORY.INCOME_NUM,
       us_me_CIS_128_EMPLOYMENT_HISTORY.EMPLOYER_TX,
       us_me_CIS_128_EMPLOYMENT_HISTORY.OCCUPATION_TX,
@@ -410,7 +410,7 @@
       us_me_CIS_128_EMPLOYMENT_HISTORY.MODIFIED_ON_DATE,
       us_me_CIS_128_EMPLOYMENT_HISTORY.file_id,
       us_me_CIS_128_EMPLOYMENT_HISTORY.is_deleted]
-    sorts: [us_me_CIS_128_EMPLOYMENT_HISTORY.START_DATE__raw]
+    sorts: [us_me_CIS_128_EMPLOYMENT_HISTORY.EMPLOYMENT_HISTORY_ID]
     note_display: hover
     note_text: "Contains a record of employment status information for persons under MDOC custody."
     listen: 
@@ -430,24 +430,24 @@
       us_me_CIS_130_INVESTIGATION.Cis_100_Client_Id,
       us_me_CIS_130_INVESTIGATION.Cis_900_Employee_Id,
       us_me_CIS_130_INVESTIGATION.Cis_908_Ccs_Location_Id,
-      us_me_CIS_130_INVESTIGATION.Complete_Date__raw,
-      us_me_CIS_130_INVESTIGATION.Complete_Date_Changed_Date__raw,
+      us_me_CIS_130_INVESTIGATION.Complete_Date,
+      us_me_CIS_130_INVESTIGATION.Complete_Date_Changed_Date,
       us_me_CIS_130_INVESTIGATION.Created_By_Tx,
-      us_me_CIS_130_INVESTIGATION.Created_On_Date__raw,
-      us_me_CIS_130_INVESTIGATION.Due_Date__raw,
+      us_me_CIS_130_INVESTIGATION.Created_On_Date,
+      us_me_CIS_130_INVESTIGATION.Due_Date,
       us_me_CIS_130_INVESTIGATION.First_Name,
       us_me_CIS_130_INVESTIGATION.Investigation_Id,
       us_me_CIS_130_INVESTIGATION.Last_Name,
       us_me_CIS_130_INVESTIGATION.Middle_Name,
       us_me_CIS_130_INVESTIGATION.Modified_By_Tx,
-      us_me_CIS_130_INVESTIGATION.Modified_On_Date__raw,
+      us_me_CIS_130_INVESTIGATION.Modified_On_Date,
       us_me_CIS_130_INVESTIGATION.Notes_Tx,
-      us_me_CIS_130_INVESTIGATION.Request_Date__raw,
+      us_me_CIS_130_INVESTIGATION.Request_Date,
       us_me_CIS_130_INVESTIGATION.Cis_1301_Type_Cd,
       us_me_CIS_130_INVESTIGATION.Cis_9902_Court_Cd,
       us_me_CIS_130_INVESTIGATION.file_id,
       us_me_CIS_130_INVESTIGATION.is_deleted]
-    sorts: [us_me_CIS_130_INVESTIGATION.Complete_Date__raw]
+    sorts: [us_me_CIS_130_INVESTIGATION.Investigation_Id]
     note_display: hover
     note_text: "This table lists details about investigations, each row is unique to a client and investigation ID."
     listen: 
@@ -510,8 +510,8 @@
     fields: [us_me_CIS_160_DRUG_SCREENING.primary_key,
       us_me_CIS_160_DRUG_SCREENING.DRUG_SCREENING_ID,
       us_me_CIS_160_DRUG_SCREENING.SPECIMEN_NUM_TX,
-      us_me_CIS_160_DRUG_SCREENING.TEST_DATE__raw,
-      us_me_CIS_160_DRUG_SCREENING.POSTED_DATE__raw,
+      us_me_CIS_160_DRUG_SCREENING.TEST_DATE,
+      us_me_CIS_160_DRUG_SCREENING.POSTED_DATE,
       us_me_CIS_160_DRUG_SCREENING.BAC_NUM,
       us_me_CIS_160_DRUG_SCREENING.NOTES_TX,
       us_me_CIS_160_DRUG_SCREENING.CIS_100_CLIENT_ID,
@@ -532,7 +532,7 @@
       us_me_CIS_160_DRUG_SCREENING.MODIFIED_ON_DATE,
       us_me_CIS_160_DRUG_SCREENING.file_id,
       us_me_CIS_160_DRUG_SCREENING.is_deleted]
-    sorts: [us_me_CIS_160_DRUG_SCREENING.TEST_DATE__raw]
+    sorts: [us_me_CIS_160_DRUG_SCREENING.DRUG_SCREENING_ID]
     note_display: hover
     note_text: "Contains a record of each drug screen a client has taken."
     listen: 
@@ -661,8 +661,8 @@
     type: looker_grid
     fields: [us_me_CIS_210_JOB_ASSIGN.primary_key,
       us_me_CIS_210_JOB_ASSIGN.ASSIGN_ID,
-      us_me_CIS_210_JOB_ASSIGN.START_DATE__raw,
-      us_me_CIS_210_JOB_ASSIGN.END_DATE__raw,
+      us_me_CIS_210_JOB_ASSIGN.START_DATE,
+      us_me_CIS_210_JOB_ASSIGN.END_DATE,
       us_me_CIS_210_JOB_ASSIGN.HOLD_IND,
       us_me_CIS_210_JOB_ASSIGN.FIRED_IND,
       us_me_CIS_210_JOB_ASSIGN.NOTES_TX,
@@ -685,12 +685,12 @@
       us_me_CIS_210_JOB_ASSIGN.CIS_100_CLIENT_ID,
       us_me_CIS_210_JOB_ASSIGN.LOGICAL_DELETE_IND,
       us_me_CIS_210_JOB_ASSIGN.CREATED_BY_TX,
-      us_me_CIS_210_JOB_ASSIGN.CREATED_ON_DATE__raw,
+      us_me_CIS_210_JOB_ASSIGN.CREATED_ON_DATE,
       us_me_CIS_210_JOB_ASSIGN.MODIFIED_BY_TX,
-      us_me_CIS_210_JOB_ASSIGN.MODIFIED_ON_DATE__raw,
+      us_me_CIS_210_JOB_ASSIGN.MODIFIED_ON_DATE,
       us_me_CIS_210_JOB_ASSIGN.file_id,
       us_me_CIS_210_JOB_ASSIGN.is_deleted]
-    sorts: [us_me_CIS_210_JOB_ASSIGN.START_DATE__raw]
+    sorts: [us_me_CIS_210_JOB_ASSIGN.ASSIGN_ID]
     note_display: hover
     note_text: "TODO(#23225): Fill in the file description"
     listen: 
@@ -744,7 +744,7 @@
     type: looker_grid
     fields: [us_me_CIS_300_Personal_Property.primary_key,
       us_me_CIS_300_Personal_Property.PP_ID,
-      us_me_CIS_300_Personal_Property.ENTRY_DATE__raw,
+      us_me_CIS_300_Personal_Property.ENTRY_DATE,
       us_me_CIS_300_Personal_Property.DESCRIPTION_TX,
       us_me_CIS_300_Personal_Property.THIRD_PARTY_NAME,
       us_me_CIS_300_Personal_Property.MESSAGE_IND,
@@ -758,12 +758,12 @@
       us_me_CIS_300_Personal_Property.CIS_908_CCS_LOCATION_ID,
       us_me_CIS_300_Personal_Property.CIS_900_EMPLOYEE_ID,
       us_me_CIS_300_Personal_Property.CREATED_BY_TX,
-      us_me_CIS_300_Personal_Property.CREATED_ON_DATE__raw,
+      us_me_CIS_300_Personal_Property.CREATED_ON_DATE,
       us_me_CIS_300_Personal_Property.MODIFIED_BY_TX,
-      us_me_CIS_300_Personal_Property.MODIFIED_ON_DATE__raw,
+      us_me_CIS_300_Personal_Property.MODIFIED_ON_DATE,
       us_me_CIS_300_Personal_Property.file_id,
       us_me_CIS_300_Personal_Property.is_deleted]
-    sorts: [us_me_CIS_300_Personal_Property.ENTRY_DATE__raw]
+    sorts: [us_me_CIS_300_Personal_Property.PP_ID]
     note_display: hover
     note_text: "TODO(#23225): Fill in the file description"
     listen: 
@@ -912,11 +912,11 @@
       us_me_CIS_324_AWOL.CIS_3240_AWOL_TYPE_CD,
       us_me_CIS_324_AWOL.CIS_908_ESCAPED_FROM_ID,
       us_me_CIS_324_AWOL.CIS_908_RETURNED_TO_ID,
-      us_me_CIS_324_AWOL.AWOL_DATE__raw,
-      us_me_CIS_324_AWOL.AWOL_TIME__raw,
-      us_me_CIS_324_AWOL.INEFFCT_DATE__raw,
-      us_me_CIS_324_AWOL.RETURN_DATE__raw,
-      us_me_CIS_324_AWOL.RETURN_TIME__raw,
+      us_me_CIS_324_AWOL.AWOL_DATE,
+      us_me_CIS_324_AWOL.AWOL_TIME,
+      us_me_CIS_324_AWOL.INEFFCT_DATE,
+      us_me_CIS_324_AWOL.RETURN_DATE,
+      us_me_CIS_324_AWOL.RETURN_TIME,
       us_me_CIS_324_AWOL.DAYS_UAL_NUM,
       us_me_CIS_324_AWOL.NOTES_TX,
       us_me_CIS_324_AWOL.CLOTHING_TX,
@@ -927,7 +927,7 @@
       us_me_CIS_324_AWOL.MODIFIED_ON_DATE,
       us_me_CIS_324_AWOL.file_id,
       us_me_CIS_324_AWOL.is_deleted]
-    sorts: [us_me_CIS_324_AWOL.AWOL_DATE__raw]
+    sorts: [us_me_CIS_324_AWOL.AWOL_ID]
     note_display: hover
     note_text: "This table lists all escapes from DOC Facilities. It also includes escapes from community confinement (SCCP) and Parole."
     listen: 
@@ -1139,8 +1139,8 @@
     fields: [us_me_CIS_425_MAIN_PROG.primary_key,
       us_me_CIS_425_MAIN_PROG.ENROLL_ID,
       us_me_CIS_425_MAIN_PROG.CIS_100_CLIENT_ID,
-      us_me_CIS_425_MAIN_PROG.TERM_END_DATE__raw,
-      us_me_CIS_425_MAIN_PROG.LSI_DATE__raw,
+      us_me_CIS_425_MAIN_PROG.TERM_END_DATE,
+      us_me_CIS_425_MAIN_PROG.LSI_DATE,
       us_me_CIS_425_MAIN_PROG.LSI_SCORE_NUM,
       us_me_CIS_425_MAIN_PROG.NOTES_TX,
       us_me_CIS_425_MAIN_PROG.UNADMIN_TX,
@@ -1161,7 +1161,7 @@
       us_me_CIS_425_MAIN_PROG.MODIFIED_ON_DATE,
       us_me_CIS_425_MAIN_PROG.file_id,
       us_me_CIS_425_MAIN_PROG.is_deleted]
-    sorts: [us_me_CIS_425_MAIN_PROG.TERM_END_DATE__raw]
+    sorts: [us_me_CIS_425_MAIN_PROG.ENROLL_ID]
     note_display: hover
     note_text: "This table lists the programs that a client is enrolled in."
     listen: 
@@ -1197,11 +1197,11 @@
       us_me_CIS_430_ASSESSMENT.Court_Ind,
       us_me_CIS_430_ASSESSMENT.Created_By_Tx,
       us_me_CIS_430_ASSESSMENT.Created_On_Date,
-      us_me_CIS_430_ASSESSMENT.Dead_Line_Date__raw,
+      us_me_CIS_430_ASSESSMENT.Dead_Line_Date,
       us_me_CIS_430_ASSESSMENT.Education_Ind,
       us_me_CIS_430_ASSESSMENT.Ext_Int_Assess_Rb,
       us_me_CIS_430_ASSESSMENT.Intake_Tx,
-      us_me_CIS_430_ASSESSMENT.Interview_Date__raw,
+      us_me_CIS_430_ASSESSMENT.Interview_Date,
       us_me_CIS_430_ASSESSMENT.Logical_Delete_Ind,
       us_me_CIS_430_ASSESSMENT.Modified_By_Tx,
       us_me_CIS_430_ASSESSMENT.Modified_On_Date,
@@ -1209,10 +1209,10 @@
       us_me_CIS_430_ASSESSMENT.Other_Type_Tx,
       us_me_CIS_430_ASSESSMENT.Result_Tx,
       us_me_CIS_430_ASSESSMENT.Score_Tx,
-      us_me_CIS_430_ASSESSMENT.Start_Date__raw,
+      us_me_CIS_430_ASSESSMENT.Start_Date,
       us_me_CIS_430_ASSESSMENT.file_id,
       us_me_CIS_430_ASSESSMENT.is_deleted]
-    sorts: [us_me_CIS_430_ASSESSMENT.Dead_Line_Date__raw]
+    sorts: [us_me_CIS_430_ASSESSMENT.Assess_Id, us_me_CIS_430_ASSESSMENT.Cis_100_Client_Id]
     note_display: hover
     note_text: "This table includes all of the assessments that a client has completed."
     listen: 

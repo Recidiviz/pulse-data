@@ -637,10 +637,10 @@
       us_pa_dbo_LSIR.ParoleCountID,
       us_pa_dbo_LSIR.LsirID,
       us_pa_dbo_LSIR.LSIRScore,
-      us_pa_dbo_LSIR.InterviewDate__raw,
+      us_pa_dbo_LSIR.InterviewDate,
       us_pa_dbo_LSIR.file_id,
       us_pa_dbo_LSIR.is_deleted]
-    sorts: [us_pa_dbo_LSIR.InterviewDate__raw]
+    sorts: [us_pa_dbo_LSIR.ParoleNumber, us_pa_dbo_LSIR.ParoleCountID, us_pa_dbo_LSIR.LsirID]
     note_display: hover
     note_text: "A table containing LSIR assessments which have been conducted for people under supervision by PADOC. NOT REFRESHED REGULARLY."
     listen: 
@@ -1535,7 +1535,7 @@
       us_pa_dbo_SentenceGroup.senTrueMinDate__raw,
       us_pa_dbo_SentenceGroup.file_id,
       us_pa_dbo_SentenceGroup.is_deleted]
-    sorts: [us_pa_dbo_SentenceGroup.SentEffectiveDate__raw]
+    sorts: [us_pa_dbo_SentenceGroup.SenAddDate__raw]
     note_display: hover
     note_text: "A table containing \"roll-up\" information about all sentences in a group of sentences to incarceration or supervision to be served under the authority of PADOC. Because probation is administered almost entirely at the county level in Pennsylvania and PADOC/PBPP primarily deals with parole, the majority of sentences in this table are sentences to incarceration that in turn led to releases to parole. Consequently, much of this information is redundant of the information directly from the DOC side of PADOC via `dbo_Senrec` and may not be as reliable/consistent."
     listen: 
