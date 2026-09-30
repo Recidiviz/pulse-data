@@ -52,7 +52,8 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         view_query_template: str,
         # Schema for the deployed view. In materialized tables, this will
         # match exactly. In non-materialized views, REQUIRED fields are created
-        # as NULLABLE, and everything else will match.
+        # as NULLABLE, and everything else will match. This must be non-empty if
+        # the view is part of a deployed view graph.
         schema: Sequence[BigQueryViewColumn],
         # Address this table will be materialized to, if this is a view that is
         # materialized.
@@ -430,6 +431,8 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
+        # Schema for the deployed view. Must be non-empty if the view is part
+        # of a deployed view graph. Scratch views may pass an empty list.
         schema: Sequence[BigQueryViewColumn],
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
