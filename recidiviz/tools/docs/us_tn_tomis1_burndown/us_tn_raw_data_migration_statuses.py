@@ -41,7 +41,7 @@ class RawDataMigrationStatus(Enum):
 
 US_TN_RAW_DATA_MIGRATION_STATUSES: dict[str, RawDataMigrationStatus] = {
     "AssignedStaff": RawDataMigrationStatus.NEEDS_INVESTIGATION,
-    "Classification": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "Classification": RawDataMigrationStatus.MIGRATED,
     "Diversion": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "JOCharge": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "JOIdentification": RawDataMigrationStatus.NEEDS_INVESTIGATION,
