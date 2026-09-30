@@ -30,7 +30,7 @@ from recidiviz.issue_tracking.issue import UrlIssue
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 TODO_RE = re.compile(r"[^A-Za-z]TODO")
-VALID_TODO_RE = re.compile(
+VALID_TO_DO_RE = re.compile(
     rf"{GithubIssue.todo_regex()}|{LinearIssue.todo_regex()}|{UrlIssue.todo_regex()}"
 )
 
@@ -77,7 +77,7 @@ def check_file(filepath: str) -> list[str]:
     try:
         with open(filepath, encoding="utf-8", errors="replace") as f:
             for lineno, line in enumerate(f, start=1):
-                if TODO_RE.search(line) and not VALID_TODO_RE.search(line):
+                if TODO_RE.search(line) and not VALID_TO_DO_RE.search(line):
                     invalid_lines.append(f"{filepath}:{lineno}:{line.rstrip()}")
     except (OSError, UnicodeDecodeError):
         pass

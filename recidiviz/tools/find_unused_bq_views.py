@@ -41,39 +41,14 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     CLASSIFICATION_VIEWS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.notion_linear_roadmap_latest import (
     NOTION_LINEAR_ROADMAP_LATEST_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
-    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
-    PSA_RISK_SCORES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_certificate_awards_to_sentence_credits import (
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
-    US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
-    US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
-    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_releases_preprocessed import (
-    US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_sapphire_preprocessed import (
-    US_PA_SAPPHIRE_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
-    US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
@@ -81,50 +56,14 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
-from recidiviz.calculator.query.state.views.earned_time.us_co_certificate_proposed_credit import (
-    VIEW_BUILDER as US_CO_CERTIFICATE_PROPOSED_CREDIT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.earned_time.us_co_edovo_proposed_credit import (
-    VIEW_BUILDER as US_CO_EDOVO_PROPOSED_CREDIT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.earned_time.us_co_ged_proposed_credit import (
-    VIEW_BUILDER as US_CO_GED_PROPOSED_CREDIT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.earned_time.us_co_work_proposed_credit import (
-    VIEW_BUILDER as US_CO_WORK_PROPOSED_CREDIT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
-    SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.meetings.meetings_source_table_view_collector import (
-    collect_meetings_source_table_view_builders,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors_archive import (
-    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_officers_archive import (
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
-    SUPERVISION_STATE_METRICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
-    CASE_NOTES_DATA_STORE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reentry.case_manager import (
-    REENTRY_CASE_MANAGER_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reentry.client import (
-    REENTRY_CLIENT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
-    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.us_ar_edovo_id_match import (
     US_AR_EDOVO_ID_MATCH_VIEW_BUILDER,
@@ -141,38 +80,11 @@ from recidiviz.calculator.query.state.views.reference.us_ne_edovo_id_match impor
 from recidiviz.calculator.query.state.views.reference.us_nyc_edovo_id_match import (
     US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
-    SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
-    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
-    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.cohort_month_index import (
     COHORT_MONTH_INDEX_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
-    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
-    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_compartment_level_1_sessions import (
-    PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
-    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
-    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions_validation.session_incarceration_admissions_to_dataflow_disaggregated import (
     SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
@@ -198,27 +110,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.tasks.snooze_status_archive import (
     SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER as TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archive import (
-    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.intercom_upload_user_available_actions import (
-    INTERCOM_UPLOAD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
-    OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_marked_ineligible import (
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_MARKED_INELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_pending_approval import (
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_PENDING_APPROVAL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_waiting_for_transfer import (
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_without_referral import (
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.dataset_config import (
     document_extraction_results_unvalidated_dataset_for_region,
@@ -228,7 +119,6 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.metrics.export.exported_view_utils import (
     get_all_metric_export_view_addresses,
 )
@@ -240,10 +130,6 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_type import SpanType
 from recidiviz.outcome_metrics.dataset_config import TRANSITIONS_DATASET
-from recidiviz.persistence.entity.activity import entities as state_entities
-from recidiviz.persistence.entity.entities_bq_schema import (
-    get_bq_schema_for_entities_module,
-)
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
@@ -262,14 +148,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.oras_risk_level_is
 from recidiviz.task_eligibility.criteria.state_specific.us_az.risk_release_assessment_level_is_minimum import (
     VIEW_BUILDER as US_AZ_RISK_RELEASE_ASSESSMENT_LEVEL_IS_MINIMUM,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed import (
-    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_security_classification_committee_reviews_greater_than_observed import (
-    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
-    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
+from recidiviz.tools.unreferenced_bq_view_exemptions import (
+    PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP,
+    TEMPORARY_GRANDFATHERED_UNREFERENCED_ADDRESSES_TO_KEEP,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -299,16 +180,15 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 }
 
 
-# List of views that are not referenced in Looker but should still be kept around,
-# listed along with the reason we still need to keep them. Please be as descriptive
-# as possible when updating this list, including a point of contact and date we were
-# still using this view where possible.
-UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+# Views that are temporarily unreferenced - they will gain a downstream consumer
+# or be deleted - and cite a tracking issue for that follow-up work. Every entry
+# MUST cite that tracking issue, e.g. TODO(#12345).
+TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     **{
         BigQueryAddress.from_str(f"us_co_document_extraction_results.{table_id}"): (
             "Public LLM document extraction results view. The cross-state union "
-            "views that read these are added to the calculation graph in #98833. "
-            "(Emily Turner, 2026-09-18)"
+            "views that read these are added to the calculation graph in "
+            "TODO(#98833). (Emily Turner, 2026-09-18)"
         )
         for table_id in [
             "case_note_employment_info",
@@ -321,37 +201,23 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "case_note_payment_info_payments",
         ]
     },
-    **{
-        BigQueryAddress(
-            dataset_id=STATE_BASE_VIEWS_DATASET,
-            table_id=f"{table_id}_view",
-        ): (
-            "These views materialize to form the `state` dataset which should not be "
-            "referenced by any downstream view (Anna Geiduschek, 2024-09-18)"
-        )
-        for table_id in get_bq_schema_for_entities_module(state_entities)
-    },
-    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: (
-        "Consolidated archive view for supervision task records across states. "
-        "Will be used for cross-state task analysis (Sophie Pepin, 2026-04-22)"
-    ),
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New tasks snooze status archive view. "
-        "Downstream work is tracked in OBT-39438. (Daniel McLaughlin, 2026-07-29)"
+        "Downstream work is tracked in TODO(OBT-39438). (Daniel McLaughlin, 2026-07-29)"
     ),
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER.address: (
         "New CO certificate-to-sentence-credit reconciliation view, consumed directly "
         "by the AET retroactive-credit research notebook rather than a tracked "
-        "downstream BQ view. Tracked in OBT-29669. (Jessica Liu, 2026-08-04)"
+        "downstream BQ view. Tracked in TODO(OBT-29669). (Jessica Liu, 2026-08-04)"
     ),
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER.address: (
-        "CO Work Credit Writeback File #1 for new Earned Credit Policy. Work tracked in OBT-37777."
+        "CO Work Credit Writeback File #1 for new Earned Credit Policy. Work tracked in TODO(OBT-37777)."
         "(Shalin Brahmbhatt, 2026-08-26)"
     ),
     **{
         builder.address: (
             "Per-state lookup of Edovo-reported IDs to person_id. No downstream "
-            "consumer yet; wiring one up is tracked in OBT-52080. "
+            "consumer yet; wiring one up is tracked in TODO(OBT-52080). "
             "(Kris Gerig, 2026-09-25)"
         )
         for builder in [
@@ -362,41 +228,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
         ]
     },
-    US_CO_WORK_PROPOSED_CREDIT_VIEW_BUILDER.address: (
-        "CO work-credit candidates for the eOMIS writeback. The consumer is "
-        "CoSentenceCreditFlow, which reads the materialized table from Python, so "
-        "no BQ view references it. Tracked in CO-8. (Daren Nkomo, 2026-09-10)"
-    ),
-    US_CO_EDOVO_PROPOSED_CREDIT_VIEW_BUILDER.address: (
-        "CO Edovo credit candidates for the eOMIS writeback, mirroring "
-        "us_co_work_proposed_credit above. The consumer is CoSentenceCreditFlow, "
-        "which reads the materialized table from Python, so no BQ view "
-        "references it. This view's only BQ-view parent, "
-        "us_co_edovo_records_preprocessed, has no other consumer either. "
-        "Tracked in CO-525. (Jessica Liu, 2026-09-25)"
-    ),
-    US_CO_CERTIFICATE_PROPOSED_CREDIT_VIEW_BUILDER.address: (
-        "CO certificate-award credit candidates for the eOMIS writeback, mirroring "
-        "us_co_work_proposed_credit above. The consumer is CoSentenceCreditFlow, "
-        "which reads the materialized table from Python, so no BQ view "
-        "references it. Tracked in CO-618. (Jessica Liu, 2026-09-28)"
-    ),
-    US_CO_GED_PROPOSED_CREDIT_VIEW_BUILDER.address: (
-        "CO GED grandfather-clause credit candidates for the eOMIS writeback, "
-        "mirroring us_co_work_proposed_credit above. The consumer is "
-        "CoSentenceCreditFlow, which reads the materialized table from Python, "
-        "so no BQ view references it. us_co_ged_credit_ledger, whose only "
-        "consumer is this view, has no other consumer either. Tracked in "
-        "CO-560. (Jessica Liu, 2026-09-28)"
-    ),
     SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
         "Temporarily unused after being pulled out of needs_cst_reassessment.py "
         "pending an investigation into probation end-date ingest reliability for "
-        "dual-supervision clients. Tracked in MO-2. (Regina Medina, 2026-08-31)"
+        "dual-supervision clients. Tracked in TODO(MO-2). (Regina Medina, 2026-08-31)"
     ),
     SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
         "Only consumer is the NOT-version above, which is itself temporarily "
-        "unused for the same reason. Tracked in MO-2. (Regina Medina, 2026-08-31)"
+        "unused for the same reason. Tracked in TODO(MO-2). (Regina Medina, 2026-08-31)"
     ),
     **{
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
@@ -422,176 +261,34 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         BigQueryAddress(dataset_id="llm_eval__label_studio", table_id=table_id): (
             "Label Studio submitted-tasks views, the coverage/backlog denominator "
             "for the annotation views. Not yet consumed downstream; consumers are "
-            "tracked in OBT-46570 and OBT-49399. (Ben Packer, 2026-09-16)"
+            "tracked in TODO(OBT-46570) and TODO(OBT-49399). (Ben Packer, 2026-09-16)"
         )
         for table_id in [
             "cni_accuracy_per_field_submitted_tasks",
             "meetings_module_quality_submitted_tasks",
         ]
     },
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
-        "This is a new table in the sentence_sessions dataset which will soon be used in "
-        "PSI work (Nick Tallant, 2025-01-30)"
-    ),
-    **{
-        VIEW_BUILDER.address: (
-            "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
-            "on migration status. They are used primarily for validation and development work but some are referenced in"
-            "TES critiera. The list below encompasses those not yet referenced downstream (Andrew Gaidus, 2025-03-18)"
-        )
-        for VIEW_BUILDER in SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS
-        if VIEW_BUILDER.address.table_id
-        in [
-            "overlapping_sentence_serving_periods",
-            "sentence_id_to_consecutive_sentence_id",
-            "sentence_imposed_group_summary",
-            "most_severe_sentence_and_charge_spans",
-            "current_person_prison_projected_dates",
-        ]
-    },
-    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
-        "This is a generic view that helps understand LSI-R scoring which may be "
-        "useful for future analysis. (Anna 5/16/24)"
-    ),
-    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER.address: (
-        "Not currently referenced but has been used for ad-hoc related research questions "
-        "in the past and could become useful for census-based looker dashboards in the future"
-        "(mayukas 12/21/23)"
-    ),
-    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER.address: (
-        "Not currently referenced but captures state-specific logic that may eventually be relevant to "
-        "assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
-    ),
-    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
-        "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
-        "provides a template for an eventual  schema addition to support parole boards info. "
-        "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER.address: (
-        "Not currently referenced but captures state-specific logic that may eventually be relevant "
-        "to assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
-    ),
-    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
-        "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
-        "provides a template for an eventual  schema addition to support parole boards info. "
-        "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    REENTRY_CLIENT_VIEW_BUILDER.address: (
-        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
-        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
-    ),
-    REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
-        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
-        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
-    ),
-    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER.address: (
-        "Deployed view queried directly by CPA tools (ut_enablement.py) via BQ — not "
-        "tracked as used by the metric export pipeline. (Mahmoud Osman, 2026-06-17)"
-    ),
-    BigQueryAddress(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        table_id="most_recent_incarceration_admission_metrics_not_included_in_state_population",
-    ): (
-        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
-        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/24)"
-    ),
-    BigQueryAddress(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        table_id="most_recent_incarceration_commitment_from_supervision_metrics_not_included_in_state_population",
-    ): (
-        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
-        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/24)"
-    ),
-    BigQueryAddress(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        table_id="most_recent_incarceration_release_metrics_not_included_in_state_population",
-    ): (
-        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
-        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/24)"
-    ),
-    BigQueryAddress(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        table_id="most_recent_supervision_out_of_state_population_metrics",
-    ): (
-        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
-        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/24)"
-    ),
-    PSA_RISK_SCORES_VIEW_BUILDER.address: (
-        "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"
-    ),
-    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER.address: (
-        "Not currently referenced but is used in downstream analytical work for which "
-        "we are interested in aggregating across in state and out of state (Andrew Gaidus 1/25/24)"
-    ),
-    PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER.address: (
-        "Will be used in subsequent prs for workflows criteria (Samantha Norcia 6/20/25)"
-    ),
-    US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: (
-        "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
-        "#21518 is completed (Damini Sharma 1/25/24)"
-    ),
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER.address: (
-        "Will be referenced for zero grants impact tracking (see #34607) (Gina Valderrama 10/29/24)"
-    ),
-    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER.address: (
-        "Referenced in validations that detect major changes in officer counts (Alexa Batino 8/5/25)"
+        "Will be referenced for zero grants impact tracking (see TODO(#34607)) (Gina Valderrama 10/29/24)"
     ),
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER.address: (
-        "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
+        "Will be referenced to support Outliers analytics work (see TODO(#27576)) (Alexa Batino 2/14/24)"
     ),
     RECIDIVISM_EVENT_VIEW_BUILDER.address: (
-        "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
+        "Referenced by PSI Case Insights BigQuery writer (see TODO(#30876)) (Ben Packer 7/9/24) "
     ),
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
-        "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
-    ),
-    CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
-        "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
-    ),
-    OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER.address: (
-        "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
-        " (Justine Kunz 12/03/2024)"
-    ),
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER.address: (
-        "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
-    ),
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_MARKED_INELIGIBLE_VIEW_BUILDER.address: (
-        "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
-    ),
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_PENDING_APPROVAL_VIEW_BUILDER.address: (
-        "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
-    ),
-    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER.address: (
-        "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
-    ),
-    US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
-        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
+        "Will be used for MO RH eligibility spans (see TODO(#31337)) (Daniel Allen 7/24/24)"
     ),
     US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION.address: (
-        "Temporarily unused until AZ administrative superivsion V1 is deprecated. (AZ-392) (Elise Gonzalez 9/18/2026)"
+        "Temporarily unused until AZ administrative superivsion V1 is deprecated. TODO(AZ-392) (Elise Gonzalez 9/18/2026)"
     ),
     US_AZ_ORAS_RISK_LEVEL_IS_MEDIUM_OR_LOWER.address: (
-        "Temporarily unused until AZ administrative superivsion V1 is deprecated. (AZ-392) (Elise Gonzalez 9/16/2026)"
+        "Temporarily unused until AZ administrative superivsion V1 is deprecated. TODO(AZ-392) (Elise Gonzalez 9/16/2026)"
     ),
     US_AZ_RISK_RELEASE_ASSESSMENT_LEVEL_IS_MINIMUM.address: (
-        "Temporarily unused until AZ administrative superivsion V1 is deprecated. (AZ-392) (Elise Gonzalez 9/16/2026)"
+        "Temporarily unused until AZ administrative superivsion V1 is deprecated. TODO(AZ-392) (Elise Gonzalez 9/16/2026)"
     ),
-    US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
-        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
-    ),
-    US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
-        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
-    ),
-    SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
-        "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
-    ),
-    BigQueryAddress.from_str(
-        "static_reference_data_views.county_fips"
-    ): "This is currently unused but could be a useful reference table so we're keeping it for now (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incarceration_facility_names"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
@@ -604,165 +301,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incident_infraction_descriptions"
     ): "TODO(#53520): This will be used to add incident and infraction descriptions to facility tools (Lydia Masr, 11/26/2025)",
-    SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
-        "This view will be used just for validation views (Samantha Norcia, 11/10/2025)"
-    ),
-    BigQueryAddress.from_str(
-        "validation_views__jii_texting.incorrect_contact_reminder"
-    ): (
-        "Validation view for JII texting contact reminders (Samantha Norcia, 12/18/2025)"
-    ),
-    BigQueryAddress.from_str("validation_views__jii_texting.invalid_numbers"): (
-        "Validation view for JII texting invalid phone numbers (Samantha Norcia, 12/18/2025)"
-    ),
-    US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER.address: (
-        "Preprocessed incarceration release type view in PA, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
-    ),
-    US_PA_SAPPHIRE_PREPROCESSED_VIEW_BUILDER.address: (
-        "Preprocessed view of sapphire data in PA, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
-    ),
-    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: (
-        "Preprocessed view of address and form information entry, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
-    ),
-    US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER.address: (
-        "View used in IA program inventory sheet. https://docs.google.com/spreadsheets/d/1YhwoBkBEBIQ9-k3NX8qxSL3aYobD2xTGYoZhBuefRaw/edit?usp=sharing"
-        "(CJ Knoble, 04/13/26)"
-    ),
-    US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER.address: (
-        "View used in IA program inventory sheet. https://docs.google.com/spreadsheets/d/1YhwoBkBEBIQ9-k3NX8qxSL3aYobD2xTGYoZhBuefRaw/edit?usp=sharing"
-        "(CJ Knoble, 04/13/26)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_client_page_segment_events"): (
-        "Union view for client page segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_case_note_search_segment_events"): (
-        "Union view for case note search segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str(
-        "segment_events.all_case_planning_assistant_segment_events"
-    ): (
-        "Union view for case planning assistant segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str(
-        "segment_events.all_district_director_dashboard_segment_events"
-    ): (
-        "Union view for district director dashboard segment events, table is empty since there are no trackable events. "
-        "(Justine Kunz, 2026-05-25)"
-    ),
-    BigQueryAddress.from_str(
-        "segment_events.all_jii_opportunities_app_segment_events"
-    ): (
-        "Union view for JII opportunities app segment events. Kept for potential future use. "
-        "(Jenna Bellassai, 2026-08-28)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_lantern_segment_events"): (
-        "Union view for lantern segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-01-06)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_meetings_segment_events"): (
-        "Union view for meetings segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2026-04-15)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_milestones_segment_events"): (
-        "Union view for milestones segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_pathways_segment_events"): (
-        "Union view for pathways segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-01-06)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_psi_case_insights_segment_events"): (
-        "Union view for PSI case insights segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str(
-        "segment_events.all_supervisor_homepage_opportunities_module_segment_events"
-    ): (
-        "Union view for supervisor homepage opportunities module segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    BigQueryAddress.from_str(
-        "segment_events.all_supervisor_homepage_last_login_module_segment_events"
-    ): (
-        "Union view for supervisor homepage last login module segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2026-01-15)"
-    ),
-    BigQueryAddress.from_str("segment_events.all_vitals_segment_events"): (
-        "Union view for vitals segment events. Kept for potential future use. "
-        "(Mayuka Sarukkai, 2025-01-06)"
-    ),
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_tx_task_oriented_offices"
-    ): (
-        "Identifies which TX DPOs are task-oriented and, if applicable, the date that the office became task-oriented. See #57891 for task-oriented definition and other info. Created for analysis of task-oriented offices in TX. Kept for potential future use. "
-        "(Feona, 2026-01-28)"
-    ),
-    BigQueryAddress.from_str(
-        "vitals_report_views.us_nd_officer_vitals_report"
-    ): "Referenced by a connected sheet shared with ND leadership "
-    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
-    "(Justine Kunz, 2026-03-09)",
-    BigQueryAddress.from_str(
-        "vitals_report_views.us_nd_region_vitals_report"
-    ): "Referenced by a connected sheet shared with ND leadership "
-    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
-    "(Justine Kunz, 2026-03-09)",
-    BigQueryAddress.from_str(
-        "vitals_report_views.us_nd_state_vitals_report"
-    ): "Referenced by a connected sheet shared with ND leadership "
-    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
-    "(Justine Kunz, 2026-03-09)",
-    BigQueryAddress.from_str(
-        "analyst_data.us_tn_annex_sessions_preprocessed"
-    ): "View not yet referenced, but will be helpful for 2026 classification pilot monitoring and we intend to reference it in the future (Ethan Oro, 2026-03-13)",
-    BigQueryAddress.from_str("segment_events.all_public_pathways_segment_events"): (
-        "Union view for Public Pathways segment events. Kept for potential future use. "
-        "(Jen Overgaag, 2026-04-21)"
-    ),
-    BigQueryAddress.from_str("llm_eval__llmaj.notetaking_evaluation_scores_parsed"): (
-        "New LLMAJ eval scores view. Will be referenced by a calibration view joining "
-        "LLMAJ scores to human Label Studio annotations (mayukas, 2026-07-08)"
-    ),
-    **{
-        view_builder.address: (
-            "Cross-state union view over meetings dashboards source tables. Not yet "
-            "referenced downstream; a stacked follow-up PR will consume "
-            "NotetakingEvaluationRun (an LLMAJ eval view) and eventually the "
-            "remaining tables here. (Dana Hoffman, 2026-08-11)"
-        )
-        for view_builder in collect_meetings_source_table_view_builders()
-    },
-    BigQueryAddress.from_str("analyst_data.us_ar_education_records_preprocessed"): (
-        "Preprocessed staging view for AR education records. Used by the FDE process to "
-        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
-        "(Jessica Liu, 07/01/2026)"
-    ),
-    BigQueryAddress.from_str("analyst_data.us_ar_program_achievements_preprocessed"): (
-        "Preprocessed staging view for AR program achievements. Used by the FDE process to "
-        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
-        "(Jessica Liu, 07/01/2026)"
-    ),
-    BigQueryAddress.from_str("analyst_data.us_ar_program_referrals_preprocessed"): (
-        "Preprocessed staging view for AR program referrals. Used by the FDE process to "
-        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
-        "(Jessica Liu, 07/01/2026)"
-    ),
-    BigQueryAddress.from_str("earned_time.us_ar_ged_course_completions"): (
-        "View for AR GED course completions. Used by the FDE process to "
-        "determine downstream writeback logic for Arkansas GED AET reconciliation. "
-        "(Jessica Liu, 07/01/2026)"
-    ),
-    BigQueryAddress.from_str("earned_time.eomis_writeback_run_history"): (
-        "Operator-facing run history for eOMIS writeback runs, queried directly "
-        "when reviewing what a run did. Not referenced by downstream views. "
-        "(Josh Leichty, 07/31/2026)"
-    ),
-    INTERCOM_UPLOAD_VIEW_BUILDER.address: (
-        "View used by the Apps Script job that uploads user attribute data into Intercom (Justine Kunz, 7/30/2026)"
-    ),
+}
+
+UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    # temporary exemptions, each citing a tracking issue for removal
+    **TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP,
+    # do NOT add to this list
+    **TEMPORARY_GRANDFATHERED_UNREFERENCED_ADDRESSES_TO_KEEP,
+    # views with no plan to reference
+    **PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP,
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

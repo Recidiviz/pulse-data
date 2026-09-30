@@ -33,7 +33,7 @@ recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Re
 # TODO(#44755): Once all exemptions have been removed from this test file, we can remove Doppler ownership
 recidiviz/tests/calculator/query/state/views/reference/workflows_opportunity_configs_test.py @Recidiviz/doppler-codeowners
 recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler-codeowners
-recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
+recidiviz/tools/unreferenced_bq_view_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/source_tables/untracked_source_table_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler-codeowners
 recidiviz/tests/tools/validate_source_visibility_integration_test.py @Recidiviz/doppler-codeowners

@@ -19,6 +19,9 @@ deprecated views.
 """
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
+    PSA_RISK_SCORES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
@@ -141,7 +144,6 @@ from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_
 from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_before_full_term_completion_date import (
     VIEW_BUILDER as SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.tools.find_unused_bq_views import PSA_RISK_SCORES_VIEW_BUILDER
 from recidiviz.utils.types import assert_subclass
 from recidiviz.validation.configured_validations import (
     NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
