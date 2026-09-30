@@ -359,6 +359,9 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "supervision_staff_location_period",
         "supervision_staff_role_period",
         "supervision_staff_supervisor_period",
+        "charges_from_crim_hist",
+        "dbo_Senrec_v2",
+        "parole_sentences",
     },
     "us_tn_ingest_view_results": {
         "SupervisionContacts",
