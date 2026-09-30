@@ -85,6 +85,10 @@ _PILOT_DATASET_ALLOWLIST: frozenset[str] | None = frozenset(
         "us_ma_raw_data_secondary",
         "us_ny_raw_data",
         "us_ny_raw_data_secondary",
+        "us_nc_raw_data",
+        "us_nc_raw_data_secondary",
+        "us_ut_raw_data",
+        "us_ut_raw_data_secondary",
         "supplemental_data",
         "dataflow_metrics",
     }
