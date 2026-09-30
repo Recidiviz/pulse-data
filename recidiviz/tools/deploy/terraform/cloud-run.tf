@@ -179,6 +179,15 @@ resource "google_service_account_iam_member" "application_data_import_iam" {
   member = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
 }
 
+# Lets the Case Triage service account mint an OIDC token as itself for the
+# Workflows writeback Cloud Tasks. Without serviceAccountUser on itself,
+# creating the task fails with an iam.serviceAccounts.actAs permission error.
+resource "google_service_account_iam_member" "case_triage_act_as_self" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # Env vars from secrets
 data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
 
