@@ -686,7 +686,7 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
 
     @property
     def valid_filenames_message(self) -> bytes:
-        return b"Invalid filename unknown_file.csv, must match one of: prison_population_over_time, prison_population_by_dimension"
+        return b"Invalid filename unknown_file.csv, must match one of: prison_population_over_time, prison_population_by_dimension, prison_admissions_and_releases"
 
     @property
     def bucket_function(self) -> Callable[[], str]:

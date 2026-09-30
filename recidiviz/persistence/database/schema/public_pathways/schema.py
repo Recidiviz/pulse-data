@@ -251,3 +251,33 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
     charge_description = Column(String, nullable=False)
     # Admission reason
     admission_reason = Column(String, primary_key=True, nullable=False)
+
+
+class PublicPrisonAdmissionsAndReleases(PublicPathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.public_pathways.event_level.prison_admissions_and_releases`
+
+    Records represent individual admission or release events and may not be unique across all
+    columns, so a surrogate autoincrement primary key is used instead of a composite natural key.
+    The `id` column is not present in the BQ view or exported CSV; Postgres generates it on import.
+    """
+
+    __tablename__ = "prison_admissions_and_releases"
+    __table_args__ = (Index("prison_admissions_and_releases_state_code", "state_code"),)
+
+    # Surrogate PK — not in the BQ view or CSV; auto-assigned by Postgres on each import.
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    # State code
+    state_code = Column(String, nullable=False)
+    # Whether the event is an admission or a release
+    movement_category = Column(String, nullable=False)
+    # Date of the admission or release movement
+    movement_date = Column(Date, nullable=False)
+    # Binned time period between movement_date and the current date
+    time_period = Column(String, nullable=False)
+    # Custody type of the person being admitted/released
+    custody_type = Column(String, nullable=False)
+    # Movement type
+    movement_type = Column(String, nullable=True)
+    # Release to community supervision indicator
+    release_to_community_supervision_indicator = Column(String, nullable=True)

@@ -179,6 +179,7 @@ class TestSchemaUtils(unittest.TestCase):
         persistence_table_names = ["us_tn_caf_edits"]
         public_pathways_table_names = [
             "metric_metadata",
+            "prison_admissions_and_releases",
             "prison_population_over_time",
             "prison_population_by_dimension",
         ]

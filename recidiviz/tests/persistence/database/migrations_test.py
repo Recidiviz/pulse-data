@@ -595,6 +595,8 @@ class TestPublicPathwaysMigrations(MigrationsTestBase):
         # process. For indices on these tables, we're ok if they are not defined in
         # migrations.
         return {
+            "prison_admissions_and_releases_pkey",
+            "prison_admissions_and_releases_state_code",
             "prison_population_by_dimension_age_group",
             "prison_population_by_dimension_facility",
             "prison_population_by_dimension_gender",

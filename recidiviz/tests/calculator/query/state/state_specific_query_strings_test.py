@@ -45,6 +45,11 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "charge_county",
             "offense_type",
             "date_in_population",
+            "movement_dates",
+            "movement_categories",
+            "custody_types",
+            "movement_types",
+            "release_to_community_supervision_indicators",
         ]
         for cte in expected_ctes:
             self.assertIn(cte, result, f"Missing CTE: {cte}")
@@ -61,6 +66,11 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "charge_county_id_name_map",
             "offense_type_id_name_map",
             "date_in_population_id_name_map",
+            "movement_date_id_name_map",
+            "movement_category_id_name_map",
+            "custody_type_id_name_map",
+            "movement_type_id_name_map",
+            "release_to_community_supervision_indicator_id_name_map",
         ]
         for col in expected_columns:
             self.assertIn(col, result, f"Missing column: {col}")
@@ -85,6 +95,11 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "LEFT JOIN charge_county",
             "LEFT JOIN offense_type",
             "LEFT JOIN date_in_population",
+            "LEFT JOIN movement_dates",
+            "LEFT JOIN movement_categories",
+            "LEFT JOIN custody_types",
+            "LEFT JOIN movement_types",
+            "LEFT JOIN release_to_community_supervision_indicators",
         ]
         for join in expected_joins:
             self.assertIn(join, result, f"Missing join: {join}")
@@ -93,13 +108,13 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
 
     def test_all_joins_use_state_code(self) -> None:
         result = get_pathways_dynamic_filter_options()
-        # Count USING (state_code): 13 outer LEFT JOINs between top-level CTEs +
+        # Count USING (state_code): 18 outer LEFT JOINs between top-level CTEs +
         # 1 inner INNER JOIN against UNDER_CUSTODY_all inside the
-        # date_in_population CTE = 14.
+        # date_in_population CTE = 19.
         using_count = result.count("USING (state_code)") + result.count(
             "USING(state_code)"
         )
-        self.assertEqual(using_count, 14)
+        self.assertEqual(using_count, 19)
 
 
 class GetPathwaysLastUpdatedDateTests(unittest.TestCase):
