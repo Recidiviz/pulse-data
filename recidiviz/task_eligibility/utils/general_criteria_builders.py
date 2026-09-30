@@ -668,8 +668,10 @@ def custody_level_vs_recommended_criteria_view_builder(
     # the criteria's state, so the two cannot disagree.
     recommended_classification_spans_view_builder: RecommendedClassificationSpansBigQueryViewBuilder,
     # The comparison that satisfies this criteria (e.g. HIGHER_THAN_RECOMMENDED for a
-    # downgrade task).
-    comparison: CustodyLevelVsRecommended,
+    # downgrade task). None satisfies the criteria for every span the policy covers,
+    # which is how a task carries a policy's current and recommended levels as reasons
+    # without gating on them.
+    comparison: CustodyLevelVsRecommended | None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns the view builder for a criteria describing when a resident's current
     custody level compares to their recommended level in the given way.
@@ -728,13 +730,9 @@ def custody_level_vs_recommended_criteria(
             for every span the policy covers, which is how a task carries a policy's
             current and recommended levels as reasons without gating on them.
 
-    TODO(#63762): The next_eligibility_spans CTE and final SELECT below duplicate the
-    tail of custody_level_compared_to_recommended, which the policies still on
-    hand-written recommended-custody-level views use. The two copies are semantically
-    identical but differ in whitespace and comment wording, so sharing one fragment
-    would rewrite the rendered SQL of the five live criteria views built on that
-    function. Results would be unchanged, but they would all need re-materializing, so
-    factor the shared tail out when that function is deleted rather than now.
+    TODO(#63762): custody_level_compared_to_recommended no longer has any callers.
+    Delete it. Its upcoming_eligibility_date logic has a bug fixed here, where a met
+    span followed by another met span reported the later span's start date.
     """
     spans_address = (
         recommended_classification_spans_view_builder.table_for_query.format_address_for_query_template()
@@ -756,21 +754,17 @@ def custody_level_vs_recommended_criteria(
             {meets_criteria_expression} AS meets_criteria,
         FROM `{spans_address}`
     ),
-    /* This CTE aggregates meets_criteria_spans for rows where custody_level,
-    recommended_custody_level, and meets_criteria have the same value so that we can set the
-    upcoming_eligibility_date as the start date for that row if meets_criteria, and the
-    start_date for the upcoming row, if the next row meets_criteria. In this way we get the
-    date at which someone becomes eligible for rows where clients are eligible, or the next
-    date at which the client will become eligible */
-    next_eligibility_spans AS (
+    /* Flags each met span that begins an unbroken run of met spans: one not directly
+    preceded (with no gap) by another met span. A change in custody_level or
+    recommended_custody_level while still met does not start a new run. */
+    eligibility_run_starts AS (
         SELECT
             *,
-            CASE
-                WHEN LEAD(meets_criteria) OVER (PARTITION BY person_id ORDER BY start_date)
-                    THEN LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date)
-                WHEN meets_criteria THEN start_date
-                ELSE NULL
-            END AS upcoming_eligibility_date
+            meets_criteria AND NOT IFNULL(
+                LAG(meets_criteria) OVER person_window
+                    AND LAG({END_DATE_EXCLUSIVE_COLUMN_NAME}) OVER person_window = start_date,
+                FALSE
+            ) AS starts_eligibility_run,
         FROM ({aggregate_adjacent_spans(
             table_name='meets_criteria_spans',
             attribute=[
@@ -780,6 +774,26 @@ def custody_level_vs_recommended_criteria(
             ],
             end_date_field_name=END_DATE_EXCLUSIVE_COLUMN_NAME,
         )})
+        WINDOW person_window AS (PARTITION BY person_id ORDER BY start_date)
+    ),
+    /* Sets upcoming_eligibility_date to the date the resident became eligible for a met
+    span (the start of its unbroken run of met spans), or the date they next become
+    eligible for an unmet span followed by a met one. */
+    next_eligibility_spans AS (
+        SELECT
+            *,
+            CASE
+                WHEN meets_criteria THEN LAST_VALUE(
+                    IF(starts_eligibility_run, start_date, NULL) IGNORE NULLS
+                ) OVER (
+                    PARTITION BY person_id ORDER BY start_date
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                )
+                WHEN LEAD(meets_criteria) OVER (PARTITION BY person_id ORDER BY start_date)
+                    THEN LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date)
+                ELSE NULL
+            END AS upcoming_eligibility_date,
+        FROM eligibility_run_starts
     )
     SELECT
         state_code,
