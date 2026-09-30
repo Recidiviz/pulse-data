@@ -2591,6 +2591,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.StaffCaseloadTypePeriod",
     "us_tn_ingest_view_results.StaffRoleLocationPeriods",
     "us_tn_ingest_view_results.StaffSupervisorPeriods",
+    "us_tn_ingest_view_results.Staff_v2",
     "us_tn_ingest_view_results.VantagePointAssessments",
     "us_tn_ingest_view_results.ViolationsAndSanctions",
     "us_tn_ingest_view_results.diversion_sentence",

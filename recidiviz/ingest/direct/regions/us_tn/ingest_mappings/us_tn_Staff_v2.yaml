@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  USERID: STRING
+  StaffID: STRING
+  LastName: STRING
+  FirstName: STRING
+  OutlookEmail: STRING
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: USERID
+          id_type: $literal("US_TN_STAFF_USERID")
+      # following the MiCase migration, StaffID is not a required field so some staff members
+      # may no longer have one
+      - $conditional:
+          - $if:
+              $not_null: StaffID
+            $then:
+              StateStaffExternalId:
+                external_id: StaffID
+                id_type: $literal("US_TN_STAFF_TOMIS")
+      - $conditional:
+          - $if:
+              $not_null: OutlookEmail
+            $then:
+              StateStaffExternalId:
+                external_id: OutlookEmail
+                id_type: $literal("US_TN_STAFF_EMAIL")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $surname: LastName
+    email: OutlookEmail

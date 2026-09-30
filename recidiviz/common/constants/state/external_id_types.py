@@ -194,6 +194,9 @@ US_TN_STAFF_TOMIS: Final = "US_TN_STAFF_TOMIS"
 US_TN_STAFF_EMAIL: Final = "US_TN_STAFF_EMAIL"
 # MiCase/TOMIS 2.0 PERSON_ID *should* be stable across incarceration episodes (IN_EPISODE/DOC_ID)
 US_TN_PERSON_ID: Final = "US_TN_PERSON_ID"
+# MiCase/TOMIS 2.0 Staff USERID is the PK for the MEA_PROFILES table and is also the staff's
+# matching entry in the PERSON table
+US_TN_STAFF_USERID: Final = "US_TN_STAFF_USERID"
 
 
 # US_TX
