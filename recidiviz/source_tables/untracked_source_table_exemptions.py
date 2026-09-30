@@ -329,6 +329,8 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
     "us_mi_ingest_view_results": {
         "sentences_v2",
         "state_charge_v2",
+        "LEGACY_sentences",
+        "LEGACY_state_charge",
     },
     "us_mo_ingest_view_results": {
         "incarceration_sentence",

@@ -1186,8 +1186,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_identity_fragment.identity_race",
     "us_mi_identity_fragment.identity_sex",
     "us_mi_identity_rejections.rejected_identity_cluster",
-    "us_mi_ingest_view_results.LEGACY_sentences",
-    "us_mi_ingest_view_results.LEGACY_state_charge",
     "us_mi_ingest_view_results.assaultive_risk_assessments",
     "us_mi_ingest_view_results.assessments_v3",
     "us_mi_ingest_view_results.employment_period",
