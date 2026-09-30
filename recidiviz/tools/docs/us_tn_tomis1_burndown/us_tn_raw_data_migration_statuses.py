@@ -49,7 +49,7 @@ US_TN_RAW_DATA_MIGRATION_STATUSES: dict[str, RawDataMigrationStatus] = {
     "JOSentence": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "JOSpecialConditions": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "OffenderMovement": RawDataMigrationStatus.NEEDS_INVESTIGATION,
-    "OffenderName": RawDataMigrationStatus.NEEDS_INVESTIGATION,
+    "OffenderName": RawDataMigrationStatus.MIGRATED,
     "Sentence": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "SentenceAction": RawDataMigrationStatus.NEEDS_INVESTIGATION,
     "SentenceMiscellaneous": RawDataMigrationStatus.NEEDS_INVESTIGATION,
