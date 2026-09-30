@@ -301,6 +301,24 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incident_infraction_descriptions"
     ): "TODO(#53520): This will be used to add incident and infraction descriptions to facility tools (Lydia Masr, 11/26/2025)",
+    **{
+        BigQueryAddress.from_str(f"normalized_state_views.{table_id}"): (
+            "Generated over a v1 sentence association table; its only reader was the v1 "
+            "branch of sentences_preprocessed. Goes away with the v1 entities in "
+            "TODO(#33402). (Andrew Gaidus, 2026-09-29)"
+        )
+        for table_id in [
+            "state_charge_incarceration_sentence_association_view",
+            "state_charge_supervision_sentence_association_view",
+        ]
+    },
+    BigQueryAddress.from_str(
+        "sentence_sessions_v2_all.compartment_sessions_closest_imposed_sentence"
+    ): (
+        "The sentence_sessions_v2_all copy of a view whose readers use the "
+        "sentence_sessions version. The v2_all copies go away in TODO(#33402). "
+        "(Andrew Gaidus, 2026-09-30)"
+    ),
 }
 
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {

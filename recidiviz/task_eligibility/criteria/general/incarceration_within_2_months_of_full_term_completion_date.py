@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    incarceration_within_ftcd_criteria_builder,
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,11 +30,13 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    incarceration_within_ftcd_criteria_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
+    is_past_completion_date_criteria_builder(
+        compartment_level_1_filter="INCARCERATION",
         meets_criteria_leading_window_time=2,
         date_part="MONTH",
+        critical_date_name_in_reason="full_term_completion_date",
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
     )
 )
 

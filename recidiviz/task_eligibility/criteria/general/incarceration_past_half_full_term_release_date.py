@@ -19,10 +19,11 @@ has completed half their maximum term incarceration sentence.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -41,12 +42,22 @@ WITH critical_date_spans AS (
         span.state_code,
         span.person_id,
         span.start_date AS start_datetime,
-        span.end_date AS end_datetime,
-        (DATE_ADD(MAX(sent.effective_date),INTERVAL
-            CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="INCARCERATION")}
-    WHERE
-        sent.sentence_type = 'INCARCERATION'
+        span.end_date_exclusive AS end_datetime,
+        (DATE_ADD(MAX(serving.effective_date),INTERVAL
+            CAST(CEILING(DATE_DIFF(MAX(sentence_projected_full_term_release_date_max),MAX(serving.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
+    FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized` span,
+    UNNEST(sentence_array)
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
+        USING (state_code, person_id, sentence_id)
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_start_date_materialized` serving
+        USING (state_code, person_id, sentence_id)
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
+        ON span.state_code = sess.state_code
+        AND span.person_id = sess.person_id
+        AND sess.compartment_level_1 = 'INCARCERATION'
+        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
+        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+    WHERE sent.sentence_type = 'STATE_PRISON'
     GROUP BY 1, 2, 3, 4
 ),
 {critical_date_has_passed_spans_cte()}
@@ -67,6 +78,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_name=_CRITERIA_NAME,
     description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(

@@ -87,9 +87,6 @@ from recidiviz.calculator.query.state.views.sessions.housing_unit_type_non_prote
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -128,9 +125,6 @@ from recidiviz.calculator.query.state.views.sessions.supervision_level_sessions 
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_staff_attribute_sessions import (
     SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
@@ -183,7 +177,6 @@ def is_view_part_of_infra_library_2025(view_address: BigQueryAddress) -> bool:
         HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.address,
         HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER.address,
         HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER.address,
-        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address,
         INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER.address,
         LOCATION_SESSIONS_VIEW_BUILDER.address,
         LOCATION_TYPE_SESSIONS_VIEW_BUILDER.address,
@@ -197,7 +190,6 @@ def is_view_part_of_infra_library_2025(view_address: BigQueryAddress) -> bool:
         SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER.address,
         SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER.address,
         SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER.address,
-        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address,
         SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER.address,
         SUPERVISION_UNIT_SUPERVISOR_SESSIONS_VIEW_BUILDER.address,
         SYSTEM_SESSIONS_VIEW_BUILDER.address,

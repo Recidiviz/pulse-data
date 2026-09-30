@@ -21,9 +21,6 @@ from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mo_sentences_v1_burndown import (
     US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nd_sentences_v1_burndown import (
-    US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_view_graphs import (
@@ -42,7 +39,6 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     dict[str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]],
 ] = {
     StateCode.US_MO: US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_ND: US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 }
 
 

@@ -22,21 +22,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
-    US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions_v1_states import (
-    SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_start_date import (
-    SENTENCE_SERVING_START_DATE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_status_raw_text_sessions import (
-    SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
-    SENTENCES_AND_CHARGES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
@@ -48,12 +33,6 @@ from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import
 )
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.consecutive_sentences_preprocessed import (
-    CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
@@ -69,33 +48,6 @@ from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
 )
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
-    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
-)
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_consecutive_sentences_preprocessed import (
-    US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_sentences_preprocessed import (
-    US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
-    state_specific_supervision_projected_completion_date_spans_address,
-)
-from recidiviz.calculator.query.state.views.shared_metric.single_day_incarceration_population_for_spotlight import (
-    SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision_population_for_spotlight import (
-    SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
-    SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
-    US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -123,26 +75,8 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_term_release_date import (
-    VIEW_BUILDER as INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.general.incarceration_within_1_year_of_full_term_completion_date import (
-    VIEW_BUILDER as INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.general.incarceration_within_2_months_of_full_term_completion_date import (
-    VIEW_BUILDER as INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.general.incarceration_within_42_months_of_full_term_completion_date import (
-    VIEW_BUILDER as INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_of_2_years_or_less import (
-    VIEW_BUILDER as SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_of_less_than_6_years import (
     VIEW_BUILDER as SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_before_full_term_completion_date import (
-    VIEW_BUILDER as SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
 from recidiviz.utils.types import assert_subclass
 from recidiviz.validation.configured_validations import (
@@ -193,26 +127,11 @@ _ALL_SCHEMA_TABLE_VIEWS = [
 ]
 
 # These are views that still reference state-specific sentences v1 tables and have been
-# exempted. For example the views listed under (StateCode.US_ND, StateIncarcerationSentence)
-# are views that reference the us_nd_normalized_state.state_incarceration_sentence table
-# directly.
-_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
-    (StateCode.US_ND, StateIncarcerationSentence): {
-        US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46257): This view should be deleted once ND no longer "
-            "relies on v1 sentences"
-        ),
-        US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46257): This view should be deleted once ND no longer "
-            "relies on v1 sentences"
-        ),
-    },
-    (StateCode.US_ND, StateSupervisionSentence): {
-        US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-    },
+# exempted. For example the views listed under (StateCode.US_MI, StateCharge) are views
+# that reference the us_mi_normalized_state.state_charge table directly.
+_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS: dict[
+    tuple[StateCode, type[Entity]], dict[BigQueryAddress, str]
+] = {
     (StateCode.US_MI, StateCharge): {
         US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER.address: (
             "TODO(#46258): Update validation to read from state_charge_v2"
@@ -233,54 +152,9 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view (or delete this view)"
         ),
-        SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted once no states rely on v1 sentences"
-        ),
-        SENTENCE_SERVING_START_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SENTENCES_AND_CHARGES_VIEW_BUILDER.address: (
-            "TODO(#33402): This reference should go away once we no longer rely on v1 "
-            "sentences."
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all",
-            table_id="sentence_projected_date_sessions_v1_states",
-        ): (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all",
-            table_id="sentence_serving_start_date",
-        ): (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all",
-            table_id="sentence_status_raw_text_sessions",
-        ): (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all", table_id="sentences_and_charges"
-        ): (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         RECIDIVISM_EVENT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
-        ),
-        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
         ),
         SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
@@ -293,17 +167,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         SENTENCE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
         ),
         SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
@@ -321,24 +184,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `sentence_spans` once all states are migrated
     # to v2 infra
     SENTENCE_SPANS_VIEW_BUILDER.address: {
-        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -351,42 +196,11 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
         ),
-        SENTENCES_AND_CHARGES_VIEW_BUILDER.address: (
-            "TODO(#33402): This reference should go away once we no longer rely on v1 "
-            "sentences."
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all", table_id="sentences_and_charges"
-        ): (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration"
-        ),
-        US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46257): This view should be deleted once ND no longer "
-            "relies on v1 sentences"
-        ),
     },
     # TODO(#33402): Delete `sentence_deadline_spans` once all states are migrated
     # to v2 infra
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
         SENTENCE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration"
-        ),
-        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
-        SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration"
-        ),
-        BigQueryAddress(
-            dataset_id="sentence_sessions_v2_all",
-            table_id="sentence_projected_date_sessions_v1_states",
-        ): (
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
         ),
@@ -406,18 +220,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
         ),
-        SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         RECIDIVISM_EVENT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -430,14 +232,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `compartment_sessions_closest_sentence_imposed_group` once
     # all states are migrated to v2 infra
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-        SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SENTENCE_COHORT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -459,70 +253,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "invariants are checked at ingest pipeline runtime."
         ),
     },
-    # TODO(#33402): Delete `incarceration_projected_completion_date_spans` once all
-    # states are migrated to v2 infra
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-        US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
-            "TODO(#46257): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-    },
-    # TODO(#33402): Delete `supervision_projected_completion_date_spans` once all
-    # states are migrated to v2 infra
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-        **{
-            state_specific_supervision_projected_completion_date_spans_address(
-                StateCode(state_code_str)
-            ): (
-                "TODO(#46252): State-specific wrapper around deprecated v1 view, "
-                "will be removed when the state associated with this view migrates to "
-                "v2 sentences"
-            )
-            for state_code_str in STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA
-        },
-        SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-    },
-    # TODO(#33402): Delete `consecutive_sentences_preprocessed` once all states are
-    #  migrated to v2 infra
-    CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration"
-        ),
-    },
-    # TODO(#46257): Delete `us_nd_consecutive_sentences_preprocessed` once US_ND is
-    #  migrated to v2 infra
-    US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove this reference as part of the v2 sentences migration"
-        ),
-    },
-    # TODO(#46257): Delete `us_nd_consecutive_sentences_preprocessed` once US_ND is
-    #  migrated to v2 infra
-    US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove this reference as part of the v2 sentences migration"
-        ),
-    },
     # TODO(#33402): Delete StateIncarcerationSentence once all states are migrated
     # to v2 infra
     normalized_state_view_address_for_entity_table(
@@ -541,10 +271,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
                 )
             )
         },
-        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration."
-        ),
         SENTENCE_COMPARISON_VIEW_BUILDER.address: (
             "TODO(#33402): This view will no longer be needed once we have migrated "
             "all downstream views to read from sentences v2"
@@ -568,10 +294,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
                 )
             )
         },
-        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences "
-            "migration."
-        ),
         SENTENCE_COMPARISON_VIEW_BUILDER.address: (
             "TODO(#33402): This view will no longer be needed once we have migrated "
             "all downstream views to read from sentences v2"
@@ -590,9 +312,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
                 + _get_ingest_metadata_addresses_table(StateCharge.get_table_id())
             )
         },
-        CHARGES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
-        ),
         NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER.address: (
             "TODO(#33402): We need to make a state_charge_v2 equivalent of this "
             "validation, then delete this once all states are migrated to v2."

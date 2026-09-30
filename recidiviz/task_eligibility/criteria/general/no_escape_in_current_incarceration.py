@@ -21,7 +21,7 @@ an escape sentence in their current incarceration.
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import (
-    SENTENCE_SESSIONS_V2_ALL_DATASET,
+    SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -72,7 +72,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
-    sentence_sessions_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
             name="ineligible_offenses_descriptions",
