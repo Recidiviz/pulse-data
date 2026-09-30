@@ -65,8 +65,6 @@ def create_parser() -> argparse.ArgumentParser:
 def main(schema_type: SchemaType, message: str) -> None:
     """Runs the script to autogenerate migrations."""
     database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
-    # TODO(#4619): We should eventually move this from a local postgres instance to running
-    # postgres from a docker container.
     if not local_postgres_helpers.can_start_on_disk_postgresql_database():
         logging.error(
             "pg_ctl is not installed, so the script cannot be run locally. "
