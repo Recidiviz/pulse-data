@@ -2059,7 +2059,7 @@ MO_CASEPLANS_DB2 = f"""
 # and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
 # when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
 # unless specifically asked to do so.
-# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+# TODO(#12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_INFO_DB2 = """
     SELECT 
         OFFENDER_ID,
@@ -2080,7 +2080,7 @@ MO_CASEPLAN_INFO_DB2 = """
 # and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
 # when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
 # unless specifically asked to do so.
-# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+# TODO(#12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_TARGETS_DB2 = """
     SELECT 
         OFFENDER_ID,
@@ -2118,7 +2118,7 @@ MO_CASEPLAN_GOALS_DB2 = f"""
 # and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
 # when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
 # unless specifically asked to do so.
-# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+# TODO(#12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_OBJECTIVES_DB2 = """
     SELECT 
         OFFENDER_ID,
@@ -2142,7 +2142,7 @@ MO_CASEPLAN_OBJECTIVES_DB2 = """
 # and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
 # when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
 # unless specifically asked to do so.
-# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+# TODO(#12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_TECHNIQUES_DB2 = """
     SELECT 
         OFFENDER_ID,
