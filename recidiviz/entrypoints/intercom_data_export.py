@@ -68,7 +68,7 @@ def verify_headers(
                 "No source table config found for [%s]. This data will still be saved as a CSV in GCS. If you wish for it to be available in BigQuery, add a YAML schema file under recidiviz/source_tables/yaml_managed/gcs_backed_tables/intercom_export",
                 big_query_address.to_str(),
             )
-            break
+            continue
 
         source_table_config = repo.source_tables[big_query_address]
         schema_fields_by_name = [f.name for f in source_table_config.schema_fields]
