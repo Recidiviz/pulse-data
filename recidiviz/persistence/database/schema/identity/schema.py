@@ -920,7 +920,7 @@ class UpdateAttributeCandidate(IdentityBase):
 
 
 class MergeCandidate(IdentityBase):
-    """Set of identities a caller wants to merge but that needs human approval."""
+    """Set of identities a caller wants to merge but that needs human approval; one PENDING row per set of identities."""
 
     __tablename__ = "merge_candidates"
 
@@ -1013,7 +1013,7 @@ class MergeCandidateIdentity(IdentityBase):
 
 
 class SplitCandidate(IdentityBase):
-    """Existing identity flagged for splitting; one row per identity."""
+    """Existing identity flagged for splitting; one PENDING row per identity."""
 
     __tablename__ = "split_candidates"
 
@@ -1060,13 +1060,22 @@ class SplitCandidate(IdentityBase):
         JSONB,
         nullable=False,
         comment=(
-            "JSONB structure describing the groups the split would partition "
-            "the identity's external IDs and attributes into."
+            "JSONB partition of the identity's active external ids that the "
+            "proposed split would produce: one group per cluster that matched "
+            "the identity, holding the identity's own ids in that cluster, "
+            "plus the ids in no current cluster, which a split would leave "
+            "with the identity."
         ),
     )
 
     detected_at_utc = Column(
-        UTCDateTime, nullable=False, comment="When the split was first proposed."
+        UTCDateTime,
+        nullable=False,
+        comment=(
+            "Start time of the most recent import run that proposed this "
+            "split. Refreshed on re-detection, so stale-candidate cleanup can "
+            "retire candidates whose identity is no longer fractured."
+        ),
     )
 
     status = Column(

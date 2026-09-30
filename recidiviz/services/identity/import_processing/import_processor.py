@@ -23,7 +23,7 @@ side (import_task_enqueuer) schedules the work.
 import datetime
 import logging
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable
 from enum import Enum
 from typing import TypeVar
@@ -52,6 +52,10 @@ from recidiviz.services.identity.import_processing.merge_candidate_flagger impor
     MergeToConsider,
     flag_merge_candidates,
 )
+from recidiviz.services.identity.import_processing.split_candidate_flagger import (
+    SplitToConsider,
+    flag_split_candidates,
+)
 from recidiviz.services.identity.import_processing.update_pass import (
     apply_identity_update,
 )
@@ -71,6 +75,7 @@ _IDENTITY_CHILD_TABLES = (
     schema.PhoneNumber,
     schema.Email,
     schema.MergeCandidateIdentity,
+    schema.SplitCandidate,
 )
 
 # Number of clusters written per transaction. Committing in chunks rather than
@@ -140,9 +145,13 @@ def process_import(
     it as a PENDING merge candidate for human review instead (see
     merge_candidate_flagger.py).
 
-    TODO(OBT-37728): Run split detection before the update and create passes,
-    so an identity whose external ids appear in more than one cluster is split
-    apart (or flagged for human review) before its clusters are categorized.
+    An existing identity whose active external ids appear in two or more of
+    the run's clusters may represent two actual people. The run records each
+    such identity as a PENDING split candidate for human review before
+    planning (see split_candidate_flagger.py), and the planning step skips
+    the identity's clusters. TODO(OBT-37728): Auto-split such identities when
+    no human decision stands in the way, so their clusters can be applied in
+    the same run.
 
     Args:
         tenant: The tenant whose clustering results to load.
@@ -174,6 +183,15 @@ def process_import(
         # The tenant was just cleared, so it has no pre-existing emails.
         existing_email_hashes: set[str] = set()
     else:
+        splits_to_consider = _splits_to_consider(tenant=tenant, snapshots=snapshots)
+        if splits_to_consider:
+            with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+                flag_split_candidates(
+                    session=session,
+                    tenant=tenant,
+                    detected_at=run_started_at,
+                    splits_to_consider=splits_to_consider,
+                )
         (
             identities_to_create,
             identities_to_update,
@@ -198,6 +216,35 @@ def process_import(
         identities_to_create=identities_to_create,
         committed_email_hashes=existing_email_hashes,
     )
+
+
+def _splits_to_consider(
+    *, tenant: Tenant, snapshots: list[ClusterSnapshot]
+) -> list[SplitToConsider]:
+    """Returns a SplitToConsider for each of the tenant's identities whose
+    active external ids appear in two or more of the given clusters.
+
+    Such an identity may represent two actual people whose records were
+    conflated; flag_split_candidates records each for human review. This
+    reads its own id map rather than sharing _plan_cluster_actions', because
+    planning must eventually run against post-split state (TODO(OBT-37728):
+    auto-split will run between this detection and planning).
+    """
+    identity_ids_by_external_id = _identity_ids_by_external_id(tenant)
+    snapshots_by_matched_recidiviz_id: dict[
+        uuid.UUID, list[ClusterSnapshot]
+    ] = defaultdict(list)
+    for snapshot in snapshots:
+        for recidiviz_id in _matched_recidiviz_ids(
+            snapshot=snapshot,
+            identity_ids_by_external_id=identity_ids_by_external_id,
+        ):
+            snapshots_by_matched_recidiviz_id[recidiviz_id].append(snapshot)
+    return [
+        SplitToConsider(recidiviz_id=recidiviz_id, snapshots=tuple(matched_snapshots))
+        for recidiviz_id, matched_snapshots in snapshots_by_matched_recidiviz_id.items()
+        if len(matched_snapshots) >= 2
+    ]
 
 
 def _plan_cluster_actions(
@@ -237,8 +284,10 @@ def _plan_cluster_actions(
       one cluster and it may represent two actual people. This function skips
       the cluster and leaves the identity untouched, since applying it would
       replace the identity's attributes with values built from only some of
-      its external ids. Split detection (OBT-37728) will eventually resolve
-      this case; it will run before this planning.
+      its external ids. The run has already recorded the identity as a
+      PENDING split candidate (see split_candidate_flagger.py).
+      TODO(OBT-37728): auto-split will resolve this case before this planning
+      runs.
     """
     identity_ids_by_external_id = _identity_ids_by_external_id(tenant)
     identities_to_create: list[IdentityToCreate] = []
@@ -246,25 +295,23 @@ def _plan_cluster_actions(
     merges_to_consider: list[MergeToConsider] = []
     matched_cluster_counts: Counter[uuid.UUID] = Counter()
     for snapshot in snapshots:
-        matched_identity_ids = {
-            identity_ids_by_external_id[key]
-            for external_id in snapshot.cluster.external_ids
-            if (key := (external_id.id_type, external_id.external_id))
-            in identity_ids_by_external_id
-        }
-        matched_cluster_counts.update(matched_identity_ids)
-        if not matched_identity_ids:
+        matched_recidiviz_ids = _matched_recidiviz_ids(
+            snapshot=snapshot,
+            identity_ids_by_external_id=identity_ids_by_external_id,
+        )
+        matched_cluster_counts.update(matched_recidiviz_ids)
+        if not matched_recidiviz_ids:
             identities_to_create.append(IdentityToCreate(snapshot=snapshot))
-        elif len(matched_identity_ids) == 1:
+        elif len(matched_recidiviz_ids) == 1:
             single_match_updates.append(
                 IdentityToUpdate(
-                    recidiviz_id=matched_identity_ids.pop(), snapshot=snapshot
+                    recidiviz_id=matched_recidiviz_ids.pop(), snapshot=snapshot
                 )
             )
         else:
             merges_to_consider.append(
                 MergeToConsider(
-                    recidiviz_ids=frozenset(matched_identity_ids), snapshot=snapshot
+                    recidiviz_ids=frozenset(matched_recidiviz_ids), snapshot=snapshot
                 )
             )
     unshared_updates = [
@@ -293,6 +340,21 @@ def _plan_cluster_actions(
         skipped_shared_identity_cluster_count,
     )
     return identities_to_create, identities_to_update, merges_to_consider
+
+
+def _matched_recidiviz_ids(
+    *,
+    snapshot: ClusterSnapshot,
+    identity_ids_by_external_id: dict[tuple[str, str], uuid.UUID],
+) -> set[uuid.UUID]:
+    """Returns the recidiviz_ids of the identities holding, as active, any
+    external id the given cluster carries."""
+    return {
+        identity_ids_by_external_id[key]
+        for external_id in snapshot.cluster.external_ids
+        if (key := (external_id.id_type, external_id.external_id))
+        in identity_ids_by_external_id
+    }
 
 
 def _identity_ids_by_external_id(
@@ -605,8 +667,8 @@ def _apply_clusters_individually(
 
 
 def _clear_tenant_identities(tenant: Tenant) -> None:
-    """Deletes the tenant's identities, all of their child rows, the tenant's
-    merge candidates, and its no-merge pairs.
+    """Deletes the tenant's identities, all of their child rows (including
+    split candidates), the tenant's merge candidates, and its no-merge pairs.
 
     Runs when an import is processed with should_clear_first, so that the
     create pass alone rebuilds the tenant's identities from its clustering
@@ -619,8 +681,8 @@ def _clear_tenant_identities(tenant: Tenant) -> None:
     TODO(OBT-48249): Clear-first stays the trigger endpoint's default until the
     update pass (plus merge and split detection) makes runs without it correct.
 
-    The update_attribute_candidates and split_candidates tables are left
-    untouched; they stay empty until the passes that write them exist.
+    The update_attribute_candidates table is left untouched; it stays empty
+    until the pass that writes it exists.
     """
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
         tenant_identity_ids = (

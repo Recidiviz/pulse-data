@@ -59,6 +59,7 @@ from recidiviz.tests.services.identity.test_utils import (
     insert_name,
     insert_no_merge,
     insert_phone_number,
+    insert_split_candidate,
 )
 from recidiviz.utils.user_hash import generate_user_hash
 
@@ -214,17 +215,18 @@ class ClearFirstImportTest(ImportProcessorTestCase):
         # Both identities land, but the shared address is attached only once.
         self.assertEqual(1, self._email_count())
 
-    def test_clear_removes_the_tenants_merge_candidates_and_no_merge_pairs(
+    def test_clear_removes_the_tenants_candidates_and_no_merge_pairs(
         self,
     ) -> None:
-        """Merge candidates and no-merge pairs reference identities the clear
-        deletes, so the clear must delete them too or the identity delete
-        FK-fails."""
+        """Merge candidates, split candidates, and no-merge pairs reference
+        identities the clear deletes, so the clear must delete them too or the
+        identity delete FK-fails."""
         first_id = uuid.uuid4()
         insert_identity(recidiviz_id=first_id)
         second_id = uuid.uuid4()
         insert_identity(recidiviz_id=second_id)
         insert_merge_candidate(recidiviz_ids=[first_id, second_id])
+        insert_split_candidate(recidiviz_id=first_id)
         insert_no_merge(recidiviz_id_a=first_id, recidiviz_id_b=second_id)
         other_tenant_id = uuid.uuid4()
         insert_identity(recidiviz_id=other_tenant_id, tenant=Tenant.US_XX)
@@ -234,6 +236,7 @@ class ClearFirstImportTest(ImportProcessorTestCase):
             recidiviz_ids=[other_tenant_id, second_other_tenant_id],
             tenant=Tenant.US_XX,
         )
+        insert_split_candidate(recidiviz_id=other_tenant_id, tenant=Tenant.US_XX)
         insert_no_merge(
             recidiviz_id_a=other_tenant_id, recidiviz_id_b=second_other_tenant_id
         )
@@ -253,6 +256,10 @@ class ClearFirstImportTest(ImportProcessorTestCase):
                     schema.MergeCandidateIdentity.recidiviz_id
                 )
             ]
+            split_candidate_recidiviz_ids = [
+                recidiviz_id
+                for (recidiviz_id,) in session.query(schema.SplitCandidate.recidiviz_id)
+            ]
             no_merge_pairs = list(
                 session.query(
                     schema.NoMerge.recidiviz_id_a, schema.NoMerge.recidiviz_id_b
@@ -262,6 +269,8 @@ class ClearFirstImportTest(ImportProcessorTestCase):
         self.assertEqual(
             {other_tenant_id, second_other_tenant_id}, set(linked_recidiviz_ids)
         )
+        # The cleared tenant's split candidate is gone; US_XX's survives.
+        self.assertEqual([other_tenant_id], split_candidate_recidiviz_ids)
         # The cleared tenant's pair is gone; the other tenant's pair survives.
         lower_id, higher_id = sorted([other_tenant_id, second_other_tenant_id])
         self.assertEqual([(lower_id, higher_id)], no_merge_pairs)
@@ -343,6 +352,67 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
                 )
             }
         self.assertEqual({first_id, second_id}, linked_recidiviz_ids)
+
+    def test_one_run_files_both_split_and_merge_candidates(self) -> None:
+        """One cluster can be evidence for both candidate kinds at once: the
+        fractured identity's ids span two clusters (a split candidate), and
+        one of those clusters also matches a second identity (a merge
+        candidate). Both are filed deliberately; whichever a reviewer resolves
+        first, the next run re-detects the other in its updated form."""
+        fractured_id = uuid.uuid4()
+        insert_identity(recidiviz_id=fractured_id)
+        insert_name(recidiviz_id=fractured_id, given_name="Ada", surname="Fractured")
+        insert_external_id(
+            recidiviz_id=fractured_id, external_id="A1", id_type=_ID_TYPE
+        )
+        insert_external_id(
+            recidiviz_id=fractured_id, external_id="B2", id_type=_ID_TYPE
+        )
+        other_id = uuid.uuid4()
+        insert_identity(recidiviz_id=other_id)
+        insert_name(recidiviz_id=other_id, given_name="Ada", surname="Other")
+        insert_external_id(recidiviz_id=other_id, external_id="C3", id_type=_ID_TYPE)
+
+        spanning_cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="C3", id_type=_ID_TYPE.value
+                ),
+            ),
+            name=IdentityClusterName(
+                tenant=Tenant.US_OZ, given_name="Ada", surname="Spanning"
+            ),
+        )
+        self._run(
+            ClusterSnapshot(
+                cluster=spanning_cluster,
+                stored_cluster_hash=spanning_cluster.cluster_hash,
+            ),
+            _named_snapshot(external_id="B2", surname="FromSecond"),
+            should_clear_first=False,
+        )
+
+        # Neither cluster is applied: the spanning cluster matches two
+        # identities, and the B2 cluster's identity is shared with it.
+        self.assertEqual({"US_OZ": ["Fractured", "Other"]}, self._surnames_by_tenant())
+        with SessionFactory.using_database(self.database_key) as session:
+            split_candidate = one(session.query(schema.SplitCandidate).all())
+            self.assertEqual(CandidateStatus.PENDING, split_candidate.status)
+            self.assertEqual(fractured_id, split_candidate.recidiviz_id)
+            merge_candidate = one(session.query(schema.MergeCandidate).all())
+            self.assertEqual(CandidateStatus.PENDING, merge_candidate.status)
+            merge_recidiviz_ids = {
+                recidiviz_id
+                for (recidiviz_id,) in session.query(
+                    schema.MergeCandidateIdentity.recidiviz_id
+                )
+            }
+        self.assertEqual({fractured_id, other_id}, merge_recidiviz_ids)
 
     def test_retired_identitys_external_id_does_not_block_creation(self) -> None:
         # A RETIRED identity must point at the identity it was merged into, and
@@ -720,7 +790,8 @@ class ImportUpdateTest(ImportProcessorTestCase):
         self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
         self.assertEqual("stale-hash", self._last_cluster_hash_for(existing_id))
 
-    def test_clusters_matching_one_identity_are_skipped(self) -> None:
+    @freeze_time(_RUN_START)
+    def test_clusters_matching_one_identity_are_skipped_and_flagged(self) -> None:
         existing_id = uuid.uuid4()
         insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
         insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
@@ -730,9 +801,10 @@ class ImportUpdateTest(ImportProcessorTestCase):
             recidiviz_id=existing_id, address_hash=generate_user_hash("keep@fake.com")
         )
 
-        # The identity's two external ids are in different clusters, so both clusters
-        # match it and both are skipped until split detection (OBT-37728) splits the
-        # identity apart.
+        # The identity's two external ids are in different clusters, so both
+        # clusters match it; the run flags the identity as a split candidate
+        # and skips both clusters. TODO(OBT-37728): auto-split will resolve
+        # this case instead of leaving it skipped.
         self._run(
             _named_snapshot(
                 external_id="A1", surname="FromFirst", email="keep@fake.com"
@@ -744,11 +816,19 @@ class ImportUpdateTest(ImportProcessorTestCase):
         )
 
         # The identity's rows, including its email, are untouched, and no
-        # cluster's hash is stamped, so a later run (once split detection has
-        # split the identity apart) still sees both clusters as changed.
+        # cluster's hash is stamped, so a later run still sees both clusters
+        # as changed.
         self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
         self.assertEqual(1, self._email_count())
         self.assertEqual("stale-hash", self._last_cluster_hash_for(existing_id))
+        # The fractured identity was recorded for human review with the run's
+        # start time; the flagging details are covered in
+        # split_candidate_flagger_test.py.
+        with SessionFactory.using_database(self.database_key) as session:
+            candidate = one(session.query(schema.SplitCandidate).all())
+            self.assertEqual(CandidateStatus.PENDING, candidate.status)
+            self.assertEqual(_RUN_START, candidate.detected_at_utc)
+            self.assertEqual(existing_id, candidate.recidiviz_id)
 
     def test_cluster_sharing_its_identity_with_a_spanning_cluster_is_skipped(
         self,
@@ -758,7 +838,8 @@ class ImportUpdateTest(ImportProcessorTestCase):
         identity's B2. The A1 cluster matches only this identity, but its
         attribute values were computed from A1's records alone, so applying it
         would overwrite attributes that should reflect A2's records too; it
-        must be skipped just like the two-identity A2 + B2 cluster."""
+        must be skipped just like the two-identity A2 + B2 cluster. The
+        fractured identity is also flagged as a split candidate."""
         twice_matched_id = uuid.uuid4()
         insert_identity(recidiviz_id=twice_matched_id, last_cluster_hash="stale-hash")
         insert_name(
@@ -806,6 +887,13 @@ class ImportUpdateTest(ImportProcessorTestCase):
         )
         self.assertEqual("stale-hash", self._last_cluster_hash_for(twice_matched_id))
         self.assertEqual("stale-hash", self._last_cluster_hash_for(other_id))
+        # Only the identity whose ids span clusters is a split candidate.
+        with SessionFactory.using_database(self.database_key) as session:
+            flagged_recidiviz_ids = [
+                recidiviz_id
+                for (recidiviz_id,) in session.query(schema.SplitCandidate.recidiviz_id)
+            ]
+        self.assertEqual([twice_matched_id], flagged_recidiviz_ids)
 
     def test_failing_update_is_isolated_and_rest_of_chunk_proceeds(self) -> None:
         first_id = uuid.uuid4()
@@ -892,7 +980,6 @@ class ClearTenantChildTableCompletenessTest(TestCase):
     # reason.
     _CLEAR_EXEMPT_TABLES = {
         "update_attribute_candidates",  # TODO(OBT-37727): clear once the guard writes it.
-        "split_candidates",  # TODO(OBT-37728): clear once split detection writes it.
         "no_merge",  # Cleared by a dedicated query: it FKs identities from two columns.
     }
 

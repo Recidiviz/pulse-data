@@ -521,6 +521,27 @@ def insert_merge_candidate(
         )
 
 
+def insert_split_candidate(
+    *,
+    recidiviz_id: uuid.UUID,
+    tenant: Tenant = Tenant.US_OZ,
+    status: CandidateStatus = CandidateStatus.PENDING,
+    detected_at_utc: datetime.datetime = CREATED,
+    cluster_groups: dict[str, object] | None = None,
+) -> None:
+    """Inserts a SplitCandidate row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.SplitCandidate(
+                tenant=tenant,
+                recidiviz_id=recidiviz_id,
+                cluster_groups=cluster_groups or {},
+                detected_at_utc=detected_at_utc,
+                status=status,
+            )
+        )
+
+
 def insert_no_merge(*, recidiviz_id_a: uuid.UUID, recidiviz_id_b: uuid.UUID) -> None:
     """Inserts a NoMerge row directly into the identity schema, putting the
     pair in the table's canonical (lower UUID first) order."""
