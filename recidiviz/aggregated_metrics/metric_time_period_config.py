@@ -362,6 +362,41 @@ class MetricTimePeriodConfig:
             config_name=f"years_rolling_last_{lookback_months}_months",
         )
 
+    @staticmethod
+    def last_day_of_month_periods_rolling_monthly(
+        lookback_months: int,
+    ) -> "MetricTimePeriodConfig":
+        """Returns a MetricTimePeriodConfig that can be used to generate a query that
+        produces 1-day time periods that start on the last day of every month, with
+        periods starting up to |lookback_months| months ago.
+        """
+
+        period_length = relativedelta(days=1)
+        if lookback_months < 1:
+            raise ValueError(
+                "Must provide a lookback_months of at least 1 to produce any periods."
+            )
+
+        max_period_end_date = first_day_of_month(current_date_us_eastern())
+        min_period_end_date = first_day_of_month(
+            max_period_end_date - relativedelta(months=lookback_months) + period_length
+        )
+        # Last day of month metrics
+        return MetricTimePeriodConfig(
+            interval_unit=MetricTimePeriod.DAY,
+            interval_length=1,
+            min_period_end_date=min_period_end_date,
+            max_period_end_date=max_period_end_date,
+            rolling_period_unit=MetricTimePeriod.MONTH,
+            rolling_period_length=1,
+            period_name=MetricTimePeriod.DAY.value,
+            description=(
+                f"Day-long metric periods, ending (exclusive) on the first of every "
+                f"month, for the last {lookback_months} months"
+            ),
+            config_name=f"years_rolling_last_{lookback_months}_months",
+        )
+
     def build_query(self) -> str:
         # If any rolling period parameter is not provided, default them to interval_unit
         # and interval_length.

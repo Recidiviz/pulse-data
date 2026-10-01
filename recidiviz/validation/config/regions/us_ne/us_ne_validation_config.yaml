@@ -18,6 +18,13 @@ exclusions:
   - validation_name: case_insights_record_sentencing_charge_record_offense_mismatch
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision_district
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: >-
+      NE has no usable district-level registered-user data in the impact report:
+      every month resolves to a single district row of "EXTERNAL_UNKNOWN" with a
+      null distinct_registered_users_supervision value, so the comparison always
+      mismatches completely. The state-level comparison has no gap and is not excluded.
 max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .38

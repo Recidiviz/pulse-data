@@ -111,6 +111,9 @@ def _build_impact_reports_usage_aggregated_metrics_collection() -> (
         MetricTimePeriodConfig.year_periods_rolling_monthly(
             lookback_months=12 + IMPACT_REPORTS_LOOKBACK_MONTHS
         ),
+        MetricTimePeriodConfig.last_day_of_month_periods_rolling_monthly(
+            lookback_months=IMPACT_REPORTS_LOOKBACK_MONTHS + 1
+        ),
     ]
     return AggregatedMetricsCollection(
         output_dataset_id=IMPACT_REPORTS_DATASET_ID,

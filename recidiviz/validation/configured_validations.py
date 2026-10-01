@@ -860,10 +860,12 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         SamenessDataValidationCheck(
             view_builder=WEEKLY_DIGEST_EMAIL_SENT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
@@ -1518,15 +1520,28 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
+            hard_max_allowed_error=0.08,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
+            validation_name_suffix="state",
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            comparison_columns=[
+                "officer_monthly_usage_report_registered_users_supervision",
+                "impact_report_registered_users_supervision",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
             hard_max_allowed_error=0.05,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         SamenessDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
+            validation_name_suffix="district",
             sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "officer_monthly_usage_report_registered_users_supervision",
-                "impact_report_registered_users_supervision",
                 "impact_report_registered_users_supervision_by_district",
             ],
             validation_category=ValidationCategory.CONSISTENCY,

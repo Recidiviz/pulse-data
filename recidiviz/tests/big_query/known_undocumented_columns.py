@@ -12998,21 +12998,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "supervising_officer",
         "supervision_level",
     ],
-    BigQueryAddress.from_str("user_metrics.officer_monthly_usage_report"): [
-        "actions_taken_this_month",
-        "clients_eligible_end_of_month",
-        "end_date",
-        "first_name",
-        "last_name",
-        "logins_this_year",
-        "officer_email",
-        "officer_id",
-        "start_date",
-        "state_code",
-        "supervision_district",
-        "supervisor_email",
-        "total_logins_this_month",
-    ],
     BigQueryAddress.from_str(
         "user_metrics.us_nd_transfer_to_min_eligible_marked_ineligible"
     ): [
@@ -14000,69 +13985,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "description",
         "person_id",
         "region_code",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_actions_without_logins"
-    ): [
-        "actions_taken_this_month",
-        "end_date",
-        "officer_id",
-        "region_code",
-        "start_date",
-        "state_code",
-        "total_logins_this_month",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_duplicate_rows"
-    ): [
-        "end_date",
-        "officer_email",
-        "region_code",
-        "report_rows",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_vs_impact_report_active_users_supervision"
-    ): [
-        "end_date",
-        "impact_report_active_users_supervision",
-        "officer_monthly_usage_report_active_users_supervision",
-        "region_code",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_vs_impact_report_active_users_supervision_errors"
-    ): [
-        "end_date",
-        "impact_report_active_users_supervision",
-        "officer_monthly_usage_report_active_users_supervision",
-        "region_code",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_vs_impact_report_registered_users_supervision"
-    ): [
-        "end_date",
-        "impact_report_registered_users_supervision",
-        "impact_report_registered_users_supervision_by_district",
-        "officer_monthly_usage_report_registered_users_supervision",
-        "region_code",
-        "start_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str(
-        "validation_views.officer_monthly_usage_report_vs_impact_report_registered_users_supervision_errors"
-    ): [
-        "end_date",
-        "impact_report_registered_users_supervision",
-        "impact_report_registered_users_supervision_by_district",
-        "officer_monthly_usage_report_registered_users_supervision",
-        "region_code",
-        "start_date",
         "state_code",
     ],
     BigQueryAddress.from_str(

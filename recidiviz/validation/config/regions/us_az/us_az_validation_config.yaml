@@ -51,23 +51,6 @@ max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.0004
     override_reason: TODO(#45221) - Delete duplicates resolved after #66209
-  - validation_name: officer_monthly_usage_report_vs_impact_report_active_users_supervision
-    hard_max_allowed_error_override: 0.10
-    override_reason: |-
-      Contractor staff (GEO Group, CoreCivic) who register for Workflows are not present
-      in ACIS data and therefore cannot be linked to ingested supervision officers. These
-      users appear in impact report active user counts but not in the officer monthly usage
-      report, causing a structural gap. The observed worst case is ~6% (Nov 2025).
-  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
-    hard_max_allowed_error_override: 0.21
-    override_reason: |-
-      Contractor staff (GEO Group, CoreCivic) who register for Workflows are not present
-      in ACIS data. These users appear in impact report registered user counts but cannot
-      be linked to ingested supervision officers, causing a gap between the state-level and
-      district-level impact report counts (users without a district assignment are excluded
-      from district aggregates). The absolute gap is ~4-5 users; the 20% worst case (May
-      2025) occurred when total registered users was only 10. With the current ~90 registered
-      users the gap is ~5%, and it will not worsen as the user base grows.
 num_allowed_rows_overrides:
   - validation_name: workflows_primary_users_not_in_state_staff
     hard_num_allowed_rows_override: 24

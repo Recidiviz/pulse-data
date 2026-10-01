@@ -42,14 +42,6 @@ max_allowed_error_overrides:
     override_reason:
       Given the very small size of the staff and population in ND, this is
       actually a very strict threshold.
-  - validation_name: officer_monthly_usage_report_vs_impact_report_active_users_supervision
-    hard_max_allowed_error_override: 0.15
-    override_reason:
-      Given the very small size of the staff and population in ND, this is a
-      reasonable threshold.
-  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
-    hard_max_allowed_error_override: 0.06
-    override_reason: Bumping threshold until investigation can be completed. TODO(#51499)
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: 0.08
     override_reason: Bumping threshold until investigation can be completed. TODO(#61071)
@@ -104,10 +96,11 @@ num_allowed_rows_overrides:
       Will slowly grow until we rerun the CJARS script, which is currently loosely owned
       by DSI. TODO(OBT-37927)
   - validation_name: workflows_primary_users_not_in_state_staff
-    hard_num_allowed_rows_override: 60
+    hard_num_allowed_rows_override: 10
     override_reason: |-
-      This validation will flag every incarceration-side user as an erroring row until
-      we ingest email addresses from Elite. #TODO(#37707)
+      We infer the staff emails by fuzzy matching the user name on the product roster
+      and the staff name ingested from Elite. This inference is not perfect though and
+      does not cover all facility users.
   - validation_name: missing_client_record_rows_null_full_name
     hard_num_allowed_rows_override: 4
     override_reason: Only two people missing from raw data as of 2025-10-02. TODO(#50219)

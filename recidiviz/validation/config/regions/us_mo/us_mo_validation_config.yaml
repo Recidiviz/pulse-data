@@ -25,6 +25,15 @@ max_allowed_error_overrides:
   - validation_name: open_sessions_without_active_sentences
     hard_max_allowed_error_override: 0.1
     override_reason: TODO(#39581) - investigate missing sentence serving periods for open probation sessions
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision_state
+    hard_max_allowed_error_override: 0.15
+    override_reason: >-
+      Caused by known issues connecting state staff to user emails, which decreases the number of officers
+      recorded in the officer monthly usage report. Worst observed as of 2026-09 is 11.2%.
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision_district
+    hard_max_allowed_error_override: 0.15
+    override_reason: >-
+      See the matching override on the _state validation; worst observed as of 2026-09 is 11.2%.
 num_allowed_rows_overrides:
   - validation_name: active_in_population_after_death_date
     hard_num_allowed_rows_override: 11
