@@ -274,7 +274,7 @@ function request_pam_grant {
 # migrating deploys off go/jit onto PAM. Scoped to staging alpha deploys for
 # now.
 #
-# TODO(#2839): once go/jit is deprecated, remove the go/jit references in this
+# TODO(AUR-240): once go/jit is deprecated, remove the go/jit references in this
 # comment; and once the PAM rollout is complete and all deployers are eligible,
 # make this fatal (fail the deploy rather than warning) so a deploy can no longer
 # silently fall back to standing access.
