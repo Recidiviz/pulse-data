@@ -31,8 +31,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     custody_level_lower_than_recommended,
     custody_level_lower_than_recommended_2026_policy_v3,
     has_not_been_classified_under_2026_policy,
-    ineligible_for_annual_reclassification,
-    ineligible_for_initial_classification,
+    ineligible_for_annual_reclassification_2026_policy,
+    ineligible_for_initial_classification_2026_policy,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
@@ -55,8 +55,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        ineligible_for_annual_reclassification.VIEW_BUILDER,
-        ineligible_for_initial_classification.VIEW_BUILDER,
+        ineligible_for_annual_reclassification_2026_policy.VIEW_BUILDER,
+        ineligible_for_initial_classification_2026_policy.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy_v3.VIEW_BUILDER,
         custody_level_not_lower_than_recommended_previous_policy_view_builder,
         caf_assessed_level_lower_than_2026_policy_v3_recommended_at_caf_date.VIEW_BUILDER,

@@ -33,6 +33,9 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -179,6 +182,56 @@ def state_specific_supervision_type_raw_text_is_not(
                 name="supervision_type_raw_text",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="Raw-text supervision type(s)",
+            ),
+        ],
+    )
+
+
+def not_eligible_for_task_criteria_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    tes_builder: SingleTaskEligibilitySpansBigQueryViewBuilder,
+    count_almost_eligible_as_eligible: bool,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria view builder for spans when someone is not eligible for the
+    task in tes_builder, with the task's ineligible criteria in the reasons.
+
+    Args:
+        criteria_name: The name of the criterion.
+        description: A brief description of the criterion.
+        tes_builder: The task eligibility spans view to read eligibility from.
+        count_almost_eligible_as_eligible: Whether almost eligible spans also fail
+            to meet this criterion.
+    """
+    meets_criteria = (
+        "NOT is_eligible AND NOT is_almost_eligible"
+        if count_almost_eligible_as_eligible
+        else "NOT is_eligible"
+    )
+    query_template = f"""
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        {meets_criteria} AS meets_criteria,
+        TO_JSON(STRUCT((ineligible_criteria) AS ineligible_criteria)) AS reason,
+        ineligible_criteria,
+    FROM `{tes_builder.table_for_query.format_address_for_query_template()}` tes
+    WHERE
+        tes.state_code = '{tes_builder.state_code.value}'
+"""
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=tes_builder.state_code,
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_criteria",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description=f"Criteria not met for {tes_builder.task_name}",
             ),
         ],
     )
