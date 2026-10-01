@@ -33,14 +33,7 @@ locals {
           time_zone = "Etc/UTC"
           env       = {}
         }
-        # One CO job covering every continuous pathway, not one job per
-        # pathway. CO's instance refuses a second session for an account that
-        # already has one, so parallel jobs would collide; flows named together
-        # share a single login.
-        #
-        # Only the continuous pathways belong here. Certificates and GED are
-        # one-time retroactive corrections — going forward CDOC awards the new
-        # amounts natively — so they are run from the CLI, not scheduled.
+        # Run all four Colorado pathways in one scheduled job.
         #
         # TODO(OBT-22951): both of the reasons this job could not run are now
         # cleared. It stays paused below until one manual execution of the job
@@ -53,10 +46,9 @@ locals {
         #      was already correct: this job routes through the VPC connector
         #      and Cloud NAT, so it leaves from the same allowlisted address
         #      the attended production run of 2026-08-30 used.
-        #   2. Both candidate views this job reads now exist:
-        #      earned_time.us_co_edovo_proposed_credit and
-        #      earned_time.us_co_work_proposed_credit. Certificates and GED
-        #      still have no view, which is why neither flow is named here.
+        #   2. All four candidate views are available in earned_time:
+        #      us_co_edovo_proposed_credit, us_co_work_proposed_credit,
+        #      us_co_certificate_proposed_credit, and us_co_ged_proposed_credit.
         #
         # Renaming the key from "us-co-edovo" destroys and recreates the job and
         # its scheduler rather than updating them in place -- for_each keys are
@@ -89,6 +81,8 @@ locals {
           args = [
             "--flow=co_edovo",
             "--flow=co_work",
+            "--flow=co_cert",
+            "--flow=co_ged",
             "--account=svc",
             "--workers=8",
             "--max-writes=15000",
