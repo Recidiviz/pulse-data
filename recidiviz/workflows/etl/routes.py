@@ -55,6 +55,7 @@ from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
 from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
 )
+from recidiviz.workflows.types import WorkflowsSystemType
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
@@ -68,10 +69,12 @@ TRIGGER_TYPESENSE_BACKFILL_ROUTE = "_trigger_typesense_backfill"
 
 # Keys in the body of a Typesense backfill task. Exactly one of COLLECTION_KEY and
 # SOURCE_COLLECTION_KEY is set: the latter for opportunities, whose many Firestore
-# collections all feed one Typesense collection.
+# collections all feed one Typesense collection. Opportunity tasks also set
+# SYSTEM_TYPE_KEY.
 STATE_CODE_KEY = "state_code"
 COLLECTION_KEY = "collection"
 SOURCE_COLLECTION_KEY = "source_collection"
+SYSTEM_TYPE_KEY = "system_type"
 
 # Delegates whose completion should trigger a Typesense backfill in the separate
 # search-indexing project. The tasks delegate is intentionally excluded — its collection
@@ -106,11 +109,13 @@ def _typesense_backfill_task_body(
 
     Opportunity tasks name the Firestore source collection instead of a Typesense one,
     since every per-state, per-opportunity Firestore collection feeds the single Typesense
-    `opportunities` collection."""
+    `opportunities` collection, along with whether the opportunity is a supervision or an
+    incarceration one."""
     if isinstance(delegate, WorkflowsOpportunityETLDelegate):
         return {
             STATE_CODE_KEY: delegate.state_code.value,
             SOURCE_COLLECTION_KEY: delegate.COLLECTION_BY_FILENAME[filename],
+            SYSTEM_TYPE_KEY: delegate.SYSTEM_TYPE_BY_FILENAME[filename].value,
         }
 
     if not isinstance(delegate, DELEGATES_TRIGGERING_TYPESENSE_BACKFILL):
@@ -252,6 +257,7 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
         state_code = body.get(STATE_CODE_KEY)
         collection = body.get(COLLECTION_KEY)
         source_collection = body.get(SOURCE_COLLECTION_KEY)
+        system_type = body.get(SYSTEM_TYPE_KEY)
 
         if not state_code:
             return (
@@ -260,9 +266,16 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
             )
 
         if source_collection:
+            if not system_type:
+                return (
+                    f"Must include {SYSTEM_TYPE_KEY} in the request body when "
+                    f"{SOURCE_COLLECTION_KEY} is set",
+                    HTTPStatus.BAD_REQUEST,
+                )
             TypesenseBackfillClient().trigger_opportunities_backfill(
                 state_code=StateCode(state_code),
                 source_collection=source_collection,
+                system_type=WorkflowsSystemType(system_type),
             )
             return "", HTTPStatus.OK
 

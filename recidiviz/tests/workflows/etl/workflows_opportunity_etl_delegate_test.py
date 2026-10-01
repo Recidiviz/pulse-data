@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
+from recidiviz.workflows.types import WorkflowsSystemType
 
 # A real (source file -> opportunity type) pairing from WORKFLOWS_OPPORTUNITY_CONFIGS,
 # used to exercise the config-driven opportunity_type lookup. The test_opportunity_type
@@ -281,6 +282,13 @@ class TestWorkflowsETLDelegate(TestCase):
         self.assertEqual(
             TEST_OPPORTUNITY_TYPE,
             delegate.OPPORTUNITY_TYPE_BY_FILENAME[TEST_OPPORTUNITY_FILENAME],
+        )
+
+    def test_system_type_matches_config(self) -> None:
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
+        self.assertEqual(
+            WorkflowsSystemType.SUPERVISION,
+            delegate.SYSTEM_TYPE_BY_FILENAME[TEST_OPPORTUNITY_FILENAME],
         )
 
     def test_transform_row(self) -> None:

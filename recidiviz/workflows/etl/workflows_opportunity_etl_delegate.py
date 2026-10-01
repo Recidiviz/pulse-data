@@ -27,6 +27,7 @@ from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.types import WorkflowsSystemType
 
 
 @attr.s
@@ -62,6 +63,13 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
         return {
             config.source_filename: config.export_collection_name
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+        }
+
+    @property
+    def SYSTEM_TYPE_BY_FILENAME(self) -> Dict[str, WorkflowsSystemType]:
+        return {
+            config.source_filename: config.person_record_type.to_workflows_system_type()
             for config in WORKFLOWS_OPPORTUNITY_CONFIGS
         }
 

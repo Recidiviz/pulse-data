@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.etl.typesense_backfill_client import TypesenseBackfillClient
+from recidiviz.workflows.types import WorkflowsSystemType
 
 FUNCTION_URL = "https://typesense-backfill-abc123-uc.a.run.app"
 
@@ -67,7 +68,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
     @patch("recidiviz.workflows.etl.typesense_backfill_client.requests.post")
     @patch("recidiviz.workflows.etl.typesense_backfill_client.fetch_id_token")
     @patch("recidiviz.workflows.etl.typesense_backfill_client.get_secret")
-    def test_trigger_opportunities_backfill_includes_source_collection(
+    def test_trigger_opportunities_backfill_includes_source_collection_and_system(
         self,
         mock_get_secret: MagicMock,
         mock_fetch_id_token: MagicMock,
@@ -81,6 +82,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
         TypesenseBackfillClient().trigger_opportunities_backfill(
             state_code=StateCode.US_XX,
             source_collection="US_XX-supervisionLevelDowngrade",
+            system_type=WorkflowsSystemType.SUPERVISION,
         )
 
         mock_post.assert_called_once_with(
@@ -89,6 +91,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
                 "stateCode": "US_XX",
                 "collections": ["opportunities"],
                 "sourceCollection": "US_XX-supervisionLevelDowngrade",
+                "system": "SUPERVISION",
             },
             headers={"Authorization": "Bearer id-token"},
             timeout=EXPECTED_TIMEOUT,
@@ -113,6 +116,7 @@ class TestTypesenseBackfillClient(unittest.TestCase):
             TypesenseBackfillClient().trigger_opportunities_backfill(
                 state_code=StateCode.US_XX,
                 source_collection="US_XX-supervisionLevelDowngrade",
+                system_type=WorkflowsSystemType.SUPERVISION,
             )
 
         self.assertIn(

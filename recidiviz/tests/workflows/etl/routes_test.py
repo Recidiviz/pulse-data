@@ -41,6 +41,7 @@ from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
 from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
 )
+from recidiviz.workflows.types import WorkflowsSystemType
 
 
 class TestWorkflowsETLRoutes(unittest.TestCase):
@@ -229,6 +230,9 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         mock_delegate.COLLECTION_BY_FILENAME = {
             filename: "US_XX-supervisionLevelDowngrade"
         }
+        mock_delegate.SYSTEM_TYPE_BY_FILENAME = {
+            filename: WorkflowsSystemType.SUPERVISION
+        }
         mock_get_delegates.return_value = [mock_delegate]
         with self.test_app.test_client() as client:
             response = client.post(
@@ -241,6 +245,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 body={
                     "state_code": "US_XX",
                     "source_collection": "US_XX-supervisionLevelDowngrade",
+                    "system_type": "SUPERVISION",
                 },
                 service_account_email="<EMAIL>",
             )
@@ -299,7 +304,48 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
 
     @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
-    def test_trigger_typesense_backfill_for_opportunities(
+    def test_trigger_typesense_backfill_for_supervision_opportunity(
+        self, mock_client: MagicMock
+    ) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={
+                    "state_code": "US_XX",
+                    "source_collection": "US_XX-supervisionLevelDowngrade",
+                    "system_type": "SUPERVISION",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_backfill.assert_not_called()
+            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX,
+                source_collection="US_XX-supervisionLevelDowngrade",
+                system_type=WorkflowsSystemType.SUPERVISION,
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_for_incarceration_opportunity(
+        self, mock_client: MagicMock
+    ) -> None:
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/_trigger_typesense_backfill",
+                json={
+                    "state_code": "US_XX",
+                    "source_collection": "US_XX-workRelease",
+                    "system_type": "INCARCERATION",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
+                state_code=StateCode.US_XX,
+                source_collection="US_XX-workRelease",
+                system_type=WorkflowsSystemType.INCARCERATION,
+            )
+
+    @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
+    def test_trigger_typesense_backfill_for_opportunity_missing_system_type(
         self, mock_client: MagicMock
     ) -> None:
         with self.test_app.test_client() as client:
@@ -310,12 +356,13 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                     "source_collection": "US_XX-supervisionLevelDowngrade",
                 },
             )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_client.return_value.trigger_backfill.assert_not_called()
-            mock_client.return_value.trigger_opportunities_backfill.assert_called_once_with(
-                state_code=StateCode.US_XX,
-                source_collection="US_XX-supervisionLevelDowngrade",
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Must include system_type in the request body when source_collection "
+                b"is set",
+                response.data,
             )
+            mock_client.return_value.trigger_opportunities_backfill.assert_not_called()
 
     @patch("recidiviz.workflows.etl.routes.TypesenseBackfillClient")
     def test_trigger_typesense_backfill_failure_is_retryable(

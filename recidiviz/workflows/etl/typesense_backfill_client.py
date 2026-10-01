@@ -26,7 +26,7 @@ Most Workflows collections map one-to-one from Firestore to Typesense. Opportuni
 not: every per-state, per-opportunity Firestore collection (e.g.
 `US_TN-supervisionLevelDowngrade`) feeds the single Typesense `opportunities`
 collection, so those requests additionally name the Firestore source collection they are
-backfilling from.
+backfilling from and whether that opportunity is a supervision or an incarceration one.
 
 Callers reach this client from a task on the Typesense backfill queue, which owns retrying
 a trigger the function refused for lack of capacity. This client therefore does not retry;
@@ -41,6 +41,7 @@ from google.oauth2.id_token import fetch_id_token
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.secrets import get_secret
+from recidiviz.workflows.types import WorkflowsSystemType
 
 # Secret Manager secret holding the HTTPS trigger URL of the Typesense backfill Cloud
 # Function. Populated per-environment (staging and production).
@@ -50,6 +51,7 @@ TYPESENSE_BACKFILL_FUNCTION_URL_SECRET_ID = "TYPESENSE_BACKFILL_FUNCTION_URL"  #
 STATE_CODE_PARAM = "stateCode"
 COLLECTIONS_PARAM = "collections"
 SOURCE_COLLECTION_PARAM = "sourceCollection"
+SYSTEM_PARAM = "system"
 
 # Names of the fields the backfill function returns in a 200 response body.
 TOTALS_FIELD = "totals"
@@ -83,10 +85,15 @@ class TypesenseBackfillClient:
             state_code=state_code,
             typesense_collection=collection,
             source_collection=None,
+            system_type=None,
         )
 
     def trigger_opportunities_backfill(
-        self, *, state_code: StateCode, source_collection: str
+        self,
+        *,
+        state_code: StateCode,
+        source_collection: str,
+        system_type: WorkflowsSystemType,
     ) -> None:
         """Sends an authenticated request to the Typesense backfill function to
         re-index a single Firestore opportunity collection (e.g.
@@ -99,11 +106,19 @@ class TypesenseBackfillClient:
         source are safe as well — the prune re-confirms each delete candidate against
         Firestore after the export — so a retried trigger that lands while an earlier run
         is still going duplicates the scan and import work rather than dropping
-        documents."""
+        documents.
+
+        Args:
+            state_code: The state whose opportunity collection to re-index.
+            source_collection: The Firestore opportunity collection to re-index.
+            system_type: Whether the opportunity in source_collection is for clients on
+                supervision or residents who are incarcerated.
+        """
         self._post_backfill_request(
             state_code=state_code,
             typesense_collection=OPPORTUNITIES_TYPESENSE_COLLECTION,
             source_collection=source_collection,
+            system_type=system_type,
         )
 
     def _post_backfill_request(
@@ -112,10 +127,11 @@ class TypesenseBackfillClient:
         state_code: StateCode,
         typesense_collection: str,
         source_collection: str | None,
+        system_type: WorkflowsSystemType | None,
     ) -> None:
         """Posts a backfill request to the Typesense backfill function, including
-        `sourceCollection` when the Typesense collection is fed by more than one
-        Firestore collection.
+        `sourceCollection` and `system` when the Typesense collection is fed by more than
+        one Firestore collection.
 
         No-ops when not running in GCP (local/test) or when the function URL secret is
         unset, so the trigger stays dormant until the URL is configured."""
@@ -140,6 +156,8 @@ class TypesenseBackfillClient:
         }
         if source_collection is not None:
             body[SOURCE_COLLECTION_PARAM] = source_collection
+        if system_type is not None:
+            body[SYSTEM_PARAM] = system_type.value
 
         id_token = fetch_id_token(request=Request(), audience=function_url)
         response = requests.post(
