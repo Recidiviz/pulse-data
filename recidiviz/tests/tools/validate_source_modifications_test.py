@@ -79,9 +79,6 @@ class CheckAssertionsTest(unittest.TestCase):
 
         self._run_test(modified_files, [], [UV_KEY])
 
-    # TODO(#8217) excluding the admin panel from endpoint documentation,
-    #  write new test to test the admin panel routes
-
     def _run_test(
         self,
         modified_files: List[str],
