@@ -185,20 +185,32 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # MUST cite that tracking issue, e.g. TODO(#12345).
 TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     **{
-        BigQueryAddress.from_str(f"us_co_document_extraction_results.{table_id}"): (
-            "Public LLM document extraction results view. The cross-state union "
-            "views that read these are added to the calculation graph in "
-            "TODO(#98833). (Emily Turner, 2026-09-18)"
+        BigQueryAddress.from_str(address): (
+            "Cross-state document extraction UNION ALL view. This is the public, "
+            "state-agnostic interface downstream product views read, but its only "
+            "current readers are the non-deployed views. Its "
+            "per-state parents are marked used through it. Tracked in TODO(OBT-51675). "
+            "(Emily Turner, 2026-09-22)"
         )
-        for table_id in [
-            "case_note_employment_info",
-            "case_note_employment_info_employer_entities",
-            "case_note_employment_info_employers",
-            "case_note_employment_info_employment_changes",
-            "case_note_housing_info",
-            "case_note_housing_info_housing_entities",
-            "case_note_payment_info",
-            "case_note_payment_info_payments",
+        for address in [
+            "document_extraction_results.case_note_employment_info",
+            "document_extraction_results.case_note_employment_info_employer_entities",
+            "document_extraction_results.case_note_employment_info_employers",
+            "document_extraction_results.case_note_employment_info_employment_changes",
+            "document_extraction_results.case_note_housing_info",
+            "document_extraction_results.case_note_housing_info_housing_entities",
+            "document_extraction_results.case_note_payment_info",
+            "document_extraction_results.case_note_payment_info_payments",
+            "document_extraction_results__entity_mentions.case_note_employment_info_employer_entity_mentions",
+            "document_extraction_results__entity_mentions.case_note_housing_info_housing_entity_mentions",
+            "document_extraction_results__pre_resolution.case_note_employment_info_employers",
+            "document_extraction_results__pre_resolution.case_note_housing_info",
+            "document_extraction_results__unvalidated.case_note_employment_info",
+            "document_extraction_results__unvalidated.case_note_employment_info_employers",
+            "document_extraction_results__unvalidated.case_note_employment_info_employment_changes",
+            "document_extraction_results__unvalidated.case_note_housing_info",
+            "document_extraction_results__unvalidated.case_note_payment_info",
+            "document_extraction_results__unvalidated.case_note_payment_info_payments",
         ]
     },
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (

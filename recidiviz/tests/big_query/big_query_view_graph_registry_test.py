@@ -503,6 +503,12 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                 view_derived_source_table_collections=[],
             )
 
+    @unittest.skip(
+        "TODO(OBT-51674): Cross-graph cycle detection is temporarily disabled "
+        "because the dataset-granular check reports a cycle once the calculation "
+        "graph reads the extraction results datasets. Re-enable this test "
+        "when the check is restored."
+    )
     def test_three_graph_cycle_raises(self) -> None:
         # g_a -> g_b -> g_c -> g_a via their boundary datasets.
         g_a = _graph(

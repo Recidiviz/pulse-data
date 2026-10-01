@@ -42,6 +42,7 @@ from recidiviz.datasets.static_data.views.view_config import (
 )
 from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
     deployed_llm_extraction_view_graphs,
+    deployed_state_agnostic_llm_extraction_results_view_builders,
 )
 from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
@@ -118,20 +119,23 @@ def _all_view_graphs(project_id: str) -> list[BigQueryViewGraph]:
 
 def _calculation_view_graph(
     project_id: str,
-    view_builder_candidates: list[BigQueryViewBuilder],
+    project_agnostic_view_builder_candidates: list[BigQueryViewBuilder],
 ) -> BigQueryViewGraph:
     """Returns the view graph whose views are updated by the calculation DAG."""
     return BigQueryViewGraph.build(
         name=CALCULATION_VIEW_GRAPH_NAME,
         project_id=project_id,
         input_source_table_update_group=SourceTableUpdateGroup.CALC,
-        view_builder_candidates=view_builder_candidates,
+        view_builder_candidates=[
+            *project_agnostic_view_builder_candidates,
+            *deployed_state_agnostic_llm_extraction_results_view_builders(project_id),
+        ],
     )
 
 
 def _calculation_view_builders_across_projects() -> list[BigQueryViewBuilder]:
-    """Returns every view builder that is a candidate for the calculation view graph,
-    across all projects.
+    """Returns every project-agnostic view builder that is a candidate for the
+    calculation view graph, across all projects.
     """
     logging.info("Gathering all calculation view graph builders...")
     return list(
