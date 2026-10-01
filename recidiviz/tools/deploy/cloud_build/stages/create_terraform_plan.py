@@ -215,7 +215,7 @@ def _get_airflow_file_sync_steps(
         name=BUILDER_GCLOUD,
         volumes=[RECIDIVIZ_SOURCE_VOLUME],
         wait_for=[create_airflow_source_manifest.id],
-        timeout_seconds=(3 * 60),  # 3 min timeout
+        timeout_seconds=(6 * 60),  # 6 min timeout
     )
 
     return [create_airflow_source_manifest, copy_airflow_source_files]
