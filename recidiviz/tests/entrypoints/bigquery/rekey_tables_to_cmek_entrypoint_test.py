@@ -32,14 +32,22 @@ class RekeyEntrypointScopingTest(unittest.TestCase):
         datasets = _pilot_filtered(_datasets_for_scope("raw_data"))
         self.assertEqual(
             [
+                "us_co_raw_data",
+                "us_co_raw_data_secondary",
                 "us_ma_raw_data",
                 "us_ma_raw_data_secondary",
                 "us_nc_raw_data",
                 "us_nc_raw_data_secondary",
+                "us_nd_raw_data",
+                "us_nd_raw_data_secondary",
                 "us_ny_raw_data",
                 "us_ny_raw_data_secondary",
                 "us_oz_raw_data",
                 "us_oz_raw_data_secondary",
+                "us_pa_raw_data",
+                "us_pa_raw_data_secondary",
+                "us_tx_raw_data",
+                "us_tx_raw_data_secondary",
                 "us_ut_raw_data",
                 "us_ut_raw_data_secondary",
             ],
