@@ -347,7 +347,9 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "incarceration_state_person",
     },
     "us_nd_ingest_view_results": {
+        "docstars_offensestable",
         "elite_alias",
+        "elite_incarceration_sentences",
         "elite_sentence_group",
         "task_deadlines",
     },

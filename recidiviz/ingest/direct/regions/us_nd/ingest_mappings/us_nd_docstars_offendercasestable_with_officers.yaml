@@ -48,6 +48,9 @@ input_columns:
   SEXOFF: STRING
   case_covered_by_violations_data: STRING
 unused_columns:
+  - PAROLE_TO
+  - SENT_YY
+  - SENT_MM
   - TERMINATING_OFFICER
   - SENT_TYPE
   - TD_PUB_AST
@@ -168,45 +171,6 @@ output:
                                     - "DOCR Inmate Sentence followed by Probation"
                                     - "DOCR Inmate Sentence followed by probation"
                                     - "resentenced to five years more"
-    supervision_sentences:
-      - $conditional:
-          - $if:
-              $not_in:
-                $value: DESCRIPTION
-                $options: [$literal("Pre-Trial")]
-            $then:
-              StateSupervisionSentence:
-                external_id: CASE_NUMBER
-                status:
-                  $conditional:
-                    - $if:
-                        $not_null: TERM_DATE
-                      $then: $literal_enum(StateSentenceStatus.COMPLETED)
-                supervision_type:
-                  $enum_mapping:
-                    $raw_text: DESCRIPTION
-                    $mappings:
-                      StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS: "Community Placement Pgrm"
-                      StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
-                      StateSupervisionSentenceSupervisionType.PAROLE:
-                        - "IC Parole"
-                        - "Parole"
-                        - "SSOP"
-                      StateSupervisionSentenceSupervisionType.PROBATION:
-                        - "Deferred"
-                        - "IC Probation"
-                        - "Suspended"
-                date_imposed: PAROLE_FR
-                effective_date: PAROLE_FR
-                projected_completion_date: PAROLE_TO
-                completion_date: TERM_DATE
-                max_length_days:
-                  $custom:
-                    $function: us_nd_custom_parsers.parse_supervision_sentence_max_length
-                    $args:
-                      years: SENT_YY
-                      months: SENT_MM
-                      effective_date: PAROLE_FR
     supervision_periods:
       - StateSupervisionPeriod:
           external_id: CASE_NUMBER
