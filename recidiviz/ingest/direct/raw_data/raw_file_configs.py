@@ -1312,7 +1312,7 @@ class DirectIngestRawFileConfig:
 class DirectIngestRegionRawFileConfig:
     """Class that parses and stores raw data import configs for a region"""
 
-    # TODO(#5262): Add documentation for the structure of the raw data yaml files
+    # The structure of the raw data YAML files is documented in yaml_schema/schema.json.
     region_code: str = attr.ib()
     region_module: ModuleType = attr.ib(default=regions)
     yaml_config_file_dir: str = attr.ib()
