@@ -92,10 +92,6 @@ def get_latest_job_for_state_instance(
 
     location, job_id = latest_job_location_and_id
 
-    # TODO(#209930): remove this check once dataflow is launched for all states
-    if state_code not in DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE:
-        return None
-
     # If a location has been recorded, use it, otherwise fall back to current configuration
     location = location or DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
