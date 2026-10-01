@@ -109,4 +109,14 @@ locals {
     : {}
   )
   restricted_access_states = toset(keys(local.restricted_access_state_groups))
+
+  # States that encrypt the direct ingest files they deliver. Mirrors
+  # ENCRYPTED_INGEST_FILES_STATES in recidiviz/ingest/direct/ingest_file_decryption.py
+  encrypted_ingest_files_states = toset(["US_NV"])
+
+  # Mirrors decryption_password_secret_id() in that same module.
+  ingest_files_decryption_password_secret_ids = {
+    for state_code in local.encrypted_ingest_files_states :
+    state_code => "${lower(state_code)}_ingest_files_decryption_password"
+  }
 }

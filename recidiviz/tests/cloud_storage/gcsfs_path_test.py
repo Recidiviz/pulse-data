@@ -56,6 +56,14 @@ class TestGcsfsPath(unittest.TestCase):
         # File system extensions are case-sensitive - this is not considered a ZIP file.
         self.assertFalse(path.has_zip_extension)
 
+        path = GcsfsFilePath.from_absolute_path(
+            "gs://recidiviz-456-bucket/path/to/my_file.7z"
+        )
+        self.assertEqual("7z", path.extension)
+        self.assertTrue(path.has_seven_zip_extension)
+        self.assertFalse(path.has_zip_extension)
+        self.assertTrue(path.has_compressed_extension)
+
     def test_base_file_name(self) -> None:
         path = GcsfsFilePath.from_absolute_path("gs://recidiviz-456-bucket/my_file.txt")
 

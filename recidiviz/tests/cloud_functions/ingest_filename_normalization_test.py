@@ -30,6 +30,7 @@ from recidiviz.cloud_functions.ingest_filename_normalization import (
     normalize_filename,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -419,6 +420,58 @@ class TestHandleZipfile(TestCase):
         self.assertFalse(
             DirectIngestGCSFileSystem.is_normalized_file_path(unnormalized_gz)
         )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.un7z")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.get_decryption_password_if_encrypted"
+    )
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    def test_seven_zip_file_from_encrypted_state_is_decrypted(
+        self, mock_fs: MagicMock, mock_get_password: MagicMock, mock_un7z: MagicMock
+    ) -> None:
+        """A .7z file from an encrypted-ingest state is extracted with the state's
+        password rather than unzipped."""
+        mock_get_password.return_value = "hunter2"
+        self.mock_request.get_json.return_value = {
+            "bucket": "recidiviz-test-direct-ingest-state-us-nv",
+            "name": "test_file.7z",
+        }
+
+        handle_zipfile(self.mock_request)
+
+        mock_get_password.assert_called_once_with(
+            state_code=StateCode.US_NV, project_id="recidiviz-test"
+        )
+        mock_un7z.assert_called_once()
+        self.assertEqual("hunter2", mock_un7z.call_args.kwargs["password"])
+        mock_fs.unzip.assert_not_called()
+        mock_fs.gunzip.assert_not_called()
+        mock_fs.mv.assert_called_once()
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.un7z")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.get_decryption_password_if_encrypted"
+    )
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    def test_seven_zip_file_from_unencrypted_state_is_extracted_without_password(
+        self, mock_fs: MagicMock, mock_get_password: MagicMock, mock_un7z: MagicMock
+    ) -> None:
+        """A .7z from a state that does not use encrypted ingest is still extracted, just
+        with no password (a 7z archive is not necessarily encrypted)."""
+        mock_get_password.return_value = None
+        self.mock_request.get_json.return_value = {
+            "bucket": "recidiviz-test-direct-ingest-state-us-xx",
+            "name": "test_file.7z",
+        }
+
+        handle_zipfile(self.mock_request)
+
+        mock_get_password.assert_called_once_with(
+            state_code=StateCode.US_XX, project_id="recidiviz-test"
+        )
+        mock_un7z.assert_called_once()
+        self.assertIsNone(mock_un7z.call_args.kwargs["password"])
+        mock_fs.mv.assert_called_once()
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
     def test_uncompressed_file_is_left_alone(self, mock_fs: MagicMock) -> None:

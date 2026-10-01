@@ -79,6 +79,28 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
   }
 }
 
+# Secrets holding the passwords states encrypt their direct ingest archives with, read
+# at runtime by the ingest zipfile handler above via get_secret. The password is
+# delivered out of band by the state and added manually as a new secret version after
+# apply, so Terraform manages only the empty container. To onboard another state, add it
+# to encrypted_ingest_files_states in direct-ingest-constants.tf.
+resource "google_secret_manager_secret" "ingest_files_decryption_password" {
+  for_each  = local.ingest_files_decryption_password_secret_ids
+  secret_id = each.value
+  # Auto (global) replication is blocked by the gcp.resourceLocations org policy, so
+  # pin replicas to the same regions used by our other user-managed secrets.
+  replication {
+    user_managed {
+      replicas {
+        location = "us-central1"
+      }
+      replicas {
+        location = "us-east1"
+      }
+    }
+  }
+}
+
 
 # This function is deployed by the `BuildCloudFunctions` deployment stage
 resource "google_cloudfunctions2_function" "filename_normalization" {

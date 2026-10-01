@@ -33,6 +33,8 @@ from flask import Request
 from recidiviz.cloud_functions.cloud_function_utils import cloud_functions_log
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
+from recidiviz.cloud_storage.gcsfs_seven_zip import un7z
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
 )
@@ -43,6 +45,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.raw_file_name_cleaners import clean_raw_file_name
+from recidiviz.ingest.direct.ingest_file_decryption import (
+    get_decryption_password_if_encrypted,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
 )
@@ -55,7 +60,7 @@ fs: Optional[DirectIngestGCSFileSystem] = None
 @functions_framework.cloud_event
 def normalize_filename(cloud_event: CloudEvent) -> None:
     """Function to normalize ingest filenames in GCS triggered by a finalized object event in GCS.
-    If the file is compressed (.zip or .gz), it will invoke another cloud function to handle
+    If the file is compressed (.zip, .gz, or .7z), it will invoke another cloud function to handle
     expanding it in order to allocate more memory to the process.
 
     If the existing file name is already prefixed by "unprocessed" or "processed", the function will return without
@@ -192,7 +197,8 @@ def _get_access_token(audience: str) -> str:
 @functions_framework.http
 def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
     """Function to handle compressed files in GCS triggered by HTTP POST request.
-    If the file is a .zip or .gz file, it will be expanded and moved to deprecated storage.
+    If the file is a .zip, .gz, or .7z file, it will be expanded and moved to deprecated
+    storage.
 
     Function will return 200 OK if the file is not compressed, if expanding it fails with a
     ValueError, or if expanding it is successful.
@@ -239,6 +245,7 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
     ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
         GcsfsBucketPath(bucket)
     )
+    project_id = os.environ["PROJECT_ID"]
 
     cloud_functions_log(
         severity="INFO",
@@ -247,6 +254,11 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
     try:
         if path.has_gz_extension:
             fs.gunzip(path, GcsfsBucketPath(bucket))
+        elif path.has_seven_zip_extension:
+            password = get_decryption_password_if_encrypted(
+                state_code=StateCode(region_code.upper()), project_id=project_id
+            )
+            un7z(fs, path, GcsfsBucketPath(bucket), password=password)
         else:
             fs.unzip(path, GcsfsBucketPath(bucket))
         fs.mv(
@@ -255,7 +267,7 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
                 region_code=region_code,
                 ingest_instance=ingest_instance,
                 deprecated_on_date=datetime.date.today(),
-                project_id=os.environ["PROJECT_ID"],
+                project_id=project_id,
             ),
         )
     except ValueError as e:

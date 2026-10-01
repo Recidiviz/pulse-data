@@ -193,6 +193,10 @@ dev = [
     # the deployed image. Needs `uv run playwright install chromium`.
     "playwright",
     "pygtrie",
+    # Only the ingest file decryption cloud function uses py7zr, and it installs from
+    # its own requirements.txt, not this file. A dev extra so tests and type checking
+    # can reach it without shipping it in the deployed app image.
+    "py7zr",
     "rope",
     "ruamel.yaml",
     "tabula-py",
