@@ -25,7 +25,6 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
-from recidiviz.big_query.constants import BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
@@ -92,10 +91,7 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
             schema_field_for_attribute(
                 field_name=field,
                 attribute=attribute,
-                # TODO(#54941) remove fallback when descriptions are required
-                description=attribute.metadata.get(
-                    "description", BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
-                ),
+                description=attribute.metadata["description"],
             )
             for field, attribute in attr.fields_dict(cls).items()
         ]

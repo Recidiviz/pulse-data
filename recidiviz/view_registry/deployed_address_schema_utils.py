@@ -204,6 +204,9 @@ from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import 
 from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
     DAG_RUNTIMES_VIEW_BUILDER,
 )
+from recidiviz.outcome_metrics.transitions_schemas import (
+    TRANSITIONS_ATTRIBUTE_COL_COMBINATIONS,
+)
 from recidiviz.outcome_metrics.views.transitions_metric_utils import (
     collect_view_builders_for_breadth_depth_metrics,
 )
@@ -345,8 +348,9 @@ def _get_breadth_depth_addresses_without_state_code() -> set[BigQueryAddress]:
     column. These are views grouped by attributes other than state_code.
     """
     attribute_col_combinations_without_state_code = [
-        ["product_transition_type"],
-        ["decarceral_impact_type", "has_mandatory_due_date", "is_jii_transition"],
+        cols
+        for cols in TRANSITIONS_ATTRIBUTE_COL_COMBINATIONS
+        if "state_code" not in {c.name for c in cols}
     ]
 
     current_year = datetime.now().year

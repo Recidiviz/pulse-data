@@ -22,6 +22,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.observations.views.events.person.impact_transition import (
     VIEW_BUILDER as impact_transition_view_builder,
 )
@@ -42,7 +43,14 @@ class TransitionsBreadthMetricForYearTest(SimpleBigQueryViewBuilderTestCase):
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
         return get_transitions_breadth_metric_for_year(
-            metric_year=self.METRIC_YEAR, attribute_cols=["system_type"]
+            metric_year=self.METRIC_YEAR,
+            attribute_cols=[
+                String(
+                    name="system_type",
+                    description="System type",
+                    mode="NULLABLE",
+                )
+            ],
         )
 
     @property

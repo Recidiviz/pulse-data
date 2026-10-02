@@ -99,12 +99,13 @@ class BigQueryViewColumn(abc.ABC):
 
         Comparison treats REQUIRED and NULLABLE modes as equivalent since BigQuery
         views always produce NULLABLE columns even when the underlying data is REQUIRED.
+        Descriptions are not compared because the deployed view's column descriptions
+        are generated from the declared schema.
         """
         self_mode = "NULLABLE" if self.mode == "REQUIRED" else self.mode
         other_mode = (
             "NULLABLE" if schema_field.mode == "REQUIRED" else schema_field.mode
         )
-        # TODO(#54941) compare descriptions after they are deployed with views
         return (self.field_type.value, self.name, self_mode,) == (
             schema_field.field_type,
             schema_field.name,

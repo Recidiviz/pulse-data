@@ -128,8 +128,49 @@ ALL_FULL_STATE_LAUNCH_DATES_SCHEMA = [
 ]
 
 
+STATE_CODE_ATTRIBUTE = String(
+    name="state_code",
+    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    mode="NULLABLE",
+)
+PRODUCT_TRANSITION_TYPE_ATTRIBUTE = String(
+    name="product_transition_type",
+    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    mode="NULLABLE",
+)
+DECARCERAL_IMPACT_TYPE_ATTRIBUTE = String(
+    name="decarceral_impact_type",
+    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    mode="NULLABLE",
+)
+HAS_MANDATORY_DUE_DATE_ATTRIBUTE = String(
+    name="has_mandatory_due_date",
+    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    mode="NULLABLE",
+)
+IS_JII_TRANSITION_ATTRIBUTE = String(
+    name="is_jii_transition",
+    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    mode="NULLABLE",
+)
+
+TRANSITIONS_ATTRIBUTE_COL_COMBINATIONS: list[list[BigQueryViewColumn]] = [
+    [STATE_CODE_ATTRIBUTE],
+    [PRODUCT_TRANSITION_TYPE_ATTRIBUTE],
+    [
+        DECARCERAL_IMPACT_TYPE_ATTRIBUTE,
+        HAS_MANDATORY_DUE_DATE_ATTRIBUTE,
+        IS_JII_TRANSITION_ATTRIBUTE,
+    ],
+]
+"""Sets of attribute columns used to disaggregate the breadth, baseline, and depth
+metric views. One set of views is generated per combination per metric year. Every
+attribute is a STRING because these views read from the impact_transition
+observation view, which stores every attribute as a string."""
+
+
 def transitions_breadth_metric_schema(
-    attribute_cols: list[str] | None,
+    attribute_cols: list[BigQueryViewColumn] | None,
 ) -> list[BigQueryViewColumn]:
     """Schema for breadth metric views.
 
@@ -143,19 +184,7 @@ def transitions_breadth_metric_schema(
             mode="NULLABLE",
         ),
     ]
-    # TODO(#54941): thread BigQueryViewColumn through `attribute_col_combinations`
-    # in `view_config.get_transitions_view_builders_for_views_to_update` so per-
-    # attribute descriptions and types can be wired in here instead of defaulting
-    # to undocumented String.
-    if attribute_cols:
-        for col in attribute_cols:
-            base.append(
-                String(
-                    name=col,
-                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
-                    mode="NULLABLE",
-                )
-            )
+    base.extend(attribute_cols or [])
     base.extend(
         [
             String(
@@ -184,7 +213,7 @@ def transitions_breadth_metric_schema(
 
 
 def transitions_baseline_metric_schema(
-    attribute_cols: list[str] | None,
+    attribute_cols: list[BigQueryViewColumn] | None,
 ) -> list[BigQueryViewColumn]:
     """Schema for baseline metric views."""
     base: list[BigQueryViewColumn] = [
@@ -194,19 +223,7 @@ def transitions_baseline_metric_schema(
             mode="NULLABLE",
         ),
     ]
-    # TODO(#54941): thread BigQueryViewColumn through `attribute_col_combinations`
-    # in `view_config.get_transitions_view_builders_for_views_to_update` so per-
-    # attribute descriptions and types can be wired in here instead of defaulting
-    # to undocumented String.
-    if attribute_cols:
-        for col in attribute_cols:
-            base.append(
-                String(
-                    name=col,
-                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
-                    mode="NULLABLE",
-                )
-            )
+    base.extend(attribute_cols or [])
     base.extend(
         [
             String(
@@ -245,7 +262,7 @@ def transitions_baseline_metric_schema(
 
 
 def transitions_depth_metric_schema(
-    attribute_cols: list[str] | None,
+    attribute_cols: list[BigQueryViewColumn] | None,
 ) -> list[BigQueryViewColumn]:
     """Schema for depth metric views."""
     base: list[BigQueryViewColumn] = [
@@ -255,19 +272,7 @@ def transitions_depth_metric_schema(
             mode="NULLABLE",
         ),
     ]
-    # TODO(#54941): thread BigQueryViewColumn through `attribute_col_combinations`
-    # in `view_config.get_transitions_view_builders_for_views_to_update` so per-
-    # attribute descriptions and types can be wired in here instead of defaulting
-    # to undocumented String.
-    if attribute_cols:
-        for col in attribute_cols:
-            base.append(
-                String(
-                    name=col,
-                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
-                    mode="NULLABLE",
-                )
-            )
+    base.extend(attribute_cols or [])
     base.extend(
         [
             String(

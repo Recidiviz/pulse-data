@@ -18,6 +18,7 @@
 import unittest
 from typing import Dict, Type
 
+import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
@@ -198,4 +199,18 @@ class TestRecidivizMetricType(unittest.TestCase):
         ]
         self.assertEqual(
             len(set(all_metric_descriptions)), len(all_metric_descriptions)
+        )
+
+    def test_every_metric_field_has_description(self) -> None:
+        fields_missing_description = sorted(
+            f"{metric_class.__name__}.{field_name}"
+            for metric_class in DATAFLOW_METRICS_TO_TABLES
+            for field_name, attribute in attr.fields_dict(metric_class).items()
+            if "description" not in attribute.metadata
+        )
+        self.assertEqual(
+            [],
+            fields_missing_description,
+            "Every RecidivizMetric field must set metadata={'description': ...}, "
+            "which becomes the column description in the metric's BigQuery table.",
         )

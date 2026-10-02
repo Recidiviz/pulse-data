@@ -30,7 +30,10 @@ from recidiviz.outcome_metrics.impact_transitions_view_builder import (
 from recidiviz.outcome_metrics.impact_transitions_view_collector import (
     ImpactTransitionsBigQueryViewCollector,
 )
-from recidiviz.outcome_metrics.transitions_schemas import all_impact_transitions_schema
+from recidiviz.outcome_metrics.transitions_schemas import (
+    TRANSITIONS_ATTRIBUTE_COL_COMBINATIONS,
+    all_impact_transitions_schema,
+)
 from recidiviz.outcome_metrics.views.all_full_state_launch_dates import (
     ALL_FULL_STATE_LAUNCH_DATES_VIEW_BUILDER,
 )
@@ -62,16 +65,10 @@ def get_transitions_view_builders_for_views_to_update() -> Sequence[
     """Collects and returns a list of builders for all views related to
     orgwide transitions metrics
     """
-    attribute_col_combinations = [
-        ["state_code"],
-        ["product_transition_type"],
-        ["decarceral_impact_type", "has_mandatory_due_date", "is_jii_transition"],
-    ]
-
     current_year = datetime.now().year
     breadth_depth_builders: list[BigQueryViewBuilder] = []
     for year in range(2024, current_year + 1):
-        for attribute_cols in attribute_col_combinations:
+        for attribute_cols in TRANSITIONS_ATTRIBUTE_COL_COMBINATIONS:
             breadth_depth_builders.extend(
                 collect_view_builders_for_breadth_depth_metrics(
                     metric_year=year, attribute_cols=attribute_cols

@@ -195,7 +195,6 @@ def format_schema_diffs(
     """Format a dictionary of schema diffs (keyed by view address)."""
     parts = []
     for address, schema_diff in diffs_by_address.items():
-        # TODO(#54941) include description when it is loaded
         diff_lines = "\n".join(
             f"  {indicator} {field.name} ({field.mode} {field.field_type})"
             for indicator, field in schema_diff
