@@ -48,6 +48,7 @@ from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
+from recidiviz.common.io.gzip_file_contents_handle import GzipFileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
@@ -223,17 +224,20 @@ class FakeGCSFileSystem(GCSFileSystem):
         content_type: str,
         timeout: int = 60,
         metadata: Optional[Dict[str, str]] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
         temp_path = generate_random_temp_path()
         if isinstance(contents_handle, FlaskFileStorageContentsHandle):
             contents_path = contents_handle.file_storage.filename or ""
         elif isinstance(contents_handle, LocalFileContentsHandle):
             contents_path = contents_handle.local_file_path
-        elif isinstance(contents_handle, ZipFileContentsHandle):
+        elif isinstance(
+            contents_handle, (ZipFileContentsHandle, GzipFileContentsHandle)
+        ):
             contents_path = None
-            with contents_handle.open() as zip_contents:
+            with contents_handle.open("rb") as decompressed_contents:
                 with open(temp_path, mode="wb") as temp_file:
-                    temp_file.write(zip_contents.read())
+                    shutil.copyfileobj(decompressed_contents, temp_file)
         elif isinstance(contents_handle, SftpFileContentsHandle):
             contents_path = contents_handle.sftp_file_path or ""
         else:

@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the GCSFileSystem."""
 from unittest import TestCase
+from zipfile import ZIP_STORED, ZipFile
 
 from google.api_core import exceptions
 from google.cloud import storage
@@ -30,6 +31,7 @@ from recidiviz.cloud_storage.gcs_file_system_impl import (
     unzip,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
@@ -108,6 +110,27 @@ class TestGcsFileSystem(TestCase):
                 call(mock_src_blob, "rewrite-token"),
             ]
         )
+
+    def test_upload_from_contents_handle_stream_sets_chunk_size(self) -> None:
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "dst.csv")
+        mock_bucket = create_autospec(Bucket)
+        mock_blob = create_autospec(Blob)
+        mock_bucket.blob.return_value = mock_blob
+        self.mock_storage_client.bucket.return_value = mock_bucket
+
+        self.fs.upload_from_contents_handle_stream(
+            path=dst_path,
+            contents_handle=LocalFileContentsHandle(
+                fixtures.as_filepath("example_file_structure_commas.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+            chunk_size=32 * 1024 * 1024,
+        )
+
+        mock_bucket.blob.assert_called_once_with("dst.csv", chunk_size=33554432)
+        mock_blob.upload_from_file.assert_called_once()
 
     def test_copy_with_failure(self) -> None:
         bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
@@ -277,6 +300,12 @@ class TestGcsFileSystem(TestCase):
         with self.assertRaisesRegex(ValueError, r"Could not decompress gzip file"):
             gunzip(file_system, gz_file_path=src_path, destination_dir=bucket_path)
 
+        self.assertFalse(
+            file_system.exists(
+                GcsfsFilePath.from_directory_and_file_name(bucket_path, "truncated.csv")
+            )
+        )
+
     def test_gunzip_not_a_gzip_file(self) -> None:
         file_system = FakeGCSFileSystem()
         bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
@@ -290,6 +319,68 @@ class TestGcsFileSystem(TestCase):
 
         with self.assertRaisesRegex(ValueError, r"is not a gzip file\. Cannot"):
             gunzip(file_system, gz_file_path=src_path, destination_dir=bucket_path)
+
+    def test_unzip_corrupt_member_reports_uploaded_members(self) -> None:
+        """A member whose data fails its CRC check is only detected partway through the
+        archive. Filename normalization may already have renamed the members uploaded
+        before it, so they are not deleted; the error must list them for manual cleanup
+        and surface as invalid input (ValueError)."""
+        file_system = FakeGCSFileSystem()
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "corrupt_second_member.zip"
+        )
+        second_member_contents = b"second,file\n" * 100
+
+        zip_path = generate_random_temp_path("corrupt_second_member.zip")
+        with ZipFile(zip_path, "w", compression=ZIP_STORED) as z:
+            z.writestr("first.csv", b"first,file\n")
+            z.writestr("second.csv", second_member_contents)
+        with open(zip_path, "rb") as f:
+            zip_bytes = bytearray(f.read())
+        # Members are stored uncompressed, so flipping a byte inside the second
+        # member's data leaves the archive structure intact but fails its CRC check.
+        corrupt_offset = zip_bytes.index(second_member_contents) + 1
+        zip_bytes[corrupt_offset] ^= 0xFF
+        with open(zip_path, "wb") as f:
+            f.write(zip_bytes)
+        file_system.test_add_path(src_path, zip_path)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Could not unzip member \[second\.csv\] of zip file "
+            r"\[gs://my-bucket/corrupt_second_member\.zip\]: "
+            r"Bad CRC-32 for file 'second\.csv'\. Members already uploaded, "
+            r"possibly since renamed to unprocessed_<timestamp>_raw_<name> by "
+            r"filename normalization, must be deleted from the bucket manually: "
+            r"\[gs://my-bucket/first\.csv\]$",
+        ):
+            unzip(file_system, zip_file_path=src_path, destination_dir=bucket_path)
+
+        self.assertTrue(
+            file_system.exists(
+                GcsfsFilePath.from_directory_and_file_name(bucket_path, "first.csv")
+            )
+        )
+        self.assertFalse(
+            file_system.exists(
+                GcsfsFilePath.from_directory_and_file_name(bucket_path, "second.csv")
+            )
+        )
+
+    def test_unzip_not_a_zip_file(self) -> None:
+        file_system = FakeGCSFileSystem()
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "example_file_structure_commas.zip"
+        )
+        # A plain CSV that only claims to be zipped.
+        file_system.test_add_path(
+            src_path, fixtures.as_filepath("example_file_structure_commas.csv")
+        )
+
+        with self.assertRaisesRegex(ValueError, r"is not a zip file\. Cannot unzip"):
+            unzip(file_system, zip_file_path=src_path, destination_dir=bucket_path)
 
     def test_unzip_zip_with_multiple_files(self) -> None:
         # Arrange

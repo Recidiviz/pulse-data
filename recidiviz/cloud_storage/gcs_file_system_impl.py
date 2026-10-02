@@ -15,18 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """An implementation of the GCSFileSystem built on top of a real GCSFileSystem."""
-import io
 import logging
 import os
-import shutil
 import tempfile
 import uuid
 import zlib
 from contextlib import contextmanager
-from gzip import GzipFile
+from gzip import BadGzipFile
 from io import TextIOWrapper
 from typing import IO, Any, Dict, Iterator, List, Optional, Union
-from zipfile import ZipFile, is_zipfile
+from zipfile import BadZipFile, ZipFile, is_zipfile
 
 from google.api_core import retry
 from google.api_core.page_iterator import HTTPIterator
@@ -46,6 +44,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.io.gzip_file_contents_handle import GzipFileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.common.retry_predicate import google_api_retry_predicate
@@ -78,41 +77,75 @@ def generate_random_temp_path(filename: Optional[str] = None) -> str:
     return os.path.join(temp_dir, filename if filename else str(uuid.uuid4()))
 
 
+# Errors raised by ZipFile while reading a member whose compressed data is corrupt or
+# truncated: a CRC mismatch or bad header (BadZipFile), invalid deflate data
+# (zlib.error), or data that ends before the member does (EOFError).
+_ZIP_MEMBER_DECOMPRESSION_ERRORS = (BadZipFile, zlib.error, EOFError)
+
+# Upload chunk size for decompressed contents. Each resumable upload request reads this
+# many bytes from the decompressing stream, and ZipFile turns that into a read of up
+# to the same number of compressed bytes, so peak memory scales with it. Benchmarked
+# on a 567 MiB zip: 100 MiB (the client default) peaked at ~444 MiB of live memory,
+# 32 MiB at ~179 MiB, and smaller sizes saved little more. Must be a multiple of
+# 256 KiB.
+DECOMPRESSED_UPLOAD_CHUNK_SIZE = 32 * 1024 * 1024
+
+
 def unzip(
     fs: GCSFileSystem, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
 ) -> List[GcsfsFilePath]:
     """Uses the provided fs to unzip the zip file at the provided |zip_file_path| and
     write all internal files into the provided |destination_dir|. Returns the list of
     unzipped paths generated.
-    """
-    logging.info("Downloading zip file [%s] as bytes", zip_file_path.uri())
-    downloaded_bytes = fs.download_as_bytes(zip_file_path)
-    logging.info("Finished downloading zip file [%s] as bytes", zip_file_path.uri())
-    zipbytes = io.BytesIO(downloaded_bytes)
-    if not is_zipfile(zipbytes):
-        raise ValueError(
-            f"Path [{zip_file_path.uri()}] is not a zip file. Cannot unzip."
-        )
 
-    new_paths = []
-    with ZipFile(zipbytes, "r") as z:
-        for i, content_filename in enumerate(z.namelist()):
-            new_path = GcsfsFilePath.from_directory_and_file_name(
-                destination_dir, content_filename
+    The archive is streamed from GCS with ranged reads rather than downloaded, so memory
+    use does not grow with the archive size. If a member turns out to be corrupt partway
+    through, a ValueError is raised. The members uploaded before it stay in
+    |destination_dir| and are listed in the error so they can be removed manually.
+    """
+    # The non-verifiable reader is seekable, which ZipFile requires to read the central
+    # directory at the end of the archive. ZipFile still checks each member's CRC32 as
+    # the member is read.
+    with fs.open(zip_file_path, mode="rb", verifiable=False) as zip_stream:
+        if not is_zipfile(zip_stream):
+            raise ValueError(
+                f"Path [{zip_file_path.uri()}] is not a zip file. Cannot unzip."
             )
-            logging.info(
-                "[%s of %s] Uploading unzipped file %s to %s",
-                i,
-                len(z.namelist()),
-                content_filename,
-                new_path.uri(),
-            )
-            fs.upload_from_contents_handle_stream(
-                path=new_path,
-                contents_handle=ZipFileContentsHandle(content_filename, z),
-                content_type=BYTES_CONTENT_TYPE,
-            )
-            new_paths.append(new_path)
+
+        new_paths: List[GcsfsFilePath] = []
+        with ZipFile(zip_stream, "r") as z:
+            content_filenames = z.namelist()
+            for i, content_filename in enumerate(content_filenames):
+                new_path = GcsfsFilePath.from_directory_and_file_name(
+                    destination_dir, content_filename
+                )
+                logging.info(
+                    "[%s of %s] Uploading unzipped file %s to %s",
+                    i,
+                    len(content_filenames),
+                    content_filename,
+                    new_path.uri(),
+                )
+                try:
+                    fs.upload_from_contents_handle_stream(
+                        path=new_path,
+                        contents_handle=ZipFileContentsHandle(content_filename, z),
+                        content_type=BYTES_CONTENT_TYPE,
+                        chunk_size=DECOMPRESSED_UPLOAD_CHUNK_SIZE,
+                    )
+                except _ZIP_MEMBER_DECOMPRESSION_ERRORS as e:
+                    # Members already uploaded are not deleted here: filename
+                    # normalization renames each one as it lands, so their paths are
+                    # no longer known.
+                    uploaded_uris = ", ".join(p.uri() for p in new_paths)
+                    raise ValueError(
+                        f"Could not unzip member [{content_filename}] of zip file "
+                        f"[{zip_file_path.uri()}]: {e}. Members already uploaded, "
+                        f"possibly since renamed to unprocessed_<timestamp>_raw_<name> "
+                        f"by filename normalization, must be deleted from the bucket "
+                        f"manually: [{uploaded_uris}]"
+                    ) from e
+                new_paths.append(new_path)
     logging.info("Finished uploading unzipped files")
     return new_paths
 
@@ -120,6 +153,11 @@ def unzip(
 # First two bytes of every gzip member, per RFC 1952. Used to validate a file's contents
 # the way is_zipfile() does for zip archives.
 GZIP_MAGIC_NUMBER = b"\x1f\x8b"
+
+# Errors raised by GzipFile while reading a corrupt or truncated stream: a bad header or
+# CRC/size trailer mismatch (BadGzipFile), invalid deflate data (zlib.error), or data
+# that ends before the end-of-stream marker (EOFError).
+_GZIP_DECOMPRESSION_ERRORS = (BadGzipFile, zlib.error, EOFError)
 
 
 def gunzip(
@@ -132,46 +170,38 @@ def gunzip(
     Unlike a zip archive, a gzip file holds exactly one member and carries no internal
     file name, so the output name is the input name with the .gz extension stripped
     (e.g. MY_FILE.csv.gz -> MY_FILE.csv).
+
+    The file is streamed from GCS and decompressed as it is uploaded, so memory use does
+    not grow with the file size. A corrupt or truncated file raises a ValueError before
+    the upload is finalized, so no output file is created.
     """
-    logging.info("Downloading gzip file [%s] as bytes", gz_file_path.uri())
-    downloaded_bytes = fs.download_as_bytes(gz_file_path)
-    logging.info("Finished downloading gzip file [%s] as bytes", gz_file_path.uri())
-
-    if not downloaded_bytes.startswith(GZIP_MAGIC_NUMBER):
-        raise ValueError(
-            f"Path [{gz_file_path.uri()}] is not a gzip file. Cannot decompress."
-        )
-
-    # Decompress up front rather than streaming during upload: a truncated or corrupt
-    # member raises partway through, and callers treat a bad file as invalid input
-    # (ValueError) rather than a retryable server error.
-    temp_path = generate_random_temp_path(gz_file_path.base_file_name)
-    try:
-        try:
-            with GzipFile(fileobj=io.BytesIO(downloaded_bytes), mode="rb") as gz_file:
-                with open(temp_path, "wb") as decompressed_file:
-                    shutil.copyfileobj(gz_file, decompressed_file)
-        except (OSError, EOFError, zlib.error) as e:
+    new_path = GcsfsFilePath.from_directory_and_file_name(
+        destination_dir, gz_file_path.base_file_name
+    )
+    # The non-verifiable reader is seekable, which lets each upload attempt rewind the
+    # stream. GzipFile still checks the CRC32 and size trailer at the end of the stream.
+    with fs.open(gz_file_path, mode="rb", verifiable=False) as gz_stream:
+        if gz_stream.read(len(GZIP_MAGIC_NUMBER)) != GZIP_MAGIC_NUMBER:
             raise ValueError(
-                f"Could not decompress gzip file [{gz_file_path.uri()}]: {e}"
-            ) from e
+                f"Path [{gz_file_path.uri()}] is not a gzip file. Cannot decompress."
+            )
 
-        new_path = GcsfsFilePath.from_directory_and_file_name(
-            destination_dir, gz_file_path.base_file_name
-        )
         logging.info(
             "Uploading decompressed file %s to %s",
             gz_file_path.file_name,
             new_path.uri(),
         )
-        fs.upload_from_contents_handle_stream(
-            path=new_path,
-            contents_handle=LocalFileContentsHandle(temp_path, cleanup_file=False),
-            content_type=BYTES_CONTENT_TYPE,
-        )
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        try:
+            fs.upload_from_contents_handle_stream(
+                path=new_path,
+                contents_handle=GzipFileContentsHandle(gz_stream),
+                content_type=BYTES_CONTENT_TYPE,
+                chunk_size=DECOMPRESSED_UPLOAD_CHUNK_SIZE,
+            )
+        except _GZIP_DECOMPRESSION_ERRORS as e:
+            raise ValueError(
+                f"Could not decompress gzip file [{gz_file_path.uri()}]: {e}"
+            ) from e
     logging.info("Finished uploading decompressed file")
     return [new_path]
 
@@ -421,10 +451,11 @@ class GCSFileSystemImpl(GCSFileSystem):
         content_type: str,
         timeout: int = 60,
         metadata: Optional[Dict[str, str]] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
         bucket = self.storage_client.bucket(path.bucket_name)
         with contents_handle.open("rb") as file_stream:
-            blob = bucket.blob(path.blob_name)
+            blob = bucket.blob(path.blob_name, chunk_size=chunk_size)
             if metadata:
                 blob.metadata = metadata
             blob.upload_from_file(

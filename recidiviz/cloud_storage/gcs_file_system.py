@@ -144,8 +144,13 @@ class GCSFileSystem:
         content_type: str,
         timeout: int = 60,
         metadata: Optional[Dict[str, str]] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
-        """Uploads contents in handle via a file stream to a file path."""
+        """Uploads contents in handle via a file stream to a file path. |chunk_size|
+        is the number of bytes read from the stream and sent per resumable upload
+        request; it must be a multiple of 256 KiB. If None, the GCS client default
+        (100 MiB) is used.
+        """
 
     @abc.abstractmethod
     def upload_local_file(

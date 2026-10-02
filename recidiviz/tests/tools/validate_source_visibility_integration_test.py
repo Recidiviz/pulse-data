@@ -549,6 +549,7 @@ def test_cloud_function_ingest_filename_normalization_dependencies() -> None:
                 "recidiviz.common.io.file_contents_handle",
                 "recidiviz.common.io.local_file_contents_handle",
                 "recidiviz.common.io.zip_file_contents_handle",
+                "recidiviz.common.io.gzip_file_contents_handle",
                 "recidiviz.common.retry_predicate",
                 "recidiviz.ingest.direct.direct_ingest_bucket_name_utils",
                 "recidiviz.ingest.direct.ingest_file_decryption",

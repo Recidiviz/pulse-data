@@ -251,9 +251,10 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         content_type: str,
         timeout: int = 60,
         metadata: Optional[Dict[str, str]] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
         return self.gcs_file_system.upload_from_contents_handle_stream(
-            path, contents_handle, content_type, timeout, metadata
+            path, contents_handle, content_type, timeout, metadata, chunk_size
         )
 
     def upload_local_file(
