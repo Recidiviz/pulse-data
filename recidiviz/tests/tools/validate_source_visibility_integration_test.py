@@ -727,6 +727,11 @@ def test_application_data_import_server_dependencies() -> None:
                 "recidiviz.cloud_storage",
                 "recidiviz.cloud_memorystore",
                 "recidiviz.common",
+                # TODO(OBT-53143): CNI meetings export views gate their deploy
+                # projects by importing the extraction subsystem at module load,
+                # pulling it in here. Narrow back once that gating moves into a
+                # view-graph collector.
+                "recidiviz.documents",
                 "recidiviz.firestore.firestore_client",
                 "recidiviz.ingest",
                 "recidiviz.metrics",
@@ -839,6 +844,11 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
                 "recidiviz.segment.product_type",
                 "recidiviz.datasets.static_data.views.data",
                 "recidiviz.datasets.static_data.views.dataset_config",
+                # TODO(OBT-53143): CNI meetings export views gate their deploy
+                # projects by importing the extraction subsystem at module load,
+                # pulling it in here. Narrow back once that gating moves into a
+                # view-graph collector.
+                "recidiviz.documents",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
                 # Pulled in transitively by yaml_managed.datasets.

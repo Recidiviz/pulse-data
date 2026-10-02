@@ -186,18 +186,16 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     **{
         BigQueryAddress.from_str(address): (
-            "Cross-state document extraction UNION ALL view. This is the public, "
-            "state-agnostic interface downstream product views read, but its only "
-            "current readers are the document_extraction_sessions views, which have "
-            "no deployed downstream consumer yet. Its per-state parents are marked "
-            "used through it. Tracked in TODO(OBT-51675). (Emily Turner, 2026-09-22)"
+            "Cross-state document extraction UNION ALL view with no deployed "
+            "downstream consumer: either a payment view (the payment "
+            "document_extraction_sessions view that reads it is itself unconsumed) "
+            "or an unvalidated/pre-resolution/entity view that no sessions view "
+            "reads. Its per-state parents are marked used through it. Tracked in "
+            "TODO(OBT-51675). (Emily Turner, 2026-09-22)"
         )
         for address in [
-            "document_extraction_results.case_note_employment_info",
             "document_extraction_results.case_note_employment_info_employer_entities",
-            "document_extraction_results.case_note_employment_info_employers",
             "document_extraction_results.case_note_employment_info_employment_changes",
-            "document_extraction_results.case_note_housing_info",
             "document_extraction_results.case_note_housing_info_housing_entities",
             "document_extraction_results.case_note_payment_info",
             "document_extraction_results.case_note_payment_info_payments",
@@ -213,20 +211,13 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__unvalidated.case_note_payment_info_payments",
         ]
     },
-    **{
-        BigQueryAddress.from_str(address): (
-            "Sessionized view over cross-state document extraction results, now in "
-            "the calculation view graph but without a deployed downstream consumer "
-            "until the summary/export views are wired up. Tracked in TODO(OBT-51675). "
-            "(Emily Turner, 2026-10-02)"
-        )
-        for address in [
-            "document_extraction_sessions.case_note_employment_info_llm_sessions",
-            "document_extraction_sessions.case_note_employment_info_employer_llm_sessions",
-            "document_extraction_sessions.case_note_housing_info_llm_sessions",
-            "document_extraction_sessions.case_note_payment_info_payment_type_llm_sessions",
-        ]
-    },
+    BigQueryAddress.from_str(
+        "document_extraction_sessions.case_note_payment_info_payment_type_llm_sessions"
+    ): (
+        "Payment sessions view with no deployed downstream consumer yet; there is "
+        "no CNI payment summary view, unlike employment and housing. Tracked in "
+        "TODO(OBT-51675). (Emily Turner, 2026-10-02)"
+    ),
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New tasks snooze status archive view. "
         "Downstream work is tracked in TODO(OBT-39438). (Daniel McLaughlin, 2026-07-29)"
