@@ -32,6 +32,12 @@ schema:
     type: STRING
     mode: NULLABLE
     description: Terminal failure detail. Always present on "failed" and "completed_with_errors" rows, null otherwise.
+  - name: code_version
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      The git commit the run's code was built from (the image's CURRENT_GIT_SHA). Null when it was not set, e.g. a
+      local run that did not set CURRENT_GIT_SHA.
   - name: recorded_at
     type: TIMESTAMP
     mode: REQUIRED

@@ -57,6 +57,22 @@ schema:
     type: STRING
     mode: NULLABLE
     description: CoWriteResult.entry_time, identifying the row eOMIS created, or null when nothing was written.
+  - name: stored_rows
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      The rows the write created, as eOMIS stored them, as a JSON list, e.g. [{"type": "14", "status": "Partially
+      Applied", "days": 11}, {"type": "1S", "status": "Pending", "days": 4}]. Null when nothing was written.
+  - name: dates_before
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      The person's header dates just before the write, as a JSON object keyed by label, e.g. {"MRD(EST.)":
+      "11/20/2026", "PED(EST.)": "03/01/2026"}. Null when nothing was submitted.
+  - name: dates_after
+    type: STRING
+    mode: NULLABLE
+    description: The person's header dates just after the write, in the same form as dates_before.
   - name: recorded_at
     type: TIMESTAMP
     mode: REQUIRED
