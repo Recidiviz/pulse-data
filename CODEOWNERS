@@ -3,6 +3,27 @@
 .github/runs-on.yml @Recidiviz/infra-review
 
 # DADS-owned code
+recidiviz/research/** @Recidiviz/dads
+recidiviz/looker/** @Recidiviz/dads
+recidiviz/observations/** @Recidiviz/dads
+recidiviz/aggregated_metrics/** @Recidiviz/dads
+recidiviz/outcome_metrics/** @Recidiviz/dads
+recidiviz/tools/analyst/** @Recidiviz/dads
+recidiviz/tools/looker/** @Recidiviz/dads
+recidiviz/tests/research/** @Recidiviz/dads
+recidiviz/tests/looker/** @Recidiviz/dads
+recidiviz/tests/observations/** @Recidiviz/dads
+recidiviz/tests/aggregated_metrics/** @Recidiviz/dads
+recidiviz/tests/outcome_metrics/** @Recidiviz/dads
+recidiviz/tests/tools/analyst/** @Recidiviz/dads
+recidiviz/tests/tools/looker/** @Recidiviz/dads
+recidiviz/calculator/query/state/views/analyst_data/** @Recidiviz/dads
+recidiviz/calculator/query/state/views/sessions/** @Recidiviz/dads
+recidiviz/calculator/query/state/views/sessions_validation/** @Recidiviz/dads
+recidiviz/calculator/query/state/views/sentence_sessions/** @Recidiviz/dads
+recidiviz/tests/calculator/query/state/views/analyst_data/** @Recidiviz/dads
+recidiviz/tests/calculator/query/state/views/sessions/** @Recidiviz/dads
+recidiviz/tests/calculator/query/state/views/sentence_sessions/** @Recidiviz/dads
 
 # R&D-owned code
 
