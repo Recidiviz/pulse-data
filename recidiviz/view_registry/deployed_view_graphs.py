@@ -41,6 +41,7 @@ from recidiviz.datasets.static_data.views.view_config import (
     get_static_data_view_builders,
 )
 from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
+    deployed_document_extraction_sessions_view_builders,
     deployed_llm_extraction_view_graphs,
     deployed_state_agnostic_llm_extraction_results_view_builders,
 )
@@ -129,6 +130,7 @@ def _calculation_view_graph(
         view_builder_candidates=[
             *project_agnostic_view_builder_candidates,
             *deployed_state_agnostic_llm_extraction_results_view_builders(project_id),
+            *deployed_document_extraction_sessions_view_builders(project_id),
         ],
     )
 

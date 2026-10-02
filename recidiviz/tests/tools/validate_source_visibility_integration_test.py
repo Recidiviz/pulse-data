@@ -917,6 +917,7 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.aggregated_metrics",
                 "recidiviz.calculator.query",
                 "recidiviz.datasets.static_data.views",
+                "recidiviz.documents.views",
                 "recidiviz.ingest.views",
                 "recidiviz.ingest.direct",
                 "recidiviz.llm_eval",

@@ -188,9 +188,9 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         BigQueryAddress.from_str(address): (
             "Cross-state document extraction UNION ALL view. This is the public, "
             "state-agnostic interface downstream product views read, but its only "
-            "current readers are the non-deployed views. Its "
-            "per-state parents are marked used through it. Tracked in TODO(OBT-51675). "
-            "(Emily Turner, 2026-09-22)"
+            "current readers are the document_extraction_sessions views, which have "
+            "no deployed downstream consumer yet. Its per-state parents are marked "
+            "used through it. Tracked in TODO(OBT-51675). (Emily Turner, 2026-09-22)"
         )
         for address in [
             "document_extraction_results.case_note_employment_info",
@@ -211,6 +211,20 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__unvalidated.case_note_housing_info",
             "document_extraction_results__unvalidated.case_note_payment_info",
             "document_extraction_results__unvalidated.case_note_payment_info_payments",
+        ]
+    },
+    **{
+        BigQueryAddress.from_str(address): (
+            "Sessionized view over cross-state document extraction results, now in "
+            "the calculation view graph but without a deployed downstream consumer "
+            "until the summary/export views are wired up. Tracked in TODO(OBT-51675). "
+            "(Emily Turner, 2026-10-02)"
+        )
+        for address in [
+            "document_extraction_sessions.case_note_employment_info_llm_sessions",
+            "document_extraction_sessions.case_note_employment_info_employer_llm_sessions",
+            "document_extraction_sessions.case_note_housing_info_llm_sessions",
+            "document_extraction_sessions.case_note_payment_info_payment_type_llm_sessions",
         ]
     },
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (

@@ -65,6 +65,9 @@ from recidiviz.calculator.query.state.views.jii_texting.jii_texting_welcome_mess
     JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.views.view_config import (
+    collect_document_extraction_sessions_view_builders,
+)
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
     raw_latest_views_dataset_for_region,
@@ -494,6 +497,12 @@ class ViewDagInvariantTests(unittest.TestCase):
             # reading the unioned view is what lets a newly migrated policy flow through
             # without adding a branch here.
             RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER.address,
+            # Sessionized views over validated document extraction results, each
+            # tracking a status field over time across all states at once.
+            *(
+                builder.address
+                for builder in collect_document_extraction_sessions_view_builders()
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {

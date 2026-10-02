@@ -182,6 +182,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "document_extraction_results__entity_mentions",
     "document_extraction_results__pre_resolution",
     "document_extraction_results__unvalidated",
+    "document_extraction_sessions",
     "us_tn_tomis_1_0_analog_views",
     "public_dashboard_views",
     "recommended_classification_spans_us_ix",
