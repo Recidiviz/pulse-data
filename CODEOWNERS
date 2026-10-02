@@ -44,6 +44,12 @@ recidiviz/persistence/**/workflows/** @Recidiviz/polaris-core
 recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_columns.py @jovergaag @georgemandis
 recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
 
+# Implementation engineers. Kept above the Doppler rules below, so the more specific Doppler ingest/direct rules still win.
+recidiviz/ingest/direct/** @Recidiviz/implementation-engineers
+recidiviz/tests/ingest/direct/** @Recidiviz/implementation-engineers
+recidiviz/validation/views/** @Recidiviz/implementation-engineers
+recidiviz/tests/validation/views/** @Recidiviz/implementation-engineers
+
 # Doppler
 #  For Doppler-owned files, which can tend to have a high volume of edits, review is assigned to the
 #  @Recidiviz/doppler-codeowners group, which assigns a single reviewer via round robin. That reviewer will loop in
