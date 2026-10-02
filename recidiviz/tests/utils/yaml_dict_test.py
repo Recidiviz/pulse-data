@@ -39,6 +39,36 @@ class TestYAMLDict(unittest.TestCase):
         self.assertIsNone(yaml_dict.pop_dicts_optional("my_key"))
         self.assertIsNone(yaml_dict.pop_list_optional("my_key", str))
 
+    def test_optionals_wrong_type_raises(self) -> None:
+        yaml_dict = YAMLDict(raw_yaml={"my_key": "my_str"})
+        with self.assertRaisesRegex(
+            ValueError, r"The field \[my_key\] must be of type \[<class 'int'>\]"
+        ):
+            _ = yaml_dict.peek_optional("my_key", int)
+
+        yaml_dict = YAMLDict(raw_yaml={"my_key": "my_str"})
+        with self.assertRaisesRegex(
+            ValueError, r"The field \[my_key\] must be of type \[<class 'dict'>\]"
+        ):
+            _ = yaml_dict.pop_dict_optional("my_key")
+
+        yaml_dict = YAMLDict(raw_yaml={"my_key": "my_str"})
+        with self.assertRaisesRegex(
+            ValueError, r"The field \[my_key\] must be of type \[<class 'list'>\]"
+        ):
+            _ = yaml_dict.pop_dicts_optional("my_key")
+
+        yaml_dict = YAMLDict(raw_yaml={"my_key": "my_str"})
+        with self.assertRaisesRegex(
+            ValueError, r"The field \[my_key\] must be of type \[<class 'list'>\]"
+        ):
+            _ = yaml_dict.pop_list_optional("my_key", str)
+
+    def test_peek_optional_does_not_consume(self) -> None:
+        yaml_dict = YAMLDict(raw_yaml={"my_key": "my_str"})
+        self.assertEqual("my_str", yaml_dict.peek_optional("my_key", str))
+        self.assertEqual(1, len(yaml_dict))
+
     def test_pop_none_value_throws(self) -> None:
         key = "my_key"
 

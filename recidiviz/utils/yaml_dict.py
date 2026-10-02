@@ -79,10 +79,9 @@ class YAMLDict:
         return value
 
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
-        """Returns the object at the given key |field| without popping it from the
+        """Returns the object at the given key |field| after popping it from the
         YAMLDict. Will return None if the field does not exist or if the value at that
-        field is None. Throws if the value is nonnull but the type is not the expected
-        |value_type|.
+        field is None. Throws if the value is nonnull and not the expected |value_type|.
         """
         value = self.raw_yaml.pop(field, None)
         if value is None:
@@ -91,9 +90,8 @@ class YAMLDict:
 
     def pop(self, field: str, value_type: Type[T]) -> T:
         """Returns the object at the given key |field| after popping it from the
-        YAMLDict. Throws if the value is nonnull but the type is not the expected
-        |value_type|, or if the field does not exist, or if the value at that field is
-        None.
+        YAMLDict. Throws if the value is nonnull and not the expected |value_type|, or
+        if the field does not exist, or if the value at that field is None.
         """
         try:
             value = self.raw_yaml.pop(field)
@@ -111,19 +109,14 @@ class YAMLDict:
         return YAMLDict(self.pop(field, dict))
 
     def pop_dict_optional(self, field: str) -> Optional["YAMLDict"]:
-        """Returns the dictionary at the given key |field| without popping it from the
+        """Returns the dictionary at the given key |field| after popping it from the
         YAMLDict. Will return None if the field does not exist or if the value at that
-        field is None.
+        field is None. Throws if the value is nonnull but the type is not a dictionary.
         """
-        # TODO(OBT-46924): This catches the ValueError that a nonnull non-dict
-        # value raises, so the key is consumed and the malformed value silently
-        # discarded. Catch only KeyError here (and in the other *_optional accessors)
-        # so wrong-typed values raise.
-        try:
-            raw_yaml = self.pop(field, dict)
-            return YAMLDict(raw_yaml)
-        except (KeyError, ValueError):
+        raw_yaml = self.pop_optional(field, dict)
+        if raw_yaml is None:
             return None
+        return YAMLDict(raw_yaml)
 
     @classmethod
     def _transform_dicts(cls, field: str, raw_yamls: List) -> List["YAMLDict"]:
@@ -147,9 +140,8 @@ class YAMLDict:
         list or if any of the list values are not dictionaries. If the field does not
         exist, or if the value at that field is None, returns None.
         """
-        try:
-            raw_yamls = self.pop(field, list)
-        except (KeyError, ValueError):
+        raw_yamls = self.pop_optional(field, list)
+        if raw_yamls is None:
             return None
         return self._transform_dicts(field, raw_yamls)
 
@@ -172,9 +164,8 @@ class YAMLDict:
         list or if any of the list values are not the expected |list_values_type|. If
         the field does not exist, or if the value at that field is None, returns None.
         """
-        try:
-            raw_yamls = self.pop(field, list)
-        except (KeyError, ValueError):
+        raw_yamls = self.pop_optional(field, list)
+        if raw_yamls is None:
             return None
         return [
             self._assert_type(field, raw_val, list_values_type) for raw_val in raw_yamls
@@ -183,12 +174,12 @@ class YAMLDict:
     def peek_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
         """Returns the object at the given key |field| without popping it from the
         YAMLDict. Will return None if the field does not exist or if the value at that
-        field is None.
+        field is None. Throws if the value is nonnull and not the expected |value_type|.
         """
-        try:
-            return self.peek(field, value_type)
-        except (KeyError, ValueError):
+        value = self.raw_yaml.get(field)
+        if value is None:
             return None
+        return self._assert_type(field, value, value_type)
 
     def peek(self, field: str, value_type: Type[T]) -> T:
         """Returns the object at the given key |field| without popping it from the

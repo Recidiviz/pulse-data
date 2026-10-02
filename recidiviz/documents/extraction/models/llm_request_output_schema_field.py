@@ -504,16 +504,11 @@ class LLMRequestOutputSchemaField(abc.ABC):
         field_name: str, field_yaml_dict: YAMLDict, constraint_key: str
     ) -> dict | None:
         """Returns the mapping at |constraint_key| without consuming it, or None
-        when the key is absent. Raises when the key is present but its value is
-        not a mapping, so a misdeclared constraint (e.g. a bare condition field
-        name) fails at parse time instead of being silently dropped.
+        when the key is absent or None. Raises when the key is present but its value is
+        not a mapping.
         """
-        # TODO(OBT-46924): Simplify this once the YAMLDict *_optional accessors
-        # raise on wrong-typed values instead of swallowing them.
-        if constraint_key not in field_yaml_dict.keys():
-            return None
         try:
-            return field_yaml_dict.peek(constraint_key, dict)
+            return field_yaml_dict.peek_optional(constraint_key, dict)
         except ValueError as e:
             raise ValueError(
                 f"Field [{field_name}] declares a [{constraint_key}] constraint "
@@ -817,7 +812,7 @@ def _is_primitive_scalar_field_type(
 
 
 @attr.define(frozen=True, kw_only=True)
-class ScalarValuedLLMRequestOutputSchemaField(LLMRequestOutputSchemaField):
+class ScalarValuedLLMRequestOutputSchemaField(LLMRequestOutputSchemaField, abc.ABC):
     """An output schema field whose value is a single scalar: a primitive
     (`PrimitiveScalarLLMRequestOutputSchemaField`) or an ENUM
     (`EnumLLMRequestOutputSchemaField`, whose value is a STRING), as opposed to
