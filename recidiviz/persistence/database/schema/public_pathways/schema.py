@@ -257,18 +257,19 @@ class PublicPrisonAdmissionsAndReleases(PublicPathwaysBase):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.public_pathways.event_level.prison_admissions_and_releases`
 
-    Records represent individual admission or release events and may not be unique across all
-    columns, so a surrogate autoincrement primary key is used instead of a composite natural key.
-    The `id` column is not present in the BQ view or exported CSV; Postgres generates it on import.
+    Each row is one admission or release event. Two events can match on every descriptive column,
+    so the primary key is state_code plus an id that the BQ view assigns.
     """
 
     __tablename__ = "prison_admissions_and_releases"
     __table_args__ = (Index("prison_admissions_and_releases_state_code", "state_code"),)
 
-    # Surrogate PK — not in the BQ view or CSV; auto-assigned by Postgres on each import.
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    # Row number within the state, assigned by the BQ view. This ID column is arbitrary, but
+    # needs to be handled in the view rather than with autoincrement, since the Cloud SQL
+    # CSV import user has no permission on the sequence that autoincrement creates.
+    id = Column(BigInteger, primary_key=True, nullable=False, autoincrement=False)
     # State code
-    state_code = Column(String, nullable=False)
+    state_code = Column(String, primary_key=True, nullable=False)
     # Whether the event is an admission or a release
     movement_category = Column(String, nullable=False)
     # Date of the admission or release movement

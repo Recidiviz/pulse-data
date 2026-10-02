@@ -1,4 +1,4 @@
-state_code,movement_category,movement_date,time_period,custody_type,movement_type,release_to_community_supervision_indicator
-US_XX,admission,2023-01-01,months_25_60,incarcerated_individual,court_commitment,not_applicable
-US_XX,admission,2023-01-01,months_25_60,incarcerated_individual,returned_parole_violator,not_applicable
-US_XX,admission,2023-01-01,months_25_60,incarcerated_parolee,drug_treatment_judicially_sanctioned,not_applicable
+state_code,movement_category,movement_date,time_period,custody_type,movement_type,release_to_community_supervision_indicator,id
+US_XX,admission,2023-01-01,months_25_60,incarcerated_individual,court_commitment,not_applicable,1
+US_XX,admission,2023-01-01,months_25_60,incarcerated_individual,returned_parole_violator,not_applicable,2
+US_XX,admission,2023-01-01,months_25_60,incarcerated_parolee,drug_treatment_judicially_sanctioned,not_applicable,3
