@@ -46,6 +46,9 @@ from recidiviz.workflows.etl.workflows_location_etl_delegate import (
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_parole_board_client_profile_etl_delegate import (
+    WorkflowsParoleBoardClientProfileETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
     WorkflowsResidentETLDelegate,
 )
@@ -96,6 +99,7 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
         WorkflowsIncarcerationStaffETLDelegate(state_code),
         WorkflowsClientETLDelegate(state_code),
         WorkflowsResidentETLDelegate(state_code),
+        WorkflowsParoleBoardClientProfileETLDelegate(state_code),
         WorkflowsTasksETLDelegate(state_code),
         WorkflowsLocationETLDelegate(state_code),
     ]
