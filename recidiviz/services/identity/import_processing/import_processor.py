@@ -63,6 +63,9 @@ from recidiviz.services.identity.import_processing.split_pass import (
     apply_identity_split,
     find_split_blockers,
 )
+from recidiviz.services.identity.import_processing.stale_candidate_cleanup_pass import (
+    retire_stale_candidates,
+)
 from recidiviz.services.identity.import_processing.update_pass import (
     apply_identity_update,
 )
@@ -162,6 +165,12 @@ def process_import(
     PENDING split candidate for review instead (see
     split_candidate_flagger.py) and planning skips the identity's clusters.
 
+    Once every pass has run, the run retires the tenant's PENDING candidates
+    that no cluster proposed this time, so the review queues hold only live
+    proposals (see stale_candidate_cleanup_pass.py). A clear-first run skips
+    this: it cleared the tenant's existing candidates up front and its passes
+    file none of their own.
+
     Args:
         tenant: The tenant whose clustering results to load.
         snapshot_timestamp: Last-modified time of the tenant's identity cluster
@@ -228,6 +237,16 @@ def process_import(
         identities_to_create=identities_to_create,
         committed_email_hashes=existing_email_hashes,
     )
+    if not should_clear_first:
+        # A clear-first run rebuilt the tenant from scratch, so there are no
+        # candidates left over from a prior run to retire; the flaggers and
+        # attribute passes that file candidates only run when clear_first is off.
+        with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+            retire_stale_candidates(
+                session=session,
+                tenant=tenant,
+                run_started_at=run_started_at,
+            )
 
 
 def _splits_to_consider(

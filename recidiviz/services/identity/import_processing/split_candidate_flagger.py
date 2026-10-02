@@ -146,7 +146,7 @@ def flag_split_candidates(
             # An earlier run filed this same question and no reviewer has
             # resolved it yet. Refreshing detected_at_utc marks the candidate
             # as still proposed this run; the stale-candidate cleanup
-            # (TODO(OBT-37730)) will retire candidates that stop being
+            # (retire_stale_candidates) retires candidates that stop being
             # refreshed because the identity's ids no longer span multiple
             # clusters.
             # Overwriting cluster_groups and blockers replaces the stored

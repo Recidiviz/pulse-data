@@ -920,6 +920,17 @@ class UpdateAttributeCandidate(IdentityBase):
         ),
     )
 
+    status_updated_at_utc = Column(
+        UTCDateTime,
+        nullable=True,
+        comment=(
+            "When the status last changed, stamped on every status "
+            "transition (e.g. marked STALE by the import's stale-candidate "
+            "cleanup, or RESOLVED by a reviewer). NULL while the row has "
+            "never left PENDING."
+        ),
+    )
+
 
 class MergeCandidate(IdentityBase):
     """Set of identities a caller wants to merge but that needs human approval; one PENDING row per set of identities."""
@@ -982,6 +993,17 @@ class MergeCandidate(IdentityBase):
         comment=(
             "PENDING / RESOLVED / STALE — STALE if intervening writes "
             "invalidated the proposed merge."
+        ),
+    )
+
+    status_updated_at_utc = Column(
+        UTCDateTime,
+        nullable=True,
+        comment=(
+            "When the status last changed, stamped on every status "
+            "transition (e.g. marked STALE by the import's stale-candidate "
+            "cleanup, or RESOLVED by a reviewer). NULL while the row has "
+            "never left PENDING."
         ),
     )
 
@@ -1098,6 +1120,17 @@ class SplitCandidate(IdentityBase):
         comment=(
             "PENDING / RESOLVED / STALE — STALE if intervening writes "
             "invalidated the proposed split."
+        ),
+    )
+
+    status_updated_at_utc = Column(
+        UTCDateTime,
+        nullable=True,
+        comment=(
+            "When the status last changed, stamped on every status "
+            "transition (e.g. marked STALE by the import's stale-candidate "
+            "cleanup, or RESOLVED by a reviewer). NULL while the row has "
+            "never left PENDING."
         ),
     )
 

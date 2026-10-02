@@ -428,6 +428,36 @@ class ImportWithoutClearFirstTest(ImportProcessorTestCase):
             }
         self.assertEqual({fractured_id, other_id}, merge_recidiviz_ids)
 
+    @freeze_time(_RUN_START)
+    def test_prior_candidates_no_longer_detected_are_retired(self) -> None:
+        """Once every pass has run, a prior run's PENDING candidates that this
+        run's clusters no longer implicate are retired (see
+        stale_candidate_cleanup_pass.py). Here neither the split candidate's identity
+        nor the merge candidate's identities carry an external id any of this
+        run's clusters match, so both go STALE."""
+        split_id = uuid.uuid4()
+        insert_identity(recidiviz_id=split_id)
+        insert_split_candidate(recidiviz_id=split_id, detected_at_utc=_SNAPSHOT)
+        first_merge_id = uuid.uuid4()
+        second_merge_id = uuid.uuid4()
+        insert_identity(recidiviz_id=first_merge_id)
+        insert_identity(recidiviz_id=second_merge_id)
+        insert_merge_candidate(
+            recidiviz_ids=[first_merge_id, second_merge_id],
+            detected_at_utc=_SNAPSHOT,
+        )
+
+        self._run(
+            _named_snapshot(external_id="NEW1", surname="Newcomer"),
+            should_clear_first=False,
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            split_candidate = one(session.query(schema.SplitCandidate).all())
+            merge_candidate = one(session.query(schema.MergeCandidate).all())
+            self.assertEqual(CandidateStatus.STALE, split_candidate.status)
+            self.assertEqual(CandidateStatus.STALE, merge_candidate.status)
+
     def test_retired_identitys_external_id_does_not_block_creation(self) -> None:
         # A RETIRED identity must point at the identity it was merged into, and
         # its external id row is inactive (the unique index on active external
