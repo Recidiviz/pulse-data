@@ -432,6 +432,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-xdist",
+    "pytest-cov",
     "pylint",
     "more-itertools",
     "mypy",
