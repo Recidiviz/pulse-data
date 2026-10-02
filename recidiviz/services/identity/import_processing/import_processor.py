@@ -782,9 +782,6 @@ def _clear_tenant_identities(tenant: Tenant) -> None:
     clear deletes, so the clear deletes them too — including human-recorded
     no-merge pairs, one more reason clear-first is temporary.
 
-    TODO(OBT-48249): Clear-first stays the trigger endpoint's default until the
-    update pass (plus merge and split detection) makes runs without it correct.
-
     The update_attribute_candidates table is left untouched; it stays empty
     until the pass that writes it exists.
     """

@@ -484,23 +484,22 @@ class PostImportEndpointTest(TestCase):
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
         self.mock_enqueue.assert_called_once()
         self.assertEqual(Tenant.US_OZ, self.mock_enqueue.call_args.kwargs["tenant"])
-        # TODO(OBT-48249): A request that omits clear_first defaults to
-        # clearing until runs without the clear are correct.
-        self.assertTrue(self.mock_enqueue.call_args.kwargs["should_clear_first"])
+        # A request that omits clear_first defaults to an incremental import.
+        self.assertFalse(self.mock_enqueue.call_args.kwargs["should_clear_first"])
 
-    def test_request_can_opt_out_of_clear_first(self) -> None:
+    def test_request_can_opt_in_to_clear_first(self) -> None:
         with mock_iap_environment(
             mapping=DEFAULT_MAPPING, authenticated_as=IMPORTER_SERVICE_ACCOUNT
         ):
             response = self.client.post(
                 TRIGGER_IMPORT_ROUTE,
-                json={"tenant": "US_OZ", "clear_first": False},
+                json={"tenant": "US_OZ", "clear_first": True},
                 headers=IAP_HEADERS,
             )
 
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
         self.mock_enqueue.assert_called_once()
-        self.assertFalse(self.mock_enqueue.call_args.kwargs["should_clear_first"])
+        self.assertTrue(self.mock_enqueue.call_args.kwargs["should_clear_first"])
 
     def test_returns_404_when_cluster_table_missing(self) -> None:
         self.mock_enqueue.side_effect = ClusterSnapshotNotFoundError(
