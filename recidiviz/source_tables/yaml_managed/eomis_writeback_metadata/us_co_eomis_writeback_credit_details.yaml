@@ -51,8 +51,8 @@ schema:
     type: STRING
     mode: NULLABLE
     description: >-
-      "ALREADY_SYNCED" or "WEDGED_ERROR" when the write did not land for one of those reasons; null on a verified
-      success or a dry run.
+      "ALREADY_SYNCED", "WEDGED_ERROR" or "REFUSED" (eOMIS opened the add form read-only) when the write did not land
+      for one of those reasons; null on a verified success or a dry run.
   - name: eomis_entry_reference
     type: STRING
     mode: NULLABLE
