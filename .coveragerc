@@ -1,2 +1,4 @@
 [run]
 omit = lib/*,recidiviz/tests/*,recidiviz/utils/data_migration.py
+# Write paths relative to the repo root, so Aikido can match them to repository files.
+relative_files = True
