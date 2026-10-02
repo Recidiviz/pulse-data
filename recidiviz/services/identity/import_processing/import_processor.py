@@ -53,8 +53,15 @@ from recidiviz.services.identity.import_processing.merge_candidate_flagger impor
     flag_merge_candidates,
 )
 from recidiviz.services.identity.import_processing.split_candidate_flagger import (
+    BlockedSplit,
     SplitToConsider,
+    active_external_ids_by_recidiviz_id,
+    build_cluster_groups,
     flag_split_candidates,
+)
+from recidiviz.services.identity.import_processing.split_pass import (
+    apply_identity_split,
+    find_split_blockers,
 )
 from recidiviz.services.identity.import_processing.update_pass import (
     apply_identity_update,
@@ -145,13 +152,15 @@ def process_import(
     it as a PENDING merge candidate for human review instead (see
     merge_candidate_flagger.py).
 
-    An existing identity whose active external ids appear in two or more of
-    the run's clusters may represent two actual people. The run records each
-    such identity as a PENDING split candidate for human review before
-    planning (see split_candidate_flagger.py), and the planning step skips
-    the identity's clusters. TODO(OBT-37728): Auto-split such identities when
-    no human decision stands in the way, so their clusters can be applied in
-    the same run.
+    An existing identity whose active external ids appear in two or more
+    clusters may represent two actual people. Before planning (the
+    _plan_cluster_actions step that decides what to do with each cluster),
+    the run auto-splits each such identity when no human decision stands in
+    the way (see split_pass.py), so planning sees the post-split state and
+    applies each cluster to its own identity in the same run. When a human
+    merge or human-edited attributes block the split, the run records a
+    PENDING split candidate for review instead (see
+    split_candidate_flagger.py) and planning skips the identity's clusters.
 
     Args:
         tenant: The tenant whose clustering results to load.
@@ -184,13 +193,16 @@ def process_import(
         existing_email_hashes: set[str] = set()
     else:
         splits_to_consider = _splits_to_consider(tenant=tenant, snapshots=snapshots)
-        if splits_to_consider:
+        blocked_splits = _split_identities(
+            splits_to_consider=splits_to_consider, now=run_started_at
+        )
+        if blocked_splits:
             with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
                 flag_split_candidates(
                     session=session,
                     tenant=tenant,
                     detected_at=run_started_at,
-                    splits_to_consider=splits_to_consider,
+                    blocked_splits=blocked_splits,
                 )
         (
             identities_to_create,
@@ -225,10 +237,10 @@ def _splits_to_consider(
     active external ids appear in two or more of the given clusters.
 
     Such an identity may represent two actual people whose records were
-    conflated; flag_split_candidates records each for human review. This
-    reads its own id map rather than sharing _plan_cluster_actions', because
-    planning must eventually run against post-split state (TODO(OBT-37728):
-    auto-split will run between this detection and planning).
+    conflated; _split_identities splits or flags each one. This reads its own
+    id map rather than sharing _plan_cluster_actions', because the auto-split
+    pass runs between this detection and planning, and planning must see
+    post-split state.
     """
     identity_ids_by_external_id = _identity_ids_by_external_id(tenant)
     snapshots_by_matched_recidiviz_id: dict[
@@ -245,6 +257,76 @@ def _splits_to_consider(
         for recidiviz_id, matched_snapshots in snapshots_by_matched_recidiviz_id.items()
         if len(matched_snapshots) >= 2
     ]
+
+
+def _split_identities(
+    *, splits_to_consider: list[SplitToConsider], now: datetime.datetime
+) -> list[BlockedSplit]:
+    """Auto-splits each fractured identity (one whose active external ids
+    appear in two or more of the run's clusters) that no human decision
+    blocks, returning the blocked splits for flagging.
+
+    Each split runs in its own transaction, so one failing split neither
+    sinks the pass nor leaves a partial split. A failed split's identity
+    stays fractured, planning skips its clusters (see _plan_cluster_actions),
+    and the next run retries it.
+    """
+    if not splits_to_consider:
+        return []
+    blocked_splits: list[BlockedSplit] = []
+    split_count = 0
+    for split_to_consider in splits_to_consider:
+        try:
+            with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+                active_external_ids = active_external_ids_by_recidiviz_id(
+                    session=session,
+                    recidiviz_ids=frozenset([split_to_consider.recidiviz_id]),
+                )[split_to_consider.recidiviz_id]
+                cluster_groups = build_cluster_groups(
+                    snapshots=split_to_consider.snapshots,
+                    active_external_ids=active_external_ids,
+                )
+                blockers = find_split_blockers(
+                    session=session,
+                    recidiviz_id=split_to_consider.recidiviz_id,
+                    cluster_groups=cluster_groups,
+                )
+                if blockers:
+                    blocked_splits.append(
+                        BlockedSplit(
+                            split_to_consider=split_to_consider, blockers=blockers
+                        )
+                    )
+                    continue
+                identity = (
+                    session.query(schema.Identity)
+                    .filter(
+                        schema.Identity.recidiviz_id == split_to_consider.recidiviz_id
+                    )
+                    .one()
+                )
+                apply_identity_split(
+                    session=session,
+                    identity=identity,
+                    cluster_groups=cluster_groups,
+                    now=now,
+                )
+                split_count += 1
+        except Exception:
+            logging.exception(
+                "Auto-split failed for identity [%s]; planning will skip its "
+                "clusters this run and the next run will retry.",
+                split_to_consider.recidiviz_id,
+            )
+    logging.info(
+        "Of [%s] identities whose external ids span multiple clusters: "
+        "[%s] auto-split, [%s] blocked and flagged for review, [%s] failed.",
+        len(splits_to_consider),
+        split_count,
+        len(blocked_splits),
+        len(splits_to_consider) - split_count - len(blocked_splits),
+    )
+    return blocked_splits
 
 
 def _plan_cluster_actions(
@@ -284,10 +366,10 @@ def _plan_cluster_actions(
       one cluster and it may represent two actual people. This function skips
       the cluster and leaves the identity untouched, since applying it would
       replace the identity's attributes with values built from only some of
-      its external ids. The run has already recorded the identity as a
-      PENDING split candidate (see split_candidate_flagger.py).
-      TODO(OBT-37728): auto-split will resolve this case before this planning
-      runs.
+      its external ids. A successful auto-split leaves every identity's
+      active ids within at most one cluster before this planning runs, so
+      this case is the safety net for identities whose auto-split was blocked
+      (recorded as PENDING split candidates) or failed this run.
     """
     identity_ids_by_external_id = _identity_ids_by_external_id(tenant)
     identities_to_create: list[IdentityToCreate] = []
@@ -530,8 +612,11 @@ def _update_identity_in_session(
         committed_email_hashes=committed_email_hashes,
         staged_email_hashes=staged_email_hashes,
     )
-    # TODO(OBT-37727): Clear identity.skip_demographic_guard here, now that the
-    # update it was set to allow has been applied.
+    if identity.skip_demographic_guard:
+        # Only apply_identity_split sets this flag, so an auto-split left this
+        # identity expecting one corrective update to pass the guard. That
+        # update just ran; clearing the flag keeps future updates guarded.
+        identity.skip_demographic_guard = False
 
 
 def _create_identities(

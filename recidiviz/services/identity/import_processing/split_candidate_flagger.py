@@ -16,15 +16,17 @@
 # =============================================================================
 """Split-candidate flagging pass of the Identity Service import: records each
 existing identity whose active external ids appear in two or more of the run's
-clusters as a split candidate for human review.
+clusters, and whose auto-split a human decision blocks, as a split candidate
+for human review.
 
 Detecting those identities happens upstream, in the import's orchestration
-(_splits_to_consider in import_processor.py); this pass only records what was
-detected. It creates or refreshes a PENDING split_candidates row for each
-detected identity, and the import takes no further action on the identity's
-clusters. Each candidate's cluster_groups payload records the partition of
-the identity's external ids that the proposed split would produce (defined in
-_build_cluster_groups).
+(_splits_to_consider in import_processor.py), and the auto-split attempt in
+split_pass.py; this pass only records what was blocked. It creates or
+refreshes a PENDING split_candidates row for each such identity, and the
+import takes no further action on the identity's clusters this run. Each
+candidate's cluster_groups payload records the partition of the identity's
+external ids that the proposed split would produce (defined in
+build_cluster_groups).
 """
 import datetime
 import logging
@@ -34,7 +36,8 @@ from collections import defaultdict
 import attr
 from sqlalchemy.orm import Session
 
-from recidiviz.common.constants.identity import CandidateStatus
+from recidiviz.common import attr_validators
+from recidiviz.common.constants.identity import CandidateStatus, SplitBlocker
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
@@ -48,8 +51,9 @@ class SplitToConsider:
     clusters' external ids, and thus may represent more than one person.
 
     Not to be confused with a SplitCandidate: a SplitToConsider is one run's
-    in-memory detection result, and flag_split_candidates records it as (or
-    refreshes) the identity's one PENDING SplitCandidate row.
+    in-memory detection result. When a human decision blocks its auto-split,
+    flag_split_candidates records it as (or refreshes) the identity's one
+    PENDING SplitCandidate row.
     """
 
     recidiviz_id: uuid.UUID = attr.ib(validator=attr.validators.instance_of(uuid.UUID))
@@ -71,28 +75,50 @@ class SplitToConsider:
             )
 
 
+@attr.define(frozen=True, kw_only=True)
+class BlockedSplit:
+    """A split to consider whose auto-split a human decision blocked, paired
+    with its blockers so flag_split_candidates records both together."""
+
+    split_to_consider: SplitToConsider = attr.ib(
+        validator=attr.validators.instance_of(SplitToConsider)
+    )
+    """The split that was blocked."""
+
+    blockers: list[SplitBlocker] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(SplitBlocker),
+        ]
+    )
+    """The human decisions that blocked the auto-split; never empty, since an
+    unblocked split is applied rather than flagged."""
+
+
 def flag_split_candidates(
     *,
     session: Session,
     tenant: Tenant,
     detected_at: datetime.datetime,
-    splits_to_consider: list[SplitToConsider],
+    blocked_splits: list[BlockedSplit],
 ) -> None:
-    """Creates or refreshes one PENDING split_candidate row per identity to
-    consider splitting.
+    """Creates or refreshes one PENDING split_candidates row per identity
+    whose auto-split a human decision blocked, recording the blockers in the
+    candidate's cluster_groups so a reviewer sees why the split needs their
+    judgment.
 
     Args:
         session: Session the candidate writes are staged on.
         tenant: The tenant whose import run detected the splits.
         detected_at: The run's start time, written to detected_at_utc.
-        splits_to_consider: One entry per identity whose active external ids
-            appear in two or more of the run's clusters.
+        blocked_splits: One entry per identity whose auto-split was blocked
+            this run.
     """
     all_recidiviz_ids = frozenset(
-        split_to_consider.recidiviz_id for split_to_consider in splits_to_consider
+        blocked_split.split_to_consider.recidiviz_id for blocked_split in blocked_splits
     )
 
-    active_external_ids_by_recidiviz_id = _active_external_ids_by_recidiviz_id(
+    all_active_external_ids_by_recidiviz_id = active_external_ids_by_recidiviz_id(
         session=session, recidiviz_ids=all_recidiviz_ids
     )
 
@@ -104,13 +130,15 @@ def flag_split_candidates(
 
     created_count = 0
     refreshed_count = 0
-    for split_to_consider in splits_to_consider:
-        cluster_groups = _build_cluster_groups(
+    for blocked_split in blocked_splits:
+        split_to_consider = blocked_split.split_to_consider
+        cluster_groups = build_cluster_groups(
             snapshots=split_to_consider.snapshots,
-            active_external_ids=active_external_ids_by_recidiviz_id[
+            active_external_ids=all_active_external_ids_by_recidiviz_id[
                 split_to_consider.recidiviz_id
             ],
         )
+        blockers = [blocker.value for blocker in blocked_split.blockers]
         pending_split_candidate = pending_split_candidates_by_recidiviz_id.get(
             split_to_consider.recidiviz_id
         )
@@ -119,11 +147,13 @@ def flag_split_candidates(
             # resolved it yet. Refreshing detected_at_utc marks the candidate
             # as still proposed this run; the stale-candidate cleanup
             # (TODO(OBT-37730)) will retire candidates that stop being
-            # refreshed because the identity is no longer fractured.
-            # Overwriting cluster_groups replaces the stored grouping with
-            # this run's, rather than accumulating past runs'.
+            # refreshed because the identity's ids no longer span multiple
+            # clusters.
+            # Overwriting cluster_groups and blockers replaces the stored
+            # context with this run's, rather than accumulating past runs'.
             pending_split_candidate.detected_at_utc = detected_at
             pending_split_candidate.cluster_groups = cluster_groups
+            pending_split_candidate.blockers = blockers
             refreshed_count += 1
             continue
         session.add(
@@ -131,6 +161,7 @@ def flag_split_candidates(
                 tenant=tenant,
                 recidiviz_id=split_to_consider.recidiviz_id,
                 cluster_groups=cluster_groups,
+                blockers=blockers,
                 detected_at_utc=detected_at,
                 status=CandidateStatus.PENDING,
             )
@@ -139,14 +170,14 @@ def flag_split_candidates(
     logging.info(
         "Flagged [%s] split candidates for tenant [%s]: [%s] new, [%s] "
         "re-detected with detected_at_utc refreshed.",
-        len(splits_to_consider),
+        len(blocked_splits),
         tenant.value,
         created_count,
         refreshed_count,
     )
 
 
-def _active_external_ids_by_recidiviz_id(
+def active_external_ids_by_recidiviz_id(
     *, session: Session, recidiviz_ids: frozenset[uuid.UUID]
 ) -> dict[uuid.UUID, set[tuple[str, str]]]:
     """Returns each given identity's active external ids as
@@ -163,17 +194,15 @@ def _active_external_ids_by_recidiviz_id(
         )
         .all()
     )
-    active_external_ids_by_recidiviz_id: dict[
-        uuid.UUID, set[tuple[str, str]]
-    ] = defaultdict(set)
+    external_ids_by_recidiviz_id: dict[uuid.UUID, set[tuple[str, str]]] = defaultdict(
+        set
+    )
     for recidiviz_id, id_type, external_id in rows:
-        active_external_ids_by_recidiviz_id[recidiviz_id].add(
-            (id_type.value, external_id)
-        )
+        external_ids_by_recidiviz_id[recidiviz_id].add((id_type.value, external_id))
     # A plain dict, so looking up an identity the query did not find fails
     # loudly instead of defaulting to an empty set: detection matched every
     # identity here through its active external ids, so a miss is a bug.
-    return dict(active_external_ids_by_recidiviz_id)
+    return dict(external_ids_by_recidiviz_id)
 
 
 def _pending_split_candidates_by_recidiviz_id(
@@ -200,7 +229,7 @@ def _pending_split_candidates_by_recidiviz_id(
     }
 
 
-def _build_cluster_groups(
+def build_cluster_groups(
     *,
     snapshots: tuple[ClusterSnapshot, ...],
     active_external_ids: set[tuple[str, str]],

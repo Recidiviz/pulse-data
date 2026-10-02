@@ -35,6 +35,7 @@ from recidiviz.common.constants.identity import (
     PhoneType,
     ProductApp,
     SourceType,
+    SplitBlocker,
     SplitTrigger,
 )
 from recidiviz.common.constants.tenants import Tenant
@@ -420,7 +421,14 @@ def insert_external_id(
         )
 
 
-def insert_name(*, recidiviz_id: uuid.UUID, given_name: str, surname: str) -> None:
+def insert_name(
+    *,
+    recidiviz_id: uuid.UUID,
+    given_name: str,
+    surname: str,
+    source_type: SourceType = SourceType.EXTERNAL_DATA_SYSTEM,
+    source_product_app: ProductApp | None = None,
+) -> None:
     """Inserts a Name row directly into the identity schema."""
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
         session.add(
@@ -431,9 +439,29 @@ def insert_name(*, recidiviz_id: uuid.UUID, given_name: str, surname: str) -> No
                 middle_names=[],
                 name_suffix=None,
                 use=NameUse.OFFICIAL,
-                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                source_product_app=None,
+                source_type=source_type,
+                source_product_app=source_product_app,
                 last_updated_utc=CREATED,
+            )
+        )
+
+
+def insert_merge_event(
+    *,
+    surviving_id: uuid.UUID,
+    retired_id: uuid.UUID,
+    trigger: MergeTrigger,
+    requested_by: str | None = None,
+) -> None:
+    """Inserts a MergeEvent audit row directly into the identity schema."""
+    with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
+        session.add(
+            schema.MergeEvent(
+                surviving_id=surviving_id,
+                retired_id=retired_id,
+                trigger=trigger,
+                requested_by=requested_by,
+                timestamp_utc=CREATED,
             )
         )
 
@@ -476,7 +504,13 @@ def insert_phone_number(*, recidiviz_id: uuid.UUID, number: str) -> None:
         )
 
 
-def insert_email(*, recidiviz_id: uuid.UUID, address_hash: str) -> None:
+def insert_email(
+    *,
+    recidiviz_id: uuid.UUID,
+    address_hash: str,
+    source_type: SourceType = SourceType.EXTERNAL_DATA_SYSTEM,
+    source_product_app: ProductApp | None = None,
+) -> None:
     """Inserts an Email row directly into the identity schema."""
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
         session.add(
@@ -484,8 +518,8 @@ def insert_email(*, recidiviz_id: uuid.UUID, address_hash: str) -> None:
                 recidiviz_id=recidiviz_id,
                 address="test@example.com",
                 address_hash=address_hash,
-                source_type=SourceType.EXTERNAL_DATA_SYSTEM,
-                source_product_app=None,
+                source_type=source_type,
+                source_product_app=source_product_app,
                 last_updated_utc=CREATED,
             )
         )
@@ -528,6 +562,7 @@ def insert_split_candidate(
     status: CandidateStatus = CandidateStatus.PENDING,
     detected_at_utc: datetime.datetime = CREATED,
     cluster_groups: dict[str, object] | None = None,
+    blockers: list[str] | None = None,
 ) -> None:
     """Inserts a SplitCandidate row directly into the identity schema."""
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
@@ -536,6 +571,7 @@ def insert_split_candidate(
                 tenant=tenant,
                 recidiviz_id=recidiviz_id,
                 cluster_groups=cluster_groups or {},
+                blockers=blockers or [SplitBlocker.HUMAN_EDITED_ATTRIBUTES.value],
                 detected_at_utc=detected_at_utc,
                 status=status,
             )

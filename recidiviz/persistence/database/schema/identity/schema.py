@@ -164,8 +164,10 @@ class Identity(IdentityBase):
             "this identity during the per-cluster update pass. Set on the "
             "original identity after an auto-split so the update pass can "
             "correct its canonical EXTERNAL_DATA_SYSTEM attributes without "
-            "the guard blocking. Cleared back to FALSE immediately after the "
-            "successful update pass in the same import run."
+            "the guard blocking. Cleared when the identity's next update is "
+            "applied, usually in the same import run; it persists across runs "
+            "when that update did not happen (its cluster was skipped or its "
+            "update failed)."
         ),
     )
 
@@ -1068,6 +1070,17 @@ class SplitCandidate(IdentityBase):
         ),
     )
 
+    blockers = Column(
+        ARRAY(String),
+        nullable=False,
+        comment=(
+            "The human decisions (SplitBlocker values) that stopped the "
+            "import from auto-splitting the identity, so a reviewer sees why "
+            "the split needs their judgment. Non-empty, since an unblocked "
+            "split is applied rather than flagged."
+        ),
+    )
+
     detected_at_utc = Column(
         UTCDateTime,
         nullable=False,
@@ -1388,8 +1401,12 @@ class NoMerge(IdentityBase):
 
     created_by = Column(
         String,
-        nullable=False,
-        comment="Email of the authenticated user who recorded this no-merge pair.",
+        nullable=True,
+        comment=(
+            "Email of the authenticated user who recorded this no-merge pair, "
+            "or NULL when the import's auto-split recorded it (matching "
+            "requested_by on the merge and split event tables)."
+        ),
     )
 
     created_utc = Column(

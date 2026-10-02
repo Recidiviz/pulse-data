@@ -555,8 +555,8 @@ class Identity:
     skip_demographic_guard: bool = attr.ib(validator=attr_validators.is_bool)
     """When TRUE, the next per-cluster update pass skips the demographic guard for this
     Identity. Set on the original identity after an auto-split so the update pass can
-    correct attributes without the guard blocking. Clear back to FALSE immediately
-    after the successful update pass."""
+    correct attributes without the guard blocking; cleared when the identity's next
+    update is applied, usually in the same import run."""
 
     external_ids: list[ExternalId] = attr.ib(
         validator=[attr_validators.is_list_of(ExternalId)]

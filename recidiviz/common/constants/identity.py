@@ -176,3 +176,17 @@ class SplitTrigger(enum.Enum):
 
     SPLIT_ENDPOINT = "SPLIT_ENDPOINT"
     """Split triggered by an explicit call to the split API."""
+
+
+class SplitBlocker(enum.Enum):
+    """A human decision that stops the import from auto-splitting a fractured
+    identity, recorded on its split candidate so a reviewer sees why the split
+    needs their judgment."""
+
+    HUMAN_MERGE = "HUMAN_MERGE"
+    """A human deliberately merged records into this identity, and the proposed
+    split would move external ids that merge contributed off it."""
+
+    HUMAN_EDITED_ATTRIBUTES = "HUMAN_EDITED_ATTRIBUTES"
+    """The identity has PRODUCT_APP or ADMIN_OVERRIDE attribute values, and the
+    import cannot know which side of the split they belong to."""

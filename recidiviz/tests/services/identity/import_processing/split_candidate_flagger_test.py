@@ -30,6 +30,7 @@ from recidiviz.common.constants.identity import (
     CandidateStatus,
     IdentifierType,
     PersonType,
+    SplitBlocker,
 )
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.persistence.database.schema.identity import schema
@@ -43,6 +44,7 @@ from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
     ClusterSnapshot,
 )
 from recidiviz.services.identity.import_processing.split_candidate_flagger import (
+    BlockedSplit,
     SplitToConsider,
     flag_split_candidates,
 )
@@ -103,11 +105,11 @@ class SplitToConsiderTest(unittest.TestCase):
 @pytest.mark.uses_db
 class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
     """Tests for flag_split_candidates: one PENDING split_candidates row per
-    identity to consider splitting, created or refreshed."""
+    blocked identity, created or refreshed."""
 
     def _flag(
         self,
-        *splits_to_consider: SplitToConsider,
+        *blocked_splits: BlockedSplit,
         detected_at: datetime.datetime,
     ) -> None:
         """Calls flag_split_candidates the way one import run does: a single
@@ -117,7 +119,7 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
                 session=session,
                 tenant=Tenant.US_OZ,
                 detected_at=detected_at,
-                splits_to_consider=list(splits_to_consider),
+                blocked_splits=list(blocked_splits),
             )
 
     def _candidate_rows(self) -> list[dict[str, object]]:
@@ -135,6 +137,7 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
                     "detected_at_utc": candidate.detected_at_utc,
                     "recidiviz_id": candidate.recidiviz_id,
                     "cluster_groups": candidate.cluster_groups,
+                    "blockers": candidate.blockers,
                 }
                 for candidate in candidates
             ]
@@ -162,9 +165,12 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         )
 
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(first_snapshot, second_snapshot),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(first_snapshot, second_snapshot),
+                ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
@@ -197,6 +203,7 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
                         ],
                         "unclustered_external_ids": [],
                     },
+                    "blockers": ["HUMAN_EDITED_ATTRIBUTES"],
                 }
             ],
             self._candidate_rows(),
@@ -206,12 +213,15 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         recidiviz_id = self._insert_fractured_identity(external_ids=["A1", "B2", "C3"])
 
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
@@ -234,12 +244,15 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         )
 
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1", "OLD9"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1", "OLD9"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
@@ -257,18 +270,44 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         )
         self.assertEqual([], cluster_groups["unclustered_external_ids"])
 
-    def test_redetected_identity_keeps_its_row_and_refreshes_detected_at(self) -> None:
+    def test_blockers_are_recorded(self) -> None:
         recidiviz_id = self._insert_fractured_identity(external_ids=["A1", "B2"])
-        split_to_consider = SplitToConsider(
-            recidiviz_id=recidiviz_id,
-            snapshots=(
-                _matching_snapshot(external_ids=["A1"]),
-                _matching_snapshot(external_ids=["B2"]),
+
+        self._flag(
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
+                ),
+                blockers=[
+                    SplitBlocker.HUMAN_MERGE,
+                    SplitBlocker.HUMAN_EDITED_ATTRIBUTES,
+                ],
             ),
+            detected_at=_RUN_1_TIME,
         )
 
-        self._flag(split_to_consider, detected_at=_RUN_1_TIME)
-        self._flag(split_to_consider, detected_at=_RUN_2_TIME)
+        row = one(self._candidate_rows())
+        self.assertEqual(["HUMAN_MERGE", "HUMAN_EDITED_ATTRIBUTES"], row["blockers"])
+
+    def test_redetected_identity_keeps_its_row_and_refreshes_detected_at(self) -> None:
+        recidiviz_id = self._insert_fractured_identity(external_ids=["A1", "B2"])
+        blocked_split = BlockedSplit(
+            split_to_consider=SplitToConsider(
+                recidiviz_id=recidiviz_id,
+                snapshots=(
+                    _matching_snapshot(external_ids=["A1"]),
+                    _matching_snapshot(external_ids=["B2"]),
+                ),
+            ),
+            blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
+        )
+
+        self._flag(blocked_split, detected_at=_RUN_1_TIME)
+        self._flag(blocked_split, detected_at=_RUN_2_TIME)
 
         row = one(self._candidate_rows())
         self.assertEqual(CandidateStatus.PENDING, row["status"])
@@ -277,12 +316,15 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
     def test_redetection_overwrites_cluster_groups(self) -> None:
         recidiviz_id = self._insert_fractured_identity(external_ids=["A1", "B2", "C3"])
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
@@ -295,12 +337,15 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         # The next run fractures the same identity differently: C3,
         # unclustered in the first run, now clusters with A1.
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1", "C3"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1", "C3"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_2_TIME,
         )
@@ -328,12 +373,15 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         )
 
         self._flag(
-            SplitToConsider(
-                recidiviz_id=recidiviz_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=recidiviz_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
@@ -352,19 +400,25 @@ class FlagSplitCandidatesTest(IdentityDatabaseTestCase):
         second_id = self._insert_fractured_identity(external_ids=["B1", "B2"])
 
         self._flag(
-            SplitToConsider(
-                recidiviz_id=first_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["A1"]),
-                    _matching_snapshot(external_ids=["A2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=first_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["A1"]),
+                        _matching_snapshot(external_ids=["A2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
-            SplitToConsider(
-                recidiviz_id=second_id,
-                snapshots=(
-                    _matching_snapshot(external_ids=["B1"]),
-                    _matching_snapshot(external_ids=["B2"]),
+            BlockedSplit(
+                split_to_consider=SplitToConsider(
+                    recidiviz_id=second_id,
+                    snapshots=(
+                        _matching_snapshot(external_ids=["B1"]),
+                        _matching_snapshot(external_ids=["B2"]),
+                    ),
                 ),
+                blockers=[SplitBlocker.HUMAN_EDITED_ATTRIBUTES],
             ),
             detected_at=_RUN_1_TIME,
         )
