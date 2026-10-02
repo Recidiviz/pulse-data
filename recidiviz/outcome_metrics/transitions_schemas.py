@@ -72,7 +72,12 @@ def impact_transitions_base_schema() -> list[BigQueryViewColumn]:
         ),
         Bool(
             name="is_during_or_after_full_state_launch_month",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=(
+                "Whether the transition happened in or after the month of "
+                "full_state_launch_date, or in or after the month of the pilot launch for TN "
+                "compliant reporting 2025 policy transitions in pilot districts. Breadth counts only transitions where this "
+                "is true."
+            ),
             mode="NULLABLE",
         ),
         Bool(
@@ -82,7 +87,11 @@ def impact_transitions_base_schema() -> list[BigQueryViewColumn]:
         ),
         Date(
             name="full_state_launch_date",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=(
+                "The date the tool for this transition launched to the full state. For "
+                "the TN compliant reporting 2025 policy, transitions in a pilot district hold"
+                " that district's pilot launch date instead."
+            ),
             mode="NULLABLE",
         ),
         Float(
