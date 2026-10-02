@@ -1,3 +1,9 @@
+# Repo infrastructure. Kept above the .github/workflows rules below, since the last matching rule wins.
+/.github/** @Recidiviz/infra-review
+/Dockerfile* @Recidiviz/infra-review
+/pyproject.toml @Recidiviz/infra-review
+/uv.lock @Recidiviz/infra-review
+
 # Review changes to Github workflows
 .github/workflows/** @Recidiviz/infra-review
 .github/runs-on.yml @Recidiviz/infra-review
@@ -74,3 +80,9 @@ recidiviz/view_registry/raw_data_table_reference_exemptions.py @Recidiviz/dopple
 # Aurora
 # Google Workflows are allowed for orchestration but cannot process DOC data
 recidiviz/cloud_workflows/** @Recidiviz/aurora
+
+# Infra review
+recidiviz/tools/deploy/** @Recidiviz/infra-review
+recidiviz/monitoring/** @Recidiviz/infra-review
+recidiviz/tests/tools/deploy/** @Recidiviz/infra-review
+recidiviz/tests/monitoring/** @Recidiviz/infra-review
