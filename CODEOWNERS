@@ -9,27 +9,6 @@
 .github/runs-on.yml @Recidiviz/infra-review
 
 # DADS-owned code
-recidiviz/research/** @Recidiviz/dads
-recidiviz/looker/** @Recidiviz/dads
-recidiviz/observations/** @Recidiviz/dads
-recidiviz/aggregated_metrics/** @Recidiviz/dads
-recidiviz/outcome_metrics/** @Recidiviz/dads
-recidiviz/tools/analyst/** @Recidiviz/dads
-recidiviz/tools/looker/** @Recidiviz/dads
-recidiviz/tests/research/** @Recidiviz/dads
-recidiviz/tests/looker/** @Recidiviz/dads
-recidiviz/tests/observations/** @Recidiviz/dads
-recidiviz/tests/aggregated_metrics/** @Recidiviz/dads
-recidiviz/tests/outcome_metrics/** @Recidiviz/dads
-recidiviz/tests/tools/analyst/** @Recidiviz/dads
-recidiviz/tests/tools/looker/** @Recidiviz/dads
-recidiviz/calculator/query/state/views/analyst_data/** @Recidiviz/dads
-recidiviz/calculator/query/state/views/sessions/** @Recidiviz/dads
-recidiviz/calculator/query/state/views/sessions_validation/** @Recidiviz/dads
-recidiviz/calculator/query/state/views/sentence_sessions/** @Recidiviz/dads
-recidiviz/tests/calculator/query/state/views/analyst_data/** @Recidiviz/dads
-recidiviz/tests/calculator/query/state/views/sessions/** @Recidiviz/dads
-recidiviz/tests/calculator/query/state/views/sentence_sessions/** @Recidiviz/dads
 
 # R&D-owned code
 
@@ -41,14 +20,8 @@ recidiviz/persistence/**/justice_counts/** @Recidiviz/polaris-core
 recidiviz/persistence/**/pathways/** @Recidiviz/polaris-core
 recidiviz/persistence/**/workflows/** @Recidiviz/polaris-core
 # Public Pathways views should be reviewed by Jen or George to ensure non-pii columns
-recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_columns.py @jovergaag @georgemandis
+recidiviz/calculator/query/state/views/public_pathways/event_level/allowed_columns.py @jovergaag
 recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
-
-# Implementation engineers. Kept above the Doppler rules below, so the more specific Doppler ingest/direct rules still win.
-recidiviz/ingest/direct/** @Recidiviz/implementation-engineers
-recidiviz/tests/ingest/direct/** @Recidiviz/implementation-engineers
-recidiviz/validation/views/** @Recidiviz/implementation-engineers
-recidiviz/tests/validation/views/** @Recidiviz/implementation-engineers
 
 # Doppler
 #  For Doppler-owned files, which can tend to have a high volume of edits, review is assigned to the
