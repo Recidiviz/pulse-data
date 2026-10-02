@@ -17,7 +17,6 @@
 """Shared schemas for outcome_metrics transition views."""
 
 from recidiviz.big_query.big_query_view_column import (
-    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
     BigQueryViewColumn,
     Bool,
     Date,
@@ -26,48 +25,97 @@ from recidiviz.big_query.big_query_view_column import (
     String,
 )
 
+_WEIGHT_FACTOR_DESCRIPTION = (
+    "How much this transition counts relative to others when "
+    "transitions from different product types are combined."
+)
+
+_DELTA_DIRECTION_FACTOR_DESCRIPTION = (
+    "1 if more of this transition should raise the depth metric, or -1 if it "
+    "should lower it."
+)
+
+_METRIC_MONTH_DESCRIPTION = "The first day of the month the metric covers."
+
+_TOTAL_BASELINE_DESCRIPTION = (
+    "The expected number of transitions per month without the launches, "
+    "monthly_baseline_old_tools plus monthly_baseline_new_tools."
+)
+
+
+_STATE_CODE_DESCRIPTION = "The state where the transition happened."
+
+_PRODUCT_TRANSITION_TYPE_DESCRIPTION = (
+    "The product the transition is attributed to, as the lowercase name of a "
+    "ProductTransitionType value (e.g. workflows_discretionary)."
+)
+
+_DECARCERAL_IMPACT_TYPE_DESCRIPTION = (
+    "The type of movement toward greater liberty that the transition facilitates,"
+    " as a DecarceralImpactType value (e.g. DOWNGRADE_CUSTODY_LEVEL). "
+    "NOT_APPLICABLE for supervisor outcomes module transitions."
+)
+
+_HAS_MANDATORY_DUE_DATE_DESCRIPTION = (
+    "Whether the transition's task has a mandatory due date."
+)
+
+_IS_JII_TRANSITION_DESCRIPTION = (
+    "Whether the transition is itself a movement toward greater liberty for the "
+    "justice-impacted individual, such as a release from solitary confinement, "
+    "rather than an administrative step that helps bring one about, such as a "
+    "review hearing."
+)
+
 
 def impact_transitions_base_schema() -> list[BigQueryViewColumn]:
     """Base schema for individual impact transitions views."""
     return [
         Integer(
             name="person_id",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description="The person who experienced the transition.",
             mode="REQUIRED",
         ),
         Date(
             name="event_date",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description="The date the transition happened.",
             mode="NULLABLE",
         ),
         String(
             name="state_code",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_STATE_CODE_DESCRIPTION,
             mode="REQUIRED",
         ),
         String(
             name="experiment_id",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=(
+                "The experiment_id of the launch this transition is attributed to,"
+                " which links the transition to its launch date in experiment_assignments."
+            ),
             mode="NULLABLE",
         ),
         String(
             name="decarceral_impact_type",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_DECARCERAL_IMPACT_TYPE_DESCRIPTION,
             mode="NULLABLE",
         ),
         String(
             name="system_type",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=(
+                "The part of the system the transition happens in: INCARCERATION or "
+                "SUPERVISION for Workflows and supervisor module transitions, PRE-SENTENCING "
+                "for PSI case insights transitions."
+            ),
             mode="NULLABLE",
         ),
         Bool(
             name="has_mandatory_due_date",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_HAS_MANDATORY_DUE_DATE_DESCRIPTION,
             mode="NULLABLE",
         ),
         Bool(
             name="is_jii_transition",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_IS_JII_TRANSITION_DESCRIPTION,
             mode="NULLABLE",
         ),
         Bool(
@@ -82,7 +130,11 @@ def impact_transitions_base_schema() -> list[BigQueryViewColumn]:
         ),
         Bool(
             name="is_within_one_year_before_full_state_launch_month",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=(
+                "Whether the transition happened in the 12 months before the month of "
+                "full_state_launch_date. Depth uses these transitions as the baseline for a "
+                "new launch."
+            ),
             mode="NULLABLE",
         ),
         Date(
@@ -96,12 +148,12 @@ def impact_transitions_base_schema() -> list[BigQueryViewColumn]:
         ),
         Float(
             name="weight_factor",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_WEIGHT_FACTOR_DESCRIPTION,
             mode="NULLABLE",
         ),
         Integer(
             name="delta_direction_factor",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_DELTA_DIRECTION_FACTOR_DESCRIPTION,
             mode="NULLABLE",
         ),
     ]
@@ -112,7 +164,7 @@ def all_impact_transitions_schema() -> list[BigQueryViewColumn]:
     return impact_transitions_base_schema() + [
         String(
             name="product_transition_type",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_PRODUCT_TRANSITION_TYPE_DESCRIPTION,
             mode="NULLABLE",
         ),
     ]
@@ -121,17 +173,17 @@ def all_impact_transitions_schema() -> list[BigQueryViewColumn]:
 ALL_FULL_STATE_LAUNCH_DATES_SCHEMA = [
     String(
         name="state_code",
-        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        description="The state where the tool launched.",
         mode="REQUIRED",
     ),
     String(
         name="experiment_id",
-        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        description="The experiment that represents the tool's launch.",
         mode="NULLABLE",
     ),
     Date(
         name="launch_date",
-        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        description="The date the tool launched statewide.",
         mode="NULLABLE",
     ),
 ]
@@ -139,27 +191,27 @@ ALL_FULL_STATE_LAUNCH_DATES_SCHEMA = [
 
 STATE_CODE_ATTRIBUTE = String(
     name="state_code",
-    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    description=_STATE_CODE_DESCRIPTION,
     mode="NULLABLE",
 )
 PRODUCT_TRANSITION_TYPE_ATTRIBUTE = String(
     name="product_transition_type",
-    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    description=_PRODUCT_TRANSITION_TYPE_DESCRIPTION,
     mode="NULLABLE",
 )
 DECARCERAL_IMPACT_TYPE_ATTRIBUTE = String(
     name="decarceral_impact_type",
-    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    description=_DECARCERAL_IMPACT_TYPE_DESCRIPTION,
     mode="NULLABLE",
 )
 HAS_MANDATORY_DUE_DATE_ATTRIBUTE = String(
     name="has_mandatory_due_date",
-    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    description=_HAS_MANDATORY_DUE_DATE_DESCRIPTION,
     mode="NULLABLE",
 )
 IS_JII_TRANSITION_ATTRIBUTE = String(
     name="is_jii_transition",
-    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    description=_IS_JII_TRANSITION_DESCRIPTION,
     mode="NULLABLE",
 )
 
@@ -189,7 +241,7 @@ def transitions_breadth_metric_schema(
     base: list[BigQueryViewColumn] = [
         Date(
             name="metric_month",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_METRIC_MONTH_DESCRIPTION,
             mode="NULLABLE",
         ),
     ]
@@ -198,22 +250,25 @@ def transitions_breadth_metric_schema(
         [
             String(
                 name="weight_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_WEIGHT_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             String(
                 name="delta_direction_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_DELTA_DIRECTION_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             Integer(
                 name="transitions",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The number of distinct transitions in the month from tools in or after their full-state launch month.",
                 mode="NULLABLE",
             ),
             Integer(
                 name="new_transitions_added_via_launch",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=(
+                    "The number of those transitions from tools whose full-state launch was in this "
+                    "month, excluding supervisor opportunities module launches."
+                ),
                 mode="NULLABLE",
             ),
         ]
@@ -228,7 +283,7 @@ def transitions_baseline_metric_schema(
     base: list[BigQueryViewColumn] = [
         Date(
             name="metric_month",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_METRIC_MONTH_DESCRIPTION,
             mode="NULLABLE",
         ),
     ]
@@ -237,32 +292,38 @@ def transitions_baseline_metric_schema(
         [
             String(
                 name="weight_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_WEIGHT_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             String(
                 name="delta_direction_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_DELTA_DIRECTION_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             Integer(
                 name="num_new_launches",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The number of tools with a full-state launch in this month.",
                 mode="NULLABLE",
             ),
             Float(
                 name="monthly_baseline_old_tools",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=(
+                    "For tools launched before the metric year, the average monthly transitions in "
+                    "the year before the metric year."
+                ),
                 mode="NULLABLE",
             ),
             Float(
                 name="monthly_baseline_new_tools",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=(
+                    "For tools launched during the metric year, in or before this month, the average "
+                    "monthly transitions in the 12 months before each tool's launch month."
+                ),
                 mode="NULLABLE",
             ),
             Float(
                 name="total_baseline",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_TOTAL_BASELINE_DESCRIPTION,
                 mode="NULLABLE",
             ),
         ]
@@ -277,7 +338,7 @@ def transitions_depth_metric_schema(
     base: list[BigQueryViewColumn] = [
         Date(
             name="metric_month",
-            description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+            description=_METRIC_MONTH_DESCRIPTION,
             mode="NULLABLE",
         ),
     ]
@@ -286,42 +347,45 @@ def transitions_depth_metric_schema(
         [
             String(
                 name="weight_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_WEIGHT_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             String(
                 name="delta_direction_factor",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_DELTA_DIRECTION_FACTOR_DESCRIPTION,
                 mode="NULLABLE",
             ),
             Integer(
                 name="transitions_month",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The number of transitions in the month, from the breadth metric.",
                 mode="NULLABLE",
             ),
             Integer(
                 name="transitions_cumulative",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The number of transitions from the start of the metric year through this month.",
                 mode="NULLABLE",
             ),
             Float(
                 name="total_baseline",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=_TOTAL_BASELINE_DESCRIPTION,
                 mode="NULLABLE",
             ),
             Float(
                 name="total_baseline_cumulative",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The sum of total_baseline from the start of the metric year through this month.",
                 mode="NULLABLE",
             ),
             Float(
                 name="transitions_delta_month",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description="The percent change from total_baseline to transitions_month, as a fraction (0.1 is 10% above baseline).",
                 mode="NULLABLE",
             ),
             Float(
                 name="transitions_delta_cumulative",
-                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                description=(
+                    "The percent change from total_baseline_cumulative to transitions_cumulative, as a "
+                    "fraction (0.1 is 10% above baseline)."
+                ),
                 mode="NULLABLE",
             ),
         ]
