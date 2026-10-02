@@ -6414,15 +6414,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("sessions.supervisor_of_officer_sessions"): [
-        "date_gap_id",
-        "end_date_exclusive",
-        "is_supervision_officer_supervisor",
-        "session_id",
-        "staff_id",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str("sessions.system_sessions"): [
         "end_date",
         "end_date_exclusive",
