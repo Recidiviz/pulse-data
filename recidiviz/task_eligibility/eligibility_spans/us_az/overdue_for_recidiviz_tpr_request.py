@@ -29,7 +29,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     early_release_to_community_confinement_supervision_not_overdue,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
-    at_least_24_months_since_last_csed,
     enrolled_in_functional_literacy_tpr,
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
@@ -38,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_tpr_removals_from_self_improvement_programs,
     not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
     not_eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
+    tpr_date_at_least_24_months_since_last_csed,
     within_7_days_of_recidiviz_tpr_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -90,7 +90,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # d. Self improvement programs
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
         # e. Time
-        at_least_24_months_since_last_csed.VIEW_BUILDER,
+        tpr_date_at_least_24_months_since_last_csed.VIEW_BUILDER,
         within_7_days_of_recidiviz_tpr_date.VIEW_BUILDER,
         # f. Not already eligible for DTP opps
         not_eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp.VIEW_BUILDER,
