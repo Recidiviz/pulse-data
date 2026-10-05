@@ -152,7 +152,11 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Install Pylint
-        run: uv pip install pylint --python .venv/bin/python
+        # Pinned to the last pylint/astroid that lints our code cleanly. The 4.1
+        # line flags stable code, mostly abstract-method false positives on
+        # intermediate base classes. Unpin once we adopt 4.1 deliberately.
+        # TODO(COS-82)
+        run: uv pip install "pylint==4.0.10" "astroid==4.0.4" --python .venv/bin/python
       - name: Pylint
         run: uv run --no-sync ./recidiviz/tools/lint/run_pylint.sh
         env:

@@ -38,7 +38,9 @@ get_changed_files() {
 pylint_config_files_in_change_list=$(get_changed_files | grep -e uv.lock -e .pylintrc -e run_pylint.sh)
 
 if ! uv pip show pylint; then
-  uv pip install "pylint"
+  # Keep the pinned versions in sync with the Install Pylint step in
+  # .github/workflows/ci.yml. See TODO(COS-82).
+  uv pip install "pylint==4.0.10" "astroid==4.0.4"
 fi
 
 pylint --version
