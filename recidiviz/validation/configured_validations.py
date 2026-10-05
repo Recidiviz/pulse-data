@@ -488,6 +488,11 @@ from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_va
 from recidiviz.validation.views.state.workflows.us_az_resident_metadata_columns_never_populated import (
     US_AZ_RESIDENT_METADATA_COLUMNS_NEVER_POPULATED_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.us_az_resident_metadata_tpr_missing_dynamic_criteria import (
+    ACTUAL_NO_DYNAMIC_BLOCKER_COLUMN_NAME,
+    EXPECTED_NO_DYNAMIC_BLOCKER_COLUMN_NAME,
+    US_AZ_RESIDENT_METADATA_TPR_MISSING_DYNAMIC_CRITERIA_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.us_ix_overdue_f2f_contact_missing_from_supervision_tasks import (
     US_IX_OVERDUE_F2F_CONTACT_MISSING_FROM_SUPERVISION_TASKS_VIEW_BUILDER,
 )
@@ -766,6 +771,18 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AZ_RESIDENT_METADATA_COLUMNS_NEVER_POPULATED_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=US_AZ_RESIDENT_METADATA_TPR_MISSING_DYNAMIC_CRITERIA_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                EXPECTED_NO_DYNAMIC_BLOCKER_COLUMN_NAME,
+                ACTUAL_NO_DYNAMIC_BLOCKER_COLUMN_NAME,
+            ],
+            partition_columns=["region_code"],
+            hard_max_allowed_error=0.01,
+            soft_max_allowed_error=0.01,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
