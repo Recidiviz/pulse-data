@@ -14,8 +14,8 @@
 """Pre-existing undocumented columns that are exempt from meaningful-description
 enforcement.
 
-The view-graph validation test checks every declared column description and
-fails if it is empty, indicates unfinished work, or equals the
+ViewSchemaValidationTest in recidiviz/tests/view_registry checks every declared
+column description and fails if it is empty, indicates unfinished work, or equals the
 COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT sentinel. Any (view_address, column_name)
 listed here is exempt from that check.
 
