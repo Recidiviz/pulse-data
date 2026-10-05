@@ -53,6 +53,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_certificate
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.classification.all_classification_assessment_events import (
+    ALL_CLASSIFICATION_ASSESSMENT_EVENTS_VIEW_ID,
+)
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
@@ -245,6 +248,15 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             US_NYC_EDOVO_ID_MATCH_VIEW_BUILDER,
         ]
     },
+    BigQueryAddress(
+        dataset_id=CLASSIFICATION_VIEWS_DATASET,
+        table_id=ALL_CLASSIFICATION_ASSESSMENT_EVENTS_VIEW_ID,
+    ): (
+        "Union of the per-instrument classification assessment event views. No "
+        "downstream consumer yet; replacing custody_classification_assessment_dates "
+        "with it is tracked in TODO(OBT-52960). Its per-instrument parents are marked "
+        "used through it. (Hugo Salas, 2026-10-05)"
+    ),
     SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_120_DAYS.address: (
         "Temporarily unused after being pulled out of needs_cst_reassessment.py "
         "pending an investigation into probation end-date ingest reliability for "
