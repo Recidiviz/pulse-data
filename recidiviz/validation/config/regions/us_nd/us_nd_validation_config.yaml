@@ -7,9 +7,6 @@ exclusions:
     exclusion_reason:
       ND ingest constructs one supervision period per supervision sentence - we
       expect supervision periods to overlap
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28866) Hydrate new sentencing entities
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 0.05
@@ -76,10 +73,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 33000
     override_reason: Needs investigation.  Current failing level as of 12/10/25
       is 30,856 rows #TODO(#16436)
-  - validation_name: sentences_undefined_relationship
-    hard_num_allowed_rows_override: 20
-    override_reason: Needs investigation. Current failing level as of 7/29/24 is
-      13 rows #TODO(#19047)
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 210
     override_reason: Small number of rows missing descriptions in ref table.

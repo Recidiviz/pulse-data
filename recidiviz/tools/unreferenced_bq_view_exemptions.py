@@ -24,9 +24,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
-    PSA_RISK_SCORES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
     US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
 )
@@ -250,9 +247,6 @@ PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
         "(Anna Geiduschek 1/8/24)"
-    ),
-    PSA_RISK_SCORES_VIEW_BUILDER.address: (
-        "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"
     ),
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER.address: (
         "Not currently referenced but is used in downstream analytical work for which "

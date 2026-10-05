@@ -3,9 +3,6 @@
 region_code: US_MI
 dev_mode: False
 exclusions:
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28865) Hydrate new sentencing entities
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: We don't use uniform offense labels for anything in MI

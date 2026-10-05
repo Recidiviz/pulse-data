@@ -285,9 +285,6 @@ from recidiviz.validation.views.state.sentence_sessions.overlapping_sentence_inf
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sentences.compare_v2_and_v1_sentences import (
-    SENTENCE_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_descriptions import (
     NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
 )
@@ -299,9 +296,6 @@ from recidiviz.validation.views.state.sentences.sentence_inferred_group_projecte
 )
 from recidiviz.validation.views.state.sentences.sentences_missing_date_imposed import (
     SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sentences.sentences_undefined_relationship import (
-    SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no_sentence_completion_date import (
     SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
@@ -707,10 +701,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
@@ -1479,15 +1469,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.INVARIANT,
             region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SENTENCE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=[
-                "charge_v1_external_id",
-                "charge_v2_external_id",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
         ),
         SamenessDataValidationCheck(
             view_builder=PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,

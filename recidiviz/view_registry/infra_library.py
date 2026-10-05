@@ -57,9 +57,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_session_start_r
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
-    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
 )
@@ -104,15 +101,6 @@ from recidiviz.calculator.query.state.views.sessions.person_demographics import 
 )
 from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_sessions import (
     PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
-    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
-    SENTENCE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.session_location_names import (
     SESSION_LOCATION_NAMES_VIEW_BUILDER,
@@ -165,7 +153,6 @@ def is_view_part_of_infra_library_2025(view_address: BigQueryAddress) -> bool:
         COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER.address,
         COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER.address,
         COMPARTMENT_SESSIONS_VIEW_BUILDER.address,
-        COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address,
         COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER.address,
         COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER.address,
         COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.address,
@@ -183,9 +170,6 @@ def is_view_part_of_infra_library_2025(view_address: BigQueryAddress) -> bool:
         PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER.address,
         PERSON_DEMOGRAPHICS_VIEW_BUILDER.address,
         PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER.address,
-        SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address,
-        SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address,
-        SENTENCE_SPANS_VIEW_BUILDER.address,
         SESSION_LOCATION_NAMES_VIEW_BUILDER.address,
         SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER.address,
         SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER.address,
