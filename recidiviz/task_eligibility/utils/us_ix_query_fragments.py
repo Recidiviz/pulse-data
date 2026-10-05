@@ -60,6 +60,33 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 US_IX_LSIR_ASSESSMENT_LOOKBACK_DAYS = 90
 US_IX_STABLE_ASSESSMENT_LOOKBACK_DAYS = 60
 
+# Idaho treats an LSI-R done for a pre-sentence investigation (PSI) as valid for a
+# year, so a PSI LSI-R counts toward a session that starts up to this many days later.
+US_IX_PSI_LSIR_LOOKBACK_DAYS = 365
+
+# LSI-Rs are sometimes entered a few days after the PSI report is marked complete.
+_US_IX_PSI_COMPLETED_DATE_GRACE_DAYS = 7
+
+# LSI-R assessments completed as part of a PSI, one row per person and assessment date.
+US_IX_PSI_LSIR_ASSESSMENTS_QUERY = f"""
+    SELECT DISTINCT
+        lsir.state_code,
+        lsir.person_id,
+        lsir.assessment_date,
+    FROM `{{project_id}}.sessions.assessment_score_sessions_materialized` lsir
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        ON peid.person_id = lsir.person_id
+        AND peid.state_code = 'US_IX'
+        AND peid.id_type = 'US_IX_DOC'
+    INNER JOIN `{{project_id}}.us_ix_raw_data_up_to_date_views.com_PSIReport_latest` psi
+        ON psi.OffenderId = peid.external_id
+        AND lsir.assessment_date BETWEEN DATE(psi.OrderDate)
+            AND DATE_ADD(DATE(psi.CompletedDate), INTERVAL {_US_IX_PSI_COMPLETED_DATE_GRACE_DAYS} DAY)
+    WHERE lsir.state_code = 'US_IX'
+        AND lsir.assessment_type = 'LSIR'
+        AND lsir.assessment_class = 'RISK'
+"""
+
 # Community Reentry Centers (CRCs) - work release facilities where residents
 # can transition back into the community
 IX_CRC_FACILITIES = [
@@ -1063,6 +1090,7 @@ def us_ix_annual_assessment_criteria_view_builder(
     assessment_type: str,
     assessment_class: str,
     assessment_lookback_days: int,
+    include_psi_lsir_assessments: bool,
     include_supervision_contact_reasons: Optional[List[str]] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
@@ -1080,11 +1108,20 @@ def us_ix_annual_assessment_criteria_view_builder(
         assessment_lookback_days: Days before a session start within which an assessment
             still anchors that session's reassessment clock. Mirrors the initial
             trigger's `contact_date_lookback_days`.
+        include_psi_lsir_assessments: Whether LSI-Rs done for a pre-sentence
+            investigation anchor the reassessment clock of a session that starts up to
+            US_IX_PSI_LSIR_LOOKBACK_DAYS later. Only valid for LSI-R assessments.
         include_supervision_contact_reasons: Optional list of supervision contact reasons to also
             consider as valid assessments (e.g., ['LSI_R_REVIEW', 'INITIAL,LSI_R_REVIEW']).
             When provided, supervision contacts with these contact_reasons and status='COMPLETED'
             will be included via UNION ALL.
     """
+    if include_psi_lsir_assessments and assessment_type != "LSIR":
+        raise ValueError(
+            f"include_psi_lsir_assessments is only valid for LSIR assessments, found "
+            f"assessment_type [{assessment_type}] for criteria [{criteria_name}]"
+        )
+
     # Build optional supervision contact query
     supervision_contact_union = ""
     if include_supervision_contact_reasons:
@@ -1092,17 +1129,30 @@ def us_ix_annual_assessment_criteria_view_builder(
             include_supervision_contact_reasons, quoted=True, single_quote=True
         )
         supervision_contact_union = f"""
-    UNION DISTINCT
+    UNION ALL
 
     -- Include supervision contacts with the specified contact_reasons as valid assessments
     SELECT
         state_code,
         person_id,
         contact_date AS assessment_date,
+        {assessment_lookback_days} AS lookback_days,
     FROM `{{project_id}}.normalized_state.state_supervision_contact`
     WHERE state_code = 'US_IX'
         AND contact_reason_raw_text IN ({contact_reasons_str})
         AND status = 'COMPLETED'"""
+
+    psi_lsir_union = ""
+    if include_psi_lsir_assessments:
+        psi_lsir_union = f"""
+    UNION ALL
+
+    SELECT
+        state_code,
+        person_id,
+        assessment_date,
+        {US_IX_PSI_LSIR_LOOKBACK_DAYS} AS lookback_days,
+    FROM ({US_IX_PSI_LSIR_ASSESSMENTS_QUERY})"""
 
     query_template = f"""
 WITH supervision_sessions AS (
@@ -1121,18 +1171,28 @@ WITH supervision_sessions AS (
 ),
 
 assessments AS (
-    -- DISTINCT (and UNION DISTINCT, when contacts are included) dedupes dates
-    -- across sources so a same-day assessment and LSI-R-review contact don't
-    -- break the LEAD-based sequencing below.
-    SELECT DISTINCT
+    -- Grouping dedupes dates across sources so a same-day assessment and LSI-R-review
+    -- contact don't break the LEAD-based sequencing below. A date from several
+    -- sources keeps the longest lookback any of them allows.
+    SELECT
         state_code,
         person_id,
         assessment_date,
-    FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
-    WHERE state_code = 'US_IX'
-        AND assessment_type = '{assessment_type}'
-        AND assessment_class = '{assessment_class}'
+        MAX(lookback_days) AS lookback_days,
+    FROM (
+        SELECT
+            state_code,
+            person_id,
+            assessment_date,
+            {assessment_lookback_days} AS lookback_days,
+        FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
+        WHERE state_code = 'US_IX'
+            AND assessment_type = '{assessment_type}'
+            AND assessment_class = '{assessment_class}'
 {supervision_contact_union}
+{psi_lsir_union}
+    )
+    GROUP BY state_code, person_id, assessment_date
 ),
 
 critical_date_spans AS (
@@ -1170,10 +1230,10 @@ critical_date_spans AS (
         LEFT JOIN assessments a
             ON ss.person_id = a.person_id
                 AND ss.state_code = a.state_code
-                -- Reach back up to {assessment_lookback_days} days before session start,
+                -- Reach back up to the assessment's lookback before session start,
                 -- but not past the previous session's end.
                 AND a.assessment_date BETWEEN GREATEST(
-                        DATE_SUB(ss.start_date, INTERVAL {assessment_lookback_days} DAY),
+                        DATE_SUB(ss.start_date, INTERVAL a.lookback_days DAY),
                         {nonnull_start_date_clause('ss.prev_session_end_date')}
                     )
                     AND {nonnull_end_date_exclusive_clause('ss.end_date')}
