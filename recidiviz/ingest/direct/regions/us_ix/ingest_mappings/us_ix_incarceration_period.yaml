@@ -16,6 +16,7 @@ input_columns:
   BedTypeDesc: STRING
   period_id: INTEGER
   JurisdictionId: STRING
+  ParoleHold_ContinuedDate: DATETIME
 unused_columns: []
 output:
   StatePerson:
@@ -81,6 +82,14 @@ output:
                     - SecurityLevelName
                     - $literal("Rider")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              # Before the Parole Violator legal status is recorded, a parolee returned
+              # to custody has no legal status. When the parole board later continued
+              # their parole, that time was a hold, not general incarceration.
+              - $else_if:
+                  $and:
+                    - $not_null: ParoleHold_ContinuedDate
+                    - $is_null: LegalStatusDesc
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
               - $else_if:
                   $is_null: LegalStatusDesc
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
@@ -97,68 +106,84 @@ output:
                       StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
                         - Non Idaho Commitment
           admission_reason:
-            $enum_mapping:
-              $raw_text: Start_TransferReasonDesc
-              $mappings:
-                StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
-                  - Pending Custody Intake
-                StateIncarcerationPeriodAdmissionReason.ESCAPE:
-                  - Escape
-                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  - Administrative
-                  - Administrative Transfer
-                  - Assigned To Jail
-                  - Civil Commitment
-                  - Civil Commitment Pending
-                  # The following two reasons only show up <10 times each
-                  - Intensive Re-entry Program
-                  - Pre-Release Assignment
-                  # TODO(#21085) Investigate why Release to Supervision and Release to Parole
-                  # are coming in as an admission reason for one person
-                  - Release to Supervision
-                  - Release to Parole
-                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-                  - Court Action
-                  - Initial Facility Intake
-                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
-                  - Return from Escape
-                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
-                  - Return From Bond
-                  - Return From Temporary Release
-                StateIncarcerationPeriodAdmissionReason.REVOCATION:
-                  - Return From Parole
-                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
-                  - Sanction
-                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
-                  - Assigned To Work Release
-                  - Death Row
-                  - Home Electronic Monitoring
-                  - Independent Living Program
-                  - Segregation -Administration
-                  - Segregation -Mental Health
-                  - Segregation -Protective Custody
-                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
-                  - Mental Health Treatment
-                  - Substance Abuse And Therapeutic Program Assignment
-                  - Temporary Remand To Custody
-                  - Wellness Hold
-                StateIncarcerationPeriodAdmissionReason.TRANSFER:
-                  - Emergency Transfer
-                  - Jail To Jail
-                  - Offender Moves Location
-                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
-                  - Return From Court
-                  - Returned To Jail
-                  - Transfer To Hospital
-                  - Housing Unit Transfer
-                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                  - Assigned
-                  - Contract In
-                  - Interstate Compact Facility In
-                  - Return Other Jurisdictions
-                  - Serving Local Jail Sentence
-                  - Serving Other Jurisdiction
-                  - Serving Out of State Sentence
+            $conditional:
+              # A return from parole that the parole board resolved by continuing
+              # parole was temporary custody, not a revocation.
+              - $if:
+                  $and:
+                    - $not_null: ParoleHold_ContinuedDate
+                    - $equal:
+                        - Start_TransferReasonDesc
+                        - $literal("Return From Parole")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Start_TransferReasonDesc
+                    $mappings:
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                        - Return From Parole
+              - $else:
+                  $enum_mapping:
+                    $raw_text: Start_TransferReasonDesc
+                    $mappings:
+                      StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
+                        - Pending Custody Intake
+                      StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                        - Escape
+                      StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        - Administrative
+                        - Administrative Transfer
+                        - Assigned To Jail
+                        - Civil Commitment
+                        - Civil Commitment Pending
+                        # The following two reasons only show up <10 times each
+                        - Intensive Re-entry Program
+                        - Pre-Release Assignment
+                        # TODO(#21085) Investigate why Release to Supervision and Release to Parole
+                        # are coming in as an admission reason for one person
+                        - Release to Supervision
+                        - Release to Parole
+                      StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                        - Court Action
+                        - Initial Facility Intake
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                        - Return from Escape
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                        - Return From Bond
+                        - Return From Temporary Release
+                      StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                        - Return From Parole
+                      StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                        - Sanction
+                      StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                        - Assigned To Work Release
+                        - Death Row
+                        - Home Electronic Monitoring
+                        - Independent Living Program
+                        - Segregation -Administration
+                        - Segregation -Mental Health
+                        - Segregation -Protective Custody
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                        - Mental Health Treatment
+                        - Substance Abuse And Therapeutic Program Assignment
+                        - Temporary Remand To Custody
+                        - Wellness Hold
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                        - Emergency Transfer
+                        - Jail To Jail
+                        - Offender Moves Location
+                        - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                        - Return From Court
+                        - Returned To Jail
+                        - Transfer To Hospital
+                        - Housing Unit Transfer
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - Assigned
+                        - Contract In
+                        - Interstate Compact Facility In
+                        - Return Other Jurisdictions
+                        - Serving Local Jail Sentence
+                        - Serving Other Jurisdiction
+                        - Serving Out of State Sentence
           release_reason:
             $enum_mapping:
               $raw_text: End_TransferReasonDesc
