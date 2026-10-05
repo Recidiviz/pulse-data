@@ -271,24 +271,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
 DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
     StateCode, dict[str, list[str]]
 ] = {
-    StateCode.US_AZ: {
-        "AZ_DOC_HWD_WARRANT": [
-            "ATS_DTM",
-            "CC_SIGNATURE_DTM",
-            "CREATE_DTM",
-            "RELEASE_TYPE_LAST_CHANGE_DTM",
-            "STATUS_DTM",
-        ],
-        "AZ_DOC_SC_ARS_CODE": [
-            "CREATE_DTM",
-            "EFF_END_DTM",
-            "EFF_START_DTM",
-            "UPDT_DTM",
-        ],
-        "DOC_CLASS_ARREST_HISTORY": ["ARS_ID_LAST_MODIFIED_DATE"],
-        "DOC_PR_PROGRAM": ["PR_EFF_DATE", "PR_END_DATE"],
-        "ORAS_results_sheet": ["date"],
-    },
     StateCode.US_CA: {
         "AssessmentInCustody": [
             "CompasCompletedDate",
