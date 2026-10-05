@@ -40,6 +40,10 @@ ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
 JESSICALIU_US_AR_EDOVO_RAW_DATA: str = "jessicaliu_us_ar_edovo_raw_data"
 
+US_CO_EDOVO_PRE_API_COURSE_COMPLETIONS_DATA: str = (
+    "us_co_edovo_pre_api_course_completions_data"
+)
+
 # Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
 JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
 
@@ -87,6 +91,10 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     JESSICALIU_US_AR_EDOVO_RAW_DATA: (
         "Stores temporary AR Edovo data for staging validation."
+    ),
+    US_CO_EDOVO_PRE_API_COURSE_COMPLETIONS_DATA: (
+        "Stores CO Edovo course completions recorded before the Edovo API feed "
+        "began, loaded manually from a CSV."
     ),
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
         "Stores events logged from public-pathways via Segment."

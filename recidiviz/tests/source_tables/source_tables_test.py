@@ -160,6 +160,11 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # deployed view yet. TODO(CO-736): remove once the retroactive/
             # reconciliation view that reads this table is built.
             "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
+            # Pre-API CO Edovo course completions, loaded manually from a CSV and
+            # not read by any deployed view yet. TODO(CO-755): remove once the
+            # view that unions this table with the federated Edovo completions
+            # is built.
+            "us_co_edovo_pre_api_course_completions_data.course_completions",
             *COMMON_VESTIGES,
         ]
     },
@@ -178,6 +183,11 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # deployed view yet. TODO(CO-736): remove once the retroactive/
             # reconciliation view that reads this table is built.
             "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
+            # Pre-API CO Edovo course completions, loaded manually from a CSV and
+            # not read by any deployed view yet. TODO(CO-755): remove once the
+            # view that unions this table with the federated Edovo completions
+            # is built.
+            "us_co_edovo_pre_api_course_completions_data.course_completions",
             *COMMON_VESTIGES,
         ]
     },

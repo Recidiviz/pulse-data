@@ -1,0 +1,52 @@
+address:
+  dataset_id: us_co_edovo_pre_api_course_completions_data
+  table_id: course_completions
+description:
+  CO Edovo course completions recorded before the Edovo API feed began, loaded
+  manually from a CSV. Columns mirror the federated edovo_course_completions
+  table, minus the Postgres-specific id and idempotency_key, except that
+  completed_at is replaced by completed_date. The pre-API export only has a
+  local calendar date with no time of day, so completed_date is a DATE in
+  Colorado local time; do not convert it with a timezone. The live table's
+  completed_at is a TIMESTAMP that must be converted with DATE(completed_at,
+  'America/Denver'). id_type is US_CO_ADCNUMBER for facilities that start with
+  "CDOC:" and NULL for county facilities, whose IDs are not ADC numbers.
+  content_hours comes from our own course mapping, not from Edovo.
+  completed_date is NULL for courses that were started but not completed.
+  received_at is the time the CSV was loaded into BigQuery, one value for all
+  rows, not the time Edovo submitted each completion as in the live table.
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: id_type
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: course_id
+    type: STRING
+    mode: NULLABLE
+  - name: course_name
+    type: STRING
+    mode: NULLABLE
+  - name: first_name
+    type: STRING
+    mode: NULLABLE
+  - name: last_name
+    type: STRING
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+  - name: content_hours
+    type: FLOAT
+    mode: NULLABLE
+  - name: completed_date
+    type: DATE
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
