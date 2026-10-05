@@ -11,6 +11,9 @@ input_columns:
   LKUP_VALUE: STRING
   RSCL_CTGRY_NAME: STRING
   RSCL_OFFC_REGION: STRING
+  last_session_date: DATE
+  sessions_attended: INTEGER
+  sessions_missed: INTEGER
 unused_columns: []
 output:
   StatePerson:
@@ -52,3 +55,6 @@ output:
             $normalized_values_json_dict:
               provider: RSCL_DIR_NAME
               program_type: LKUP_VALUE
+              last_session_date: last_session_date
+              sessions_attended: sessions_attended
+              sessions_missed: sessions_missed
