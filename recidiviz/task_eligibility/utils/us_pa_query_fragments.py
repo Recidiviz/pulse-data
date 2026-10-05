@@ -727,18 +727,14 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
         from_clause = f"""FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentence_serving_period_materialized` ssp
     INNER JOIN `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sen
         USING (state_code, person_id, sentence_id)
-    INNER JOIN `{{project_id}}.normalized_state.state_charge_v2` sc
-        ON sen.charge_v2_id = sc.charge_v2_id AND sen.state_code = sc.state_code
     WHERE sen.state_code = 'US_PA'
       AND CURRENT_DATE('US/Eastern') >= ssp.start_date
       AND CURRENT_DATE('US/Eastern') < {nonnull_end_date_exclusive_clause('ssp.end_date_exclusive')}
     """
     else:
-        # for all charges, we just join sentences & charges
-        from_clause = """FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc 
-        USING(person_id, charge_id) 
-    WHERE sen.state_code = 'US_PA' 
+        # for all charges, we just pull in sentences & charges
+        from_clause = """FROM `{project_id}.{sentence_sessions_v2_all_dataset}.sentences_and_charges_materialized` sen
+    WHERE sen.state_code = 'US_PA'
     """
 
     return f"""
@@ -752,21 +748,21 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
         -- each row is a one charge with an attached statute, annotated with it's source
         all_statue_and_source_info AS (
           SELECT
-            ssp.person_id,
+            sen.person_id,
             sen.statute,
             sen.description,
             CASE
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN ' (Source: CAPTOR - Criminal History)'
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN ' (Source: Supervisor Controls)'
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN ' (Source: CAPTOR - Sentence Summary)'
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN ' (Source: CalcRite)'
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN ' (Source: CAPTOR - Criminal History)'
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN ' (Source: Supervisor Controls)'
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'SENREC' THEN ' (Source: CAPTOR - Sentence Summary)'
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN ' (Source: CalcRite)'
               ELSE ' (Source: CAPTOR - Other)'
             END as source,
             CASE
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN 1
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN 2
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN 3
-              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN 4
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN 1
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'SENREC' THEN 2
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN 3
+              WHEN SPLIT(sen.charge_external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN 4
               ELSE 5
             END as source_sorting_rank,
             sen.imposed_date,
