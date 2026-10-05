@@ -13,6 +13,7 @@ input_columns:
   LegalStatusDesc: STRING
   SecurityLevelName: STRING
   LevelPath: STRING
+  BedTypeDesc: STRING
   period_id: INTEGER
   JurisdictionId: STRING
 unused_columns: []
@@ -239,4 +240,58 @@ output:
                   - Serving Out of State Sentence
                   - Interstate Compact Community Out
           housing_unit: LevelPath
+          # justice_impact_sessions counts OTHER_SOLITARY_CONFINEMENT as solitary only
+          # through the category.
+          housing_unit_category:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: BedTypeDesc
+                    $options:
+                      - $literal("Long Term Restrictive Housing")
+                      - $literal("Segregation")
+                $then:
+                  $enum_mapping:
+                    $raw_text: BedTypeDesc
+                    $mappings:
+                      StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
+                        - Long Term Restrictive Housing
+                        - Segregation
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: BedTypeDesc
+              $mappings:
+                StateIncarcerationPeriodHousingUnitType.GENERAL:
+                  - General Population
+                  - Community Reentry Center
+                  - Contract Jail
+                  - Parole Violator
+                  - Retained Jurisdiction
+                  - Temporary Cot (GP)
+                  - Work Camp
+                  - Work Release
+                StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                  - Medical
+                StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
+                  - Protective Custody
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                  - Short Term Restrictive Housing
+                StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT:
+                  - Long Term Restrictive Housing
+                  - Segregation # Inactive legacy bed type
+                StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN:
+                  - Reception and Diagnostic Unit
+                  - Mental Health
+                  - Death Row
+                  # Inactive legacy program bed types
+                  - Cadre
+                  - Cognitive
+                  - Grooming Violators
+                  - Independent Living
+                  - Re-Entry
+                  - Sex Offender Treatment Program
+                  - Step Down Phase 1
+                  - Step Down Phase 2
+                  - Steps to Achieve Reintegration
+                  - Youthful Transition
           county_code: JurisdictionId

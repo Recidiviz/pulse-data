@@ -23,7 +23,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
-from recidiviz.task_eligibility.criteria.general import incarcerated_at_least_6_months
+from recidiviz.task_eligibility.criteria.general import (
+    housing_unit_type_is_not_solitary_confinement_or_protective_custody,
+    incarcerated_at_least_6_months,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     custody_level_higher_than_recommended,
     no_active_discretionary_override,
@@ -54,6 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_classification_pilot.VIEW_BUILDER,
         not_already_on_lowest_eligible_custody_level.VIEW_BUILDER,
         not_within_6_months_of_initial_classification.VIEW_BUILDER,
+        housing_unit_type_is_not_solitary_confinement_or_protective_custody.VIEW_BUILDER,
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             criteria_name="US_IX_SERVING_A_TERMER_SENTENCE_OR_INCARCERATED_AT_LEAST_6_MONTHS",
             logic_type=TaskCriteriaGroupLogicType.OR,
