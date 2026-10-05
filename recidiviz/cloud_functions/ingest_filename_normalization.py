@@ -186,7 +186,7 @@ def _invoke_zipfile_handler(bucket: str, relative_file_path: str) -> requests.Re
     cloud_functions_log(
         severity="INFO", message=f"Invoking {function_url} with payload: {payload}"
     )
-    return requests.post(function_url, headers=headers, json=payload, timeout=540)
+    return requests.post(function_url, headers=headers, json=payload, timeout=3600)
 
 
 def _get_access_token(audience: str) -> str:

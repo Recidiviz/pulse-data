@@ -61,7 +61,7 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
   service_config {
     max_instance_count = 10
     available_memory   = "8G"
-    timeout_seconds    = 540
+    timeout_seconds    = 3600
     environment_variables = {
       PYTHONPATH       = "/workspace"
       PROJECT_ID       = var.project_id
@@ -140,7 +140,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
   service_config {
     max_instance_count = 50
     available_memory   = "512M"
-    timeout_seconds    = 540
+    timeout_seconds    = 3600
     environment_variables = {
       PYTHONPATH                   = "/workspace" # directory recidiviz/ lives in
       ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
