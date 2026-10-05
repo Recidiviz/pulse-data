@@ -95,9 +95,6 @@ from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.us_mi_flag_new_offense_codes import (
-    US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
-)
 
 
 def _get_ingest_metadata_addresses_table(
@@ -119,19 +116,6 @@ _ALL_SCHEMA_TABLE_VIEWS = [
     ),
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
 ]
-
-# These are views that still reference state-specific sentences v1 tables and have been
-# exempted. For example the views listed under (StateCode.US_MI, StateCharge) are views
-# that reference the us_mi_normalized_state.state_charge table directly.
-_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS: dict[
-    tuple[StateCode, type[Entity]], dict[BigQueryAddress, str]
-] = {
-    (StateCode.US_MI, StateCharge): {
-        US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER.address: (
-            "TODO(#46258): Update validation to read from state_charge_v2"
-        ),
-    },
-}
 
 # Maps deprecated view addresses to a dict of views that are allowed to reference
 # them. The inner dict maps each exempted view address to a reason string explaining
@@ -315,9 +299,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
                 ): (
                     f"TODO(#33402): This view will be deleted when "
                     f"{assert_subclass(entity_cls, Entity).get_table_id()} is deleted"
-                ),
-                **_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS.get(
-                    (state_code, entity_cls), {}
                 ),
             }
         )
