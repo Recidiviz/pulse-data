@@ -90,6 +90,7 @@ class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
         state_enum_strings.state_incarceration_incident_outcome_good_time_loss
     )
     NOT_GUILTY = state_enum_strings.state_incarceration_incident_outcome_not_guilty
+    PENDING = state_enum_strings.state_incarceration_incident_outcome_pending
     PRIVILEGE_LOSS = (
         state_enum_strings.state_incarceration_incident_outcome_privilege_loss
     )
@@ -131,6 +132,10 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_TYPE_VALUE_DESCRIPTIONS: Dict[
     "their sentence.",
     StateIncarcerationIncidentOutcomeType.NOT_GUILTY: "Used when the person is found "
     "to be not guilty of the reported incident.",
+    StateIncarcerationIncidentOutcomeType.PENDING: "Used when the disciplinary process "
+    "for the incident has not reached a decision yet, for example because a hearing "
+    "or a review of the hearing decision is still pending. Incidents under appeal "
+    "after a decision are not pending.",
     StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS: "Describes an incident "
     "outcome in which a person loses some kind of privilege.",
     StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT: "Describes an "

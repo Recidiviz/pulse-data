@@ -196,6 +196,7 @@ state_incarceration_incident_outcome_external_prosecution = "EXTERNAL_PROSECUTIO
 state_incarceration_incident_outcome_financial_penalty = "FINANCIAL_PENALTY"
 state_incarceration_incident_outcome_good_time_loss = "GOOD_TIME_LOSS"
 state_incarceration_incident_outcome_not_guilty = "NOT_GUILTY"
+state_incarceration_incident_outcome_pending = "PENDING"
 state_incarceration_incident_outcome_privilege_loss = "PRIVILEGE_LOSS"
 state_incarceration_incident_outcome_restricted_confinement = "RESTRICTED_CONFINEMENT"
 state_incarceration_incident_outcome_solitary = "SOLITARY"
