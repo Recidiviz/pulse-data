@@ -11,10 +11,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
-from recidiviz.calculator.query.state.dataset_config import (
-    SENTENCE_SESSIONS_DATASET,
-    SENTENCE_SESSIONS_V2_ALL_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
@@ -221,10 +218,7 @@ def test_no_v1_references_for_exported_views(
             deprecated_addresses=deprecated_addresses,
             product_view_addresses=export_addresses,
             state_code=state_code,
-            filter_datasets={
-                SENTENCE_SESSIONS_DATASET,
-                SENTENCE_SESSIONS_V2_ALL_DATASET,
-            },
+            filter_datasets={SENTENCE_SESSIONS_DATASET},
         )
     )
 

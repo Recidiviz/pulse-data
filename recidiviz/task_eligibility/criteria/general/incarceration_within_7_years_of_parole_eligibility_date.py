@@ -37,7 +37,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         critical_date_name_in_reason="parole_eligibility_date",
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        sentence_sessions_dataset="sentence_sessions_v2_all",
+        sentence_sessions_dataset="sentence_sessions",
     )
 )
 

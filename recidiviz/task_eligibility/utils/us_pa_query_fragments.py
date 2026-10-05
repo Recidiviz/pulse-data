@@ -521,7 +521,7 @@ def adm_form_information_helper() -> str:
                 sen.description,
                 sen.offense_type,
                 sc.status,
-            FROM `{project_id}.{sentence_sessions_v2_all_dataset}.sentences_and_charges_materialized` sen
+            FROM `{project_id}.{sentence_sessions_dataset}.sentences_and_charges_materialized` sen
             LEFT JOIN `{project_id}.normalized_state.state_charge_v2` sc
                 ON sen.charge_v2_id = sc.charge_v2_id AND sen.state_code = sc.state_code
             WHERE sen.state_code = 'US_PA'
@@ -724,8 +724,8 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
     if filter_to_current_charges:
         # in order to filter to _just_ current charges, we pull in sentences to
         # filter out any sentences that are not currently being served
-        from_clause = f"""FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentence_serving_period_materialized` ssp
-    INNER JOIN `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sen
+        from_clause = f"""FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_materialized` ssp
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sen
         USING (state_code, person_id, sentence_id)
     WHERE sen.state_code = 'US_PA'
       AND CURRENT_DATE('US/Eastern') >= ssp.start_date
@@ -733,7 +733,7 @@ def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> st
     """
     else:
         # for all charges, we just pull in sentences & charges
-        from_clause = """FROM `{project_id}.{sentence_sessions_v2_all_dataset}.sentences_and_charges_materialized` sen
+        from_clause = """FROM `{project_id}.{sentence_sessions_dataset}.sentences_and_charges_materialized` sen
     WHERE sen.state_code = 'US_PA'
     """
 
@@ -1031,7 +1031,7 @@ def adm_eligibility_unclear_helper() -> str:
             imposed_date,
             description,
             classification_type
-        FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sent
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
         WHERE state_code = 'US_PA'
     ), sentences_clean AS (
     /* takes PA sentences and splits the statute codes into titles, sections, and subsections */
@@ -1133,7 +1133,7 @@ def adm_dui_helper() -> str:
             imposed_date,
             description,
             classification_type
-        FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sent
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
         WHERE state_code = 'US_PA'
     )
     /* takes PA sentences and splits the statute codes into titles, sections, and subsections */
@@ -1236,8 +1236,8 @@ def spc_eligibility_unclear_helper() -> str:
         sen.statute,
         sen.imposed_date,
         sen.classification_type
-    FROM `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentence_serving_period_materialized` ssp
-    INNER JOIN `{{project_id}}.{{sentence_sessions_v2_all_dataset}}.sentences_and_charges_materialized` sen
+    FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_materialized` ssp
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sen
       USING (state_code, person_id, sentence_id)
     WHERE sen.state_code = "US_PA"
       -- violent/non-violent split only matters for non-life sentences

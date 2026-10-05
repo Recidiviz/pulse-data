@@ -78,9 +78,6 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
-    SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -402,22 +399,6 @@ PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
 # entry a ticket and move it to TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP in
 # find_unused_bq_views. Do NOT add new entries here.
 TEMPORARY_GRANDFATHERED_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
-    **{
-        VIEW_BUILDER.address: (
-            "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
-            "on migration status. They are used primarily for validation and development work but some are referenced in"
-            "TES critiera. The list below encompasses those not yet referenced downstream (Andrew Gaidus, 2025-03-18)"
-        )
-        for VIEW_BUILDER in SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS
-        if VIEW_BUILDER.address.table_id
-        in [
-            "overlapping_sentence_serving_periods",
-            "sentence_id_to_consecutive_sentence_id",
-            "sentence_imposed_group_summary",
-            "most_severe_sentence_and_charge_spans",
-            "current_person_prison_projected_dates",
-        ]
-    },
     PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER.address: (
         "Will be used in subsequent prs for workflows criteria (Samantha Norcia 6/20/25)"
     ),

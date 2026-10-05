@@ -341,13 +341,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "state_charge_supervision_sentence_association_view",
         ]
     },
-    BigQueryAddress.from_str(
-        "sentence_sessions_v2_all.compartment_sessions_closest_imposed_sentence"
-    ): (
-        "The sentence_sessions_v2_all copy of a view whose readers use the "
-        "sentence_sessions version. The v2_all copies go away in TODO(#33402). "
-        "(Andrew Gaidus, 2026-09-30)"
-    ),
 }
 
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {

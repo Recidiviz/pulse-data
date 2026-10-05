@@ -1549,8 +1549,7 @@ def is_past_completion_date_criteria_builder(
             or supervision session has no overlapping sentence span. The projected dates from
             the latest (non-overlapping) sentence span will be applied. Defaults to False.
         sentence_sessions_dataset (str, optional): The dataset that contains the sentence
-            sessions. Defaults to "sentence_sessions", but can be set to "sentence_sessions_v2_all"
-            for states that want to use the new sentence sessions but have yet to fully migrate.
+            sessions. Defaults to "sentence_sessions".
         allow_past_critical_date (bool, optional): If True, the critical date can be in the past.
             Defaults to True. If False, spans are cropped so that the end_date of a span is the
             LEAST of the critical date and the sentence session end_date.

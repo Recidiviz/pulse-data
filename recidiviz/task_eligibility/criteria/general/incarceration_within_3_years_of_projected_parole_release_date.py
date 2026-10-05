@@ -38,7 +38,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         date_part="YEAR",
         critical_date_name_in_reason="group_projected_parole_release_date",
         critical_date_column="group_projected_parole_release_date",
-        sentence_sessions_dataset="sentence_sessions_v2_all",
+        sentence_sessions_dataset="sentence_sessions",
     )
 )
 

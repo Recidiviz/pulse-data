@@ -33,7 +33,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    SENTENCE_SESSIONS_V2_ALL_DATASET,
+    SENTENCE_SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     current_violent_statutes_being_served,
@@ -900,7 +900,7 @@ def eprd_within_x_months_criteria_view_builder(
         criteria_name=criteria_name,
         criteria_spans_query_template=query_template,
         description=description,
-        sentence_sessions_v2_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
+        sentence_sessions_v2_dataset=SENTENCE_SESSIONS_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
         meets_criteria_default=meets_criteria_default,
