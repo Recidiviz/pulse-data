@@ -341,3 +341,10 @@ class OperateOnRawStorageDirectoriesController:
         )
 
         self.operations_list.extend([operation for operation, _ in result.successes])
+
+        if result.exceptions:
+            raise ExceptionGroup(
+                f"Failed to {self.operation_type.value.lower()} files for "
+                f"[{len(result.exceptions)}] of [{len(all_operations)}] operations",
+                [exception for _work_item, exception in result.exceptions],
+            )
