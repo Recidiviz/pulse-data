@@ -11,6 +11,7 @@ input_columns:
   inState: STRING
   TermId: STRING
   SentenceOrderTypeId: STRING
+  SentenceOrderEventTypeName: STRING
   parent_sentence_external_id_array: STRING
   SentenceDetailUpdateDate: STRING
   SegmentEndDate: DATE
@@ -125,3 +126,6 @@ output:
                     - $literal("Death")
                 $then: $literal_bool(True)
               - $else: $literal_bool(False)
+          sentence_metadata:
+            $normalized_values_json_dict:
+              sentence_event_type: SentenceOrderEventTypeName
