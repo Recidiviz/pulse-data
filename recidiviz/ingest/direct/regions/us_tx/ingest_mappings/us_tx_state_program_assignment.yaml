@@ -27,6 +27,8 @@ output:
               $mappings:
                 StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
                   - "COMPLETED" # Successful
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
+                  - "CLOSED"
                 StateProgramAssignmentParticipationStatus.PENDING:
                   - "WAITLIST"
                 StateProgramAssignmentParticipationStatus.IN_PROGRESS:
