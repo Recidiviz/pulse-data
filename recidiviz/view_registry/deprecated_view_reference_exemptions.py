@@ -22,12 +22,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
-    RECIDIVISM_EVENT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
-    SENTENCE_COHORT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
     CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -152,10 +146,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view (or delete this view)"
         ),
-        RECIDIVISM_EVENT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
         ),
@@ -220,22 +210,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"
         ),
-        RECIDIVISM_EVENT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SENTENCE_COHORT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
     },
     # TODO(#33402): Delete `compartment_sessions_closest_sentence_imposed_group` once
     # all states are migrated to v2 infra
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-        SENTENCE_COHORT_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"

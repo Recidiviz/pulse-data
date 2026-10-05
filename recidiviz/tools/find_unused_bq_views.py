@@ -218,6 +218,13 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         "no CNI payment summary view, unlike employment and housing. Tracked in "
         "TODO(OBT-51675). (Emily Turner, 2026-10-02)"
     ),
+    BigQueryAddress.from_str(
+        "sessions.compartment_sessions_closest_sentence_imposed_group"
+    ): (
+        "Deprecated v1 sessions view no longer on any product's path after the US_IX "
+        "Case Insights v2 repoint; deleted with the other v1 sessions views in "
+        "TODO(#33402). (Kim Jones, 2026-10-01)"
+    ),
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New tasks snooze status archive view. "
         "Downstream work is tracked in TODO(OBT-39438). (Daniel McLaughlin, 2026-07-29)"

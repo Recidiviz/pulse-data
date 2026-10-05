@@ -81,9 +81,6 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
     SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
 )
@@ -411,10 +408,6 @@ PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
 # entry a ticket and move it to TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP in
 # find_unused_bq_views. Do NOT add new entries here.
 TEMPORARY_GRANDFATHERED_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
-        "This is a new table in the sentence_sessions dataset which will soon be used in "
-        "PSI work (Nick Tallant, 2025-01-30)"
-    ),
     **{
         VIEW_BUILDER.address: (
             "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "

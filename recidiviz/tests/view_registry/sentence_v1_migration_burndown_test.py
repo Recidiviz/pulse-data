@@ -18,9 +18,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mo_sentences_v1_burndown import (
-    US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_view_graphs import (
@@ -37,9 +34,7 @@ from recidiviz.view_registry.deprecated_view_reference_exemptions import (
 _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode,
     dict[str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]],
-] = {
-    StateCode.US_MO: US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-}
+] = {}
 
 
 @cache
