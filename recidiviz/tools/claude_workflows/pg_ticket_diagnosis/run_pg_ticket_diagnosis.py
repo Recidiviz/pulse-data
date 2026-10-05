@@ -26,8 +26,9 @@ Features:
   it never resolved that PII to a person.
 - Conditionally loads diagnosis prompts based on product area labels
   (workflows, tasks, insights). Falls back to all three if none specified.
-- Deduplication: skips issues that already have a diagnosis comment
-  (override with FORCE_RERUN=1).
+- Deduplication: skips issues that already have a successful diagnosis comment
+  (override with FORCE_RERUN=1). A retrigger after a failed run diagnoses again
+  and replaces the failure notice with the new result.
 - Token usage logging per iteration and in the GitHub comment footer.
 
 To test end-to-end, fire the Cloud Build webhook trigger directly:
@@ -84,7 +85,7 @@ from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
     github_helperbot_client,
-    helperbot_issue_has_comment_with_prefix,
+    helperbot_issue_comment_bodies_with_prefix,
     upsert_helperbot_comment,
 )
 from recidiviz.github.github_issue import GithubIssue
@@ -225,11 +226,21 @@ def get_secret(name: str, gcp_project: str) -> str:
 DIAGNOSIS_MARKER = "<!-- pg-diagnosis-agent -->"
 FOLLOW_UP_MARKER = "<!-- pg-diagnosis-followup -->"
 
+# Every failure notice opens with this text, right after DIAGNOSIS_MARKER.
+FAILED_DIAGNOSIS_PREFIX = "⚠️ Automated diagnosis"
 
-def issue_has_marker(issue: GithubIssue, marker: str) -> bool:
-    """Return True iff a Helperbot comment on the issue starts with the marker."""
-    return helperbot_issue_has_comment_with_prefix(
-        issue_number=issue.number, prefix=marker, repo=issue.repo
+
+def issue_has_successful_diagnosis(issue: GithubIssue) -> bool:
+    """Returns True iff the issue has a diagnosis comment that is not a failure
+    notice, so a retrigger after a failed run diagnoses the ticket again.
+    """
+    return any(
+        not body.removeprefix(DIAGNOSIS_MARKER)
+        .lstrip()
+        .startswith(FAILED_DIAGNOSIS_PREFIX)
+        for body in helperbot_issue_comment_bodies_with_prefix(
+            issue_number=issue.number, prefix=DIAGNOSIS_MARKER, repo=issue.repo
+        )
     )
 
 
@@ -316,7 +327,7 @@ class DiagnosisFailure(AgentFailure):
 
     def user_message(self) -> str:
         return (
-            f"⚠️ Automated diagnosis could not complete — {self.HEADLINE}\n\n"
+            f"{FAILED_DIAGNOSIS_PREFIX} could not complete — {self.HEADLINE}\n\n"
             f"**Detail:** {self}\n\n"
             f"{self.GUIDANCE}"
         )
@@ -1227,9 +1238,9 @@ def main() -> None:
     force_rerun = os.environ.get("FORCE_RERUN", "").lower() in ("1", "true", "yes")
     logs_footer = _build_logs_footer(config.gcp_project, config.build_id)
 
-    if not force_rerun and issue_has_marker(issue, DIAGNOSIS_MARKER):
+    if not force_rerun and issue_has_successful_diagnosis(issue):
         logger.info(
-            "Diagnosis already exists for %s, skipping (set FORCE_RERUN=1 to override)",
+            "Successful diagnosis already exists for %s, skipping (set FORCE_RERUN=1 to override)",
             issue,
         )
         # upsert is idempotent (edits in place; no duplicate notification),
@@ -1318,7 +1329,8 @@ def main() -> None:
         try:
             _post_marked_comment(
                 issue,
-                f"⚠️ Automated diagnosis failed.\n\n**Detail:** {detail}" + logs_footer,
+                f"{FAILED_DIAGNOSIS_PREFIX} failed.\n\n**Detail:** {detail}"
+                + logs_footer,
             )
         except Exception:
             logger.exception("Failed to post failure comment for %s", issue)

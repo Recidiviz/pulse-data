@@ -21,6 +21,7 @@ import time
 
 from github import Github
 from github.Auth import Token
+from github.Issue import Issue
 from github.IssueComment import IssueComment
 from more_itertools import one
 
@@ -117,6 +118,17 @@ def _is_helperbot_comment_with_prefix(comment: IssueComment, prefix: str) -> boo
     return comment.user.login == HELPERBOT_USER_NAME and comment.body.startswith(prefix)
 
 
+def _helperbot_comments_with_prefix(issue: Issue, prefix: str) -> list[IssueComment]:
+    """Returns every Helperbot comment on the issue that starts with prefix, oldest
+    first.
+    """
+    return [
+        comment
+        for comment in issue.get_comments()
+        if _is_helperbot_comment_with_prefix(comment, prefix)
+    ]
+
+
 def helperbot_comment_with_prefix_exists(
     github_client: Github,
     issue_number: int,
@@ -125,10 +137,7 @@ def helperbot_comment_with_prefix_exists(
 ) -> bool:
     """Returns True iff a helperbot comment starting with `prefix` exists on the issue/PR."""
     issue = github_client.get_repo(repo).get_issue(issue_number)
-    return any(
-        _is_helperbot_comment_with_prefix(comment, prefix)
-        for comment in issue.get_comments()
-    )
+    return bool(_helperbot_comments_with_prefix(issue, prefix))
 
 
 def helperbot_issue_has_comment_with_prefix(
@@ -145,6 +154,19 @@ def helperbot_issue_has_comment_with_prefix(
     )
 
 
+def helperbot_issue_comment_bodies_with_prefix(
+    *,
+    issue_number: int,
+    prefix: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> list[str]:
+    """Returns the bodies of every Helperbot comment on the issue/PR that starts
+    with prefix, oldest first.
+    """
+    issue = github_helperbot_client().get_repo(repo).get_issue(issue_number)
+    return [comment.body for comment in _helperbot_comments_with_prefix(issue, prefix)]
+
+
 def upsert_issue_comment(
     github_client: Github,
     issue_number: int,
@@ -159,11 +181,7 @@ def upsert_issue_comment(
     `pr.get_issue_comments()`.
     """
     issue = github_client.get_repo(repo).get_issue(issue_number)
-    comments = [
-        comment
-        for comment in issue.get_comments()
-        if _is_helperbot_comment_with_prefix(comment, prefix)
-    ]
+    comments = _helperbot_comments_with_prefix(issue, prefix)
 
     body_length_safe = truncate_string_if_necessary(
         body, max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH

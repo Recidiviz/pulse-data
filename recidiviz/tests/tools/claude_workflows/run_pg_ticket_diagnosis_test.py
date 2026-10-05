@@ -308,7 +308,9 @@ class TestFetchPiiForIssue(unittest.TestCase):
     },
 )
 @mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
-@mock.patch(f"{_MODULE}.issue_has_marker", mock.MagicMock(return_value=False))
+@mock.patch(
+    f"{_MODULE}.issue_has_successful_diagnosis", mock.MagicMock(return_value=False)
+)
 @mock.patch(
     f"{_MODULE}.fetch_issue_content",
     mock.MagicMock(
@@ -385,6 +387,96 @@ class TestMainRefusesUnresolvedDiagnosis(unittest.TestCase):
         posted = mock_post.call_args.args[1]
         self.assertIn("No PII found for issue 88494", posted)
         self.assertNotIn("never resolved this ticket's PII to a person", posted)
+
+
+class TestIssueHasSuccessfulDiagnosis(unittest.TestCase):
+    """Tests for issue_has_successful_diagnosis."""
+
+    FAILURE_NOTICE = (
+        f"{run_pg.DIAGNOSIS_MARKER}\n"
+        + run_pg.PIIUnusableError("never resolved").user_message()
+    )
+    CRASH_NOTICE = (
+        f"{run_pg.DIAGNOSIS_MARKER}\n"
+        f"{run_pg.FAILED_DIAGNOSIS_PREFIX} failed.\n\n**Detail:** TimeoutError"
+    )
+    DIAGNOSIS = f"{run_pg.DIAGNOSIS_MARKER}\n# TLDR\n\nThe contact was ingested late."
+
+    def _has_successful_diagnosis(self, bodies: list[str]) -> bool:
+        with mock.patch(
+            f"{_MODULE}.helperbot_issue_comment_bodies_with_prefix",
+            return_value=bodies,
+        ):
+            return run_pg.issue_has_successful_diagnosis(_ISSUE)
+
+    def test_no_comments(self) -> None:
+        self.assertFalse(self._has_successful_diagnosis([]))
+
+    def test_only_failure_notices(self) -> None:
+        self.assertFalse(
+            self._has_successful_diagnosis([self.FAILURE_NOTICE, self.CRASH_NOTICE])
+        )
+
+    def test_diagnosis_after_failure(self) -> None:
+        self.assertTrue(
+            self._has_successful_diagnosis([self.FAILURE_NOTICE, self.DIAGNOSIS])
+        )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GCP_PROJECT_ID": "recidiviz-staging",
+        "BUILD_ID": "test-build",
+        "ISSUE_NUMBER": str(_ISSUE.number),
+        "ISSUE_REPO": _ISSUE.repo,
+    },
+)
+class TestMainDeduplication(unittest.TestCase):
+    """Tests that main() re-runs after a failed diagnosis but not a successful one."""
+
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.fetch_issue_content")
+    @mock.patch(f"{_MODULE}.issue_has_successful_diagnosis", return_value=True)
+    def test_skips_after_successful_diagnosis(
+        self,
+        _mock_has_diagnosis: mock.MagicMock,
+        mock_fetch: mock.MagicMock,
+        mock_post: mock.MagicMock,
+    ) -> None:
+        run_pg.main()
+
+        mock_fetch.assert_not_called()
+        mock_post.assert_called_once()
+        self.assertEqual(mock_post.call_args.kwargs["marker"], run_pg.FOLLOW_UP_MARKER)
+
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.run_agent")
+    @mock.patch(f"{_MODULE}.get_secret", return_value="fake-api-key")
+    @mock.patch(f"{_MODULE}.resolve_linear_id_for_issue", return_value=None)
+    @mock.patch(
+        f"{_MODULE}.fetch_issue_content",
+        return_value=run_pg.FetchedIssueContent(
+            title=_ISSUE_TITLE, body=_BODY_WITH_BANNER, pii_doc_id=_DOC_ID
+        ),
+    )
+    @mock.patch(f"{_MODULE}.issue_has_successful_diagnosis", return_value=False)
+    def test_reruns_after_failed_diagnosis(
+        self,
+        _mock_has_diagnosis: mock.MagicMock,
+        _mock_fetch: mock.MagicMock,
+        _mock_linear: mock.MagicMock,
+        _mock_secret: mock.MagicMock,
+        mock_run_agent: mock.MagicMock,
+        mock_post: mock.MagicMock,
+    ) -> None:
+        mock_run_agent.return_value = run_pg.AgentResult(text="# TLDR")
+
+        run_pg.main()
+
+        mock_run_agent.assert_called_once()
+        mock_post.assert_called_once()
+        self.assertNotIn("marker", mock_post.call_args.kwargs)
 
 
 class TestResolveLinearIdForIssue(unittest.TestCase):
