@@ -14,6 +14,9 @@ input_columns:
   SeverityDesc: STRING
   DAProcedureStatusDesc: STRING
   IncidentDetails: STRING
+  DACaseId: STRING
+  DAHearingDate: STRING
+  IsDismissed: BOOLEAN
   outcome_list: STRING
 unused_columns: []
 output:
@@ -80,3 +83,20 @@ output:
                       $json_extract:
                         $key: insert_date
                         $json: $iter_item
+            # A DOR whose DA case ended in dismissal gets one DISMISSED outcome
+            # alongside any penalties, so downstream logic can drop it.
+            - $conditional:
+                - $if:
+                    $equal:
+                      - IsDismissed
+                      - $literal("True")
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("DA_CASE")
+                            - DACaseId
+                      outcome_type: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)
+                      outcome_description: DAProcedureStatusDesc
+                      hearing_date: DAHearingDate
