@@ -18,7 +18,7 @@
 
 Part of the CJIS Assured Workloads migration (Recidiviz/zenhub-tasks#2606).
 Dry run is the default; nothing changes without --apply. Run it under a PAM
-grant (pam-deploy-app: needs bigquery.admin plus
+grant (pam-engineering: needs bigquery.admin plus
 datacatalog.categoryFineGrainedReader for policy-tagged tables).
 
 Usage:

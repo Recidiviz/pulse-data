@@ -198,6 +198,18 @@ function next_alpha_version {
 # Deliberately non-fatal: if the entitlement isn't reachable or the user isn't
 # eligible yet (mid-rollout), it logs and returns so callers still on standing
 # access are unaffected.
+# Returns 0 if the caller can request a grant on ENTITLEMENT_ID in PROJECT_ID.
+# Checks reachability from the REQUESTER's view (privilegedaccessmanager.entitlements.search),
+# not entitlements.describe. Eligible requesters hold grants.create and entitlements.search but
+# NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin requester.
+function pam_entitlement_reachable {  # PROJECT_ID ENTITLEMENT_ID
+    gcloud pam entitlements search \
+        --project="$1" --location="global" \
+        --caller-access-type=grant-requester \
+        --format="value(name)" 2>/dev/null \
+        | grep -q "/entitlements/$2$"
+}
+
 function request_pam_grant {
     local PROJECT_ID=$1
     local ENTITLEMENT_ID=$2
@@ -213,15 +225,7 @@ function request_pam_grant {
 
     echo "Requesting just-in-time Privileged Access Manager (PAM) access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
 
-    # Check reachability from the REQUESTER's view (privilegedaccessmanager.entitlements.search),
-    # not entitlements.describe. Eligible requesters hold grants.create and entitlements.search but
-    # NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin requester
-    # and silently skips JIT elevation, falling back to standing access.
-    if ! gcloud pam entitlements search \
-            --project="${PROJECT_ID}" --location="${LOCATION}" \
-            --caller-access-type=grant-requester \
-            --format="value(name)" 2>/dev/null \
-            | grep -q "/entitlements/${ENTITLEMENT_ID}$"; then
+    if ! pam_entitlement_reachable "${PROJECT_ID}" "${ENTITLEMENT_ID}"; then
         echo "⚠️  Not eligible for PAM entitlement [${ENTITLEMENT_ID}] on [${PROJECT_ID}] as [${GCLOUD_USER}] — skipping JIT elevation."
         echo "    (Confirm you're in ${GROUP_HINT}.)"
         return 0
@@ -268,7 +272,7 @@ function request_pam_grant {
     echo "PAM access granted (auto-expires in ${DURATION})."
 }
 
-# Requests a just-in-time PAM grant for the `pam-deploy-app` lane so the
+# Requests a just-in-time PAM grant for the deploy lane so the
 # deploying engineer holds deploy permissions only for the duration of the
 # deploy, rather than relying on standing access. This is the first step in
 # migrating deploys off go/jit onto PAM. Scoped to staging alpha deploys for
@@ -278,10 +282,23 @@ function request_pam_grant {
 # comment; and once the PAM rollout is complete and all deployers are eligible,
 # make this fatal (fail the deploy rather than warning) so a deploy can no longer
 # silently fall back to standing access.
+#
+# The lane is `pam-engineering` (Terraform-managed in Recidiviz/recidiviz-iam;
+# requesters are s-polaris@ and s-doppler@). Callers not eligible for it fall
+# back to the legacy `pam-deploy-app` lane, so nobody loses elevation during
+# the move. Once `pam-deploy-app` is deleted the fallback finds nothing.
+# TODO(AUR-240): drop the `pam-deploy-app` fallback when that lane is retired.
 function request_pam_deploy_grant {
     local PROJECT_ID=$1
     local VERSION_TAG=$2
-    request_pam_grant "${PROJECT_ID}" "pam-deploy-app" "s-pam-deploy-app@" \
+    local ENTITLEMENT_ID="pam-engineering"
+    local GROUP_HINT="s-polaris@ or s-doppler@"
+    if ! pam_entitlement_reachable "${PROJECT_ID}" "${ENTITLEMENT_ID}" \
+            && pam_entitlement_reachable "${PROJECT_ID}" "pam-deploy-app"; then
+        ENTITLEMENT_ID="pam-deploy-app"
+        GROUP_HINT="s-pam-deploy-app@"
+    fi
+    request_pam_grant "${PROJECT_ID}" "${ENTITLEMENT_ID}" "${GROUP_HINT}" \
         "Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}"
 }
 
