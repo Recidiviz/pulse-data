@@ -24,6 +24,7 @@ from mock import MagicMock, patch
 
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_client import (
+    LINEAR_API_KEY_ENV_VAR,
     LINEAR_API_KEY_SECRET_NAME,
     LINEAR_API_MAX_ATTEMPTS,
     LinearApiError,
@@ -32,6 +33,7 @@ from recidiviz.issue_tracking.linear.linear_client import (
     LinearEquivalentIssueGroup,
     LinearIssueInfo,
     RetryableLinearApiError,
+    linear_client_from_env_or_secret,
     linear_client_from_secret,
 )
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
@@ -1592,9 +1594,16 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
                             {
                                 "id": "proj-1",
                                 "slugId": "abc123def456",
-                                "name": "US_MO Tasks V2",
+                                "name": "US_XX Tasks V2",
                                 "state": "started",
+                                "status": {"name": "TT"},
                                 "targetDate": "2026-06-01",
+                                "labels": {
+                                    "nodes": [
+                                        {"name": "US_XX", "parent": {"name": "States"}}
+                                    ],
+                                    "pageInfo": {"hasNextPage": False},
+                                },
                                 "milestones": {
                                     "nodes": [
                                         {
@@ -1622,9 +1631,14 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
                 {
                     "id": "proj-1",
                     "slugId": "abc123def456",
-                    "name": "US_MO Tasks V2",
+                    "name": "US_XX Tasks V2",
                     "state": "started",
+                    "status": {"name": "TT"},
                     "targetDate": "2026-06-01",
+                    "labels": {
+                        "nodes": [{"name": "US_XX", "parent": {"name": "States"}}],
+                        "pageInfo": {"hasNextPage": False},
+                    },
                     "milestones": {
                         "nodes": [
                             {
@@ -1654,6 +1668,10 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
                                     "name": "First",
                                     "state": "started",
                                     "targetDate": None,
+                                    "labels": {
+                                        "nodes": [],
+                                        "pageInfo": {"hasNextPage": False},
+                                    },
                                     "milestones": {
                                         "nodes": [],
                                         "pageInfo": {"hasNextPage": False},
@@ -1680,6 +1698,10 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
                                     "name": "Second",
                                     "state": "completed",
                                     "targetDate": None,
+                                    "labels": {
+                                        "nodes": [],
+                                        "pageInfo": {"hasNextPage": False},
+                                    },
                                     "milestones": {
                                         "nodes": [],
                                         "pageInfo": {"hasNextPage": False},
@@ -1744,9 +1766,13 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
                             {
                                 "id": "proj-1",
                                 "slugId": "abc123def456",
-                                "name": "US_MO Tasks V2",
+                                "name": "US_XX Tasks V2",
                                 "state": "started",
                                 "targetDate": None,
+                                "labels": {
+                                    "nodes": [],
+                                    "pageInfo": {"hasNextPage": False},
+                                },
                                 "milestones": {
                                     "nodes": [],
                                     "pageInfo": {"hasNextPage": True},
@@ -1762,9 +1788,50 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
         client = LinearClient(FAKE_API_KEY)
         with self.assertRaisesRegex(
             ValueError,
-            r"^Milestones were truncated for projects: \['US_MO Tasks V2'\]\. "
+            r"^Milestones were truncated for projects: \['US_XX Tasks V2'\]\. "
             r"get_all_projects_with_milestones does not paginate milestones "
-            r"within a project\.$",
+            r"within a project\. Paginate the nested milestones query",
+        ):
+            client.get_all_projects_with_milestones()
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_when_a_projects_labels_are_truncated(
+        self, mock_post: MagicMock
+    ) -> None:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "projects": {
+                        "nodes": [
+                            {
+                                "id": "proj-1",
+                                "slugId": "abc123def456",
+                                "name": "US_XX Tasks V2",
+                                "state": "started",
+                                "targetDate": None,
+                                "labels": {
+                                    "nodes": [],
+                                    "pageInfo": {"hasNextPage": True},
+                                },
+                                "milestones": {
+                                    "nodes": [],
+                                    "pageInfo": {"hasNextPage": False},
+                                },
+                            },
+                        ],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            },
+        )
+
+        client = LinearClient(FAKE_API_KEY)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Labels were truncated for projects: \['US_XX Tasks V2'\]\. "
+            r"get_all_projects_with_milestones does not paginate labels "
+            r"within a project\. Paginate the nested labels query",
         ):
             client.get_all_projects_with_milestones()
 
@@ -1788,3 +1855,37 @@ class LinearClientFromSecretTest(unittest.TestCase):
         mock_get_secret.return_value = None
         with self.assertRaises(KeyError):
             linear_client_from_secret()
+
+
+class LinearClientFromEnvOrSecretTest(unittest.TestCase):
+    """Tests for linear_client_from_env_or_secret()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.get_secret")
+    @patch.dict("os.environ", {LINEAR_API_KEY_ENV_VAR: FAKE_API_KEY})
+    def test_prefers_env_var(self, mock_get_secret: MagicMock) -> None:
+        client = linear_client_from_env_or_secret()
+
+        self.assertEqual(client.api_key, FAKE_API_KEY)
+        mock_get_secret.assert_not_called()
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.get_secret")
+    @patch.dict("os.environ", {}, clear=True)
+    def test_falls_back_to_secret_when_env_var_missing(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = "lin_api_secret_key"
+
+        client = linear_client_from_env_or_secret()
+
+        self.assertEqual(client.api_key, "lin_api_secret_key")
+        mock_get_secret.assert_called_once_with(LINEAR_API_KEY_SECRET_NAME)
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.get_secret")
+    @patch.dict("os.environ", {}, clear=True)
+    def test_raises_when_neither_key_available(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = None
+
+        with self.assertRaises(KeyError):
+            linear_client_from_env_or_secret()

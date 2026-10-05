@@ -702,6 +702,10 @@ def test_admin_panel_server_dependencies() -> None:
                 "recidiviz.workflows",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Constants-only module with the launch momentum roadmap snapshot
+                # table addresses and column names, which
+                # notion_linear_roadmap_latest reads.
+                "recidiviz.issue_tracking.roadmap_snapshot_tables",
             }
         ),
     )
@@ -810,6 +814,10 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.workflows",
+                # Constants-only module with the launch momentum roadmap snapshot
+                # table addresses and column names, which
+                # notion_linear_roadmap_latest reads.
+                "recidiviz.issue_tracking.roadmap_snapshot_tables",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],
@@ -964,6 +972,10 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Constants-only module with the launch momentum roadmap snapshot
+                # table addresses and column names, which
+                # notion_linear_roadmap_latest reads.
+                "recidiviz.issue_tracking.roadmap_snapshot_tables",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],

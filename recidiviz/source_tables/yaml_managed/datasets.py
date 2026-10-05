@@ -35,9 +35,13 @@ CLOUD_SQL_TO_BQ_REFRESH_DATASET_ID: str = "cloud_sql_to_bq_refresh"
 # means and uploaded via recidiviz/tools/analyst/randomization.py
 EXPERIMENT_ASSIGNMENTS_DATASET: str = "experiment_assignments"
 
-# Snapshot log of the Notion state-initiative roadmap joined with Linear project
-# data, uploaded via recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py
+# Daily snapshot log of every Linear project, written by
+# recidiviz/issue_tracking/linear/linear_project_snapshot.py
 LINEAR_SNAPSHOTS_DATASET: str = "linear_snapshots"
+
+# Snapshot log of the Notion state-initiative roadmap, uploaded from a manual CSV
+# export via recidiviz/tools/analyst/notion_roadmap_snapshot.py
+NOTION_SNAPSHOTS_DATASET: str = "notion_snapshots"
 
 VERA_DATASET: str = "vera_data"
 
@@ -92,9 +96,13 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "annotation exports and the task files staged for import."
     ),
     LINEAR_SNAPSHOTS_DATASET: (
-        "Stores a snapshot log of the Notion state-initiative roadmap joined with "
-        "Linear project data, uploaded via "
-        "recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py."
+        "Stores a daily snapshot log of every Linear project's status, dates, "
+        "health, milestones, and labels."
+    ),
+    NOTION_SNAPSHOTS_DATASET: (
+        "Stores a snapshot log of the Notion state-initiative roadmap, uploaded "
+        "from a manual CSV export via "
+        "recidiviz/tools/analyst/notion_roadmap_snapshot.py."
     ),
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."

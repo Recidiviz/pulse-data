@@ -1,13 +1,14 @@
 address:
-  dataset_id: linear_snapshots
-  table_id: notion_linear_roadmap_snapshots
+  dataset_id: notion_snapshots
+  table_id: notion_roadmap_snapshots
 description:
-  Append-only historical snapshot log combining the Notion state-initiative
-  roadmap export with live Linear project and milestone data, uploaded via
-  recidiviz/tools/analyst/notion_linear_roadmap_snapshot.py. Each run appends
-  one row per initiative tagged with that run's snapshot_date. Query the
-  analyst_data.notion_linear_roadmap_latest view for latest-snapshot-only
-  rows.
+  Append-only snapshot log of the Notion state-initiative roadmap, uploaded from a
+  manual CSV export via recidiviz/tools/analyst/notion_roadmap_snapshot.py. Each
+  run appends one row per roadmap initiative tagged with that run's snapshot_date.
+  Notion date and date-time columns are parsed into DATE and DATETIME; every
+  other Notion column is stored as uploaded, as a string. Query the
+  analyst_data.notion_linear_roadmap_latest view for the latest Linear and Notion
+  snapshots joined together.
 schema:
   - name: initiative
     type: STRING
@@ -18,21 +19,21 @@ schema:
     mode: NULLABLE
     description: Notion "*Global Prio Flag" column.
   - name: actual_fs_launch
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Actual FS Launch" column.
+    description: Notion "Actual FS Launch" column. For a date range, the range's end date.
   - name: actual_l_n_ig_scoping_validation_start
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Actual L->N IG/Scoping+Validation Start" column.
+    description: Notion "Actual L->N IG/Scoping+Validation Start" column. For a date range, the range's end date.
   - name: actual_n_n
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Actual N->N " column.
+    description: Notion "Actual N->N " column. For a date range, the range's end date.
   - name: actual_tt_launch
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Actual TT Launch" column.
+    description: Notion "Actual TT Launch" column. For a date range, the range's end date.
   - name: all_state_prio_rank
     type: STRING
     mode: NULLABLE
@@ -42,13 +43,15 @@ schema:
     mode: NULLABLE
     description: Notion "Contract to Data (weeks)" column.
   - name: contract_dsa_signed
-    type: STRING
-    mode: NULLABLE
-    description: Notion "Contract/DSA Signed" column.
+    type: DATE
+    mode: REPEATED
+    description:
+      Every date in the Notion "Contract/DSA Signed" column, sorted ascending. The Notion
+      column can list several dates.
   - name: created_time
-    type: STRING
+    type: DATETIME
     mode: NULLABLE
-    description: Notion "Created time" column.
+    description: Notion "Created time" column, in the time zone of whoever exported the CSV.
   - name: current_owner_s
     type: STRING
     mode: NULLABLE
@@ -62,9 +65,11 @@ schema:
     mode: NULLABLE
     description: Notion "Data Analysts" column.
   - name: data_received
-    type: STRING
-    mode: NULLABLE
-    description: Notion "Data Received" column.
+    type: DATE
+    mode: REPEATED
+    description:
+      Every date in the Notion "Data Received" column, sorted ascending. The Notion
+      column can list several dates.
   - name: data_to_fully_scoped_weeks
     type: STRING
     mode: NULLABLE
@@ -102,9 +107,11 @@ schema:
     mode: NULLABLE
     description: Notion "Initiative Documentation" column.
   - name: last_edited_time
-    type: STRING
+    type: DATETIME
     mode: NULLABLE
-    description: Notion "Last edited time" column.
+    description:
+      Notion "Last edited time" column, in the time zone of whoever exported the
+      CSV.
   - name: linear_project
     type: STRING
     mode: NULLABLE
@@ -194,17 +201,17 @@ schema:
     mode: NULLABLE
     description: Notion "TT to FSL (weeks)" column.
   - name: target_fsl
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Target FSL" column.
+    description: Notion "Target FSL" column. For a date range, the range's end date.
   - name: target_n_n
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Target N->N" column.
+    description: Notion "Target N->N" column. For a date range, the range's end date.
   - name: target_tt_launch
-    type: STRING
+    type: DATE
     mode: NULLABLE
-    description: Notion "Target TT Launch" column.
+    description: Notion "Target TT Launch" column. For a date range, the range's end date.
   - name: teams_for_q3_2026
     type: STRING
     mode: NULLABLE
@@ -236,74 +243,29 @@ schema:
   - name: linear_project_slug_id
     type: STRING
     mode: NULLABLE
-    description: slugId extracted from the Notion "Linear Project" URL column.
-  - name: linear_project_id
-    type: STRING
-    mode: NULLABLE
-    description: Linear project UUID, joined by slugId. Null if unmatched.
-  - name: linear_project_name
-    type: STRING
-    mode: NULLABLE
-    description: Linear project name, joined by slugId. Null if unmatched.
-  - name: linear_project_state
-    type: STRING
-    mode: NULLABLE
-    description: Linear project state (e.g. "started", "completed"), joined by slugId.
-  - name: linear_project_start_date
+    description:
+      slugId extracted from the Notion "Linear Project" URL column. Null if the
+      initiative has no Linear Project link.
+  - name: working_period_start_date
     type: DATE
     mode: NULLABLE
-    description: Linear project's own top-level start date (not tied to a specific launch stage).
-  - name: linear_project_target_date
+    description:
+      First day of the Notion "Working Period" date range. Null if the initiative
+      has no working period.
+  - name: working_period_end_date_exclusive
     type: DATE
     mode: NULLABLE
-    description: Linear project's own top-level target date (not tied to a specific launch stage).
-  - name: linear_project_health
-    type: STRING
-    mode: NULLABLE
-    description: Latest project health status from Linear (e.g. "onTrack", "atRisk", "offTrack"). Null if no update has been posted.
-  - name: linear_project_health_updated_at
-    type: TIMESTAMP
-    mode: NULLABLE
-    description: Timestamp the latest project health status was posted. Null if no update has been posted.
-  - name: fsl_date
-    type: DATE
-    mode: NULLABLE
-    description: Target date of the Linear milestone matched to the Full State Launch (FSL) stage.
-  - name: fsl_milestone_name
-    type: STRING
-    mode: NULLABLE
-    description: Name of the Linear milestone matched to the FSL stage.
-  - name: tt_date
-    type: DATE
-    mode: NULLABLE
-    description: Target date of the Linear milestone matched to the Trusted Tester (TT) launch stage.
-  - name: tt_milestone_name
-    type: STRING
-    mode: NULLABLE
-    description: Name of the Linear milestone matched to the TT stage.
-  - name: partial_date
-    type: DATE
-    mode: NULLABLE
-    description: Target date of the Linear milestone matched to the Partial launch stage.
-  - name: partial_milestone_name
-    type: STRING
-    mode: NULLABLE
-    description: Name of the Linear milestone matched to the Partial stage.
-  - name: core_scoping_complete_date
-    type: DATE
-    mode: NULLABLE
-    description: Target date of the Linear milestone matched to the Core Scoping Complete stage.
-  - name: core_scoping_complete_milestone_name
-    type: STRING
-    mode: NULLABLE
-    description: Name of the Linear milestone matched to the Core Scoping Complete stage.
+    description:
+      Day after the last day of the Notion "Working Period" date range. Notion
+      shows the range's last day inclusively, so this is one day later than the
+      end date shown in Notion. Null if the initiative has no working period.
   - name: snapshot_date
     type: DATE
     mode: REQUIRED
-    description: Date this row was uploaded, i.e. which script run it belongs to.
+    description: Date this row was uploaded, i.e. which upload it belongs to.
   - name: upload_datetime
     type: TIMESTAMP
-    mode: NULLABLE
+    mode: REQUIRED
     description: Timestamp this row was uploaded.
 clustering_fields:
   - snapshot_date

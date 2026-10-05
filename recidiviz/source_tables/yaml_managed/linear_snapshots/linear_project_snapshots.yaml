@@ -1,0 +1,129 @@
+address:
+  dataset_id: linear_snapshots
+  table_id: linear_project_snapshots
+description:
+  Append-only daily snapshot log of every Linear project's status, dates, health,
+  launch-stage milestone dates, and labels. Each run appends one row per Linear
+  project tagged with that run's snapshot_date. Written by
+  recidiviz/issue_tracking/linear/linear_project_snapshot.py.
+schema:
+  - name: linear_project_id
+    type: STRING
+    mode: REQUIRED
+    description: Linear project UUID.
+  - name: linear_project_slug_id
+    type: STRING
+    mode: REQUIRED
+    description: Linear project slugId, the 12-character ID at the end of the project's URL.
+  - name: linear_project_name
+    type: STRING
+    mode: REQUIRED
+    description: Linear project name.
+  - name: linear_project_state
+    type: STRING
+    mode: REQUIRED
+    description: Built-in type of the project's status (e.g. "started", "completed").
+  - name: linear_project_status
+    type: STRING
+    mode: REQUIRED
+    description:
+      Linear project status name (e.g. "Scoping", "TT", "FSL"). Unlike
+      linear_project_state, which is the status's built-in type, this is the launch
+      stage PMs set per the Launch Momentum Linear setup guidelines.
+  - name: linear_project_start_date
+    type: DATE
+    mode: NULLABLE
+    description:
+      Linear project's own top-level start date (not tied to a specific launch
+      stage).
+  - name: linear_project_target_date
+    type: DATE
+    mode: NULLABLE
+    description:
+      Linear project's own top-level target date (not tied to a specific launch
+      stage).
+  - name: linear_project_health
+    type: STRING
+    mode: NULLABLE
+    description:
+      Latest project health status from Linear (e.g. "onTrack", "atRisk",
+      "offTrack"). Null if no update has been posted.
+  - name: linear_project_health_updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description:
+      Timestamp the latest project health status was posted. Null if no update has
+      been posted.
+  - name: core_scoping_complete_date
+    type: DATE
+    mode: NULLABLE
+    description:
+      Target date of the Linear milestone matched to the Core Scoping Complete
+      stage.
+  - name: core_scoping_complete_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the Core Scoping Complete stage.
+  - name: tt_date
+    type: DATE
+    mode: NULLABLE
+    description:
+      Target date of the Linear milestone matched to the Trusted Tester (TT) launch
+      stage.
+  - name: tt_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the TT stage.
+  - name: partial_date
+    type: DATE
+    mode: NULLABLE
+    description: Target date of the Linear milestone matched to the Partial launch stage.
+  - name: partial_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the Partial stage.
+  - name: fsl_date
+    type: DATE
+    mode: NULLABLE
+    description:
+      Target date of the Linear milestone matched to the Full State Launch (FSL)
+      stage.
+  - name: fsl_milestone_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the Linear milestone matched to the FSL stage.
+  - name: linear_state_label
+    type: STRING
+    mode: NULLABLE
+    description:
+      Label from the project's "States" label group (e.g. "US_AZ"). Idaho projects
+      use "US_ID". Null if unlabeled.
+  - name: linear_product_label
+    type: STRING
+    mode: NULLABLE
+    description:
+      Label from the project's "Products" label group (e.g. "JII Tablet App",
+      "Policy Analysis", "Infrastructure & Maintenance"). Null if unlabeled.
+  - name: linear_engineering_size_label
+    type: STRING
+    mode: NULLABLE
+    description:
+      Label from the project's "Engineering Size" label group (XS, S, M, L, or XL).
+      Null if unlabeled.
+  - name: linear_labels
+    type: STRING
+    mode: NULLABLE
+    description:
+      Every label on the project, sorted and comma-separated, with grouped labels
+      written as "Group/Label" (e.g. "H2 2026, Products/Meetings, States/US_AZ").
+      Null if unlabeled.
+  - name: snapshot_date
+    type: DATE
+    mode: REQUIRED
+    description: Date this row was written, i.e. which daily snapshot it belongs to.
+  - name: upload_datetime
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Timestamp this row was written.
+clustering_fields:
+  - snapshot_date

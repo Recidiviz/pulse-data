@@ -31,9 +31,9 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 )
 from recidiviz.source_tables.yaml_managed.datasets import EXPERIMENT_ASSIGNMENTS_DATASET
 from recidiviz.tools.analyst.source_table_upload_utils import (
+    append_df_to_source_table_in_all_projects,
     validate_and_convert_df_columns_to_schema,
 )
-from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
 
@@ -198,28 +198,10 @@ def upload_assignments_to_gbq(
     validate_and_convert_df_columns_to_schema(df_copy, experiments_table_config)
     _validate_unique_id_and_variant_per_day(df_copy)
 
-    num_rows = len(df_copy)
     if upload_to_gbq:
-        for project_id in DATA_PLATFORM_GCP_PROJECTS:
-            project_specific_address = (
-                experiments_table_config.address.to_project_specific_address(project_id)
-            )
-            print(
-                f"Uploading [{num_rows}] rows to "
-                f"`{project_specific_address.to_str()}`..."
-            )
-            df_copy.to_gbq(
-                destination_table=experiments_table_config.address.to_str(),
-                project_id=project_id,
-                table_schema=[
-                    col.to_api_repr() for col in experiments_table_config.schema_fields
-                ],
-                if_exists="append",
-            )
-            print(
-                f"Done uploading [{num_rows}] rows to "
-                f"`{project_specific_address.to_str()}`."
-            )
+        append_df_to_source_table_in_all_projects(
+            df_copy, table_config=experiments_table_config
+        )
     else:
         print("DataFrame was validated, but not uploaded to BigQuery.")
 
