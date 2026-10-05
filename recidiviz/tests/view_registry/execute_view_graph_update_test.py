@@ -150,9 +150,9 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 ancestor_view_addresses=set(),
                 state_code_literal_references=set(),
                 parent_addresses=[BigQueryAddress.from_str("some_dataset.table")],
-                complexity_score_2025=1,
-                composite_complexity_score_2025=1,
-                post_infra_library_composite_complexity_score_2025=1,
+                complexity_score_2025=None,
+                composite_complexity_score_2025=None,
+                post_infra_library_composite_complexity_score_2025=None,
                 referenced_raw_data_tables=[],
                 is_leaf_node=True,
             ),
@@ -185,9 +185,9 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 parent_addresses=[
                     BigQueryAddress.from_str("some_dataset.raw_latest_view")
                 ],
-                complexity_score_2025=1,
-                composite_complexity_score_2025=10,
-                post_infra_library_composite_complexity_score_2025=5,
+                complexity_score_2025=None,
+                composite_complexity_score_2025=None,
+                post_infra_library_composite_complexity_score_2025=None,
                 referenced_raw_data_tables=[
                     BigQueryAddress.from_str("some_dataset.raw_latest_view")
                 ],

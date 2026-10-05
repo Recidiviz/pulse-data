@@ -37,20 +37,7 @@ from recidiviz.big_query.view_update_manager import CreateOrUpdateViewResult
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
-from recidiviz.utils import environment, metadata
-from recidiviz.view_registry.address_to_complexity_score_mapping import (
-    ParentAddressComplexityScoreMapper,
-)
-from recidiviz.view_registry.deployed_source_table_repository import (
-    build_source_table_repository_for_collected_schemata,
-)
-from recidiviz.view_registry.deployed_view_graphs import (
-    builders_for_all_deployed_view_graphs,
-)
-from recidiviz.view_registry.infra_library import is_view_part_of_infra_library_2025
-from recidiviz.view_registry.query_complexity_score_2025 import (
-    get_query_complexity_score_2025,
-)
+from recidiviz.utils import environment
 
 
 @attr.define(kw_only=True)
@@ -190,10 +177,12 @@ class PerViewUpdateStats:
     parent_addresses: list[BigQueryAddress] = attr.ib(
         validator=attr_validators.is_list_of(BigQueryAddress)
     )
-    complexity_score_2025: int = attr.ib(validator=attr_validators.is_int)
-    composite_complexity_score_2025: int = attr.ib(validator=attr_validators.is_int)
-    post_infra_library_composite_complexity_score_2025: int = attr.ib(
-        validator=attr_validators.is_int
+    complexity_score_2025: int | None = attr.ib(validator=attr_validators.is_opt_int)
+    composite_complexity_score_2025: int | None = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
+    post_infra_library_composite_complexity_score_2025: int | None = attr.ib(
+        validator=attr_validators.is_opt_int
     )
     referenced_raw_data_tables: list[BigQueryAddress] = attr.ib(
         validator=attr_validators.is_list_of(BigQueryAddress)
@@ -250,13 +239,6 @@ def per_view_update_stats_for_view_update_result(
     view involved in the update, packaging those in a class that can be easily persisted
     to the per_view_update_stats table.
     """
-    source_table_repository = build_source_table_repository_for_collected_schemata(
-        project_id=metadata.project_id()
-    )
-    address_to_table_complexity_score_mapper = ParentAddressComplexityScoreMapper(
-        source_table_repository=source_table_repository,
-        all_view_builders=builders_for_all_deployed_view_graphs(),
-    )
     raw_data_datasets = get_raw_data_table_and_view_datasets()
 
     def stats_process_fn(
@@ -283,29 +265,6 @@ def per_view_update_stats_for_view_update_result(
             query_expression
         )
 
-        complexity_score_2025 = get_query_complexity_score_2025(
-            query_expression,
-            address_to_table_complexity_score_mapper,
-            v.address,
-        )
-
-        composite_complexity_score_2025 = (
-            sum(p.composite_complexity_score_2025 for p in parent_results.values())
-            + complexity_score_2025
-        )
-
-        post_infra_library_composite_complexity_score_2025 = (
-            sum(
-                (
-                    p.post_infra_library_composite_complexity_score_2025
-                    if not is_view_part_of_infra_library_2025(p.view_address)
-                    else 0
-                )
-                for p in parent_results.values()
-            )
-            + complexity_score_2025
-        )
-
         return PerViewUpdateStats(
             success_datetime=success_datetime,
             view_graph_name=view_graph_name,
@@ -314,11 +273,13 @@ def per_view_update_stats_for_view_update_result(
             ancestor_view_addresses=ancestor_view_addresses,
             parent_addresses=sorted(parent_addresses, key=lambda a: a.to_str()),
             state_code_literal_references=state_code_literal_references,
-            complexity_score_2025=complexity_score_2025,
-            composite_complexity_score_2025=composite_complexity_score_2025,
-            post_infra_library_composite_complexity_score_2025=(
-                post_infra_library_composite_complexity_score_2025
-            ),
+            # These three complexity scores are no longer computed in the deploy path:
+            # building the full view universe to score them was the dominant cost of
+            # every view-update task. The columns are kept nullable so the downstream
+            # Looker dashboard keeps working.
+            complexity_score_2025=None,
+            composite_complexity_score_2025=None,
+            post_infra_library_composite_complexity_score_2025=None,
             referenced_raw_data_tables=sorted(
                 raw_data_parent_addresses, key=lambda a: a.to_str()
             ),

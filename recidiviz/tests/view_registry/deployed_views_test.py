@@ -126,11 +126,7 @@ from recidiviz.validation.views.dataset_config import (
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
-from recidiviz.view_registry.address_to_complexity_score_mapping import (
-    ParentAddressComplexityScoreMapper,
-)
 from recidiviz.view_registry.deployed_source_table_repository import (
-    build_source_table_repository_for_collected_schemata,
     get_all_source_table_addresses,
     get_source_table_addresses,
 )
@@ -140,9 +136,6 @@ from recidiviz.view_registry.deployed_view_graphs import (
 )
 from recidiviz.view_registry.deprecated_view_reference_exemptions import (
     DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS,
-)
-from recidiviz.view_registry.query_complexity_score_2025 import (
-    get_query_complexity_score_2025,
 )
 from recidiviz.view_registry.raw_data_table_reference_exemptions import (
     RAW_DATA_TABLE_REFERENCE_EXEMPTIONS,
@@ -1279,50 +1272,6 @@ class ViewQueryFormatTest(unittest.TestCase):
             return exceptions
 
         self._run_query_format_test(_get_view_errors)
-
-    @parameterized.expand(DATA_PLATFORM_GCP_PROJECTS)
-    def test_view_query_format__can_compute_complexity_score(
-        self, project_id: str
-    ) -> None:
-        with local_project_id_override(project_id):
-            repository = build_source_table_repository_for_collected_schemata(
-                project_id
-            )
-            project_view_builders = builders_for_all_deployed_view_graphs()
-            views_by_address = {vb.address: vb.build() for vb in project_view_builders}
-
-        parsed_view_trees_by_address = {
-            address: assert_type(
-                sqlglot.parse_one(view.view_query, dialect="bigquery"),
-                sqlglot.exp.Query,
-            )
-            for address, view in views_by_address.items()
-        }
-
-        address_to_table_complexity_score_mapper = ParentAddressComplexityScoreMapper(
-            source_table_repository=repository,
-            all_view_builders=project_view_builders,
-        )
-
-        def _get_view_errors(
-            view: BigQueryView, query_expression: sqlglot.exp.Query
-        ) -> list[ValueError]:
-            exceptions = []
-            try:
-                get_query_complexity_score_2025(
-                    query_expression,
-                    address_to_table_complexity_score_mapper,
-                    view.address,
-                )
-            except ValueError as e:
-                exceptions.append(e)
-            return exceptions
-
-        self._run_query_format_test_for_views(
-            _get_view_errors,
-            views_by_address=views_by_address,
-            parsed_view_trees_by_address=parsed_view_trees_by_address,
-        )
 
     def test_view_query_format__can_get_state_code_literal_references(self) -> None:
         def _get_view_errors(

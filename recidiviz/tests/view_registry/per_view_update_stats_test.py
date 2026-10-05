@@ -22,7 +22,6 @@ from unittest.mock import create_autospec, patch
 
 import pytz
 from google.cloud import bigquery
-from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
@@ -40,16 +39,6 @@ from recidiviz.big_query.view_update_manager import (
     CreateOrUpdateViewStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.source_tables.source_table_config import (
-    RawDataSourceTableLabel,
-    SourceTableCollection,
-    SourceTableCollectionUpdateConfig,
-    SourceTableConfig,
-    SourceTableLabel,
-    SourceTableUpdateGroup,
-)
-from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
     build_source_table_repository_for_yaml_managed_tables,
 )
@@ -57,9 +46,6 @@ from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_D
 from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils import metadata
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.address_to_complexity_score_mapping import (
-    ParentAddressComplexityScoreMapper,
-)
 from recidiviz.view_registry.per_view_update_stats import (
     PerViewUpdateStats,
     per_view_update_stats_for_view_update_result,
@@ -68,7 +54,7 @@ from recidiviz.view_registry.per_view_update_stats import (
 # View builders for views forming a DAG with a diamond in it:
 #  1     2
 #   \   /
-#     3    <-- this is a "library" view
+#     3
 #   /   \
 #  4     5
 #   \   /
@@ -79,7 +65,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_1_us_yy",
         should_materialize=True,
         description="table_1 description",
-        # Query complexity: 1
         view_query_template="SELECT *, a + b AS c FROM `{project_id}.source_dataset.source_table`",
         schema=MINIMAL_SCHEMA,
     ),
@@ -88,7 +73,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_2_us_xx",
         should_materialize=False,
         description="table_2 description",
-        # Query complexity: 11
         view_query_template="SELECT * FROM `{project_id}.us_xx_raw_data.raw_table` WHERE state_code = 'US_XX'",
         schema=MINIMAL_SCHEMA,
     ),
@@ -97,7 +81,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_3",
         should_materialize=True,
         description="table_3 description",
-        # Query complexity: 20
         view_query_template="""
             SELECT * 
             FROM (
@@ -117,7 +100,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_4",
         should_materialize=True,
         description="table_4 description",
-        # Query complexity: 1
         view_query_template="""
             SELECT *, c + d AS e FROM `{project_id}.dataset_3.table_3_materialized`""",
         time_partitioning=bigquery.TimePartitioning(
@@ -130,7 +112,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_5",
         should_materialize=True,
         description="table_5 description",
-        # Query complexity: 4
         view_query_template="""
             SELECT d + f AS g, h + i AS j
             FROM `{project_id}.dataset_3.table_3_materialized`
@@ -143,7 +124,6 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         view_id="table_6",
         should_materialize=True,
         description="table_6 description",
-        # Query complexity: 2
         view_query_template="""
         SELECT * FROM `{project_id}.dataset_4.table_4_materialized`
         JOIN `{project_id}.dataset_5.table_5_materialized`
@@ -208,9 +188,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             ancestor_view_addresses=set(),
             state_code_literal_references=set(),
             parent_addresses=[BigQueryAddress.from_str("some_dataset.table")],
-            complexity_score_2025=1,
-            composite_complexity_score_2025=1,
-            post_infra_library_composite_complexity_score_2025=1,
+            complexity_score_2025=None,
+            composite_complexity_score_2025=None,
+            post_infra_library_composite_complexity_score_2025=None,
             referenced_raw_data_tables=[],
             is_leaf_node=False,
         )
@@ -241,9 +221,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "graph_depth": 0,
             "num_ancestor_views": 0,
             "parent_addresses": ["some_dataset.table"],
-            "complexity_score_2025": 1,
-            "composite_complexity_score_2025": 1,
-            "post_infra_library_composite_complexity_score_2025": 1,
+            "complexity_score_2025": None,
+            "composite_complexity_score_2025": None,
+            "post_infra_library_composite_complexity_score_2025": None,
             "has_state_specific_logic": False,
             "states_referenced": [],
             "state_code_specific_to_view": None,
@@ -290,9 +270,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             },
             state_code_literal_references={StateCode.US_XX, StateCode.US_YY},
             parent_addresses=[BigQueryAddress.from_str("some_dataset.raw_latest_view")],
-            complexity_score_2025=1,
-            composite_complexity_score_2025=10,
-            post_infra_library_composite_complexity_score_2025=5,
+            complexity_score_2025=None,
+            composite_complexity_score_2025=None,
+            post_infra_library_composite_complexity_score_2025=None,
             referenced_raw_data_tables=[
                 BigQueryAddress.from_str("some_dataset.raw_latest_view")
             ],
@@ -325,9 +305,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "graph_depth": 2,
             "num_ancestor_views": 2,
             "parent_addresses": ["some_dataset.raw_latest_view"],
-            "complexity_score_2025": 1,
-            "composite_complexity_score_2025": 10,
-            "post_infra_library_composite_complexity_score_2025": 5,
+            "complexity_score_2025": None,
+            "composite_complexity_score_2025": None,
+            "post_infra_library_composite_complexity_score_2025": None,
             "has_state_specific_logic": True,
             "states_referenced": ["US_XX", "US_YY"],
             "state_code_specific_to_view": None,
@@ -340,25 +320,6 @@ class TestPerViewUpdateStats(unittest.TestCase):
 class TestBuildPerViewUpdateStats(unittest.TestCase):
     """Tests for the per_view_update_stats_for_view_update_result() helper"""
 
-    @staticmethod
-    def _source_table_collection_for_address(
-        table_address: BigQueryAddress, labels: list[SourceTableLabel[Any]]
-    ) -> SourceTableCollection:
-        return SourceTableCollection(
-            update_groups={SourceTableUpdateGroup.CALC},
-            dataset_id=table_address.dataset_id,
-            labels=labels,
-            source_tables_by_address={
-                table_address: SourceTableConfig(
-                    address=table_address,
-                    schema_fields=[SchemaField("col", "STRING", "NULLABLE")],
-                    description=f"Description for {table_address.to_str()}",
-                )
-            },
-            update_config=SourceTableCollectionUpdateConfig.protected(),
-            description=f"Description for dataset {table_address.dataset_id}",
-        )
-
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
@@ -367,45 +328,8 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             b.build() for b in _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
         ]
 
-        self.parent_complexity_mapper_patcher = patch(
-            "recidiviz.view_registry.per_view_update_stats.ParentAddressComplexityScoreMapper"
-        )
-
-        self.parent_complexity_mapper_patcher.start().return_value = (
-            ParentAddressComplexityScoreMapper(
-                source_table_repository=SourceTableRepository(
-                    source_table_collections=[
-                        self._source_table_collection_for_address(
-                            BigQueryAddress.from_str("source_dataset.source_table"),
-                            labels=[],
-                        ),
-                        self._source_table_collection_for_address(
-                            BigQueryAddress.from_str("us_xx_raw_data.raw_table"),
-                            labels=[
-                                RawDataSourceTableLabel(
-                                    state_code=StateCode.US_XX,
-                                    ingest_instance=DirectIngestInstance.PRIMARY,
-                                )
-                            ],
-                        ),
-                    ]
-                ),
-                all_view_builders=_DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
-            )
-        )
-
-        self.is_library_view_patcher = patch(
-            "recidiviz.view_registry.per_view_update_stats.is_view_part_of_infra_library_2025"
-        )
-
-        self.is_library_view_patcher.start().side_effect = (
-            lambda view_address: view_address.dataset_id == "dataset_3"
-        )
-
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
-        self.parent_complexity_mapper_patcher.stop()
-        self.is_library_view_patcher.stop()
 
     def test_per_view_update_stats_for_view_update_result(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
@@ -475,9 +399,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
-                "complexity_score_2025": 1,
-                "composite_complexity_score_2025": 1,
-                "post_infra_library_composite_complexity_score_2025": 1,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 0,
                 "num_ancestor_views": 0,
                 "parent_addresses": ["source_dataset.source_table"],
@@ -504,9 +428,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
-                "complexity_score_2025": 11,
-                "composite_complexity_score_2025": 11,
-                "post_infra_library_composite_complexity_score_2025": 11,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 0,
                 "num_ancestor_views": 0,
                 "parent_addresses": ["us_xx_raw_data.raw_table"],
@@ -533,9 +457,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": "foo,bar",
                 "time_partitioning_string": None,
-                "complexity_score_2025": 20,
-                "composite_complexity_score_2025": 32,
-                "post_infra_library_composite_complexity_score_2025": 32,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 1,
                 "num_ancestor_views": 2,
                 "parent_addresses": [
@@ -565,10 +489,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": '{"field": "partition_field", "type": "DAY"}',
-                "complexity_score_2025": 1,
-                "composite_complexity_score_2025": 33,
-                # Post-infra complexity score resets here because dataset_3 is a "library" dataset
-                "post_infra_library_composite_complexity_score_2025": 1,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 2,
                 "num_ancestor_views": 3,
                 "parent_addresses": ["dataset_3.table_3"],
@@ -595,10 +518,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
-                "complexity_score_2025": 4,
-                "composite_complexity_score_2025": 36,
-                # Post-infra complexity score resets here because dataset_3 is a "library" dataset
-                "post_infra_library_composite_complexity_score_2025": 4,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 2,
                 "num_ancestor_views": 3,
                 "parent_addresses": ["dataset_3.table_3"],
@@ -625,9 +547,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
-                "complexity_score_2025": 2,
-                "composite_complexity_score_2025": 71,
-                "post_infra_library_composite_complexity_score_2025": 7,
+                "complexity_score_2025": None,
+                "composite_complexity_score_2025": None,
+                "post_infra_library_composite_complexity_score_2025": None,
                 "graph_depth": 3,
                 "num_ancestor_views": 5,
                 "parent_addresses": ["dataset_4.table_4", "dataset_5.table_5"],
