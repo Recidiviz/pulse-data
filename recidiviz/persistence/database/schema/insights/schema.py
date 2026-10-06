@@ -112,9 +112,6 @@ class SupervisionOfficerSupervisor(PersonBase, InsightsBase):
     # Supervision location to show on the individual supervisor page
     supervision_location_for_supervisor_page = Column(String, nullable=True)
     email = Column(String, nullable=True)
-    # The supervisor's external id that stays stable over time. It may differ from
-    # external_id, so don't display it to users.
-    stable_staff_external_id = Column(String, nullable=True)
 
 
 class SupervisionDistrictManager(InsightsBase):
