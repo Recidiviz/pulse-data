@@ -30,7 +30,6 @@ from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_15_months,
     on_supervision_at_least_15_months,
     oras_community_supervision_completed,
-    within_3_months_of_oras_assessment_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_ineligible_offense_conviction_for_admin_supervision,
@@ -128,8 +127,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_has_substance_use_issues.VIEW_BUILDER,
         # Internal Criteria for validation purposes
         oras_community_supervision_completed.VIEW_BUILDER,
-        # Internal Criteria added b/c ADM v1 Audit suggested ORAS staleness as a factor in denials
-        within_3_months_of_oras_assessment_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     policy_start_date=date(2026, 6, 27),
