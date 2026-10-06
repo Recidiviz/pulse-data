@@ -25,10 +25,18 @@ if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
+status_sum=0
+
 for project_id in recidiviz-staging recidiviz-123; do
     request_pam_grant "${project_id}" "pam-update-data" "s-pam-update-data@" \
         "SendGrid CSV upload to ${project_id}"
     uv run python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq \
         --local-filepath "$filepath" \
         --project-id $project_id;
+    status_sum=$((status_sum + $?))
 done;
+
+if [[ "$status_sum" == 0 ]]; then
+    echo "All uploads successful. Deleting CSV: $filepath"
+    rm "$filepath"
+fi
