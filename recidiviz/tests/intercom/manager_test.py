@@ -154,7 +154,11 @@ class TestIntercomAPIManager(unittest.TestCase):
             expected_update_datetime = pd.Timestamp(self.update_datetime)
 
             for base_name, path in file_paths.items():
-                df = pd.read_csv(path, parse_dates=[UPDATE_DATETIME_COLUMN_NAME])
+                df = pd.read_csv(
+                    path,
+                    parse_dates=[UPDATE_DATETIME_COLUMN_NAME],
+                    date_format="ISO8601",
+                )
                 self.assertIn(UPDATE_DATETIME_COLUMN_NAME, df.columns)
                 self.assertTrue(
                     (df[UPDATE_DATETIME_COLUMN_NAME] == expected_update_datetime).all(),
