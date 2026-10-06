@@ -488,6 +488,7 @@ class OutliersQuerier:
                     SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
                     SupervisionOfficerSupervisor.email,
+                    SupervisionOfficerSupervisor.stable_staff_external_id,
                 )
                 .with_entities(
                     SupervisionOfficerSupervisor.external_id,
@@ -496,6 +497,7 @@ class OutliersQuerier:
                     SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
                     SupervisionOfficerSupervisor.email,
+                    SupervisionOfficerSupervisor.stable_staff_external_id,
                     (
                         func.sum(
                             case(
@@ -530,6 +532,7 @@ class OutliersQuerier:
                     supervision_location_for_supervisor_page=record.supervision_location_for_supervisor_page,
                     email=record.email,
                     has_outliers=record.has_outliers,
+                    stable_staff_external_id=record.stable_staff_external_id,
                 )
                 for record in records
             ]
