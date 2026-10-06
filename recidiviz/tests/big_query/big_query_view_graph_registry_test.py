@@ -142,6 +142,49 @@ def _single_view_graph(
     )
 
 
+class TestViewDerivedSourceTableCollection(unittest.TestCase):
+    """Tests view_derived_source_table_collection."""
+
+    def _source_table_collection(
+        self,
+        writer_update_group: SourceTableUpdateGroup,
+        reader_update_groups: set[SourceTableUpdateGroup],
+    ) -> SourceTableCollection:
+        return view_derived_source_table_collection(
+            dataset_id="boundary",
+            writer_update_group=writer_update_group,
+            reader_update_groups=reader_update_groups,
+            source_tables_by_address={},
+        )
+
+    def test_update_group_regenerable(self) -> None:
+        # Writer and sole reader share a DAG run, so an emptied table is always
+        # repopulated before anything reads it.
+        collection = self._source_table_collection(
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={SourceTableUpdateGroup.CALC},
+        )
+        self.assertEqual(
+            SourceTableCollectionUpdateConfig.regenerable(),
+            collection.update_config,
+        )
+
+    def test_update_group_protected(self) -> None:
+        # One reader shares the writer's group and one does not; the cross-DAG
+        # reader reintroduces the hazard, so the whole collection is protected.
+        collection = self._source_table_collection(
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={
+                SourceTableUpdateGroup.CALC,
+                SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+            },
+        )
+        self.assertEqual(
+            SourceTableCollectionUpdateConfig.protected(),
+            collection.update_config,
+        )
+
+
 # TODO(OBT-44681) Add test for more complex graph scenarios
 class TestBigQueryViewGraphRegistry(unittest.TestCase):
     """Tests for BigQueryViewGraphRegistry."""
@@ -219,7 +262,8 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
         # and the plain raw collection.
         expected_boundary_collection = view_derived_source_table_collection(
             dataset_id="us_xx_case_notes_outputs",
-            update_groups={SourceTableUpdateGroup.CALC},
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={SourceTableUpdateGroup.CALC},
             source_tables_by_address={
                 config.address: config
                 for config in fake_llm_graph.output_source_table_configs_by_dataset[
@@ -557,6 +601,44 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
                 candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
             )
 
+    def test_build_dataset_with_writers_in_two_update_groups_raises(self) -> None:
+        # Both graphs materialize into `shared_leaf`, which nothing reads, so the
+        # single-writer check must still fire on this leaf dataset.
+        g_a = _graph(
+            "g_a",
+            [
+                _view_builder(
+                    "shared_leaf",
+                    "out_a",
+                    should_materialize=True,
+                ),
+            ],
+            input_source_table_update_group=SourceTableUpdateGroup.CALC,
+        )
+        g_b = _graph(
+            "g_b",
+            [
+                _view_builder(
+                    "shared_leaf",
+                    "out_b",
+                    should_materialize=True,
+                ),
+            ],
+            input_source_table_update_group=SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Dataset \[shared_leaf\] is materialized into by graphs in multiple "
+            r"update groups \['CALC', 'LLM_DOCUMENT_EXTRACTION'\]. A dataset must be "
+            r"written by graphs in a single update group\.$",
+        ):
+            BigQueryViewGraphRegistry.build(
+                project_id=_PROJECT_ID,
+                view_graphs=[g_a, g_b],
+                candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+            )
+
     def test_graph_reading_dataset_it_materializes_into_is_not_a_cycle(self) -> None:
         # g_a both materializes into `boundary` (via out) and reads a different
         # table from `boundary` (out reads boundary.other), so it is its own
@@ -583,7 +665,8 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
 
         expected_boundary_collection = view_derived_source_table_collection(
             dataset_id="boundary",
-            update_groups={SourceTableUpdateGroup.CALC},
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={SourceTableUpdateGroup.CALC},
             source_tables_by_address={
                 config.address: config
                 for config in g_a.output_source_table_configs_by_dataset["boundary"]

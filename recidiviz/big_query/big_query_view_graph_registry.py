@@ -21,6 +21,7 @@ project.
 from collections import defaultdict
 
 import attr
+from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_graph import (
@@ -40,18 +41,34 @@ from recidiviz.utils.list_helpers import flatten_values_for_keys, group_by
 
 def view_derived_source_table_collection(
     dataset_id: str,
-    update_groups: set[SourceTableUpdateGroup],
+    writer_update_group: SourceTableUpdateGroup,
+    reader_update_groups: set[SourceTableUpdateGroup],
     source_tables_by_address: dict[BigQueryAddress, SourceTableConfig],
 ) -> SourceTableCollection:
     """Returns a source table collection for a boundary dataset, whose tables are
-    derived from the views other graphs materialize into it.
+    derived from the views the graph in |writer_update_group| materializes into it.
     """
+    is_read_across_dags = bool(reader_update_groups - {writer_update_group})
+    # All view materialized collections are technically regenerable. However, a schema
+    # update task will regenerate a materialized table if the schema changes. When the
+    # table is only read and written by a single DAG, this is fine because the re-materialization
+    # will happen before any downstream readers access it. If it is read by one
+    # (or more) DAGs and written by another, there is no guarantee that the table will be regenerated
+    # before the downstream readers access it, so the table could still be empty when read. Instead,
+    # such tables are protected() to prevent accidental data loss.
+    update_config = (
+        SourceTableCollectionUpdateConfig.protected()
+        if is_read_across_dags
+        else SourceTableCollectionUpdateConfig.regenerable()
+    )
     return SourceTableCollection(
         dataset_id=dataset_id,
         description=f"View-derived source tables materialized into [{dataset_id}].",
-        # TODO(OBT-50266) Decide if we should make this protected() instead.
-        update_config=SourceTableCollectionUpdateConfig.regenerable(),
-        update_groups=update_groups,
+        update_config=update_config,
+        # The update group of every graph that reads this dataset: the DAGs whose
+        # tasks consume these tables, so this source table collection must be updated
+        # whenever a reading graph's DAG runs.
+        update_groups=reader_update_groups,
         source_tables_by_address=source_tables_by_address,
     )
 
@@ -71,6 +88,36 @@ def _map_datasets_to_writer_reader_graphs(
         for dataset_id in graph.root_datasets:
             reader_graphs_by_dataset[dataset_id].append(graph)
     return dict(writer_graphs_by_dataset), dict(reader_graphs_by_dataset)
+
+
+def _assert_single_writer_for_datasets(
+    writer_graphs_by_dataset: dict[str, list[BigQueryViewGraph]],
+) -> None:
+    """Raises if any materialized dataset is written by graphs spanning more than
+    one update group. Two DAGs co-owning a dataset's contents is not a
+    configuration we support, since it becomes impossible to reason about when the
+    dataset is updated.
+    """
+    for dataset_id, writer_graphs in writer_graphs_by_dataset.items():
+        writer_update_groups = {
+            graph.input_source_table_update_group for graph in writer_graphs
+        }
+        if len(writer_update_groups) > 1:
+            raise ValueError(
+                f"Dataset [{dataset_id}] is materialized into by graphs in "
+                f"multiple update groups {sorted(g.value for g in writer_update_groups)}. "
+                f"A dataset must be written by graphs in a single update group."
+            )
+
+
+def _writer_update_group_for_boundary_dataset(
+    writer_graphs: list[BigQueryViewGraph],
+) -> SourceTableUpdateGroup:
+    """Returns the update group shared by every graph that materializes into the
+    boundary dataset. Assumes _assert_single_writer_for_datasets has already
+    verified the writers share a single update group.
+    """
+    return one({graph.input_source_table_update_group for graph in writer_graphs})
 
 
 _VIEW_GRAPH_NODE_PREFIX = "view_graph:"
@@ -232,6 +279,7 @@ class BigQueryViewGraphRegistry:
         # view DAG is acyclic). Restore this once the calculation graph is split so
         # cross-graph edges no longer loop at dataset granularity.
         # _assert_view_graphs_acyclic(writer_graphs_by_dataset, reader_graphs_by_dataset)
+        _assert_single_writer_for_datasets(writer_graphs_by_dataset)
 
         # A boundary dataset is materialized into by some graph and read by some graph
         # (possibly the same graph). Sorted for test determinism.
@@ -241,12 +289,10 @@ class BigQueryViewGraphRegistry:
         derived_source_table_collections = [
             view_derived_source_table_collection(
                 dataset_id=dataset_id,
-                # The update group of every graph that reads this dataset: the DAGs whose
-                # tasks consume these tables, so this source table collection must be updated
-                # whenever a reading graph's DAG runs. We do not include update groups from the
-                # graphs that materialize into this dataset because they will update this source table
-                # collection during the materialization process.
-                update_groups={
+                writer_update_group=_writer_update_group_for_boundary_dataset(
+                    writer_graphs_by_dataset[dataset_id]
+                ),
+                reader_update_groups={
                     graph.input_source_table_update_group
                     for graph in reader_graphs_by_dataset[dataset_id]
                 },
