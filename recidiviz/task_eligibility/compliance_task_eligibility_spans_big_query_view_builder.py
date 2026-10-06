@@ -20,9 +20,12 @@ a compliance-oriented task (e.g., contacts, assessments).
 """
 from typing import List, Optional, Sequence
 
+from more_itertools import one
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Bool, Date
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     CadenceType,
     ComplianceType,
@@ -221,6 +224,35 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
                 f"contact types that close out this task on one of its criteria "
                 f"builders."
             )
+
+        if (
+            compliance_type is ComplianceType.ASSESSMENT
+            and criteria_spans_view_builders
+            and self.assessment_type is None
+        ):
+            raise ValueError(
+                f"[{state_code.value}] ASSESSMENT compliance task [{task_name}] has "
+                f"criteria but none of them declare an assessment_type. Declare the "
+                f"assessment type on one of its criteria builders."
+            )
+
+    @property
+    def assessment_type(self) -> AssessmentType | None:
+        """Returns the single assessment type this compliance task concerns (for
+        ASSESSMENT tasks), collected from its criteria builders, or None if none declare
+        one. Raises if the criteria disagree."""
+        assessment_types = {
+            criteria_builder.assessment_type
+            for criteria_builder in self.criteria_spans_view_builders
+            if criteria_builder.assessment_type is not None
+        }
+        if len(assessment_types) > 1:
+            raise ValueError(
+                f"[{self.state_code.value}] compliance task [{self.task_name}] has "
+                f"conflicting assessment types across its criteria: "
+                f"[{sorted(at.value for at in assessment_types)}]."
+            )
+        return one(assessment_types) if assessment_types else None
 
     @property
     def contact_types(self) -> list[ContactType]:

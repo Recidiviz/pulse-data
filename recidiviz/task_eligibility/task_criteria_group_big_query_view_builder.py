@@ -32,6 +32,7 @@ from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -44,6 +45,26 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 )
 
 FOUR_SPACES_INDENT = "    "
+
+
+def _combine_assessment_type(
+    sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
+) -> AssessmentType | None:
+    """Returns the single assessment type declared across a group's sub-criteria, or
+    None if none declare one. Raises if the sub-criteria disagree — a criteria group is
+    expected to concern a single assessment type."""
+    assessment_types = {
+        sub_criteria.assessment_type
+        for sub_criteria in sub_criteria_list
+        if sub_criteria.assessment_type is not None
+    }
+    if len(assessment_types) > 1:
+        raise ValueError(
+            f"Criteria group has conflicting assessment types: "
+            f"[{sorted(at.value for at in assessment_types)}]. A criteria group must "
+            f"concern a single assessment type."
+        )
+    return one(assessment_types) if assessment_types else None
 
 
 def _combine_only_include_completed_contacts(
@@ -596,6 +617,9 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         self.only_include_completed_contacts = _combine_only_include_completed_contacts(
             sub_criteria_list
         )
+        # A criteria group's assessment type is the single assessment type declared
+        # across its sub-criteria (each sub-group already aggregates its own).
+        self.assessment_type = _combine_assessment_type(sub_criteria_list)
 
     def get_descendant_criteria(
         self,
@@ -727,6 +751,9 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         self.only_include_completed_contacts = _combine_only_include_completed_contacts(
             sub_criteria_list
         )
+        # A criteria group's assessment type is the single assessment type declared
+        # across its sub-criteria (each sub-group already aggregates its own).
+        self.assessment_type = _combine_assessment_type(sub_criteria_list)
 
     def drop_false_periods(self) -> "StateSpecificTaskCriteriaGroupBigQueryViewBuilder":
         """Wraps the view query to only include periods where meets_criteria

@@ -34,6 +34,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     convert_cols_to_json,
 )
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
@@ -197,6 +198,19 @@ def _validated_contact_types(
     return contact_types
 
 
+def _validated_assessment_type(
+    assessment_type: AssessmentType | None,
+) -> AssessmentType | None:
+    """Returns the assessment type unchanged, raising if it is not an AssessmentType
+    member (or None)."""
+    if assessment_type is not None and not isinstance(assessment_type, AssessmentType):
+        raise ValueError(
+            f"assessment_type must be an AssessmentType member or None; "
+            f"got [{assessment_type}]."
+        )
+    return assessment_type
+
+
 def validate_and_derive_state_specific_view_id(
     *,
     state_code: StateCode,
@@ -260,6 +274,9 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # set to False for criteria whose triggers count non-completed contacts (e.g.
         # an attempted contact that nonetheless verified employment).
         only_include_completed_contacts: bool = True,
+        # The assessment type this criterion is tied to, for ASSESSMENT compliance
+        # tasks. None for criteria not tied to a specific assessment type.
+        assessment_type: AssessmentType | None = None,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -294,6 +311,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.reasons_fields = reasons_fields
         self.contact_types = _validated_contact_types(contact_types)
         self.only_include_completed_contacts = only_include_completed_contacts
+        self.assessment_type = _validated_assessment_type(assessment_type)
 
     def get_descendant_criteria(self) -> set["TaskCriteriaBigQueryViewBuilder"]:
         """Returns all the criteria that are descendants (sub-criteria) of this
@@ -353,6 +371,9 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # set to False for criteria whose triggers count non-completed contacts (e.g.
         # an attempted contact that nonetheless verified employment).
         only_include_completed_contacts: bool = True,
+        # The assessment type this criterion is tied to, for ASSESSMENT compliance
+        # tasks. None for criteria not tied to a specific assessment type.
+        assessment_type: AssessmentType | None = None,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:
@@ -387,6 +408,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.reasons_fields = reasons_fields
         self.contact_types = _validated_contact_types(contact_types)
         self.only_include_completed_contacts = only_include_completed_contacts
+        self.assessment_type = _validated_assessment_type(assessment_type)
 
     def get_descendant_criteria(
         self,

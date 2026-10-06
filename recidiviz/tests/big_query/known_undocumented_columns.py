@@ -68,20 +68,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
         "task_type",
     ],
-    BigQueryAddress.from_str(
-        "analyst_data.compliance_type_cadence_type_eligibility_sessions"
-    ): [
-        "cadence_type",
-        "compliance_session_id",
-        "compliance_type",
-        "date_gap_id",
-        "end_date_exclusive",
-        "is_overdue",
-        "is_required",
-        "person_id",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str("analyst_data.consecutive_payments_preprocessed"): [
         "consecutive_payment",
         "consecutive_payment_session_id",
@@ -2995,9 +2981,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "sex",
     ],
     BigQueryAddress.from_str(
-        "observations__person_span.supervision_assessment_compliance_span"
-    ): ["assessment_overdue", "assessment_required"],
-    BigQueryAddress.from_str(
         "observations__person_span.supervision_contact_compliance_span"
     ): ["contact_overdue", "contact_required"],
     BigQueryAddress.from_str("observations__person_span.supervision_level_session"): [
@@ -3666,14 +3649,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "has_mandatory_due_date",
         "is_jii_decarceral_transition",
         "system_type",
-    ],
-    BigQueryAddress.from_str("reference_views.compliance_tasks_configs"): [
-        "cadence_type",
-        "compliance_type",
-        "firestore_task_name",
-        "state_code",
-        "task_display_name",
-        "task_name",
     ],
     BigQueryAddress.from_str("reference_views.current_physical_residence_address"): [
         "address_city",

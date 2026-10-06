@@ -35,6 +35,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SENTENCE_SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     current_violent_statutes_being_served,
 )
@@ -1087,7 +1088,7 @@ def us_ix_supervision_start_spans_query() -> str:
 def us_ix_annual_assessment_criteria_view_builder(
     criteria_name: str,
     description: str,
-    assessment_type: str,
+    assessment_type: AssessmentType,
     assessment_class: str,
     assessment_lookback_days: int,
     include_psi_lsir_assessments: bool,
@@ -1103,7 +1104,9 @@ def us_ix_annual_assessment_criteria_view_builder(
     Args:
         criteria_name: The name of the criteria (e.g., 'US_IX_IS_MISSING_ANNUAL_LSIR_ASSESSMENT')
         description: The description/docstring for the criteria
-        assessment_type: The assessment type to filter (e.g., 'LSIR', 'STABLE')
+        assessment_type: The compliance AssessmentType this criterion is tied to (e.g.,
+            AssessmentType.LSIR, AssessmentType.STABLE). Its value doubles as the
+            `state_assessment.assessment_type` value to filter on.
         assessment_class: The assessment class to filter (e.g., 'RISK', 'SEX_OFFENSE')
         assessment_lookback_days: Days before a session start within which an assessment
             still anchors that session's reassessment clock. Mirrors the initial
@@ -1116,11 +1119,13 @@ def us_ix_annual_assessment_criteria_view_builder(
             When provided, supervision contacts with these contact_reasons and status='COMPLETED'
             will be included via UNION ALL.
     """
-    if include_psi_lsir_assessments and assessment_type != "LSIR":
+    if include_psi_lsir_assessments and assessment_type is not AssessmentType.LSIR:
         raise ValueError(
             f"include_psi_lsir_assessments is only valid for LSIR assessments, found "
-            f"assessment_type [{assessment_type}] for criteria [{criteria_name}]"
+            f"assessment_type [{assessment_type.value}] for criteria [{criteria_name}]"
         )
+    # US_IX's assessment ingest values match their AssessmentType codes.
+    state_assessment_type = assessment_type.value
 
     # Build optional supervision contact query
     supervision_contact_union = ""
@@ -1187,7 +1192,7 @@ assessments AS (
             {assessment_lookback_days} AS lookback_days,
         FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
         WHERE state_code = 'US_IX'
-            AND assessment_type = '{assessment_type}'
+            AND assessment_type = '{state_assessment_type}'
             AND assessment_class = '{assessment_class}'
 {supervision_contact_union}
 {psi_lsir_union}
@@ -1259,14 +1264,14 @@ SELECT
             last_assessment_date AS last_assessment_date,
             critical_date_has_passed AS is_missing_annual_assessment,
             '1 EVERY 365 DAYS' AS contact_cadence,
-            '{assessment_type}' AS assessment_type,
+            '{state_assessment_type}' AS assessment_type,
             '{assessment_class}' AS assessment_class
     )) AS reason,
     critical_date AS assessment_due_date,
     last_assessment_date,
     critical_date_has_passed AS is_missing_annual_assessment,
     '1 EVERY 365 DAYS' AS contact_cadence,
-    '{assessment_type}' AS assessment_type,
+    '{state_assessment_type}' AS assessment_type,
     '{assessment_class}' AS assessment_class,
 FROM critical_date_has_passed_spans
 """
@@ -1276,6 +1281,7 @@ FROM critical_date_has_passed_spans
         criteria_name=criteria_name,
         criteria_spans_query_template=query_template,
         description=description,
+        assessment_type=assessment_type,
         reasons_fields=[
             ReasonsField(
                 name="assessment_due_date",

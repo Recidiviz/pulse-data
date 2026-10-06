@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_column import Bool, Date, Integer, Json, String
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     CadenceType,
     ComplianceType,
@@ -606,6 +607,7 @@ def _contact_criteria(
     state_code: StateCode,
     criteria_name: str,
     contact_types: list[ContactType],
+    assessment_type: AssessmentType | None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=state_code,
@@ -625,6 +627,7 @@ def _contact_criteria(
             ),
         ],
         contact_types=contact_types,
+        assessment_type=assessment_type,
     )
 
 
@@ -633,11 +636,13 @@ def _compliance_builder(
     state_code: StateCode,
     compliance_type: ComplianceType,
     contact_types: list[ContactType],
+    assessment_type: AssessmentType | None,
 ) -> ComplianceTaskEligibilitySpansBigQueryViewBuilder:
     criteria = _contact_criteria(
         state_code=state_code,
         criteria_name=f"{state_code.value}_TEST_CONTACT_CRITERIA",
         contact_types=contact_types,
+        assessment_type=assessment_type,
     )
     return ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         state_code=state_code,
@@ -658,6 +663,7 @@ class TestComplianceContactTypes(unittest.TestCase):
         builder = _compliance_builder(
             state_code=StateCode.US_TX,
             compliance_type=ComplianceType.CONTACT,
+            assessment_type=None,
             contact_types=[
                 ContactType.SCHEDULED_VIRTUAL_OFFICE_VISIT,
                 ContactType.HOME_VISIT,
@@ -678,6 +684,7 @@ class TestComplianceContactTypes(unittest.TestCase):
             _compliance_builder(
                 state_code=StateCode.US_XX,
                 compliance_type=ComplianceType.CONTACT,
+                assessment_type=None,
                 contact_types=[],
             )
 
@@ -685,6 +692,7 @@ class TestComplianceContactTypes(unittest.TestCase):
         builder = _compliance_builder(
             state_code=StateCode.US_TX,
             compliance_type=ComplianceType.ASSESSMENT,
+            assessment_type=AssessmentType.TRAS,
             contact_types=[],
         )
         self.assertEqual([], builder.contact_types)
@@ -694,6 +702,7 @@ class TestComplianceContactTypes(unittest.TestCase):
         builder = _compliance_builder(
             state_code=StateCode.US_MO,
             compliance_type=ComplianceType.CONTACT,
+            assessment_type=None,
             contact_types=[],
         )
         self.assertEqual([], builder.contact_types)

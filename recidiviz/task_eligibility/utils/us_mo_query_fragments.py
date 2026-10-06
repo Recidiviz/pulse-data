@@ -31,6 +31,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     calc_contact_period_end_date,
@@ -1364,6 +1365,7 @@ FROM critical_date_has_passed_spans
         description=description,
         criteria_spans_query_template=query_template,
         meets_criteria_default=False,
+        assessment_type=AssessmentType.ORAS,
         reasons_fields=[
             ReasonsField(
                 name="assessment_due_date",

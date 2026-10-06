@@ -21,6 +21,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.almost_eligible_spans_big_query_view_builder import (
@@ -131,6 +132,7 @@ TEST_CRITERIA_BUILDER_5 = StateSpecificTaskCriteriaBigQueryViewBuilder(
         ),
     ],
     contact_types=[ContactType.HOME_VISIT],
+    assessment_type=AssessmentType.LSIR,
 )
 
 TES_QUERY_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(

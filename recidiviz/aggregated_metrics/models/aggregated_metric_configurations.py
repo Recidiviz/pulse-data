@@ -49,6 +49,7 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JusticeImpactType,
 )
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -57,6 +58,9 @@ from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
+from recidiviz.observations.views.spans.person.supervision_assessment_compliance_span import (
+    ALL_ASSESSMENT_TYPES_VALUE,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
@@ -766,6 +770,9 @@ AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     ),
 )
 
+# Pinned to assessment_type = 'ALL' so these reproduce the de-duplicated, collapsed-across-types
+# totals exactly. The SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN now also carries per-type rows, so
+# omitting this filter would double-count clients who owe more than one assessment type.
 AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED = DailyAvgSpanCountMetric(
     name="avg_population_assessment_required",
     display_name="Average Population: Clients Requiring Risk Assessment",
@@ -773,7 +780,10 @@ AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED = DailyAvgSpanCountMetric(
     "supervision level",
     span_selector=SpanSelector(
         span_type=SpanType.SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN,
-        span_conditions_dict={"assessment_required": ["true"]},
+        span_conditions_dict={
+            "assessment_required": ["true"],
+            "assessment_type": [ALL_ASSESSMENT_TYPES_VALUE],
+        },
     ),
 )
 
@@ -787,9 +797,49 @@ AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE = DailyAvgSpanCountMetric(
         span_conditions_dict={
             "assessment_required": ["true"],
             "assessment_overdue": ["true"],
+            "assessment_type": [ALL_ASSESSMENT_TYPES_VALUE],
         },
     ),
 )
+
+# One metric per assessment type, each pinned to a single `assessment_type`. Because each metric
+# selects exactly one type, there is no per-person fan-out within it. Per-type values legitimately
+# sum to more than the 'ALL' total for clients who owe multiple assessment types.
+AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED_BY_TYPE_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_assessment_required_{assessment_type.value.lower()}",
+        display_name=f"Average Population: Clients Requiring {assessment_type.value} Assessment",
+        description=f"Average daily population of clients requiring a {assessment_type.value} risk "
+        f"assessment based on their supervision level",
+        span_selector=SpanSelector(
+            span_type=SpanType.SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN,
+            span_conditions_dict={
+                "assessment_required": ["true"],
+                "assessment_type": [assessment_type.value],
+            },
+        ),
+    )
+    for assessment_type in AssessmentType
+]
+
+AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE_BY_TYPE_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_assessment_overdue_{assessment_type.value.lower()}",
+        display_name=f"Average Population: Clients Requiring {assessment_type.value} Assessment Whose "
+        f"Assessments Are Overdue",
+        description=f"Average daily population of clients requiring a {assessment_type.value} risk "
+        f"assessment based on their supervision level who are overdue to receive one",
+        span_selector=SpanSelector(
+            span_type=SpanType.SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN,
+            span_conditions_dict={
+                "assessment_required": ["true"],
+                "assessment_overdue": ["true"],
+                "assessment_type": [assessment_type.value],
+            },
+        ),
+    )
+    for assessment_type in AssessmentType
+]
 
 AVG_DAILY_POPULATION_CONTACT_REQUIRED = DailyAvgSpanCountMetric(
     name="avg_population_contact_required",

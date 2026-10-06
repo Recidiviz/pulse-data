@@ -24,6 +24,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
@@ -63,8 +64,7 @@ def us_ne_recurring_assessment_criteria_view_builder(
     *,
     criteria_name: str,
     description: str,
-    assessment_type: str,
-    assessment_display_name: str,
+    assessment_type: AssessmentType,
     reassessment_cadence_months: int,
     supervision_spans_query: str,
     assessment_date_lookback_days: int = 0,
@@ -83,10 +83,10 @@ def us_ne_recurring_assessment_criteria_view_builder(
         criteria_name: Name of the criterion view (e.g.
             US_NE_IS_MISSING_ANNUAL_STABLE_ASSESSMENT).
         description: Description of the criterion view.
-        assessment_type: Value of `state_assessment.assessment_type` to filter
-            on (e.g. 'STABLE', 'ORAS_COMMUNITY_SUPERVISION_SCREENING').
-        assessment_display_name: Short label for the assessment (e.g. 'STABLE',
-            'ORAS') used in reasons-field descriptions.
+        assessment_type: The compliance AssessmentType this criterion is tied to
+            (e.g. AssessmentType.STABLE, AssessmentType.ORAS). It determines both
+            the `state_assessment.assessment_type` value to filter on and the
+            label used in reasons-field descriptions.
         reassessment_cadence_months: Number of months after a prior assessment
             until the next one is due (snapped to the last day of the month).
         supervision_spans_query: SQL returning state_code, person_id,
@@ -97,6 +97,13 @@ def us_ne_recurring_assessment_criteria_view_builder(
             episode's "first" assessment. Set to 0 to require assessments
             within the episode itself.
     """
+    # US_NE's ORAS assessments are ingested under a specific ORAS variant; every other
+    # assessment type's ingest value matches its AssessmentType code.
+    state_assessment_type = {
+        AssessmentType.ORAS: "ORAS_COMMUNITY_SUPERVISION_SCREENING",
+    }.get(assessment_type, assessment_type.value)
+    assessment_display_name = assessment_type.value
+
     query_template = f"""
 WITH supervision_spans AS (
     {supervision_spans_query}
@@ -121,7 +128,7 @@ assessments AS (
                 DATE_SUB(ss.start_date, INTERVAL {assessment_date_lookback_days} DAY)
                 AND {nonnull_end_date_exclusive_clause('ss.end_date')}
     WHERE a.state_code = 'US_NE'
-        AND a.assessment_type = '{assessment_type}'
+        AND a.assessment_type = '{state_assessment_type}'
     -- Within a single day, keep the latest assessment by sequence_num
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY a.person_id, a.assessment_date
@@ -188,6 +195,7 @@ FROM critical_date_has_passed_spans
         description=description,
         criteria_spans_query_template=query_template,
         meets_criteria_default=False,
+        assessment_type=assessment_type,
         reasons_fields=[
             ReasonsField(
                 name="assessment_due_date",

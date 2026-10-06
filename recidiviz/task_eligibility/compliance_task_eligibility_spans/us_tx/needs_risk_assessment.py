@@ -18,6 +18,12 @@
 need a risk assessment conducted
 """
 
+# TODO(OBT-39526): Optional follow-on now that assessment type is modeled explicitly via
+# AssessmentType — rename this task (module, view_id, and BQ view/table
+# `task_eligibility_spans_us_tx.needs_risk_assessment`) to `needs_tras_assessment` for
+# naming consistency with the other assessment tasks; account for the product export /
+# Firestore task name and historical data continuity when doing so.
+
 from recidiviz.calculator.query.state.views.tasks.compliance_type import (
     CadenceType,
     ComplianceType,

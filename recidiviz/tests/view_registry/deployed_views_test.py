@@ -468,6 +468,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             ),
             BigQueryAddress(
                 dataset_id="observations__person_span",
+                table_id="supervision_assessment_compliance_span",
+            ),
+            BigQueryAddress(
+                dataset_id="observations__person_span",
                 table_id="compliance_task_eligibility_session",
             ),
             BigQueryAddress(
