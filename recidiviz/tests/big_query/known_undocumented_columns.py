@@ -2618,14 +2618,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_reason",
         "start_sub_reason",
     ],
-    BigQueryAddress.from_str("observations__person_event.custody_level_change"): [
-        "change_type",
-        "custody_level_num_change",
-        "months_between_assessment_due_and_downgrade",
-        "new_custody_level",
-        "previous_change_type",
-        "previous_custody_level",
-    ],
     BigQueryAddress.from_str("observations__person_event.drug_screen"): [
         "is_initial_within_supervision_super_session",
         "is_positive_result",

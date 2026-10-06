@@ -25,6 +25,10 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
+)
+from recidiviz.common.str_field_utils import snake_to_title
 
 INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES = {
     "ALL_INCARCERATION_STATES": (
@@ -43,4 +47,15 @@ INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES = {
         MetricPopulationType.INCARCERATION,
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ),
+}
+
+_CUSTODY_LEVEL_SUGGESTIONS = [
+    snake_to_title(level.value) for level in StateIncarcerationPeriodCustodyLevel
+]
+
+INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[
+    str, list[str]
+] = {
+    "previous_custody_level": _CUSTODY_LEVEL_SUGGESTIONS,
+    "new_custody_level": _CUSTODY_LEVEL_SUGGESTIONS,
 }
