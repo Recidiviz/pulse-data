@@ -21,6 +21,7 @@ from pprint import pprint
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_all_dag_ids,
     get_raw_data_import_dag_id,
+    get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
@@ -40,6 +41,7 @@ from recidiviz.airflow.dags.utils.environment import (
 
 INCIDENT_START_DATE_LOOKBACK = timedelta(days=21)
 RAW_DATA_INCIDENT_START_DATE_LOOKBACK = timedelta(days=42)
+SFTP_INCIDENT_START_DATE_LOOKBACK = timedelta(days=42)
 
 
 def get_default_lookback_for_dag(*, dag_id: str) -> timedelta:
@@ -52,6 +54,10 @@ def get_default_lookback_for_dag(*, dag_id: str) -> timedelta:
     project_id = get_project_id()
     if dag_id == get_raw_data_import_dag_id(project_id):
         return RAW_DATA_INCIDENT_START_DATE_LOOKBACK
+    # TODO(OBT-53750) adding this as a workaround to silence noisy ticket that has been open for
+    # >21 days, but the correct thing to do would be to fix the duplicate alert issue.
+    if dag_id == get_sftp_dag_id(project_id):
+        return SFTP_INCIDENT_START_DATE_LOOKBACK
     return INCIDENT_START_DATE_LOOKBACK
 
 
