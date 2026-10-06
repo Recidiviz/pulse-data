@@ -5223,6 +5223,18 @@ DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP_FOR_REGISTERED_JII_TABLET_A
     ),
 )
 
+CONTACTS_INCLUDED_IN_ROUTE_PLANNER = EventCountMetric(
+    name="contacts_included_in_route_planner",
+    display_name="Contacts Included in Route Planner",
+    description=(
+        "Number of contacts whose type closes a task that the Route Planner surfaces. Denominator for the CONTACTS_AFTER_ROUTE_PLANNER_* metrics, so those give the share of route planner relevant contacts that followed a Route Planner interaction."
+    ),
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={"contact_included_in_route_planner": ["true"]},
+    ),
+)
+
 CONTACTS_AFTER_ROUTE_PLANNER_SURFACED = EventCountMetric(
     name="contacts_after_route_planner_surfaced",
     display_name="Contacts After Being Surfaced in Route Planner",
