@@ -39,6 +39,7 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_categ
     CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.route_planner_client_interactions import (
+    CLIENT_SELECTED_ACTION,
     ROUTE_OPTIMIZATION_ACTION,
     ROUTE_PLANNER_LINK_ACTIONS,
     SURFACED_ROUTE_PLANNER_ACTION,
@@ -4143,6 +4144,32 @@ DISTINCT_PRIMARY_TASKS_USERS_VIEWED_HCRP_USING_MOBILE = EventDistinctUnitCountMe
             "event": SURFACED_ROUTE_PLANNER_ACTION,
             "is_mobile": ["true"],
         },
+    ),
+)
+
+DISTINCT_PRIMARY_TASKS_USERS_VIEWED_HCRP_REPEAT = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_viewed_hcrp_repeat",
+    display_name="Distinct Primary Tasks Users Who Viewed HCRP Again",
+    description="Number of distinct primary Tasks users who had at least one client "
+    "surfaced in the Home Contact Route Planner and had already had a client surfaced "
+    "there on an earlier day",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": SURFACED_ROUTE_PLANNER_ACTION,
+            "is_repeat_user": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_TASKS_USERS_SELECTED_CLIENT_IN_HCRP = EventDistinctUnitCountMetric(
+    name="distinct_primary_tasks_users_selected_client_in_hcrp",
+    display_name="Distinct Primary Tasks Users Who Selected a Client in HCRP",
+    description="Number of distinct primary Tasks users who added at least one client "
+    "to their route in the Home Contact Route Planner",
+    event_selector=EventSelector(
+        event_type=EventType.ROUTE_PLANNER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"event": [CLIENT_SELECTED_ACTION]},
     ),
 )
 
