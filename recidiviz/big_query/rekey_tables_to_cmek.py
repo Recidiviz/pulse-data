@@ -35,6 +35,15 @@ run against live projects:
     A mismatch keeps the backup and stops the run.
   - skips tables that already have the key, so re-running resumes an
     interrupted sweep.
+  - bounds every BigQuery job wait at JOB_DEADLINE_SECONDS, client retries
+    included. The library defaults (600s per call, 2400s per query job) let
+    one bad job hold a 15-minute DAG task for 40 minutes. A job past the
+    deadline is abandoned as FAILED: the table is untouched if its backup
+    was not yet complete, otherwise the backup is kept.
+  - skips a table whose backup is newer than IN_PROGRESS_WINDOW, because
+    another run is mid-way through it. Two runs on the same table race on
+    the one backup name, and the first to finish deletes it from under the
+    second.
 
 This is temporary migration code for the CJIS Assured Workloads move
 (Recidiviz/zenhub-tasks#2606); delete it when every table carries the key.
@@ -51,14 +60,21 @@ import json
 import logging
 import re
 from collections import Counter
-from typing import IO, Iterable
+from typing import IO, Any, Iterable
 
 import attr
+from google.api_core.exceptions import GoogleAPICallError, RetryError
 from google.cloud import bigquery
+from google.cloud.bigquery.retry import DEFAULT_JOB_RETRY, DEFAULT_RETRY
 from google.cloud.exceptions import NotFound
 
 BACKUP_SUFFIX = "_rekey_bak"
 STREAM_LOOKBACK_DAYS = 30
+JOB_DEADLINE_SECONDS = 180
+IN_PROGRESS_WINDOW = datetime.timedelta(seconds=3 * JOB_DEADLINE_SECONDS)
+
+# What a job wait raises when the deadline passes or BigQuery keeps failing.
+_JOB_ERRORS = (TimeoutError, RetryError, GoogleAPICallError)
 
 # Identifiers are interpolated into SQL (BigQuery cannot bind table names as
 # query parameters), so every identifier must match these before any query is
@@ -86,6 +102,7 @@ class RekeyAction(enum.Enum):
     SKIP_BUFFER = "SKIP_BUFFER"
     SKIP_STREAMED = "SKIP_STREAMED"
     SKIP_NOT_QUIET = "SKIP_NOT_QUIET"
+    SKIP_IN_PROGRESS = "SKIP_IN_PROGRESS"
     WOULD_REKEY = "WOULD_REKEY"
     REKEYED_VERIFIED = "REKEYED_VERIFIED"
     CRITICAL_MISMATCH = "CRITICAL_MISMATCH"
@@ -106,6 +123,37 @@ class RekeyResult:
         )
 
 
+def _wait_copy(job: bigquery.CopyJob) -> None:
+    job.result(
+        retry=DEFAULT_RETRY.with_timeout(JOB_DEADLINE_SECONDS),
+        timeout=JOB_DEADLINE_SECONDS,
+    )
+
+
+def _query_rows(job: bigquery.QueryJob) -> Any:
+    # job_retry is the layer that re-runs a whole query on a 5xx; left at its
+    # 2400s default it is what turns one bad job into a 40-minute wait.
+    return job.result(
+        retry=DEFAULT_RETRY.with_timeout(JOB_DEADLINE_SECONDS),
+        timeout=JOB_DEADLINE_SECONDS,
+        job_retry=DEFAULT_JOB_RETRY.with_timeout(JOB_DEADLINE_SECONDS),
+    )
+
+
+def _backup_age(client: bigquery.Client, backup_ref: str) -> datetime.timedelta | None:
+    """Returns how long ago the backup table was last written, or None if it
+    does not exist."""
+    try:
+        backup = client.get_table(backup_ref)
+    except NotFound:
+        return None
+    return datetime.datetime.now(datetime.timezone.utc) - backup.modified
+
+
+def _brief(error: BaseException) -> str:
+    return f"{type(error).__name__}: {str(error)[:200]}"
+
+
 def recently_streamed_tables(
     *, client: bigquery.Client, project_id: str, bq_region: str
 ) -> set[tuple[str, str]]:
@@ -123,7 +171,7 @@ def recently_streamed_tables(
     FROM `{project_id}`.`region-{bq_region}`.INFORMATION_SCHEMA.WRITE_API_TIMELINE_BY_PROJECT
     WHERE start_timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {STREAM_LOOKBACK_DAYS} DAY)
     """
-    return {(row[0], row[1]) for row in client.query(sql).result()}
+    return {(row[0], row[1]) for row in _query_rows(client.query(sql))}
 
 
 def _checksum(*, client: bigquery.Client, table_ref: str, checksum_mode: str) -> str:
@@ -138,7 +186,7 @@ def _checksum(*, client: bigquery.Client, table_ref: str, checksum_mode: str) ->
         """
     else:
         sql = f"SELECT CAST(COUNT(*) AS STRING) FROM `{table_ref}`"
-    return next(iter(client.query(sql).result()))[0]
+    return next(iter(_query_rows(client.query(sql))))[0]
 
 
 def _current_kms_key(table: bigquery.Table) -> str | None:
@@ -215,11 +263,30 @@ def rekey_table(
     if not kms_key:
         return result(RekeyAction.FAILED, "kms_key is required to apply")
 
-    before = _checksum(client=client, table_ref=table_ref, checksum_mode=checksum_mode)
-
     backup_ref = f"{table_ref}{BACKUP_SUFFIX}"
+    backup_age = _backup_age(client, backup_ref)
+    if backup_age is not None and backup_age < IN_PROGRESS_WINDOW:
+        return result(
+            RekeyAction.SKIP_IN_PROGRESS,
+            f"backup written {backup_age.total_seconds():.0f}s ago; "
+            "another run owns this table",
+        )
+
+    try:
+        before = _checksum(
+            client=client, table_ref=table_ref, checksum_mode=checksum_mode
+        )
+    except _JOB_ERRORS as e:
+        return result(RekeyAction.FAILED, f"checksum: {_brief(e)}; table untouched")
+
     backup_config = bigquery.CopyJobConfig(write_disposition="WRITE_TRUNCATE")
-    client.copy_table(table_ref, backup_ref, job_config=backup_config).result()
+    try:
+        _wait_copy(client.copy_table(table_ref, backup_ref, job_config=backup_config))
+    except _JOB_ERRORS as e:
+        # The real table has not been written yet; the partial backup must not
+        # survive to look like another run's claim on this table.
+        client.delete_table(backup_ref, not_found_ok=True)
+        return result(RekeyAction.FAILED, f"backup copy: {_brief(e)}; table untouched")
 
     rekey_config = bigquery.CopyJobConfig(
         write_disposition="WRITE_TRUNCATE",
@@ -227,10 +294,17 @@ def rekey_table(
             kms_key_name=kms_key
         ),
     )
-    client.copy_table(table_ref, table_ref, job_config=rekey_config).result()
-
-    new_key = _current_kms_key(client.get_table(table_ref)) or ""
-    after = _checksum(client=client, table_ref=table_ref, checksum_mode=checksum_mode)
+    try:
+        _wait_copy(client.copy_table(table_ref, table_ref, job_config=rekey_config))
+        new_key = _current_kms_key(client.get_table(table_ref)) or ""
+        after = _checksum(
+            client=client, table_ref=table_ref, checksum_mode=checksum_mode
+        )
+    except _JOB_ERRORS as e:
+        return result(
+            RekeyAction.FAILED,
+            f"re-key or verify: {_brief(e)}; BACKUP KEPT: [{backup_ref}]",
+        )
     if after != before or not new_key.startswith(kms_key):
         return result(
             RekeyAction.CRITICAL_MISMATCH,

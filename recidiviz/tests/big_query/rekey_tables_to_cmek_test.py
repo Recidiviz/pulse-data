@@ -20,10 +20,12 @@ import unittest
 from typing import Any
 from unittest.mock import MagicMock
 
+from google.api_core.exceptions import RetryError
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
 from recidiviz.big_query.rekey_tables_to_cmek import (
+    JOB_DEADLINE_SECONDS,
     RekeyAction,
     rekey_table,
     rekey_tables,
@@ -53,6 +55,12 @@ def _fake_table(
     table.num_bytes = num_bytes
     table.num_rows = num_rows
     return table
+
+
+def _fake_backup(*, modified_seconds_ago: float) -> MagicMock:
+    backup = MagicMock()
+    backup.modified = _NOW - datetime.timedelta(seconds=modified_seconds_ago)
+    return backup
 
 
 def _query_result(value: str) -> MagicMock:
@@ -149,6 +157,7 @@ class RekeyTableTest(unittest.TestCase):
         client = MagicMock()
         client.get_table.side_effect = [
             _fake_table(),  # gates
+            NotFound("no backup"),  # nobody else owns the table
             _fake_table(kms_key=f"{_KEY}/version/1"),  # verify
         ]
         client.query.side_effect = [_query_result("10|abc"), _query_result("10|abc")]
@@ -173,6 +182,7 @@ class RekeyTableTest(unittest.TestCase):
         client = MagicMock()
         client.get_table.side_effect = [
             _fake_table(),
+            NotFound("no backup"),
             _fake_table(kms_key=f"{_KEY}/version/1"),
         ]
         client.query.side_effect = [
@@ -183,6 +193,119 @@ class RekeyTableTest(unittest.TestCase):
         result = _rekey_table_defaults(client)
 
         self.assertEqual(RekeyAction.CRITICAL_MISMATCH, result.action)
+        client.delete_table.assert_not_called()
+
+    def test_fresh_backup_means_another_run_owns_the_table(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [
+            _fake_table(),
+            _fake_backup(modified_seconds_ago=30),
+        ]
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.SKIP_IN_PROGRESS, result.action)
+        self.assertIn("another run", result.detail)
+        client.query.assert_not_called()
+        client.copy_table.assert_not_called()
+        client.delete_table.assert_not_called()
+
+    def test_stale_backup_is_overwritten(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [
+            _fake_table(),
+            _fake_backup(modified_seconds_ago=24 * 3600),  # an abandoned run
+            _fake_table(kms_key=f"{_KEY}/version/1"),
+        ]
+        client.query.side_effect = [_query_result("10|abc"), _query_result("10|abc")]
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.REKEYED_VERIFIED, result.action)
+        self.assertEqual(2, client.copy_table.call_count)
+
+    def test_every_job_wait_carries_the_deadline(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [
+            _fake_table(),
+            NotFound("no backup"),
+            _fake_table(kms_key=f"{_KEY}/version/1"),
+        ]
+        queries = [_query_result("10|abc"), _query_result("10|abc")]
+        client.query.side_effect = queries
+
+        _rekey_table_defaults(client)
+
+        copy_waits = client.copy_table.return_value.result.call_args_list
+        self.assertEqual(2, len(copy_waits))
+        for call in copy_waits:
+            self.assertEqual(JOB_DEADLINE_SECONDS, call.kwargs["timeout"])
+            self.assertEqual(JOB_DEADLINE_SECONDS, call.kwargs["retry"].timeout)
+        for query in queries:
+            call = query.result.call_args
+            self.assertEqual(JOB_DEADLINE_SECONDS, call.kwargs["timeout"])
+            self.assertEqual(JOB_DEADLINE_SECONDS, call.kwargs["retry"].timeout)
+            self.assertEqual(JOB_DEADLINE_SECONDS, call.kwargs["job_retry"].timeout)
+
+    def test_checksum_timeout_touches_nothing(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [_fake_table(), NotFound("no backup")]
+        slow = MagicMock()
+        slow.result.side_effect = TimeoutError()
+        client.query.return_value = slow
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.FAILED, result.action)
+        self.assertIn("table untouched", result.detail)
+        client.copy_table.assert_not_called()
+        client.delete_table.assert_not_called()
+
+    def test_backup_copy_timeout_removes_the_partial_backup(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [_fake_table(), NotFound("no backup")]
+        client.query.return_value = _query_result("10|abc")
+        client.copy_table.return_value.result.side_effect = RetryError(
+            "Timeout of 180.0s exceeded", None
+        )
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.FAILED, result.action)
+        self.assertIn("table untouched", result.detail)
+        # Only the backup copy was attempted; the in-place re-key never ran.
+        self.assertEqual(1, client.copy_table.call_count)
+        backup_ref = f"{_PROJECT}.ds.tb_rekey_bak"
+        client.delete_table.assert_called_once_with(backup_ref, not_found_ok=True)
+
+    def test_rekey_copy_timeout_keeps_the_backup(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [_fake_table(), NotFound("no backup")]
+        client.query.return_value = _query_result("10|abc")
+        client.copy_table.return_value.result.side_effect = [None, TimeoutError()]
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.FAILED, result.action)
+        self.assertIn("BACKUP KEPT", result.detail)
+        self.assertEqual(2, client.copy_table.call_count)
+        client.delete_table.assert_not_called()
+
+    def test_verify_timeout_keeps_the_backup(self) -> None:
+        client = MagicMock()
+        client.get_table.side_effect = [
+            _fake_table(),
+            NotFound("no backup"),
+            _fake_table(kms_key=f"{_KEY}/version/1"),
+        ]
+        slow = MagicMock()
+        slow.result.side_effect = TimeoutError()
+        client.query.side_effect = [_query_result("10|abc"), slow]
+
+        result = _rekey_table_defaults(client)
+
+        self.assertEqual(RekeyAction.FAILED, result.action)
+        self.assertIn("BACKUP KEPT", result.detail)
         client.delete_table.assert_not_called()
 
     def test_rejects_sql_unsafe_identifiers(self) -> None:
@@ -244,6 +367,7 @@ class RekeyTablesTest(unittest.TestCase):
         ]
         client.get_table.side_effect = [
             _fake_table(),
+            NotFound("no backup"),
             _fake_table(kms_key=f"{_KEY}/version/1"),
         ]
 
@@ -256,6 +380,29 @@ class RekeyTablesTest(unittest.TestCase):
         )
 
         self.assertEqual([RekeyAction.CRITICAL_MISMATCH], [r.action for r in results])
+
+    def test_in_progress_skip_does_not_halt_the_sweep(self) -> None:
+        client = MagicMock()
+        client.query.return_value = self._ledger_result()
+        client.get_table.side_effect = [
+            _fake_table(),
+            _fake_backup(modified_seconds_ago=5),
+            _fake_table(kms_key=f"{_KEY}/version/1"),
+        ]
+
+        results = rekey_tables(
+            client=client,
+            project_id=_PROJECT,
+            tables=[("ds", "claimed"), ("ds", "done")],
+            kms_key=_KEY,
+            apply=True,
+        )
+
+        self.assertEqual(
+            [RekeyAction.SKIP_IN_PROGRESS, RekeyAction.SKIP_ALREADY_CMEK],
+            [r.action for r in results],
+        )
+        client.copy_table.assert_not_called()
 
     def test_dry_run_is_default(self) -> None:
         client = MagicMock()
