@@ -2328,6 +2328,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_oz_ingest_view_results.nd_person_details",
     "us_oz_ingest_view_results.sm_periods",
     "us_oz_ingest_view_results.sm_person",
+    "us_oz_ingest_view_results.soso_people",
     "us_oz_ingest_view_results.vfds_periods",
     "us_oz_ingest_view_results.vfds_person",
     "us_oz_normalized_state.state_assessment",

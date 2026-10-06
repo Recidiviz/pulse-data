@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_soso_people` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  id: STRING
+  first_name: STRING
+  last_name: STRING
+  birthdate: DATE
+  sex: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: id
+          id_type: $literal("US_OZ_SOSO_PERSON_ID")
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $surname: last_name
+    birthdate: birthdate
+    sex:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateSex.MALE: "MALE"
+          StateSex.FEMALE: "FEMALE"
+          StateSex.OTHER: "OTHER"
+          StateSex.EXTERNAL_UNKNOWN: "UNKNOWN"
