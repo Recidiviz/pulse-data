@@ -118,6 +118,26 @@ locals {
           env       = {}
           paused    = true
         }
+        # Dry run: reads production eOMIS, writes nothing.
+        "us-co-continuous" = {
+          args = [
+            "--flow=co_work",
+            "--flow=co_cert",
+            "--flow=co_ged",
+            "--flow=co_edovo",
+            "--account=svc",
+            "--workers=8",
+            # Above the first pass's candidate count.
+            "--max-writes=30000",
+          ]
+          # Room for the first pass.
+          timeout = "86400s"
+          # Before CDOC's midnight export.
+          schedule  = "0 18 * * *"
+          time_zone = "America/Denver"
+          env       = {}
+          paused    = true
+        }
       }
       recidiviz_env = "production"
     }
