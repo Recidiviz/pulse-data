@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  TROA_SID_NO: STRING
+  SID_NO: STRING
   TROA_ID: STRING
   TRAS_CODE: STRING
   TROA_SCORE: STRING
@@ -15,7 +15,7 @@ output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: TROA_SID_NO
+          external_id: SID_NO
           id_type: $literal("US_TX_SID")
     assessments:
       - StateAssessment:
