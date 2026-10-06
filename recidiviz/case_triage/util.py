@@ -25,6 +25,8 @@ from typing import Any, Dict, Optional
 
 from redis import Redis
 from redis.backoff import ConstantBackoff
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 from redis.retry import Retry
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -69,9 +71,8 @@ REDIS_RETRY_MAX_RETRIES = 3
 REDIS_RETRY_BACKOFF_SECONDS = 0.01
 
 REDIS_RETRY_SUPPORTED_ERRORS = (
-    ConnectionError,
-    ConnectionResetError,
-    TimeoutError,
+    RedisConnectionError,
+    RedisTimeoutError,
     socket.timeout,
 )
 
