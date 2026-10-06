@@ -214,7 +214,6 @@ MICASE_FILE_TAGS: frozenset[str] = frozenset(
         "CL_RESTRICTIVE_HOUSING",
         "CL_UTM_REVIEW",
         "CM_CASEMAN_ENEMY_ALERT_RETRACTION",
-        "CM_CASE_PLAN_PR",
         "CM_IGP",
         "CM_IGP_GOAL",
         "CM_IGP_OBJECTIVES",

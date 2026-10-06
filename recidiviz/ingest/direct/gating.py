@@ -159,7 +159,6 @@ FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
         "CL_RESTRICTIVE_HOUSING": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
         "CL_UTM_REVIEW": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
         "CM_CASEMAN_ENEMY_ALERT_RETRACTION": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
-        "CM_CASE_PLAN_PR": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
         "CM_IGP": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
         "CM_IGP_GOAL": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
         "CM_IGP_OBJECTIVES": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
