@@ -41,7 +41,6 @@ google-cloud-tasks==2.23.0
 jsonschema==4.26.0
 more-itertools==11.1.0
 networkx==3.6.1
-oauth2client==4.1.3
 # TODO(open-telemetry/opentelemetry-python#3959): Remove TODO when opentelemetry when cost increase is solved.
 opentelemetry-api==1.33.1
 opentelemetry-sdk==1.33.1

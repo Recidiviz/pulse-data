@@ -18,9 +18,9 @@
 import logging
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
+import google.auth
 from googleapiclient.discovery import build
 from more_itertools import one
-from oauth2client.client import GoogleCredentials
 
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
@@ -71,7 +71,7 @@ def get_job_id(project_id: str, region: str, job_name: str) -> str:
 
         service_name = "dataflow"
         dataflow_api_version = "v1b3"
-        credentials = GoogleCredentials.get_application_default()
+        credentials, _ = google.auth.default()
 
         dataflow = build(
             serviceName=service_name,
