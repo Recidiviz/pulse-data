@@ -43,12 +43,26 @@ def is_tomis_2_0_enabled(
     return False
 
 
+def is_coms_2026_enabled(
+    project_id: str,  # pylint: disable=unused-argument
+) -> bool:
+    """Returns whether the data platform should read from the data that includes
+    the new tables from the 2026 migration (rather than just the data tables from
+    before the 2026 migration).
+
+    TODO(MI-8297): Delete this flag, and any logic gated on it, once COMS 2026
+    data has been fully incorporated into transfers and all data validated
+    """
+    return False
+
+
 # All feature flags available to gate ingest logic. Keys are bare, snake_case
 # names and values are pure functions of the project the logic is being
 # evaluated for. By convention a flag keyed `foo_enabled` is backed by a
 # function named `is_foo_enabled`.
 _INGEST_FEATURE_FLAGS: dict[str, Callable[[str], bool]] = {
     "tomis_2_0_enabled": is_tomis_2_0_enabled,
+    "coms_2026_enabled": is_coms_2026_enabled,
 }
 
 
