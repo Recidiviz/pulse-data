@@ -504,6 +504,17 @@ class VertexAISyncLLMClientTest(TestCase):
                 ),
                 LLMRequestErrorType.SERVER_ERROR,
             ),
+            (
+                httpx.RemoteProtocolError(
+                    "Server disconnected without sending a response."
+                ),
+                LLMRequestErrorType.SERVER_ERROR,
+            ),
+            (
+                httpx.ConnectError("nodename nor servname provided, or not known"),
+                LLMRequestErrorType.SERVER_ERROR,
+            ),
+            (OSError(9, "Bad file descriptor"), LLMRequestErrorType.SERVER_ERROR),
         ):
             with self.subTest(error=error):
                 self.mock_generate_content.side_effect = error

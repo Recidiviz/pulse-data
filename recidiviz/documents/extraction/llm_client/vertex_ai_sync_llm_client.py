@@ -87,6 +87,13 @@ def _error_type_for_exception(error: Exception) -> LLMRequestErrorType:
         if error.code == _GATEWAY_TIMEOUT_CODE:
             return LLMRequestErrorType.TIMEOUT
         return LLMRequestErrorType.SERVER_ERROR
+    # Transport-level failures raised by httpx.Client.send before any HTTP status
+    # comes back — a dropped connection (RemoteProtocolError, "Server disconnected
+    # without sending a response"), a DNS failure (ConnectError wrapping
+    # socket.gaierror, "nodename nor servname provided"), or a socket closed under
+    # load (OSError/EBADF, "Bad file descriptor").
+    if isinstance(error, (httpx.TransportError, OSError)):
+        return LLMRequestErrorType.SERVER_ERROR
     return LLMRequestErrorType.UNKNOWN_ERROR
 
 
