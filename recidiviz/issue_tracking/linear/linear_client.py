@@ -56,6 +56,8 @@ LINEAR_API_MAX_ATTEMPTS = 4
 # Mirrors github_helperbot_client's use of github_deploy_script_pat.
 LINEAR_API_KEY_SECRET_NAME = "linear_deploy_script_api_key"  # nosec
 
+LINEAR_OAUTH_TOKEN_URL = "https://api.linear.app/oauth/token"  # nosec B105
+
 
 class LinearApiError(Exception):
     """Raised when the Linear API returns an error or is unreachable."""
@@ -842,3 +844,32 @@ def linear_client_from_env_or_secret() -> LinearClient:
         LINEAR_API_KEY_ENV_VAR,
     )
     return linear_client_from_secret()
+
+
+def get_linear_oauth_access_token(
+    *, client_id: str, client_secret: str, scope: str
+) -> str:
+    """Exchanges a Linear OAuth application's client credentials for an access
+    token that acts as the application, with the given comma-separated scope
+    (e.g. "read" or "read,write"). Pass the token to LinearClient prefixed with
+    "Bearer ".
+    """
+    response = requests.post(
+        LINEAR_OAUTH_TOKEN_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "scope": scope,
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if "access_token" not in data:
+        raise ValueError(
+            f"Linear OAuth failed: {data.get('error', 'unknown')} - "
+            f"{data.get('error_description', 'no description')}"
+        )
+    return data["access_token"]

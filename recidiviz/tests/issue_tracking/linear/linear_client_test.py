@@ -33,6 +33,7 @@ from recidiviz.issue_tracking.linear.linear_client import (
     LinearEquivalentIssueGroup,
     LinearIssueInfo,
     RetryableLinearApiError,
+    get_linear_oauth_access_token,
     linear_client_from_env_or_secret,
     linear_client_from_secret,
 )
@@ -1834,6 +1835,52 @@ class GetAllProjectsWithMilestonesTest(unittest.TestCase):
             r"within a project\. Paginate the nested labels query",
         ):
             client.get_all_projects_with_milestones()
+
+
+class GetLinearOauthAccessTokenTest(unittest.TestCase):
+    """Tests for get_linear_oauth_access_token()."""
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_exchanges_client_credentials_for_token(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            json=lambda: {"access_token": "test-token", "token_type": "Bearer"}
+        )
+
+        token = get_linear_oauth_access_token(
+            client_id="test-client-id", client_secret="test-client-secret", scope="read"
+        )
+
+        self.assertEqual(token, "test-token")
+        mock_post.assert_called_once_with(
+            "https://api.linear.app/oauth/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "scope": "read",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=30,
+        )
+
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
+    def test_raises_when_response_has_no_token(self, mock_post: MagicMock) -> None:
+        mock_post.return_value = MagicMock(
+            json=lambda: {
+                "error": "invalid_client",
+                "error_description": "Client authentication failed",
+            }
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Linear OAuth failed: invalid_client - Client authentication failed$",
+        ):
+            get_linear_oauth_access_token(
+                client_id="test-client-id",
+                client_secret="wrong-secret",
+                scope="read",
+            )
 
 
 class LinearClientFromSecretTest(unittest.TestCase):

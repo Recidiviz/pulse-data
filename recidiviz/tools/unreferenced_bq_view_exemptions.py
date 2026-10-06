@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.calculator.query.state.views.analyst_data.linear_project_latest import (
+    LINEAR_PROJECT_LATEST_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -392,6 +395,10 @@ PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
     ),
     INTERCOM_UPLOAD_VIEW_BUILDER.address: (
         "View used by the Apps Script job that uploads user attribute data into Intercom (Justine Kunz, 7/30/2026)"
+    ),
+    LINEAR_PROJECT_LATEST_VIEW_BUILDER.address: (
+        "Read by the quarterly planning Google Sheet through Connected Sheets, so no "
+        "BQ view references it. (Sophie Pepin, 10/05/2026)"
     ),
 }
 

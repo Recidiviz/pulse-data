@@ -980,3 +980,31 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],
     )
+
+
+def test_entrypoint_linear_project_snapshot_dependencies() -> None:
+    """Test that the linear_project_snapshot entrypoint has valid dependencies."""
+    validate_dependencies_for_entrypoint(
+        "recidiviz.entrypoints.linear_project_snapshot",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.big_query",
+                "recidiviz.calculator.query.state.dataset_config",
+                "recidiviz.cloud_resources",
+                "recidiviz.cloud_storage.gcsfs_path",
+                "recidiviz.common",
+                "recidiviz.datasets.static_data.terraform_managed.config",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.linear_project_snapshot",
+                # LinearClient builds GitHub-linked Issue objects.
+                "recidiviz.github.github_issue",
+                "recidiviz.issue_tracking.issue",
+                "recidiviz.issue_tracking.linear",
+                "recidiviz.issue_tracking.roadmap_snapshot_tables",
+                "recidiviz.metrics.metric_big_query_view",
+                "recidiviz.persistence.database.reserved_words",
+                "recidiviz.source_tables.yaml_managed.datasets",
+                "recidiviz.utils",
+            }
+        ),
+    )

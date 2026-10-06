@@ -27,9 +27,8 @@ Usage:
 import argparse
 import os
 
-import requests
+from recidiviz.issue_tracking.linear.linear_client import get_linear_oauth_access_token
 
-LINEAR_OAUTH_TOKEN_URL = "https://api.linear.app/oauth/token"  # nosec B105
 LINEAR_CLIENT_ID_ENV_VAR = "LINEAR_CLIENT_ID"
 LINEAR_CLIENT_SECRET_ENV_VAR = "LINEAR_CLIENT_SECRET"  # nosec B105
 
@@ -40,36 +39,17 @@ def get_linear_oauth_token(*, scope: str) -> str:
     Reads LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET from environment variables,
     exchanges them for an access token, and returns it.
     """
-
     client_id = os.environ.get(LINEAR_CLIENT_ID_ENV_VAR)
     if not client_id:
         raise ValueError(f"Must set {LINEAR_CLIENT_ID_ENV_VAR} environment variable.")
-
     client_secret = os.environ.get(LINEAR_CLIENT_SECRET_ENV_VAR)
     if not client_secret:
         raise ValueError(
             f"Must set {LINEAR_CLIENT_SECRET_ENV_VAR} environment variable."
         )
-
-    response = requests.post(
-        LINEAR_OAUTH_TOKEN_URL,
-        data={
-            "grant_type": "client_credentials",
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "scope": scope,
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        timeout=30,
+    return get_linear_oauth_access_token(
+        client_id=client_id, client_secret=client_secret, scope=scope
     )
-    response.raise_for_status()
-    data = response.json()
-    if "access_token" not in data:
-        raise ValueError(
-            f"Linear OAuth failed: {data.get('error', 'unknown')} - "
-            f"{data.get('error_description', 'no description')}"
-        )
-    return data["access_token"]
 
 
 if __name__ == "__main__":
