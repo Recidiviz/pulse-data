@@ -58,6 +58,7 @@ from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archi
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.meetings.meetings_source_table_view_collector import (
+    MEETING_SOURCE_TABLE_ID,
     collect_meetings_source_table_view_builders,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors_archive import (
@@ -462,5 +463,7 @@ TEMPORARY_GRANDFATHERED_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, st
             "remaining tables here. (Dana Hoffman, 2026-08-11)"
         )
         for view_builder in collect_meetings_source_table_view_builders()
+        # The MEETINGS_MEETING_STARTED observation reads the Meeting view.
+        if view_builder.view_id != MEETING_SOURCE_TABLE_ID
     },
 }

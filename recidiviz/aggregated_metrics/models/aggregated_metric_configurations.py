@@ -4287,6 +4287,33 @@ DISTINCT_ACTIVE_MEETINGS_USERS = EventDistinctUnitCountMetric(
     ),
 )
 
+MEETINGS_STARTED = EventCountMetric(
+    name="meetings_started",
+    display_name="Meetings Started",
+    description="Number of meetings started in the Meetings tool",
+    event_selector=EventSelector(
+        event_type=EventType.MEETINGS_MEETING_STARTED,
+        event_conditions_dict={
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+    event_segmentation_columns=["meeting_id"],
+)
+
+MEETINGS_COMPLETED = EventCountMetric(
+    name="meetings_completed",
+    display_name="Meetings Completed",
+    description="Number of meetings started in the Meetings tool where the post meeting process status was not NOT_STARTED. Meetings count toward this metric whether or not processing of the recording succeeded",
+    event_selector=EventSelector(
+        event_type=EventType.MEETINGS_MEETING_STARTED,
+        event_conditions_dict={
+            "post_meeting_processing_status": 'NOT IN ("NOT_STARTED")',
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+    event_segmentation_columns=["meeting_id"],
+)
+
 AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_daily_population_task_marked_ineligible",
     display_name="Average Population: Task Marked Ineligible",

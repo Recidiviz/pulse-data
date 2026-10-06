@@ -87,6 +87,9 @@ from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.observations.views.events.global_provisioned_user.global_user_active_usage_event import (
     VIEW_BUILDER as GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER,
 )
+from recidiviz.observations.views.events.global_provisioned_user.meetings_meeting_started import (
+    VIEW_BUILDER as MEETINGS_MEETING_STARTED_VIEW_BUILDER,
+)
 from recidiviz.observations.views.events.person.task_completed import (
     VIEW_BUILDER as TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER,
 )
@@ -496,6 +499,9 @@ class ViewDagInvariantTests(unittest.TestCase):
                 builder.address
                 for builder in collect_document_extraction_sessions_view_builders()
             ),
+            # Meetings usage metrics count meetings across every state that uses the
+            # Meetings tool.
+            MEETINGS_MEETING_STARTED_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

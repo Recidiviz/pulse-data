@@ -91,4 +91,6 @@ MEETINGS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.DISTINCT_REGISTERED_MEETINGS_USERS,
     metric_config.DISTINCT_LOGGED_IN_MEETINGS_USERS,
     metric_config.DISTINCT_ACTIVE_MEETINGS_USERS,
+    metric_config.MEETINGS_STARTED,
+    metric_config.MEETINGS_COMPLETED,
 ]
