@@ -18,11 +18,34 @@
 # scheduled Cloud Run Job, one job per flow.
 
 locals {
+  # Same CO job in both projects, so staging rehearses production. Dry run
+  # unless the execution adds --commit.
+  eomis_writeback_us_co_job = {
+    args = [
+      "--flow=co_work",
+      "--flow=co_cert",
+      "--flow=co_ged",
+      "--flow=co_edovo",
+      # CDOC's service account; its login needs no browser.
+      "--account=svc",
+      "--workers=8",
+      # Above the first run's candidate count.
+      "--max-writes=30000",
+    ]
+    # Room for the first run.
+    timeout = "86400s"
+    # Before CDOC's 8:30 PM Mountain export.
+    schedule  = "0 18 * * *"
+    time_zone = "America/Denver"
+    env       = {}
+    paused    = true
+  }
+
   eomis_writeback_env_config = {
     staging = {
       # One entry per flow. Drives the jobs, scheduler, and per-job IAM. The
       # args are appended to the module invocation; dry-run is the absence of
-      # --commit / --allow-prod-write, so staging entries never include them.
+      # --commit.
       jobs = {
         # GED and Edovo share one job and eOMIS login session. Starts paused.
         # TODO(AR-490): Set US_AR_EDOVO_POLICY_START_MONTH to the confirmed
@@ -33,78 +56,8 @@ locals {
           time_zone = "Etc/UTC"
           env       = {}
         }
-        # Run all four Colorado pathways in one scheduled job.
-        #
-        # TODO(OBT-22951): both of the reasons this job could not run are now
-        # cleared. It stays paused below until one manual execution of the job
-        # succeeds in staging and CDOC confirms the cadence -- the scheduler
-        # cannot produce an unattended run while it is paused.
-        #
-        #   1. The login works in the deployed image now. CDOC provisioned a
-        #      service account, and its credentials are in Secret Manager in
-        #      both projects. --account=svc below selects it. The egress path
-        #      was already correct: this job routes through the VPC connector
-        #      and Cloud NAT, so it leaves from the same allowlisted address
-        #      the attended production run of 2026-08-30 used.
-        #   2. All four candidate views are available in earned_time:
-        #      us_co_edovo_proposed_credit, us_co_work_proposed_credit,
-        #      us_co_certificate_proposed_credit, and us_co_ged_proposed_credit.
-        #
-        # Renaming the key from "us-co-edovo" destroys and recreates the job and
-        # its scheduler rather than updating them in place -- for_each keys are
-        # resource identity. Safe here: the job is paused and holds no state, and
-        # the plan shows it as 3 destroy / 4 add rather than a surprise.
-        #
-        # Daily to match AR; deployed paused until CDOC confirms cadence.
-        "us-co-continuous" = {
-          # --account=svc names CDOC's provisioned service account. Its form
-          # login opens no browser, which is what lets this job run in the
-          # deployed image at all. Without the flag the job falls back to the
-          # passkey login, which needs a display.
-          # --workers gives each worker its own eOMIS login, which is what
-          # lets a full pass finish: the service account holds several sessions
-          # at once, and a per-offender screen answers for whoever *that*
-          # session selected. Set it to 1 to put the job back to one at a time.
-          # --max-writes raises the flow's own circuit breaker, which the runner
-          # applies per pathway and only on a committing run:
-          # MAX_WRITES_PER_RUN is 25, and a --commit run of more candidates than
-          # that raises before writing anything. 25 suits an attended CLI
-          # rehearsal and not a pass over the backlog, which is 13,885 work
-          # candidates as of 2026-09-23. Set high enough to clear that with room
-          # and still low enough to stop a run that proposed, say, the whole CO
-          # population -- 175,584 people hold an ADC number.
-          #
-          # Inert while these args carry no --commit. It is set here so the
-          # first committing staging run does not have to discover the ceiling,
-          # and should come down to the steady state's few hundred once the
-          # backlog is written.
-          args = [
-            "--flow=co_edovo",
-            "--flow=co_work",
-            "--flow=co_cert",
-            "--flow=co_ged",
-            "--account=svc",
-            "--workers=8",
-            "--max-writes=15000",
-          ]
-          # Twelve hours, sized for the first pass rather than the steady state.
-          # That pass writes the whole backlog -- 13,885 work candidates as of
-          # 2026-09-23 -- where every later run carries only the day's new
-          # credit, on the order of a few hundred. A measured dry run over the
-          # full backlog took 2h at eight workers; a committing pass submits a
-          # form per candidate on top of that, and the flow's re-read of a
-          # continuous pathway can no longer narrow by entry date, so both are
-          # slower than the figure this was first sized against.
-          #
-          # A task that outruns its timeout dies partway. The re-read makes a
-          # resumed run write only what is still owed, so nothing is lost or
-          # doubled, but a half-finished production pass is worth avoiding for
-          # the sake of a larger number here. Cloud Run allows up to 24h.
-          timeout   = "43200s"
-          schedule  = "0 0 * * *"
-          time_zone = "Etc/UTC"
-          env       = {}
-        }
+        # TODO(OBT-22951): unpause only after CDOC confirms the cadence.
+        "us-co-continuous" = local.eomis_writeback_us_co_job
       }
       # Which eOMIS instance/secrets the running container targets.
       recidiviz_env = "staging"
@@ -118,26 +71,7 @@ locals {
           env       = {}
           paused    = true
         }
-        # Dry run: reads production eOMIS, writes nothing.
-        "us-co-continuous" = {
-          args = [
-            "--flow=co_work",
-            "--flow=co_cert",
-            "--flow=co_ged",
-            "--flow=co_edovo",
-            "--account=svc",
-            "--workers=8",
-            # Above the first pass's candidate count.
-            "--max-writes=30000",
-          ]
-          # Room for the first pass.
-          timeout = "86400s"
-          # Before CDOC's midnight export.
-          schedule  = "0 18 * * *"
-          time_zone = "America/Denver"
-          env       = {}
-          paused    = true
-        }
+        "us-co-continuous" = local.eomis_writeback_us_co_job
       }
       recidiviz_env = "production"
     }
