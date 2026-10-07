@@ -158,11 +158,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
             # Read by the CO credit writer at run time, not by a view.
             "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
-            # Pre-API CO Edovo course completions, loaded manually from a CSV and
-            # not read by any deployed view yet. TODO(CO-755): remove once the
-            # view that unions this table with the federated Edovo completions
-            # is built.
-            "us_co_edovo_pre_api_course_completions_data.course_completions",
             *COMMON_VESTIGES,
         ]
     },
@@ -179,11 +174,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_ix_supervision_tasks_record_archive",
             # Read by the CO credit writer at run time, not by a view.
             "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
-            # Pre-API CO Edovo course completions, loaded manually from a CSV and
-            # not read by any deployed view yet. TODO(CO-755): remove once the
-            # view that unions this table with the federated Edovo completions
-            # is built.
-            "us_co_edovo_pre_api_course_completions_data.course_completions",
             *COMMON_VESTIGES,
         ]
     },
