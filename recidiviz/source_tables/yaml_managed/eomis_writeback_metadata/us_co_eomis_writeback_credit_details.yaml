@@ -46,7 +46,7 @@ schema:
   - name: written_credit_units
     type: NUMERIC
     mode: NULLABLE
-    description: Days this run wrote, or would have written on a dry run. Zero for a skip, an error, or a dry run.
+    description: Days this run wrote. Zero for a skip, an error, or a dry run.
   - name: skip_reason_code
     type: STRING
     mode: NULLABLE
