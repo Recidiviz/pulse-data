@@ -284,21 +284,11 @@ function request_pam_grant {
 # silently fall back to standing access.
 #
 # The lane is `pam-engineering` (Terraform-managed in Recidiviz/recidiviz-iam;
-# requesters are s-polaris@ and s-doppler@). Callers not eligible for it fall
-# back to the legacy `pam-deploy-app` lane, so nobody loses elevation during
-# the move. Once `pam-deploy-app` is deleted the fallback finds nothing.
-# TODO(AUR-240): drop the `pam-deploy-app` fallback when that lane is retired.
+# requesters are s-polaris@ and s-doppler@).
 function request_pam_deploy_grant {
     local PROJECT_ID=$1
     local VERSION_TAG=$2
-    local ENTITLEMENT_ID="pam-engineering"
-    local GROUP_HINT="s-polaris@ or s-doppler@"
-    if ! pam_entitlement_reachable "${PROJECT_ID}" "${ENTITLEMENT_ID}" \
-            && pam_entitlement_reachable "${PROJECT_ID}" "pam-deploy-app"; then
-        ENTITLEMENT_ID="pam-deploy-app"
-        GROUP_HINT="s-pam-deploy-app@"
-    fi
-    request_pam_grant "${PROJECT_ID}" "${ENTITLEMENT_ID}" "${GROUP_HINT}" \
+    request_pam_grant "${PROJECT_ID}" "pam-engineering" "s-polaris@ or s-doppler@" \
         "Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}"
 }
 

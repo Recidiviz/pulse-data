@@ -91,8 +91,8 @@ retirement is still "empty it, then let the deploy drop the shell" — but step 
 2. **Empty the dataset.** Deleting its tables needs both halves:
    - an *allow* for `bigquery.tables.delete`. The standing `recidivizengineeringrole` does
      **not** grant it (it grants `datasets.delete` but not `tables.delete`), and neither does
-     dataset-level access on a platform-owned dataset. Request the **`pam-update-data`** lane,
-     whose `roles/bigquery.dataEditor` supplies it — in staging as well as prod.
+     dataset-level access on a platform-owned dataset. Request the **`pam-engineering`** lane,
+     whose `roles/bigquery.admin` supplies it — in staging as well as prod.
    - an exception to the *deny*: join `breakglass@`. Allow and deny are evaluated
      independently, so holding one without the other still fails. Group membership takes
      1–2 minutes to propagate; an immediate retry looks like break-glass not working.
