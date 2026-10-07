@@ -140,6 +140,26 @@ def load_all_first_order_llm_extractor_configs(
     ]
 
 
+def _lookup_extractor_config(
+    *,
+    configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]],
+    state_code: StateCode,
+    collection_name: str,
+) -> LLMExtractorConfig:
+    """Returns the extractor config for |collection_name| in |state_code| within
+    |configs_by_state|, raising with the state's known collection names if no such
+    extractor exists.
+    """
+    state_configs = configs_by_state.get(state_code, {})
+    if collection_name not in state_configs:
+        raise ValueError(
+            f"No extractor config for collection [{collection_name}] in state "
+            f"[{state_code.value}]. Known collections for this state: "
+            f"{sorted(state_configs)}."
+        )
+    return state_configs[collection_name]
+
+
 def get_first_order_llm_extractor_config(
     state_code: StateCode,
     collection_name: str,
@@ -149,16 +169,30 @@ def get_first_order_llm_extractor_config(
     |state_code| within |config_module| (the production config package by
     default), raising if no such extractor exists.
     """
-    state_configs = load_first_order_llm_extractor_configs(config_module).get(
-        state_code, {}
+    return _lookup_extractor_config(
+        configs_by_state=load_first_order_llm_extractor_configs(config_module),
+        state_code=state_code,
+        collection_name=collection_name,
     )
-    if collection_name not in state_configs:
-        raise ValueError(
-            f"No extractor config for collection [{collection_name}] in state "
-            f"[{state_code.value}]. Known collections for this state: "
-            f"{sorted(state_configs)}."
-        )
-    return state_configs[collection_name]
+
+
+def get_extractor_config(
+    state_code: StateCode,
+    collection_name: str,
+    config_module: ModuleType | None = None,
+) -> LLMExtractorConfig:
+    """Returns the resolved extractor config — first-order or generated
+    entity-resolution — for |collection_name| in |state_code| within
+    |config_module| (the production config package by default), raising if no such
+    extractor exists.
+    """
+    return _lookup_extractor_config(
+        configs_by_state=collect_all_extractor_configs_by_state(
+            config_module=config_module
+        ),
+        state_code=state_code,
+        collection_name=collection_name,
+    )
 
 
 def collect_entity_resolution_extractor_configs(

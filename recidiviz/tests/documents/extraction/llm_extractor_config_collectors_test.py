@@ -37,6 +37,7 @@ from recidiviz.documents.extraction.config_defaults import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     collect_all_extractor_configs_by_state,
     collect_entity_resolution_extractor_configs,
+    get_extractor_config,
     get_first_order_llm_extractor_config,
     get_states_with_extractor_configs,
     load_first_order_llm_extractor_configs,
@@ -386,3 +387,30 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
                 ),
             ):
                 collect_all_extractor_configs_by_state(config_module=fake_config)
+
+    def test_get_extractor_config_resolves_first_order_and_entity_resolution(
+        self,
+    ) -> None:
+        first_order = get_extractor_config(
+            StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+        self.assertEqual(_FAKE_COLLECTION_NAME, first_order.extractor_collection.name)
+        self.assertIsNone(first_order.entity_group)
+
+        entity_resolution = get_extractor_config(
+            StateCode.US_XX, FAKE_LOCATION_ER_COLLECTION_NAME, config_module=fake_config
+        )
+        self.assertEqual(
+            FAKE_LOCATION_ER_COLLECTION_NAME,
+            entity_resolution.extractor_collection.name,
+        )
+        self.assertIsNotNone(entity_resolution.entity_group)
+
+    def test_get_extractor_config_unknown_collection_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape("No extractor config for collection [NOT_A_COLLECTION]"),
+        ):
+            get_extractor_config(
+                StateCode.US_XX, "NOT_A_COLLECTION", config_module=fake_config
+            )
