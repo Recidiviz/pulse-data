@@ -176,11 +176,10 @@ RAW_DATA_WARM_POOL_READY_TIMEOUT_SECONDS = 5 * 60
 # Placeholder pods self-terminate after this long, so the pool can't hold capacity
 # forever if the teardown never runs. Comfortably above a normal run.
 RAW_DATA_WARM_POOL_POD_DEADLINE_SECONDS = 2 * 60 * 60
-# Cap on a chunking/normalization pod task. KubernetesPodOperator only times out
-# pod *scheduling*; once Running there is no timeout, so a pod whose node is
+# Cap on a chunking/normalization pod task -- a pod whose node is
 # drained mid-run would otherwise hang until the 1-day env default. This fails it
 # promptly so retries=1 can re-run it. (OBT-2245)
-RAW_DATA_POD_EXECUTION_TIMEOUT = datetime.timedelta(minutes=30)
+RAW_DATA_POD_EXECUTION_TIMEOUT = datetime.timedelta(minutes=120)
 
 
 def create_single_state_code_ingest_instance_raw_data_import_branch(
