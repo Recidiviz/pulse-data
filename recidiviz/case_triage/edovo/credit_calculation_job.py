@@ -17,8 +17,9 @@
 """The Edovo earned-time credit-calculation consumer: pool stored completions and
 hand the per-person totals to a ``PendingCreditSink``.
 
-TODO(OBT-22951): wire this into a scheduled environment against the real eOMIS
-sink. Nothing invokes it in production yet.
+TODO(CO-762): this job and ``PendingCreditSink`` are superseded by
+``CoSentenceCreditFlow`` (see CO-8) and are not invoked in production. Confirm
+still unused and delete.
 """
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.case_triage.edovo.credit_calculator import (
