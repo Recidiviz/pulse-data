@@ -26,7 +26,6 @@ from google.genai import errors, types
 
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
 from recidiviz.documents.extraction.llm_client.types import (
-    BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME,
     MAX_OUTPUT_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME,
     TEMPERATURE_EXTRACTION_REQUEST_PARAMETER_NAME,
     THINKING_BUDGET_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME,
@@ -262,7 +261,7 @@ class VertexAISyncLLMClient(SyncLLMClient):
             # the google-genai Schema type (an OpenAPI-3.0 subset that cannot
             # represent our generated schema).
             response_json_schema=request.response_json_schema,
-            labels=parameters[BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME],
+            labels=request.billing_labels,
         )
 
     def _build_result(

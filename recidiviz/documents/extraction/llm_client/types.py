@@ -46,11 +46,6 @@ MAX_OUTPUT_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME = "max_output_tokens"
 generate in its response.
 """
 
-BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME = "labels"
-"""Name of the parameter carrying the billing labels attached to each request
-for cost attribution.
-"""
-
 THINKING_BUDGET_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME = "thinking_budget_tokens"
 """Name of the tunable parameter that caps a thinking model's internal
 reasoning tokens. A value of 0 disables thinking; omitting it uses
@@ -106,10 +101,14 @@ class LLMDocumentExtractionRequest:
         )
     )
     """The generation parameters for the call — temperature, thinking budget,
-    caching, and billing labels — keyed by parameter name. Populated upstream from
-    the resolved model config; the client translates the keys it knows into the
-    provider's request.
+    caching — keyed by parameter name. Populated upstream from the resolved model
+    config; the client translates the keys it knows into the provider's request.
     """
+
+    billing_labels: dict[str, str] = attr.ib(
+        validator=attr_validators.is_dict_of(str, str)
+    )
+    """Billing labels attached to the request for cost attribution."""
 
 
 @attr.define(frozen=True, kw_only=True)

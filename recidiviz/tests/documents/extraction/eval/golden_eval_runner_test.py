@@ -62,7 +62,6 @@ from recidiviz.documents.extraction.extraction_results_columns import (
     EXTRACTION_JOB_ID_COLUMN_NAME,
 )
 from recidiviz.documents.extraction.llm_client.types import (
-    BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME,
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionRequest,
     LLMDocumentExtractionTokenCounts,
@@ -508,9 +507,7 @@ class GoldenEvalRunnerTest(TestCase):
                 "model": "acme_large_deterministic",
                 "requester": _REQUESTER,
             },
-            request.request_parameters[
-                BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME
-            ],
+            request.billing_labels,
         )
 
     def test_billing_labels_sanitized(self) -> None:

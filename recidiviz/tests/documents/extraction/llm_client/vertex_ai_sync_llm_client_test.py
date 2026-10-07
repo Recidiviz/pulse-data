@@ -47,11 +47,6 @@ _DEFAULT_REQUEST_PARAMETERS: dict[str, Any] = {
     "top_p": 1.0,
     "max_output_tokens": 8192,
     "thinking_budget_tokens": 0,
-    "labels": {
-        "state_code": "us_xx",
-        "environment": "staging",
-        "requester": "test_user",
-    },
 }
 
 _DEFAULT_LEVEL_REQUEST_PARAMETERS: dict[str, Any] = {
@@ -59,11 +54,12 @@ _DEFAULT_LEVEL_REQUEST_PARAMETERS: dict[str, Any] = {
     "top_p": 1.0,
     "max_output_tokens": 8192,
     "thinking_level": "MINIMAL",
-    "labels": {
-        "state_code": "us_xx",
-        "environment": "staging",
-        "requester": "test_user",
-    },
+}
+
+_BILLING_LABELS = {
+    "state_code": "us_xx",
+    "environment": "staging",
+    "requester": "test_user",
 }
 
 
@@ -84,6 +80,7 @@ def _request(
             if request_parameters is None
             else request_parameters
         ),
+        billing_labels=_BILLING_LABELS,
     )
 
 
@@ -271,11 +268,11 @@ class VertexAISyncLLMClientTest(TestCase):
         )
 
     def test_missing_required_parameter_raises(self) -> None:
-        # temperature/top_p/max_output_tokens/labels are required; a request
-        # missing any of them fails loudly with a KeyError rather than sending a
-        # silent None to the SDK.
+        # temperature/top_p/max_output_tokens are required; a request missing any
+        # of them fails loudly with a KeyError rather than sending a silent None to
+        # the SDK.
         self.mock_generate_content.return_value = _response()
-        for missing_key in ("temperature", "top_p", "max_output_tokens", "labels"):
+        for missing_key in ("temperature", "top_p", "max_output_tokens"):
             with self.subTest(missing_key=missing_key):
                 parameters = {
                     k: v

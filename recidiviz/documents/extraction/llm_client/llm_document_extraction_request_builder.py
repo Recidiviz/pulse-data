@@ -31,14 +31,10 @@ from recidiviz.cloud_storage.gcs_file_system import (
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.document_text_source import DocumentTextSource
-from recidiviz.documents.extraction.llm_client.types import (
-    BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME,
-    LLMDocumentExtractionRequest,
-)
+from recidiviz.documents.extraction.llm_client.types import LLMDocumentExtractionRequest
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
-from recidiviz.documents.extraction.models.llm_model_registry import LLMModelConfig
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
 )
@@ -69,24 +65,14 @@ class LLMDocumentExtractionRequestBuilder:
     response_json_schema."""
 
     request_parameters: dict[str, Any] = attr.ib(validator=attr_validators.is_dict)
-    """The generation parameters — temperature, thinking budget, caching, billing
-    labels — keyed by parameter name."""
+    """The generation parameters — temperature, thinking budget, caching — keyed by
+    parameter name."""
 
-    @staticmethod
-    def build_request_parameters(
-        *, model_config: LLMModelConfig, labels: dict[str, str]
-    ) -> dict[str, Any]:
-        """Returns the request_parameters for an extractor: |model_config|'s
-        resolved generation parameters (temperature, thinking budget, etc.) plus
-        the billing |labels| for cost attribution, keyed by parameter name.
-
-        The billing-labels key is always present (mapped to |labels|, empty or
-        not), never omitted.
-        """
-        return {
-            **model_config.resolved_parameter_values,
-            BILLING_LABELS_EXTRACTION_REQUEST_PARAMETER_NAME: labels,
-        }
+    billing_labels: dict[str, str] = attr.ib(
+        validator=attr_validators.is_dict_of(str, str)
+    )
+    """Billing labels attached to every request this builder produces, for cost
+    attribution."""
 
     def build_request(
         self, *, document: DocumentTextSource
@@ -126,6 +112,7 @@ class LLMDocumentExtractionRequestBuilder:
             document_text=document_text,
             response_json_schema=self.response_json_schema,
             request_parameters=self.request_parameters,
+            billing_labels=self.billing_labels,
         )
 
     @classmethod
@@ -136,15 +123,14 @@ class LLMDocumentExtractionRequestBuilder:
         billing_labels: dict[str, str],
     ) -> "LLMDocumentExtractionRequestBuilder":
         """Returns the builder for |config|: its rendered instructions prompt, its
-        collection's generated JSON schema, and the request parameters its model
-        config resolves to.
+        collection's generated JSON schema, the generation parameters its model
+        config resolves to, and the |billing_labels| for cost attribution.
         """
         return cls(
             instructions_prompt=config.instructions_prompt,
             response_json_schema=config.extractor_collection.generate_json_schema(),
-            request_parameters=cls.build_request_parameters(
-                model_config=config.model_config, labels=billing_labels
-            ),
+            request_parameters=config.model_config.resolved_parameter_values,
+            billing_labels=billing_labels,
         )
 
 

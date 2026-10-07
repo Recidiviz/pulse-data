@@ -27,14 +27,10 @@ from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_b
     LLMDocumentExtractionRequestError,
 )
 from recidiviz.documents.extraction.llm_client.types import LLMDocumentExtractionRequest
-from recidiviz.documents.extraction.models.llm_model_registry import (
-    load_llm_model_registry,
-)
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     fake_first_order_extractor_config,
 )
@@ -51,7 +47,6 @@ _RESPONSE_JSON_SCHEMA: dict[str, Any] = {
 }
 _REQUEST_PARAMETERS: dict[str, Any] = {
     "temperature": 0.0,
-    "labels": {"state_code": "us_xx"},
 }
 _BILLING_LABELS = {"state_code": "us_xx"}
 _DOCUMENT_CONTENTS_ID = "a" * 64
@@ -65,6 +60,7 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
             instructions_prompt=_INSTRUCTIONS_PROMPT,
             response_json_schema=_RESPONSE_JSON_SCHEMA,
             request_parameters=_REQUEST_PARAMETERS,
+            billing_labels=_BILLING_LABELS,
         )
 
     def test_build_request_for_text_assembles_request(self) -> None:
@@ -80,6 +76,7 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
                 document_text="Client started a new job.",
                 response_json_schema=_RESPONSE_JSON_SCHEMA,
                 request_parameters=_REQUEST_PARAMETERS,
+                billing_labels=_BILLING_LABELS,
             ),
             request,
         )
@@ -110,8 +107,8 @@ class LLMDocumentExtractionRequestBuilderTest(TestCase):
                 request_parameters={
                     "temperature": 0.0,
                     "thinking_budget_tokens": 0,
-                    "labels": _BILLING_LABELS,
                 },
+                billing_labels=_BILLING_LABELS,
             ),
             builder,
         )
@@ -126,6 +123,7 @@ class GCSDocumentTextSourceTest(TestCase):
             instructions_prompt=_INSTRUCTIONS_PROMPT,
             response_json_schema=_RESPONSE_JSON_SCHEMA,
             request_parameters=_REQUEST_PARAMETERS,
+            billing_labels=_BILLING_LABELS,
         )
 
     def _document(
@@ -176,6 +174,7 @@ class GCSDocumentTextSourceTest(TestCase):
                 document_text="Client started a new job.",
                 response_json_schema=_RESPONSE_JSON_SCHEMA,
                 request_parameters=_REQUEST_PARAMETERS,
+                billing_labels=_BILLING_LABELS,
             ),
             request,
         )
@@ -220,39 +219,3 @@ class GCSDocumentTextSourceTest(TestCase):
         self.assertIsNone(
             self.builder.build_request(document=self._document(_DOCUMENT_CONTENTS_ID))
         )
-
-
-class BuildRequestParametersTest(TestCase):
-    """Tests for LLMDocumentExtractionRequestBuilder.build_request_parameters."""
-
-    def test_flattens_model_params_and_includes_labels(self) -> None:
-        # ACME_LARGE_NO_THINKING declares temperature and thinking_budget_tokens.
-        model_config = load_llm_model_registry(fake_config).get_model_config(
-            "ACME_LARGE_NO_THINKING"
-        )
-
-        parameters = LLMDocumentExtractionRequestBuilder.build_request_parameters(
-            model_config=model_config, labels={"requester": "alice"}
-        )
-
-        self.assertEqual(
-            {
-                "temperature": 0.5,
-                "thinking_budget_tokens": 0,
-                "labels": {"requester": "alice"},
-            },
-            parameters,
-        )
-
-    def test_labels_present_even_when_empty(self) -> None:
-        # The provider client reads the labels key unconditionally, so it must be
-        # present even with no labels supplied.
-        model_config = load_llm_model_registry(fake_config).get_model_config(
-            "ACME_LARGE_NO_THINKING"
-        )
-
-        parameters = LLMDocumentExtractionRequestBuilder.build_request_parameters(
-            model_config=model_config, labels={}
-        )
-
-        self.assertEqual({}, parameters["labels"])
