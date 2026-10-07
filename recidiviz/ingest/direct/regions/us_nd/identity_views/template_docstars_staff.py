@@ -83,7 +83,11 @@ FROM (
         FNAME,
         -- Null out emails for entries like "Bismarck CS", which sometimes appear
         -- as terminating officers in supervision periods, but are not real people.
-        IF(LOGINNAME LIKE '%% %%', NULL, CONCAT(LOWER(LOGINNAME), '@nd.gov')) AS EMAIL,
+        CASE WHEN
+            LOGINNAME LIKE '%% %%' THEN NULL
+            WHEN LOWER(LOGINNAME) LIKE '%@nd.gov' THEN LOWER(LOGINNAME)
+            ELSE CONCAT(LOWER(LOGINNAME), '@nd.gov')
+        END AS EMAIL,
         RecDate,
         ROW_NUMBER() OVER (
             PARTITION BY CAST(OFFICER AS INT64)
