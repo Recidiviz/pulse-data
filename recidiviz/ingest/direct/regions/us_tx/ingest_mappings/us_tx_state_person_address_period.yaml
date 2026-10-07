@@ -53,6 +53,9 @@ output:
                 StatePersonHousingStatusType.FACILITY:
                   - "Facility"
                   - "Treatment facility"
+                  # Not a TDCJ residence type; the ingest view sets this for addresses
+                  # at the Texas Civil Commitment Center.
+                  - "Texas Civil Commitment Center"
                 StatePersonHousingStatusType.EXTERNAL_UNKNOWN:
                   - "Other"
                 StatePersonHousingStatusType.INTERNAL_UNKNOWN:

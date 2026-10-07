@@ -54,6 +54,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         electronic_monitoring_for_at_least_60_days.VIEW_BUILDER,
         at_least_30_days_since_last_rejection_for_em_removal.VIEW_BUILDER,
+        # TODO(TX-1100): Remove if we decide on start/end EM equipment service dates
         at_least_60_days_since_facility_or_temporary_housing_ended.VIEW_BUILDER,
         at_least_60_days_since_negative_drug_test_streak_began.VIEW_BUILDER,
         no_supervision_violation_within_30_days.VIEW_BUILDER,
