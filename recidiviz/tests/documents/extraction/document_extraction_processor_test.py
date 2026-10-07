@@ -14,11 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the sandbox_document_extraction_processor."""
+"""Tests for the document_extraction_processor."""
 
 import datetime
 from unittest import TestCase, mock
 
+from recidiviz.documents.extraction.document_extraction_processor import (
+    ExtractionRunSummary,
+    read_expected_entry_nums_by_document,
+)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
 )
@@ -49,10 +53,6 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     fake_entity_resolution_extractor_config,
     fake_first_order_extractor_config,
     patch_fake_entity_resolution_model_config_name,
-)
-from recidiviz.tools.documents.sandbox_document_extraction_processor import (
-    SandboxExtractionSummary,
-    read_expected_entry_nums_by_document,
 )
 from recidiviz.utils.types import assert_type
 
@@ -183,11 +183,11 @@ class ReadExpectedEntryNumsByDocumentTest(BigQueryEmulatorTestCase):
         run_query.assert_not_called()
 
 
-class SandboxExtractionSummaryTest(TestCase):
-    """Tests for SandboxExtractionSummary's console rendering."""
+class ExtractionRunSummaryTest(TestCase):
+    """Tests for ExtractionRunSummary's console rendering."""
 
     def test_log_renders_every_section(self) -> None:
-        summary = SandboxExtractionSummary(
+        summary = ExtractionRunSummary(
             extractor_config_name="FAKE_EXTRACTOR_COLLECTION",
             session_summary=SyncLLMDocumentExtractionSessionSummary(
                 processed=3,
@@ -211,7 +211,7 @@ class SandboxExtractionSummaryTest(TestCase):
 
         output = "\n".join(logs.output)
         for fragment in [
-            "=== Sandbox extraction complete: FAKE_EXTRACTOR_COLLECTION ===",
+            "=== Extraction complete: FAKE_EXTRACTOR_COLLECTION ===",
             "LLM requests phase took 1m 1s.",
             "❌ Empty text in GCS (skipped): 1",
             "❌ Failed to build LLM request: 1",

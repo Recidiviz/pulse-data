@@ -107,6 +107,10 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
+from recidiviz.documents.extraction.document_extraction_processor import (
+    DocumentExtractionProcessor,
+    ExtractionRunSummary,
+)
 from recidiviz.documents.extraction.llm_client.vertex_ai_sync_llm_client import (
     VertexAISyncLLMClient,
 )
@@ -131,10 +135,6 @@ from recidiviz.documents.store.document_store_sandbox_context import (
 from recidiviz.ingest.direct.external_id_type_helpers import validate_external_id_types
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.documents.sandbox_document_extraction_processor import (
-    DocumentExtractionProcessor,
-    SandboxExtractionSummary,
-)
 from recidiviz.tools.documents.sandbox_extraction_bq_helpers import (
     PROMOTABLE_SANDBOX_PREFIX,
     create_document_store_tables,
@@ -302,7 +302,7 @@ def run_extraction(
     table_expiration_ms: int,
     bq_client: BigQueryClient,
     fs: GCSFileSystem,
-) -> SandboxExtractionSummary | None:
+) -> ExtractionRunSummary | None:
     """Creates one config's result tables and runs its extraction thread, returning
     the extraction's summary (None if no work). Reads input from wherever
     |document_store_sandbox| maps the config's input collection; writes results under
@@ -367,7 +367,7 @@ def run_entity_resolution(
     table_expiration_ms: int,
     bq_client: BigQueryClient,
     fs: GCSFileSystem,
-) -> list[SandboxExtractionSummary]:
+) -> list[ExtractionRunSummary]:
     """Runs the second-order entity-resolution extraction, one |er_config| per entity
     group declared by the first-order config: for each, generate + upload the
     composite documents into the sandbox store and run the ER extraction thread over
@@ -378,7 +378,7 @@ def run_entity_resolution(
         logging.info("First-order collection declares no entity groups; no ER pass.")
         return []
 
-    er_summaries: list[SandboxExtractionSummary] = []
+    er_summaries: list[ExtractionRunSummary] = []
     for er_config in er_configs:
         # ER composites are always generated into the sandbox, so every ER config
         # seeds its document store before extracting.
@@ -551,7 +551,7 @@ def parse_arguments() -> argparse.Namespace:
 
 def run_sandbox_extraction(
     args: argparse.Namespace,
-) -> list[SandboxExtractionSummary]:
+) -> list[ExtractionRunSummary]:
     """Runs one sandbox extraction end-to-end: the first-order extraction thread
     (reading input from the production document store), the first-order view deploy,
     then the entity-resolution pass. Returns one summary per phase that did work;
@@ -666,7 +666,7 @@ def run_sandbox_extraction(
             bq_client=bq_client,
         )
 
-    summaries: list[SandboxExtractionSummary] = []
+    summaries: list[ExtractionRunSummary] = []
     if first_order_summary is not None:
         summaries.append(first_order_summary)
     summaries.extend(er_summaries)

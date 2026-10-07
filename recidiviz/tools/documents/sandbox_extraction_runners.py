@@ -22,6 +22,10 @@ from datetime import datetime, timezone
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.document_extraction_processor import (
+    DocumentExtractionProcessor,
+    ExtractionRunSummary,
+)
 from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
     LLMExtractionEligibleDocumentQueryBuilder,
 )
@@ -48,10 +52,6 @@ from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
 from recidiviz.documents.store.record_document_upload_results import (
     DocumentUploadResultRecorder,
-)
-from recidiviz.tools.documents.sandbox_document_extraction_processor import (
-    DocumentExtractionProcessor,
-    SandboxExtractionSummary,
 )
 
 # Refuse to start a run whose job holds more than this many documents.
@@ -191,7 +191,7 @@ class SandboxExtractionRunner:
     def state_code(self) -> StateCode:
         return self.config.state_code
 
-    def run(self) -> SandboxExtractionSummary | None:
+    def run(self) -> ExtractionRunSummary | None:
         """Runs the extraction thread end-to-end and returns the run's summary, or
         None if there was no work to do (no eligible documents, or a resumed job
         whose documents all finished before a crash).

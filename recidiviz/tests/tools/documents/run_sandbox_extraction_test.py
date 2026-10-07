@@ -35,6 +35,9 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.document_extraction_processor import (
+    ExtractionRunSummary,
+)
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
     EntityResolutionDocumentCollectionConfig,
 )
@@ -132,9 +135,6 @@ from recidiviz.tests.documents.store.document_store_test_utils import (
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.tests.tools.documents import fixtures
 from recidiviz.tools.documents import run_sandbox_extraction
-from recidiviz.tools.documents.sandbox_document_extraction_processor import (
-    SandboxExtractionSummary,
-)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.metadata import local_project_id_override
@@ -473,7 +473,7 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
         *,
         document_limit: int | None = None,
         promote_results: bool = False,
-    ) -> list[SandboxExtractionSummary]:
+    ) -> list[ExtractionRunSummary]:
         # project_id() reads the metadata server, which is disabled under test; the
         # override points it at the emulator project the way main() does locally.
         with local_project_id_override(BQ_EMULATOR_PROJECT_ID):

@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Runs a sandbox extraction job's pending documents through the LLM for one
-extractor: builds a request per document, runs them, classifies each result, and
-flushes the results to BigQuery and Postgres in chunks, tallying the outcome into
-a run summary as it goes."""
+"""Runs a job's pending documents through the LLM for one extractor: builds a
+request per document, runs them, classifies each result, and flushes the results
+to BigQuery and Postgres in chunks, tallying the outcome into a run summary as it
+goes."""
 
 import logging
 import time
@@ -158,10 +158,10 @@ class _ExtractionProgressLogger:
 
 
 @attr.define(kw_only=True)
-class _SandboxExtractionSessionDelegate:
-    """Routes the extraction session's per-document events into the sandbox run's
-    logging and progress reporting. Every event is survivable: the session counts
-    the document and moves on rather than aborting the whole run.
+class _ExtractionSessionDelegate:
+    """Routes the extraction session's per-document events into the run's logging
+    and progress reporting. Every event is survivable: the session counts the
+    document and moves on rather than aborting the whole run.
     """
 
     progress: _ExtractionProgressLogger = attr.ib(
@@ -173,9 +173,9 @@ class _SandboxExtractionSessionDelegate:
     def on_empty_document(self, *, document_contents_id: str) -> None:
         """Logs the skip and drops the document from the progress denominator.
 
-        An empty-text document is skipped without a terminal result_type, so under
-        --keep-postgres it is re-selected into a fresh job on every resume
-        (re-read, re-skipped, job marked SUCCESS) and never converges — see
+        An empty-text document is skipped without a terminal result_type, so it is
+        re-selected into a fresh job on every subsequent run for this extractor
+        version (re-read, re-skipped, job marked SUCCESS) and never converges — see
         TODO(OBT-42807) in the session's request generator.
         """
         logging.info("Document [%s] has empty text; skipping.", document_contents_id)
@@ -204,7 +204,7 @@ class _SandboxExtractionSessionDelegate:
 
 
 @attr.define(frozen=True, kw_only=True)
-class SandboxExtractionSummary:
+class ExtractionRunSummary:
     """The tally of one extraction thread's run, paired with the extractor
     collection it covers so the run's first-order and per-entity-group phases can
     each be printed under their own header rather than rolled into one total."""
@@ -230,9 +230,7 @@ class SandboxExtractionSummary:
     def log(self) -> None:
         """Logs the run's summary under a header naming the extractor collection
         it covers."""
-        logging.info(
-            "=== Sandbox extraction complete: %s ===", self.extractor_config_name
-        )
+        logging.info("=== Extraction complete: %s ===", self.extractor_config_name)
         minutes, seconds = divmod(round(self.llm_phase_seconds), 60)
         logging.info("LLM requests phase took %dm %ds.", minutes, seconds)
 
@@ -319,10 +317,10 @@ def read_expected_entry_nums_by_document(
 
 
 class DocumentExtractionProcessor:
-    """Runs a job's pending documents through the LLM for one extractor and
-    sandbox: builds a request per document, runs them, classifies each result, and
-    flushes the results to BigQuery and Postgres in chunks. Returns a summary
-    wrapping the extraction session's outcome tally.
+    """Runs a job's pending documents through the LLM for one extractor: builds a
+    request per document, runs them, classifies each result, and flushes the
+    results to BigQuery and Postgres in chunks. Returns a summary wrapping the
+    extraction session's outcome tally.
     """
 
     def __init__(
@@ -330,14 +328,15 @@ class DocumentExtractionProcessor:
         *,
         # The narrowed extractor config every stage reads from.
         config: LLMExtractorConfig,
-        # Prefix scoping the BQ result datasets this processor writes.
-        results_sandbox_prefix: str,
+        # Prefix scoping the BQ result datasets this processor writes, or None to
+        # write the production result tables.
+        results_sandbox_prefix: str | None,
         # The sandbox document store its request builder reads each document's text
         # from, or None to read the production document store.
         document_store_sandbox: DocumentStoreSandboxContext | None,
         # Billing labels attached to each Vertex AI request.
         labels: dict[str, str],
-        # Client for the sandbox result tables.
+        # Client for the result tables.
         bq_client: BigQueryClient,
         # Filesystem the document text is read from.
         fs: GCSFileSystem,
@@ -374,7 +373,7 @@ class DocumentExtractionProcessor:
 
     def process(
         self, *, job_id: str, pending_documents: list[LLMExtractionJobDocument]
-    ) -> SandboxExtractionSummary:
+    ) -> ExtractionRunSummary:
         """Builds a request per pending document, runs them through the LLM,
         classifies each result, and flushes the results to BigQuery and Postgres
         in chunks. Returns the summary of the processed documents."""
@@ -407,8 +406,8 @@ class DocumentExtractionProcessor:
         # Progress is reported through the session's per-result event, which fires
         # as each result completes — decoupling how often the run says something
         # from how often it flushes to BigQuery. Tying the two together meant a run
-        # shorter than one persist chunk (the common sandbox case) printed no
-        # progress at all until it finished.
+        # shorter than one persist chunk printed no progress at all until it
+        # finished.
         progress = _ExtractionProgressLogger(
             total_documents=total_documents,
             interval_seconds=self.progress_log_interval_seconds,
@@ -418,7 +417,7 @@ class DocumentExtractionProcessor:
             job_id=job_id,
             billing_labels=self.labels,
             sync_client=self.sync_client,
-            delegate=_SandboxExtractionSessionDelegate(progress=progress),
+            delegate=_ExtractionSessionDelegate(progress=progress),
             expected_entry_nums_source=(
                 None
                 if expected_entry_nums_by_document is None
@@ -438,7 +437,7 @@ class DocumentExtractionProcessor:
         # Flush the final partial chunk.
         self._write_results_to_bq_and_postgres(results=chunk)
         progress.log_final()
-        return SandboxExtractionSummary(
+        return ExtractionRunSummary(
             extractor_config_name=self.config.extractor_collection.name,
             session_summary=session.finish_session(),
             llm_phase_seconds=progress.elapsed_seconds,

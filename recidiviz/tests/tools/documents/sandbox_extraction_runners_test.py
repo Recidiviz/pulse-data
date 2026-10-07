@@ -35,6 +35,10 @@ from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobResultType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.document_extraction_processor import (
+    DocumentExtractionProcessor,
+    ExtractionRunSummary,
+)
 from recidiviz.documents.extraction.extraction_results_columns import (
     EXTRACTION_JOB_ID_COLUMN_NAME,
     RESULT_DATETIME_UTC_COLUMN_NAME,
@@ -117,10 +121,6 @@ from recidiviz.tests.documents.store.document_store_test_utils import (
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.tools.documents import fixtures
 from recidiviz.tools.documents import sandbox_extraction_runners
-from recidiviz.tools.documents.sandbox_document_extraction_processor import (
-    DocumentExtractionProcessor,
-    SandboxExtractionSummary,
-)
 from recidiviz.tools.documents.sandbox_extraction_runners import (
     SandboxDocumentStoreRunner,
     SandboxExtractionRunner,
@@ -330,7 +330,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         persist_chunk_size: int = 1000,
         request_build_concurrency: int = 4,
         progress_log_interval_seconds: float = 0.0,
-    ) -> SandboxExtractionSummary | None:
+    ) -> ExtractionRunSummary | None:
         # Drives just the extraction thread against the seeded result and doc-store
         # tables; the table-create, upload, and view-deploy steps live in
         # run_sandbox_extraction and are not exercised here.
@@ -444,7 +444,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
 
         # Both documents succeed, so their token counts are summed across the run.
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
@@ -509,7 +509,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             summary = self._run(self._fake_client(), request_build_concurrency=2)
 
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
@@ -573,7 +573,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             [len(call.kwargs["results"]) for call in persist_spy.call_args_list],
         )
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
@@ -609,7 +609,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # An LLM-request-level error is counted separately from a validation
         # failure. The error result carries no usage, so no tokens are summed.
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
@@ -670,7 +670,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # so they land in failed_validation, not failed_llm_request. The requests'
         # token counts are still summed across the run.
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
@@ -726,7 +726,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # doc-a processed and succeeded (contributing its token counts); doc-b
         # could not be assembled into a request.
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=1,
@@ -780,7 +780,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         # doc-a has empty text and is skipped before the LLM; doc-b processes and
         # succeeds, contributing its token counts.
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=1,
@@ -854,7 +854,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
         with mock.patch.object(LLMExtractionJobManager, "mark_job_completed"):
             first_summary = self._run(self._fake_client())
         self.assertEqual(
-            SandboxExtractionSummary(
+            ExtractionRunSummary(
                 extractor_config_name=_COLLECTION_NAME,
                 session_summary=SyncLLMDocumentExtractionSessionSummary(
                     processed=2,
