@@ -2817,7 +2817,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.project_patcher.stop()
         self.ingest_states_patcher.stop()
         for patcher in self.region_module_patch:
-            patcher.start()
+            patcher.stop()
         # operators ---
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
