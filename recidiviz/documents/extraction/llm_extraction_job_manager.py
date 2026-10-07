@@ -296,9 +296,32 @@ class LLMExtractionJobManager:
         document_filter_id: str,
         eligible_documents: list[LLMExtractionEligibleDocumentRecord],
     ) -> None:
+        """Writes to `llm_extraction_eligible_document` and, for documents never
+        seen before, `llm_extraction_eligible_document_metadata`. Opens and
+        commits its own transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            self.record_eligible_documents_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
+                document_filter_id=document_filter_id,
+                eligible_documents=eligible_documents,
+            )
+
+    def record_eligible_documents_with_session(
+        self,
+        session: Session,
+        *,
+        state_code: StateCode,
+        extractor_version_id: str,
+        document_filter_id: str,
+        eligible_documents: list[LLMExtractionEligibleDocumentRecord],
+    ) -> None:
         """Writes to `llm_extraction_eligible_document` (insert-if-absent per
         (extractor_version, filter, document)) and, for documents never seen
-        before, `llm_extraction_eligible_document_metadata`.
+        before, `llm_extraction_eligible_document_metadata`. Runs within
+        |session|; does not commit.
 
         Idempotent: re-recording the same documents adds no duplicate rows, and
         a metadata row is written only the first time a document is seen.
@@ -307,117 +330,138 @@ class LLMExtractionJobManager:
             return
 
         now = datetime.datetime.now(tz=datetime.UTC)
-        with SessionFactory.using_database(self.database_key) as session:
-            metadata_rows = [
-                {
-                    schema.LLMExtractionEligibleDocumentMetadata.state_code: state_code.value,
-                    schema.LLMExtractionEligibleDocumentMetadata.document_contents_id: doc.document_contents_id,
-                    schema.LLMExtractionEligibleDocumentMetadata.document_length_bytes: doc.document_length_bytes,
-                    schema.LLMExtractionEligibleDocumentMetadata.document_update_datetime: doc.document_update_datetime,
-                    schema.LLMExtractionEligibleDocumentMetadata.row_creation_datetime_utc: now,
-                }
-                for doc in eligible_documents
-            ]
-            session.execute(
-                insert(schema.LLMExtractionEligibleDocumentMetadata)
-                .values(metadata_rows)
-                .on_conflict_do_nothing(
-                    constraint="llm_extraction_eligible_document_metadata_pkey",
-                )
+        metadata_rows = [
+            {
+                schema.LLMExtractionEligibleDocumentMetadata.state_code: state_code.value,
+                schema.LLMExtractionEligibleDocumentMetadata.document_contents_id: doc.document_contents_id,
+                schema.LLMExtractionEligibleDocumentMetadata.document_length_bytes: doc.document_length_bytes,
+                schema.LLMExtractionEligibleDocumentMetadata.document_update_datetime: doc.document_update_datetime,
+                schema.LLMExtractionEligibleDocumentMetadata.row_creation_datetime_utc: now,
+            }
+            for doc in eligible_documents
+        ]
+        session.execute(
+            insert(schema.LLMExtractionEligibleDocumentMetadata)
+            .values(metadata_rows)
+            .on_conflict_do_nothing(
+                constraint="llm_extraction_eligible_document_metadata_pkey",
             )
+        )
 
-            eligible_rows = [
-                {
-                    schema.LLMExtractionEligibleDocument.state_code: state_code.value,
-                    schema.LLMExtractionEligibleDocument.extractor_version_id: extractor_version_id,
-                    schema.LLMExtractionEligibleDocument.document_filter_id: document_filter_id,
-                    schema.LLMExtractionEligibleDocument.document_contents_id: doc.document_contents_id,
-                    schema.LLMExtractionEligibleDocument.row_creation_datetime_utc: now,
-                }
-                for doc in eligible_documents
-            ]
-            session.execute(
-                insert(schema.LLMExtractionEligibleDocument)
-                .values(eligible_rows)
-                .on_conflict_do_nothing(
-                    constraint="llm_extraction_eligible_document_pkey",
-                )
+        eligible_rows = [
+            {
+                schema.LLMExtractionEligibleDocument.state_code: state_code.value,
+                schema.LLMExtractionEligibleDocument.extractor_version_id: extractor_version_id,
+                schema.LLMExtractionEligibleDocument.document_filter_id: document_filter_id,
+                schema.LLMExtractionEligibleDocument.document_contents_id: doc.document_contents_id,
+                schema.LLMExtractionEligibleDocument.row_creation_datetime_utc: now,
+            }
+            for doc in eligible_documents
+        ]
+        session.execute(
+            insert(schema.LLMExtractionEligibleDocument)
+            .values(eligible_rows)
+            .on_conflict_do_nothing(
+                constraint="llm_extraction_eligible_document_pkey",
             )
+        )
 
     def get_document_contents_ids_needing_processing(
         self, *, state_code: StateCode, extractor_version_id: str
     ) -> list[str]:
+        """Returns the eligible documents that lack a terminal result across prior
+        jobs for this extractor version. Opens and commits its own transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.get_document_contents_ids_needing_processing_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
+            )
+
+    def get_document_contents_ids_needing_processing_with_session(
+        self, session: Session, *, state_code: StateCode, extractor_version_id: str
+    ) -> list[str]:
         """Returns the eligible documents that lack a terminal result across
-        prior jobs for this extractor version — the input to `create_job`.
+        prior jobs for this extractor version — the input to `create_job`. Runs
+        within |session|; does not commit.
 
         The eligible-documents x job-documents anti-join runs entirely in SQL;
         the eligible set grows without bound over an extractor's lifetime, so it
         is never diffed in memory.
         """
-        with SessionFactory.using_database(self.database_key) as session:
-            terminal_document_ids = (
-                session.query(schema.LLMExtractionJobDocument.document_contents_id)
-                .join(
-                    schema.LLMExtractionJob,
-                    and_(
-                        schema.LLMExtractionJob.state_code
-                        == schema.LLMExtractionJobDocument.state_code,
-                        schema.LLMExtractionJob.job_id
-                        == schema.LLMExtractionJobDocument.job_id,
-                    ),
-                )
-                .filter(
-                    schema.LLMExtractionJobDocument.state_code == state_code.value,
-                    schema.LLMExtractionJob.extractor_version_id
-                    == extractor_version_id,
-                    schema.LLMExtractionJobDocument.result_type.in_(
-                        [t.value for t in TERMINAL_JOB_DOCUMENT_RESULT_TYPES]
-                    ),
-                )
-                .scalar_subquery()
+        terminal_document_ids = (
+            session.query(schema.LLMExtractionJobDocument.document_contents_id)
+            .join(
+                schema.LLMExtractionJob,
+                and_(
+                    schema.LLMExtractionJob.state_code
+                    == schema.LLMExtractionJobDocument.state_code,
+                    schema.LLMExtractionJob.job_id
+                    == schema.LLMExtractionJobDocument.job_id,
+                ),
             )
+            .filter(
+                schema.LLMExtractionJobDocument.state_code == state_code.value,
+                schema.LLMExtractionJob.extractor_version_id == extractor_version_id,
+                schema.LLMExtractionJobDocument.result_type.in_(
+                    [t.value for t in TERMINAL_JOB_DOCUMENT_RESULT_TYPES]
+                ),
+            )
+            .scalar_subquery()
+        )
 
-            needing_processing = (
-                session.query(schema.LLMExtractionEligibleDocument.document_contents_id)
-                .filter(
-                    schema.LLMExtractionEligibleDocument.state_code == state_code.value,
-                    schema.LLMExtractionEligibleDocument.extractor_version_id
-                    == extractor_version_id,
-                    schema.LLMExtractionEligibleDocument.document_contents_id.notin_(
-                        terminal_document_ids
-                    ),
-                )
-                .distinct()
-                .all()
+        needing_processing = (
+            session.query(schema.LLMExtractionEligibleDocument.document_contents_id)
+            .filter(
+                schema.LLMExtractionEligibleDocument.state_code == state_code.value,
+                schema.LLMExtractionEligibleDocument.extractor_version_id
+                == extractor_version_id,
+                schema.LLMExtractionEligibleDocument.document_contents_id.notin_(
+                    terminal_document_ids
+                ),
             )
-            return [
-                document_contents_id for (document_contents_id,) in needing_processing
-            ]
+            .distinct()
+            .all()
+        )
+        return [document_contents_id for (document_contents_id,) in needing_processing]
 
     def get_open_job(
         self, *, state_code: StateCode, extractor_version_id: str
     ) -> LLMExtractionJob | None:
         """Returns the open (not-yet-completed) job for this extractor version, or
-        None. At most one exists — enforced by the
-        `one_open_llm_extraction_job_per_extractor_version` partial unique index,
-        which is also why callers resume it rather than create another.
+        None. Opens and commits its own transaction.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            job = (
-                session.query(schema.LLMExtractionJob)
-                .filter(
-                    schema.LLMExtractionJob.state_code == state_code.value,
-                    schema.LLMExtractionJob.extractor_version_id
-                    == extractor_version_id,
-                    schema.LLMExtractionJob.completion_datetime_utc.is_(None),
-                )
-                .one_or_none()
+            return self.get_open_job_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
             )
-            if job is None:
-                return None
-            return convert_schema_object_to_entity(
-                job, LLMExtractionJob, populate_direct_back_edges=False
+
+    def get_open_job_with_session(
+        self, session: Session, *, state_code: StateCode, extractor_version_id: str
+    ) -> LLMExtractionJob | None:
+        """Returns the open (not-yet-completed) job for this extractor version, or
+        None. At most one exists — enforced by the
+        `one_open_llm_extraction_job_per_extractor_version` partial unique index,
+        which is also why callers resume it rather than create another. Runs
+        within |session|; does not commit.
+        """
+        job = (
+            session.query(schema.LLMExtractionJob)
+            .filter(
+                schema.LLMExtractionJob.state_code == state_code.value,
+                schema.LLMExtractionJob.extractor_version_id == extractor_version_id,
+                schema.LLMExtractionJob.completion_datetime_utc.is_(None),
             )
+            .one_or_none()
+        )
+        if job is None:
+            return None
+        return convert_schema_object_to_entity(
+            job, LLMExtractionJob, populate_direct_back_edges=False
+        )
 
     def create_job(
         self,
@@ -427,7 +471,28 @@ class LLMExtractionJobManager:
         document_contents_ids: list[str],
     ) -> LLMExtractionJob:
         """Writes the `llm_extraction_job` row and one `llm_extraction_job_document`
-        row per document, returning the created job.
+        row per document, returning the created job. Opens and commits its own
+        transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.create_job_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
+                document_contents_ids=document_contents_ids,
+            )
+
+    def create_job_with_session(
+        self,
+        session: Session,
+        *,
+        state_code: StateCode,
+        extractor_version_id: str,
+        document_contents_ids: list[str],
+    ) -> LLMExtractionJob:
+        """Writes the `llm_extraction_job` row and one `llm_extraction_job_document`
+        row per document, returning the created job. Runs within |session|; does
+        not commit.
 
         Everything but the inputs is manager-assigned: the job_id UUID, each
         row's job_index ordering (0-indexed, in the given order), and the
@@ -440,89 +505,136 @@ class LLMExtractionJobManager:
             )
 
         job_id = str(uuid.uuid4())
-        with SessionFactory.using_database(self.database_key) as session:
-            job = schema.LLMExtractionJob(
+        job = schema.LLMExtractionJob(
+            state_code=state_code.value,
+            job_id=job_id,
+            extractor_version_id=extractor_version_id,
+            start_datetime_utc=None,
+            completion_datetime_utc=None,
+            result_type=None,
+            error_message=None,
+        )
+        session.add(job)
+        session.add_all(
+            schema.LLMExtractionJobDocument(
                 state_code=state_code.value,
                 job_id=job_id,
-                extractor_version_id=extractor_version_id,
-                start_datetime_utc=None,
-                completion_datetime_utc=None,
+                document_contents_id=document_contents_id,
+                batch_index=None,
+                job_index=job_index,
+                result_datetime_utc=None,
                 result_type=None,
+                is_relevant=None,
                 error_message=None,
+                input_token_count=None,
+                output_token_count=None,
+                cached_input_token_count=None,
+                thinking_token_count=None,
             )
-            session.add(job)
-            session.add_all(
-                schema.LLMExtractionJobDocument(
-                    state_code=state_code.value,
-                    job_id=job_id,
-                    document_contents_id=document_contents_id,
-                    batch_index=None,
-                    job_index=job_index,
-                    result_datetime_utc=None,
-                    result_type=None,
-                    is_relevant=None,
-                    error_message=None,
-                    input_token_count=None,
-                    output_token_count=None,
-                    cached_input_token_count=None,
-                    thinking_token_count=None,
-                )
-                for job_index, document_contents_id in enumerate(document_contents_ids)
-            )
-            return convert_schema_object_to_entity(
-                job, LLMExtractionJob, populate_direct_back_edges=False
-            )
+            for job_index, document_contents_id in enumerate(document_contents_ids)
+        )
+        return convert_schema_object_to_entity(
+            job, LLMExtractionJob, populate_direct_back_edges=False
+        )
 
     def mark_job_started(self, *, state_code: StateCode, job_id: str) -> None:
         """Writes `start_datetime_utc` to `llm_extraction_job`. A no-op if the
-        job is already started (a resumed job)."""
+        job is already started (a resumed job). Opens and commits its own
+        transaction."""
         with SessionFactory.using_database(self.database_key) as session:
-            session.query(schema.LLMExtractionJob).filter(
-                schema.LLMExtractionJob.state_code == state_code.value,
-                schema.LLMExtractionJob.job_id == job_id,
-                schema.LLMExtractionJob.start_datetime_utc.is_(None),
-            ).update(
-                {
-                    schema.LLMExtractionJob.start_datetime_utc: datetime.datetime.now(
-                        tz=datetime.UTC
-                    )
-                },
-                synchronize_session=False,
+            self.mark_job_started_with_session(
+                session, state_code=state_code, job_id=job_id
             )
+
+    def mark_job_started_with_session(
+        self, session: Session, *, state_code: StateCode, job_id: str
+    ) -> None:
+        """Writes `start_datetime_utc` to `llm_extraction_job`. A no-op if the
+        job is already started (a resumed job). Runs within |session|; does not
+        commit."""
+        session.query(schema.LLMExtractionJob).filter(
+            schema.LLMExtractionJob.state_code == state_code.value,
+            schema.LLMExtractionJob.job_id == job_id,
+            schema.LLMExtractionJob.start_datetime_utc.is_(None),
+        ).update(
+            {
+                schema.LLMExtractionJob.start_datetime_utc: datetime.datetime.now(
+                    tz=datetime.UTC
+                )
+            },
+            synchronize_session=False,
+        )
 
     def get_pending_job_documents(
         self, *, state_code: StateCode, job_id: str
     ) -> list[LLMExtractionJobDocument]:
         """Returns the job's documents still needing processing (no result yet) —
-        the read that feeds the request builder.
+        the read that feeds the request builder. Opens and commits its own
+        transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.get_pending_job_documents_with_session(
+                session, state_code=state_code, job_id=job_id
+            )
+
+    def get_pending_job_documents_with_session(
+        self, session: Session, *, state_code: StateCode, job_id: str
+    ) -> list[LLMExtractionJobDocument]:
+        """Returns the job's documents still needing processing (no result yet) —
+        the read that feeds the request builder. Runs within |session|; does not
+        commit.
 
         These are the input side of a row: identity and creation-time context,
         result columns still null. The document text is not loaded here.
         """
-        with SessionFactory.using_database(self.database_key) as session:
-            pending = (
-                session.query(schema.LLMExtractionJobDocument)
-                .filter(
-                    schema.LLMExtractionJobDocument.state_code == state_code.value,
-                    schema.LLMExtractionJobDocument.job_id == job_id,
-                    schema.LLMExtractionJobDocument.result_type.is_(None),
-                )
-                .all()
+        pending = (
+            session.query(schema.LLMExtractionJobDocument)
+            .filter(
+                schema.LLMExtractionJobDocument.state_code == state_code.value,
+                schema.LLMExtractionJobDocument.job_id == job_id,
+                schema.LLMExtractionJobDocument.result_type.is_(None),
             )
-            return [
-                convert_schema_object_to_entity(
-                    document,
-                    LLMExtractionJobDocument,
-                    populate_direct_back_edges=False,
-                )
-                for document in pending
-            ]
+            .all()
+        )
+        return [
+            convert_schema_object_to_entity(
+                document,
+                LLMExtractionJobDocument,
+                populate_direct_back_edges=False,
+            )
+            for document in pending
+        ]
 
     def set_job_document_results(
-        self, *, state_code: StateCode, results: list[LLMJobDocumentExtractionResult]
+        self,
+        *,
+        state_code: StateCode,
+        results: list[LLMJobDocumentExtractionResult],
     ) -> None:
         """Persists a batch of documents' outcomes (their non-PII columns) to
-        `llm_extraction_job_document` in a single transaction.
+        `llm_extraction_job_document`. Opens and commits its own transaction.
+
+        Callers must persist each result's content to BQ *first*: a terminal
+        result here permanently removes the document from job selection, so
+        marking before the BQ write turns a crash between the two writes into
+        silent data loss. Raises if any result has no matching job-document row,
+        rolling back the whole batch.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            self.set_job_document_results_with_session(
+                session, state_code=state_code, results=results
+            )
+
+    def set_job_document_results_with_session(
+        self,
+        session: Session,
+        *,
+        state_code: StateCode,
+        results: list[LLMJobDocumentExtractionResult],
+    ) -> None:
+        """Persists a batch of documents' outcomes (their non-PII columns) to
+        `llm_extraction_job_document`. Runs within |session|; does not commit,
+        so the whole batch lands in the caller's transaction.
 
         Callers must persist each result's content to BQ *first*: a terminal
         result here permanently removes the document from job selection, so
@@ -541,26 +653,25 @@ class LLMExtractionJobManager:
         # cost that dominates at scale — a connection acquire + commit per row — is
         # already collapsed to one by sharing the session, so the extra statements
         # are cheap round-trips within that transaction.
-        with SessionFactory.using_database(self.database_key) as session:
-            for result in results:
-                updated = (
-                    session.query(schema.LLMExtractionJobDocument)
-                    .filter(
-                        schema.LLMExtractionJobDocument.state_code == state_code.value,
-                        schema.LLMExtractionJobDocument.job_id == result.job_id,
-                        schema.LLMExtractionJobDocument.document_contents_id
-                        == result.document_contents_id,
-                    )
-                    .update(
-                        self._job_document_result_values(result),
-                        synchronize_session=False,
-                    )
+        for result in results:
+            updated = (
+                session.query(schema.LLMExtractionJobDocument)
+                .filter(
+                    schema.LLMExtractionJobDocument.state_code == state_code.value,
+                    schema.LLMExtractionJobDocument.job_id == result.job_id,
+                    schema.LLMExtractionJobDocument.document_contents_id
+                    == result.document_contents_id,
                 )
-                if not updated:
-                    raise ValueError(
-                        f"No job document found for state [{state_code.value}], job "
-                        f"[{result.job_id}], document [{result.document_contents_id}]."
-                    )
+                .update(
+                    self._job_document_result_values(result),
+                    synchronize_session=False,
+                )
+            )
+            if not updated:
+                raise ValueError(
+                    f"No job document found for state [{state_code.value}], job "
+                    f"[{result.job_id}], document [{result.document_contents_id}]."
+                )
 
     @staticmethod
     def _job_document_result_values(
@@ -586,6 +697,19 @@ class LLMExtractionJobManager:
     def mark_job_completed(self, *, state_code: StateCode, job_id: str) -> None:
         """Closes the job, deriving the job-level result from its document rows:
         SUCCESS when no document failed, PARTIAL_FAILURE when at least one did.
+        Opens and commits its own transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            self.mark_job_completed_with_session(
+                session, state_code=state_code, job_id=job_id
+            )
+
+    def mark_job_completed_with_session(
+        self, session: Session, *, state_code: StateCode, job_id: str
+    ) -> None:
+        """Closes the job, deriving the job-level result from its document rows:
+        SUCCESS when no document failed, PARTIAL_FAILURE when at least one did.
+        Runs within |session|; does not commit.
 
         The document rows are the authoritative outcomes — on a resumed job, no
         in-memory results list covers the documents processed before a crash.
@@ -593,53 +717,72 @@ class LLMExtractionJobManager:
         definition, run); the DB completion-requires-start constraint enforces
         this. A job that fails before it starts goes through mark_job_failed.
         """
-        with SessionFactory.using_database(self.database_key) as session:
-            has_failure = (
-                session.query(schema.LLMExtractionJobDocument)
-                .filter(
-                    schema.LLMExtractionJobDocument.state_code == state_code.value,
-                    schema.LLMExtractionJobDocument.job_id == job_id,
-                    schema.LLMExtractionJobDocument.result_type.in_(
-                        [t.value for t in _FAILURE_JOB_DOCUMENT_RESULT_TYPES]
-                    ),
-                )
-                .first()
-                is not None
+        has_failure = (
+            session.query(schema.LLMExtractionJobDocument)
+            .filter(
+                schema.LLMExtractionJobDocument.state_code == state_code.value,
+                schema.LLMExtractionJobDocument.job_id == job_id,
+                schema.LLMExtractionJobDocument.result_type.in_(
+                    [t.value for t in _FAILURE_JOB_DOCUMENT_RESULT_TYPES]
+                ),
             )
-            result_type = (
-                LLMExtractionJobResultType.PARTIAL_FAILURE
-                if has_failure
-                else LLMExtractionJobResultType.SUCCESS
-            )
-            self._close_job(
-                session=session,
-                state_code=state_code,
-                job_id=job_id,
-                result_type=result_type,
-                error_message=None,
-            )
+            .first()
+            is not None
+        )
+        result_type = (
+            LLMExtractionJobResultType.PARTIAL_FAILURE
+            if has_failure
+            else LLMExtractionJobResultType.SUCCESS
+        )
+        self._close_job(
+            session=session,
+            state_code=state_code,
+            job_id=job_id,
+            result_type=result_type,
+            error_message=None,
+        )
 
     def mark_job_failed(
         self, *, state_code: StateCode, job_id: str, error_message: str
     ) -> None:
         """Closes the job as a job-level FAILURE with the given `error_message`
-        (the one result type that cannot be derived from document rows).
+        (the one result type that cannot be derived from document rows). Opens
+        and commits its own transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            self.mark_job_failed_with_session(
+                session,
+                state_code=state_code,
+                job_id=job_id,
+                error_message=error_message,
+            )
+
+    def mark_job_failed_with_session(
+        self,
+        session: Session,
+        *,
+        state_code: StateCode,
+        job_id: str,
+        error_message: str,
+    ) -> None:
+        """Closes the job as a job-level FAILURE with the given `error_message`
+        (the one result type that cannot be derived from document rows). Runs
+        within |session|; does not commit.
 
         Its unprocessed documents lack a terminal result, so they are re-selected
         into a future job.
         """
-        with SessionFactory.using_database(self.database_key) as session:
-            self._close_job(
-                session=session,
-                state_code=state_code,
-                job_id=job_id,
-                result_type=LLMExtractionJobResultType.FAILURE,
-                error_message=error_message,
-                # A job can fail at startup, before mark_job_started runs. The
-                # completion-requires-start constraint still applies, so treat
-                # the failure moment as the (instantaneous) start in that case.
-                backfill_start_if_unstarted=True,
-            )
+        self._close_job(
+            session=session,
+            state_code=state_code,
+            job_id=job_id,
+            result_type=LLMExtractionJobResultType.FAILURE,
+            error_message=error_message,
+            # A job can fail at startup, before mark_job_started runs. The
+            # completion-requires-start constraint still applies, so treat
+            # the failure moment as the (instantaneous) start in that case.
+            backfill_start_if_unstarted=True,
+        )
 
     @staticmethod
     def _close_job(

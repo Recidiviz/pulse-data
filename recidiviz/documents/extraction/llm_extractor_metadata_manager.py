@@ -47,86 +47,96 @@ class LLMExtractorMetadataManager:
         self, *, config: LLMExtractorConfig
     ) -> LLMExtractorVersion:
         """Writes this extractor config to the DB if it is different than the
+        current config written to the DB. Opens and commits its own transaction.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.set_active_extractor_version_with_session(
+                session, config=config
+            )
+
+    def set_active_extractor_version_with_session(
+        self, session: Session, *, config: LLMExtractorConfig
+    ) -> LLMExtractorVersion:
+        """Writes this extractor config to the DB if it is different than the
         current config written to the DB — upserting rows into the four
         config/version tables keyed on the computed version IDs, inserting a new
         llm_extractor_version row when extractor_version_id is new. Returns the
-        active LLMExtractorVersion.
+        active LLMExtractorVersion. Runs within |session|; does not commit.
         """
         now = datetime.datetime.now(tz=datetime.UTC)
         collection = config.extractor_collection
 
-        with SessionFactory.using_database(self.database_key) as session:
-            self._assert_input_document_collection_unchanged(session, config=config)
-            session.execute(
-                insert(schema.LLMExtractorCollection)
-                .values(
-                    collection_name=collection.name,
-                    collection_version_id=collection.collection_version_id,
-                    output_schema_version=collection.output_schema_version,
-                    output_schema_json=collection.generate_json_schema_str(),
-                    description=collection.description,
-                    minimum_confidence_level=(
-                        collection.minimum_confidence_level.value
-                        if collection.minimum_confidence_level is not None
-                        else None
-                    ),
-                    row_creation_datetime_utc=now,
-                )
-                .on_conflict_do_nothing(constraint="llm_extractor_collection_pkey")
+        self._assert_input_document_collection_unchanged(session, config=config)
+        session.execute(
+            insert(schema.LLMExtractorCollection)
+            .values(
+                collection_name=collection.name,
+                collection_version_id=collection.collection_version_id,
+                output_schema_version=collection.output_schema_version,
+                output_schema_json=collection.generate_json_schema_str(),
+                description=collection.description,
+                minimum_confidence_level=(
+                    collection.minimum_confidence_level.value
+                    if collection.minimum_confidence_level is not None
+                    else None
+                ),
+                row_creation_datetime_utc=now,
             )
-            session.execute(
-                insert(schema.LLMExtractor)
-                .values(
-                    state_code=config.state_code.value,
-                    extractor_id=config.extractor_id,
-                    extractor_collection_name=collection.name,
-                    input_document_collection_name=config.input_document_collection.name,
-                    row_creation_datetime_utc=now,
-                )
-                .on_conflict_do_nothing(constraint="llm_extractor_pkey")
+            .on_conflict_do_nothing(constraint="llm_extractor_collection_pkey")
+        )
+        session.execute(
+            insert(schema.LLMExtractor)
+            .values(
+                state_code=config.state_code.value,
+                extractor_id=config.extractor_id,
+                extractor_collection_name=collection.name,
+                input_document_collection_name=config.input_document_collection.name,
+                row_creation_datetime_utc=now,
             )
-            session.execute(
-                insert(schema.LLMExtractorDocumentFilter)
-                .values(
-                    state_code=config.state_code.value,
-                    extractor_id=config.extractor_id,
-                    document_filter_id=config.document_filter_id,
-                    document_metadata_filter_query_template=config.document_filter.document_metadata_filter_query_template,
-                    row_creation_datetime_utc=now,
-                )
-                .on_conflict_do_nothing(constraint="llm_extractor_document_filter_pkey")
+            .on_conflict_do_nothing(constraint="llm_extractor_pkey")
+        )
+        session.execute(
+            insert(schema.LLMExtractorDocumentFilter)
+            .values(
+                state_code=config.state_code.value,
+                extractor_id=config.extractor_id,
+                document_filter_id=config.document_filter_id,
+                document_metadata_filter_query_template=config.document_filter.document_metadata_filter_query_template,
+                row_creation_datetime_utc=now,
             )
-            session.execute(
-                insert(schema.LLMExtractorVersion)
-                .values(
-                    state_code=config.state_code.value,
-                    extractor_version_id=config.extractor_version_id,
-                    extractor_id=config.extractor_id,
-                    extractor_collection_name=collection.name,
-                    extractor_collection_version_id=collection.collection_version_id,
-                    instructions_prompt=config.instructions_prompt,
-                    instructions_prompt_hash=config.instructions_prompt_hash,
-                    model_config_name=config.model_config.name,
-                    model_config_version_id=config.model_config.model_config_version_id,
-                    invalidated_datetime_utc=None,
-                    invalidation_reason=None,
-                    row_creation_datetime_utc=now,
-                )
-                .on_conflict_do_nothing(constraint="llm_extractor_version_pkey")
+            .on_conflict_do_nothing(constraint="llm_extractor_document_filter_pkey")
+        )
+        session.execute(
+            insert(schema.LLMExtractorVersion)
+            .values(
+                state_code=config.state_code.value,
+                extractor_version_id=config.extractor_version_id,
+                extractor_id=config.extractor_id,
+                extractor_collection_name=collection.name,
+                extractor_collection_version_id=collection.collection_version_id,
+                instructions_prompt=config.instructions_prompt,
+                instructions_prompt_hash=config.instructions_prompt_hash,
+                model_config_name=config.model_config.name,
+                model_config_version_id=config.model_config.model_config_version_id,
+                invalidated_datetime_utc=None,
+                invalidation_reason=None,
+                row_creation_datetime_utc=now,
             )
+            .on_conflict_do_nothing(constraint="llm_extractor_version_pkey")
+        )
 
-            version = (
-                session.query(schema.LLMExtractorVersion)
-                .filter(
-                    schema.LLMExtractorVersion.state_code == config.state_code.value,
-                    schema.LLMExtractorVersion.extractor_version_id
-                    == config.extractor_version_id,
-                )
-                .one()
+        version = (
+            session.query(schema.LLMExtractorVersion)
+            .filter(
+                schema.LLMExtractorVersion.state_code == config.state_code.value,
+                schema.LLMExtractorVersion.extractor_version_id
+                == config.extractor_version_id,
             )
-            return convert_schema_object_to_entity(
-                version, LLMExtractorVersion, populate_direct_back_edges=False
-            )
+            .one()
+        )
+        return convert_schema_object_to_entity(
+            version, LLMExtractorVersion, populate_direct_back_edges=False
+        )
 
     def _assert_input_document_collection_unchanged(
         self, session: Session, *, config: LLMExtractorConfig
@@ -157,25 +167,35 @@ class LLMExtractorMetadataManager:
         self, *, state_code: StateCode, collection_name: str
     ) -> LLMExtractorVersion:
         """Returns the current active version for the given (state_code,
-        collection) — the most recent non-invalidated llm_extractor_version row.
+        collection). Opens and commits its own transaction.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            version = (
-                session.query(schema.LLMExtractorVersion)
-                .filter(
-                    schema.LLMExtractorVersion.state_code == state_code.value,
-                    schema.LLMExtractorVersion.extractor_collection_name
-                    == collection_name,
-                    schema.LLMExtractorVersion.invalidated_datetime_utc.is_(None),
-                )
-                .order_by(schema.LLMExtractorVersion.row_creation_datetime_utc.desc())
-                .first()
+            return self.get_active_extractor_version_with_session(
+                session, state_code=state_code, collection_name=collection_name
             )
-            if version is None:
-                raise ValueError(
-                    f"No active extractor version for state [{state_code.value}], "
-                    f"collection [{collection_name}]."
-                )
-            return convert_schema_object_to_entity(
-                version, LLMExtractorVersion, populate_direct_back_edges=False
+
+    def get_active_extractor_version_with_session(
+        self, session: Session, *, state_code: StateCode, collection_name: str
+    ) -> LLMExtractorVersion:
+        """Returns the current active version for the given (state_code,
+        collection) — the most recent non-invalidated llm_extractor_version row.
+        Runs within |session|; does not commit.
+        """
+        version = (
+            session.query(schema.LLMExtractorVersion)
+            .filter(
+                schema.LLMExtractorVersion.state_code == state_code.value,
+                schema.LLMExtractorVersion.extractor_collection_name == collection_name,
+                schema.LLMExtractorVersion.invalidated_datetime_utc.is_(None),
             )
+            .order_by(schema.LLMExtractorVersion.row_creation_datetime_utc.desc())
+            .first()
+        )
+        if version is None:
+            raise ValueError(
+                f"No active extractor version for state [{state_code.value}], "
+                f"collection [{collection_name}]."
+            )
+        return convert_schema_object_to_entity(
+            version, LLMExtractorVersion, populate_direct_back_edges=False
+        )
