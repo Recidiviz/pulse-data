@@ -55,8 +55,17 @@ resource "google_secret_manager_secret" "linear_project_snapshot_oauth" {
     "linear_project_snapshot_oauth_client_secret",
   ])
   secret_id = each.key
+  # The gcp.resourceLocations org policy allows US locations only, and it
+  # rejects auto replication because auto replication counts as global.
   replication {
-    auto {}
+    user_managed {
+      replicas {
+        location = "us-central1"
+      }
+      replicas {
+        location = "us-east1"
+      }
+    }
   }
 }
 
