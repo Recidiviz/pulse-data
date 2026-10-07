@@ -163,7 +163,9 @@ dev = [
     "pytest",
     "pytest-xdist",
     "pytest-cov",
-    "mypy",
+    # mypy 2.4 rejects attr.validators.in_(SomeEnum); stay on 2.3 until those are
+    # addressed or we migrate to ty.
+    "mypy==2.3.1",
     "bandit",
     "coveralls",
     # This should always be pinned to the latest version officially supported by Dataflow

@@ -6206,7 +6206,7 @@ requires-dist = [
     { name = "mock", marker = "extra == 'dev'" },
     { name = "more-itertools" },
     { name = "msal", marker = "extra == 'dev'" },
-    { name = "mypy", marker = "extra == 'dev'" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "==2.3.1" },
     { name = "mypy-protobuf", marker = "extra == 'dev'" },
     { name = "nbautoexport", marker = "extra == 'dev'" },
     { name = "nbconvert", marker = "extra == 'dev'", specifier = ">=6.5.1" },
