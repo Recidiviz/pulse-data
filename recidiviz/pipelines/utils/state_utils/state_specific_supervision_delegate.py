@@ -69,8 +69,6 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         other info packed into the supervision_site field, this function must be overridden
         in the state-specific implementation of this delegate.
         """
-        # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
-        #  location distinction directly into our schema.
         level_1_supervision_location = supervision_site or None
         level_2_supervision_location = None
 
