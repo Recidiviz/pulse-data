@@ -162,7 +162,10 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
                 gcs_files=[],
                 file_id=record[0],
                 file_tag=record[1],
-                update_datetime=record[2],
+                # psycopg2 returns a timestamptz in the connection's local timezone;
+                # normalize to UTC so the metadata validator passes regardless of the
+                # developer machine's timezone.
+                update_datetime=record[2].astimezone(datetime.UTC),
             )
             for record in records
         ]
