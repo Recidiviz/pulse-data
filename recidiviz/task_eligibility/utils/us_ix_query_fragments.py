@@ -566,57 +566,74 @@ lsir_spans AS (
     GROUP BY grp, state_code, person_id, lsir_level)"""
 
 
-# Newer Atlas rows wrap the DOR narrative in a JSON blob alongside the binary detail
-# flags; older rows store it bare.
-DOR_OFFENSE_DESCRIPTION_CLAUSE = """COALESCE(REGEXP_EXTRACT(dac.OffenseDesc, r'"offense_desc": "([^"]+)"'), dac.OffenseDesc)"""
+def us_ix_dors_query(*, dor_classes: list[str]) -> str:
+    """Returns a SQL query for the US_IX DORs of the given classes, one row per DOR, read
+    from normalized state. Dismissed and not-guilty DORs are left out; pending DORs and
+    informal resolutions are kept. Reports with no DA case are also left out, since
+    nothing records whether they were decided. Ingest stores text uppercase, so the
+    offense type name and the description come back title-cased for display.
 
-DOR_CASE_NOTES_COLUMNS = f"""
-        dac.OffenderId AS external_id,
-        'Disciplinary Offense Reports (in the past 6 months)' AS criteria,
-        CONCAT('Class ', SUBSTR(dot.DorOffenseCode, 1, 1), ': ', DorOffenseTypeName) AS note_title,
-        {DOR_OFFENSE_DESCRIPTION_CLAUSE} AS note_body,
-        SAFE_CAST(LEFT(dac.OffenseDateTime, 10) AS DATE) AS event_date,"""
+    For example, a resident with a pending class B DOR and a dismissed class A DOR gets
+    one row (some columns abridged):
 
-DOR_CRITERIA_COLUMNS = """
-        dac.OffenderId AS external_id,
-        SAFE_CAST(LEFT(COALESCE(dac.AuditHearingDate, dac.OffenseDateTime), 10) AS DATE) AS start_date,
-        SUBSTR(dot.DorOffenseCode, 1, 1) AS dor_class"""
-
-
-def dor_query(columns_str: str, classes_to_include: list, indent_level: int = 8) -> str:
+        person_id,dor_class,offense_type_name,dor_description,incident_date,hearing_date,is_pending
+        123,B,Disobedience To Orders 2,Resident Refused To Return To The Assigned Cell,2026-08-01,,true
     """
-    Returns a SQL query that returns all the Disciplinary Offense Reports in Idaho
-    that match the classes requested.
+    return f"""
+    SELECT
+        incident.state_code,
+        incident.person_id,
+        incident.incarceration_incident_id,
+        -- Report-backed DORs use the report id as their external_id.
+        incident.external_id AS incident_external_id,
+        NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.DACaseId'), '') AS da_case_id,
+        SUBSTR(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseCode'), 1, 1) AS dor_class,
+        INITCAP(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseTypeName')) AS offense_type_name,
+        INITCAP(incident.incident_details) AS dor_description,
+        incident.incident_date,
+        CAST(
+            LEFT(NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.HearingDate'), ''), 10)
+            AS DATE
+        ) AS hearing_date,
+        incident.facility,
+        incident.incarceration_incident_id IN (
+            SELECT incarceration_incident_id
+            FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
+            WHERE state_code = 'US_IX'
+                AND outcome_type = 'PENDING'
+        ) AS is_pending,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` incident
+    WHERE incident.state_code = 'US_IX'
+        AND SUBSTR(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseCode'), 1, 1)
+            IN ({list_to_query_string(dor_classes, quoted=True, single_quote=True)})
+        AND NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.DACaseId'), '') IS NOT NULL
+        AND incident.incarceration_incident_id NOT IN (
+            SELECT incarceration_incident_id
+            FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
+            WHERE state_code = 'US_IX'
+                AND outcome_type IN ('DISMISSED', 'NOT_GUILTY')
+        )"""
 
-    Args:
-        columns_str (str): Columns to use for the select statement. Defaults to
-            DOR_CASE_NOTES_COLUMNS.
-        classes_to_include (list): List of classes to include in the query. E.g. ['A', 'B'].
-        additional_where_clause (str): Additional where clause to use in the query.
-            Defaults to ''.
-        indent_level (int): Indent level for the query. Defaults to 8.
-    """
 
+def dor_case_notes_query(*, in_the_past_x_months: int, indent_level: int) -> str:
+    """Returns a SQL query for the class A, B and C DORs from the past
+    in_the_past_x_months months, as opportunity case notes keyed on the resident's
+    current US_IX_DOC display id."""
     query = f"""
-    SELECT *
+    SELECT
+        pei.external_id,
+        'Disciplinary Offense Reports (in the past {in_the_past_x_months} months)' AS criteria,
+        CONCAT('Class ', dor.dor_class, ': ', dor.offense_type_name) AS note_title,
+        dor.dor_description AS note_body,
+        dor.incident_date AS event_date,
     FROM (
-        SELECT {columns_str}
-        # Procedure data contains offense type for each case (class)
-        FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.dsc_DAProcedure_latest` dap
-        # Details of each case
-        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.dsc_DACase_latest` dac
-            USING (OffenderId, DACaseId)
-        # Offense types
-        INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_DorOffenseType_latest` dot
-            USING (DorOffenseTypeId)
-        WHERE SUBSTR(dot.DorOffenseCode, 1, 1) IN {str(tuple(classes_to_include))}
-        -- Remove dismissed DORs
-            AND dac.DAProcedureStatusId NOT IN ('3','7','15','18','21','22','25')
-            -- According to ID, affirmed DORs are (2,6,11,17,20,23,26)
-        #Only keep the latest record for each offender-case
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY dap.DACaseId, dap.OffenderId ORDER BY dap.InsertDate DESC) = 1
-    )"""
-
+{fix_indent(us_ix_dors_query(dor_classes=["A", "B", "C"]), indent_level=8)}
+    ) dor
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON pei.person_id = dor.person_id
+        AND pei.id_type = 'US_IX_DOC'
+        AND pei.is_current_display_id_for_type
+    WHERE dor.incident_date > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {in_the_past_x_months} MONTH)"""
     return fix_indent(query, indent_level=indent_level)
 
 
@@ -1417,10 +1434,7 @@ def crc_case_notes_cte(
         "        --Detainers\n" + detainer_case_notes(),
         # DORs
         "        --DORs\n"
-        + dor_query(
-            columns_str=DOR_CASE_NOTES_COLUMNS, classes_to_include=["A", "B", "C"]
-        )
-        + "\nWHERE event_date > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)",
+        + dor_case_notes_query(in_the_past_x_months=6, indent_level=8),
         # Program Enrollment
         "        --Program Enrollment\n" + program_enrollment_query(),
         # Victim alerts
