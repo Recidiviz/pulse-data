@@ -88,6 +88,8 @@ output:
                   - "HOS" # Hospitalized
                   - "***" # UNKNOWN
                   - "INF" # Infirmary
+                  # TODO(MO-13026) Revisit this mapping once MO defines ERH.
+                  - "ERH" # Unknown
                 StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
                   - "ADS" # Administrative Segregation
                   - "DIS" # Disciplinary Segregation
@@ -110,7 +112,10 @@ output:
                 StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                   - "ADS"
                   - "NOC"
-                StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN: "***"
+                StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN:
+                  - "***"
+                  # TODO(MO-13026) Revisit this mapping once MO defines ERH.
+                  - "ERH" # Unknown
           custody_level:
             $enum_mapping:
               $raw_text: CUSTODY_LVL
