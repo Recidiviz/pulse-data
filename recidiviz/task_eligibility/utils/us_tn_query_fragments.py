@@ -680,48 +680,25 @@ def latest_caf_score_cte() -> str:
     """
 
 
-def offense_severity_to_q2_score(
-    generation_keys: list[str],
-    q2_scores_by_rank: list[int],
-) -> str:
-    """
-    Returns a SQL CASE expression that maps offense_severity_row_number to the
-    appropriate q2_score.
-
-    Args:
-        generation_keys: The CAF/DCAF/RCAF "generation(s)" (keys in
-            _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP) this pricing
-            applies to -- more than one when several generations share the same
-            scoring (e.g. RCAF and RCAF_V2) -- used only to validate that
-            [q2_scores_by_rank] has one entry per severity rank for every generation
-            listed.
-        q2_scores_by_rank: The point value to award for each offense_severity_row_number,
-            in rank order (i.e. q2_scores_by_rank[0] is the score for rank 1, etc).
-
-    Returns:
-        str: SQL CASE expression mapping offense_severity_row_number to q2_score
-    """
+def offense_severity_rank_count(generation_keys: list[str]) -> int:
+    """Returns how many severity ranks |generation_keys| distinguish, raising if a key is
+    unknown or if the keys disagree on the rank count."""
+    rank_counts = set()
     for generation_key in generation_keys:
         if generation_key not in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP:
             raise ValueError(
                 f"Unknown generation_key: [{generation_key}]. "
                 f"Must be one of {list(_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP.keys())}"
             )
-
-        expected_rank_count = len(
-            _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP[generation_key]
+        rank_counts.add(
+            len(_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP[generation_key])
         )
-        if len(q2_scores_by_rank) != expected_rank_count:
-            raise ValueError(
-                f"Expected {expected_rank_count} q2_scores_by_rank for generation_key "
-                f"[{generation_key}], got {len(q2_scores_by_rank)}: {q2_scores_by_rank}"
-            )
-
-    when_clauses = [
-        f"WHEN offense_severity_row_number = {idx + 1} THEN {score}"
-        for idx, score in enumerate(q2_scores_by_rank)
-    ]
-    return f"CASE {' '.join(when_clauses)} END"
+    if len(rank_counts) != 1:
+        raise ValueError(
+            f"Generations {generation_keys} distinguish different numbers of offense "
+            f"severity ranks: {sorted(rank_counts)}."
+        )
+    return rank_counts.pop()
 
 
 def tn_classification_policy_2026_incidents() -> str:

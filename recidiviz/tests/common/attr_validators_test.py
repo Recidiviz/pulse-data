@@ -2152,6 +2152,30 @@ class TestIsNonEmptyList(unittest.TestCase):
             _ = self._TestClass(items="not a list")  # type: ignore[arg-type]
 
 
+class TestIsListWithoutDuplicates(unittest.TestCase):
+    """Tests for the is_list_without_duplicates() validator."""
+
+    @attr.define
+    class _TestClass:
+        items: list = attr.ib(validator=attr_validators.is_list_without_duplicates)
+
+    def test_distinct_items(self) -> None:
+        _ = self._TestClass(items=["a", "b"])
+
+    def test_empty_list(self) -> None:
+        _ = self._TestClass(items=[])
+
+    def test_duplicate_items(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"more than once. Found duplicates \['a'\]"
+        ):
+            _ = self._TestClass(items=["a", "b", "a"])
+
+    def test_not_a_list(self) -> None:
+        with self.assertRaises((TypeError, ValueError)):
+            _ = self._TestClass(items="not a list")  # type: ignore[arg-type]
+
+
 class TestIsNonEmptyTuple(unittest.TestCase):
     """Tests for the is_non_empty_tuple() validator."""
 

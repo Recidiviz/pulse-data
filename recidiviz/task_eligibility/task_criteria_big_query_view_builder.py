@@ -57,14 +57,14 @@ def _build_reason_v2_description(reasons_fields: List[ReasonsField]) -> str:
 
 def span_with_reasons_schema(
     *,
-    value_column: BigQueryViewColumn,
+    value_columns: Sequence[BigQueryViewColumn],
     reasons_fields: List[ReasonsField],
     span_label: str,
     state_code_mode: SqlFieldMode,
     person_id_mode: SqlFieldMode,
 ) -> Sequence[BigQueryViewColumn]:
     """Returns the shared schema for a "span with reasons" view: the base span
-    keys, a caller-supplied |value_column|, and the reason / reason_v2 JSON
+    keys, the caller-supplied |value_columns|, and the reason / reason_v2 JSON
     blobs. |span_label| names the span in the column descriptions (e.g.
     "criteria span"). Shared by the criteria schema (value = meets_criteria) and
     the classification score component schema (value = component_score)."""
@@ -89,7 +89,7 @@ def span_with_reasons_schema(
             mode="NULLABLE",
             description=f"End date of the {span_label} (exclusive). NULL means the span is ongoing.",
         ),
-        value_column,
+        *value_columns,
         Json(
             name="reason",
             mode="NULLABLE",
@@ -110,11 +110,13 @@ def task_criteria_schema(
     provided, the reason_v2 column description enumerates the fields."""
     return span_with_reasons_schema(
         # Some criteria produce NULL meets_criteria values.
-        value_column=Bool(
-            name="meets_criteria",
-            mode="NULLABLE",
-            description="Whether the person meets the criteria during this span",
-        ),
+        value_columns=[
+            Bool(
+                name="meets_criteria",
+                mode="NULLABLE",
+                description="Whether the person meets the criteria during this span",
+            )
+        ],
         reasons_fields=reasons_fields or [],
         span_label="criteria span",
         # TODO(#62322): make state_code, person_id and meets_criteria REQUIRED after there are no more nulls in
@@ -128,11 +130,28 @@ def get_template_with_reasons_as_json(
     query_template: str,
     reasons_fields: List[ReasonsField],
     state_code: Optional[str] = None,
-    # Name of the span-attribute column the base query emits. Defaults to the
-    # criteria contract's boolean `meets_criteria`; the classification score
-    # component builder passes an integer `component_score` instead.
     value_column_name: str = "meets_criteria",
+    is_value_column_compared_as_json: bool = False,
 ) -> str:
+    """Returns |query_template| wrapped so that adjacent spans with the same value and
+    reasons are merged, the reason fields are packed into a reason_v2 JSON blob, and the
+    span dates are cast to DATE.
+
+    Args:
+        query_template: The base query, emitting one row per span with
+            state_code, person_id, start_date, end_date, the value column,
+            reason, and one column per entry in reasons_fields.
+        reasons_fields: Fields packed into the reason_v2 blob.
+        state_code: If set, restricts the output to this state.
+        value_column_name: Name of the span-attribute column the base query
+            emits. Defaults to the criteria contract's boolean meets_criteria;
+            the classification score component builder passes component_score or
+            score_categories instead.
+        is_value_column_compared_as_json: Whether |value_column_name| is
+            compared as a JSON string during the adjacent-span merge, which a
+            column that cannot be compared with "=" needs (e.g. the score
+            component builder's repeated score_categories).
+    """
     # If no reason fields are provided, default to NULL
     reasons_query_fragment = "TO_JSON(STRUCT())"
     # Package reason fields into a json, maintaining original typing of fields
@@ -170,7 +189,11 @@ _aggregated AS
     index_columns=['person_id','state_code'],
     end_date_field_name="end_date",
     attribute=[value_column_name,'reason','reason_v2'],
-    struct_attribute_subset=['reason','reason_v2']
+    struct_attribute_subset=[
+        *([value_column_name] if is_value_column_compared_as_json else []),
+        'reason',
+        'reason_v2',
+    ]
 )}
 )
 SELECT 

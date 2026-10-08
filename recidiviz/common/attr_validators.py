@@ -805,6 +805,18 @@ def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> 
         )
 
 
+def is_list_without_duplicates(
+    instance: Any, attribute: attr.Attribute, value: list
+) -> None:
+    is_list(instance, attribute, value)
+
+    if duplicates := {item for item in value if value.count(item) > 1}:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must not list "
+            f"the same item more than once. Found duplicates {sorted(duplicates)}"
+        )
+
+
 def is_non_empty_list_of(list_item_expected_type: Type) -> AttrValidator:
     """Returns a validator that checks the value is a non-empty list whose every element
     is an instance of |list_item_expected_type|."""
