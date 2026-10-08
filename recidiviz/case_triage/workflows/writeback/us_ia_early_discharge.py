@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from typing import Self, TypeAlias
 
 from defusedxml.ElementTree import fromstring as _safe_fromstring
-from google.cloud.firestore_v1 import FieldFilter
+from google.cloud.firestore_v1 import FieldFilter, transforms
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
@@ -358,7 +358,23 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
     Status is written per charge ID so the FE can display, for each charge,
     whether it has been submitted and what its current status is. A single form
     submission covers a subset of the person's charges; unsubmitted charges have
-    no status document.
+    no status entry.
+
+    Per-charge statuses live in a charges map on the usIaEarlyDischarge opportunity
+    document. Each submission creates its own document in a submissions subcollection,
+    keyed by message ID, so multiple in-flight submissions for the same person do not
+    overwrite each other:
+
+        clientUpdatesV2/us_ia_{person_id}/clientOpportunityUpdates/usIaEarlyDischarge: {
+            charges: {
+                "CHG789": {"iconSubmissionStatus": "IN_PROGRESS", "__loadedAt": ...},
+                "CHG790": {"iconSubmissionStatus": "IN_PROGRESS", "__loadedAt": ...},
+            },
+        }
+        clientUpdatesV2/us_ia_{person_id}/clientOpportunityUpdates/usIaEarlyDischarge/iconSubmissions/{message_id}: {
+            iconSubmissionMessageId: "<uuid>",
+            chargeIds: ["CHG789", "CHG790"],
+        }
 
     The writeback is two-phase:
       - After the initial POST to MCP succeeds, IN_PROGRESS is written for each
@@ -369,17 +385,21 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
         responds per submission (not per charge), so all charges in a submission
         receive the same final status.
 
-    Because of this, ``set_status(SUCCESS)`` is intentionally a no-op: the
-    route helper calls it after ``execute()`` returns, but the true success
+    Because of this, set_status(SUCCESS) is intentionally a no-op: the
+    route helper calls it after execute() returns, but the true success
     signal comes from the callback, not from MCP's 200 acknowledgement.
     """
 
     def __init__(
         self,
-        firestore_paths: list[str],
+        # Path to the usIaEarlyDischarge opportunity document for this person.
+        firestore_path: str,
+        # Charge IDs included in the submission.
+        charge_ids: list[str],
         firestore_client: FirestoreClientImpl,
     ) -> None:
-        self.firestore_paths = firestore_paths
+        self.firestore_path = firestore_path
+        self.charge_ids = charge_ids
         self.firestore_client = firestore_client
 
     @classmethod
@@ -389,12 +409,12 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
         firestore_client: FirestoreClientImpl,
     ) -> Self:
         """Returns a tracker for the submission associated with the given MCP message ID.
-        Raises McpMessageNotFoundError if no documents are found in clientOpportunityUpdates
-        for the message ID, or McpMessageAmbiguousError if the documents span multiple persons.
+        Raises McpMessageNotFoundError if no submission document matches the message ID,
+        or McpMessageAmbiguousError if multiple persons share the same message ID.
         """
         docs = (
-            firestore_client.client.collection_group("clientOpportunityUpdates")
-            .where(filter=FieldFilter("earlyDischargeMessageId", "==", message_id))
+            firestore_client.client.collection_group("iconSubmissions")
+            .where(filter=FieldFilter("iconSubmissionMessageId", "==", message_id))
             .get()
         )
 
@@ -403,42 +423,54 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
                 f"No pending early discharge request found for message ID [{message_id}]"
             )
 
-        record_ids = {doc.reference.parent.parent.id for doc in docs}
-        if len(record_ids) != 1:
+        if len(docs) > 1:
+            record_ids = {doc.reference.parent.parent.parent.parent.id for doc in docs}
             raise McpMessageAmbiguousError(
                 f"Expected a single person for message ID [{message_id}], "
                 f"got [{record_ids}]"
             )
 
+        doc = docs[0]
+        doc_data = doc.to_dict() or {}
+        if not doc_data.get("chargeIds"):
+            raise McpMessageNotFoundError(
+                f"iconSubmissions document [{doc.reference.path}] is missing chargeIds"
+            )
+        charge_ids: list[str] = doc_data["chargeIds"]
+
         return cls(
-            firestore_paths=[doc.reference.path for doc in docs],
+            firestore_path=doc.reference.parent.parent.path,
+            charge_ids=charge_ids,
             firestore_client=firestore_client,
         )
 
     def record_pending_message_id(self, message_id: str) -> None:
-        """Store the message ID in clientOpportunityUpdates ."""
-        for path in self.firestore_paths:
-            self.firestore_client.set_document(
-                path,
-                {
-                    "earlyDischargeMessageId": message_id,
-                },
-                merge=True,
-            )
+        """Write a submission record so the callback endpoint can look up this submission by message ID."""
+        self.firestore_client.set_document(
+            f"{self.firestore_path}/iconSubmissions/{message_id}",
+            {
+                "iconSubmissionMessageId": message_id,
+                "chargeIds": self.charge_ids,
+            },
+        )
 
     def set_status(self, status: ExternalSystemRequestStatus) -> None:
         if status is ExternalSystemRequestStatus.SUCCESS:
             # SUCCESS is only written via apply_mcp_callback once ATG confirms.
             return
-        for path in self.firestore_paths:
-            self.firestore_client.set_document(
-                path,
-                {
-                    "status": status.value,
-                    self.firestore_client.timestamp_key: datetime.now(timezone.utc),
-                },
-                merge=True,
-            )
+        charge_update: dict[str, object] = {
+            "iconSubmissionStatus": status.value,
+            self.firestore_client.timestamp_key: datetime.now(timezone.utc),
+        }
+        if status is ExternalSystemRequestStatus.IN_PROGRESS:
+            # Clear any errorMessage left by a previous failed submission so
+            # the FE does not display a stale error while the retry is in flight.
+            charge_update["errorMessage"] = transforms.DELETE_FIELD
+        self.firestore_client.set_document(
+            self.firestore_path,
+            {"charges": {charge_id: charge_update for charge_id in self.charge_ids}},
+            merge=True,
+        )
 
     def apply_mcp_callback(self, callback: McpCallbackData) -> None:
         """Write the final SUCCESS or FAILURE status for all charges in the submission."""
@@ -447,18 +479,17 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
             if callback.transaction_status == "S"
             else ExternalSystemRequestStatus.FAILURE
         )
-        update: dict[str, object] = {
-            "status": final_status.value,
+        charge_update: dict[str, object] = {
+            "iconSubmissionStatus": final_status.value,
             self.firestore_client.timestamp_key: datetime.now(timezone.utc),
         }
         if callback.error_message:
-            update["errorMessage"] = callback.error_message
-        for path in self.firestore_paths:
-            self.firestore_client.set_document(
-                path,
-                update,
-                merge=True,
-            )
+            charge_update["errorMessage"] = callback.error_message
+        self.firestore_client.set_document(
+            self.firestore_path,
+            {"charges": {charge_id: charge_update for charge_id in self.charge_ids}},
+            merge=True,
+        )
 
 
 class UsIaEarlyDischargeWritebackExecutor(
@@ -473,13 +504,13 @@ class UsIaEarlyDischargeWritebackExecutor(
 
     def __init__(self, request: UsIaEarlyDischargeRequestData) -> None:
         super().__init__(request)
-        firestore_paths = [
+        firestore_path = (
             f"clientUpdatesV2/us_ia_{request.person_external_id}"
-            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_{charge_id}"
-            for charge_id in request.charge_ids
-        ]
+            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}"
+        )
         self._tracker = UsIaEarlyDischargeStatusTracker(
-            firestore_paths=firestore_paths,
+            firestore_path=firestore_path,
+            charge_ids=request.charge_ids,
             firestore_client=FirestoreClientImpl(),
         )
 

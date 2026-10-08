@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the US_IA early discharge writeback."""
 import os
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
@@ -26,6 +27,7 @@ import pytest
 import requests
 import responses
 from flask import Flask
+from google.cloud.firestore_v1 import transforms
 from mock import MagicMock, patch
 from pydantic import ValidationError
 
@@ -528,10 +530,16 @@ class TestUsIaEarlyDischargeWritebackExecutor(TestCase):
             rsps.add(responses.POST, self.fake_url, status=200)
             UsIaEarlyDischargeWritebackExecutor(_make_request_data()).execute()
 
-        path = mock_firestore_cls.return_value.set_document.call_args.args[0]
-        self.assertTrue(path.startswith("clientUpdatesV2"))
-        doc = mock_firestore_cls.return_value.set_document.call_args.args[1]
-        self.assertEqual(doc["earlyDischargeMessageId"], _TEST_MESSAGE_ID)
+        mock_firestore_cls.return_value.set_document.assert_called_once()
+        path, doc = mock_firestore_cls.return_value.set_document.call_args.args[:2]
+        self.assertEqual(
+            path,
+            f"clientUpdatesV2/us_ia_{PERSON_EXTERNAL_ID}"
+            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}"
+            f"/iconSubmissions/{_TEST_MESSAGE_ID}",
+        )
+        self.assertEqual(doc["iconSubmissionMessageId"], _TEST_MESSAGE_ID)
+        self.assertEqual(doc["chargeIds"], CHARGE_IDENTIFICATION)
 
 
 # ---------------------------------------------------------------------------
@@ -539,16 +547,10 @@ class TestUsIaEarlyDischargeWritebackExecutor(TestCase):
 # ---------------------------------------------------------------------------
 
 
-def _expected_firestore_path(charge_id: str) -> str:
-    return (
-        f"clientUpdatesV2/us_ia_{PERSON_EXTERNAL_ID}"
-        f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_{charge_id}"
-    )
-
-
-EXPECTED_FIRESTORE_PATHS = [
-    _expected_firestore_path(charge_id) for charge_id in CHARGE_IDENTIFICATION
-]
+EXPECTED_FIRESTORE_PATH = (
+    f"clientUpdatesV2/us_ia_{PERSON_EXTERNAL_ID}"
+    f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}"
+)
 
 
 class TestUsIaEarlyDischargeStatusTracker(TestCase):
@@ -556,66 +558,78 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
 
     def _tracker(self) -> tuple[UsIaEarlyDischargeStatusTracker, MagicMock]:
         mock_firestore = MagicMock()
-        mock_firestore.timestamp_key = "serverTimestamp"
+        mock_firestore.timestamp_key = "__loadedAt"
         return (
             UsIaEarlyDischargeStatusTracker(
-                firestore_paths=EXPECTED_FIRESTORE_PATHS,
+                firestore_path=EXPECTED_FIRESTORE_PATH,
+                charge_ids=CHARGE_IDENTIFICATION,
                 firestore_client=mock_firestore,
             ),
             mock_firestore,
         )
 
-    def test_set_status_in_progress_writes_once_per_charge(self) -> None:
+    def test_set_status_in_progress_writes_charges_map(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
+        mock_firestore.set_document.assert_called_once()
+        path, doc = mock_firestore.set_document.call_args.args[:2]
+        self.assertEqual(path, EXPECTED_FIRESTORE_PATH)
         self.assertEqual(
-            mock_firestore.set_document.call_count, len(CHARGE_IDENTIFICATION)
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.IN_PROGRESS.value,
         )
-        for call, expected_path in zip(
-            mock_firestore.set_document.call_args_list, EXPECTED_FIRESTORE_PATHS
-        ):
-            path, doc, *_ = call.args
-            self.assertEqual(path, expected_path)
-            self.assertEqual(
-                doc["status"], ExternalSystemRequestStatus.IN_PROGRESS.value
-            )
+        self.assertEqual(
+            doc["charges"]["CHG790"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.IN_PROGRESS.value,
+        )
+        # DELETE_FIELD clears any errorMessage left by a prior failed submission.
+        self.assertEqual(
+            doc["charges"]["CHG789"]["errorMessage"], transforms.DELETE_FIELD
+        )
+        self.assertEqual(
+            doc["charges"]["CHG790"]["errorMessage"], transforms.DELETE_FIELD
+        )
 
-    def test_set_status_failure_writes_once_per_charge(self) -> None:
+    def test_set_status_failure_writes_charges_map(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.set_status(ExternalSystemRequestStatus.FAILURE)
 
+        mock_firestore.set_document.assert_called_once()
+        path, doc = mock_firestore.set_document.call_args.args[:2]
+        self.assertEqual(path, EXPECTED_FIRESTORE_PATH)
         self.assertEqual(
-            mock_firestore.set_document.call_count, len(CHARGE_IDENTIFICATION)
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
         )
-        for call, expected_path in zip(
-            mock_firestore.set_document.call_args_list, EXPECTED_FIRESTORE_PATHS
-        ):
-            path, doc, *_ = call.args
-            self.assertEqual(path, expected_path)
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
+        self.assertEqual(
+            doc["charges"]["CHG790"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
+        )
 
     def test_set_status_success_is_noop(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.set_status(ExternalSystemRequestStatus.SUCCESS)
         mock_firestore.set_document.assert_not_called()
 
-    def test_apply_mcp_callback_success_writes_once_per_charge(self) -> None:
+    def test_apply_mcp_callback_success_writes_charges_map(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.apply_mcp_callback(
             McpCallbackData(message_id=_TEST_MESSAGE_ID, transaction_status="S")
         )
 
+        mock_firestore.set_document.assert_called_once()
+        path, doc = mock_firestore.set_document.call_args.args[:2]
+        self.assertEqual(path, EXPECTED_FIRESTORE_PATH)
         self.assertEqual(
-            mock_firestore.set_document.call_count, len(CHARGE_IDENTIFICATION)
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.SUCCESS.value,
         )
-        for call, expected_path in zip(
-            mock_firestore.set_document.call_args_list, EXPECTED_FIRESTORE_PATHS
-        ):
-            path, doc, *_ = call.args
-            self.assertEqual(path, expected_path)
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.SUCCESS.value)
-            self.assertNotIn("errorMessage", doc)
+        self.assertEqual(
+            doc["charges"]["CHG790"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.SUCCESS.value,
+        )
+        self.assertNotIn("errorMessage", doc["charges"]["CHG789"])
 
     def test_apply_mcp_callback_failure_writes_error_message_to_all_charges(
         self,
@@ -629,13 +643,24 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
             )
         )
 
+        mock_firestore.set_document.assert_called_once()
+        _, doc = mock_firestore.set_document.call_args.args[:2]
         self.assertEqual(
-            mock_firestore.set_document.call_count, len(CHARGE_IDENTIFICATION)
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
         )
-        for call in mock_firestore.set_document.call_args_list:
-            _, doc, *_ = call.args
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
-            self.assertEqual(doc["errorMessage"], "ATG rejected: ineligible offense")
+        self.assertEqual(
+            doc["charges"]["CHG789"]["errorMessage"],
+            "ATG rejected: ineligible offense",
+        )
+        self.assertEqual(
+            doc["charges"]["CHG790"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
+        )
+        self.assertEqual(
+            doc["charges"]["CHG790"]["errorMessage"],
+            "ATG rejected: ineligible offense",
+        )
 
     def test_apply_mcp_callback_unknown_status_treated_as_failure(self) -> None:
         tracker, mock_firestore = self._tracker()
@@ -643,41 +668,47 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
             McpCallbackData(message_id=_TEST_MESSAGE_ID, transaction_status="X")
         )
 
-        for call in mock_firestore.set_document.call_args_list:
-            _, doc, *_ = call.args
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
+        _, doc = mock_firestore.set_document.call_args.args[:2]
+        self.assertEqual(
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
+        )
+        self.assertEqual(
+            doc["charges"]["CHG790"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
+        )
 
-    def _mock_docs(
-        self, charge_ids: list[str], person_external_id: str = PERSON_EXTERNAL_ID
-    ) -> list[MagicMock]:
-        docs = []
-        for charge_id in charge_ids:
-            doc = MagicMock()
-            doc.reference.parent.parent.id = f"us_ia_{person_external_id}"
-            doc.reference.path = (
-                f"clientUpdatesV2/us_ia_{person_external_id}"
-                f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_{charge_id}"
-            )
-            docs.append(doc)
-        return docs
+    def _mock_submission_doc(
+        self,
+        charge_ids: list[str],
+        message_id: str = _TEST_MESSAGE_ID,
+        person_external_id: str = PERSON_EXTERNAL_ID,
+    ) -> MagicMock:
+        opportunity_path = (
+            f"clientUpdatesV2/us_ia_{person_external_id}"
+            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}"
+        )
+        doc = MagicMock()
+        doc.reference.parent.parent.path = opportunity_path
+        doc.reference.parent.parent.parent.parent.id = f"us_ia_{person_external_id}"
+        doc.to_dict.return_value = {
+            "iconSubmissionMessageId": message_id,
+            "chargeIds": charge_ids,
+        }
+        return doc
 
     def test_from_message_id(self) -> None:
         mock_firestore = MagicMock()
-        mock_firestore.client.collection_group.return_value.where.return_value.get.return_value = self._mock_docs(
-            CHARGE_IDENTIFICATION
-        )
+        mock_firestore.client.collection_group.return_value.where.return_value.get.return_value = [
+            self._mock_submission_doc(CHARGE_IDENTIFICATION)
+        ]
         tracker = UsIaEarlyDischargeStatusTracker.from_message_id(
             _TEST_MESSAGE_ID, mock_firestore
         )
-        self.assertEqual(
-            tracker.firestore_paths,
-            [
-                f"clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_CHG789",
-                f"clientUpdatesV2/us_ia_A123456/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}_CHG790",
-            ],
-        )
+        self.assertEqual(tracker.firestore_path, EXPECTED_FIRESTORE_PATH)
+        self.assertEqual(tracker.charge_ids, CHARGE_IDENTIFICATION)
         mock_firestore.client.collection_group.assert_called_once_with(
-            "clientOpportunityUpdates"
+            "iconSubmissions"
         )
 
     def test_from_message_id_unknown_raises(self) -> None:
@@ -694,8 +725,8 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
 
     def test_from_message_id_multiple_persons_raises(self) -> None:
         mock_firestore = MagicMock()
-        doc1 = self._mock_docs(["CHG789"], person_external_id="A123456")[0]
-        doc2 = self._mock_docs(["CHG789"], person_external_id="B999999")[0]
+        doc1 = self._mock_submission_doc(["CHG789"], person_external_id="A123456")
+        doc2 = self._mock_submission_doc(["CHG789"], person_external_id="B999999")
         mock_firestore.client.collection_group.return_value.where.return_value.get.return_value = [
             doc1,
             doc2,
@@ -707,10 +738,30 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
                 _TEST_MESSAGE_ID, mock_firestore
             )
 
+    def test_from_message_id_missing_charge_ids_raises(self) -> None:
+        mock_firestore = MagicMock()
+        doc = MagicMock()
+        submission_path = (
+            f"clientUpdatesV2/us_ia_{PERSON_EXTERNAL_ID}"
+            f"/clientOpportunityUpdates/{EARLY_DISCHARGE_STATUS_DOC_ID}"
+            f"/iconSubmissions/{_TEST_MESSAGE_ID}"
+        )
+        doc.reference.path = submission_path
+        doc.to_dict.return_value = {"iconSubmissionMessageId": _TEST_MESSAGE_ID}
+        mock_firestore.client.collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        with self.assertRaisesRegex(
+            McpMessageNotFoundError,
+            rf"^iconSubmissions document \[{re.escape(submission_path)}\] is missing chargeIds$",
+        ):
+            UsIaEarlyDischargeStatusTracker.from_message_id(
+                _TEST_MESSAGE_ID, mock_firestore
+            )
+
     def test_firestore_path_uses_correct_state_prefix(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
-        for call in mock_firestore.set_document.call_args_list:
-            path = call.args[0]
-            self.assertTrue(path.startswith("clientUpdatesV2/us_ia_"))
+        path = mock_firestore.set_document.call_args.args[0]
+        self.assertTrue(path.startswith("clientUpdatesV2/us_ia_"))

@@ -2451,15 +2451,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         charge_ids: list[str] | None = None,
     ) -> None:
         charge_ids = charge_ids if charge_ids is not None else ["CHG789"]
-        mock_docs = []
-        for charge_id in charge_ids:
-            doc = MagicMock()
-            doc.id = f"usIaEarlyDischarge_{charge_id}"
-            doc.reference.parent.parent.id = f"us_ia_{person_external_id}"
-            mock_docs.append(doc)
-        mock_firestore.return_value.client.collection_group.return_value.where.return_value.get.return_value = (
-            mock_docs
+        doc = MagicMock()
+        doc.reference.parent.parent.path = (
+            f"clientUpdatesV2/us_ia_{person_external_id}"
+            f"/clientOpportunityUpdates/usIaEarlyDischarge"
         )
+        doc.reference.parent.parent.parent.parent.id = f"us_ia_{person_external_id}"
+        doc.to_dict.return_value = {
+            "iconSubmissionMessageId": "test-message-id",
+            "chargeIds": charge_ids,
+        }
+        mock_firestore.return_value.client.collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
@@ -2483,10 +2487,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(
             self._parse_callback_response_transaction_status(response), "S"
         )
-        mock_firestore.return_value.set_document.assert_called()
-        for mock_call in mock_firestore.return_value.set_document.call_args_list:
-            _, doc, *_ = mock_call.args
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.SUCCESS.value)
+        mock_firestore.return_value.set_document.assert_called_once()
+        _, doc = mock_firestore.return_value.set_document.call_args.args[:2]
+        self.assertEqual(
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.SUCCESS.value,
+        )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_mcp_early_discharge_callback_bad_token_returns_401(
@@ -2573,14 +2579,15 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(
             self._parse_callback_response_transaction_status(response), "S"
         )
-        mock_firestore.return_value.set_document.assert_called()
-
-        for (
-            set_document_call
-        ) in mock_firestore.return_value.set_document.call_args_list:
-            _, doc, *_ = set_document_call.args
-            self.assertEqual(doc["status"], ExternalSystemRequestStatus.FAILURE.value)
-            self.assertEqual(doc["errorMessage"], "ATG rejected: ineligible offense")
+        mock_firestore.return_value.set_document.assert_called_once()
+        _, doc = mock_firestore.return_value.set_document.call_args.args[:2]
+        self.assertEqual(
+            doc["charges"]["CHG789"]["iconSubmissionStatus"],
+            ExternalSystemRequestStatus.FAILURE.value,
+        )
+        self.assertEqual(
+            doc["charges"]["CHG789"]["errorMessage"], "ATG rejected: ineligible offense"
+        )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
