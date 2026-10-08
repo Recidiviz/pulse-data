@@ -120,6 +120,15 @@ repos:
         files: ^recidiviz/calculator/query/|^recidiviz/.*/views/|^recidiviz/task_eligibility/|^recidiviz/monitoring/platform_kpis/|^recidiviz/ingest/direct/regions/.*/raw_data/
         exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
         require_serial: true
+      - id: generate_function_usage_documentation
+        name: generate_function_usage_documentation
+        entry: uv run python -m
+          recidiviz.tools.docs.function_usage_documentation_generator
+        language: system
+        files: ^recidiviz/.*\.py$
+        exclude: ^recidiviz/tests/
+        pass_filenames: false
+        require_serial: true
       - id: generate_ingest_mappings_schema_documentation
         name: generate_ingest_mappings_schema_documentation
         entry: uv run python -m

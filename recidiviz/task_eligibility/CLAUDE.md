@@ -42,11 +42,13 @@ appropriate location.
 | `aggregate_adjacent_spans`            | `sessions_query_fragments.py`      | Merges adjacent spans with identical attributes into single spans                                                                         |
 | `nonnull_end_date_exclusive_clause`   | `bq_utils.py`                      | Like `nonnull_end_date_clause` but for exclusive end dates                                                                                |
 
-Additional resources:
-
-- `utils/general_criteria_builders.py` and
-  `utils/state_dataset_query_fragments.py`
-- `utils/us_xx_query_fragments.py` for state-specific helpers
+For every function that criteria files import at least 3 times, ranked by
+usage and attributed to the module that defines it, see
+[`docs/engineering/task_eligibility/criteria_function_usage.md`](../../docs/engineering/task_eligibility/criteria_function_usage.md).
+A pre-commit hook regenerates it, so check it before writing a new fragment.
+It leaves out helpers imported fewer than 3 times, so also skim
+`utils/general_criteria_builders.py` and `utils/state_dataset_query_fragments.py`;
+state-specific helpers live in `utils/us_xx_query_fragments.py`.
 
 #### Handling NULL Start and End Dates
 
