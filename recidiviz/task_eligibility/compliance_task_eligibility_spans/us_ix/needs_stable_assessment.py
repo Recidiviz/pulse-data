@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a criteria view that shows spans of time for which sex offense supervision clients
 need a STABLE assessment. Specifically:
-- Initial assessments are needed within 90 days of starting supervision for sex offenders
+- Initial assessments are needed within 45 days of starting supervision
 - Reassessments are needed every 365 days after the last assessment, triggered
     30 days before that date.
 - Unlike LSI-R assessments, even clients on minimum supervision level need STABLE reassessments.

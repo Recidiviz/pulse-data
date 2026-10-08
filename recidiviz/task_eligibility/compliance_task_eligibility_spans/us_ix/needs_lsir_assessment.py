@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a criteria view that shows spans of time for which supervision clients
 need an LSI-R assessment. Specifically:
-- Initial assessments are needed within 45 or 90 days of starting supervision
+- Initial assessments are needed within 45 days of starting supervision
 - Reassessments are needed every 365 days after the last assessment, triggered
     30 days before that date. However:
     - Clients on minimum supervision level and with GENERAL case type do not need reassessments.
