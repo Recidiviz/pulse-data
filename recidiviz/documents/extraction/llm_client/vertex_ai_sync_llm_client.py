@@ -24,6 +24,10 @@ import httpx
 from google import genai
 from google.genai import errors, types
 
+from recidiviz.cloud_resources.platform_resource_labels import (
+    PlatformEnvironmentResourceLabel,
+)
+from recidiviz.cloud_resources.resource_label import coalesce_resource_labels
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
 from recidiviz.documents.extraction.llm_client.types import (
     MAX_OUTPUT_TOKENS_EXTRACTION_REQUEST_PARAMETER_NAME,
@@ -261,7 +265,11 @@ class VertexAISyncLLMClient(SyncLLMClient):
             # the google-genai Schema type (an OpenAPI-3.0 subset that cannot
             # represent our generated schema).
             response_json_schema=request.response_json_schema,
-            labels=request.billing_labels,
+            labels=coalesce_resource_labels(
+                *request.billing_labels,
+                PlatformEnvironmentResourceLabel.for_current_env(),
+                should_throw_on_conflict=True,
+            ),
         )
 
     def _build_result(

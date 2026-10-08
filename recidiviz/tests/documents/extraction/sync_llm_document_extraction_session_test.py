@@ -28,6 +28,7 @@ from unittest import TestCase
 
 import attr
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
@@ -64,7 +65,7 @@ from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import
 )
 
 _JOB_ID = "job-1"
-_BILLING_LABELS = {"job_type": "test"}
+_BILLING_LABELS = [ResourceLabel(key="job_type", value="test")]
 _ASSIGNMENT_GROUP_NAME = "assignment"
 _DOC_A = "CID_A"
 _DOC_B = "CID_B"

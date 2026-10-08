@@ -22,6 +22,7 @@ import attrs
 
 from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common.constants import platform_logging_strings
+from recidiviz.common.google_cloud.utils import format_resource_label
 from recidiviz.utils import environment
 
 
@@ -174,6 +175,15 @@ class IngestInstanceResourceLabel(ResourceLabel):
 @attrs.define(kw_only=True)
 class SandboxPrefixResourceLabel(ResourceLabel):
     key: str = attrs.field(default=platform_logging_strings.SANDBOX_PREFIX)
+
+
+@attrs.define(kw_only=True)
+class RequesterResourceLabel(ResourceLabel):
+    key: str = attrs.field(default=platform_logging_strings.REQUESTER)
+
+    @classmethod
+    def for_user(cls, user: str) -> "RequesterResourceLabel":
+        return cls(value=format_resource_label(user))
 
 
 @attrs.define(kw_only=True)

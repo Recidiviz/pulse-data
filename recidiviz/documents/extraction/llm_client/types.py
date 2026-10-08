@@ -29,6 +29,7 @@ from typing import Any
 import attr
 from google.genai import types
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
 
 TEMPERATURE_EXTRACTION_REQUEST_PARAMETER_NAME = "temperature"
@@ -105,8 +106,8 @@ class LLMDocumentExtractionRequest:
     config; the client translates the keys it knows into the provider's request.
     """
 
-    billing_labels: dict[str, str] = attr.ib(
-        validator=attr_validators.is_dict_of(str, str)
+    billing_labels: list[ResourceLabel] = attr.ib(
+        validator=attr_validators.is_list_of(ResourceLabel)
     )
     """Billing labels attached to the request for cost attribution."""
 

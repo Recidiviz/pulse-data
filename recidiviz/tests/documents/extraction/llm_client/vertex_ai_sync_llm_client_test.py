@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 from google.genai import errors, types  # pylint: disable=no-name-in-module
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionRequest,
     LLMRequestErrorType,
@@ -56,11 +57,10 @@ _DEFAULT_LEVEL_REQUEST_PARAMETERS: dict[str, Any] = {
     "thinking_level": "MINIMAL",
 }
 
-_BILLING_LABELS = {
-    "state_code": "us_xx",
-    "environment": "staging",
-    "requester": "test_user",
-}
+_BILLING_LABELS = [
+    ResourceLabel(key="state_code", value="us_xx"),
+    ResourceLabel(key="requester", value="test_user"),
+]
 
 
 def _request(
@@ -253,16 +253,18 @@ class VertexAISyncLLMClientTest(TestCase):
 
         self.assertIsNone(self._last_generate_config().thinking_config)
 
-    def test_billing_labels_passed_through_verbatim(self) -> None:
+    def test_billing_labels_merged_with_execution_environment(self) -> None:
         self.mock_generate_content.return_value = _response()
 
         self._execute()
 
+        # The request's own labels, plus the platform_environment label the client
+        # derives from the current env (local_machine under test).
         self.assertEqual(
             {
                 "state_code": "us_xx",
-                "environment": "staging",
                 "requester": "test_user",
+                "platform_environment": "local_machine",
             },
             self._last_generate_config().labels,
         )

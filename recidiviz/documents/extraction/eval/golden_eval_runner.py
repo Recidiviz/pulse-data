@@ -18,13 +18,18 @@
 sheet, extracts every document through the real LLM path, scores the results, and
 writes the scored rows to the golden eval results table.
 """
+
 import datetime
-import re
 from collections.abc import Callable, Sequence
 
 from googleapiclient.discovery import Resource
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.cloud_resources.platform_resource_labels import (
+    RequesterResourceLabel,
+    StateCodeResourceLabel,
+)
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
 from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
     GoldenEvalDocumentReader,
@@ -38,6 +43,10 @@ from recidiviz.documents.extraction.eval.golden_eval_results_table import (
 )
 from recidiviz.documents.extraction.eval.golden_eval_scorer import (
     LLMDocumentExtractionGoldenEvalScorer,
+)
+from recidiviz.documents.extraction.extraction_resource_labels import (
+    ExtractionModelResourceLabel,
+    GoldenEvaluationResourceLabel,
 )
 from recidiviz.documents.extraction.llm_client.sync_llm_client import SyncLLMClient
 from recidiviz.documents.extraction.llm_client.types import (
@@ -67,42 +76,9 @@ from recidiviz.utils.google_sheets_reader import GoogleSheetReader
 GOLDEN_EVAL_JOB_ID_PREFIX = "golden_eval"
 """Prefix for the job id of a golden eval run."""
 
-# Billing label keys attached to every request an eval run makes, for cost
-# attribution.
-# TODO(OBT-42711): Use formal ResourceLabel classes
-_STATE_CODE_BILLING_LABEL_KEY = "state_code"
-_JOB_TYPE_BILLING_LABEL_KEY = "job_type"
-_MODEL_BILLING_LABEL_KEY = "model"
-_REQUESTER_BILLING_LABEL_KEY = "requester"
-
-# Value of the job-type billing label
-_SYNC_JOB_TYPE_BILLING_LABEL_VALUE = "golden-eval"
-
 # Golden eval documents hold their text in memory, so a request build does no I/O
 # and needs no build parallelism.
 _REQUEST_BUILD_CONCURRENCY = 1
-
-
-def _sanitize_label_value(value: str) -> str:
-    """Returns |value| coerced into a valid GCP label value: lowercased, with any
-    character outside [a-z0-9_-] replaced by '_', truncated to GCP's 63-character
-    limit."""
-    sanitized = re.sub(r"[^a-z0-9_-]", "_", value.lower())
-    return sanitized[:63]
-
-
-def _sanitize_label_key(key: str) -> str:
-    """Returns |key| coerced into a valid GCP label key. Sanitizes like a value
-    but additionally enforces GCP's stricter key rules — a key must be non-empty
-    and start with a lowercase letter — raising loudly rather than sending an
-    invalid key that would fail every Vertex request in the run."""
-    sanitized = _sanitize_label_value(key)
-    if not re.fullmatch(r"[a-z][a-z0-9_-]*", sanitized):
-        raise ValueError(
-            f"Label key [{key}] sanitizes to [{sanitized}], which is not a valid "
-            f"GCP label key (must be non-empty and start with a lowercase letter)."
-        )
-    return sanitized
 
 
 def build_vertex_ai_sync_llm_client(model_config: LLMModelConfig) -> SyncLLMClient:
@@ -271,21 +247,15 @@ class GoldenEvalRunner:
             f"{run_datetime_utc.strftime('%Y%m%dT%H%M%S%f')}"
         )
 
-    def billing_labels(self, *, config: LLMExtractorConfig) -> dict[str, str]:
+    def billing_labels(self, *, config: LLMExtractorConfig) -> list[ResourceLabel]:
         """Returns the billing labels attached to every LLM request this run
-        makes, for cost attribution. Keys and values are sanitized to satisfy
-        GCP's label character restrictions.
-        """
-        labels = {
-            _STATE_CODE_BILLING_LABEL_KEY: config.state_code.value,
-            _JOB_TYPE_BILLING_LABEL_KEY: _SYNC_JOB_TYPE_BILLING_LABEL_VALUE,
-            _MODEL_BILLING_LABEL_KEY: config.model_config.name,
-            _REQUESTER_BILLING_LABEL_KEY: self.requester,
-        }
-        return {
-            _sanitize_label_key(key): _sanitize_label_value(value)
-            for key, value in labels.items()
-        }
+        makes, for cost attribution."""
+        return [
+            StateCodeResourceLabel(value=config.state_code.value.lower()),
+            ExtractionModelResourceLabel.for_model_name(config.model_config.name),
+            RequesterResourceLabel.for_user(self.requester),
+            GoldenEvaluationResourceLabel(),
+        ]
 
     def _read_golden_eval_documents(
         self, *, config: LLMExtractorConfig

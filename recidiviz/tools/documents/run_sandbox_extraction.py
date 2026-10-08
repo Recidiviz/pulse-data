@@ -95,7 +95,6 @@ To narrow to specific root entities:
 import argparse
 import logging
 import os
-import re
 import sys
 import tempfile
 import time
@@ -103,10 +102,16 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.cloud_resources.platform_resource_labels import (
+    RequesterResourceLabel,
+    SandboxPrefixResourceLabel,
+)
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
+from recidiviz.common.google_cloud.utils import format_resource_label
 from recidiviz.documents.extraction.document_extraction_processor import (
     DocumentExtractionProcessor,
     ExtractionRunSummary,
@@ -185,43 +190,21 @@ DEFAULT_REQUEST_BUILD_CONCURRENCY = 16
 DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS = 10.0
 
 
-REQUESTER_LABEL_KEY = "requester"
-SANDBOX_PREFIX_LABEL_KEY = "sandbox_prefix"
-
-
-# TODO(OBT-42711) Formalize concept of labels
-def _build_labels(*, user_labels: list[str], sandbox_prefix: str) -> dict[str, str]:
-    """Returns the billing labels attached to every Vertex request: the parsed
-    user-supplied labels, plus an automatically-added requester and sandbox prefix.
-    """
-
-    def _sanitize_label_value(value: str) -> str:
-        """Returns |value| coerced into a valid GCP label value: lowercased, with any
-        character outside [a-z0-9_-] replaced by '_', truncated to GCP's 63-character
-        limit."""
-        sanitized = re.sub(r"[^a-z0-9_-]", "_", value.lower())
-        return sanitized[:63]
-
-    def _sanitize_label_key(key: str) -> str:
-        """Returns |key| coerced into a valid GCP label key. Sanitizes like a value
-        but additionally enforces GCP's stricter key rules — a key must be non-empty
-        and start with a lowercase letter — raising loudly rather than sending an
-        invalid key that would fail every Vertex request in the run."""
-        sanitized = _sanitize_label_value(key)
-        if not re.fullmatch(r"[a-z][a-z0-9_-]*", sanitized):
-            raise ValueError(
-                f"Label key [{key}] sanitizes to [{sanitized}], which is not a valid "
-                f"GCP label key (must be non-empty and start with a lowercase letter)."
-            )
-        return sanitized
-
-    labels = parse_key_value_args(user_labels)
-    labels.setdefault(REQUESTER_LABEL_KEY, get_normalized_git_username())
-    labels[SANDBOX_PREFIX_LABEL_KEY] = sandbox_prefix
-    return {
-        _sanitize_label_key(key): _sanitize_label_value(value)
-        for key, value in labels.items()
-    }
+def _build_labels(
+    *, user_labels: dict[str, str], sandbox_prefix: str
+) -> list[ResourceLabel]:
+    """Builds the list of resource labels for cost attribution."""
+    labels: list[ResourceLabel] = [
+        RequesterResourceLabel.for_user(get_normalized_git_username()),
+        SandboxPrefixResourceLabel(value=sandbox_prefix),
+    ]
+    labels.extend(
+        ResourceLabel(
+            key=format_resource_label(key), value=format_resource_label(value)
+        )
+        for key, value in user_labels.items()
+    )
+    return labels
 
 
 _PERSISTENT_POSTGRES_DATA_DIR = os.path.join(
@@ -298,7 +281,7 @@ def run_extraction(
     config: LLMExtractorConfig,
     results_sandbox_prefix: str,
     document_store_sandbox: DocumentStoreSandboxContext,
-    labels: dict[str, str],
+    labels: list[ResourceLabel],
     table_expiration_ms: int,
     bq_client: BigQueryClient,
     fs: GCSFileSystem,
@@ -363,7 +346,7 @@ def run_entity_resolution(
     er_configs: list[LLMExtractorConfig],
     results_sandbox_prefix: str,
     document_store_sandbox: DocumentStoreSandboxContext,
-    labels: dict[str, str],
+    labels: list[ResourceLabel],
     table_expiration_ms: int,
     bq_client: BigQueryClient,
     fs: GCSFileSystem,
@@ -570,7 +553,10 @@ def run_sandbox_extraction(
     table_expiration_ms = args.table_expiration_days * 24 * 60 * 60 * 1000
     bq_client = BigQueryClientImpl(project_id=project_id())
     fs = GcsfsFactory.build()
-    labels = _build_labels(user_labels=args.labels, sandbox_prefix=args.sandbox_prefix)
+    labels = _build_labels(
+        user_labels=parse_key_value_args(args.labels),
+        sandbox_prefix=args.sandbox_prefix,
+    )
 
     # TODO(OBT-45428): Once there is a run-first-order-only flag, reject
     # --document-limit unless that flag is set (ER over a truncated document set is

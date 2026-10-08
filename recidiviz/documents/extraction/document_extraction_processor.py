@@ -25,6 +25,7 @@ import time
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
@@ -335,7 +336,7 @@ class DocumentExtractionProcessor:
         # from, or None to read the production document store.
         document_store_sandbox: DocumentStoreSandboxContext | None,
         # Billing labels attached to each Vertex AI request.
-        labels: dict[str, str],
+        labels: list[ResourceLabel],
         # Client for the result tables.
         bq_client: BigQueryClient,
         # Filesystem the document text is read from.

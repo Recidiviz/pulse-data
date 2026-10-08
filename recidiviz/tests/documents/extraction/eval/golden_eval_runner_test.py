@@ -35,6 +35,10 @@ from googleapiclient.discovery import Resource
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.cloud_resources.platform_resource_labels import (
+    RequesterResourceLabel,
+    StateCodeResourceLabel,
+)
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
 )
@@ -56,6 +60,10 @@ from recidiviz.documents.extraction.eval.golden_eval_results_table import (
 from recidiviz.documents.extraction.eval.golden_eval_runner import (
     GoldenEvalRunner,
     _StrictGoldenEvalSessionDelegate,
+)
+from recidiviz.documents.extraction.extraction_resource_labels import (
+    ExtractionModelResourceLabel,
+    GoldenEvaluationResourceLabel,
 )
 from recidiviz.documents.extraction.extraction_results_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -501,12 +509,12 @@ class GoldenEvalRunnerTest(TestCase):
             request.response_json_schema,
         )
         self.assertEqual(
-            {
-                "state_code": "us_xx",
-                "job_type": "golden-eval",
-                "model": "acme_large_deterministic",
-                "requester": _REQUESTER,
-            },
+            [
+                StateCodeResourceLabel(value="us_xx"),
+                ExtractionModelResourceLabel(value="acme_large_deterministic"),
+                RequesterResourceLabel(value=_REQUESTER),
+                GoldenEvaluationResourceLabel(),
+            ],
             request.billing_labels,
         )
 
@@ -519,12 +527,12 @@ class GoldenEvalRunnerTest(TestCase):
         )
 
         self.assertEqual(
-            {
-                "state_code": "us_xx",
-                "job_type": "golden-eval",
-                "model": "acme_large_deterministic",
-                "requester": "testy_tester_recidiviz_org",
-            },
+            [
+                StateCodeResourceLabel(value="us_xx"),
+                ExtractionModelResourceLabel(value="acme_large_deterministic"),
+                RequesterResourceLabel(value="testy-tester-recidiviz-org"),
+                GoldenEvaluationResourceLabel(),
+            ],
             runner.billing_labels(config=self.config),
         )
 

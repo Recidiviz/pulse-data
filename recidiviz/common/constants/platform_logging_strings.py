@@ -81,6 +81,7 @@ DATASET_ID: str = "dataset_id"
 TABLE_ID: str = "table_id"
 BIG_QUERY_ADDRESS: str = "big_query_address"
 
+REQUESTER: str = "requester"
 
 # -- OTHER COMMON VALUES --
 STATE_AGNOSTIC: str = "state_agnostic"

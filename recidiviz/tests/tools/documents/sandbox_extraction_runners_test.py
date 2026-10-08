@@ -27,6 +27,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.llm_extraction_job import (
@@ -351,7 +352,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
                 config=config,
                 results_sandbox_prefix=_SANDBOX_PREFIX,
                 document_store_sandbox=None,
-                labels={"reason": "test"},
+                labels=[ResourceLabel(key="reason", value="test")],
                 bq_client=self.bq_client,
                 fs=self.fs,
                 sync_client=sync_client,
@@ -541,7 +542,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
             config=config,
             results_sandbox_prefix=_SANDBOX_PREFIX,
             document_store_sandbox=None,
-            labels={"reason": "test"},
+            labels=[ResourceLabel(key="reason", value="test")],
             bq_client=self.bq_client,
             fs=self.fs,
             sync_client=self._fake_client(),

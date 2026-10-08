@@ -54,7 +54,7 @@ def _request(document_contents_id: str) -> LLMDocumentExtractionRequest:
         document_text=f"Text for {document_contents_id}.",
         response_json_schema=_RESPONSE_JSON_SCHEMA,
         request_parameters={},
-        billing_labels={},
+        billing_labels=[],
     )
 
 

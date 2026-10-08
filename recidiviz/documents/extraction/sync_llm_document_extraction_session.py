@@ -23,6 +23,7 @@ from typing import Protocol
 
 import attr
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
 from recidiviz.documents.extraction.document_text_source import DocumentTextSource
 from recidiviz.documents.extraction.expected_entry_nums_source import (
@@ -147,8 +148,8 @@ class SyncLLMDocumentExtractionSession:
     job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The extraction job id stamped on every processed result."""
 
-    billing_labels: dict[str, str] = attr.ib(
-        validator=attr_validators.is_dict_of(str, str)
+    billing_labels: list[ResourceLabel] = attr.ib(
+        validator=attr_validators.is_list_of(ResourceLabel)
     )
     """Billing labels attached to every LLM request this session makes, for cost
     attribution."""

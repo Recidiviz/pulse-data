@@ -24,6 +24,7 @@ from typing import Any
 
 import attr
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSBlobDoesNotExistError,
     GCSFileSystem,
@@ -68,8 +69,8 @@ class LLMDocumentExtractionRequestBuilder:
     """The generation parameters — temperature, thinking budget, caching — keyed by
     parameter name."""
 
-    billing_labels: dict[str, str] = attr.ib(
-        validator=attr_validators.is_dict_of(str, str)
+    billing_labels: list[ResourceLabel] = attr.ib(
+        validator=attr_validators.is_list_of(ResourceLabel)
     )
     """Billing labels attached to every request this builder produces, for cost
     attribution."""
@@ -120,7 +121,7 @@ class LLMDocumentExtractionRequestBuilder:
         cls,
         *,
         config: LLMExtractorConfig,
-        billing_labels: dict[str, str],
+        billing_labels: list[ResourceLabel],
     ) -> "LLMDocumentExtractionRequestBuilder":
         """Returns the builder for |config|: its rendered instructions prompt, its
         collection's generated JSON schema, the generation parameters its model

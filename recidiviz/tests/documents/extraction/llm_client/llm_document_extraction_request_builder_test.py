@@ -19,6 +19,7 @@
 from typing import Any
 from unittest import TestCase
 
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_client.llm_document_extraction_request_builder import (
@@ -48,7 +49,7 @@ _RESPONSE_JSON_SCHEMA: dict[str, Any] = {
 _REQUEST_PARAMETERS: dict[str, Any] = {
     "temperature": 0.0,
 }
-_BILLING_LABELS = {"state_code": "us_xx"}
+_BILLING_LABELS = [ResourceLabel(key="state_code", value="us_xx")]
 _DOCUMENT_CONTENTS_ID = "a" * 64
 
 
