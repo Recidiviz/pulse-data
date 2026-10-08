@@ -3,11 +3,12 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  DiscOffenseRptId: STRING
+  IncidentExternalId: STRING
   TermId: STRING
   OffenderId: STRING
   InfractionDate: STRING
   DorOffenseTypeDesc: STRING
+  DorOffenseTypeName: STRING
   DorOffenseCode: STRING
   DorOffenseCategoryId: STRING
   LocationName: STRING
@@ -17,6 +18,7 @@ input_columns:
   DACaseId: STRING
   DAHearingDate: STRING
   IsDismissed: BOOLEAN
+  IsPending: BOOLEAN
   outcome_list: STRING
 unused_columns: []
 output:
@@ -27,7 +29,7 @@ output:
           id_type: $literal("US_IX_DOC")
     incarceration_incidents:
       - StateIncarcerationIncident:
-          external_id: DiscOffenseRptId
+          external_id: IncidentExternalId
           incident_date: InfractionDate
           facility: LocationName
           incident_severity:
@@ -54,6 +56,9 @@ output:
           incident_metadata:
             $normalized_values_json_dict:
               ProcedureStatus: DAProcedureStatusDesc
+              HearingDate: DAHearingDate
+              OffenseTypeName: DorOffenseTypeName
+              DACaseId: DACaseId
               TermId: TermId
               OffenseCode: DorOffenseCode
               OffenseCategoryId: DorOffenseCategoryId
@@ -83,20 +88,33 @@ output:
                       $json_extract:
                         $key: insert_date
                         $json: $iter_item
-            # A DOR whose DA case ended in dismissal gets one DISMISSED outcome
-            # alongside any penalties, so downstream logic can drop it.
+            # A DOR that was dismissed or overturned, or whose DA case hasn't been
+            # decided yet, gets one DISMISSED or PENDING outcome alongside any
+            # penalties, so downstream logic can tell those DORs apart. It is keyed on
+            # the incident because an overturned report can have no DA case.
             - $conditional:
                 - $if:
-                    $equal:
-                      - IsDismissed
-                      - $literal("True")
+                    $or:
+                      - $equal:
+                          - IsDismissed
+                          - $literal("True")
+                      - $equal:
+                          - IsPending
+                          - $literal("True")
                   $then:
                     StateIncarcerationIncidentOutcome:
                       external_id:
                         $concat:
                           $values:
-                            - $literal("DA_CASE")
-                            - DACaseId
-                      outcome_type: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)
+                            - $literal("STATUS")
+                            - IncidentExternalId
+                      outcome_type:
+                        $conditional:
+                          - $if:
+                              $equal:
+                                - IsDismissed
+                                - $literal("True")
+                            $then: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)
+                          - $else: $literal_enum(StateIncarcerationIncidentOutcomeType.PENDING)
                       outcome_description: DAProcedureStatusDesc
                       hearing_date: DAHearingDate
