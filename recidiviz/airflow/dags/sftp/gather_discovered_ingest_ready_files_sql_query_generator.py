@@ -26,6 +26,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.sftp.metadata import (
+    MAX_FILES_TO_PROCESS_PER_DAG_RUN,
     POST_PROCESSED_NORMALIZED_FILE_PATH,
     REMOTE_FILE_PATH,
 )
@@ -64,4 +65,6 @@ class GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
         return f"""
 SELECT post_processed_normalized_file_path, remote_file_path FROM direct_ingest_sftp_ingest_ready_file_metadata
  WHERE region_code = '{self.region_code}' AND file_upload_time IS NULL AND
- file_discovery_time IS NOT NULL;"""
+ file_discovery_time IS NOT NULL
+ ORDER BY file_discovery_time, post_processed_normalized_file_path
+ LIMIT {MAX_FILES_TO_PROCESS_PER_DAG_RUN};"""

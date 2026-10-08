@@ -25,8 +25,6 @@ data "google_secret_manager_secret_version" "us_tx_sftp_host_ip" { secret = "us_
 
 data "google_secret_manager_secret_version" "us_pa_sftp_host_ip" { secret = "us_pa_sftp_host_ip" }
 
-data "google_secret_manager_secret_version" "us_ix_sftp_host_ip" { secret = "us_ix_sftp_host_ip" }
-
 resource "google_project_service" "vpc_access_connector" {
   service = "vpcaccess.googleapis.com"
 
@@ -98,14 +96,6 @@ resource "google_compute_address" "us_pa_sftp_outbound_requests" {
   region       = var.us_central_region
 }
 
-# TODO(OBT-53968) rollback once Idaho confirms whether 130.211.120.162 was blocked
-resource "google_compute_address" "us_ix_sftp_outbound_requests" {
-  name         = "us-ix-sftp-temp-outbound-requests"
-  address_type = "EXTERNAL"
-  description  = "Static IP for making requests directly to Idaho. Should be temporary, see TODO(OBT-53968)"
-  region       = var.us_central_region
-}
-
 # The names of the following NATs and Routers all say "dataflow", but they're actually for all
 # resources in the "default" network.
 module "nat_us_central1" {
@@ -122,40 +112,26 @@ module "nat_us_central1" {
   # from teh same internal to external IP.
   # Specifying rules requires making this value false.
   enable_endpoint_independent_mapping = false
-  rules = concat(
-    var.project_id == "recidiviz-123" ? [
-      {
-        # Production only: staging still reaches Idaho from the shared IP and moving it
-        # would risk the one path that currently works. TODO(OBT-53968)
-        rule_number = 64997
-        description = "Route requests to the US_IX SFTP server through a separate IP"
-        match       = "destination.ip == '${data.google_secret_manager_secret_version.us_ix_sftp_host_ip.secret_data}'"
-        action = {
-          source_nat_active_ips = [google_compute_address.us_ix_sftp_outbound_requests.self_link]
-        }
+  rules = [
+    {
+      # rule_number determines the order in which the rules are checked. The lower the
+      # number, the higher the priority.
+      rule_number = 64998
+      description = "Route requests to the US_TX SFTP server through a separate IP"
+      match       = "destination.ip == '${data.google_secret_manager_secret_version.us_tx_sftp_host_ip.secret_data}'"
+      action = {
+        source_nat_active_ips = [google_compute_address.us_tx_sftp_outbound_requests.self_link]
       }
-    ] : [],
-    [
-      {
-        # rule_number determines the order in which the rules are checked. The lower the
-        # number, the higher the priority.
-        rule_number = 64998
-        description = "Route requests to the US_TX SFTP server through a separate IP"
-        match       = "destination.ip == '${data.google_secret_manager_secret_version.us_tx_sftp_host_ip.secret_data}'"
-        action = {
-          source_nat_active_ips = [google_compute_address.us_tx_sftp_outbound_requests.self_link]
-        }
-      },
-      {
-        rule_number = 64999
-        description = "Route requests to the US_PA SFTP server through a separate IP"
-        match       = "destination.ip == '${data.google_secret_manager_secret_version.us_pa_sftp_host_ip.secret_data}'"
-        action = {
-          source_nat_active_ips = [google_compute_address.us_pa_sftp_outbound_requests.self_link]
-        }
+    },
+    {
+      rule_number = 64999
+      description = "Route requests to the US_PA SFTP server through a separate IP"
+      match       = "destination.ip == '${data.google_secret_manager_secret_version.us_pa_sftp_host_ip.secret_data}'"
+      action = {
+        source_nat_active_ips = [google_compute_address.us_pa_sftp_outbound_requests.self_link]
       }
-    ]
-  )
+    }
+  ]
 }
 
 module "nat_us_west1" {

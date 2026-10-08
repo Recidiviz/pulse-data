@@ -25,7 +25,11 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+from recidiviz.airflow.dags.sftp.metadata import (
+    MAX_FILES_TO_PROCESS_PER_DAG_RUN,
+    REMOTE_FILE_PATH,
+    SFTP_TIMESTAMP,
+)
 
 
 class GatherDiscoveredRemoteFilesSqlQueryGenerator(
@@ -59,4 +63,6 @@ class GatherDiscoveredRemoteFilesSqlQueryGenerator(
         return f"""
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
  WHERE region_code = '{self.region_code}' AND file_download_time IS NULL AND
- file_discovery_time IS NOT NULL;"""
+ file_discovery_time IS NOT NULL
+ ORDER BY sftp_timestamp, remote_file_path
+ LIMIT {MAX_FILES_TO_PROCESS_PER_DAG_RUN};"""

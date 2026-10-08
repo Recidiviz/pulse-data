@@ -39,6 +39,13 @@ END_SFTP = "end_sftp"
 TASK_RETRIES = 3
 
 
+# Must stay under the core.max_map_length Airflow config set in cloud-composer.tf.
+# A backlog larger than this drains across subsequent DAG runs, which means partial
+# data can be imported and ingested between them.
+# TODO(OBT-54071) revisit so that one run transfers a state's files atomically
+MAX_FILES_TO_PROCESS_PER_DAG_RUN = 1000
+
+
 # yaml config file names and location
 SFTP_ENABLED_YAML_CONFIG = "sftp_enabled_in_airflow_config.yaml"
 SFTP_EXCLUDED_PATHS_YAML_CONFIG = "sftp_excluded_remote_file_paths.yaml"
