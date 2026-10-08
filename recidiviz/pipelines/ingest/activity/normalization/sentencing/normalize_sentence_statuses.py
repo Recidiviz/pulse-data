@@ -378,14 +378,15 @@ def normalize_snapshots_for_single_sentence(
         )
     ):
         imposed_dt = as_datetime(assert_type(sentence.imposed_date, datetime.date))
-        # Don't create IMPOSED_PENDING_SERVING if there's already a terminating
-        # status at or before the imposed date (e.g., sentence completed before
-        # it was imposed — bad data, but we shouldn't crash on it).
-        has_terminating_at_or_before = any(
-            s.status.is_terminating_status and s.status_update_datetime <= imposed_dt
+        # Skip the inferred status when the sentence already terminated or started
+        # serving by the imposed date; otherwise it would land after that status, or
+        # start and end on the same instant.
+        is_already_terminated_or_serving = any(
+            (s.status.is_terminating_status or s.status.is_considered_serving_status)
+            and s.status_update_datetime <= imposed_dt
             for s in all_snapshots
         )
-        if not has_terminating_at_or_before:
+        if not is_already_terminated_or_serving:
             all_snapshots.append(
                 StateSentenceStatusSnapshot(
                     state_code=sentence.state_code,

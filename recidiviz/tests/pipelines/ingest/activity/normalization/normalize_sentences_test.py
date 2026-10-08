@@ -1487,6 +1487,105 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert snapshots[0].status == StateSentenceStatus.COMPLETED
         assert snapshots[0].status_update_datetime == completed_dt
 
+    def test_infer_imposed_pending_serving_skipped_when_serving_before_imposed(
+        self,
+    ) -> None:
+        """When a sentence is already SERVING at or before the imposed_date and
+        has no start date, we skip creating IMPOSED_PENDING_SERVING so the queued
+        status does not follow SERVING and stay open."""
+        sentence = self._new_sentence(1)
+        serving_dt = self.start_dt - datetime.timedelta(days=4)
+        sentence.imposed_date = self.start_date
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=serving_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatInfersImposedPendingServingFromImposedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        assert len(snapshots) == 1
+        assert snapshots[0].status == StateSentenceStatus.SERVING
+        assert snapshots[0].status_update_datetime == serving_dt
+        assert snapshots[0].status_end_datetime is None
+
+    def test_infer_imposed_pending_serving_skipped_when_serving_on_imposed_date(
+        self,
+    ) -> None:
+        """When a sentence is SERVING from the imposed_date itself and has no start
+        date, there is no gap to fill, so no IMPOSED_PENDING_SERVING is created."""
+        sentence = self._new_sentence(1)
+        sentence.imposed_date = self.start_date
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatInfersImposedPendingServingFromImposedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        assert len(snapshots) == 1
+        assert snapshots[0].status == StateSentenceStatus.SERVING
+        assert snapshots[0].status_update_datetime == self.start_dt
+        assert snapshots[0].status_end_datetime is None
+
+    def test_infer_imposed_pending_serving_kept_when_serving_after_imposed(
+        self,
+    ) -> None:
+        """When a sentence's ingested SERVING status comes after the imposed_date and
+        it has no start date, we still create IMPOSED_PENDING_SERVING to cover the gap."""
+        sentence = self._new_sentence(1)
+        serving_dt = self.start_dt + datetime.timedelta(days=60)
+        sentence.imposed_date = self.start_date
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=serving_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatInfersImposedPendingServingFromImposedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        assert len(snapshots) == 2
+        assert snapshots[0].status == StateSentenceStatus.IMPOSED_PENDING_SERVING
+        assert snapshots[0].status_update_datetime == self.start_dt
+        assert snapshots[0].status_end_datetime == serving_dt
+        assert snapshots[1].status == StateSentenceStatus.SERVING
+        assert snapshots[1].status_update_datetime == serving_dt
+        assert snapshots[1].status_end_datetime is None
+
     def test_close_serving_period_injects_completed_when_projected_date_passed(
         self,
     ) -> None:

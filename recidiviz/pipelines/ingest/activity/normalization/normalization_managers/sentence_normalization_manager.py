@@ -270,7 +270,9 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         If True, when a sentence has an imposed_date and either:
           - no current_state_provided_start_date, or
           - an imposed_date that is before the current_state_provided_start_date,
-        we will create an IMPOSED_PENDING_SERVING status snapshot at the imposed_date.
+        we will create an IMPOSED_PENDING_SERVING status snapshot at the imposed_date,
+        unless the sentence already has a serving or terminating status at or before
+        that date.
 
         This captures the period between when a sentence was imposed and when it
         began being actively served. For sentences without an effective date, this
