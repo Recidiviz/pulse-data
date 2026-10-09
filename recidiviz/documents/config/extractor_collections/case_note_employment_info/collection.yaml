@@ -93,7 +93,14 @@ output_schema:
         employment — do not include.
       applicable_when_value:
         primary_status: [employed]
-      primary_keys: [employer_name]
+      primary_keys:
+        [
+          employer_name,
+          employer_location,
+          job_title,
+          self_employed,
+          employment_type,
+        ]
       fields:
         - name: employer_name
           type: STRING
