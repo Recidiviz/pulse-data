@@ -5,13 +5,17 @@ description:
   CO Edovo course completions recorded before the Edovo API feed began, loaded
   manually from a CSV. Columns mirror the federated edovo_course_completions
   table, minus the Postgres-specific id and idempotency_key, except that
-  completed_at is replaced by completed_date. The pre-API export only has a
-  local calendar date with no time of day, so completed_date is a DATE in
-  Colorado local time; do not convert it with a timezone. The live table's
-  completed_at is a TIMESTAMP that must be converted with DATE(completed_at,
-  'America/Denver'). id_type is US_CO_ADCNUMBER for facilities that start with
-  "CDOC:" and NULL for county facilities, whose IDs are not ADC numbers.
-  content_hours comes from our own course mapping, not from Edovo.
+  completed_at is replaced by completed_date. Edovo's export only has a date
+  with no time of day, and that date is the UTC date of the completion, not the
+  Colorado date, so a completion in the evening in Colorado carries the next
+  day's date. completed_date is a DATE; do not convert it with a timezone, since
+  there is no time of day to convert. The live table's completed_at is a
+  TIMESTAMP. Compare it with completed_date as DATE(completed_at) in UTC, and use
+  DATE(completed_at, 'America/Denver') for the Colorado date. id_type is
+  US_CO_ADCNUMBER for facilities that start with "CDOC:" and NULL for county
+  facilities, whose IDs are not ADC numbers. content_hours is Edovo's
+  time_to_complete_min for the course divided by 60, rounded to 2 decimals;
+  snapshots loaded before 2026-10-08 used our own course mapping instead.
   completed_date is NULL for courses that were started but not completed.
   received_at is the time the CSV was loaded into BigQuery, one value for all
   rows, not the time Edovo submitted each completion as in the live table.
