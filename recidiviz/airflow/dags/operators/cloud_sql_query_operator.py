@@ -16,16 +16,15 @@
 # =============================================================================
 """Custom operator that returns output from a Cloud SQL Postgres query."""
 import abc
-from contextlib import contextmanager
-from typing import Any, Generic, Iterator, TypeVar
+from typing import Any, Generic, TypeVar
 
 from airflow.models.baseoperator import BaseOperator
-from airflow.models.connection import Connection
-from airflow.providers.google.cloud.hooks.cloud_sql import CloudSQLDatabaseHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
-from recidiviz.utils.types import assert_type
+from recidiviz.airflow.dags.utils.cloud_sql_session import (
+    cloud_sql_postgres_hook_for_connection,
+)
 
 Output = TypeVar("Output")
 
@@ -59,37 +58,9 @@ class CloudSqlQueryOperator(BaseOperator, Generic[Output]):
         self.query_generator = query_generator
 
     def execute(self, context: Context) -> Output:
-        cloud_sql_hook = CloudSQLDatabaseHook(
-            gcp_cloudsql_conn_id=self.cloud_sql_conn_id
-        )
-        cloud_sql_hook.validate_ssl_certs()
-        cloud_sql_hook.validate_socket_path_length()
-
-        with self.cloud_sql_proxy(cloud_sql_hook) as connection:
-            postgres_hook = assert_type(
-                cloud_sql_hook.get_database_hook(connection),
-                PostgresHook,
-            )
-            results = self.query_generator.execute_postgres_query(
+        with cloud_sql_postgres_hook_for_connection(
+            self.cloud_sql_conn_id
+        ) as postgres_hook:
+            return self.query_generator.execute_postgres_query(
                 self, postgres_hook, context
             )
-        return results
-
-    @staticmethod
-    @contextmanager
-    def cloud_sql_proxy(cloud_sql_hook: CloudSQLDatabaseHook) -> Iterator[Connection]:
-        """In order to connect to CloudSQL, the recommended way is through the
-        Cloud SQL Auth Proxy, which needs to be started and stopped explicitly between
-        transactions. https://cloud.google.com/sql/docs/postgres/sql-proxy"""
-        cloud_sql_proxy_runner = None
-        connection = cloud_sql_hook.create_connection()
-        if cloud_sql_hook.use_proxy:
-            cloud_sql_proxy_runner = cloud_sql_hook.get_sqlproxy_runner()
-            cloud_sql_hook.free_reserved_port()
-            cloud_sql_proxy_runner.start_proxy()
-
-        try:
-            yield connection
-        finally:
-            if cloud_sql_proxy_runner:
-                cloud_sql_proxy_runner.stop_proxy()

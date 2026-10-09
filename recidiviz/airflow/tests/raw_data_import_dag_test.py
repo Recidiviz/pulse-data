@@ -542,7 +542,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.region_module_patch.start()
         self.cloud_sql_db_hook_patcher = patch(
-            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
+            "recidiviz.airflow.dags.utils.cloud_sql_session.CloudSQLDatabaseHook"
         )
         self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
         self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
@@ -2709,7 +2709,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # operator mocks ---
 
         self.cloud_sql_db_hook_patcher = patch(
-            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
+            "recidiviz.airflow.dags.utils.cloud_sql_session.CloudSQLDatabaseHook"
         )
         self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
         self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
