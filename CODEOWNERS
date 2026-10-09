@@ -33,7 +33,14 @@ recidiviz/calculator/query/state/views/reference/product_person_external_id_help
 recidiviz/ingest/direct/gating.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/datetime_sql_parser_exemptions.py @Recidiviz/doppler-codeowners
-recidiviz/persistence/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/* @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/bq_refresh/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/schema_entity_converter/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/schema/state/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/schema/operations/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/database/schema/identity/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/entity/** @Recidiviz/doppler-codeowners
+recidiviz/persistence/entity_matching/** @Recidiviz/doppler-codeowners
 recidiviz/pipelines/** @Recidiviz/doppler-codeowners
 recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler-codeowners
 # TODO(#44755): Once all exemptions have been removed from this test file, we can remove Doppler ownership
