@@ -34,6 +34,7 @@
   "private": true,
   "resolutions": {
     "yargs": "^18.1.0",
-    "@fastify/busboy": ">=3.2.2"
+    "@fastify/busboy": ">=3.2.2",
+    "protobufjs": "^8.8.0"
   }
 }
