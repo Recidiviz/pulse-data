@@ -1303,6 +1303,62 @@ class AuthEndpointTests(TestCase):
                 sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
             )
 
+    def test_import_ingested_users_combined_roles(self) -> None:
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_incarceration_and_supervision_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH,
+                    "us_xx_ingested_incarceration_and_supervision_product_users_combined_roles.csv",
+                ),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                generate_fake_default_permissions(
+                    state="US_XX",
+                    role=SUPERVISION_STAFF,
+                ),
+                generate_fake_default_permissions(
+                    state="US_XX",
+                    role="unknown",
+                ),
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                    "filename": "ingested_incarceration_and_supervision_product_users.csv",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(
+                {
+                    # A role listed twice is stored once.
+                    "supervision_staff@testdomain.com": [SUPERVISION_STAFF],
+                    # The unknown role is dropped next to another primary role.
+                    "user@testdomain.com": [SUPERVISION_STAFF],
+                    # Roles outside RosterPredefinedRoles, like experiments, are not primary roles.
+                    "user4@testdomain.com": ["unknown", "experiment-test-treated"],
+                },
+                {
+                    user["emailAddress"]: user["roles"]
+                    for user in json.loads(response.data)
+                },
+            )
+
     @patch(
         "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )

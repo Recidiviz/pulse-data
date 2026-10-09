@@ -32,6 +32,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
+from recidiviz.auth.constants import PREDEFINED_ROLES
 from recidiviz.auth.helpers import (
     convert_user_object_to_dict,
     generate_pseudonymized_id,
@@ -43,6 +44,7 @@ from recidiviz.calculator.query.state.views.reference.ingested_supervision_produ
 from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
     SimpleGcsfsCsvReaderDelegate,
 )
+from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.persistence.database.schema.case_triage.schema import (
     Roster,
     StateRolePermissions,
@@ -50,6 +52,8 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils.user_hash import generate_user_hash
+
+_UNKNOWN_ROLE = RosterPredefinedRoles.UNKNOWN.value.lower()
 
 
 class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
@@ -131,7 +135,15 @@ def _upsert_user_rows(
 
         email = row["email_address"].lower()
 
-        roles = [value.strip().lower() for value in row["roles"].split(",")]
+        # The incarceration and supervision view concatenates both sides' roles, so
+        # someone with the same role on both sides arrives with it listed twice.
+        roles = list(
+            dict.fromkeys(value.strip().lower() for value in row["roles"].split(","))
+        )
+        # The unknown role grants no permissions, so it is redundant next to any
+        # other role in RosterPredefinedRoles.
+        if any(role in PREDEFINED_ROLES and role != _UNKNOWN_ROLE for role in roles):
+            roles = [role for role in roles if role != _UNKNOWN_ROLE]
         row["roles"] = roles
         validate_roles(row)
 

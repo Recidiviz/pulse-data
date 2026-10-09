@@ -1,0 +1,3 @@
+US_XX,supervision_staff@testdomain.com,3706,,,,"supervision_line_staff,supervision_line_staff","D1","facility_id_1","supervision","user","pseudo-3706",true,true
+US_XX,user@testdomain.com,98725,,,,"supervision_line_staff,unknown","D2","facility_id_2","supervision2","user2","pseudo-98725",true,true
+US_XX,user4@testdomain.com,98727,,,,"unknown,experiment-test-treated","D2",,"both4","user4","pseudo-98727",true,false
