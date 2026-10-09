@@ -44,7 +44,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.raw_file_name_cleaners import clean_raw_file_name
+from recidiviz.ingest.direct.gcs.raw_file_path_transformers import (
+    transform_raw_file_path,
+)
 from recidiviz.ingest.direct.ingest_file_decryption import (
     get_decryption_password_if_encrypted,
 )
@@ -66,9 +68,10 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
     If the existing file name is already prefixed by "unprocessed" or "processed", the function will return without
     doing anything. Otherwise, it will rename the file to format "unprocessed_{ISO_FORMATTED_DATETIME}_raw_{EXISTING_FILENAME}"
 
-    Before renaming, any region-specific content is stripped from the file name (e.g. NYC's embedded per-file timestamp)
-    so the parsed file tag matches the region's raw data config. The {ISO_FORMATTED_DATETIME} is sourced from the object's
-    preserved creation time (customTime) on the finalize event when present, falling back to the current time.
+    Before renaming, the file's path is cleaned of any region-specific content (e.g. NYC's embedded per-file
+    timestamp, or a TN vendor's upload subfolder) so the parsed file tag matches the region's raw data config and the
+    rename lands at the bucket root. The {ISO_FORMATTED_DATETIME} is sourced from the object's preserved creation
+    time (customTime) on the finalize event when present, falling back to the current time.
 
     If we encounter any error with base class ValueError, including GCSBlobDoesNotExistError,
     we will log the error and return without raising an exception, so if a file is moved or
@@ -131,11 +134,13 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
             # (customTime) if present, otherwise None so normalization falls back to
             # the current time.
             update_datetime = _update_datetime_from_event(data)
-            cleaned_file_name = clean_raw_file_name(region_code, path.file_name)
+            cleaned_blob_name = transform_raw_file_path(region_code, path.blob_name)
             new_path = fs.mv_raw_file_to_normalized_path(
                 path,
                 dt=update_datetime,
-                normalized_from_file_name=cleaned_file_name,
+                normalized_from_path=GcsfsFilePath.from_bucket_and_blob_name(
+                    bucket_name=bucket, blob_name=cleaned_blob_name
+                ),
             )
             cloud_functions_log(
                 severity="INFO",

@@ -390,22 +390,27 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         self,
         path: GcsfsFilePath,
         dt: Optional[datetime.datetime] = None,
-        normalized_from_file_name: str | None = None,
+        normalized_from_path: GcsfsFilePath | None = None,
     ) -> GcsfsFilePath:
         """Renames a raw data file with an unnormalized file name to a file with a
-        normalized file name in the same directory. If |dt| is specified, the file will
-        contain that timestamp, otherwise will contain the current timestamp.
+        normalized file name. If |dt| is specified, the file will contain that
+        timestamp, otherwise will contain the current timestamp.
 
-        If |normalized_from_file_name| is specified, the normalized name is composed from
-        it rather than from |path|'s own name, while the file moved is still |path|. This
-        lets a caller normalize a file to a cleaned name (e.g. one with a region-specific
-        suffix stripped) that does not yet exist on disk.
+        If |normalized_from_path| is specified, the normalized file name and
+        destination directory are both composed from it rather than from |path|'s own
+        location, while the file moved is still |path|. This lets a caller normalize a
+        file to a cleaned name and relocate it out of a region-specific subfolder (e.g.
+        a vendor upload subfolder) in the same move, rather than into |path|'s own
+        directory.
 
         Returns the new normalized path location of this file after the move completes.
         """
-        file_name_to_normalize = normalized_from_file_name or path.file_name
+        source_for_normalization = normalized_from_path or path
         updated_file_path = GcsfsFilePath.with_new_file_name(
-            path, to_normalized_unprocessed_raw_file_name(file_name_to_normalize, dt=dt)
+            source_for_normalization,
+            to_normalized_unprocessed_raw_file_name(
+                source_for_normalization.file_name, dt=dt
+            ),
         )
 
         if self.exists(updated_file_path):

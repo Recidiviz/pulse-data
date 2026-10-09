@@ -251,6 +251,32 @@ class TestDirectIngestGcsFileSystem(TestCase):
                 starting_path, self.STORAGE_DIR_PATH
             )
 
+    def test_mv_raw_file_to_normalized_path_relocates_to_cleaned_directory(
+        self,
+    ) -> None:
+        dt = datetime.datetime(2024, 1, 1, 1, 1, 1)
+        starting_path = GcsfsFilePath(
+            bucket_name="my_bucket", blob_name="vendor-subfolder/tag.csv"
+        )
+        self.fs.gcs_file_system.test_add_path(starting_path, local_path=None)
+
+        normalized = self.fs.mv_raw_file_to_normalized_path(
+            starting_path,
+            dt,
+            normalized_from_path=GcsfsFilePath(
+                bucket_name="my_bucket", blob_name="tag.csv"
+            ),
+        )
+
+        self.assertEqual(
+            GcsfsFilePath(
+                bucket_name="my_bucket",
+                blob_name="unprocessed_2024-01-01T01:01:01:000000_raw_tag.csv",
+            ),
+            normalized,
+        )
+        self.assertEqual({normalized}, set(self.fs.gcs_file_system.all_paths))
+
 
 class TestPathNormalization(TestCase):
     """Class that tests path normalization functions created for both processed and unprocessed file paths"""

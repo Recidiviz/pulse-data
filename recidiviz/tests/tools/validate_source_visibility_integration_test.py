@@ -563,7 +563,7 @@ def test_cloud_function_ingest_filename_normalization_dependencies() -> None:
                 "recidiviz.utils.string_formatting",
                 "recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system",
                 "recidiviz.ingest.direct.gcs.directory_path_utils",
-                "recidiviz.ingest.direct.gcs.raw_file_name_cleaners",
+                "recidiviz.ingest.direct.gcs.raw_file_path_transformers",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
             }
         ),

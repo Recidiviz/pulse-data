@@ -93,7 +93,7 @@ class TestNormalizeFilename(TestCase):
         normalize_filename(self.event)
 
         mock_fs.mv_raw_file_to_normalized_path.assert_called_with(
-            path_instance, dt=None, normalized_from_file_name=self.relative_file_path
+            path_instance, dt=None, normalized_from_path=path_instance
         )
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -120,7 +120,9 @@ class TestNormalizeFilename(TestCase):
             dt=datetime.datetime(
                 2026, 8, 19, 14, 5, 3, 716152, tzinfo=datetime.timezone.utc
             ),
-            normalized_from_file_name=self.relative_file_path,
+            normalized_from_path=GcsfsFilePath(
+                bucket_name=self.bucket, blob_name=self.relative_file_path
+            ),
         )
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -310,7 +312,9 @@ class TestNormalizeFilename(TestCase):
             dt=datetime.datetime(
                 2026, 8, 19, 14, 5, 3, 716152, tzinfo=datetime.timezone.utc
             ),
-            normalized_from_file_name="PIC_FEED.csv",
+            normalized_from_path=GcsfsFilePath(
+                bucket_name=nyc_bucket, blob_name="PIC_FEED.csv"
+            ),
         )
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -334,7 +338,39 @@ class TestNormalizeFilename(TestCase):
         mock_fs.mv_raw_file_to_normalized_path.assert_called_once_with(
             GcsfsFilePath(bucket_name=nyc_bucket, blob_name="PIC_FEED.csv"),
             dt=None,
-            normalized_from_file_name="PIC_FEED.csv",
+            normalized_from_path=GcsfsFilePath(
+                bucket_name=nyc_bucket, blob_name="PIC_FEED.csv"
+            ),
+        )
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=False,
+    )
+    def test_us_tn_micase_subfolder_upload_is_flattened_to_bucket_root(
+        self,
+        _mock_is_normalized: MagicMock,
+        mock_fs: MagicMock,
+    ) -> None:
+        tn_bucket = "recidiviz-test-direct-ingest-state-us-tn"
+        event = self._build_pubsub_cloudevent(
+            file_name="tn-micase-sftp/2026-01-01/FOO.csv", bucket=tn_bucket
+        )
+
+        normalize_filename(event)
+
+        # The file is moved directly from the vendor subfolder to a normalized name
+        # at the bucket root, in a single move.
+        mock_fs.mv.assert_not_called()
+        mock_fs.mv_raw_file_to_normalized_path.assert_called_once_with(
+            GcsfsFilePath(
+                bucket_name=tn_bucket, blob_name="tn-micase-sftp/2026-01-01/FOO.csv"
+            ),
+            dt=None,
+            normalized_from_path=GcsfsFilePath(
+                bucket_name=tn_bucket, blob_name="FOO.csv"
+            ),
         )
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -359,7 +395,9 @@ class TestNormalizeFilename(TestCase):
                 bucket_name=self.bucket, blob_name="PIC_FEED_081420261204.csv"
             ),
             dt=None,
-            normalized_from_file_name="PIC_FEED_081420261204.csv",
+            normalized_from_path=GcsfsFilePath(
+                bucket_name=self.bucket, blob_name="PIC_FEED_081420261204.csv"
+            ),
         )
 
 
