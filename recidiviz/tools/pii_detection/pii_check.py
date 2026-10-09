@@ -18,8 +18,17 @@ from google import genai
 from tabulate import tabulate
 
 # NOTE: If you change the model, you may need to change update the token limit!
-MODEL_NAME = "gemini-2.5-flash"
-MODEL_INPUT_TOKEN_LIMIT = 2_097_152
+MODEL_NAME = "gemini-3.5-flash"
+# Reported by the API itself when you go over: "The input token count exceeds the maximum
+# number of tokens allowed 1048576." Half of gemini-2.5-flash's 2,097,152 — the limit
+# shrank with the model upgrade, so this is not a value to raise back without re-probing.
+MODEL_INPUT_TOKEN_LIMIT = 1_048_576
+# Gemini 3.x is NOT served by regional endpoints: us-central1, us-east1, us-east4,
+# us-east5, us-west1, us-west4, us-south1 and northamerica-northeast1 all return
+# 404 NOT_FOUND for these model ids. Only the "us" multi-region and "global" endpoints
+# carry them. We use "us" rather than "global" so inference on partner diffs stays in
+# US regions instead of routing worldwide.
+MODEL_LOCATION = "us"
 
 
 def estimate_tokens_from_chars(text: str) -> int:
@@ -258,8 +267,10 @@ def generate_prompts(
             estimate_tokens_from_chars(prompt) + estimate_tokens_from_chars(this_diff)
             > MODEL_INPUT_TOKEN_LIMIT
         ):
+            # The diff that overflowed the batch starts the next one — dropping it here
+            # would silently exclude that file from the PII scan.
             yield prompt
-            prompt = copy(FIND_PII_GEMINI_PROMPT)
+            prompt = copy(FIND_PII_GEMINI_PROMPT) + this_diff
         else:
             prompt += this_diff
     # This case is if all unprompted diffs haven't reached the size limit by the end
@@ -272,7 +283,10 @@ def run_prompt_and_collect_findings(client: genai.Client, prompt: str) -> list[d
     Runs a prompt against the Gemini model and collects PII findings.
     Retries on transient errors with exponential backoff.
     """
-    if len(prompt) > MODEL_INPUT_TOKEN_LIMIT:
+    # Tokens, not characters: len() here compared a character count against a token
+    # limit, so this guard skipped batches ~4x smaller than the model actually accepts —
+    # and a skipped batch is a batch nobody scans for PII.
+    if estimate_tokens_from_chars(prompt) > MODEL_INPUT_TOKEN_LIMIT:
         print(
             f"::warning::Prompt exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens. Skipping this batch."
         )
@@ -336,7 +350,7 @@ def main(head: str, pr_number: str) -> int:
     client = genai.Client(
         vertexai=True,
         project=os.environ.get("GOOGLE_CLOUD_PROJECT", "recidiviz-security"),
-        location="us-central1",
+        location=MODEL_LOCATION,
     )
 
     repo = os.environ["GITHUB_REPOSITORY"]

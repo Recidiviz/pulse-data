@@ -2,12 +2,18 @@
 Unit tests for the pii_check module, which analyzes code changes for potential PII.
 """
 import unittest
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
+from recidiviz.tools.pii_detection import pii_check
 from recidiviz.tools.pii_detection.pii_check import (
     FIND_PII_GEMINI_PROMPT,
     build_markdown_comment,
+    estimate_tokens_from_chars,
     extract_json_from_markdown,
     generate_found_pii_table,
+    generate_prompts,
+    run_prompt_and_collect_findings,
 )
 
 
@@ -99,6 +105,44 @@ class TestPIICheck(unittest.TestCase):
             "_This comment is automatically updated on new commits to this PR._",
             markdown_comment,
         )
+
+    def test_generate_prompts_keeps_every_diff_when_batching(self) -> None:
+        """Every changed file must appear in some batch.
+
+        The diff that overflows a batch has to start the next one; dropping it would
+        silently exclude that file from the PII scan while the check still reports clean.
+        """
+        base_tokens = estimate_tokens_from_chars(FIND_PII_GEMINI_PROMPT)
+        # ~100 estimated tokens per diff, against a limit that fits one diff per batch.
+        changed_file_to_diff = {f"file_{i}.py": "x" * 400 for i in range(4)}
+
+        with patch.object(pii_check, "MODEL_INPUT_TOKEN_LIMIT", base_tokens + 150):
+            prompts = list(generate_prompts(changed_file_to_diff))
+
+        self.assertGreater(
+            len(prompts), 1, "expected these diffs to be split across batches"
+        )
+        joined = "\n".join(prompts)
+        for file_path in changed_file_to_diff:
+            self.assertIn(f"# File: {file_path}", joined)
+
+    def test_oversized_prompt_guard_measures_tokens_not_characters(self) -> None:
+        """The skip guard must compare estimated tokens against the token limit.
+
+        Comparing raw character length rejected prompts ~4x smaller than the model
+        accepts, and a skipped batch is a batch nobody scans for PII.
+        """
+        limit = 1_000
+        # Comfortably under the limit in tokens, far over it in characters.
+        prompt = "y" * (limit * 4 - 4)
+        client = MagicMock()
+        client.models.generate_content.return_value = SimpleNamespace(text="[]")
+
+        with patch.object(pii_check, "MODEL_INPUT_TOKEN_LIMIT", limit):
+            findings = run_prompt_and_collect_findings(client, prompt)
+
+        self.assertEqual(findings, [])
+        client.models.generate_content.assert_called_once()
 
     def test_prompt_contains_false_positive_guidance(self) -> None:
         """Test that the prompt contains guidance to avoid false positives."""
