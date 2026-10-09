@@ -345,7 +345,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 supervision_location_for_supervisor_page="unit 2",
                 email="supervisor2@recidiviz.org",
                 has_outliers=True,
-                stable_staff_external_id="STABLE_102",
             ),
         ]
 
@@ -4093,7 +4092,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email=email,
             has_outliers=True,
-            stable_staff_external_id=f"STABLE_{external_id}",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -4144,7 +4142,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4242,7 +4239,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4282,7 +4278,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         # Our PATCH endpoint returns the updated entity, so we can compare its response directly
@@ -4660,7 +4655,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=False,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4715,7 +4709,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4765,7 +4758,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4815,7 +4807,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4865,7 +4856,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=False,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4919,7 +4909,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -4972,7 +4961,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -5025,7 +5013,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
-            stable_staff_external_id="STABLE_102",
         )
 
         response = self.test_client.get(
@@ -5723,7 +5710,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         supervision_location_for_supervisor_page=record.supervision_location_for_supervisor_page,
                         email=record.email,
                         has_outliers=True,
-                        stable_staff_external_id=record.stable_staff_external_id,
                     )
                     for record in supervisors
                 ]

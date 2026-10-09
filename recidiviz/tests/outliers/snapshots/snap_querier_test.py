@@ -770,15 +770,15 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_supervisor_entities"
 ] = [
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='2', middle_names='', name_suffix=''), external_id='102', pseudonymized_id='hash2', email='supervisor2@recidiviz.org', has_outliers=True, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page='unit 2', stable_staff_external_id='STABLE_102')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='1', middle_names='', name_suffix=''), external_id='101', pseudonymized_id='hash1', email='supervisor1@recidiviz.org', has_outliers=True, supervision_location_for_list_page=None, supervision_location_for_supervisor_page='unit 1')"
     ),
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='1', middle_names='', name_suffix=''), external_id='101', pseudonymized_id='hash1', email='supervisor1@recidiviz.org', has_outliers=True, supervision_location_for_list_page=None, supervision_location_for_supervisor_page='unit 1', stable_staff_external_id='STABLE_101')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='3', middle_names='', name_suffix=''), external_id='103', pseudonymized_id='hash3', email='manager3@recidiviz.org', has_outliers=False, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='3', middle_names='', name_suffix=''), external_id='103', pseudonymized_id='hash3', email='manager3@recidiviz.org', has_outliers=False, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page=None, stable_staff_external_id='STABLE_103')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='5', middle_names='', name_suffix=''), external_id='105', pseudonymized_id='hash5', email='supervisor5@recidiviz.org', has_outliers=False, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page='unit 2')"
     ),
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='5', middle_names='', name_suffix=''), external_id='105', pseudonymized_id='hash5', email='supervisor5@recidiviz.org', has_outliers=False, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page='unit 2', stable_staff_external_id='STABLE_105')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='2', middle_names='', name_suffix=''), external_id='102', pseudonymized_id='hash2', email='supervisor2@recidiviz.org', has_outliers=True, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page='unit 2')"
     ),
 ]
