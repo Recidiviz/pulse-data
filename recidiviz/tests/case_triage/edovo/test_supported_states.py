@@ -17,13 +17,10 @@
 """Tests the states the Edovo course-completion endpoint accepts, and US_AR
 support for course completions."""
 import json
-import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
-
-from flask import Flask
+from unittest.mock import patch
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import schema_field_for_type
@@ -31,10 +28,6 @@ from recidiviz.calculator.query.state.views.reference.product_person_external_id
     get_product_display_person_external_id_types_by_state,
 )
 from recidiviz.case_triage.edovo.course_completion_models import CourseCompletionRequest
-from recidiviz.case_triage.edovo.credit_calculator import (
-    HOURS_PER_CREDIT_BY_STATE,
-    calculate_all_pending_credits,
-)
 from recidiviz.case_triage.edovo.external_id_matching import PERSON_EXTERNAL_ID_ADDRESS
 from recidiviz.case_triage.edovo.person_verification import (
     PERSON_ADDRESS,
@@ -49,21 +42,11 @@ from recidiviz.common.constants.state.external_id_types import (
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    EdovoCourseCompletion,
-)
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 PERSON_VERIFICATION_MODULE = "recidiviz.case_triage.edovo.person_verification"
-CREDIT_CALCULATOR_MODULE = "recidiviz.case_triage.edovo.credit_calculator"
 
 _AR_FIRST_NAME = "Alex"
 _AR_LAST_NAME = "Rivera"
@@ -290,106 +273,3 @@ class TestUsArPersonVerificationAgainstEmulator(BigQueryEmulatorTestCase):
         _verify_ar_person(
             self.bq_client, StateCode.US_AR, f"0{_AR_ID_WITH_LEADING_ZEROS}"
         )
-
-
-class TestUsArAgainstTheCoCreditCalculator(TestCase):
-    """Tests US_AR behavior in the CO credit calculator."""
-
-    postgres_launch_result: OnDiskPostgresLaunchResult
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.postgres_launch_result
-        )
-
-    def setUp(self) -> None:
-        self.project_id_patcher = patch(
-            f"{CREDIT_CALCULATOR_MODULE}.project_id", return_value="recidiviz-123"
-        )
-        self.project_id_patcher.start()
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
-                self.postgres_launch_result
-            )
-        )
-        db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
-        engine = setup_scoped_sessions(Flask(__name__), SchemaType.CASE_TRIAGE, db_url)
-        self.database_key.declarative_meta.metadata.create_all(engine)
-
-    def tearDown(self) -> None:
-        self.project_id_patcher.stop()
-        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    def test_us_ar_has_no_configured_pooling_rate(self) -> None:
-        self.assertIn(StateCode.US_AR, SUPPORTED_STATES)
-        self.assertNotIn(StateCode.US_AR, HOURS_PER_CREDIT_BY_STATE)
-
-    def test_an_ar_completion_stops_the_calculator_rather_than_being_credited(
-        self,
-    ) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                EdovoCourseCompletion(
-                    idempotency_key=uuid.uuid4(),
-                    person_external_id=_AR_ID_NO_LEADING_ZEROS,
-                    id_type=US_AR_ADCNUMBER,
-                    state_code=StateCode.US_AR.value,
-                    course_id="ar-course-001",
-                    course_name="Synthetic AR Course",
-                    first_name=_AR_FIRST_NAME,
-                    last_name=_AR_LAST_NAME,
-                    facility="AR-SYNTHETIC-UNIT",
-                    content_hours=6.0,
-                    completed_at=datetime(2026, 8, 13, tzinfo=timezone.utc),
-                    received_at=datetime(2026, 8, 13, tzinfo=timezone.utc),
-                )
-            )
-
-        bq_client = MagicMock()
-        bq_client.run_query_async.return_value = iter(
-            [{"stripped_external_id": _AR_ID_NO_LEADING_ZEROS, "person_id": 111}]
-        )
-        with SessionFactory.using_database(self.database_key) as session:
-            with self.assertRaisesRegex(
-                ValueError,
-                r"No Edovo earned-time credit policy configured for state \[US_AR\]",
-            ):
-                calculate_all_pending_credits(session=session, bq_client=bq_client)
-
-    def test_one_person_under_two_paddings_evades_the_capture_time_guard(self) -> None:
-        for external_id in [_AR_ID_WITH_LEADING_ZEROS, "7423"]:
-            with SessionFactory.using_database(self.database_key) as session:
-                session.add(
-                    EdovoCourseCompletion(
-                        idempotency_key=uuid.uuid4(),
-                        person_external_id=external_id,
-                        id_type=US_AR_ADCNUMBER,
-                        state_code=StateCode.US_AR.value,
-                        course_id="ar-course-001",
-                        course_name="Synthetic AR Course",
-                        first_name=_AR_FIRST_NAME,
-                        last_name=_AR_LAST_NAME,
-                        facility="AR-SYNTHETIC-UNIT",
-                        content_hours=6.0,
-                        completed_at=datetime(2026, 8, 13, tzinfo=timezone.utc),
-                        received_at=datetime(2026, 8, 13, tzinfo=timezone.utc),
-                    )
-                )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            stored = [
-                record.person_external_id
-                for record in session.query(EdovoCourseCompletion).all()
-            ]
-        self.assertEqual([_AR_ID_WITH_LEADING_ZEROS, "7423"], sorted(stored))

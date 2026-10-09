@@ -56,7 +56,7 @@ locals {
           time_zone = "Etc/UTC"
           env       = {}
         }
-        # TODO(OBT-22951): unpause only after CDOC confirms the cadence.
+        # TODO(CO-302): unpause only after CDOC confirms the cadence.
         "us-co-continuous" = local.eomis_writeback_us_co_job
       }
       # Which eOMIS instance/secrets the running container targets.

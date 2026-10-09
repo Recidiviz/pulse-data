@@ -107,7 +107,7 @@ class EdovoCourseCompletion(CaseTriageBase):
     # Best-effort capture-time guard: dedups on external id, which is not a stable
     # 1:1 handle for a person, so it can't guarantee one credit per person per
     # course. The authoritative per-person, per-course dedup happens downstream in
-    # credit_calculator once the external id is resolved to a person_id (OBT-23210).
+    # the BigQuery views once the external id is resolved to a person_id.
     __table_args__ = (
         UniqueConstraint(
             "state_code",

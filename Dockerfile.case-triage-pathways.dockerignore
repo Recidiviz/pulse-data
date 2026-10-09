@@ -54,7 +54,7 @@ bandit/**
 docs/**
 # Exclude research directory (which has analytical and ad hoc work)
 recidiviz/research/**
-# TODO(OBT-22951): delete this block when the copy.bara.sky one goes -- these
+# TODO(CO-662): delete this block when the copy.bara.sky one goes -- these
 # lists are kept in sync. See mirror/copy.bara.sky for why the eOMIS writeback
 # is not published.
 recidiviz/eomis/**

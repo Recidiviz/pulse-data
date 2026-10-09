@@ -29,8 +29,8 @@ from recidiviz.common.constants.states import StateCode
 # Maps each supported state to the external-id type Edovo sends. For CO this is
 # the DOC-facing ADC number (facility_assigned_id / DOCNO), not the internal
 # EOMIS OFFENDERID. Only admit id_types that are stable and single-per-person;
-# the authoritative per-person, per-course dedup happens downstream in
-# credit_calculator (OBT-23210).
+# the authoritative per-person, per-course dedup happens downstream in the
+# BigQuery views (us_co_edovo_records_preprocessed and us_co_edovo_proposed_credit).
 SUPPORTED_STATES: dict[StateCode, str] = {
     StateCode.US_AR: US_AR_ADCNUMBER,
     StateCode.US_CO: US_CO_ADCNUMBER,
