@@ -18,6 +18,7 @@
 
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.sentence_calculator.models.inputs import (
     OffenseCategory,
     OffenseGroup,
@@ -64,13 +65,19 @@ class NevadaSentence(Sentence):
     qualified_for_enhanced_good_time fields.
     """
 
-    offense_category: NevadaOffenseCategory
-    offense_group: NevadaOffenseGroup
+    offense_category: NevadaOffenseCategory = attr.ib(
+        validator=attr.validators.in_(NevadaOffenseCategory)
+    )
+    offense_group: NevadaOffenseGroup = attr.ib(
+        validator=attr.validators.in_(NevadaOffenseGroup)
+    )
 
     # A code that uniquely identifies the offense this sentence is tied to.
     # For Nevada, this is the NOC (Nevada Offense Code).
-    offense_id: int | None = None
+    offense_id: int | None = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Whether this person earns work/education time on top of statutory good
     # time, which the PRE_413 credit_rate rules key on (NRS 209.4465(2)).
-    qualified_for_enhanced_good_time: bool = False
+    qualified_for_enhanced_good_time: bool = attr.ib(
+        default=False, validator=attr_validators.is_bool
+    )

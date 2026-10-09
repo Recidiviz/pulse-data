@@ -26,6 +26,8 @@ from typing import Any, Generic, TypeVar
 
 import attr
 
+from recidiviz.common import attr_validators
+
 # T_co is covariant so that a TrackedValue[int] is usable wherever a
 # TrackedValue[int | date] is expected.
 T_co = TypeVar("T_co", covariant=True)
@@ -34,6 +36,22 @@ T_co = TypeVar("T_co", covariant=True)
 # equivalent of the above type for parameters. The split here should be
 # opaque to consumers, it's just a hack to appease the type system.
 ValueT = TypeVar("ValueT")
+
+
+def _is_allowed_tracked_value(
+    instance: Any, attribute: attr.Attribute, value: Any
+) -> None:
+    """Validates the `value` field of a TrackedValue.
+
+    T_co is erased at runtime, so this can't check against the type parameter
+    itself. Instead it checks against the concrete types every TrackedValue in
+    this domain actually holds: a count of days, a multiplier, or a date --
+    the types tracked_sum etc do arithmetic on and to_derivation_tree knows
+    how to serialize.
+    """
+    if isinstance(value, date):
+        return
+    attr_validators.is_numerical_strict(instance, attribute, value)
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -52,11 +70,20 @@ class TrackedValue(Generic[T_co]):
         formula: Human-readable formula showing the calculation
     """
 
-    value: T_co
-    label: str
-    sources: tuple["TrackedValue[Any]", ...] = attr.Factory(tuple)
-    rule_name: str | None = None
-    formula: str | None = None
+    value: T_co = attr.ib(validator=_is_allowed_tracked_value)
+    label: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    sources: tuple["TrackedValue[Any]", ...] = attr.ib(factory=tuple)
+    rule_name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    formula: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+
+    @sources.validator
+    def _check_sources(
+        self, attribute: attr.Attribute, value: tuple["TrackedValue[Any]", ...]
+    ) -> None:
+        # TrackedValue can't be named directly in a validator built while the
+        # class itself is still being defined, so this defers the lookup of
+        # the class name to call time via is_tuple_of's closure instead.
+        attr_validators.is_tuple_of(TrackedValue)(self, attribute, value)
 
     @staticmethod
     def input(value: ValueT, label: str) -> "TrackedValue[ValueT]":

@@ -795,6 +795,18 @@ def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
     return IsListOfValidator(list_item_expected_type)
 
 
+class IsSequenceOfValidator(_IsContainerOfValidator):
+    def __init__(self, item_expected_type: Type) -> None:
+        super().__init__(Sequence, item_expected_type)
+
+
+def is_sequence_of(sequence_item_expected_type: Type) -> IsSequenceOfValidator:
+    """Returns an attrs validator for a field typed as collections.abc.Sequence
+    rather than list, e.g. when a subtype's covariance requires the field to
+    accept Sequence[Subtype] where Sequence[Supertype] is expected."""
+    return IsSequenceOfValidator(sequence_item_expected_type)
+
+
 def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> None:
     is_list(instance, attribute, value)
 

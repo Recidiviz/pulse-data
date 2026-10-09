@@ -50,5 +50,9 @@ class FakeOffenseGroup(OffenseGroup):
 class FakeSentence(Sentence):
     """Sentence implementation for a fake state, using the fake offense enums."""
 
-    offense_category: FakeOffenseCategory
-    offense_group: FakeOffenseGroup
+    offense_category: FakeOffenseCategory = attr.ib(
+        validator=attr.validators.in_(FakeOffenseCategory)
+    )
+    offense_group: FakeOffenseGroup = attr.ib(
+        validator=attr.validators.in_(FakeOffenseGroup)
+    )

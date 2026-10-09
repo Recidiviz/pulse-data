@@ -19,6 +19,7 @@
 import datetime
 import re
 import unittest
+from collections.abc import Sequence
 from typing import List, Optional
 
 import attr
@@ -34,6 +35,7 @@ from recidiviz.common.attr_validators import (
     is_non_empty_set_of,
     is_not_set_along_with,
     is_opt_non_empty_set_of,
+    is_sequence_of,
     is_set_of,
     is_tuple_of,
 )
@@ -1356,6 +1358,64 @@ class TestIsListOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 list_of_str_field=[],
                 list_of_class_field=[None],  # type: ignore[list-item]
+            )
+
+
+class TestIsSequenceOfValidator(unittest.TestCase):
+    """Tests for the is_sequence_of() validator."""
+
+    @attr.define
+    class TestClass:
+        sequence_of_str_field: Sequence[str] = attr.ib(validator=is_sequence_of(str))
+        sequence_of_class_field: Sequence[_TestEmailClass] = attr.ib(
+            validator=is_sequence_of(_TestEmailClass)
+        )
+
+    def test_sequence_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(
+            sequence_of_str_field=["a", "b"],
+            sequence_of_class_field=[
+                _TestEmailClass(my_email="valid@example.com", my_opt_email=None)
+            ],
+        )
+
+    def test_sequence_of_validator_accepts_tuples(self) -> None:
+        _ = self.TestClass(
+            sequence_of_str_field=("a", "b"),
+            sequence_of_class_field=(),
+        )
+
+    def test_sequence_of_validator_empty_sequences(self) -> None:
+        _ = self.TestClass(sequence_of_str_field=[], sequence_of_class_field=[])
+
+    def test_sequence_of_validator_bad_container_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found value for Sequence type field [sequence_of_str_field] on "
+                "class [<class 'recidiviz.tests.common.attr_validators_test."
+                "TestIsSequenceOfValidator.TestClass'>] which has non-Sequence "
+                "type [<class 'dict'>].",
+            ),
+        ):
+            _ = self.TestClass(
+                sequence_of_str_field={},  # type: ignore[arg-type]
+                sequence_of_class_field=[],
+            )
+
+    def test_sequence_of_validator_bad_item_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in Sequence type field [sequence_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test."
+                "TestIsSequenceOfValidator.TestClass'>] which is not the expected "
+                "type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                sequence_of_str_field=[1],  # type: ignore[list-item]
+                sequence_of_class_field=[],
             )
 
 

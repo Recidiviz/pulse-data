@@ -24,7 +24,9 @@ from enum import Enum, EnumMeta
 
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.recidiviz_attr_validators import is_state_code
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -40,9 +42,9 @@ class Term:
     configured per regime.
     """
 
-    years: int = 0
-    months: int = 0
-    days: int = 0
+    years: int = attr.ib(default=0, validator=attr_validators.is_non_negative_int)
+    months: int = attr.ib(default=0, validator=attr_validators.is_non_negative_int)
+    days: int = attr.ib(default=0, validator=attr_validators.is_non_negative_int)
 
 
 class _ABCEnumMeta(ABCMeta, EnumMeta):
@@ -87,7 +89,7 @@ class Sentence(abc.ABC):
     """A single sentence node in a sentence calculation DAG.
 
     This represents one sentence with its term lengths, offense characteristics,
-    and relationship to other consecutive sentences via parent_sentence_ids.
+    and relationship to other consecutive sentences via parent_sentence_id.
 
     Terms on indeterminate sentences can be specified using the Term structure
     (years/months/days) via min_term and max_term fields.
@@ -101,25 +103,34 @@ class Sentence(abc.ABC):
     subclass for a given state code.
     """
 
-    sentence_id: str
+    sentence_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Identifier that uniquely identifies this sentence within a calculation."""
 
-    min_term: Term
+    min_term: Term = attr.ib(validator=attr.validators.instance_of(Term))
     """Time until eligible to go before the parole board."""
 
-    max_term: Term
+    max_term: Term = attr.ib(validator=attr.validators.instance_of(Term))
     """Time until the sentence is complete."""
 
-    sentence_type: SentenceType | None = None
+    sentence_type: SentenceType | None = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SentenceType)),
+    )
     """Exceptional sentence type (e.g. life, life without parole, death), if any."""
 
-    start_date: date | None = None
+    start_date: date | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
     """Date this sentence begins, if known."""
 
-    parent_sentence_id: str | None = None
+    parent_sentence_id: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     """ID of the sentence this sentence runs consecutive to. None if it's a root sentence."""
 
-    initial_time_served: Term = attr.Factory(Term)
+    initial_time_served: Term = attr.ib(
+        factory=Term, validator=attr.validators.instance_of(Term)
+    )
     """Credit for time already served prior to this sentence (jail time).
     Converted to days using the regime's conversion settings (fixed or
     calendar-based). (The factory ensures this instance isn't reused.)"""
@@ -141,9 +152,11 @@ class SentenceCalculationInput:
     that defines the end date.
     """
 
-    state_code: StateCode
+    state_code: StateCode = attr.ib(validator=is_state_code)
     # Must be a Sequence because list[ArbitraryStateSentence] isn't a
     # subtype of list[Sentence]
-    sentences: Sequence[Sentence]
+    sentences: Sequence[Sentence] = attr.ib(
+        validator=attr_validators.is_sequence_of(Sentence)
+    )
     # Regime ID is used to load the regime rules in the calculator.
-    law_regime_id: str
+    law_regime_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
