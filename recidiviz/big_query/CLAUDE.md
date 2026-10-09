@@ -979,3 +979,20 @@ for detailed usage examples.
 
 10. **Use type annotations** - Always add type information to function
     definitions (per project style guide)
+
+### Source Table Registration
+
+All source tables referenced by BigQuery views must have schema definitions
+checked into the codebase. Tables written by Python code (not YAML-managed)
+must be registered in a `SourceTableCollection` in
+`recidiviz/source_tables/collect_all_source_table_configs.py` — view-graph
+validation only materializes tables found in that repository, so views over an
+unregistered table fail `view_graph_validation_test.py`.
+
+### ORDER BY in Views
+
+Do not put `ORDER BY` anywhere except inside a window or aggregation function.
+Ingest view tests enforce this via
+`check_query_is_not_ordered_outside_of_windows`
+(`recidiviz/tests/big_query/sqlglot_helpers.py`). Sort for display in the
+frontend instead.
