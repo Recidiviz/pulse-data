@@ -22,3 +22,13 @@ flex templates. Every pipeline extends `BasePipeline` in `base_pipeline.py`.
 - `flex_pipeline_runner.py` - Entry point for running a pipeline by name
 - `calculation_pipeline_templates.yaml` - Flex template definitions
 - `dataflow_config.py` - Dataflow-specific configuration
+
+## Rules
+
+- Never mutate a Beam element in place in a `Map`/`DoFn` — deep-copy it first
+  (see `ingest/identity/assign_identity_fragment_ids.py`). Beam reuses elements
+  across steps, so in-place mutation causes side effects in other steps.
+- A pipeline reference query must expose the root entity id column (`person_id`
+  or `staff_id`) — `RootEntityIdFilteredQueryProvider` filters on it. Never read
+  a person-level raw table directly from a metric pipeline; wrap it in a
+  reference query that joins to `person_id`.
