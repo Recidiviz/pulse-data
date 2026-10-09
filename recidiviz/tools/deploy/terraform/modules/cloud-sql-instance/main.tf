@@ -133,8 +133,8 @@ locals {
   env_prefix                 = var.project_id == "recidiviz-staging" ? "dev" : "prod"
   effective_base_secret_name = coalesce(var.base_secret_name, var.instance_key)
 
-  effective_instance_name     = coalesce(var.instance_name, "${local.env_prefix}-${replace(var.instance_key, "_", "-")}-data-cmek")
-  connection_name             = "${var.project_id}:${var.region}:${local.effective_instance_name}"
+  effective_instance_name = coalesce(var.instance_name, "${local.env_prefix}-${replace(var.instance_key, "_", "-")}-data-cmek")
+  connection_name         = "${var.project_id}:${var.region}:${local.effective_instance_name}"
 
   database_friendly_name = title(replace(var.instance_key, "_", " "))
 
@@ -205,7 +205,7 @@ resource "google_sql_database_instance" "data" {
 
     database_flags {
       name  = "log_duration"
-      value = "on"
+      value = "off"
     }
 
     database_flags {
@@ -213,9 +213,12 @@ resource "google_sql_database_instance" "data" {
       value = "on"
     }
 
+    # Logging every statement writes query text and bind parameter values,
+    # which can include person data, to Cloud Logging. ddl, -1 and warning are
+    # the CIS GCP Benchmark v2.0 values for these three flags.
     database_flags {
       name  = "log_statement"
-      value = "all"
+      value = "ddl"
     }
 
     database_flags {
@@ -225,18 +228,18 @@ resource "google_sql_database_instance" "data" {
 
     database_flags {
       name  = "log_min_messages"
-      value = "info"
+      value = "warning"
     }
 
 
     database_flags {
       name  = "log_min_duration_statement"
-      value = 0
+      value = "-1"
     }
 
     ip_configuration {
       ipv4_enabled = true
-      ssl_mode  = var.require_ssl_connection ? "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" : "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
+      ssl_mode     = var.require_ssl_connection ? "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" : "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
 
     }
 
