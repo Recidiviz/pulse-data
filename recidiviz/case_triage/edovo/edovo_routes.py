@@ -135,6 +135,7 @@ _PYDANTIC_TYPE_TO_CONSTRAINT: dict[str, _ConstraintLiteral] = {
 
 _FIELD_AND_TYPE_TO_CONSTRAINT: dict[tuple[str, str], _ConstraintLiteral] = {
     ("content_hours", "value_error"): "gt_zero",
+    ("api_version", "value_error"): "gt_zero",
     ("state_code", "value_error"): "invalid_state_code",
     # A blank value and a JSON null are both reported as the missing field they
     # effectively are; pydantic raises a type error rather than a missing key.

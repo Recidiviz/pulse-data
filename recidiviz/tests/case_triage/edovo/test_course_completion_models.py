@@ -43,6 +43,7 @@ VALID_PAYLOAD = {
     "first_name": "Jane",
     "last_name": "Doe",
     "facility": "CDOC-XYZ",
+    "api_version": 2,
 }
 
 
@@ -64,6 +65,7 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(req.first_name, "Jane")
         self.assertEqual(req.last_name, "Doe")
         self.assertEqual(req.facility, "CDOC-XYZ")
+        self.assertEqual(req.api_version, 2)
 
         dumped = req.model_dump(mode="json")
         self.assertEqual(dumped["person_external_id"], "012345")
@@ -75,6 +77,7 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(dumped["first_name"], "Jane")
         self.assertEqual(dumped["last_name"], "Doe")
         self.assertEqual(dumped["facility"], "CDOC-XYZ")
+        self.assertEqual(dumped["api_version"], 2)
 
     # --- content_hours validation ---
 
@@ -95,6 +98,44 @@ class TestCourseCompletionRequest(TestCase):
         errors = cm.exception.errors()
         self.assertEqual(len(errors), 1)
         self.assertIn("content_hours must be greater than 0", errors[0]["msg"])
+
+    # --- api_version validation ---
+
+    def test_api_version_zero_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate({**VALID_PAYLOAD, "api_version": 0})
+        errors = cm.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn("api_version must be greater than 0", errors[0]["msg"])
+
+    def test_api_version_as_string_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate(
+                {**VALID_PAYLOAD, "api_version": "2"}
+            )
+        errors = cm.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], ("api_version",))
+        self.assertEqual(errors[0]["type"], "int_type")
+
+    def test_api_version_as_float_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate(
+                {**VALID_PAYLOAD, "api_version": 2.0}
+            )
+        errors = cm.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], ("api_version",))
+        self.assertEqual(errors[0]["type"], "int_type")
+
+    def test_missing_api_version_is_rejected(self) -> None:
+        payload = {k: v for k, v in VALID_PAYLOAD.items() if k != "api_version"}
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate(payload)
+        errors = cm.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], ("api_version",))
+        self.assertEqual(errors[0]["type"], "missing")
 
     # --- completed_at validation ---
 

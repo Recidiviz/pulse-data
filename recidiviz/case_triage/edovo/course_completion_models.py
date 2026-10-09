@@ -24,7 +24,7 @@ already completed (422).
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, StrictInt, field_validator
 
 from recidiviz.case_triage.edovo.name_matching import normalized_name
 from recidiviz.case_triage.edovo.supported_states import SUPPORTED_STATES
@@ -53,6 +53,9 @@ class CourseCompletionRequest(BaseModel):
     first_name: str
     last_name: str
     facility: str
+    # Edovo's integer version of the payload they send. StrictInt so "2" or 2.0
+    # is rejected rather than coerced.
+    api_version: StrictInt
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -91,6 +94,13 @@ class CourseCompletionRequest(BaseModel):
     def content_hours_must_be_positive(cls, v: Decimal) -> Decimal:
         if v <= 0:
             raise ValueError("content_hours must be greater than 0")
+        return v
+
+    @field_validator("api_version")
+    @classmethod
+    def api_version_must_be_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("api_version must be greater than 0")
         return v
 
     @property

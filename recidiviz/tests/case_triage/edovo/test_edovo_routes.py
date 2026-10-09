@@ -73,6 +73,7 @@ _VALID_BODY: dict[str, object] = {
     "first_name": _FIRST_NAME,
     "last_name": _LAST_NAME,
     "facility": "CDOC-XYZ",
+    "api_version": 2,
 }
 
 _AUTH_HEADER = "Bearer some.jwt.token"
@@ -449,6 +450,33 @@ class TestEdovoRoutes(TestCase):
             self.assertEqual(_FIRST_NAME, record.first_name)
             self.assertEqual(_LAST_NAME, record.last_name)
             self.assertEqual("CDOC-XYZ", record.facility)
+
+    def test_api_version_is_persisted(self) -> None:
+        self._post()
+        with SessionFactory.using_database(self.database_key) as session:
+            record = session.query(EdovoCourseCompletion).one()
+            self.assertEqual(2, record.api_version)
+
+    def test_missing_api_version_returns_400(self) -> None:
+        body = {k: v for k, v in _VALID_BODY.items() if k != "api_version"}
+        self._assert_rejected_as_required(self._post(body=body), "api_version")
+
+    def test_non_integer_api_version_returns_400(self) -> None:
+        response = self._post(body={**_VALID_BODY, "api_version": "2"})
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        data = response.get_json()
+        self.assertEqual(
+            {"field": "api_version", "constraint": "invalid"}, data["details"]
+        )
+
+    def test_non_positive_api_version_returns_400(self) -> None:
+        response = self._post(body={**_VALID_BODY, "api_version": 0})
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        data = response.get_json()
+        self.assertEqual(
+            {"field": "api_version", "constraint": "gt_zero"}, data["details"]
+        )
+        self.assertEqual("api_version must be greater than 0.", data["message"])
 
     def test_missing_required_field_returns_400(self) -> None:
         body = {k: v for k, v in _VALID_BODY.items() if k != "course_id"}

@@ -54,6 +54,7 @@ _VALID_PAYLOAD: dict[str, object] = {
     "first_name": "Jane",
     "last_name": "Doe",
     "facility": "CDOC-XYZ",
+    "api_version": 2,
 }
 
 
@@ -204,6 +205,13 @@ class TestPersistCompletion(TestCase):
             self.assertEqual("Jane", record.first_name)
             self.assertEqual("Doe", record.last_name)
             self.assertEqual("CDOC-XYZ", record.facility)
+
+    def test_api_version_is_written(self) -> None:
+        request = CourseCompletionRequest.model_validate(_VALID_PAYLOAD)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            record, _ = persist_completion(session, request, uuid.uuid4(), _RECEIVED_AT)
+            self.assertEqual(2, record.api_version)
 
     def test_different_courses_for_same_person_are_independent(self) -> None:
         request_a = CourseCompletionRequest.model_validate(_VALID_PAYLOAD)

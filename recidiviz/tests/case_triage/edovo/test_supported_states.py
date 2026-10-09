@@ -81,6 +81,7 @@ _AR_PAYLOAD: dict[str, object] = {
     "first_name": _AR_FIRST_NAME,
     "last_name": _AR_LAST_NAME,
     "facility": "AR-SYNTHETIC-UNIT",
+    "api_version": 2,
 }
 
 

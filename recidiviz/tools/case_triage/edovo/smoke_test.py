@@ -87,6 +87,7 @@ def _build_payload() -> dict[str, object]:
         "first_name": "Smoke",
         "last_name": "Tester",
         "facility": "SMOKE-TEST-FACILITY",
+        "api_version": 2,
     }
 
 

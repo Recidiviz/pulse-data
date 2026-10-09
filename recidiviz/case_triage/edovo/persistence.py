@@ -95,6 +95,7 @@ def persist_completion(
         facility=request.facility,
         content_hours=request.content_hours,
         completed_at=request.completed_at,
+        api_version=request.api_version,
         received_at=received_at,
     )
     session.add(record)

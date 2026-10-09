@@ -141,6 +141,9 @@ class EdovoCourseCompletion(CaseTriageBase):
     # completion time (e.g. 3.5h), so double precision is more than sufficient.
     content_hours = Column(Float, nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=False)
+    # Edovo's version of the payload. NULL for completions received before Edovo
+    # began sending api_version; every request since carries it.
+    api_version = Column(Integer, nullable=True)
     # When Recidiviz received the inbound request (set by the route). Kept
     # server_default as a safety net for direct inserts that omit it.
     received_at = Column(
