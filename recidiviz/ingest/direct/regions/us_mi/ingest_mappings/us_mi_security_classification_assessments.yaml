@@ -13,6 +13,8 @@ input_columns:
   ActualPlacementLevel: STRING
   WaiverReason: STRING
   DepartureReason: STRING
+  ScoredSecurityLevel: STRING
+  OverrideReason: STRING
   management_raw_score: INTEGER
 unused_columns: []
 output:
@@ -34,7 +36,7 @@ output:
           assessment_score: management_raw_score
           assessment_level:
             $enum_mapping:
-              $raw_text: TrueSecurityLevel
+              $raw_text: ScoredSecurityLevel
               $mappings:
                 StateAssessmentLevel.VERY_HIGH:
                   - "V"
@@ -44,6 +46,23 @@ output:
                   - "II"
                 StateAssessmentLevel.LOW:
                   - "I"
+          assessment_override_reason: OverrideReason
+          assessment_override_level:
+            $conditional:
+              - $if:
+                  $not_null: OverrideReason
+                $then:
+                  $enum_mapping:
+                    $raw_text: TrueSecurityLevel
+                    $mappings:
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "V"
+                      StateAssessmentLevel.HIGH:
+                        - "IV"
+                      StateAssessmentLevel.MEDIUM:
+                        - "II"
+                      StateAssessmentLevel.LOW:
+                        - "I"
           assessment_metadata:
             $normalized_values_json_dict:
               Confinement_Level_Assessment_Result: ConfinementLevel
