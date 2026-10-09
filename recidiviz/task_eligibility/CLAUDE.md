@@ -28,6 +28,13 @@ When writing criteria queries, **always prefer downstream/aggregated views**:
 2. **Never use `state`** — always use `normalized_state` dataset
 3. **Prefer aggregated views** that handle sessionization and edge cases
 
+## Querying Spans at a Point in Time
+
+`end_date` on spans is exclusive: a date equal to `end_date` is outside the
+span. Compare with `date < end_date` (or use
+`DATE_SUB(end_date, INTERVAL 1 DAY)` with `BETWEEN`) to avoid duplicate rows on
+days when one span closes and the next one opens.
+
 #### Helper Functions
 
 Before writing new criteria: Check for existing helper functions. If the
@@ -155,12 +162,14 @@ SELECT * FROM `recidiviz-staging.<prefix>_validation_views__task_eligibility.zer
 ```sql
 SELECT 'staging' AS source, COUNT(DISTINCT person_id) AS eligible_count
 FROM `recidiviz-staging.task_eligibility_spans_<state_code>.<task_name>_materialized`
-WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-12-31')
+WHERE CURRENT_DATE('US/Eastern') >= start_date
+  AND CURRENT_DATE('US/Eastern') < IFNULL(end_date, '9999-12-31')
   AND is_eligible = TRUE
 UNION ALL
 SELECT 'sandbox', COUNT(DISTINCT person_id)
 FROM `recidiviz-staging.<prefix>_task_eligibility_spans_<state_code>.<task_name>_materialized`
-WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-12-31')
+WHERE CURRENT_DATE('US/Eastern') >= start_date
+  AND CURRENT_DATE('US/Eastern') < IFNULL(end_date, '9999-12-31')
   AND is_eligible = TRUE
 ```
 
