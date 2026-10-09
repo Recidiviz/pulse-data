@@ -87,6 +87,7 @@ from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
     UsCoContactNoteWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
+    MCP_TRANSPORT_CONFIG,
     MCP_WS_RESPONSE_NS,
     McpCallbackData,
     McpCallbackMissingFieldsError,
@@ -98,10 +99,12 @@ from recidiviz.case_triage.workflows.writeback.us_ia_early_discharge import (
     UsIaEarlyDischargeWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
+    DOCSTARS_TRANSPORT_CONFIG,
     UsNdEarlyTerminationRequestData,
     UsNdEarlyTerminationWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
+    TOMIS_TRANSPORT_CONFIG,
     UsTnContactNoteRequestData,
     UsTnContactNoteWritebackExecutor,
     UsTnTEPEContactNoteRequestData,
@@ -158,6 +161,22 @@ STAGING_URL = "https://app-staging.recidiviz.org"
 PRODUCTION_URL = "https://app.recidiviz.org"
 
 OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP"
+
+# Names of the Secret Manager secrets that /workflows/proxy may resolve and send
+# a request to: the production and test URLs of the external systems that
+# Workflows writeback already talks to. The proxy rejects every other name
+# without looking it up, since the service account can read every secret in
+# the project and most of them are not URLs.
+PROXY_ALLOWED_URL_SECRETS: frozenset[str] = frozenset(
+    {
+        TOMIS_TRANSPORT_CONFIG.url_secret,
+        TOMIS_TRANSPORT_CONFIG.test_url_secret,
+        DOCSTARS_TRANSPORT_CONFIG.url_secret,
+        DOCSTARS_TRANSPORT_CONFIG.test_url_secret,
+        MCP_TRANSPORT_CONFIG.url_secret,
+        MCP_TRANSPORT_CONFIG.test_url_secret,
+    }
+)
 
 
 def _mcp_ws_response(
@@ -229,16 +248,28 @@ def create_workflows_api_blueprint() -> Blueprint:
     @requires_api_schema(ProxySchema)
     def proxy() -> Response:
         url_secret = g.api_data["url_secret"]
-        if (url := get_secret(url_secret)) is None:
-            return make_response(f"Secret {url_secret} not found", HTTPStatus.NOT_FOUND)
+        method = g.api_data["method"]
+        if url_secret not in PROXY_ALLOWED_URL_SECRETS:
+            logging.warning(
+                "Workflows proxy: [%s] requested url_secret [%s], which is not in the proxy allowlist",
+                g.authenticated_user_email,
+                url_secret,
+            )
+            return make_response(
+                "url_secret is not allowed for the Workflows proxy",
+                HTTPStatus.FORBIDDEN,
+            )
 
-        method = g.api_data.get("method")
+        if (url := get_secret(url_secret)) is None:
+            return make_response(
+                f"Secret [{url_secret}] not found", HTTPStatus.NOT_FOUND
+            )
+
         logging.info(
-            "Workflows proxy: [%s] is sending a [%s] request to url_secret [%s] with value [%s]",
+            "Workflows proxy: [%s] is sending a [%s] request to url_secret [%s]",
             g.authenticated_user_email,
             method,
             url_secret,
-            url,
         )
 
         response = requests.request(

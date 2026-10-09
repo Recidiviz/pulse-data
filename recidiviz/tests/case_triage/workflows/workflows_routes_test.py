@@ -37,6 +37,7 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
 )
 from recidiviz.case_triage.workflows.workflows_routes import (
     OPT_OUT_MESSAGE,
+    PROXY_ALLOWED_URL_SECRETS,
     create_workflows_api_blueprint,
 )
 from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
@@ -50,6 +51,7 @@ from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     UsNdEarlyTerminationRequestData,
 )
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
+    TOMIS_TRANSPORT_CONFIG,
     UsTnContactNoteRequestData,
     UsTnContactTypeCode,
 )
@@ -144,6 +146,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
         self.fake_url = "http://fake-url.com"
+        self.allowed_url_secret = TOMIS_TRANSPORT_CONFIG.test_url_secret
 
     def tearDown(self) -> None:
         self.allowed_twilio_patch.stop()
@@ -174,13 +177,16 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
             response = self.test_client.post(
                 "/workflows/proxy",
-                json={"url_secret": "foo", "method": "GET"},
+                json={"url_secret": self.allowed_url_secret, "method": "GET"},
             )
             self.assertEqual(response.get_data(as_text=True), proxy_response)
             self.assertIn(
-                f"INFO:root:Workflows proxy: [test_user@recidiviz.org] is sending a [GET] request to url_secret [foo] with value [{self.fake_url}]",
+                f"INFO:root:Workflows proxy: [test_user@recidiviz.org] is sending a [GET] request to url_secret [{self.allowed_url_secret}]",
                 log.output,
             )
+            for line in log.output:
+                self.assertNotIn(self.fake_url, line)
+        mock_get_secret.assert_called_once_with(self.allowed_url_secret)
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_proxy(self, mock_get_secret: MagicMock) -> None:
@@ -209,7 +215,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             response = self.test_client.post(
                 "/workflows/proxy",
                 json={
-                    "url_secret": "foo",
+                    "url_secret": self.allowed_url_secret,
                     "method": "PUT",
                     "json": {"key": "value"},
                     "headers": headers,
@@ -231,9 +237,51 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         response = self.test_client.post(
             "/workflows/proxy",
-            json={"url_secret": "foo", "method": "GET"},
+            json={"url_secret": self.allowed_url_secret, "method": "GET"},
         )
         self.assertEqual(response.status_code, 404, response.get_data(as_text=True))
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_proxy_disallowed_secret(self, mock_get_secret: MagicMock) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz",
+            "test_user@recidiviz.org",
+            ["US_TN"],
+            on_successful_authorization_recidiviz_only,
+        )
+        mock_get_secret.return_value = self.fake_url
+
+        for url_secret in [
+            "twilio_auth_token",
+            "workflows_us_tn_insert_contact_note_key",
+        ]:
+            with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+                response = self.test_client.post(
+                    "/workflows/proxy",
+                    json={"url_secret": url_secret, "method": "GET"},
+                )
+                self.assertEqual(
+                    response.status_code,
+                    HTTPStatus.FORBIDDEN,
+                    response.get_data(as_text=True),
+                )
+                self.assertNotIn(url_secret, response.get_data(as_text=True))
+                self.assertEqual(len(rsps.calls), 0)
+
+        mock_get_secret.assert_not_called()
+
+    def test_proxy_allowed_url_secrets(self) -> None:
+        self.assertEqual(
+            {
+                "workflows_us_ia_early_discharge_test_url",
+                "workflows_us_ia_early_discharge_url",
+                "workflows_us_nd_early_termination_test_url",
+                "workflows_us_nd_early_termination_url",
+                "workflows_us_tn_insert_contact_note_test_url",
+                "workflows_us_tn_insert_contact_note_url",
+            },
+            PROXY_ALLOWED_URL_SECRETS,
+        )
 
     def test_proxy_not_authorized(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
