@@ -68,6 +68,9 @@ from recidiviz.entrypoints.bigquery.validate_source_table_datasets_entrypoint im
 from recidiviz.entrypoints.document_store.document_upload import (
     DocumentUploadEntrypoint,
 )
+from recidiviz.entrypoints.documents.llm_document_extraction_sync_job import (
+    LLMDocumentExtractionSyncJobEntrypoint,
+)
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.identity.identity_service_export import (
     IdentityServiceExportEntrypoint,
@@ -118,6 +121,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     DataflowMetricPruningEntrypoint,
     DatasetCleanupEntrypoint,
     DocumentUploadEntrypoint,
+    LLMDocumentExtractionSyncJobEntrypoint,
     IdentityServiceExportEntrypoint,
     RekeyTablesToCmekEntrypoint,
     MetricViewExportEntrypoint,

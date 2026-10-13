@@ -143,6 +143,12 @@ DocumentUploadEntrypoint:
       cpu: 1000m
       memory: 2Gi
 
+LLMDocumentExtractionSyncJobEntrypoint:
+  default_resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
 # Exports the Identity Service's Postgres state to the identity_service_export
 # BigQuery dataset. Holds every exported table's rows in memory between the
 # Postgres read and the BigQuery load jobs, so memory needs grow with the
