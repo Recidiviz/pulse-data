@@ -34,7 +34,7 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = non_intake_c
     state_code=StateCode.US_TN,
     description=__doc__,
     # Filters to the 2026 reclassification CAF, TN's non-intake classification instrument.
-    additional_where_clause="c.assessment_type = 'RCAF'",
+    additional_where_clause="c.assessment_instrument = 'RCAF'",
 )
 
 if __name__ == "__main__":

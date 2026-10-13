@@ -18,6 +18,9 @@
 in TN under the pre-2026 classification policy, regardless of whether they were on time. 
 Excludes classification hearings done during Intake.
 """
+from recidiviz.calculator.query.state.views.classification.classification_assessment_events.us_tn import (
+    caf,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
@@ -26,24 +29,21 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
     SELECT c.state_code,
            c.person_id,
-           c.classification_decision_date AS completion_event_date, 
+           c.classification_decision_date AS completion_event_date,
     FROM
-        `{project_id}.analyst_data.custody_classification_assessment_dates_materialized` c
+        `{caf.VIEW_BUILDER.table_for_query.format_address_for_query_template()}` c
     -- This criteria only exists for spans where someone has received their first classification after starting
     -- or re-starting state-prison custody, excluding those events limits to non-intake classifications
-    LEFT JOIN 
-        `{project_id}.task_eligibility_criteria_general.has_initial_classification_in_state_prison_custody_materialized` i
+    LEFT JOIN
+        `{{project_id}}.task_eligibility_criteria_general.has_initial_classification_in_state_prison_custody_materialized` i
         ON c.person_id = i.person_id
         AND c.state_code = i.state_code
         AND c.classification_decision_date = i.start_date
-    WHERE 
-        i.person_id IS NULL  
-        -- filter only to v1 CAF
-        AND c.assessment_type = 'CAF'
-
+    WHERE
+        i.person_id IS NULL
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(

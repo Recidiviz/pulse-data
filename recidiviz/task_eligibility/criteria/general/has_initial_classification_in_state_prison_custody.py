@@ -20,6 +20,9 @@ they entered state prison custody"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.state.views.classification.all_classification_assessment_events import (
+    ALL_CLASSIFICATION_ASSESSMENT_EVENTS_MATERIALIZED_TABLE,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -50,14 +53,17 @@ _QUERY_TEMPLATE = f"""
         classification_dates.classification_decision_date AS initial_classification_decision_date,
         custody.start_date AS most_recent_prison_custody_start_date
     FROM `{{project_id}}.sessions.custodial_authority_sessions_materialized` custody
-    INNER JOIN `{{project_id}}.analyst_data.custody_classification_assessment_dates_materialized` classification_dates
+    INNER JOIN {ALL_CLASSIFICATION_ASSESSMENT_EVENTS_MATERIALIZED_TABLE} classification_dates
         ON classification_decision_date BETWEEN start_date AND {nonnull_end_date_exclusive_clause('custody.end_date_exclusive')}
         AND classification_dates.person_id = custody.person_id
     WHERE custodial_authority = 'STATE_PRISON'
     -- People will have multiple classifications during a custodial authority span. We want to keep the earliest instance
     -- of this because that's when the criteria for having an initial classification is met
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY custody.state_code, custody.person_id, custody.start_date 
-                              ORDER BY classification_dates.classification_decision_date ASC) = 1
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY custody.state_code, custody.person_id, custody.start_date
+                              ORDER BY classification_dates.classification_decision_date ASC,
+                                       classification_dates.classification_date ASC,
+                                       classification_dates.assessment_date ASC,
+                                       classification_dates.assessment_id ASC) = 1
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(

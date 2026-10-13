@@ -37,6 +37,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.classification.all_classification_assessment_events import (
+    state_classification_assessment_events_query,
+)
 from recidiviz.calculator.query.state.views.classification.recommended_classification_spans_big_query_view_builder import (
     CUSTODY_LEVEL_COLUMN_NAME,
     CUSTODY_LEVEL_VS_RECOMMENDED_COLUMN_NAME,
@@ -64,6 +67,7 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     supervision_violations_cte,
 )
+from recidiviz.utils.string_formatting import fix_indent
 
 # Valid BigQuery types that can be used in CAST expressions (excludes complex types)
 _EXCLUDED_TYPES = {"TYPE_KIND_UNSPECIFIED", "ARRAY", "STRUCT", "RANGE", "FOREIGN"}
@@ -939,9 +943,9 @@ def at_least_x_time_since_latest_classification_assessment(
     future state's eligible_date_clause sits close to classification_decision_date.
 
     Args:
-        state_code (StateCode): State to filter `custody_classification_assessment_dates`
-            spans to.
-        eligible_date_clause (str): SQL expression (may reference `assessment_due_date`)
+        state_code (StateCode): State whose classification assessment events to read.
+        eligible_date_clause (str): SQL expression (may reference `assessment_due_date`,
+            the due date each instrument's classification assessment event view defines)
             computing the date a span becomes eligible again following a classification
             assessment. This is the only piece of the criteria's timing that varies by
             state; the WHERE-clause guard below is independent of it and does not vary.
@@ -963,12 +967,12 @@ def at_least_x_time_since_latest_classification_assessment(
             assessment_date,
             assessment_due_date,
             DATE_TRUNC(assessment_due_date, MONTH) AS assessment_due_month,
-        FROM
-            `{{project_id}}.analyst_data.custody_classification_assessment_dates_materialized`
+        FROM (
+{fix_indent(state_classification_assessment_events_query(state_code=state_code), indent_level=12)}
+        )
         WHERE
-            state_code = '{state_code.value}'
             -- Removes a small number of spans where classification_decision_date appears to be 1 year after the classification date.
-            AND DATE_SUB(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 WEEK) > classification_decision_date
+            DATE_SUB(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 WEEK) > classification_decision_date
     )
     ,
     {create_sub_sessions_with_attributes('assessment_sessions_cte')}
@@ -979,7 +983,7 @@ def at_least_x_time_since_latest_classification_assessment(
             *,
         FROM sub_sessions_with_attributes
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date
-            ORDER BY assessment_date DESC) = 1
+            ORDER BY assessment_date DESC, assessment_due_date DESC) = 1
     )
     SELECT
         state_code,

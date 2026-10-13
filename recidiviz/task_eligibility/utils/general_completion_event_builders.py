@@ -17,13 +17,16 @@
 """Helper methods that build completion event view builders with similar logic
 that can be parameterized.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.classification.all_classification_assessment_events import (
+    state_classification_assessment_events_query,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
+from recidiviz.utils.string_formatting import fix_indent
 
 
 def intake_classification_decision_completed_view_builder(
@@ -34,39 +37,37 @@ def intake_classification_decision_completed_view_builder(
 ) -> StateSpecificTaskCompletionEventBigQueryViewBuilder:
     """
     Args:
-        state_code (StateCode): State to filter `custody_classification_assessment_dates`
-            spans to.
+        state_code (StateCode): State whose classification assessment events to read.
         description (str): Description of the completion event, passed through to the
             view builder.
         additional_where_clause (str, optional): Extra condition AND'd onto the query,
-            e.g. an assessment_type filter isolating a specific policy version.
+            e.g. an assessment_instrument filter isolating a specific policy version.
     Returns:
         StateSpecificTaskCompletionEventBigQueryViewBuilder: Completion event firing on
             someone's first classification decision after starting or re-starting
             state-prison custody.
     """
-    where_clauses = [f"c.state_code = '{state_code.value}'"]
-    if additional_where_clause:
-        where_clauses.append(additional_where_clause)
+    where_clause = f"WHERE {additional_where_clause}" if additional_where_clause else ""
     query_template = f"""
     SELECT
         c.state_code,
         c.person_id,
         c.classification_decision_date AS completion_event_date,
-    FROM `{{project_id}}.{{analyst_views_dataset}}.custody_classification_assessment_dates_materialized` c
+    FROM (
+{fix_indent(state_classification_assessment_events_query(state_code=state_code), indent_level=8)}
+    ) c
     INNER JOIN
         `{{project_id}}.{{task_eligibility_criteria_general_dataset}}.has_initial_classification_in_state_prison_custody_materialized` i
         ON c.person_id = i.person_id
         AND c.state_code = i.state_code
         AND c.classification_decision_date = i.start_date
-    WHERE {" AND ".join(where_clauses)}
+    {where_clause}
 """
     return StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=state_code,
         completion_event_type=TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
         description=description,
         completion_event_query_template=query_template,
-        analyst_views_dataset=ANALYST_VIEWS_DATASET,
         task_eligibility_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
     )
 
@@ -79,18 +80,17 @@ def non_intake_classification_decision_completed_view_builder(
 ) -> StateSpecificTaskCompletionEventBigQueryViewBuilder:
     """
     Args:
-        state_code (StateCode): State to filter `custody_classification_assessment_dates`
-            spans to.
+        state_code (StateCode): State whose classification assessment events to read.
         description (str): Description of the completion event, passed through to the
             view builder.
         additional_where_clause (str, optional): Extra condition AND'd onto the query,
-            e.g. an assessment_type filter isolating a specific policy version.
+            e.g. an assessment_instrument filter isolating a specific policy version.
     Returns:
         StateSpecificTaskCompletionEventBigQueryViewBuilder: Completion event firing on
             every classification decision after someone's first one (i.e. excludes
             intake).
     """
-    where_clauses = [f"c.state_code = '{state_code.value}'", "i.person_id IS NULL"]
+    where_clauses = ["i.person_id IS NULL"]
     if additional_where_clause:
         where_clauses.append(additional_where_clause)
     query_template = f"""
@@ -98,7 +98,9 @@ def non_intake_classification_decision_completed_view_builder(
         c.state_code,
         c.person_id,
         c.classification_decision_date AS completion_event_date,
-    FROM `{{project_id}}.{{analyst_views_dataset}}.custody_classification_assessment_dates_materialized` c
+    FROM (
+{fix_indent(state_classification_assessment_events_query(state_code=state_code), indent_level=8)}
+    ) c
     LEFT JOIN
         `{{project_id}}.{{task_eligibility_criteria_general_dataset}}.has_initial_classification_in_state_prison_custody_materialized` i
         ON c.person_id = i.person_id
@@ -111,6 +113,5 @@ def non_intake_classification_decision_completed_view_builder(
         completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
         description=description,
         completion_event_query_template=query_template,
-        analyst_views_dataset=ANALYST_VIEWS_DATASET,
         task_eligibility_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
     )

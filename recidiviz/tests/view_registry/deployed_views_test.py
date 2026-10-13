@@ -49,6 +49,9 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibili
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.number_months_downgrade_and_assessment_due import (
+    NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
@@ -108,6 +111,9 @@ from recidiviz.observations.views.spans.person.task_eligibility_session import (
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
+)
+from recidiviz.task_eligibility.criteria.general.has_initial_classification_in_state_prison_custody import (
+    VIEW_BUILDER as HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY_VIEW_BUILDER,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -506,6 +512,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             # Meetings usage metrics count meetings across every state that uses the
             # Meetings tool.
             MEETINGS_MEETING_STARTED_VIEW_BUILDER.address,
+            # State-agnostic views over every state's classification assessments;
+            # reading the unioned view lets a state's new instrument flow through.
+            NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER.address,
+            HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

@@ -34,7 +34,7 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = intake_class
     state_code=StateCode.US_TN,
     description=__doc__,
     # Filters to the 2026 diagnostic CAF, TN's intake classification instrument.
-    additional_where_clause="c.assessment_type = 'DCAF'",
+    additional_where_clause="c.assessment_instrument = 'DCAF'",
 )
 
 if __name__ == "__main__":
