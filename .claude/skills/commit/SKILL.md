@@ -137,4 +137,4 @@ git push -u origin <branch-name>
 - NEVER commit secrets or sensitive files
 - NEVER force push to main/master
 - ALWAYS use HEREDOC for multi-line commit messages to preserve formatting
-- NEVER include Personally Identifiable Information (PII) in commit messages. Avoid names, person IDs, or other identifying details about individuals.
+- NEVER include Personally Identifiable Information (PII) in commit messages. Avoid names or other identifying details about individuals. Internal Recidiviz `person_id` values (the opaque, randomly generated numeric IDs, e.g. `457987459409735`) are NOT PII for this purpose and may be referenced.
