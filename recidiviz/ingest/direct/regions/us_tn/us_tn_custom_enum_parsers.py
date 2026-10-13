@@ -42,7 +42,7 @@ def supervision_type_from_fields(
 ) -> StateSupervisionPeriodSupervisionType:
     """Parse supervision type based on ranking of supervision level, supervision type and assignment type"""
     sup_level, assign_type, sup_type = raw_text.split("-")
-    if sup_level in ("9DP"):
+    if sup_level == "9DP":
         return StateSupervisionPeriodSupervisionType.DEPORTED
     if sup_level in ("9AB", "NIA", "ZAB", "ZAC", "ZAP") or sup_type == "ABS":
         return StateSupervisionPeriodSupervisionType.ABSCONSION
