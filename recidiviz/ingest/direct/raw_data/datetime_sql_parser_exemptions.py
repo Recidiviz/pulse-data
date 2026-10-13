@@ -99,6 +99,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "ind_OffenderSecurityLevel": ["ApprovedDate", "InsertDate", "UpdateDate"],
         "ind_Offender_Address": ["EndDate", "InsertDate", "StartDate", "UpdateDate"],
         "ind_Offender_Phone": ["InsertDate", "UpdateDate"],
+        "ind_SecurityLevelOverride": ["InsertDate", "UpdateDate"],
         "prb_PBCase": [
             "ForwardDate",
             "InsertDate",
@@ -918,7 +919,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
         "ind_AlertType": ["InsertDate", "UpdateDate"],
         "ind_AlertVisibilityType": ["InsertDate", "UpdateDate"],
         "ind_Offender_Alert": ["InsertDate", "StartDate", "UpdateDate"],
-        "ind_SecurityLevelOverride": ["InsertDate", "UpdateDate"],
         "ind_SecurityLevelReviewType": ["InsertDate", "UpdateDate"],
         "prb_PBCase_Employee": ["EndDate", "InsertDate", "StartDate", "UpdateDate"],
         "ref_NoteType": ["InsertDate", "UpdateDate"],

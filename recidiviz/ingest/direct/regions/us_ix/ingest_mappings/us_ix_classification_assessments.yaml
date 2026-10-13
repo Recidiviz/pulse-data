@@ -13,6 +13,9 @@ input_columns:
   section_one_score: STRING
   section_two_score: STRING
   section_three_score: STRING
+  ScoredSecurityLevel: STRING
+  OverrideReason: STRING
+  OverrideSecurityLevel: STRING
 unused_columns:
   - ScoreSheetTypeId
 output:
@@ -33,6 +36,63 @@ output:
                 $then: $literal("US_IX_EMPLOYEE")
           assessment_type: $literal_enum(StateAssessmentType.RSLS)
           assessment_score: score
+          assessment_level:
+            $enum_mapping:
+              $raw_text: ScoredSecurityLevel
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "Minimum"
+                StateAssessmentLevel.MEDIUM:
+                  - "Medium"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "Close"
+                StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "2"
+                  - "5"
+                  - "6"
+                  - "Community"
+                  - "Death Row"
+                  - "Field Unit"
+                  - "Hearing Impaired"
+                  - "Jail"
+                  - "Life-Death"
+                  - "Protective Custody"
+                  - "Rider"
+                  - "Segregation"
+                  - "Transition"
+                  - "Unassigned"
+                  - "Work center"
+          assessment_override_reason: OverrideReason
+          assessment_override_level:
+            $conditional:
+              - $if:
+                  $not_null: OverrideReason
+                $then:
+                  $enum_mapping:
+                    $raw_text: OverrideSecurityLevel
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "Minimum"
+                      StateAssessmentLevel.MEDIUM:
+                        - "Medium"
+                      StateAssessmentLevel.MEDIUM_HIGH:
+                        - "Close"
+                      StateAssessmentLevel.INTERNAL_UNKNOWN:
+                        - "2"
+                        - "5"
+                        - "6"
+                        - "Community"
+                        - "Death Row"
+                        - "Field Unit"
+                        - "Hearing Impaired"
+                        - "Jail"
+                        - "Life-Death"
+                        - "Protective Custody"
+                        - "Rider"
+                        - "Segregation"
+                        - "Transition"
+                        - "Unassigned"
+                        - "Work center"
           assessment_metadata:
             $normalized_values_json_dict:
               CLASSIFICATIONTYPE: ClassificationTypeDesc
