@@ -35,6 +35,9 @@ from recidiviz.documents.extraction.llm_extraction_job_generator import (
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
+from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+    run_sync_extraction_job,
+)
 from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
     LLMExtractorMetadataManager,
 )
@@ -158,11 +161,9 @@ class SandboxDocumentStoreRunner:
 
 
 class SandboxExtractionRunner:
-    """Owns the extraction job's lifecycle for one extractor and sandbox: generates
-    the job, enforces the MAX_DOCUMENTS ceiling, marks the job started/completed/
-    failed, and delegates running the pending documents through the LLM to a
-    DocumentExtractionProcessor. Runs unchanged for a first-order or an
-    entity-resolution config.
+    """Generates the extraction job for one extractor and sandbox, then runs it to
+    completion via run_sync_extraction_job (capped at MAX_DOCUMENTS). Runs unchanged
+    for a first-order or an entity-resolution config.
     """
 
     def __init__(
@@ -236,42 +237,10 @@ class SandboxExtractionRunner:
             logging.info("No documents need processing; nothing to do.")
             return None
 
-        # mark_job_started is a no-op on an already-started (resumed) job, so
-        # calling it before the pending-document read lets the try/except own the
-        # whole job lifecycle: any failure from here on marks the job failed
-        # rather than leaving it open, which under --keep-postgres would block
-        # every future run for this extractor version.
-        self.job_manager.mark_job_started(state_code=self.state_code, job_id=job.job_id)
-        try:
-            pending_documents = self.job_manager.get_pending_job_documents(
-                state_code=self.state_code, job_id=job.job_id
-            )
-            if len(pending_documents) > MAX_DOCUMENTS:
-                raise ValueError(
-                    f"Job [{job.job_id}] holds [{len(pending_documents)}] pending "
-                    f"documents, above the MAX_DOCUMENTS ceiling of "
-                    f"[{MAX_DOCUMENTS}]. This script's write path is not yet sized "
-                    f"for runs this large; narrow the run (e.g. --document-limit) "
-                    f"or raise MAX_DOCUMENTS deliberately."
-                )
-            if pending_documents:
-                summary = self.processor.process(
-                    job_id=job.job_id, pending_documents=pending_documents
-                )
-            else:
-                # A resumed job whose documents all finished before a crash still
-                # needs completing, or it stays open and blocks every future run.
-                logging.info(
-                    "Job [%s] has no pending documents; completing it.", job.job_id
-                )
-                summary = None
-            self.job_manager.mark_job_completed(
-                state_code=self.state_code, job_id=job.job_id
-            )
-        except Exception as e:
-            self.job_manager.mark_job_failed(
-                state_code=self.state_code, job_id=job.job_id, error_message=str(e)
-            )
-            raise
-
-        return summary
+        return run_sync_extraction_job(
+            config=self.config,
+            job_id=job.job_id,
+            job_manager=self.job_manager,
+            processor=self.processor,
+            max_documents=MAX_DOCUMENTS,
+        )

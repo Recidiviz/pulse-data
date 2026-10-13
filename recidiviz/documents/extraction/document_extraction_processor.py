@@ -67,6 +67,34 @@ from recidiviz.documents.store.document_store_sandbox_context import (
 )
 from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
 
+# How many processed results to buffer before flushing them to BigQuery and then
+# marking their Postgres results. Bounds both the per-flush memory footprint and
+# the re-extraction window on a crash.
+#
+# Sized for the current streaming-insert write path, whose per-request payload
+# BigQuery caps at 10 MB: too large a chunk risks a 413 on the raw-results write.
+# When the persister moves to load jobs, this should grow substantially —
+# load jobs have no payload cap but a 1,500-loads-per-table-per-
+# day quota, which instead rewards fewer, larger flushes.
+DEFAULT_PERSIST_CHUNK_SIZE = 250
+
+# How many extraction requests to build — i.e. read document text from GCS for —
+# concurrently. Building requests one at a time on the thread driving the request
+# runner is what otherwise holds the run's in-flight LLM requests far below the
+# runner's own max_concurrency, since each build costs two sequential GCS round
+# trips (one for the blob metadata, one for the bytes).
+#
+# Sized from measuring a real collection's ~300-byte documents: serial reads
+# managed ~2 documents/sec, 16 threads reached ~15/sec, and 64 threads were no
+# faster — the storage client's own connection pool becomes the limit past this
+# point, so raising it buys nothing.
+DEFAULT_REQUEST_BUILD_CONCURRENCY = 16
+
+# How often, at most, to log a progress line while the LLM requests run. Paced on
+# a time interval rather than every N documents so the cadence is the same whether
+# the run holds 200 documents or 200,000.
+DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS = 10.0
+
 
 def _format_progress(*, processed: int, total: int, elapsed_seconds: float) -> str:
     """Returns a human-readable progress line covering how far through the batch
@@ -346,11 +374,11 @@ class DocumentExtractionProcessor:
         # Marks each job document's result as it is processed.
         job_manager: LLMExtractionJobManager,
         # How many results to buffer before flushing to BigQuery and Postgres.
-        persist_chunk_size: int,
+        persist_chunk_size: int = DEFAULT_PERSIST_CHUNK_SIZE,
         # How many requests to build (reading their text from GCS) concurrently.
-        request_build_concurrency: int,
+        request_build_concurrency: int = DEFAULT_REQUEST_BUILD_CONCURRENCY,
         # Minimum seconds between progress lines while the LLM requests run.
-        progress_log_interval_seconds: float,
+        progress_log_interval_seconds: float = DEFAULT_PROGRESS_LOG_INTERVAL_SECONDS,
     ) -> None:
         self.config = config
         self.results_sandbox_prefix = results_sandbox_prefix

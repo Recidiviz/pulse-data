@@ -1,0 +1,1168 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2026 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests for run_sync_extraction_job."""
+
+import copy
+import datetime
+import threading
+import unittest
+from pathlib import Path
+from typing import Any
+from unittest import mock
+
+import attr
+import pytz
+
+from recidiviz.cloud_resources.resource_label import ResourceLabel
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common import attr_validators
+from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMDocumentExtractionErrorType,
+    LLMExtractionJobDocumentResultType,
+    LLMExtractionJobResultType,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.document_extraction_processor import (
+    DocumentExtractionProcessor,
+    ExtractionRunSummary,
+)
+from recidiviz.documents.extraction.extraction_results_columns import (
+    EXTRACTION_JOB_ID_COLUMN_NAME,
+    RESULT_DATETIME_UTC_COLUMN_NAME,
+    VALIDATION_DATETIME_UTC_COLUMN_NAME,
+)
+from recidiviz.documents.extraction.llm_client.types import (
+    LLMClientDocumentExtractionResult,
+    LLMDocumentExtractionRequest,
+    LLMDocumentExtractionTokenCounts,
+    LLMRequestErrorType,
+)
+from recidiviz.documents.extraction.llm_extraction_job_manager import (
+    LLMExtractionJobManager,
+    LLMJobDocumentExtractionResult,
+)
+from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+    run_sync_extraction_job,
+)
+from recidiviz.documents.extraction.llm_extraction_results_persister import (
+    LLMExtractionResultsPersister,
+)
+from recidiviz.documents.extraction.llm_extraction_results_tables import (
+    ExtractionRawResultsBQTable,
+    ExtractionValidatedResultsBQTable,
+    ExtractionValidationAuditBQTable,
+)
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    get_first_order_llm_extractor_config,
+)
+from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
+    LLMExtractorMetadataManager,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
+    IS_RELEVANT_FIELD_NAME,
+    RESULT_KEY,
+)
+from recidiviz.documents.extraction.models.llm_request_output_values import (
+    LLMRequestOutputValues,
+)
+from recidiviz.documents.extraction.sync_llm_document_extraction_session import (
+    SyncLLMDocumentExtractionSessionSummary,
+)
+from recidiviz.documents.extraction.validation.llm_document_validation_result import (
+    LLMDocumentValidationResult,
+)
+from recidiviz.documents.store.document_store_gcs_path_utils import (
+    gcs_path_for_document,
+)
+from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.source_tables.extraction_results_source_table_collection import (
+    collect_extraction_results_source_table_collections,
+)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_first_order_extractor_config,
+)
+from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
+    fake_minimal_relevant_result_json,
+    ground_citations_in_fake_source_text,
+)
+from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import (
+    FakeSyncLLMClient,
+)
+from recidiviz.tests.documents.store.document_store_test_utils import (
+    patch_fake_config_states_exist_in_env,
+)
+from recidiviz.tests.tools.documents import fixtures
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+
+_STATE = StateCode.US_XX
+_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
+_EXTRACTOR_VERSION = "ev1"
+_SANDBOX_PREFIX = "test_prefix"
+_NOW = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
+_DOC_A = "CID_A"
+_DOC_B = "CID_B"
+
+_OUTPUT_SCHEMA = fake_first_order_extractor_config().extractor_collection.output_schema
+
+# The canned success the fake LLM client returns, paired with the document text
+# seeded into GCS for the documents it is returned for. Validation checks a
+# result's citations against the document it was extracted from, so the two have
+# to be built together for a result to pass as usable.
+_GROUNDED_SUCCESS_RESULT = ground_citations_in_fake_source_text(
+    fake_minimal_relevant_result_json()
+)
+_DOCUMENT_TEXT = _GROUNDED_SUCCESS_RESULT.source_document_text
+
+
+def _token_counts() -> LLMDocumentExtractionTokenCounts:
+    return LLMDocumentExtractionTokenCounts(
+        input_token_count=10,
+        output_token_count=5,
+        cached_input_token_count=2,
+        thinking_token_count=0,
+    )
+
+
+def _success_result_fn(
+    request: LLMDocumentExtractionRequest,
+) -> LLMClientDocumentExtractionResult:
+    """Returns a canned success whose JSON conforms to the fake collection's
+    schema, so the real validator passes it as a usable relevant result."""
+    return LLMClientDocumentExtractionResult.from_success(
+        document_contents_id=request.document_contents_id,
+        result_json=copy.deepcopy(_GROUNDED_SUCCESS_RESULT.result_json),
+        token_counts=_token_counts(),
+    )
+
+
+def _success_job_result(
+    *, job_id: str, document_contents_id: str
+) -> LLMJobDocumentExtractionResult:
+    return LLMJobDocumentExtractionResult.for_success(
+        job_id=job_id,
+        raw_result=LLMClientDocumentExtractionResult.from_success(
+            document_contents_id=document_contents_id,
+            result_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
+            token_counts=_token_counts(),
+        ),
+        result_datetime_utc=_NOW,
+        validation_results=LLMDocumentValidationResult(
+            validated_output=LLMRequestOutputValues(
+                output_schema=_OUTPUT_SCHEMA,
+                output_json={RESULT_KEY: {IS_RELEVANT_FIELD_NAME: True}},
+            ),
+            audit_issues=[],
+            result_type_override=None,
+            validation_config_version_id="vc1",
+            validation_datetime_utc=_NOW,
+        ),
+    )
+
+
+def _failed_job_result(
+    *, job_id: str, document_contents_id: str
+) -> LLMJobDocumentExtractionResult:
+    return LLMJobDocumentExtractionResult.for_failed_request(
+        job_id=job_id,
+        raw_result=LLMClientDocumentExtractionResult.from_error(
+            document_contents_id=document_contents_id,
+            error_type=LLMRequestErrorType.RATE_LIMITED,
+            error_message="rate limited",
+            token_counts=_token_counts(),
+        ),
+        result_datetime_utc=_NOW,
+        result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+        error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+    )
+
+
+@attr.define(frozen=True, kw_only=True)
+class _ExtractionJobDocumentSnapshot:
+    """A detached copy of an LLMExtractionJobDocument's result columns, read out
+    of the session so it survives the session close and can be compared by value."""
+
+    result_type: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    is_relevant: bool | None = attr.ib(validator=attr_validators.is_opt_bool)
+    error_type: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    error_message: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    input_token_count: int | None = attr.ib(validator=attr_validators.is_opt_int)
+    output_token_count: int | None = attr.ib(validator=attr_validators.is_opt_int)
+    cached_input_token_count: int | None = attr.ib(validator=attr_validators.is_opt_int)
+    thinking_token_count: int | None = attr.ib(validator=attr_validators.is_opt_int)
+
+
+@attr.define(frozen=True, kw_only=True)
+class _ExtractionJobSnapshot:
+    """A detached copy of the extraction job's state. The completion
+    datetime is reduced to a boolean since its exact value is run-stamped."""
+
+    result_type: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    is_completed: bool = attr.ib(validator=attr_validators.is_bool)
+
+
+# A document that was never processed leaves every result column null.
+_UNMARKED_DOCUMENT = _ExtractionJobDocumentSnapshot(
+    result_type=None,
+    is_relevant=None,
+    error_type=None,
+    error_message=None,
+    input_token_count=None,
+    output_token_count=None,
+    cached_input_token_count=None,
+    thinking_token_count=None,
+)
+
+
+class RunSyncExtractionJobTest(unittest.TestCase):
+    """Tests run_sync_extraction_job's job-lifecycle orchestration against a real
+    Postgres, with the per-document processor mocked."""
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
+
+    def setUp(self) -> None:
+        self.config = fake_first_order_extractor_config()
+        self.job_manager = LLMExtractionJobManager()
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(
+            self.job_manager.database_key.schema_type
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+        self._seed_extractor_version_chain()
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    def _seed_extractor_version_chain(self) -> None:
+        """Seeds the collection → extractor → extractor_version parent rows the
+        job and job-document tables' foreign keys require."""
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.LLMExtractorCollection(
+                    collection_name=_COLLECTION_NAME,
+                    collection_version_id="cv1",
+                    output_schema_version="sv1",
+                    output_schema_json='{"type":"object"}',
+                    description="desc",
+                    minimum_confidence_level="inferred",
+                    row_creation_datetime_utc=_NOW,
+                )
+            )
+            session.add(
+                schema.LLMExtractor(
+                    state_code=_STATE.value,
+                    extractor_id="US_XX_FAKE_EXTRACTOR_COLLECTION",
+                    extractor_collection_name=_COLLECTION_NAME,
+                    input_document_collection_name="FAKE_INPUT_NOTES",
+                    row_creation_datetime_utc=_NOW,
+                )
+            )
+            session.flush()
+            session.add(
+                schema.LLMExtractorVersion(
+                    state_code=_STATE.value,
+                    extractor_version_id=_EXTRACTOR_VERSION,
+                    extractor_id="US_XX_FAKE_EXTRACTOR_COLLECTION",
+                    extractor_collection_name=_COLLECTION_NAME,
+                    extractor_collection_version_id="cv1",
+                    instructions_prompt="prompt",
+                    instructions_prompt_hash="hash",
+                    model_config_name="model",
+                    model_config_version_id="mv1",
+                    invalidated_datetime_utc=None,
+                    invalidation_reason=None,
+                    row_creation_datetime_utc=_NOW,
+                )
+            )
+
+    def _create_job(self, document_contents_ids: list[str]) -> str:
+        return self.job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=document_contents_ids,
+        ).job_id
+
+    def _mock_processor(
+        self, *, results: list[LLMJobDocumentExtractionResult] | None = None
+    ) -> mock.MagicMock:
+        """Returns a stand-in for DocumentExtractionProcessor whose process() writes
+        |results| to Postgres (as the real processor does on each chunk) and returns
+        a summary, so the job-result roll-up this test asserts is derived from real
+        document rows."""
+        processor = mock.MagicMock()
+
+        # pylint:disable=unused-argument
+        def process(*, job_id: str, pending_documents: Any) -> ExtractionRunSummary:
+            if results:
+                self.job_manager.set_job_document_results(
+                    state_code=_STATE, results=results
+                )
+            return ExtractionRunSummary(extractor_config_name=_COLLECTION_NAME)
+
+        processor.process.side_effect = process
+        return processor
+
+    def _run(
+        self,
+        *,
+        job_id: str,
+        processor: mock.MagicMock,
+        max_documents: int | None = None,
+    ) -> ExtractionRunSummary | None:
+        return run_sync_extraction_job(
+            config=self.config,
+            job_id=job_id,
+            job_manager=self.job_manager,
+            processor=processor,
+            max_documents=max_documents,
+        )
+
+    def _job_result_type(self, job_id: str) -> tuple[str | None, bool]:
+        with SessionFactory.using_database(self.database_key) as session:
+            job = session.query(schema.LLMExtractionJob).filter_by(job_id=job_id).one()
+            return job.result_type, job.completion_datetime_utc is not None
+
+    def _document_result_types(self, job_id: str) -> dict[str, str | None]:
+        with SessionFactory.using_database(self.database_key) as session:
+            return {
+                doc.document_contents_id: doc.result_type
+                for doc in session.query(schema.LLMExtractionJobDocument)
+                .filter_by(job_id=job_id)
+                .all()
+            }
+
+    def test_clean_run_persists_results_and_completes_job_as_success(self) -> None:
+        job_id = self._create_job([_DOC_A, _DOC_B])
+        processor = self._mock_processor(
+            results=[
+                _success_job_result(job_id=job_id, document_contents_id=_DOC_A),
+                _success_job_result(job_id=job_id, document_contents_id=_DOC_B),
+            ]
+        )
+
+        self._run(job_id=job_id, processor=processor)
+
+        processor.process.assert_called_once()
+        self.assertEqual(
+            (LLMExtractionJobResultType.SUCCESS.value, True),
+            self._job_result_type(job_id),
+        )
+        self.assertEqual(
+            {
+                _DOC_A: LLMExtractionJobDocumentResultType.SUCCESS.value,
+                _DOC_B: LLMExtractionJobDocumentResultType.SUCCESS.value,
+            },
+            self._document_result_types(job_id),
+        )
+
+    def test_run_with_a_failed_document_completes_job_as_partial_failure(self) -> None:
+        job_id = self._create_job([_DOC_A, _DOC_B])
+        processor = self._mock_processor(
+            results=[
+                _success_job_result(job_id=job_id, document_contents_id=_DOC_A),
+                _failed_job_result(job_id=job_id, document_contents_id=_DOC_B),
+            ]
+        )
+
+        self._run(job_id=job_id, processor=processor)
+
+        self.assertEqual(
+            (LLMExtractionJobResultType.PARTIAL_FAILURE.value, True),
+            self._job_result_type(job_id),
+        )
+
+    def test_unhandled_error_marks_job_failed_and_reraises(self) -> None:
+        job_id = self._create_job([_DOC_A])
+        processor = mock.MagicMock()
+        processor.process.side_effect = RuntimeError("vertex exploded")
+
+        with self.assertRaisesRegex(RuntimeError, r"^vertex exploded$"):
+            self._run(job_id=job_id, processor=processor)
+
+        result_type, is_completed = self._job_result_type(job_id)
+        self.assertEqual(LLMExtractionJobResultType.FAILURE.value, result_type)
+        self.assertTrue(is_completed)
+        # The failed document kept no terminal result, so a future job re-selects it.
+        self.assertEqual({_DOC_A: None}, self._document_result_types(job_id))
+
+    def test_job_with_no_pending_documents_completes_without_processing(self) -> None:
+        # A job whose documents all finished before a prior pod crashed still needs
+        # completing; the processor is never asked to process anything.
+        job_id = self._create_job([_DOC_A])
+        self.job_manager.set_job_document_results(
+            state_code=_STATE,
+            results=[_success_job_result(job_id=job_id, document_contents_id=_DOC_A)],
+        )
+        processor = mock.MagicMock()
+
+        self._run(job_id=job_id, processor=processor)
+
+        processor.process.assert_not_called()
+        self.assertEqual(
+            (LLMExtractionJobResultType.SUCCESS.value, True),
+            self._job_result_type(job_id),
+        )
+
+    def test_exceeding_max_documents_marks_job_failed_without_processing(self) -> None:
+        # Two pending documents but a ceiling of one, so the run refuses to do any
+        # LLM work. The ceiling check runs inside the job lifecycle, so the job is
+        # marked failed (not left open) and its documents stay unmarked.
+        job_id = self._create_job([_DOC_A, _DOC_B])
+        processor = mock.MagicMock()
+
+        with self.assertRaisesRegex(ValueError, r"above the ceiling of \[1\]"):
+            self._run(job_id=job_id, processor=processor, max_documents=1)
+
+        processor.process.assert_not_called()
+        self.assertEqual(
+            (LLMExtractionJobResultType.FAILURE.value, True),
+            self._job_result_type(job_id),
+        )
+        self.assertEqual(
+            {_DOC_A: None, _DOC_B: None}, self._document_result_types(job_id)
+        )
+
+
+# TODO(OBT-46375) Add a mixed-outcome run: one document succeeds while another
+# fails (LLM request error / validation failure) in the same run, asserting the
+# job-level PARTIAL_FAILURE roll-up, divergent per-doc result rows, and the
+# summary aggregating counts + tokens from only the successful doc.
+class RunSyncExtractionJobEndToEndTest(BigQueryEmulatorTestCase):
+    """Runs run_sync_extraction_job with the real DocumentExtractionProcessor against
+    a real Postgres and the BQ emulator, asserting the BQ result rows and Postgres
+    marks a run produces."""
+
+    # The seeded result tables are created once in setUpClass; keep them across
+    # tests and only clear their rows between tests.
+    wipe_emulator_data_on_teardown = False
+
+    postgres_launch_result: OnDiskPostgresLaunchResult
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        # The real persister writes to sandbox-prefixed result tables; seed them.
+        with patch_fake_config_states_exist_in_env():
+            return [
+                collection.as_sandbox_collection(_SANDBOX_PREFIX)
+                for collection in collect_extraction_results_source_table_collections(
+                    configs={
+                        _STATE: {
+                            _COLLECTION_NAME: get_first_order_llm_extractor_config(
+                                _STATE, _COLLECTION_NAME, config_module=fake_config
+                            )
+                        }
+                    }
+                )
+            ]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.postgres_launch_result
+        )
+        super().tearDownClass()
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(
+            LLMExtractionJobManager().database_key.schema_type
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
+
+        self.config = get_first_order_llm_extractor_config(
+            _STATE, _COLLECTION_NAME, config_module=fake_config
+        )
+        self.fs = FakeGCSFileSystem()
+        # Writes the collection → extractor → extractor_version chain the job's
+        # foreign keys require, and returns the version create_job keys its jobs on.
+        self.active_version = (
+            LLMExtractorMetadataManager().set_active_extractor_version(
+                config=self.config
+            )
+        )
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+        # Rows persist across tests (wipe_emulator_data_on_teardown is False), so
+        # clear every seeded table's rows.
+        self._clear_emulator_table_data()
+        super().tearDown()
+
+    def _seed_gcs(self, document_contents_id: str, text: str) -> None:
+        self.fs.upload_from_string(
+            path=gcs_path_for_document(
+                project_id=self.project_id,
+                state_code=_STATE,
+                collection_name=self.config.input_document_collection.name,
+                document_contents_id=document_contents_id,
+                sandbox_prefix=None,
+            ),
+            contents=text,
+            content_type="text/plain",
+        )
+
+    def _processor(
+        self,
+        sync_client: FakeSyncLLMClient,
+        *,
+        job_manager: LLMExtractionJobManager,
+        persist_chunk_size: int = 1000,
+        request_build_concurrency: int = 4,
+    ) -> DocumentExtractionProcessor:
+        return DocumentExtractionProcessor(
+            config=self.config,
+            results_sandbox_prefix=_SANDBOX_PREFIX,
+            document_store_sandbox=None,
+            labels=[ResourceLabel(key="reason", value="test")],
+            bq_client=self.bq_client,
+            fs=self.fs,
+            sync_client=sync_client,
+            job_manager=job_manager,
+            persist_chunk_size=persist_chunk_size,
+            request_build_concurrency=request_build_concurrency,
+            progress_log_interval_seconds=0.0,
+        )
+
+    def _run(
+        self,
+        sync_client: FakeSyncLLMClient,
+        *,
+        document_contents_ids: list[str],
+        persist_chunk_size: int = 1000,
+        request_build_concurrency: int = 4,
+    ) -> ExtractionRunSummary | None:
+        job_manager = LLMExtractionJobManager()
+        job_id = job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=self.active_version.extractor_version_id,
+            document_contents_ids=document_contents_ids,
+        ).job_id
+        return run_sync_extraction_job(
+            config=self.config,
+            job_id=job_id,
+            job_manager=job_manager,
+            processor=self._processor(
+                sync_client,
+                job_manager=job_manager,
+                persist_chunk_size=persist_chunk_size,
+                request_build_concurrency=request_build_concurrency,
+            ),
+        )
+
+    def _fake_client(
+        self,
+        result_fn: Any = _success_result_fn,
+    ) -> FakeSyncLLMClient:
+        return FakeSyncLLMClient(
+            model_config=self.config.model_config, result_fn=result_fn
+        )
+
+    def _assert_result_tables_match_fixtures(self, scenario: str) -> None:
+        """Asserts the full contents of the raw, validated, and audit result
+        tables equal the CSV fixtures for |scenario|. The run-stamped columns —
+        the per-run job UUID and the result/validation datetimes — are excluded
+        from the comparison since they vary between runs."""
+        fixtures_dir = Path(fixtures.__file__).parent
+        # The three tables share a table_id, so key the fixture on the table's
+        # role (raw / validated / audit) instead.
+        for role, table, run_stamped_datetime_column in (
+            ("raw", ExtractionRawResultsBQTable, RESULT_DATETIME_UTC_COLUMN_NAME),
+            (
+                "validated",
+                ExtractionValidatedResultsBQTable,
+                VALIDATION_DATETIME_UTC_COLUMN_NAME,
+            ),
+            (
+                "audit",
+                ExtractionValidationAuditBQTable,
+                VALIDATION_DATETIME_UTC_COLUMN_NAME,
+            ),
+        ):
+            ignore_columns = [
+                EXTRACTION_JOB_ID_COLUMN_NAME,
+                run_stamped_datetime_column,
+            ]
+            fixture_path = fixtures_dir / scenario / f"{role}_output.csv"
+            with self.subTest(fixture=str(fixture_path)):
+                self.compare_table_to_fixture(
+                    address=table.address(
+                        state_code=_STATE,
+                        collection_name=_COLLECTION_NAME,
+                        sandbox_prefix=_SANDBOX_PREFIX,
+                    ),
+                    columns_to_ignore=ignore_columns,
+                    expected_output_fixture_path=fixture_path,
+                    expect_missing_fixtures_on_empty_results=True,
+                    create_expected=False,
+                    expect_unique_output_rows=True,
+                )
+
+    def _extraction_job_document_by_id(
+        self,
+    ) -> dict[str, _ExtractionJobDocumentSnapshot]:
+        with SessionFactory.using_database(self.database_key) as session:
+            return {
+                doc.document_contents_id: _ExtractionJobDocumentSnapshot(
+                    result_type=doc.result_type,
+                    is_relevant=doc.is_relevant,
+                    error_type=doc.error_type,
+                    error_message=doc.error_message,
+                    input_token_count=doc.input_token_count,
+                    output_token_count=doc.output_token_count,
+                    cached_input_token_count=doc.cached_input_token_count,
+                    thinking_token_count=doc.thinking_token_count,
+                )
+                for doc in session.query(schema.LLMExtractionJobDocument).all()
+            }
+
+    def _extraction_job_snapshot(self) -> _ExtractionJobSnapshot:
+        with SessionFactory.using_database(self.database_key) as session:
+            job = session.query(schema.LLMExtractionJob).one()
+            return _ExtractionJobSnapshot(
+                result_type=job.result_type,
+                is_completed=job.completion_datetime_utc is not None,
+            )
+
+    def test_happy_path_persists_bq_rows_and_marks_postgres(self) -> None:
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        summary = self._run(self._fake_client(), document_contents_ids=[_DOC_A, _DOC_B])
+
+        # Both documents succeed, so their token counts are summed across the run.
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+
+        # Both documents' content landed in the sandbox-prefixed BQ result tables.
+        self._assert_result_tables_match_fixtures("happy_path")
+
+        # Both documents were marked SUCCESS in Postgres, each with its own token
+        # counts recorded on its own row (not just summed into the run totals).
+        expected_doc = _ExtractionJobDocumentSnapshot(
+            result_type=LLMExtractionJobDocumentResultType.SUCCESS.value,
+            is_relevant=True,
+            error_type=None,
+            error_message=None,
+            input_token_count=10,
+            output_token_count=5,
+            cached_input_token_count=2,
+            thinking_token_count=0,
+        )
+        self.assertEqual(
+            {_DOC_A: expected_doc, _DOC_B: expected_doc},
+            self._extraction_job_document_by_id(),
+        )
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.SUCCESS.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+
+    def test_requests_are_built_concurrently(self) -> None:
+        # Building requests inline on the thread driving the request runner
+        # serialized each document's GCS read and starved the LLM pool. Both
+        # documents' reads must now be in flight at once: this barrier only clears
+        # when two threads reach it, so a serialized build breaks the barrier on
+        # its timeout and fails the test rather than passing slowly.
+        both_reads_in_flight = threading.Barrier(2, timeout=10)
+        real_download_as_string = self.fs.download_as_string
+
+        def download_as_string(path: GcsfsFilePath, encoding: str = "utf-8") -> str:
+            # Waits before delegating, so neither thread is holding the fake
+            # filesystem's mutex while parked here.
+            both_reads_in_flight.wait()
+            return real_download_as_string(path, encoding)
+
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        with mock.patch.object(self.fs, "download_as_string", download_as_string):
+            summary = self._run(
+                self._fake_client(),
+                document_contents_ids=[_DOC_A, _DOC_B],
+                request_build_concurrency=2,
+            )
+
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+
+    def test_results_flushed_in_chunks(self) -> None:
+        # persist_chunk_size=1 forces a BigQuery+Postgres flush after each result
+        # instead of one flush at the end. Every other test uses a chunk size
+        # larger than its document count, so this is the only test in which the
+        # mid-run chunk boundary fires.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        # The persister is a frozen attrs instance, so the spy patches the class
+        # (autospec) and delegates to the real method.
+        with mock.patch.object(
+            LLMExtractionResultsPersister,
+            "persist_results",
+            autospec=True,
+            side_effect=LLMExtractionResultsPersister.persist_results,
+        ) as persist_spy:
+            summary = self._run(
+                self._fake_client(),
+                document_contents_ids=[_DOC_A, _DOC_B],
+                persist_chunk_size=1,
+            )
+
+        # Two chunks of one result each. The final flush of the empty leftover
+        # chunk never reaches the persister.
+        self.assertEqual(
+            [1, 1],
+            [len(call.kwargs["results"]) for call in persist_spy.call_args_list],
+        )
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+        # Both chunked flushes marked Postgres, so both documents carry results.
+        self.assertEqual({_DOC_A, _DOC_B}, set(self._extraction_job_document_by_id()))
+
+    def test_failed_request_counts_as_llm_request_failure(self) -> None:
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        def result_fn(
+            request: LLMDocumentExtractionRequest,
+        ) -> LLMClientDocumentExtractionResult:
+            return LLMClientDocumentExtractionResult.from_error(
+                document_contents_id=request.document_contents_id,
+                error_type=LLMRequestErrorType.CONTENT_FILTERED,
+                error_message="blocked",
+            )
+
+        summary = self._run(
+            self._fake_client(result_fn), document_contents_ids=[_DOC_A, _DOC_B]
+        )
+
+        # An LLM-request-level error is counted separately from a validation
+        # failure. The error result carries no usage, so no tokens are summed.
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    failed_llm_request=2,
+                ),
+            ),
+            summary,
+        )
+
+        # A content-filtered request never produces a result to validate, so no
+        # rows land in any of the three result tables.
+        self._assert_result_tables_match_fixtures("llm_request_error")
+
+        # Both documents are marked with a permanent document-level failure
+        # carrying the error type/message and no is_relevant. The error result
+        # carries no usage, so its token counts are zero.
+        expected_doc = _ExtractionJobDocumentSnapshot(
+            result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT.value,
+            is_relevant=None,
+            error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED.value,
+            error_message="blocked",
+            input_token_count=0,
+            output_token_count=0,
+            cached_input_token_count=0,
+            thinking_token_count=0,
+        )
+        self.assertEqual(
+            {_DOC_A: expected_doc, _DOC_B: expected_doc},
+            self._extraction_job_document_by_id(),
+        )
+        # Every document failed, so the job completes as a partial failure.
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.PARTIAL_FAILURE.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+
+    def test_failed_validations(self) -> None:
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        def result_fn(
+            request: LLMDocumentExtractionRequest,
+        ) -> LLMClientDocumentExtractionResult:
+            # A successful request whose JSON does not conform to the collection's
+            # schema, so it reaches the validator and fails there.
+            return LLMClientDocumentExtractionResult.from_success(
+                document_contents_id=request.document_contents_id,
+                result_json={"not_a_valid_field": "nope"},
+                token_counts=_token_counts(),
+            )
+
+        summary = self._run(
+            self._fake_client(result_fn), document_contents_ids=[_DOC_A, _DOC_B]
+        )
+
+        # Both documents' requests succeeded but their results failed validation,
+        # so they land in failed_validation, not failed_llm_request. The requests'
+        # token counts are still summed across the run.
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    failed_validation=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+
+        # A validation failure persists the raw result and an audit row marking
+        # the failure, but writes no validated row.
+        self._assert_result_tables_match_fixtures("validation_failure")
+
+        # Both documents are marked with a transient document-level failure (the
+        # structural check flags it retryable), with no error type/message and
+        # no is_relevant. The request's token counts are still recorded.
+        expected_doc = _ExtractionJobDocumentSnapshot(
+            result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT.value,
+            is_relevant=None,
+            error_type=None,
+            error_message=None,
+            input_token_count=10,
+            output_token_count=5,
+            cached_input_token_count=2,
+            thinking_token_count=0,
+        )
+        self.assertEqual(
+            {_DOC_A: expected_doc, _DOC_B: expected_doc},
+            self._extraction_job_document_by_id(),
+        )
+        # Every document failed, so the job completes as a partial failure.
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.PARTIAL_FAILURE.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+
+    def test_missing_gcs_document_left_unmarked(self) -> None:
+        # doc-a has GCS text; doc-b was never uploaded to GCS, so its request
+        # cannot be built.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+
+        summary = self._run(self._fake_client(), document_contents_ids=[_DOC_A, _DOC_B])
+
+        # doc-a processed and succeeded (contributing its token counts); doc-b
+        # could not be assembled into a request.
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=1,
+                    succeeded=1,
+                    failed_to_build=1,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=10,
+                        output_token_count=5,
+                        cached_input_token_count=2,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+        # doc-a processed and marked SUCCESS; doc-b left entirely unmarked for
+        # re-selection on the next run.
+        self.assertEqual(
+            {
+                _DOC_A: _ExtractionJobDocumentSnapshot(
+                    result_type=LLMExtractionJobDocumentResultType.SUCCESS.value,
+                    is_relevant=True,
+                    error_type=None,
+                    error_message=None,
+                    input_token_count=10,
+                    output_token_count=5,
+                    cached_input_token_count=2,
+                    thinking_token_count=0,
+                ),
+                _DOC_B: _UNMARKED_DOCUMENT,
+            },
+            self._extraction_job_document_by_id(),
+        )
+        # An unmarked document is not a failure, so the job completes as SUCCESS.
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.SUCCESS.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+        # Only doc-a's content was persisted.
+        self._assert_result_tables_match_fixtures("missing_gcs")
+
+    def test_empty_document_skipped(self) -> None:
+        self._seed_gcs(_DOC_A, "")
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        summary = self._run(self._fake_client(), document_contents_ids=[_DOC_A, _DOC_B])
+
+        # doc-a has empty text and is skipped before the LLM; doc-b processes and
+        # succeeds, contributing its token counts.
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=1,
+                    succeeded=1,
+                    skipped_empty=1,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=10,
+                        output_token_count=5,
+                        cached_input_token_count=2,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            summary,
+        )
+        # doc-a skipped and left entirely unmarked; doc-b marked SUCCESS.
+        self.assertEqual(
+            {
+                _DOC_A: _UNMARKED_DOCUMENT,
+                _DOC_B: _ExtractionJobDocumentSnapshot(
+                    result_type=LLMExtractionJobDocumentResultType.SUCCESS.value,
+                    is_relevant=True,
+                    error_type=None,
+                    error_message=None,
+                    input_token_count=10,
+                    output_token_count=5,
+                    cached_input_token_count=2,
+                    thinking_token_count=0,
+                ),
+            },
+            self._extraction_job_document_by_id(),
+        )
+        # A skipped document is not a failure, so the job completes as SUCCESS.
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.SUCCESS.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+        # Only doc-b's content was persisted.
+        self._assert_result_tables_match_fixtures("empty_document")
+
+    def test_resumed_job_with_no_pending_documents_is_completed(self) -> None:
+        # Simulate a crash between marking the last document and completing the
+        # job: the first run processes every document (marking them all) but its
+        # mark_job_completed is stubbed out, leaving an open job. The next run
+        # resumes that job, finds nothing pending, and must complete it rather
+        # than leave it open forever.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        job_manager = LLMExtractionJobManager()
+        job_id = job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=self.active_version.extractor_version_id,
+            document_contents_ids=[_DOC_A, _DOC_B],
+        ).job_id
+
+        with mock.patch.object(LLMExtractionJobManager, "mark_job_completed"):
+            first_summary = run_sync_extraction_job(
+                config=self.config,
+                job_id=job_id,
+                job_manager=job_manager,
+                processor=self._processor(self._fake_client(), job_manager=job_manager),
+            )
+        self.assertEqual(
+            ExtractionRunSummary(
+                extractor_config_name=_COLLECTION_NAME,
+                session_summary=SyncLLMDocumentExtractionSessionSummary(
+                    processed=2,
+                    succeeded=2,
+                    token_counts=LLMDocumentExtractionTokenCounts(
+                        input_token_count=20,
+                        output_token_count=10,
+                        cached_input_token_count=4,
+                        thinking_token_count=0,
+                    ),
+                ),
+            ),
+            first_summary,
+        )
+        # mark_job_completed was stubbed, so the job is left open and unresolved.
+        self.assertEqual(
+            _ExtractionJobSnapshot(result_type=None, is_completed=False),
+            self._extraction_job_snapshot(),
+        )
+
+        # Resume the same job: nothing left to process, but it must be completed.
+        resume_manager = LLMExtractionJobManager()
+        second_summary = run_sync_extraction_job(
+            config=self.config,
+            job_id=job_id,
+            job_manager=resume_manager,
+            processor=self._processor(self._fake_client(), job_manager=resume_manager),
+        )
+
+        self.assertIsNone(second_summary)
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.SUCCESS.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+
+    def test_job_failure_marks_job_failed(self) -> None:
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        with mock.patch.object(
+            LLMExtractionResultsPersister,
+            "persist_results",
+            side_effect=RuntimeError("BQ is down"),
+        ):
+            with self.assertRaises(RuntimeError):
+                self._run(self._fake_client(), document_contents_ids=[_DOC_A, _DOC_B])
+
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.FAILURE.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+
+    def test_exceeding_max_documents_marks_job_failed(self) -> None:
+        # Two pending documents but a ceiling of one, so the run refuses to do any
+        # LLM work. The ceiling check runs inside the job lifecycle, so the job is
+        # marked failed (not left open) and its documents stay unmarked.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+        self._seed_gcs(_DOC_B, _DOCUMENT_TEXT)
+
+        job_manager = LLMExtractionJobManager()
+        job_id = job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=self.active_version.extractor_version_id,
+            document_contents_ids=[_DOC_A, _DOC_B],
+        ).job_id
+
+        with self.assertRaisesRegex(ValueError, r"above the ceiling of \[1\]"):
+            run_sync_extraction_job(
+                config=self.config,
+                job_id=job_id,
+                job_manager=job_manager,
+                processor=self._processor(self._fake_client(), job_manager=job_manager),
+                max_documents=1,
+            )
+
+        self.assertEqual(
+            _ExtractionJobSnapshot(
+                result_type=LLMExtractionJobResultType.FAILURE.value,
+                is_completed=True,
+            ),
+            self._extraction_job_snapshot(),
+        )
+        # No documents were processed, so they stay unmarked for re-selection.
+        self.assertEqual(
+            {_DOC_A: _UNMARKED_DOCUMENT, _DOC_B: _UNMARKED_DOCUMENT},
+            self._extraction_job_document_by_id(),
+        )
