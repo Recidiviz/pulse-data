@@ -668,6 +668,9 @@ class SupervisionOfficerSupervisorEntity:
     supervision_location_for_list_page: Optional[str] = attr.ib()
     # Supervision location to show on the individual supervisor page
     supervision_location_for_supervisor_page: Optional[str] = attr.ib()
+    # The supervisor's external id that stays stable over time. It may differ from
+    # external_id, so don't display it to users.
+    stable_staff_external_id: str | None = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
