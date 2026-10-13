@@ -166,6 +166,7 @@ class MoveFilesToDeprecatedController:
             end_date_bound=self.end_date_bound,
             file_tags=self.file_tag_filters,
             file_tag_regex=self.file_tag_regex,
+            skip_confirmation=self.skip_prompts,
             dry_run=self.dry_run,
         ).run()
 

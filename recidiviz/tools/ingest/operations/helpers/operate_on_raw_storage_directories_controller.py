@@ -76,6 +76,7 @@ class OperateOnRawStorageDirectoriesController:
             deprecated/ folder in the ingest buckets.
         start_date_bound - optional start date in the format 1901-02-28
         end_date_bound - optional end date in the format 1901-02-28
+        skip_confirmation -- whether or not to skip confirmations/prompts when invoked
         dry_run - whether or not to run in dry-run mode
 
         mutex - lock to ensure thread safety
