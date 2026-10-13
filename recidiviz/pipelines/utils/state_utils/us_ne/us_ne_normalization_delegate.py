@@ -17,19 +17,9 @@
 """Contains US_NE implementation of the StateSpecificNormalizationDelegate."""
 from datetime import datetime
 
-from recidiviz.common.constants.state.external_id_types import (
-    US_NE_ID_NBR,
-    US_NE_PAROLE_STAFF_ID,
-)
+from recidiviz.common.constants.state.external_id_types import US_NE_ID_NBR
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.activity.entities import (
-    StatePersonExternalId,
-    StateStaffExternalId,
-)
-from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_external_id,
-    select_alphabetically_lowest_external_id,
-)
+from recidiviz.persistence.entity.activity.entities import StatePersonExternalId
 from recidiviz.pipelines.ingest.activity.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
@@ -53,10 +43,17 @@ class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
+        """Returns the US_NE person display id: the most-recently-active id among those
+        flagged at ingest.
+
+        TODO(OBT-53894): Remove this override once US_NE's display and stable external ids
+        are supplied by the Identity Service (which can happen once the Identity Service has
+        the ingest-set flags and dates it needs to determine the most-recently-active
+        flagged external id).
+        """
         if id_type == US_NE_ID_NBR:
             # In NE we do our best to pick a single is_current_display_id_for_type for
             # each person, but we can't always do this reasonably before we make it to
@@ -82,10 +79,17 @@ class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
     def select_stable_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
+        """Returns the US_NE person stable id: the most-recently-active id among those
+        flagged at ingest.
+
+        TODO(OBT-53894): Remove this override once US_NE's display and stable external ids
+        are supplied by the Identity Service (which can happen once the Identity Service has
+        the ingest-set flags and dates it needs to determine the most-recently-active
+        flagged external id).
+        """
         if id_type == US_NE_ID_NBR:
             # In NE we do our best to pick a single is_stable_id_for_type for
             # each person, but we can't always do this reasonably before we make it to
@@ -107,36 +111,4 @@ class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
             f"Unexpected id type {id_type} with multiple ids per person and no "
             f"is_stable_id_for_type set at ingest time: "
             f"{person_external_ids_of_type}"
-        )
-
-    def select_display_id_for_staff_external_ids_of_type(
-        self,
-        state_code: StateCode,
-        staff_id: int,
-        id_type: str,
-        staff_external_ids_of_type: list[StateStaffExternalId],
-    ) -> StateStaffExternalId:
-        if id_type == US_NE_PAROLE_STAFF_ID:
-            return select_alphabetically_highest_external_id(staff_external_ids_of_type)
-
-        raise ValueError(
-            f"Unexpected id type {id_type} with multiple ids per staff member "
-            f"and no is_current_display_id_for_type set at ingest time: "
-            f"{staff_external_ids_of_type}"
-        )
-
-    def select_stable_id_for_staff_external_ids_of_type(
-        self,
-        state_code: StateCode,
-        staff_id: int,
-        id_type: str,
-        staff_external_ids_of_type: list[StateStaffExternalId],
-    ) -> StateStaffExternalId:
-        if id_type == US_NE_PAROLE_STAFF_ID:
-            return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
-
-        raise ValueError(
-            f"Unexpected id type {id_type} with multiple ids per staff member "
-            f"and no is_stable_id_for_type set at ingest time: "
-            f"{staff_external_ids_of_type}"
         )

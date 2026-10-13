@@ -105,7 +105,6 @@ def build_normalized_state_person(
 
     normalized_person_external_ids = get_normalized_person_external_ids(
         state_code=state_code,
-        person_id=person_id,
         external_ids=person.external_ids,
         delegate=get_state_specific_normalization_delegate(state_code.value),
     )

@@ -21,8 +21,6 @@ import unittest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity.entities import StatePersonExternalId
 from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_external_id,
-    select_alphabetically_lowest_external_id,
     select_least_recently_active_external_id,
     select_most_recently_active_external_id,
     select_single_external_id_with_is_current_display_id,
@@ -31,106 +29,6 @@ from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_he
 
 _ID_TYPE = "US_XX_ID_TYPE"
 _ID_TYPE_2 = "US_XX_ID_TYPE_2"
-
-
-class TestSelectAlphabeticallyHighestOrLowestExternalId(unittest.TestCase):
-    """Unittests for the select_alphabetically_highest_external_id() and
-    select_alphabetically_lowest_external_id() helpers in
-    normalize_external_ids_helpers.py.
-    """
-
-    def make_external_id(
-        self, *, external_id: str, id_type: str = _ID_TYPE
-    ) -> StatePersonExternalId:
-        return StatePersonExternalId(
-            person_external_id_id=1,
-            state_code=StateCode.US_XX.value,
-            external_id=external_id,
-            id_type=id_type,
-            is_current_display_id_for_type=None,
-            is_stable_id_for_type=None,
-            id_active_from_datetime=None,
-            id_active_to_datetime=None,
-        )
-
-    def test_single(self) -> None:
-        ids = [
-            self.make_external_id(external_id="ABC123"),
-        ]
-        highest_result = select_alphabetically_highest_external_id(ids)
-        self.assertEqual(highest_result.external_id, "ABC123")
-
-        lowest_result = select_alphabetically_lowest_external_id(ids)
-        self.assertEqual(lowest_result.external_id, "ABC123")
-
-    def test_returns_highest_alphabetical_id(self) -> None:
-        ids = [
-            self.make_external_id(external_id="ABC123"),
-            self.make_external_id(external_id="ZZZ999"),
-            self.make_external_id(external_id="LMN456"),
-        ]
-        highest_result = select_alphabetically_highest_external_id(ids)
-        self.assertEqual(highest_result.external_id, "ZZZ999")
-
-        lowest_result = select_alphabetically_lowest_external_id(ids)
-        self.assertEqual(lowest_result.external_id, "ABC123")
-
-    def test_returns_highest_alphabetical_id_numerical_strings(self) -> None:
-        ids = [
-            self.make_external_id(external_id="8"),
-            self.make_external_id(external_id="9"),
-            self.make_external_id(external_id="10"),
-        ]
-        highest_result = select_alphabetically_highest_external_id(ids)
-        self.assertEqual(highest_result.external_id, "9")
-
-        lowest_result = select_alphabetically_lowest_external_id(ids)
-        self.assertEqual(lowest_result.external_id, "10")
-
-    def test_raises_on_empty_list(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Cannot call select_alphabetically_highest_external_id\(\) with an "
-            r"empty external_ids list",
-        ):
-            select_alphabetically_highest_external_id([])
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Cannot call select_alphabetically_lowest_external_id\(\) with an "
-            r"empty external_ids list",
-        ):
-            select_alphabetically_lowest_external_id([])
-
-    def test_raises_on_multiple_id_types(self) -> None:
-        ids = [
-            self.make_external_id(external_id="ABC123", id_type=_ID_TYPE),
-            self.make_external_id(external_id="DEF456", id_type=_ID_TYPE_2),
-        ]
-        with self.assertRaisesRegex(
-            ValueError, r"Found multiple id_types in the provided external_ids list"
-        ):
-            _ = select_alphabetically_highest_external_id(ids)
-
-        with self.assertRaisesRegex(
-            ValueError, r"Found multiple id_types in the provided external_ids list"
-        ):
-            _ = select_alphabetically_lowest_external_id(ids)
-
-    def test_raises_on_equal_external_ids(self) -> None:
-        id1 = self.make_external_id(external_id="SAME123")
-        id2 = self.make_external_id(external_id="SAME123")
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
-        ):
-            _ = select_alphabetically_highest_external_id([id1, id2])
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
-        ):
-            _ = select_alphabetically_lowest_external_id([id1, id2])
 
 
 class TestSelectMostAndLeastRecentlyActiveExternalId(unittest.TestCase):

@@ -91,12 +91,10 @@ def build_normalized_state_staff(
     expected_output_entities: set[type[Entity]],
 ) -> NormalizedStateStaff:
     """Normalizes the given StateStaff root entity into a NormalizedStateStaff."""
-    staff_id = assert_type(staff.staff_id, int)
     state_code = StateCode(staff.state_code)
 
     normalized_staff_external_ids = get_normalized_staff_external_ids(
         state_code=state_code,
-        staff_id=staff_id,
         external_ids=staff.external_ids,
         delegate=get_state_specific_normalization_delegate(state_code.value),
     )

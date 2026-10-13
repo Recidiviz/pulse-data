@@ -228,20 +228,14 @@ Each state has normalization delegates in
 #### General Normalization (`us_xx_normalization_delegate.py`)
 
 - **External ID Selection**: When a person has multiple external IDs of the same
-  type, delegates define which should be the "display" ID (shown in UI) vs
-  "stable" ID (used for persistent references)
+  type, one is chosen as the "display" ID (shown in UI) and one as the "stable"
+  ID (used for persistent references). For most states this choice is a pure
+  function of the ID strings, made by the shared per-(tenant, id_type) registry
+  in `recidiviz/common/external_id_selection.py`; the base delegate routes there.
+  Only states whose choice depends on id-active dates or ingest-set flags
+  (US_CA and US_NE person IDs) override the delegate's selection methods.
 - **Entity Generation**: Some entities are only created during normalization,
   not directly from ingest views
-
-Example from Michigan:
-
-```python
-def select_display_id_for_person_external_ids_of_type(self, ...):
-    if id_type == US_MI_DOC_BOOK:
-        return select_alphabetically_highest_person_external_id(
-            person_external_ids_of_type
-        )
-```
 
 #### Entity-Specific Normalization
 

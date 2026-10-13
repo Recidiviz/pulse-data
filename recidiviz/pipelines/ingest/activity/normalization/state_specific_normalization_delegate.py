@@ -18,7 +18,15 @@
 """
 import abc
 
+from more_itertools import one
+
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.common.external_id_selection import (
+    has_shared_selection_strategy,
+    select_display_external_id,
+    select_stable_external_id,
+)
 from recidiviz.persistence.entity.activity.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
@@ -26,16 +34,10 @@ from recidiviz.persistence.entity.activity.entities import (
 from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.pipelines.ingest.activity.multiple_external_id_helpers import (
-    staff_external_id_types_with_allowed_multiples_per_person,
-)
+from recidiviz.persistence.entity.base_entity import Entity, StateExternalIdEntityT
 from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
     select_single_external_id_with_is_current_display_id,
     select_single_external_id_with_is_stable_id,
-)
-from recidiviz.pipelines.ingest.activity.validator import (
-    person_external_id_types_with_allowed_multiples_per_person,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -50,7 +52,6 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
@@ -58,53 +59,18 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         should be used as the "display" external id in products that display person
         external_ids of this type.
 
-        States with id types that have multiple of that type per person will need to
-        provide a state-specific implementation of this delegate method.
+        States whose selection depends on id-active dates or ingest-set flags override
+        this; every other state defers to the shared selection module.
         """
-        if len(person_external_ids_of_type) <= 1:
-            raise ValueError(
-                f"We do not expect select_display_id_for_person_external_ids_of_type "
-                f"to be called if there are fewer than 2 ids of a given type. Found "
-                f"{len(person_external_ids_of_type)} ids."
-            )
-
-        if id_type not in person_external_id_types_with_allowed_multiples_per_person(
-            state_code
-        ):
-            raise ValueError(
-                f"Person external_id type [{id_type}] should never have multiple ids "
-                f"of a given type, but found multiple for person [{person_id}]. We "
-                f"should have never called "
-                f"select_display_id_for_person_external_ids_of_type(). If you expect "
-                f"that a single person can have multiple {id_type} ids, update the "
-                f"exemptions list in "
-                f"person_external_id_types_with_allowed_multiples_per_person()."
-            )
-        has_any_is_display_id_flags_set = any(
-            pei.is_current_display_id_for_type is not None
-            for pei in person_external_ids_of_type
-        )
-
-        if has_any_is_display_id_flags_set:
-            return select_single_external_id_with_is_current_display_id(
-                person_external_ids_of_type
-            )
-
-        raise NotImplementedError(
-            f"No implementation of "
-            f"select_display_id_for_person_external_ids_of_type(), but called for "
-            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
-            f"allow multiple per person, this function must be implemented in the "
-            f"appropriate state-specific subclass of "
-            f"StateSpecificNormalizationDelegate OR is_current_display_id_for_type "
-            f"must be set to True at ingest time for exactly one external id of this "
-            f"type per person."
+        return self._select_display_external_id_of_type(
+            state_code=state_code,
+            id_type=id_type,
+            external_ids_of_type=person_external_ids_of_type,
         )
 
     def select_stable_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
@@ -112,52 +78,18 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         should be used as the "stable" external id in products that need to persist an
         external id for a person across deploy cycles.
 
-        States with id types that have multiple of that type per person will need to
-        provide a state-specific implementation of this delegate method.
+        States whose selection depends on id-active dates or ingest-set flags override
+        this; every other state defers to the shared selection module.
         """
-        if len(person_external_ids_of_type) <= 1:
-            raise ValueError(
-                f"We do not expect select_stable_id_for_person_external_ids_of_type "
-                f"to be called if there are fewer than 2 ids of a given type. Found "
-                f"{len(person_external_ids_of_type)} ids."
-            )
-
-        if id_type not in person_external_id_types_with_allowed_multiples_per_person(
-            state_code
-        ):
-            raise ValueError(
-                f"Person external_id type [{id_type}] should never have multiple ids "
-                f"of a given type, but found multiple for person [{person_id}]. We "
-                f"should have never called "
-                f"select_stable_id_for_person_external_ids_of_type(). If you expect "
-                f"that a single person can have multiple {id_type} ids, update the "
-                f"exemptions list in "
-                f"person_external_id_types_with_allowed_multiples_per_person()."
-            )
-        has_any_is_stable_id_flags_set = any(
-            pei.is_stable_id_for_type is not None for pei in person_external_ids_of_type
-        )
-
-        if has_any_is_stable_id_flags_set:
-            return select_single_external_id_with_is_stable_id(
-                person_external_ids_of_type
-            )
-
-        raise NotImplementedError(
-            f"No implementation of "
-            f"select_stable_id_for_person_external_ids_of_type(), but called for "
-            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
-            f"allow multiple per person, this function must be implemented in the "
-            f"appropriate state-specific subclass of "
-            f"StateSpecificNormalizationDelegate OR is_stable_id_for_type "
-            f"must be set to True at ingest time for exactly one external id of this "
-            f"type per person."
+        return self._select_stable_external_id_of_type(
+            state_code=state_code,
+            id_type=id_type,
+            external_ids_of_type=person_external_ids_of_type,
         )
 
     def select_display_id_for_staff_external_ids_of_type(
         self,
         state_code: StateCode,
-        staff_id: int,
         id_type: str,
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
@@ -165,54 +97,18 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         should be used as the "display" external id in products that display staff
         external_ids of this type.
 
-        States with id types that have multiple of that type per staff member will need
-        to provide a state-specific implementation of this delegate method.
+        States whose selection depends on id-active dates or ingest-set flags override
+        this; every other state defers to the shared selection module.
         """
-        if len(staff_external_ids_of_type) <= 1:
-            raise ValueError(
-                f"We do not expect select_display_id_for_staff_external_ids_of_type "
-                f"to be called if there are fewer than 2 ids of a given type. Found "
-                f"{len(staff_external_ids_of_type)} ids."
-            )
-
-        if id_type not in staff_external_id_types_with_allowed_multiples_per_person(
-            state_code
-        ):
-            raise ValueError(
-                f"Staff external_id type [{id_type}] should never have multiple ids "
-                f"of a given type, but found multiple for staff [{staff_id}]. We "
-                f"should have never called "
-                f"select_display_id_for_staff_external_ids_of_type(). If you expect "
-                f"that a single staff member can have multiple {id_type} ids, update "
-                f"the exemptions list in "
-                f"staff_external_id_types_with_allowed_multiples_per_person()."
-            )
-
-        has_any_is_display_id_flags_set = any(
-            sei.is_current_display_id_for_type is not None
-            for sei in staff_external_ids_of_type
-        )
-
-        if has_any_is_display_id_flags_set:
-            return select_single_external_id_with_is_current_display_id(
-                staff_external_ids_of_type
-            )
-
-        raise NotImplementedError(
-            f"No implementation of "
-            f"select_display_id_for_staff_external_ids_of_type(), but called for "
-            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
-            f"allow multiple per staff member, this function must be implemented in the "
-            f"appropriate state-specific subclass of "
-            f"StateSpecificNormalizationDelegate OR is_current_display_id_for_type "
-            f"must be set to True at ingest time for exactly one external id of this "
-            f"type per staff member."
+        return self._select_display_external_id_of_type(
+            state_code=state_code,
+            id_type=id_type,
+            external_ids_of_type=staff_external_ids_of_type,
         )
 
     def select_stable_id_for_staff_external_ids_of_type(
         self,
         state_code: StateCode,
-        staff_id: int,
         id_type: str,
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
@@ -220,47 +116,81 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         should be used as the "stable" external id in products that need to persist an
         external id for a staff member across deploy cycles.
 
-        States with id types that have multiple of that type per staff member will need
-        to provide a state-specific implementation of this delegate method.
+        States whose selection depends on id-active dates or ingest-set flags override
+        this; every other state defers to the shared selection module.
         """
-        if len(staff_external_ids_of_type) <= 1:
-            raise ValueError(
-                f"We do not expect select_stable_id_for_staff_external_ids_of_type "
-                f"to be called if there are fewer than 2 ids of a given type. Found "
-                f"{len(staff_external_ids_of_type)} ids."
-            )
-
-        if id_type not in staff_external_id_types_with_allowed_multiples_per_person(
-            state_code
-        ):
-            raise ValueError(
-                f"Staff external_id type [{id_type}] should never have multiple ids "
-                f"of a given type, but found multiple for staff [{staff_id}]. We "
-                f"should have never called "
-                f"select_stable_id_for_staff_external_ids_of_type(). If you expect "
-                f"that a single staff member can have multiple {id_type} ids, update "
-                f"the exemptions list in "
-                f"staff_external_id_types_with_allowed_multiples_per_person()."
-            )
-
-        has_any_is_stable_id_flags_set = any(
-            sei.is_stable_id_for_type is not None for sei in staff_external_ids_of_type
+        return self._select_stable_external_id_of_type(
+            state_code=state_code,
+            id_type=id_type,
+            external_ids_of_type=staff_external_ids_of_type,
         )
 
-        if has_any_is_stable_id_flags_set:
-            return select_single_external_id_with_is_stable_id(
-                staff_external_ids_of_type
-            )
+    def _select_display_external_id_of_type(
+        self,
+        *,
+        state_code: StateCode,
+        id_type: str,
+        external_ids_of_type: list[StateExternalIdEntityT],
+    ) -> StateExternalIdEntityT:
+        """Returns the external id of the given type to use as the display id.
 
-        raise NotImplementedError(
-            f"No implementation of "
-            f"select_stable_id_for_staff_external_ids_of_type(), but called for "
-            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
-            f"allow multiple per staff member, this function must be implemented in the "
-            f"appropriate state-specific subclass of "
-            f"StateSpecificNormalizationDelegate OR is_stable_id_for_type "
-            f"must be set to True at ingest time for exactly one external id of this "
-            f"type per staff member."
+        When ingest hydrated a display flag, uses the id it marked; otherwise defers
+        to the shared (tenant, id_type)-keyed selection in
+        recidiviz.common.external_id_selection, matching the chosen id string back to
+        its entity.
+        """
+        if len(external_ids_of_type) <= 1:
+            raise ValueError(
+                f"We do not expect external id selection to be called if there are fewer "
+                f"than 2 ids of a given type. Found [{len(external_ids_of_type)}] ids."
+            )
+        tenant = Tenant.from_state_code(state_code)
+        if any(
+            ei.is_current_display_id_for_type is not None for ei in external_ids_of_type
+        ):
+            _raise_if_shared_strategy_also_exists(tenant=tenant, id_type=id_type)
+            return select_single_external_id_with_is_current_display_id(
+                external_ids_of_type
+            )
+        selected_external_id = select_display_external_id(
+            tenant=tenant,
+            id_type=id_type,
+            external_ids=[ei.external_id for ei in external_ids_of_type],
+        )
+        return one(
+            ei for ei in external_ids_of_type if ei.external_id == selected_external_id
+        )
+
+    def _select_stable_external_id_of_type(
+        self,
+        *,
+        state_code: StateCode,
+        id_type: str,
+        external_ids_of_type: list[StateExternalIdEntityT],
+    ) -> StateExternalIdEntityT:
+        """Returns the external id of the given type to use as the stable id.
+
+        When ingest hydrated a stable flag, uses the id it marked; otherwise defers
+        to the shared (tenant, id_type)-keyed selection in
+        recidiviz.common.external_id_selection, matching the chosen id string back to
+        its entity.
+        """
+        if len(external_ids_of_type) <= 1:
+            raise ValueError(
+                f"We do not expect external id selection to be called if there are fewer "
+                f"than 2 ids of a given type. Found [{len(external_ids_of_type)}] ids."
+            )
+        tenant = Tenant.from_state_code(state_code)
+        if any(ei.is_stable_id_for_type is not None for ei in external_ids_of_type):
+            _raise_if_shared_strategy_also_exists(tenant=tenant, id_type=id_type)
+            return select_single_external_id_with_is_stable_id(external_ids_of_type)
+        selected_external_id = select_stable_external_id(
+            tenant=tenant,
+            id_type=id_type,
+            external_ids=[ei.external_id for ei in external_ids_of_type],
+        )
+        return one(
+            ei for ei in external_ids_of_type if ei.external_id == selected_external_id
         )
 
     def extra_entities_generated_via_normalization(
@@ -276,3 +206,19 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
               ingest mappings step and are inputs to the normalization step.
         """
         return set()
+
+
+def _raise_if_shared_strategy_also_exists(*, tenant: Tenant, id_type: str) -> None:
+    """Raises if (tenant, id_type) is selected both by an ingest-set flag and by the shared
+    selection module. The two must be mutually exclusive, or the activity pipeline (which
+    honors the flag) and the Identity Service (which runs the shared strategy) could pick
+    different ids.
+    """
+    if has_shared_selection_strategy(tenant=tenant, id_type=id_type):
+        raise ValueError(
+            f"id_type [{id_type}] for tenant [{tenant.value}] has both an ingest-set "
+            f"display/stable flag and a shared selection strategy. These are mutually "
+            f"exclusive: remove the entry from _SELECTION_STRATEGY_BY_TENANT_AND_ID_TYPE "
+            f"in recidiviz.common.external_id_selection, or stop hydrating the flag at "
+            f"ingest."
+        )

@@ -15,24 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_CA implementation of the StateSpecificNormalizationDelegate."""
-from recidiviz.common.constants.state.external_id_types import (
-    US_CA_BADGE_NO,
-    US_CA_CDCNO,
-    US_CA_DOC,
-)
+from recidiviz.common.constants.state.external_id_types import US_CA_CDCNO, US_CA_DOC
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity import entities, normalized_entities
-from recidiviz.persistence.entity.activity.entities import (
-    StatePersonExternalId,
-    StateStaffExternalId,
-)
+from recidiviz.persistence.entity.activity.entities import StatePersonExternalId
 from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_external_id,
-    select_alphabetically_lowest_external_id,
     select_least_recently_active_external_id,
     select_most_recently_active_external_id,
 )
@@ -47,10 +38,15 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
+        """Returns the US_CA person display id, the most-recently-active id of its type.
+
+        TODO(OBT-53893): Remove this override once US_CA's display and stable external ids
+        are supplied by the Identity Service (which can happen once the Identity Service has
+        the dates it needs to determine the most-recently-active external id).
+        """
         if id_type == US_CA_DOC:
             return select_most_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
@@ -69,10 +65,15 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
     def select_stable_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
+        """Returns the US_CA person stable id, the least-recently-active id of its type.
+
+        TODO(OBT-53893): Remove this override once US_CA's display and stable external ids
+        are supplied by the Identity Service (which can happen once the Identity Service has
+        the dates it needs to determine the least-recently-active external id).
+        """
         if id_type == US_CA_DOC:
             return select_least_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
@@ -86,38 +87,6 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
             f"Unexpected id type {id_type} with multiple ids per person and no "
             f"is_stable_id_for_type set at ingest time: "
             f"{person_external_ids_of_type}"
-        )
-
-    def select_display_id_for_staff_external_ids_of_type(
-        self,
-        state_code: StateCode,
-        staff_id: int,
-        id_type: str,
-        staff_external_ids_of_type: list[StateStaffExternalId],
-    ) -> StateStaffExternalId:
-        if id_type == US_CA_BADGE_NO:
-            return select_alphabetically_highest_external_id(staff_external_ids_of_type)
-
-        raise ValueError(
-            f"Unexpected id type {id_type} with multiple ids per staff member "
-            f"and no is_current_display_id_for_type set at ingest time: "
-            f"{staff_external_ids_of_type}"
-        )
-
-    def select_stable_id_for_staff_external_ids_of_type(
-        self,
-        state_code: StateCode,
-        staff_id: int,
-        id_type: str,
-        staff_external_ids_of_type: list[StateStaffExternalId],
-    ) -> StateStaffExternalId:
-        if id_type == US_CA_BADGE_NO:
-            return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
-
-        raise ValueError(
-            f"Unexpected id type {id_type} with multiple ids per staff member "
-            f"and no is_stable_id_for_type set at ingest time: "
-            f"{staff_external_ids_of_type}"
         )
 
     def extra_entities_generated_via_normalization(

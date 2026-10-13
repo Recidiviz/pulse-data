@@ -19,10 +19,7 @@ import datetime
 
 from more_itertools import one
 
-from recidiviz.persistence.entity.base_entity import (
-    ExternalIdEntityT,
-    StateExternalIdEntityT,
-)
+from recidiviz.persistence.entity.base_entity import StateExternalIdEntityT
 
 
 def select_most_recently_active_external_id(
@@ -104,79 +101,6 @@ def _sort_external_ids_of_type_by_id_active_dates(
         )
 
     return list(sorted(external_ids, key=sort_key))
-
-
-def select_alphabetically_lowest_external_id(
-    external_ids: list[ExternalIdEntityT],
-) -> ExternalIdEntityT:
-    """Given a list of ExternalIdEntity, returns the one with the external_id that is
-    alphabetically lowest.
-
-    NOTE: If you are attempting to sort external_ids that can all be parsed as integers,
-    this is not likely the function you want to use (i.e. because "10" will sort before
-    "9")
-
-    Throws if given an empty list.
-    """
-    if not external_ids:
-        raise ValueError(
-            "Cannot call select_alphabetically_lowest_external_id() with an "
-            "empty external_ids list"
-        )
-
-    return _sort_external_ids_alphabetically(external_ids)[0]
-
-
-def select_alphabetically_highest_external_id(
-    external_ids: list[ExternalIdEntityT],
-) -> ExternalIdEntityT:
-    """Given a list of ExternalIdEntity, returns the one with the external_id that is
-    alphabetically highest.
-
-    NOTE: If you are attempting to sort external_ids that can all be parsed as integers,
-    this is not likely the function you want to use (i.e. because "10" will sort before
-    "9")
-
-    Throws if given an empty list.
-    """
-    if not external_ids:
-        raise ValueError(
-            "Cannot call select_alphabetically_highest_external_id() with an "
-            "empty external_ids list"
-        )
-
-    return _sort_external_ids_alphabetically(external_ids)[-1]
-
-
-def _sort_external_ids_alphabetically(
-    external_ids: list[ExternalIdEntityT],
-) -> list[ExternalIdEntityT]:
-    """Given a list of ExternalIdEntity, sorts the list alphabetically by external_id
-    from lowest to highest.
-
-    Throws if given an empty list.
-    """
-    if not external_ids:
-        raise ValueError("Found no external_ids.")
-
-    id_types = {ei.id_type for ei in external_ids}
-    if len(id_types) > 1:
-        raise ValueError(
-            f"Found multiple id_types in the provided external_ids list: "
-            f"{sorted(id_types)}. Expected external_ids only of a single type."
-        )
-
-    found_external_ids = set()
-    for ei in external_ids:
-        if ei.external_id in found_external_ids:
-            raise ValueError(
-                f"Found multiple external ids with external_id [{ei.external_id}] "
-                f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
-                f"this point."
-            )
-        found_external_ids.add(ei.external_id)
-
-    return list(sorted(external_ids, key=lambda e: e.external_id))
 
 
 def select_single_external_id_with_is_current_display_id(

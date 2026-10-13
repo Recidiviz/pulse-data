@@ -17,18 +17,11 @@
 """Tests for normalize_person_external_ids.py"""
 
 import unittest
-from unittest.mock import patch
-
-import mock
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity.entities import StatePersonExternalId
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePersonExternalId,
-)
-from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_external_id,
-    select_alphabetically_lowest_external_id,
 )
 from recidiviz.pipelines.ingest.activity.normalization.normalize_person_external_ids import (
     get_normalized_person_external_ids,
@@ -50,20 +43,18 @@ class PickAlphabeticallyHighestAndLowestDelegate(StateSpecificNormalizationDeleg
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
-        return select_alphabetically_highest_external_id(person_external_ids_of_type)
+        return max(person_external_ids_of_type, key=lambda pei: pei.external_id)
 
     def select_stable_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
-        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
-        return select_alphabetically_lowest_external_id(person_external_ids_of_type)
+        return min(person_external_ids_of_type, key=lambda pei: pei.external_id)
 
 
 class TestNormalizePersonExternalIds(unittest.TestCase):
@@ -111,7 +102,6 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         pei = self._make_unnormalized_external_id(external_id="ID1")
         result = get_normalized_person_external_ids(
             state_code=StateCode.US_XX,
-            person_id=12345,
             external_ids=[pei],
             delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
@@ -133,7 +123,6 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         result = get_normalized_person_external_ids(
             state_code=StateCode.US_XX,
-            person_id=12345,
             external_ids=ids,
             delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
@@ -176,7 +165,6 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         result = get_normalized_person_external_ids(
             state_code=StateCode.US_XX,
-            person_id=12345,
             external_ids=ids,
             delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
@@ -208,30 +196,20 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         self.assertEqual(expected_result, result)
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.normalization."
-        "state_specific_normalization_delegate."
-        "person_external_id_types_with_allowed_multiples_per_person"
-    )
-    def test_raises_if_some_ids_have_display_flag_and_others_do_not(
-        self, mock_allowed_types_with_multiples: mock.MagicMock
-    ) -> None:
+    def test_raises_if_some_ids_have_display_flag_and_others_do_not(self) -> None:
         class _DefaultDisplayIdNormalizationDelegate(
             StateSpecificNormalizationDelegate
         ):
-            # Only override is for stable_id normalization
+            # Only override is for stable_id normalization, so display selection falls to
+            # the base delegate's pre-hydrated-flag path.
             def select_stable_id_for_person_external_ids_of_type(
                 self,
                 state_code: StateCode,
-                person_id: int,
                 id_type: str,
                 person_external_ids_of_type: list[StatePersonExternalId],
             ) -> StatePersonExternalId:
-                return select_alphabetically_lowest_external_id(
-                    person_external_ids_of_type
-                )
+                return min(person_external_ids_of_type, key=lambda pei: pei.external_id)
 
-        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
         ids = [
             self._make_unnormalized_external_id(
                 external_id="ID1", is_current_display_id_for_type=True
@@ -248,33 +226,22 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ):
             get_normalized_person_external_ids(
                 state_code=StateCode.US_XX,
-                person_id=12345,
                 external_ids=ids,
                 delegate=_DefaultDisplayIdNormalizationDelegate(),
             )
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.normalization."
-        "state_specific_normalization_delegate."
-        "person_external_id_types_with_allowed_multiples_per_person"
-    )
-    def test_raises_if_some_ids_have_stable_flag_and_others_do_not(
-        self, mock_allowed_types_with_multiples: mock.MagicMock
-    ) -> None:
+    def test_raises_if_some_ids_have_stable_flag_and_others_do_not(self) -> None:
         class _DefaultStableIdNormalizationDelegate(StateSpecificNormalizationDelegate):
-            # Only override is for display_id normalization
+            # Only override is for display_id normalization, so stable selection falls to
+            # the base delegate's pre-hydrated-flag path.
             def select_display_id_for_person_external_ids_of_type(
                 self,
                 state_code: StateCode,
-                person_id: int,
                 id_type: str,
                 person_external_ids_of_type: list[StatePersonExternalId],
             ) -> StatePersonExternalId:
-                return select_alphabetically_highest_external_id(
-                    person_external_ids_of_type
-                )
+                return max(person_external_ids_of_type, key=lambda pei: pei.external_id)
 
-        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
         ids = [
             self._make_unnormalized_external_id(
                 external_id="ID1", is_stable_id_for_type=True
@@ -291,21 +258,11 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ):
             get_normalized_person_external_ids(
                 state_code=StateCode.US_XX,
-                person_id=12345,
                 external_ids=ids,
                 delegate=_DefaultStableIdNormalizationDelegate(),
             )
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.normalization."
-        "state_specific_normalization_delegate."
-        "person_external_id_types_with_allowed_multiples_per_person"
-    )
-    def test_all_ids_have_flags_preserved_default_delegate(
-        self, mock_allowed_types_with_multiples: mock.MagicMock
-    ) -> None:
-        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
-
+    def test_all_ids_have_flags_preserved_default_delegate(self) -> None:
         ids = [
             self._make_unnormalized_external_id(
                 external_id="ID1",
@@ -320,7 +277,6 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         result = get_normalized_person_external_ids(
             state_code=StateCode.US_XX,
-            person_id=12345,
             external_ids=ids,
             delegate=DefaultDelegate(),
         )

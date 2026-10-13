@@ -33,16 +33,14 @@ from recidiviz.utils.types import assert_type
 def get_normalized_person_external_ids(
     *,
     state_code: StateCode,
-    person_id: int,
     external_ids: list[StatePersonExternalId],
     delegate: StateSpecificNormalizationDelegate,
 ) -> list[NormalizedStatePersonExternalId]:
     """Creates NormalizedStatePersonExternalId entities.
 
-    Hydrates is_current_display_id_for_type values to each external id if they are not
-    already defined. If there are multiple external ids of a given id_type,
-    state-specific logic defined in the |delegate| is used to select the correct
-    display id.
+    Hydrates is_current_display_id_for_type and is_stable_id_for_type on each external id.
+    When a person has more than one external id of an id_type, the |delegate| selects which
+    is the display id and which is the stable id for that type.
     """
 
     ids_by_type: dict[str, list[StatePersonExternalId]] = defaultdict(list)
@@ -55,7 +53,6 @@ def get_normalized_person_external_ids(
         normalized_person_external_ids.extend(
             _convert_person_external_ids_of_type(
                 state_code=state_code,
-                person_id=person_id,
                 id_type=id_type,
                 external_ids_of_type=external_ids_of_type,
                 delegate=delegate,
@@ -68,7 +65,6 @@ def get_normalized_person_external_ids(
 def _convert_person_external_ids_of_type(
     *,
     state_code: StateCode,
-    person_id: int,
     id_type: str,
     external_ids_of_type: list[StatePersonExternalId],
     delegate: StateSpecificNormalizationDelegate,
@@ -76,9 +72,9 @@ def _convert_person_external_ids_of_type(
     """Converts the provided StatePersonExternalId into NormalizedStatePersonExternalId.
     Assumes all |external_ids_of_type| have the same id_type.
 
-    Hydrates is_current_display_id_for_type values to each external id if they are not
-    already defined. If there are multiple external ids, state-specific logic defined in
-    the |delegate| is used to select the correct display id.
+    Hydrates is_current_display_id_for_type and is_stable_id_for_type on each external id.
+    When there is more than one, the |delegate| selects the display id and the stable id
+    for the type.
     """
     if len(external_ids_of_type) == 1:
         pei = one(external_ids_of_type)
@@ -88,13 +84,11 @@ def _convert_person_external_ids_of_type(
 
     display_id_of_type = delegate.select_display_id_for_person_external_ids_of_type(
         state_code=state_code,
-        person_id=person_id,
         id_type=id_type,
         person_external_ids_of_type=external_ids_of_type,
     )
     stable_id_of_type = delegate.select_stable_id_for_person_external_ids_of_type(
         state_code=state_code,
-        person_id=person_id,
         id_type=id_type,
         person_external_ids_of_type=external_ids_of_type,
     )
