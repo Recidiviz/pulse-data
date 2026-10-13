@@ -59,3 +59,11 @@ class Dimension(enum.Enum):
     OFFENSE_TYPE = "offense_type"
     CHARGE_DESCRIPTION = "charge_description"
     DATE_IN_POPULATION = "date_in_population"
+    # Admissions and Releases Dimensions.
+    CUSTODY_STATUS = "custody_status"
+    ADMISSION_TYPE = "admission_type"
+    RELEASE_TYPE = "release_type"
+    COMMUNITY_SUPERVISION = "community_supervision"
+    # Composite dimension. Groups admissions and releases into one row per
+    # movement month per event type.
+    MOVEMENT_DATE_EVENT_TYPE = "movement_date_event_type"

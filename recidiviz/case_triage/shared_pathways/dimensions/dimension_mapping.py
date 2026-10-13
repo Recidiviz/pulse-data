@@ -20,6 +20,7 @@ from typing import List, Literal, Mapping, Union, overload
 
 import attr
 from sqlalchemy import Column
+from sqlalchemy.sql.elements import ColumnElement
 
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.exceptions import MetricMappingError
@@ -94,3 +95,7 @@ class DimensionMapping:
     dimension: Dimension
     operations: DimensionOperation
     columns: List[Column] = attr.ib(factory=list)
+    # Conditions that select the rows this dimension describes. Grouping by the
+    # dimension counts only those rows, e.g. an admission type describes
+    # admission rows and not release rows.
+    applicable_row_conditions: List[ColumnElement] = attr.ib(factory=list)

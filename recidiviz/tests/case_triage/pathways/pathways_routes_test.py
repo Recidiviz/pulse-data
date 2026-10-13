@@ -236,7 +236,10 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                         "avg_daily_population, "
                         "avg_population_limited_supervision_level, "
                         "months_since_treatment, sentence_length_min, sentence_length_max, "
-                        "charge_county_code, offense_type, charge_description, date_in_population."
+                        "charge_county_code, offense_type, charge_description, "
+                        "date_in_population, custody_status, admission_type, "
+                        "release_type, community_supervision, "
+                        "movement_date_event_type."
                     ]
                 }
             },

@@ -62,7 +62,12 @@ class CountByDimensionMetricQueryBuilder(MetricQueryBuilder):
             )
         )
 
-        conditions = self.build_filter_conditions(params)
+        conditions = [
+            *self.build_filter_conditions(params),
+            *self.dimension_mapping_collection.operable_map[DimensionOperation.GROUP][
+                params.group
+            ].applicable_row_conditions,
+        ]
 
         # If a date_column is configured and no explicit date filter was provided,
         # default to the most recent date in the table.

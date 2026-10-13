@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config parser for building MetricQueryBuilder instances from YAML config files."""
-from typing import Dict, List, Type, TypeVar, Union
+
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 import yaml
 from sqlalchemy import Column
@@ -42,6 +43,11 @@ from recidiviz.persistence.database.schema_utils import (
 )
 
 FindByNameElement = TypeVar("FindByNameElement")
+
+ColumnConfig = Union[str, Dict[str, str]]
+# One entry of a dimension_mappings block. The dict form holds operations,
+# column, an optional column_label, and an optional group_columns list.
+DimensionMappingConfig = Union[str, Dict[str, Any]]
 
 
 def find_by_name(name: str, objects: List[FindByNameElement]) -> FindByNameElement:
@@ -133,44 +139,113 @@ class MetricQueryBuilderConfigParser:
     def parse_dimension(dimension_name: str) -> Dimension:
         return Dimension(dimension_name)
 
+    def parse_labeled_column(
+        self,
+        database_entity: PathwaysBase | PublicPathwaysBase,
+        column_config: ColumnConfig,
+    ) -> Column:
+        """Returns one column, named either by a bare column name or by a
+        column/column_label pair."""
+        if isinstance(column_config, str):
+            return self.parse_column(database_entity, column_config)
+
+        column = self.parse_column(database_entity, column_config["column"])
+        column_label = column_config.get("column_label", None)
+        return column.label(column_label) if column_label else column
+
     def parse_dimension_mapping(
         self,
         database_entity: PathwaysBase | PublicPathwaysBase,
         dimension_name: str,
-        dimension_mapping_config: Union[str, Dict[str, str]],
-    ) -> DimensionMapping:
+        dimension_mapping_config: DimensionMappingConfig,
+    ) -> List[DimensionMapping]:
+        """Returns the mappings one dimension_mappings entry declares.
+
+        An entry produces one mapping, unless it sets group_columns. That key
+        makes the dimension composite: grouping by it selects several columns,
+        while filtering on it still matches the single column. Those two
+        column lists cannot live on one DimensionMapping, so the entry produces
+        a FILTER mapping and a GROUP mapping instead.
+
+        A composite entry may also set applies_to, a map of column name to
+        value. Grouping by the dimension then counts only the rows that match
+        every pair, e.g. "movement_category: admission" for an admission type.
+        """
         dimension = self.parse_dimension(dimension_name)
 
         if isinstance(dimension_mapping_config, str):
-            return DimensionMapping(
-                dimension=dimension,
-                columns=[self.parse_column(database_entity, dimension_name)],
-                operations=self.parse_dimension_operation(dimension_mapping_config),
-            )
+            return [
+                DimensionMapping(
+                    dimension=dimension,
+                    columns=[self.parse_column(database_entity, dimension_name)],
+                    operations=self.parse_dimension_operation(dimension_mapping_config),
+                )
+            ]
 
         operations = self.parse_dimension_operation(
             dimension_mapping_config["operations"]
         )
-        column_name = dimension_mapping_config["column"]
-        column_label = dimension_mapping_config.get("column_label", None)
-        column = self.parse_column(database_entity, column_name)
-        if column_label:
-            column = column.label(column_label)
+        group_columns_config = dimension_mapping_config.get("group_columns", None)
+        applies_to_config = dimension_mapping_config.get("applies_to", None)
 
-        return DimensionMapping(
-            dimension=dimension,
-            columns=[column],
-            operations=operations,
-        )
+        if not group_columns_config:
+            if applies_to_config:
+                raise ValueError(
+                    f"Dimension [{dimension_name}] sets applies_to without "
+                    f"group_columns. applies_to only narrows a grouping, so add "
+                    f"group_columns to the entry or remove applies_to."
+                )
+            return [
+                DimensionMapping(
+                    dimension=dimension,
+                    columns=[
+                        self.parse_labeled_column(
+                            database_entity, dimension_mapping_config
+                        )
+                    ],
+                    operations=operations,
+                )
+            ]
+
+        mappings: List[DimensionMapping] = []
+        if DimensionOperation.FILTER in operations:
+            mappings.append(
+                DimensionMapping(
+                    dimension=dimension,
+                    columns=[
+                        self.parse_labeled_column(
+                            database_entity, dimension_mapping_config["column"]
+                        )
+                    ],
+                    operations=DimensionOperation.FILTER,
+                )
+            )
+        if DimensionOperation.GROUP in operations:
+            mappings.append(
+                DimensionMapping(
+                    dimension=dimension,
+                    columns=[
+                        self.parse_labeled_column(database_entity, column_config)
+                        for column_config in group_columns_config
+                    ],
+                    operations=DimensionOperation.GROUP,
+                    applicable_row_conditions=[
+                        self.parse_column(database_entity, column_name) == value
+                        for column_name, value in (applies_to_config or {}).items()
+                    ],
+                )
+            )
+        return mappings
 
     def parse_dimension_mappings(
         self,
         database_entity: PathwaysBase | PublicPathwaysBase,
-        dimension_mappings: Dict[str, Union[str, Dict[str, str]]],
+        dimension_mappings: Dict[str, DimensionMappingConfig],
     ) -> List[DimensionMapping]:
         return [
-            self.parse_dimension_mapping(
+            mapping
+            for dimension_name, dimension_mapping in dimension_mappings.items()
+            for mapping in self.parse_dimension_mapping(
                 database_entity, dimension_name, dimension_mapping
             )
-            for dimension_name, dimension_mapping in dimension_mappings.items()
         ]

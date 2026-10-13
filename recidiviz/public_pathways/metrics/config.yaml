@@ -14,6 +14,12 @@
 #     # - column: str # name of the column to filter
 #     # - operations: str # `DimensionOperation`
 #     # - column_label: str # optional label for the column in the API response
+#     # - group_columns: list # optional. Makes the dimension composite: grouping
+#     #   by it selects every column named here, while filtering on it still
+#     #   matches column alone. Each entry is a column name, or a
+#     #   column/column_label pair.
+#     # - applies_to: dict # optional, needs group_columns. Maps column name to
+#     #   value; grouping by the dimension counts only the rows that match.
 #     # Enables filtering functionality of Dimension.SEX i.e. /public_pathways/US_XX/MyMetric?filters[sex]=MALE
 #     sex: FILTER
 #     # Enables both filtering and grouping functionality for Dimension.TIME_PERIOD
@@ -67,3 +73,86 @@ PrisonPopulationByDimensionCount:
     offense_type: ALL
     charge_description: ALL
     date_in_population: FILTER
+
+# Every name the API exposes below (dimensions, filter keys, response keys) is
+# the frontend's name for that concept. The export names its columns
+# differently, and one export column, movement_type, backs two frontend
+# filters. column and column_label map one onto the other.
+
+# Admissions and releases counted per movement month, split by event type. The
+# reader's event switcher picks which of the two series to draw, so both are
+# always returned.
+AdmissionsAndReleasesOverTime:
+  database_entity: PublicPrisonAdmissionsAndReleases
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    movement_date_event_type:
+      operations: GROUP
+      group_columns:
+        - movement_date
+        - column: movement_category
+          column_label: event_type
+    custody_status:
+      operations: FILTER
+      column: custody_type
+    admission_type:
+      operations: FILTER
+      column: movement_type
+    release_type:
+      operations: FILTER
+      column: movement_type
+    community_supervision:
+      operations: FILTER
+      column: release_to_community_supervision_indicator
+
+# Admissions and releases counted by one dimension. Every grouping also selects
+# the event type, so a chart can tell admissions from releases without a second
+# request.
+AdmissionsAndReleasesByDimensionCount:
+  database_entity: PublicPrisonAdmissionsAndReleases
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    custody_status:
+      operations: ALL
+      column: custody_type
+      group_columns:
+        - column: movement_category
+          column_label: event_type
+        - column: custody_type
+          column_label: custody_status
+    # Admission and release types only mean something alongside a custody
+    # status, so their groupings select it too.
+    admission_type:
+      operations: ALL
+      column: movement_type
+      applies_to:
+        movement_category: admission
+      group_columns:
+        - column: movement_category
+          column_label: event_type
+        - column: custody_type
+          column_label: custody_status
+        - column: movement_type
+          column_label: admission_type
+    release_type:
+      operations: ALL
+      column: movement_type
+      applies_to:
+        movement_category: release
+      group_columns:
+        - column: movement_category
+          column_label: event_type
+        - column: custody_type
+          column_label: custody_status
+        - column: movement_type
+          column_label: release_type
+    community_supervision:
+      operations: ALL
+      column: release_to_community_supervision_indicator
+      applies_to:
+        movement_category: release
+      group_columns:
+        - column: movement_category
+          column_label: event_type
+        - column: release_to_community_supervision_indicator
+          column_label: community_supervision
