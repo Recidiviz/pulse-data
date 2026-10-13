@@ -22,6 +22,7 @@ listed here is exempt from that check.
 The list should shrink over time. When you fix an existing column's
 description, also remove it from the list.
 """
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
 
 KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
@@ -17402,32 +17403,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str("workflows_views.us_tn_resident_metadata"): [
-        "credit_activity",
-        "credit_activity.credit_date",
-        "credit_activity.credit_type",
-        "credit_activity.credits_earned",
-        "expiration_date",
-        "expiration_date_original",
-        "file_update_date",
-        "incarceration_start_date",
         "latest_classification_date",
-        "person_id",
-        "release_eligibility_date",
-        "sentence_effective_date",
-    ],
-    BigQueryAddress.from_str("jii_views.us_tn_resident_data"): [
-        "credit_activity",
-        "credit_activity.credit_date",
-        "credit_activity.credit_type",
-        "credit_activity.credits_earned",
-        "expiration_date",
-        "expiration_date_original",
-        "file_update_date",
-        "incarceration_start_date",
-        "latest_classification_date",
-        "person_id",
-        "release_eligibility_date",
-        "sentence_effective_date",
     ],
     BigQueryAddress.from_str(
         "workflows_views.us_tn_resident_record_incarceration_cases_with_dates"
