@@ -1272,6 +1272,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 table_id="state_info",
             ),
             BigQueryAddress(
+                dataset_id="classification_views",
+                table_id="recidiviz_designed_assessment_instruments",
+            ),
+            BigQueryAddress(
                 dataset_id="sessions",
                 table_id="admission_start_reason_dedup_priority",
             ),

@@ -56,6 +56,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
+from recidiviz.calculator.query.state.views.classification.recidiviz_designed_assessment_instruments import (
+    RECIDIVIZ_DESIGNED_ASSESSMENT_INSTRUMENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
 )
@@ -329,6 +332,12 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "state_charge_supervision_sentence_association_view",
         ]
     },
+    RECIDIVIZ_DESIGNED_ASSESSMENT_INSTRUMENTS_VIEW_BUILDER.address: (
+        "Lookup of the classification instruments Recidiviz designed, for the "
+        "classification monitoring dashboard to join against all_classification_"
+        "assessment_events. Unused until that dashboard reads it. TODO(#108522) "
+        "(Hugo Salas, 2026-10-13)"
+    ),
 }
 
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
