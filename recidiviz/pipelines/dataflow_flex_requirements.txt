@@ -15,7 +15,7 @@
 #
 # Pins that also appear in uv.lock are kept in sync with it by
 # recidiviz/tools/deploy/sync_pinned_dependencies.py.
-aiohttp==3.14.3
+aiohttp==3.14.4
 cattrs==26.2.1
 cryptography==50.0.2
 dateparser==1.2.0
