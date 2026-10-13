@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
 from recidiviz.calculator.query.state.views.tasks.tasks_schemas import (
     IS_FULL_PERIOD_COLUMN,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    current_employment_case_notes,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -980,24 +983,22 @@ CASE
 END AS contact_type,"""
 
 
-def _us_tx_fees_no_records_fallback_select(
+def _us_tx_no_records_fallback_select(
     *, criteria: str, fallback_population_cte: str
 ) -> str:
     """Returns a SQL SELECT ... FROM producing a "No records found" fallback row
     for every person in fallback_population_cte.
 
-    Returns fallback client IDs and copy for the population not covered by fees data.
-
     Caller is responsible for appending the LEFT JOIN/WHERE that excludes clients
-    with real data, to complete the UNION ALL block.
+    with real data for that case notes section, to complete the UNION ALL block.
 
     Args:
         criteria: Value to populate the criteria column with, identifying which
             case notes section this fallback row belongs to (e.g. "Current Fees").
         fallback_population_cte: Name of a CTE that covers eligible clients for an
             opportunity, or all clients with a task eligibility span, depending on
-            the caller. Only people in this population who lack matching fee
-            records get the "No records found" fallback row. Should be the same
+            the caller. Only people in this population who lack records for the
+            section get the "No records found" fallback row. Should be the same
             CTE name passed as filtered_tes_cte to array_agg_case_notes_by_person_id
             for this view.
     """
@@ -1049,7 +1050,7 @@ def us_tx_fines_fees_balances_case_notes(*, fallback_population_cte: str) -> str
     -- If a TX client does not have fee balances data, then we implement the no-records fallback JSON.
     UNION ALL
 
-    {_us_tx_fees_no_records_fallback_select(
+    {_us_tx_no_records_fallback_select(
         criteria="Current Fees", fallback_population_cte=fallback_population_cte
     )}
     LEFT JOIN (
@@ -1146,10 +1147,69 @@ def us_tx_fines_fees_recent_payments_case_notes(
     SELECT person_id, criteria, note_title, note_body, event_date
     FROM {recent_payments_subquery}
     UNION ALL
-    {_us_tx_fees_no_records_fallback_select(
+    {_us_tx_no_records_fallback_select(
         criteria="Most Recent Payments", fallback_population_cte=fallback_population_cte
     )}
     LEFT JOIN (SELECT DISTINCT person_id FROM {recent_payments_subquery}) rp
         USING(person_id)
     WHERE rp.person_id IS NULL
+    """
+
+
+# Acronyms in US_TX employer names that INITCAP would otherwise turn into ordinary
+# words (e.g. "Tdcj" -> "TDCJ", "Acme Llc" -> "Acme LLC").
+_US_TX_CASE_NOTE_ACRONYMS = ["LLC", "LMHA", "PD", "TDCJ"]
+
+
+def _us_tx_initcap_keeping_acronyms_sql(column: str) -> str:
+    """Returns a SQL expression applying INITCAP to column while keeping the words in
+    _US_TX_CASE_NOTE_ACRONYMS uppercase, e.g. "TDCJ - PAROLE DIVISION" becomes
+    "TDCJ - Parole Division".
+    """
+    expression = f"INITCAP({column})"
+    for acronym in _US_TX_CASE_NOTE_ACRONYMS:
+        expression = f"REGEXP_REPLACE({expression}, r'\\b{acronym.capitalize()}\\b', '{acronym}')"
+    return expression
+
+
+def us_tx_current_employment_case_notes(*, fallback_population_cte: str) -> str:
+    """Returns a SQL fragment selecting current employment periods as case notes.
+
+    Produces one row per employment period open today, plus a "No records found"
+    fallback row for every person in fallback_population_cte with no open
+    employment period. For example (columns abridged):
+
+        person_id,criteria,note_title,note_body
+        123,Current Employment,Lone Star Welding LLC,Active
+        456,Current Employment,No records found,If this is inconsistent with OIMS...
+
+    Args:
+        fallback_population_cte: Name of a CTE that covers the clients surfaced
+            for an opportunity. Only people in this population with no open
+            employment period get the "No records found" fallback row. Should be
+            the same CTE name passed as filtered_tes_cte to
+            array_agg_case_notes_by_person_id for this view.
+    """
+    criteria = "Current Employment"
+    current_employment_query = current_employment_case_notes(
+        state_code=StateCode.US_TX,
+        criteria=criteria,
+        note_title_expression=f'IFNULL({_us_tx_initcap_keeping_acronyms_sql("employer_name")}, "Unknown Employer")',
+        note_body_expression='IFNULL(INITCAP(employment_status_raw_text), "Unknown")',
+    )
+    current_employment_subquery = f"""(
+{fix_indent(current_employment_query, indent_level=8)}
+    )"""
+
+    return f"""
+    SELECT person_id, criteria, note_title, note_body, event_date
+    FROM {current_employment_subquery}
+    UNION ALL
+    {_us_tx_no_records_fallback_select(
+        criteria=criteria,
+        fallback_population_cte=fallback_population_cte,
+    )}
+    LEFT JOIN (SELECT DISTINCT person_id FROM {current_employment_subquery}) emp
+        USING(person_id)
+    WHERE emp.person_id IS NULL
     """
