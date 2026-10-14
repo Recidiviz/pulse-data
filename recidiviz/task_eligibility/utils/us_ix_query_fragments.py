@@ -36,6 +36,13 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
+from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
+from recidiviz.calculator.query.state.views.tasks.state_specific_tasks_criteria_builders import (
+    non_recurring_contact_compliance_builder,
+)
+from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
+    get_contact_events_for_type,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     current_violent_statutes_being_served,
 )
@@ -1526,3 +1533,83 @@ SELECT
     release_district,
 FROM super_sessions_with_case_notes
 """
+
+
+# Days after case assignment within which residence and employment must be verified.
+US_IX_INITIAL_VERIFICATION_DAYS = 30
+
+# Spans from each person's start of supervision to the end of their supervision super
+# session, excluding Expanded CRC Furlough (XCRC) clients, whom policy exempts from the
+# initial residence and employment verifications. The start is the first COURT_SENTENCE
+# or RELEASE_FROM_INCARCERATION start in the super session, since those reasons mark a
+# person beginning supervision rather than continuing it; without one, the super session
+# start is used.
+_US_IX_INITIAL_VERIFICATION_PERIOD_SPANS_QUERY = f"""
+    WITH supervision_starts AS (
+        SELECT
+            sss.state_code,
+            sss.person_id,
+            MIN(IFNULL(cl1.start_date, sss.start_date)) AS start_date,
+            sss.end_date_exclusive AS end_date,
+        FROM `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
+        LEFT JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` cl1
+            ON cl1.person_id = sss.person_id
+            AND cl1.state_code = sss.state_code
+            AND cl1.start_date BETWEEN sss.start_date AND {nonnull_end_date_clause('sss.end_date')}
+            AND cl1.start_reason IN ('COURT_SENTENCE', 'RELEASE_FROM_INCARCERATION')
+            AND cl1.compartment_level_1 = 'SUPERVISION'
+        WHERE sss.state_code = 'US_IX'
+        GROUP BY sss.state_code, sss.person_id, sss.supervision_super_session_id, sss.end_date_exclusive
+    )
+    SELECT
+        ss.state_code,
+        ss.person_id,
+        ss.start_date,
+        ss.end_date,
+    FROM supervision_starts ss
+    LEFT JOIN `{{project_id}}.tasks_views.us_ix_case_type_supervision_level_spans_materialized` xcrc
+        ON xcrc.person_id = ss.person_id
+        AND xcrc.state_code = ss.state_code
+        AND xcrc.case_type = 'XCRC'
+        AND ss.start_date BETWEEN xcrc.start_date AND {nonnull_end_date_clause('xcrc.end_date')}
+    WHERE xcrc.person_id IS NULL
+"""
+
+
+def us_ix_initial_verification_trigger_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    contact_type: ContactType,
+    only_include_completed_contacts: bool,
+    include_earliest_unmet_due_date: bool,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criterion view builder for a one-time verification due within
+    US_IX_INITIAL_VERIFICATION_DAYS of the start of supervision. Each span is open
+    until a contact of contact_type is logged. XCRC clients get no spans.
+
+    Args:
+        criteria_name (str): The name of the criterion view.
+        description (str): A brief description of the criterion view.
+        contact_type (ContactType): The contact type that satisfies the verification.
+        only_include_completed_contacts (bool): Whether only COMPLETED contacts
+            satisfy the verification.
+        include_earliest_unmet_due_date (bool): Whether to emit an
+            earliest_unmet_due_date reasons field, for criteria grouped with a
+            fixed-cadence criterion that surfaces that field as the display due date.
+    """
+    return non_recurring_contact_compliance_builder(
+        criteria_name=criteria_name,
+        description=description,
+        state_code=StateCode.US_IX,
+        contact_events_query=get_contact_events_for_type(
+            [contact_type],
+            StateCode.US_IX,
+            only_include_completed_contacts=only_include_completed_contacts,
+        ),
+        contact_types=[contact_type],
+        contact_period_spans_query=_US_IX_INITIAL_VERIFICATION_PERIOD_SPANS_QUERY,
+        time_period=US_IX_INITIAL_VERIFICATION_DAYS,
+        only_include_completed_contacts=only_include_completed_contacts,
+        include_earliest_unmet_due_date=include_earliest_unmet_due_date,
+    )

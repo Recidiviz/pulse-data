@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     meets_address_changes_triggers,
     meets_home_visit_triggers,
+    meets_initial_residence_verification_trigger,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
@@ -46,18 +47,20 @@ meets_home_visit_or_address_changes_triggers = StateSpecificTaskCriteriaGroupBig
     sub_criteria_list=[
         meets_home_visit_triggers.VIEW_BUILDER,
         meets_address_changes_triggers.VIEW_BUILDER,
+        meets_initial_residence_verification_trigger.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[
         "contact_due_date",
         "last_contact_date",
         "contact_cadence",
         "earliest_unmet_due_date",
+        "contact_count",
     ],
     reasons_aggregate_function_override={
         "contact_due_date": "MIN",
         "last_contact_date": "MAX",
-        # Surface the soonest unmet requirement across both triggers so an
-        # address-change verification isn't hidden behind the routine cadence.
+        # Surface the soonest unmet requirement across all triggers so a residence
+        # verification isn't hidden behind the routine cadence.
         "earliest_unmet_due_date": "MIN",
     },
 )
