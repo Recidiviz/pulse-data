@@ -70,3 +70,7 @@ BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID = "build_document_upload_pod_argumen
 DOCUMENT_UPLOAD_TASK_ID = "document_upload"
 AFTER_UPLOAD_NOOP_TASK_ID = "after_upload_noop"
 RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID = "record_document_upload_results"
+
+# Task ids for the per-extractor-collection tasks in the LLM document extraction DAG.
+SYNC_EXTRACTOR_METADATA_TASK_ID = "sync_extractor_metadata"
+IDENTIFY_JOB_DOCUMENTS_TASK_ID = "identify_job_documents"

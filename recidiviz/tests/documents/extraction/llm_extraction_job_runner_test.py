@@ -55,7 +55,7 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
     LLMJobDocumentExtractionResult,
 )
-from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+from recidiviz.documents.extraction.llm_extraction_job_runner import (
     run_sync_extraction_job,
 )
 from recidiviz.documents.extraction.llm_extraction_results_persister import (

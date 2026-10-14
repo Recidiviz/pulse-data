@@ -3060,6 +3060,22 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-trace"
+version = "1.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fd/63/18e4cfbd48ec1de3b39a3fba5500c12c7b38f14356b1b534db8b95063338/google_cloud_trace-1.20.0.tar.gz", hash = "sha256:f5a6f9b8da530b76c452163b83e5081c1696f1b4f67290c878b0e7370f1e910a", size = 103594, upload-time = "2026-06-22T23:22:39.56Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/fb/e071b9a2a0370c50bed53292c567093b77f5db15dea4642dbc8f18d7793f/google_cloud_trace-1.20.0-py3-none-any.whl", hash = "sha256:88527c02948f410ed62ceaac5c960597a4143e3c11ce62273143f11aa388f564", size = 108134, upload-time = "2026-06-22T23:20:40.235Z" },
+]
+
+[[package]]
 name = "google-cloud-translate"
 version = "3.22.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4459,6 +4475,38 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-exporter-gcp-monitoring"
+version = "1.15.0a0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-cloud-monitoring" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-resourcedetector-gcp" },
+    { name = "opentelemetry-sdk" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/eb/8f/4c66b4e32eaddae42c4939a77076babc4a8b896646dd533c84f8d9b043fc/opentelemetry_exporter_gcp_monitoring-1.15.0a0.tar.gz", hash = "sha256:4891cd35d229e55791268a2e5fe213e392116e73e362371ad96e72ef3f9bf841", size = 21604, upload-time = "2026-08-19T21:44:12.187Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/95/4c623fcb0e3fddd55d60c1ae449b0bb5c7f4e049001c7ffa1277fe637c22/opentelemetry_exporter_gcp_monitoring-1.15.0a0-py3-none-any.whl", hash = "sha256:ad292b145d7b465380434660e678baa725bce47bc6519c8b32e194b8f7d5a6be", size = 13906, upload-time = "2026-08-19T21:44:08.059Z" },
+]
+
+[[package]]
+name = "opentelemetry-exporter-gcp-trace"
+version = "1.15.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-cloud-trace" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-resourcedetector-gcp" },
+    { name = "opentelemetry-sdk" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4e/0c/58bb79084ce208e4f46666b6343ad94533d7a8976a60d2af980a62c43e68/opentelemetry_exporter_gcp_trace-1.15.0.tar.gz", hash = "sha256:70db6b807756c0815dce6af2f230663a07983f73bde0b7302e21f3a241b512cd", size = 19597, upload-time = "2026-08-19T21:44:12.954Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/f1/7e04fa6e95c233c83ef92ca298dc56150dfa363e325e6d7d5a074151fdcb/opentelemetry_exporter_gcp_trace-1.15.0-py3-none-any.whl", hash = "sha256:bab0bda41a74c9ece16611da2e1dd442d9d6f45238a734e62fee796e2c3b122c", size = 14373, upload-time = "2026-08-19T21:44:09.012Z" },
+]
+
+[[package]]
 name = "opentelemetry-exporter-otlp"
 version = "1.38.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4543,6 +4591,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/51/14/f0c4f0f6371b9cb7f9fa9ee8918bfd59ac7040c7791f1e6da32a1839780d/opentelemetry_proto-1.38.0.tar.gz", hash = "sha256:88b161e89d9d372ce723da289b7da74c3a8354a8e5359992be813942969ed468", size = 46152, upload-time = "2025-10-16T08:36:01.612Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/6a/82b68b14efca5150b2632f3692d627afa76b77378c4999f2648979409528/opentelemetry_proto-1.38.0-py3-none-any.whl", hash = "sha256:b6ebe54d3217c42e45462e2a1ae28c3e2bf2ec5a5645236a490f55f45f1a0a18", size = 72535, upload-time = "2025-10-16T08:35:45.749Z" },
+]
+
+[[package]]
+name = "opentelemetry-resourcedetector-gcp"
+version = "1.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/54/0a95db467d25d81abc16961f5c4538b65f5707e62628a7bb9cdac2849486/opentelemetry_resourcedetector_gcp-1.14.0.tar.gz", hash = "sha256:10b41802acf815838a85c9fe1dae02f5d27ebc17527b77441111c010bead95bc", size = 14831, upload-time = "2026-07-24T19:08:37.901Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/75/81a3035969eb44ff4c6a18abc26c5cbff73ba5e4bde6be94298004c3fbb2/opentelemetry_resourcedetector_gcp-1.14.0-py3-none-any.whl", hash = "sha256:cc4818570933b5c651aef80fbf6e8fbe26d63fe6fbc24ce22ae37e78744d30eb", size = 15561, upload-time = "2026-07-24T19:08:36.843Z" },
 ]
 
 [[package]]
@@ -5761,12 +5823,15 @@ dependencies = [
     { name = "openlineage-python" },
     { name = "openlineage-sql" },
     { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-gcp-monitoring" },
+    { name = "opentelemetry-exporter-gcp-trace" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-exporter-otlp-proto-common" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-exporter-prometheus" },
     { name = "opentelemetry-proto" },
+    { name = "opentelemetry-resourcedetector-gcp" },
     { name = "opentelemetry-sdk" },
     { name = "opentelemetry-semantic-conventions" },
     { name = "opt-einsum" },
@@ -6226,12 +6291,15 @@ requires-dist = [
     { name = "openlineage-python", specifier = "==1.39.0" },
     { name = "openlineage-sql", specifier = "==1.39.0" },
     { name = "opentelemetry-api", specifier = "==1.38.0" },
+    { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.15.0a0" },
+    { name = "opentelemetry-exporter-gcp-trace", specifier = "==1.15.0" },
     { name = "opentelemetry-exporter-otlp", specifier = "==1.38.0" },
     { name = "opentelemetry-exporter-otlp-proto-common", specifier = "==1.38.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = "==1.38.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = "==1.38.0" },
     { name = "opentelemetry-exporter-prometheus", specifier = "==1.12.0rc1" },
     { name = "opentelemetry-proto", specifier = "==1.38.0" },
+    { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.14.0" },
     { name = "opentelemetry-sdk", specifier = "==1.38.0" },
     { name = "opentelemetry-semantic-conventions", specifier = "==0.59b0" },
     { name = "opt-einsum", specifier = "==3.4.0" },

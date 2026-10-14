@@ -35,7 +35,7 @@ from recidiviz.documents.extraction.llm_client.vertex_ai_sync_llm_client import 
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
-from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+from recidiviz.documents.extraction.llm_extraction_job_runner import (
     run_sync_extraction_job,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (

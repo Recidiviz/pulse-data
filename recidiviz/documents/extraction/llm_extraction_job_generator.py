@@ -36,10 +36,8 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
-from recidiviz.persistence.entity.operations.entities import (
-    LLMExtractionJob,
-    LLMExtractorVersion,
-)
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.operations.entities import LLMExtractionJob
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -67,8 +65,16 @@ class LLMExtractionJobGenerator:
     bq_client: BigQueryClient = attr.ib(factory=BigQueryClientImpl)
     """Executes the eligible-document query."""
 
+    # TODO(OBT-46617) I think it would be nicer to move the eligible-document query
+    # execution into identify_job_documents and then move this method to
+    # LLMExtractionJobManager or as a standalone helper and delete this class that
+    # way we are minimizing the amount of work we are doing in a single db transaction.
     def generate_job(
-        self, *, config: LLMExtractorConfig, active_version: LLMExtractorVersion
+        self,
+        *,
+        session: Session,
+        config: LLMExtractorConfig,
+        extractor_version_id: str,
     ) -> LLMExtractionJob | None:
         """Returns the open job for the active version if one exists (resume — a
         crashed run's job must be finished before new work is selected, since the
@@ -77,13 +83,13 @@ class LLMExtractionJobGenerator:
         remaining documents are read back via
         LLMExtractionJobManager.get_pending_job_documents. Sandbox narrowing
         arrives already applied to the config (and to the query builder built
-        from it) — this class has no narrowing surface of its own.
+        from it) — this class has no narrowing surface of its own. Runs within
+        |session|; does not commit.
         """
         state_code = config.state_code
-        extractor_version_id = active_version.extractor_version_id
 
-        open_job = self.job_manager.get_open_job(
-            state_code=state_code, extractor_version_id=extractor_version_id
+        open_job = self.job_manager.get_open_job_with_session(
+            session, state_code=state_code, extractor_version_id=extractor_version_id
         )
         if open_job is not None:
             logging.info(
@@ -94,7 +100,8 @@ class LLMExtractionJobGenerator:
             )
             return open_job
 
-        self.job_manager.record_eligible_documents(
+        self.job_manager.record_eligible_documents_with_session(
+            session,
             state_code=state_code,
             extractor_version_id=extractor_version_id,
             document_filter_id=config.document_filter_id,
@@ -102,8 +109,10 @@ class LLMExtractionJobGenerator:
         )
 
         document_contents_ids = (
-            self.job_manager.get_document_contents_ids_needing_processing(
-                state_code=state_code, extractor_version_id=extractor_version_id
+            self.job_manager.get_document_contents_ids_needing_processing_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
             )
         )
         if not document_contents_ids:
@@ -120,7 +129,8 @@ class LLMExtractionJobGenerator:
             extractor_version_id,
             len(document_contents_ids),
         )
-        return self.job_manager.create_job(
+        return self.job_manager.create_job_with_session(
+            session,
             state_code=state_code,
             extractor_version_id=extractor_version_id,
             document_contents_ids=document_contents_ids,

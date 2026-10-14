@@ -63,7 +63,9 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.operations.entities import LLMExtractionJob
 from recidiviz.tests.documents import fake_config
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -145,6 +147,14 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
             for document_contents_id in document_contents_ids
         ]
         self.bq_client.run_query_async.return_value = query_job
+
+    def _generate_job(self) -> LLMExtractionJob | None:
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.generator.generate_job(
+                session=session,
+                config=self.config,
+                extractor_version_id=self.extractor_version_id,
+            )
 
     def _pending_document_ids(self, job_id: str) -> set[str]:
         return {
@@ -231,9 +241,7 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
 
     def test_generate_job_selects_new_documents(self) -> None:
         self._set_eligible_doc_query_results(["doc1", "doc2"])
-        job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        job = self._generate_job()
 
         assert job is not None
         self.assertEqual(
@@ -254,20 +262,14 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
 
     def test_generate_job_returns_none_when_no_documents(self) -> None:
         self._set_eligible_doc_query_results([])
-        self.assertIsNone(
-            self.generator.generate_job(
-                config=self.config, active_version=self.active_version
-            )
-        )
+        self.assertIsNone(self._generate_job())
 
     def test_generate_job_returns_none_when_all_documents_already_terminal(
         self,
     ) -> None:
         # First run selects the document and processes it to a terminal SUCCESS.
         self._set_eligible_doc_query_results(["doc1"])
-        first_job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        first_job = self._generate_job()
         assert first_job is not None
         self._mark_document_result(
             job_id=first_job.job_id,
@@ -284,18 +286,12 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
         # The query still returns doc1, but it now has a terminal result, so the
         # anti-join leaves nothing needing processing and no new job is created.
         self._set_eligible_doc_query_results(["doc1"])
-        self.assertIsNone(
-            self.generator.generate_job(
-                config=self.config, active_version=self.active_version
-            )
-        )
+        self.assertIsNone(self._generate_job())
 
     def test_generate_job_skips_succeeded_reselects_transient_failure(self) -> None:
         # First run selects both documents.
         self._set_eligible_doc_query_results(["doc1", "doc2"])
-        first_job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        first_job = self._generate_job()
         assert first_job is not None
 
         # doc1 permanently succeeds; doc2 hits a transient failure (non-terminal).
@@ -321,9 +317,7 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
         # Second run re-runs selection: doc1 is skipped (terminal SUCCESS), doc2
         # is re-selected (transient), doc3 is newly eligible.
         self._set_eligible_doc_query_results(["doc1", "doc2", "doc3"])
-        second_job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        second_job = self._generate_job()
         assert second_job is not None
         self.assertNotEqual(first_job.job_id, second_job.job_id)
         self.assertEqual(
@@ -333,18 +327,14 @@ class LLMExtractionJobGeneratorTest(unittest.TestCase):
 
     def test_generate_job_resumes_open_job_without_reselecting(self) -> None:
         self._set_eligible_doc_query_results(["doc1", "doc2"])
-        first_job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        first_job = self._generate_job()
         assert first_job is not None
 
         # The first job is left open (a crashed run). The next generate_job must
         # return that same job without running selection again — the query is
         # never issued and no second job is created.
         self.bq_client.run_query_async.reset_mock()
-        resumed_job = self.generator.generate_job(
-            config=self.config, active_version=self.active_version
-        )
+        resumed_job = self._generate_job()
         assert resumed_job is not None
         self.assertEqual(first_job.job_id, resumed_job.job_id)
         self.bq_client.run_query_async.assert_not_called()

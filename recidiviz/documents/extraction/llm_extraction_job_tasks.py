@@ -16,72 +16,53 @@
 # =============================================================================
 """Shared LLM extraction job-lifecycle tasks."""
 
-import logging
-
-from recidiviz.documents.extraction.document_extraction_processor import (
-    DocumentExtractionProcessor,
-    ExtractionRunSummary,
+from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
+    LLMExtractionEligibleDocumentQueryBuilder,
+)
+from recidiviz.documents.extraction.llm_extraction_job_generator import (
+    LLMExtractionJobGenerator,
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
+from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
+    LLMExtractorMetadataManager,
+)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
+from recidiviz.persistence.database.session import Session
 
 
-def run_sync_extraction_job(
+def sync_extractor_metadata(config: LLMExtractorConfig, session: Session) -> str:
+    active_version = (
+        LLMExtractorMetadataManager().set_active_extractor_version_with_session(
+            config=config, session=session
+        )
+    )
+    return active_version.extractor_version_id
+
+
+def identify_job_documents(
     *,
     config: LLMExtractorConfig,
-    job_id: str,
+    extractor_version_id: str,
     job_manager: LLMExtractionJobManager,
-    processor: DocumentExtractionProcessor,
-    # Ceiling on how many pending documents the run will accept before refusing to
-    # start, or None for no ceiling.
-    max_documents: int | None = None,
-) -> ExtractionRunSummary | None:
-    """Runs an already-created |job_id| to completion and returns its summary, or None if
-    there was no work to do. Reads the job's pending documents, processes them through the LLM, and
-    marks the job completed — or, on any failure, marks the job failed and re-raises.
-    """
-    logging.info(
-        "Running sync extraction job [%s] for state [%s], collection [%s].",
-        job_id,
-        config.state_code.value,
-        config.extractor_collection.name,
+    bq_client: BigQueryClient,
+    session: Session,
+    source_sandbox_prefix: str | None = None,
+) -> str | None:
+    job = LLMExtractionJobGenerator(
+        eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
+            document_filter=config.document_filter,
+            input_document_collection=config.input_document_collection,
+            source_sandbox_prefix=source_sandbox_prefix,
+        ),
+        job_manager=job_manager,
+        bq_client=bq_client,
+    ).generate_job(
+        session=session, config=config, extractor_version_id=extractor_version_id
     )
 
-    # mark_job_started is a no-op on an already-started (resumed) job, so calling it
-    # before the pending-document read lets the try/except own the whole job
-    # lifecycle: any failure from here on marks the job failed rather than leaving it
-    # open, which would block every future run for this extractor version.
-    job_manager.mark_job_started(state_code=config.state_code, job_id=job_id)
-    try:
-        pending_documents = job_manager.get_pending_job_documents(
-            state_code=config.state_code, job_id=job_id
-        )
-        # TODO(OBT-46617) this is intended to prevent us from accidentally running very large
-        # sandbox runs, we should replace with the production SKIPPED_OVER_CAP check
-        # once that is built
-        if max_documents is not None and len(pending_documents) > max_documents:
-            raise ValueError(
-                f"Job [{job_id}] holds [{len(pending_documents)}] pending documents, "
-                f"above the ceiling of [{max_documents}]."
-            )
-        if pending_documents:
-            summary = processor.process(
-                job_id=job_id, pending_documents=pending_documents
-            )
-        else:
-            # A resumed job whose documents all finished before a crash still needs
-            # completing, or it stays open and blocks every future run.
-            logging.info("Job [%s] has no pending documents; completing it.", job_id)
-            summary = None
-        job_manager.mark_job_completed(state_code=config.state_code, job_id=job_id)
-    except Exception as e:
-        job_manager.mark_job_failed(
-            state_code=config.state_code, job_id=job_id, error_message=str(e)
-        )
-        raise
-
-    return summary
+    return job.job_id if job is not None else None

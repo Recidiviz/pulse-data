@@ -26,20 +26,15 @@ from recidiviz.documents.extraction.document_extraction_processor import (
     DocumentExtractionProcessor,
     ExtractionRunSummary,
 )
-from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
-    LLMExtractionEligibleDocumentQueryBuilder,
-)
-from recidiviz.documents.extraction.llm_extraction_job_generator import (
-    LLMExtractionJobGenerator,
-)
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionJobManager,
 )
-from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+from recidiviz.documents.extraction.llm_extraction_job_runner import (
     run_sync_extraction_job,
 )
-from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
-    LLMExtractorMetadataManager,
+from recidiviz.documents.extraction.llm_extraction_job_tasks import (
+    identify_job_documents,
+    sync_extractor_metadata,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
@@ -55,6 +50,11 @@ from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
 from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
 from recidiviz.documents.store.record_document_upload_results import (
     DocumentUploadResultRecorder,
+)
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SchemaType,
+    SQLAlchemyDatabaseKey,
 )
 
 # Refuse to start a run whose job holds more than this many documents.
@@ -187,6 +187,7 @@ class SandboxExtractionRunner:
         self.bq_client = bq_client
         self.job_manager = job_manager
         self.processor = processor
+        self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
     @property
     def state_code(self) -> StateCode:
@@ -200,15 +201,16 @@ class SandboxExtractionRunner:
         Expects the sandbox result tables to already exist; deploying the parsed
         views over the tables this writes is left to the caller.
         """
-        active_version = LLMExtractorMetadataManager().set_active_extractor_version(
-            config=self.config
-        )
+        with SessionFactory.using_database(self.db_key) as session:
+            active_version_id = sync_extractor_metadata(
+                config=self.config, session=session
+            )
         logging.info(
             "Running sandbox extraction for state [%s], collection [%s], "
             "extractor version [%s].",
             self.state_code.value,
             self.config.extractor_collection.name,
-            active_version.extractor_version_id,
+            active_version_id,
         )
         # A resumed job (with --keep-postgres) is keyed only on the extractor
         # version, which excludes the --document-limit / --root-entity-ids
@@ -223,23 +225,23 @@ class SandboxExtractionRunner:
             if self.document_store_sandbox is not None
             else None
         )
-        job = LLMExtractionJobGenerator(
-            eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
-                document_filter=self.config.document_filter,
-                input_document_collection=self.config.input_document_collection,
+        with SessionFactory.using_database(self.db_key) as session:
+            job_id = identify_job_documents(
+                config=self.config,
+                extractor_version_id=active_version_id,
+                job_manager=self.job_manager,
+                bq_client=self.bq_client,
                 source_sandbox_prefix=source_sandbox_prefix,
-            ),
-            job_manager=self.job_manager,
-            bq_client=self.bq_client,
-        ).generate_job(config=self.config, active_version=active_version)
+                session=session,
+            )
 
-        if job is None:
+        if job_id is None:
             logging.info("No documents need processing; nothing to do.")
             return None
 
         return run_sync_extraction_job(
             config=self.config,
-            job_id=job.job_id,
+            job_id=job_id,
             job_manager=self.job_manager,
             processor=self.processor,
             max_documents=MAX_DOCUMENTS,
