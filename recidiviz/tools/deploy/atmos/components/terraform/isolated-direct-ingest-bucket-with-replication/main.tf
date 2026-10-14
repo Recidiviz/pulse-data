@@ -93,6 +93,15 @@ resource "google_storage_bucket_iam_member" "project-bucket-writer" {
   member = "serviceAccount:${data.google_storage_transfer_project_service_account.default.email}"
 }
 
+# The transfer service reads the destination object before copying, so add the object viewer role.
+resource "google_storage_bucket_iam_member" "project-bucket-object-viewer" {
+  for_each = local.environment_to_project_id
+
+  bucket = "${each.value}-direct-ingest-state-${local.lower_state_code}"
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${data.google_storage_transfer_project_service_account.default.email}"
+}
+
 resource "google_storage_transfer_job" "copy_to_project" {
   for_each    = local.environment_to_project_id
   description = "Copies ${var.state_code} data to ${each.key}."
@@ -100,19 +109,19 @@ resource "google_storage_transfer_job" "copy_to_project" {
   replication_spec {
     dynamic "object_conditions" {
       for_each = (
-      var.replication_spec_include_prefixes_file_path != null || var.replication_spec_exclude_prefixes_file_path != null
+        var.replication_spec_include_prefixes_file_path != null || var.replication_spec_exclude_prefixes_file_path != null
       ) ? [1] : []
 
       content {
         include_prefixes = (
-        var.replication_spec_include_prefixes_file_path != null
-        ? split("\n", trimspace(file(var.replication_spec_include_prefixes_file_path)))
-        : null
+          var.replication_spec_include_prefixes_file_path != null
+          ? split("\n", trimspace(file(var.replication_spec_include_prefixes_file_path)))
+          : null
         )
         exclude_prefixes = (
-        var.replication_spec_exclude_prefixes_file_path != null
-        ? split("\n", trimspace(file(var.replication_spec_exclude_prefixes_file_path)))
-        : null
+          var.replication_spec_exclude_prefixes_file_path != null
+          ? split("\n", trimspace(file(var.replication_spec_exclude_prefixes_file_path)))
+          : null
         )
       }
     }
@@ -148,5 +157,5 @@ resource "google_storage_transfer_job" "copy_to_project" {
     ]
   }
 
-  depends_on = [google_project_iam_member.data_transfer_sa_pubsub_editor, google_project_iam_member.data_transfer_sa_storage_admin, google_project_iam_member.google_storage_sa_pubsub_editor, google_storage_bucket_iam_member.project-bucket-writer]
+  depends_on = [google_project_iam_member.data_transfer_sa_pubsub_editor, google_project_iam_member.data_transfer_sa_storage_admin, google_project_iam_member.google_storage_sa_pubsub_editor, google_storage_bucket_iam_member.project-bucket-writer, google_storage_bucket_iam_member.project-bucket-object-viewer]
 }
