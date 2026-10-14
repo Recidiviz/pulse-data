@@ -21,7 +21,7 @@ from unittest.mock import patch
 import apache_beam as beam
 import attr
 from apache_beam.pipeline_test import assert_that
-from apache_beam.testing.util import matches_all
+from apache_beam.testing.util import equal_to
 
 from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
@@ -109,7 +109,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_single_person_entity(self) -> None:
@@ -141,7 +141,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_multiple_staff_with_different_emails(self) -> None:
@@ -199,7 +199,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_staff_with_same_email_case_insensitive(self) -> None:
@@ -314,7 +314,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 state_code=self.state_code(),
                 entities_module=state_entities,
             )
-            assert_that(output, matches_all(entities))
+            assert_that(output, equal_to(entities))
             self.test_pipeline.run()
 
     def test_validate_mixed_root_entities(self) -> None:
@@ -394,7 +394,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_task_deadlines(self) -> None:
@@ -463,7 +463,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_missing_external_ids_staff_entity(self) -> None:
@@ -799,7 +799,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=state_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_duplicate_id_same_child_entities(self) -> None:
@@ -1636,7 +1636,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=normalized_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_single_person_entity(self) -> None:
@@ -1673,7 +1673,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=normalized_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_mixed_root_entities(self) -> None:
@@ -1779,7 +1779,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=normalized_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_task_deadlines(self) -> None:
@@ -1858,7 +1858,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=normalized_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_missing_external_ids_staff_entity(self) -> None:
@@ -2278,7 +2278,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             state_code=self.state_code(),
             entities_module=normalized_entities,
         )
-        assert_that(output, matches_all(entities))
+        assert_that(output, equal_to(entities))
         self.test_pipeline.run()
 
     def test_validate_duplicate_id_same_child_entities(self) -> None:

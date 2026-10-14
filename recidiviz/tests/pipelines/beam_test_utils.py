@@ -50,4 +50,4 @@ def create_test_pipeline() -> TestPipeline:
             logging.WARNING
         )
 
-    return TestPipeline(options=apache_beam_pipeline_options)
+    return TestPipeline(runner="FnApiRunner", options=apache_beam_pipeline_options)

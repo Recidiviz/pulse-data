@@ -86,10 +86,6 @@ dependencies = [
     "marshmallow",
     "pydantic",
     "cattrs",
-    # If the dill version changes be sure to update the pinned version in dataflow_setup.py
-    "dill==0.3.1.1",
-    # If the cloudpickle version changes be sure to update the pinned version in dataflow_setup.py
-    "cloudpickle==2.2.1",
     "matplotlib",
     "scipy",
     "seaborn",
@@ -169,7 +165,10 @@ dev = [
     "bandit",
     "coveralls",
     # This should always be pinned to the latest version officially supported by Dataflow
-    "apache-beam[gcp,test]==2.65.0",
+    "apache-beam[gcp]==2.77.0",
+    # Pinned in dataflow_flex_requirements.txt for Dataflow workers; declared here so
+    # uv.lock tracks its version.
+    "psycopg2-binary",
     "astroid",
     "callee",
     "debugpy",
@@ -297,6 +296,3 @@ force-exclude = '''
 required-version = ">=0.11.8"
 index-url = "https://pypi.org/simple"
 exclude-newer = "3 days"
-# Pin setuptools < 82 for Apache Beam 2.65.0 compatibility (pkg_resources removed in 82.0.0).
-# Can unpin after upgrading to apache-beam >= 2.66.0.
-build-constraint-dependencies = ["setuptools<82"]

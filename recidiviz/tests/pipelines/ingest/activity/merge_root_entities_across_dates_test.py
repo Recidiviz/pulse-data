@@ -20,7 +20,7 @@ from datetime import date, datetime
 import apache_beam as beam
 import attr
 from apache_beam.pipeline_test import assert_that
-from apache_beam.testing.util import matches_all
+from apache_beam.testing.util import equal_to
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity import entities
@@ -313,5 +313,5 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
 
         expected_entities = [person_1, person_2, staff_1, staff_2]
 
-        assert_that(output, matches_all(expected_entities))
+        assert_that(output, equal_to(expected_entities))
         self.test_pipeline.run()

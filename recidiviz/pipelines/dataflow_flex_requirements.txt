@@ -19,12 +19,6 @@ aiohttp==3.14.4
 cattrs==26.2.1
 cryptography==50.0.2
 dateparser==1.2.0
-# Must stay up-to-date with latest dill and cloudpickle versions in pyproject.toml
-# these libraries are used for template serialization and
-# it's critical that the local version used to serialize the templates and the version used to deserialize on the
-# remote workers match.
-dill==0.3.1.1
-cloudpickle==2.2.1
 Flask==3.1.3
 google-api-core==2.33.0
 google-api-python-client==2.201.0
@@ -54,7 +48,7 @@ opentelemetry-instrumentation-requests==0.54b1
 opentelemetry-instrumentation-sqlalchemy==0.54b1
 opentelemetry-semantic-conventions==0.54b1
 # Must stay up-to-date with latest protobuf version in the pyproject.toml
-protobuf==5.29.6
+protobuf==6.33.6
 # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
 python-Levenshtein==0.27.5
 psycopg2-binary==2.9.13
