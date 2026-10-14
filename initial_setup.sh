@@ -56,13 +56,6 @@ uv sync --all-extras
 echo "Installing pre-commit hooks..."
 uv run pre-commit install --overwrite
 
-# Install pylint which is not currently managed by pyproject.toml
-# There is a not easily-solved requirement conflict on `dill` between `apache-beam` and `pylint`
-# More details can be found here: https://recidiviz.slack.com/archives/C028X32LRH7/p1701458677360479
-# TODO(apache/beam#22893): This can be moved into pyproject.toml once Beam moves to cloudpickle or upgrades dill
-echo "Installing pylint..."
-uv pip install pylint --python .venv/bin/python
-
 echo ""
 echo "Setup complete!"
 echo "You can run commands with: uv run <command>"

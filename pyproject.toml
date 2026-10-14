@@ -169,7 +169,12 @@ dev = [
     # Pinned in dataflow_flex_requirements.txt for Dataflow workers; declared here so
     # uv.lock tracks its version.
     "psycopg2-binary",
-    "astroid",
+    # Pinned to the last pylint/astroid that lints our code cleanly. The 4.1 line flags
+    # stable code, mostly abstract-method false positives on intermediate base classes.
+    # Unpin once we adopt 4.1 deliberately.
+    # TODO(COS-82)
+    "pylint==4.0.10",
+    "astroid==4.0.4",
     "callee",
     "debugpy",
     "deepdiff",
