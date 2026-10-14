@@ -374,6 +374,20 @@ class TestWorkflowsETLDelegate(TestCase):
             new_document,
         )
 
+    def test_build_document_with_scope_fields(self) -> None:
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
+        data = deepcopy(TEST_DATA)
+        data["officer_id"] = "OFFICER_A12"
+        data["location_id"] = "District 4"
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["officerId"] = "OFFICER_A12"
+        expected["locationId"] = "District 4"
+        new_document = delegate.build_document(data, TEST_OPPORTUNITY_TYPE)
+        self.assertEqual(
+            expected,
+            new_document,
+        )
+
     def test_transform_with_nested_criteria(self) -> None:
         """Tests that the delegate can process a document where the "reason" in a reasons blob is itself, a reasons blob."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)

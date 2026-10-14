@@ -40,11 +40,11 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_lo
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_parole_board_hearing_sessions import (
     US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record_base import (
+    CLIENT_RECORD_BASE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.workflows.firestore.resident_record_base import (
+    RESIDENT_RECORD_BASE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
@@ -78,7 +78,7 @@ from recidiviz.validation.views.state.parole_agent_badge_number_changes import (
 RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]] = {
     StateCode.US_CA: {
         US_CA_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
-        CLIENT_RECORD_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
+        CLIENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
         PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
     },
     StateCode.US_IX: {
@@ -87,7 +87,7 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
     },
     StateCode.US_ME: {
         US_ME_POPULATION_RELEASES_VIEW_BUILDER.address: "TODO(#51181) Update to use raw data _all view",
-        RESIDENT_RECORD_VIEW_BUILDER.address: "TODO(#51181) Update to use raw data _all view",
+        RESIDENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(#51181) Update to use raw data _all view",
     },
     StateCode.US_ND: {
         US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
@@ -102,7 +102,7 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_NOT_ON_SEX_OFFENSE_PROTOCOL_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
-        CLIENT_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
+        CLIENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
     },
