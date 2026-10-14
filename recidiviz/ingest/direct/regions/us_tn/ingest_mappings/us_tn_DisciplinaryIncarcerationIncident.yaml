@@ -315,6 +315,12 @@ output:
                   - SXB # SEXUAL BATTERY
 
           incident_details: OffenderAccount
+          is_violent:
+            $custom:
+              $function: us_tn_custom_parsers.parse_incarceration_incident_is_violent
+              $args:
+                infraction_code: InfractionType
+                offense_class: DisciplinaryClass
           incident_metadata:
             $normalized_values_json_dict:
               Class: DisciplinaryClass

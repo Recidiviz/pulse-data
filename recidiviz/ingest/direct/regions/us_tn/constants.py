@@ -17,6 +17,38 @@
 """Reusable constants referenced in multiple spots in our codebase for US_TN."""
 import datetime
 
+# Infraction codes that TN's 2026 classification policy treats as violent. The policy
+# counts an incident as violent only when it is also Class A.
+CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES: list[str] = [
+    "AOO",  # ASSAULT OFFENDER - WITHOUT WEAPON
+    "AOS",  # ASSAULT ON STAFF
+    "AOW",  # ASSAULT OFFENDER - WEAPON
+    "ASA",  # ASSAULT-STAFF-SERIOUS INJURY
+    "ASB",  # ASSAULT-STAFF-INJURY
+    "ASC",  # ASSAULT-STAFF-MINOR INJURY
+    "ASD",  # ASSAULT-OFN-SERIOUS INJURY
+    "ASE",  # ASSAULT-OFN-INJURY
+    "ASF",  # ASSAULT-OFN-MINOR INJURY
+    "ASG",  # ASSAULT-VIS-SERIOUS INJURY
+    "ASH",  # ASSAULT-VIS-INJURY
+    "ASI",  # ASSAULT-VIS-MINOR INJURY
+    "ASJ",  # ASSAULT STAFF NO INJURY
+    "ASK",  # ASSAULT OFFENDER NO INJURY
+    "ASL",  # ASSAULT
+    "ASM",  # ASSAULT VISITOR NO INJURY
+    "ASO",  # ASSAULT STAFF - WITHOUT WEAPON
+    "ASW",  # ASSAULT STAFF - WEAPON
+    "AVO",  # ASSAULT VISITOR/GUEST - WITHOUT WEAPON
+    "AVW",  # ASSAULT VISITOR/GUEST - WEAPON
+    "DEG",  # DEATH-STAFF-HOMICIDE (ON DUTY)
+    "DEH",  # DEATH-OFN-HOMICIDE
+    "DVH",  # DEATH-VISITOR-HOMICIDE
+    "HOM",  # HOMICIDE
+    "HOS",  # HOSTAGE SITUATION
+    "RAP",  # RAPE
+    "SXB",  # SEXUAL BATTERY
+]
+
 # Facilities participating in the 2026 classification (RCAF/DCAF) pilot, mapped
 # to the date each facility switched over to the new classification scheme.
 # CAFs at these facilities on or after their switchover date are managed by the

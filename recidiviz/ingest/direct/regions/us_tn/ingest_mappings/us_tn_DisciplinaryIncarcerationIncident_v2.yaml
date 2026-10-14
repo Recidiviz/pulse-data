@@ -218,6 +218,12 @@ output:
                   # 2026-09. Deliberately not enumerating those here.
 
           incident_details: HEARING_COMMENT
+          is_violent:
+            $custom:
+              $function: us_tn_custom_parsers.parse_incarceration_incident_is_violent
+              $args:
+                infraction_code: VIOLENCE_CODE
+                offense_class: OFFENSE_CLASS
           incident_metadata:
             $normalized_values_json_dict:
               Class: OFFENSE_CLASS

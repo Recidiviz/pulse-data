@@ -32,6 +32,9 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
+from recidiviz.ingest.direct.regions.us_tn.constants import (
+    CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
+)
 
 
 def parse_supervision_type(raw_text: str) -> StateSupervisionSentenceSupervisionType:
@@ -130,3 +133,14 @@ def get_punishment_days(
             )
         )
     return None
+
+
+def parse_incarceration_incident_is_violent(
+    infraction_code: str, offense_class: str
+) -> bool:
+    """Returns whether TN's 2026 classification policy treats an incident as violent,
+    which requires a Class A incident whose infraction code is on the violent list."""
+    return (
+        offense_class == "A"
+        and infraction_code in CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES
+    )

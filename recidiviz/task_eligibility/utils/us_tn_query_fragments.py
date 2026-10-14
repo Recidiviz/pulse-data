@@ -26,6 +26,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.ingest.direct.regions.us_tn.constants import (
+    CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
+)
 
 # These are the raw-text supervision levels that correspond with participation in Day
 # Reporting Center (DRC) programs in TN. They're often excluded from various
@@ -552,36 +555,6 @@ def compliant_reporting_offense_type_condition(
     return " OR ".join([lk[offense_flag] for offense_flag in offense_flags])
 
 
-_US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
-    "AOO",  # ASSAULT OFFENDER - WITHOUT WEAPON
-    "AOS",  # ASSAULT ON STAFF
-    "AOW",  # ASSAULT OFFENDER - WEAPON
-    "ASA",  # ASSAULT-STAFF-SERIOUS INJURY
-    "ASB",  # ASSAULT-STAFF-INJURY
-    "ASC",  # ASSAULT-STAFF-MINOR INJURY
-    "ASD",  # ASSAULT-OFN-SERIOUS INJURY
-    "ASE",  # ASSAULT-OFN-INJURY
-    "ASF",  # ASSAULT-OFN-MINOR INJURY
-    "ASG",  # ASSAULT-VIS-SERIOUS INJURY
-    "ASH",  # ASSAULT-VIS-INJURY
-    "ASI",  # ASSAULT-VIS-MINOR INJURY
-    "ASJ",  # ASSAULT STAFF NO INJURY
-    "ASK",  # ASSAULT OFFENDER NO INJURY
-    "ASL",  # ASSAULT
-    "ASM",  # ASSAULT VISITOR NO INJURY
-    "ASO",  # ASSAULT STAFF - WITHOUT WEAPON
-    "ASW",  # ASSAULT STAFF - WEAPON
-    "AVO",  # ASSAULT VISITOR/GUEST - WITHOUT WEAPON
-    "AVW",  # ASSAULT VISITOR/GUEST - WEAPON
-    "DEG",  # DEATH-STAFF-HOMICIDE (ON DUTY)
-    "DEH",  # DEATH-OFN-HOMICIDE
-    "DVH",  # DEATH-VISITOR-HOMICIDE
-    "HOM",  # HOMICIDE
-    "HOS",  # HOSTAGE SITUATION
-    "RAP",  # RAPE
-    "SXB",  # SEXUAL BATTERY
-]
-
 # Maps each CAF/DCAF/RCAF "generation" to its raw offense severity answer values,
 # in ascending severity order. In the CAF, offense severity question is Q3, while
 # in RCAF/DCAFs, offense severity question is Q2.
@@ -711,7 +684,7 @@ def tn_classification_policy_2026_incidents() -> str:
         str: SQL CTE string
     """
     violent_infraction_types_str = list_to_query_string(
-        _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES,
+        CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
         quoted=True,
         single_quote=True,
     )
