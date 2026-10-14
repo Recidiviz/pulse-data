@@ -44,7 +44,17 @@ class SQLAlchemyEngineManager(BaseEngineManager):
     ) -> Engine:
         """Initializes a sqlalchemy Engine object for the given Postgres database /
         schema and caches it for future use."""
-        additional_kwargs = {}
+        additional_kwargs: Dict[str, Any] = {}
+        if environment.in_gcp() and database_key.pool_recycle > 0:
+            additional_kwargs["connect_args"] = {
+                "options": (
+                    f"-c idle_session_timeout={database_key.pool_recycle * 1000}"
+                )
+            }
+            # Hand out the most recently returned connection first, so a busy pool
+            # keeps reusing a few warm connections and the surplus ones sit idle
+            # long enough for Postgres to close them.
+            additional_kwargs["pool_use_lifo"] = True
         if database_key.pool_configuration:
             additional_kwargs["pool_size"] = database_key.pool_configuration.pool_size
             additional_kwargs[

@@ -126,6 +126,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -143,6 +145,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=3600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=3600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -160,6 +164,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -175,6 +181,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -190,6 +198,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -207,6 +217,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -224,6 +236,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -241,6 +255,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -258,6 +274,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -275,6 +293,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -290,6 +310,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -305,6 +327,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -322,6 +346,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
             ],
             msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",
@@ -387,6 +413,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -404,6 +432,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=3600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=3600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -421,6 +451,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -436,6 +468,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -451,6 +485,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -468,6 +504,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -485,6 +523,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -502,6 +542,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -519,6 +561,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -536,6 +580,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -551,6 +597,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -566,6 +614,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
                 call(
                     URL.create(
@@ -583,6 +633,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                     pool_pre_ping=True,
+                    connect_args={"options": "-c idle_session_timeout=600000"},
+                    pool_use_lifo=True,
                 ),
             ],
             msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",
