@@ -90,6 +90,15 @@ custom:
               "This table was modified on 2025-08-28 to also include prison case
               manager assignments (previously, it only included supervision
               officer assignments)."
+      COMS_dm_Staff_Supervisors:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2026-07-01T00:00:00Z"
+            datetime_end_exclusive: "2026-10-13T00:00:00Z"
+            reason:
+              "This table's row count jumped from ~4,081 to ~5,368 on 2026-10-13
+              as part of the COMS migration data transfer. Excluding pre-migration
+              imports from the median so future validation compares against the
+              new baseline."
 
   US_MO:
     file_tags:
