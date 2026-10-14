@@ -100,7 +100,7 @@ packer init templates/python311-postgres18.pkr.hcl
 3. **Build the AMI**:
    - Run the following command to build the AMI, replacing the variables with your custom values:
 ```shell script
-packer build -var "subnet_id=your-subnet-id" -var "region=us-west-2" templates/python311-postgres18.pkr.hcl
+packer build -var "subnet_id=your-subnet-id" -var "region=us-east-2" templates/python311-postgres18.pkr.hcl
 ```
 
 ### Available Packer Variables
@@ -110,14 +110,14 @@ The Packer template supports the following variables:
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `subnet_id` | Yes | - | AWS Subnet ID where Packer will launch build instances |
-| `region` | No | `us-west-2` | AWS region for the build |
+| `region` | No | `us-east-2` | AWS region for the build |
 | `image_name_prefix` | No | `python311-postgres18-runs-on` | Prefix for AMI names (suffixed with architecture and timestamp) |
 
 **Example with custom prefix:**
 ```shell script
 packer build \
   -var "subnet_id=subnet-0b52b6902a6c54804" \
-  -var "region=us-west-2" \
+  -var "region=us-east-2" \
   -var "image_name_prefix=my-custom-runner" \
   templates/python311-postgres18.pkr.hcl
 ```

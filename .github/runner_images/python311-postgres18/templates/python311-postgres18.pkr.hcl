@@ -16,16 +16,16 @@ variable "subnet_id" {
 
 variable "region" {
   type = string
-  # Our default region is us-west-2, but we may choose to deploy across multiple
-  # regions in the future.
-  default = "us-west-2"
+  # Our RunsOn stack runs in us-east-2. To serve more regions, add them to
+  # ami_copy_regions.
+  default = "us-east-2"
 }
 
 variable "ami_copy_regions" {
   type = list(string)
   # Regions to copy the built AMIs to, under the same name, so RunsOn stacks
   # deployed there can find them. Must not include var.region.
-  default = ["us-east-2"]
+  default = []
 }
 
 variable "image_name_prefix" {
