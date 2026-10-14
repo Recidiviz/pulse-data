@@ -1158,7 +1158,7 @@ def us_tx_fines_fees_recent_payments_case_notes(
 
 # Acronyms in US_TX employer names that INITCAP would otherwise turn into ordinary
 # words (e.g. "Tdcj" -> "TDCJ", "Acme Llc" -> "Acme LLC").
-_US_TX_CASE_NOTE_ACRONYMS = ["LLC", "LMHA", "PD", "TDCJ"]
+_US_TX_CASE_NOTE_ACRONYMS = ["DWI", "LLC", "LMHA", "PD", "SACP", "TDCJ"]
 
 
 def _us_tx_initcap_keeping_acronyms_sql(column: str) -> str:
@@ -1212,4 +1212,103 @@ def us_tx_current_employment_case_notes(*, fallback_population_cte: str) -> str:
     LEFT JOIN (SELECT DISTINCT person_id FROM {current_employment_subquery}) emp
         USING(person_id)
     WHERE emp.person_id IS NULL
+    """
+
+
+def us_tx_program_attendance_case_notes(*, fallback_population_cte: str) -> str:
+    """Returns a SQL fragment selecting program attendance for case notes, sourced from
+    normalized_state.state_program_assignment.
+
+    Produces one row per current or completed referral, plus "No records found" fallback
+    rows for every person in fallback_population_cte who doesn't have corresponding
+    attendance info under current or completed referrals. In-progress rows whose start
+    date is in the future end with "Program not started yet", and rows with no attended
+    or missed sessions end with "No sessions recorded".
+
+    For example:
+        person_id,criteria,note_title,note_body,event_date
+        123,Programs in Progress,Sex Offender Treatment,Attended: 5 | Missed: 2,2026-09-02
+        123,Completed Programs,Anger Management,Attended: 3 | Missed: 0,2026-08-05
+        456,Programs in Progress,No records found,If this is inconsistent with OIMS...
+
+    Args:
+        fallback_population_cte: Name of a CTE that covers the clients surfaced
+            for an opportunity. Only people in this population with nothing in programs
+            data get the "No records found" fallback message.
+    """
+    # We use program_id as the name of the program when possible because it's most specific
+    # (e.g., "Alcoholics Anonymous"). When the more specific program_id is unavailable,
+    # we use program_type, which is a category (e.g., "Substance Abuse").
+    program_name_expression = _us_tx_initcap_keeping_acronyms_sql(
+        "COALESCE(program_id, JSON_VALUE(referral_metadata, '$.program_type'))"
+    )
+
+    return f"""
+    SELECT
+        person_id,
+        -- Criteria name is 'Programs in Progress' for programs noted as ACTIVE and
+        -- 'Completed Programs' for programs noted as COMPLETED.
+        CASE participation_status_raw_text
+            WHEN "ACTIVE" THEN "Programs in Progress"
+            WHEN "COMPLETED" THEN "Completed Programs"
+        END AS criteria,
+        -- If the program name is an empty string (meaning there's '' for program_type),
+        -- then we call it 'Unknown Program.' Otherwise, we'll use the output from program_name_expression.
+        IF({program_name_expression} = '', "Unknown Program", {program_name_expression}) AS note_title,
+        CONCAT(
+            "Attended: ", CAST(JSON_VALUE(referral_metadata, '$.sessions_attended') AS INT64),
+            " | Missed: ", CAST(JSON_VALUE(referral_metadata, '$.sessions_missed') AS INT64),
+            IFNULL(
+                CONCAT(
+                    " | ",
+                    CASE
+                        WHEN participation_status_raw_text = "ACTIVE"
+                            AND start_date > CURRENT_DATE('US/Eastern')
+                            THEN "Program not started yet"
+                        WHEN CAST(JSON_VALUE(referral_metadata, '$.sessions_attended') AS INT64)
+                            + CAST(JSON_VALUE(referral_metadata, '$.sessions_missed') AS INT64) = 0
+                            THEN "No sessions recorded"
+                    END
+                ),
+                ""
+            )
+        ) AS note_body,
+        start_date AS event_date,
+    FROM `{{project_id}}.normalized_state.state_program_assignment`
+    WHERE state_code = "US_TX"
+        AND participation_status_raw_text IN ("ACTIVE", "COMPLETED")
+
+    UNION ALL
+
+    -- If someone doesn't have any ACTIVE programs, include no-records message under
+    -- 'Programs in Progress' section.
+    {_us_tx_no_records_fallback_select(
+        criteria="Programs in Progress",
+        fallback_population_cte=fallback_population_cte,
+    )}
+    LEFT JOIN (
+        SELECT DISTINCT person_id
+        FROM `{{project_id}}.normalized_state.state_program_assignment`
+        WHERE state_code = "US_TX"
+            AND participation_status_raw_text = "ACTIVE"
+    ) has_records
+        USING(person_id)
+    WHERE has_records.person_id IS NULL
+
+    UNION ALL
+
+    -- If someone doesn't have any COMPLETED programs, include no-records message under
+    -- 'Completed Programs' section.
+    {_us_tx_no_records_fallback_select(
+        criteria="Completed Programs",
+        fallback_population_cte=fallback_population_cte,
+    )}
+    LEFT JOIN (
+        SELECT DISTINCT person_id
+        FROM `{{project_id}}.normalized_state.state_program_assignment`
+        WHERE state_code = "US_TX"
+            AND participation_status_raw_text = "COMPLETED"
+    ) has_records
+        USING(person_id)
+    WHERE has_records.person_id IS NULL
     """
