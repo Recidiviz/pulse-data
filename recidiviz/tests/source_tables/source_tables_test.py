@@ -86,6 +86,7 @@ COMMON_VESTIGES = [
     "case_planning_production.tracks",
     "case_planning_production.users",
     "jii_auth0_production_segment_metrics.tracks",
+    "jii_backend_production_segment_metrics.backend_cre_search_query",
     "jii_backend_production_segment_metrics.backend_edovo_login_denied",
     "jii_backend_production_segment_metrics.backend_edovo_login_failed",
     "jii_backend_production_segment_metrics.backend_edovo_login_internal_error",
