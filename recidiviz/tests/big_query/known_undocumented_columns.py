@@ -16285,16 +16285,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "reasons",
         "state_code",
     ],
-    BigQueryAddress.from_str("workflows_views.us_nc_resident_metadata"): [
-        "person_id",
-        "rna_due_date",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("jii_views.us_nc_resident_data"): [
-        "person_id",
-        "rna_due_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "workflows_views.us_nd_complete_discharge_early_from_supervision_record"
     ): [
