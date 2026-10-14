@@ -1,5 +1,5 @@
 #!/bin/bash
-# TODO(#12390): Delete this script once automatic pruning is implemented.
+# TODO(#14127): Delete this script once automatic pruning is implemented.
 # Usage: bash recidiviz/tools/multi_state_raw_data_pruning.sh
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh

@@ -365,7 +365,7 @@ def run(
         print("Done!")
 
 
-# TODO(#12390) delete once pruning is live???
+# TODO(#14127): Delete once automatic raw data pruning is live.
 def main() -> None:
     """Parses CLI args && then runs the script"""
     logging.basicConfig(level=logging.INFO, format="%(message)s")

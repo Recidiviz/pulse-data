@@ -21,7 +21,7 @@ from enum import Enum
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
-# TODO(#12390): This data structure can be removed when automatic
+# TODO(#51884): This data structure can be removed when automatic
 # raw data pruning is rolled out.
 # Affectionately known as "extremely bad, lossy pruning", states that
 # undergo this process have the the earliest and most recent raw data rows
