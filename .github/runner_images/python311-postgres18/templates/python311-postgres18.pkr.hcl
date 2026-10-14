@@ -21,6 +21,13 @@ variable "region" {
   default = "us-west-2"
 }
 
+variable "ami_copy_regions" {
+  type = list(string)
+  # Regions to copy the built AMIs to, under the same name, so RunsOn stacks
+  # deployed there can find them. Must not include var.region.
+  default = ["us-east-2"]
+}
+
 variable "image_name_prefix" {
   type = string
   # Prefix for the AMI names, will be suffixed with architecture and timestamp
@@ -76,6 +83,7 @@ source "amazon-ebs" "build-x64" {
   ami_name       = "x64-${var.image_name_prefix}-${local.ami_timestamp}"
   instance_type  = "m7i.xlarge"
   region         = "${var.region}"
+  ami_regions    = var.ami_copy_regions
   source_ami     = "${data.amazon-ami.runs-on-ami-x64.id}"
   ssh_username   = "ubuntu"
   subnet_id      = "${var.subnet_id}"
@@ -88,6 +96,7 @@ source "amazon-ebs" "build-arm64" {
   ami_name       = "arm64-${var.image_name_prefix}-${local.ami_timestamp}"
   instance_type  = "m7g.xlarge"
   region         = "${var.region}"
+  ami_regions    = var.ami_copy_regions
   source_ami     = "${data.amazon-ami.runs-on-ami-arm64.id}"
   ssh_username   = "ubuntu"
   subnet_id      = "${var.subnet_id}"

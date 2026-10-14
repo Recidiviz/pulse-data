@@ -1,24 +1,31 @@
 # This file is consumed by the RunsOn service which is hosted in our AWS account
 # https://runs-on.com/configuration/repo-config/
 runners:
-  # ARM64 pricing is generally ~20% cheaper than x64 and should be used where possible
+  # ARM64 spot is often cheaper per instance than x64, but x64 (c8i/c8a) has much higher
+  # single-thread performance, so compare price per unit of work for CPU-bound jobs.
+  # Prices: https://go.runs-on.com/finder
   arm64:
     image: py311-postgres-arm64
-    family: ["m8g", "r8g", "i8g", "c8g", "c7g", "m7g"]
+    # General-purpose and compute families only; memory- and storage-optimized (r8g, i8g) cost more for no CI benefit
+    family: ["c9g", "m9g", "c8g", "m8g", "c7g", "m7g"]
     extras: ["s3-cache"]
     # Disable SSH access to the runner instances
     ssh: false
-    # Use capacity-optimized strategy to select spot instances with less chance of preemption
-    spot: capacity-optimized
+    # Balance spot price against interruption risk. capacity-optimized ignores price and
+    # was regularly picking pools at ~2x the cost of equivalent instance types
+    spot: price-capacity-optimized
 
   x64:
     image: py311-postgres-x64
-    family: ["m8", "c8"]
+    # Partial names are prefix wildcards (c8i matches c8i-flex, c8id...). m8a.* excludes
+    # m8azn, a high-frequency type that costs ~1.8x m8a on spot
+    family: ["c8i", "c8a", "m8i", "m8a.*"]
     extras: ["s3-cache"]
     # Disable SSH access to the runner instances
     ssh: false
-    # Use capacity-optimized strategy to select spot instances with less chance of preemption
-    spot: capacity-optimized
+    # Balance spot price against interruption risk. capacity-optimized ignores price and
+    # was regularly picking pools at ~2x the cost of equivalent instance types
+    spot: price-capacity-optimized
 
 images:
   py311-postgres-x64:
