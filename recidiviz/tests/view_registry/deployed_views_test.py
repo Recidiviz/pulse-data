@@ -499,6 +499,12 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="llm_eval__llmaj",
                 table_id="notetaking_evaluation_scores_parsed",
             ),
+            # Label Studio's Meetings tasks span every onboarded state, and each one
+            # takes its task_created_at from that state's meeting.
+            BigQueryAddress(
+                dataset_id="llm_eval__label_studio",
+                table_id="meetings_module_quality_submitted_tasks",
+            ),
             # State-agnostic fan-in of every classification policy's recommended spans;
             # reading the unioned view is what lets a newly migrated policy flow through
             # without adding a branch here.

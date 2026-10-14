@@ -32,6 +32,9 @@ from recidiviz.common import attr_validators
 from recidiviz.llm_eval.label_studio.models.label_studio_annotation_field import (
     LabelStudioAnnotationField,
 )
+from recidiviz.llm_eval.label_studio.models.label_studio_task_created_at_source import (
+    LabelStudioTaskCreatedAtSource,
+)
 from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
     LabelStudioTaskDataField,
 )
@@ -130,6 +133,13 @@ class LabelStudioProjectConfig:
     here never overrides what the task itself says. Declare a field only when older objects
     in the prefix predate its addition to the payload, and only for fields the path really
     does carry. Empty for a task whose payloads have always been complete."""
+
+    task_created_at_source: LabelStudioTaskCreatedAtSource | None = attr.ib(
+        validator=attr_validators.is_opt(LabelStudioTaskCreatedAtSource)
+    )
+    """Where the submitted tasks view reads its task_created_at column from, configured
+    under task_created_at. None for a task with no source yet, in which case the view has
+    no task_created_at column."""
 
     task_data_fields: list[LabelStudioTaskDataField] = attr.ib(
         validator=[
@@ -244,6 +254,8 @@ class LabelStudioProjectConfig:
                 f"the index must be 0 or greater. Fix it in "
                 f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
             )
+        if self.task_created_at_source:
+            self._validate_task_created_at_source(self.task_created_at_source)
         unknown_batch = [
             k for k in self.irr_batch_key_fields if k not in data_field_names
         ]
@@ -261,6 +273,18 @@ class LabelStudioProjectConfig:
                 f"that collide with fixed IRR output column names "
                 f"{sorted(IRR_RESERVED_COLUMN_NAMES)}. Remove {reserved_batch} from "
                 f"irr_batch_key_fields."
+            )
+
+    def _validate_task_created_at_source(
+        self, source: LabelStudioTaskCreatedAtSource
+    ) -> None:
+        """Raises unless the given source joins on one of the task's key fields."""
+        if source.task_join_column not in self.task_key_fields:
+            raise ValueError(
+                f"Task [{self.task_name}] has task_created_at task_join_column "
+                f"[{source.task_join_column}], which is not one of the task's key "
+                f"fields. Use one of {self.task_key_fields} in "
+                f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
             )
 
     def validate_task_data(self, task_data: Mapping[str, object]) -> None:
@@ -369,6 +393,12 @@ class LabelStudioProjectConfig:
         path_field_segments = {
             str(k): int(v) for k, v in path_field_segments_raw.items()
         }
+        created_at_dict = d.pop_dict_optional("task_created_at")
+        task_created_at_source = (
+            LabelStudioTaskCreatedAtSource.from_yaml_dict(created_at_dict)
+            if created_at_dict
+            else None
+        )
         task_data_fields = [
             LabelStudioTaskDataField.from_yaml_dict(fd)
             for fd in d.pop_dicts("task_data_fields")
@@ -395,6 +425,7 @@ class LabelStudioProjectConfig:
             task_import_path_contains=path_contains,
             task_import_path_excludes=path_excludes,
             task_import_path_field_segments=path_field_segments,
+            task_created_at_source=task_created_at_source,
             task_data_fields=task_data_fields,
             annotation_fields=annotation_fields,
             primary_key_fields=primary_key_fields,

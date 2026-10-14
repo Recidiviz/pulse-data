@@ -19,6 +19,7 @@ import unittest
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.llm_eval.label_studio.models.label_studio_annotation_field import (
     LabelStudioAnnotationField,
 )
@@ -28,6 +29,9 @@ from recidiviz.llm_eval.label_studio.models.label_studio_field_transform import 
 from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
     LabelStudioProjectConfig,
     collect_label_studio_project_configs,
+)
+from recidiviz.llm_eval.label_studio.models.label_studio_task_created_at_source import (
+    LabelStudioTaskCreatedAtSource,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
     LabelStudioTaskDataField,
@@ -56,6 +60,16 @@ def _annotation_field() -> LabelStudioAnnotationField:
     )
 
 
+def _created_at_source(*, task_join_column: str) -> LabelStudioTaskCreatedAtSource:
+    return LabelStudioTaskCreatedAtSource(
+        description="When the document was uploaded.",
+        table_address=BigQueryAddress(dataset_id="documents", table_id="uploads"),
+        table_join_column="document_id",
+        task_join_column=task_join_column,
+        column="uploaded_at",
+    )
+
+
 def _config(
     *,
     task_import_source_uri: str = "gs://{project_id}-label-studio/imports/test_task/*",
@@ -63,6 +77,7 @@ def _config(
     primary_key_fields: list[str] | None = None,
     task_import_path_excludes: list[str] | None = None,
     task_import_path_field_segments: dict[str, int] | None = None,
+    task_created_at_source: LabelStudioTaskCreatedAtSource | None = None,
 ) -> LabelStudioProjectConfig:
     return LabelStudioProjectConfig(
         task_name="test_task",
@@ -74,6 +89,7 @@ def _config(
         task_import_path_contains="/test_task/",
         task_import_path_excludes=task_import_path_excludes or [],
         task_import_path_field_segments=task_import_path_field_segments or {},
+        task_created_at_source=task_created_at_source,
         task_data_fields=task_data_fields
         or [
             _data_field("document_id"),
@@ -185,6 +201,28 @@ class LabelStudioProjectConfigTest(unittest.TestCase):
             r"recidiviz/llm_eval/label_studio/config/test_task\.yaml\.$",
         ):
             _config(task_import_path_excludes=["   "])
+
+    def test_created_at_source_can_join_on_any_key_field(self) -> None:
+        for task_join_column in ["document_id", "state_code"]:
+            with self.subTest(task_join_column=task_join_column):
+                # Raises if the column is rejected.
+                _config(
+                    task_created_at_source=_created_at_source(
+                        task_join_column=task_join_column
+                    )
+                )
+
+    def test_created_at_source_joining_on_a_non_key_column(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Task \[test_task\] has task_created_at task_join_column "
+            r"\[source_uri\], which is not one of the task's key fields\. Use one of "
+            r"\['document_id', 'state_code'\] in "
+            r"recidiviz/llm_eval/label_studio/config/test_task\.yaml\.$",
+        ):
+            _config(
+                task_created_at_source=_created_at_source(task_join_column="source_uri")
+            )
 
     def test_load_all_configs(self) -> None:
         # Raises if any real config fails to parse or validate.

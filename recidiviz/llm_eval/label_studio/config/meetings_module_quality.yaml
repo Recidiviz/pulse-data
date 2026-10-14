@@ -27,6 +27,21 @@ task_import_source_project_mapping:
   recidiviz-staging: recidiviz-dashboard-staging
   recidiviz-123: recidiviz-dashboard-production
 
+# The meeting's start time stands in for when its task was created, since the export stages
+# a meeting's task shortly after the meeting ends. The task files cannot supply a reliable time:
+# the transcript cleanup job re-saves a file when it deletes the meeting's transcript,
+# resetting its GCS timestamps, and older payloads carry no recording_date.
+task_created_at:
+  source: "joined_table"
+  table: "meetings_dashboards_db_export.Meeting_materialized"
+  table_join_column: "id"
+  task_join_column: "meeting_id"
+  column: "startTime"
+  description: >
+    Start time of the meeting this task is for, from the Meetings DB. Stands in for when
+    the task was created, which is usually the same day. NULL when the meeting is not in
+    the Meetings DB export, which is usually a task staged since the export last refreshed.
+
 primary_key_fields:
   - "meeting_id"
 
