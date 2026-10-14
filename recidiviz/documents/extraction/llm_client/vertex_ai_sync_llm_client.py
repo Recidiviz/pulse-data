@@ -58,6 +58,12 @@ JSON_RESPONSE_MIME_TYPE = "application/json"
 # HTTP status Vertex returns when a request is rate limited.
 _RATE_LIMITED_CODE = 429
 
+# HTTP status Vertex returns when a request is cancelled before it completes —
+# the client disconnecting or the server cancelling in-flight work, which cluster
+# as the connection pool drains at end of run. A 4xx code (so an SDK ClientError,
+# not a ServerError), but transient like the transport-level teardown errors below.
+_CANCELLED_CODE = 499
+
 # HTTP status Vertex returns when the request timed out at the gateway. Every
 # other 5xx server error (500, 502, 503, ...) is a transient SERVER_ERROR.
 _GATEWAY_TIMEOUT_CODE = 504
@@ -79,6 +85,8 @@ def _error_type_for_exception(error: Exception) -> LLMRequestErrorType:
     """Classifies an SDK exception into a request error type."""
     if isinstance(error, errors.ClientError) and error.code == _RATE_LIMITED_CODE:
         return LLMRequestErrorType.RATE_LIMITED
+    if isinstance(error, errors.ClientError) and error.code == _CANCELLED_CODE:
+        return LLMRequestErrorType.SERVER_ERROR
     # Two distinct timeout surfaces: the client giving up locally before any
     # response arrives (an httpx transport timeout — not the builtin
     # TimeoutError, which httpx does not subclass), and the server itself timing

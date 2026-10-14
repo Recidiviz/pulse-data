@@ -480,8 +480,9 @@ class VertexAISyncLLMClientTest(TestCase):
     def test_exceptions_are_classified(self) -> None:
         # A client-side transport timeout (httpx.TimeoutException), a plain
         # TimeoutError, and a 504 gateway-timeout ServerError all classify as
-        # TIMEOUT; other 5xx server errors classify as the retryable SERVER_ERROR,
-        # distinct from the UNKNOWN_ERROR catch-all.
+        # TIMEOUT; other 5xx server errors, transport-level teardown, and a 499
+        # cancellation classify as the retryable SERVER_ERROR, distinct from the
+        # UNKNOWN_ERROR catch-all.
         for error, expected_type in (
             (httpx.ReadTimeout("read timed out"), LLMRequestErrorType.TIMEOUT),
             (TimeoutError("deadline exceeded"), LLMRequestErrorType.TIMEOUT),
@@ -500,6 +501,15 @@ class VertexAISyncLLMClientTest(TestCase):
             (
                 errors.ServerError(
                     500, {"error": {"code": 500, "message": "Internal error."}}
+                ),
+                LLMRequestErrorType.SERVER_ERROR,
+            ),
+            # 499 is a 4xx (so an SDK ClientError, not a ServerError), but a
+            # cancellation is transient — it must not fall through to UNKNOWN_ERROR.
+            (
+                errors.ClientError(
+                    499,
+                    {"error": {"code": 499, "message": "The operation was cancelled."}},
                 ),
                 LLMRequestErrorType.SERVER_ERROR,
             ),
