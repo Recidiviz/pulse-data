@@ -25,6 +25,9 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+)
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
@@ -42,6 +45,23 @@ from recidiviz.common.constants.state.state_supervision_period import (
 
 # Label the housing status period view gives a span where someone was in no facility.
 NOT_IN_FACILITY_LABEL = "NOT IN FACILITY"
+
+# Categories the employment periods view assigns to TPEmpl_Hist.EMPL_NAME. Officers
+# record periods without a job as rows whose employer name says why, e.g. "UNEMPLOYED"
+# or "SSI BENEFITS".
+EMPLOYER_CATEGORY_EMPLOYER = "EMPLOYER"
+EMPLOYER_CATEGORY_UNEMPLOYED = "UNEMPLOYED"
+EMPLOYER_CATEGORY_SOCIAL_SECURITY = "SOCIAL_SECURITY"
+EMPLOYER_CATEGORY_VETERANS_BENEFITS = "VETERANS_BENEFITS"
+EMPLOYER_CATEGORY_IN_KIND_SUPPORT = "IN_KIND_SUPPORT"
+EMPLOYER_CATEGORY_HOMEMAKER = "HOMEMAKER"
+EMPLOYER_CATEGORY_RETIRED = "RETIRED"
+EMPLOYER_CATEGORY_DISABILITY = "DISABILITY"
+EMPLOYER_CATEGORY_STUDENT = "STUDENT"
+EMPLOYER_CATEGORY_UNKNOWN = "UNKNOWN"
+
+# Separator between the status and employer category in the employment status raw text.
+EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR = "@@"
 
 
 def parse_custodial_auth(
@@ -278,3 +298,46 @@ def parse_housing_status_type(
         return StatePersonHousingStatusType.INTERNAL_UNKNOWN
 
     return StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING
+
+
+def parse_employment_status(
+    raw_text: str,
+) -> StateEmploymentPeriodEmploymentStatus:
+    """Returns the employment status for a TPEmpl_Hist status and employer category.
+
+    The status says where the record is in its lifecycle, so a closed job and a
+    closed stretch of unemployment are both "TERMINATED"; the employer category
+    says what the period was. For example, "TERMINATED@@EMPLOYER" gives
+    EMPLOYED_UNKNOWN_AMOUNT, "TERMINATED@@UNEMPLOYED" gives UNEMPLOYED, and
+    "ACTIVE@@SOCIAL_SECURITY" gives ALTERNATE_INCOME_SOURCE.
+    """
+    status, employer_category = raw_text.split(EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR)
+
+    if status in ("FAILED", "CANCELLED"):
+        return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
+    if employer_category in (
+        EMPLOYER_CATEGORY_SOCIAL_SECURITY,
+        EMPLOYER_CATEGORY_VETERANS_BENEFITS,
+        EMPLOYER_CATEGORY_RETIRED,
+        # Supported by family, friends, or a partner rather than a job.
+        EMPLOYER_CATEGORY_IN_KIND_SUPPORT,
+        EMPLOYER_CATEGORY_HOMEMAKER,
+    ):
+        return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
+    if employer_category == EMPLOYER_CATEGORY_DISABILITY:
+        return StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK
+    if employer_category == EMPLOYER_CATEGORY_STUDENT:
+        return StateEmploymentPeriodEmploymentStatus.STUDENT
+    if (
+        status in ("NOT EMPLOYED", "CURRENTLY NOT EMPLOYED")
+        or employer_category == EMPLOYER_CATEGORY_UNEMPLOYED
+    ):
+        return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
+    if employer_category == EMPLOYER_CATEGORY_UNKNOWN:
+        return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
+    if employer_category == EMPLOYER_CATEGORY_EMPLOYER:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+    raise ValueError(
+        f"Unexpected employer category [{employer_category}] in employment status "
+        f"raw text [{raw_text}]"
+    )

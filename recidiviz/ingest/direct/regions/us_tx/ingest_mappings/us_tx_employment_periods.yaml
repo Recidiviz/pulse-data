@@ -9,6 +9,7 @@ input_columns:
   end_date: DATE
   last_verified_date: DATE
   employment_status: STRING
+  employer_category: STRING
   termination_reason: STRING
   employer_name: STRING
   employer_address: STRING
@@ -29,19 +30,13 @@ output:
           employer_address: employer_address
           employment_status:
             $enum_mapping:
-              $raw_text: employment_status
-              $mappings:
-                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
-                  - "Not employed"
-                  - "Currently not employed"
-                StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT:
-                  - "Active"
-                  - "Verified"
-                  - "Proposed"
-                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
-                  - "Failed"
-                  - "Cancelled"
-                  - "Terminated"
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - employment_status
+                    - employer_category
+              $custom_parser: us_tx_custom_enum_parsers.parse_employment_status
           end_reason:
             $enum_mapping:
               $raw_text: termination_reason
