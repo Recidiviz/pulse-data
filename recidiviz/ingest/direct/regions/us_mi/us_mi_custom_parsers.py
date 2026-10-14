@@ -32,6 +32,9 @@ from recidiviz.common.str_field_utils import (
     parse_datetime,
     safe_parse_days_from_duration_pieces,
 )
+from recidiviz.ingest.direct.regions.us_mi.constants import (
+    CLASSIFICATION_2026_VIOLENT_OFFENSE_NUMBERS,
+)
 
 nonbondable_offense_code = [
     "007",  # Assault and Battery (Prisoner victim)
@@ -273,6 +276,21 @@ def parse_class_iii(offense_codes: str) -> str:
             return "True"
 
     return "False"
+
+
+def parse_incarceration_incident_is_violent(offense_codes: str) -> bool:
+    """Returns whether MI's 2026 classification policy treats an incident as violent,
+    which requires a Class I or II incident with at least one offense code whose last
+    two digits are on the violent list."""
+    if (
+        parse_class_i(offense_codes) != "True"
+        and parse_class_ii(offense_codes) != "True"
+    ):
+        return False
+    return any(
+        offense_code[-2:] in CLASSIFICATION_2026_VIOLENT_OFFENSE_NUMBERS
+        for offense_code in offense_codes.split("@@")
+    )
 
 
 def period_before_COMS_migration(period_start_date: str) -> bool:

@@ -55,6 +55,11 @@ output:
                         $args:
                           offense_codes: _offense_code_list
                 $then: $literal_enum(StateIncarcerationIncidentSeverity.THIRD_HIGHEST)
+          is_violent:
+            $custom:
+              $function: us_mi_custom_parsers.parse_incarceration_incident_is_violent
+              $args:
+                offense_codes: _offense_code_list
           incident_metadata:
             $normalized_values_json_dict:
               NONBONDABLE_OFFENSES:

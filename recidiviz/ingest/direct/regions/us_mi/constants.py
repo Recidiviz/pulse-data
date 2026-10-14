@@ -17,6 +17,28 @@
 """This module has reusable strings for various MI specific query fragments and constants referenced in multiple spots in our codebase."""
 from datetime import date
 
+# Offense numbers that MI's 2026 classification policy treats as violent. Each is
+# matched against the last two digits of a three-digit misconduct offense code, so the
+# accomplice, attempt, and conspiracy variants of each offense count too.
+CLASSIFICATION_2026_VIOLENT_OFFENSE_NUMBERS: list[str] = [
+    "02",  # FELONY
+    "03",  # ASSAULT RESULTING IN SERIOUS PHYSICAL INJURY - PRISONER VICTIM
+    "04",  # ASSAULT RESULTING IN SERIOUS PHYSICAL INJURY - STAFF VICTIM
+    "05",  # ASSAULT RESULTING IN SERIOUS PHYSICAL INJURY - OTHER VICTIM
+    "07",  # ASSAULT AND BATTERY - PRISONER VICTIM
+    "08",  # ASSAULT AND BATTERY - STAFF VICTIM
+    "09",  # ASSAULT AND BATTERY - OTHER VICTIM
+    "10",  # HOMICIDE
+    "11",  # ASSAULT AND BATTERY - PRISONER VICTIM
+    "15",  # ASSAULT AND BATTERY - STAFF VICTIM
+    "16",  # ASSAULT AND BATTERY - OTHER VICTIM
+    "13",  # SEXUAL ASSAULT
+    "51",  # SEXUAL ASSAULT - ABUSIVE SEXUAL CONTACT
+    "52",  # SEXUAL ASSAULT - STAFF VICTIM
+    "53",  # SEXUAL ASSAULT - OTHER VICTIM
+    "22",  # INCITE TO RIOT OR STRIKE
+]
+
 # Date when Michigan migrated from OMNI to COMS for supervision data
 COMS_MIGRATION_DATE = date(2023, 8, 14)
 
