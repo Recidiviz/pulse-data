@@ -342,6 +342,7 @@
       normalized_state_incarceration_incident.incident_severity_raw_text,
       normalized_state_incarceration_incident.incident_type,
       normalized_state_incarceration_incident.incident_type_raw_text,
+      normalized_state_incarceration_incident.is_violent,
       normalized_state_incarceration_incident.location_within_facility,
       normalized_state_incarceration_incident.state_code]
     sorts: [normalized_state_incarceration_incident.incident_date desc]

@@ -186,6 +186,12 @@ state_incarceration_incident:
     incident_severity_raw_text: The raw text value of the incident severity.
     incident_type: The type of incident.
     incident_type_raw_text: The raw text value of the incident type.
+    is_violent: >-
+      Whether this incident is designated by the state as being severely violent. Our
+      classification models train on this flag, since these severe incidents are
+      the outcome they aim to predict. It is independent of incident_type VIOLENCE,
+      which is a broader bucket; an incident with incident_type VIOLENCE can have
+      is_violent False, and an incident of another type can have is_violent True.
     location_within_facility: The more specific location where the incident took place.
 
 state_incarceration_incident_outcome:

@@ -63,8 +63,12 @@ _STATE_INCARCERATION_INCIDENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str
     StateIncarcerationIncidentType.REPORT: "Used when a report is submitted "
     "to document a negative incident that does not fall into any of the other "
     "categories.",
-    StateIncarcerationIncidentType.VIOLENCE: "Used when a person is reported for "
-    "violent behavior.",
+    StateIncarcerationIncidentType.VIOLENCE: "Used when an incident included "
+    "violent behavior. This is a broad bucket that each state fills from its own "
+    "incident categories, so it covers minor fights as well as serious assaults. It "
+    "is independent of is_violent, which flags the severely violent incidents that "
+    "our classification models train on; an incident of this type can have "
+    "is_violent False, and an incident of another type can have is_violent True.",
 }
 
 

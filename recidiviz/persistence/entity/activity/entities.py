@@ -1521,6 +1521,10 @@ class StateIncarcerationIncident(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    is_violent: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
     # Attributes
     #   - When
     incident_date: Optional[datetime.date] = attr.ib(

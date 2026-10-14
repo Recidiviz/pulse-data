@@ -2204,6 +2204,10 @@ class NormalizedStateIncarcerationIncident(NormalizedStateEntity, HasExternalIdE
         default=None, validator=attr_validators.is_opt_str
     )
 
+    is_violent: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
     # Attributes
     #   - When
     incident_date: date | None = attr.ib(
