@@ -60,7 +60,14 @@ EMPLOYER_CATEGORY_DISABILITY = "DISABILITY"
 EMPLOYER_CATEGORY_STUDENT = "STUDENT"
 EMPLOYER_CATEGORY_UNKNOWN = "UNKNOWN"
 
-# Separator between the status and employer category in the employment status raw text.
+# Work schedules the employment periods view derives from the weekly hours on a job's
+# TPINCOME wage record.
+WORK_SCHEDULE_FULL_TIME = "FULL_TIME"
+WORK_SCHEDULE_PART_TIME = "PART_TIME"
+WORK_SCHEDULE_UNKNOWN = "UNKNOWN"
+
+# Separator between the status, employer category, and work schedule in the employment
+# status raw text.
 EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR = "@@"
 
 
@@ -303,15 +310,21 @@ def parse_housing_status_type(
 def parse_employment_status(
     raw_text: str,
 ) -> StateEmploymentPeriodEmploymentStatus:
-    """Returns the employment status for a TPEmpl_Hist status and employer category.
+    """Returns the employment status for a TPEmpl_Hist status, employer category, and
+    work schedule.
 
     The status says where the record is in its lifecycle, so a closed job and a
     closed stretch of unemployment are both "TERMINATED"; the employer category
-    says what the period was. For example, "TERMINATED@@EMPLOYER" gives
-    EMPLOYED_UNKNOWN_AMOUNT, "TERMINATED@@UNEMPLOYED" gives UNEMPLOYED, and
-    "ACTIVE@@SOCIAL_SECURITY" gives ALTERNATE_INCOME_SOURCE.
+    says what the period was; the work schedule says whether a job was full- or
+    part-time. For example, "TERMINATED@@EMPLOYER@@FULL_TIME" gives
+    EMPLOYED_FULL_TIME, "TERMINATED@@EMPLOYER@@UNKNOWN" gives
+    EMPLOYED_UNKNOWN_AMOUNT, "TERMINATED@@UNEMPLOYED@@UNKNOWN" gives UNEMPLOYED, and
+    "ACTIVE@@SOCIAL_SECURITY@@UNKNOWN" gives ALTERNATE_INCOME_SOURCE. The work
+    schedule only affects jobs.
     """
-    status, employer_category = raw_text.split(EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR)
+    status, employer_category, work_schedule = raw_text.split(
+        EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR
+    )
 
     if status in ("FAILED", "CANCELLED"):
         return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
@@ -336,8 +349,24 @@ def parse_employment_status(
     if employer_category == EMPLOYER_CATEGORY_UNKNOWN:
         return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
     if employer_category == EMPLOYER_CATEGORY_EMPLOYER:
-        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+        return _parse_job_work_schedule(work_schedule, raw_text)
     raise ValueError(
         f"Unexpected employer category [{employer_category}] in employment status "
         f"raw text [{raw_text}]"
+    )
+
+
+def _parse_job_work_schedule(
+    work_schedule: str, raw_text: str
+) -> StateEmploymentPeriodEmploymentStatus:
+    """Returns the employment status for a job with the given work schedule."""
+    if work_schedule == WORK_SCHEDULE_FULL_TIME:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME
+    if work_schedule == WORK_SCHEDULE_PART_TIME:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME
+    if work_schedule == WORK_SCHEDULE_UNKNOWN:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+    raise ValueError(
+        f"Unexpected work schedule [{work_schedule}] in employment status raw text "
+        f"[{raw_text}]"
     )

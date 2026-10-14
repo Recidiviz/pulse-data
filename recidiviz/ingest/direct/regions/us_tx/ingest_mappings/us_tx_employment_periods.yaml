@@ -10,6 +10,7 @@ input_columns:
   last_verified_date: DATE
   employment_status: STRING
   employer_category: STRING
+  work_schedule: STRING
   termination_reason: STRING
   employer_name: STRING
   employer_address: STRING
@@ -36,6 +37,7 @@ output:
                   $values:
                     - employment_status
                     - employer_category
+                    - work_schedule
               $custom_parser: us_tx_custom_enum_parsers.parse_employment_status
           end_reason:
             $enum_mapping:

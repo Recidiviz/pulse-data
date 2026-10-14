@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_income_employment_periods`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  INCM_SID_NO: STRING
+  INCM_ID: STRING
+  INCM_TYPE_ID: STRING
+  start_date: DATE
+  end_date: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: INCM_SID_NO
+          id_type: $literal("US_TX_SID")
+    employment_periods:
+      - StateEmploymentPeriod:
+          # Prefixed so income IDs can't collide with the TPEmpl_Hist EMPL_IDs used by
+          # the employment_periods view.
+          external_id:
+            $concat:
+              $values:
+                - $literal("INCM")
+                - INCM_ID
+          start_date: start_date
+          end_date: end_date
+          employment_status:
+            $enum_mapping:
+              $raw_text: INCM_TYPE_ID
+              $mappings:
+                StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE:
+                  - "5" # SSI

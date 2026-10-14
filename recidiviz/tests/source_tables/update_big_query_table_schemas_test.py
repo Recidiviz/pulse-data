@@ -2713,6 +2713,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tx_ingest_view_results.assessments",
     "us_tx_ingest_view_results.drug_screens",
     "us_tx_ingest_view_results.employment_periods",
+    "us_tx_ingest_view_results.income_employment_periods",
     "us_tx_ingest_view_results.scheduled_supervision_contacts",
     "us_tx_ingest_view_results.sots_assessment",
     "us_tx_ingest_view_results.state_person",
