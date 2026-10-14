@@ -310,6 +310,12 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         "Temporarily unused until AZ administrative superivsion V1 is deprecated. TODO(AZ-392) (Elise Gonzalez 9/16/2026)"
     ),
     BigQueryAddress.from_str(
+        "classification_score_components_us_ix.copp_class_a_dor"
+    ): "TODO(OBT-54438): This will be consumed in the following ticket. (Cass Park, 10/14/2026)",
+    BigQueryAddress.from_str(
+        "classification_score_components_us_ix.copp_class_b_dor"
+    ): "TODO(OBT-54438): This will be consumed in the following ticket. (Cass Park, 10/14/2026)",
+    BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incarceration_facility_names"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
