@@ -8,6 +8,7 @@ input_columns:
   custody_level: STRING
   period_seq: INTEGER
   location_name: STRING
+  locator_code: STRING
   prison_name: STRING
   jail_location: STRING
   start_date: DATETIME
@@ -286,7 +287,15 @@ output:
                   - SHOCK Incarceration Violator
                   - NULL - Movement Code Correction - No Status Change
           facility: prison_name
-          housing_unit: location_name
+          # Unit name and locator code, e.g. "EYMAN SMU I|D11". Periods with no known
+          # locator code get the unit name alone.
+          housing_unit:
+            $concat:
+              $values:
+                - location_name
+                - locator_code
+              $separator: "|"
+              $include_nulls: False
           custody_level:
             $enum_mapping:
               $raw_text: custody_level
