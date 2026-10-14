@@ -20,6 +20,7 @@ tables and views.
 
 import abc
 import datetime
+import functools
 import json
 import logging
 import os
@@ -861,7 +862,8 @@ class BigQueryClient:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             view_configuration_changed: Whether the view configuration changed since the last materialization.
                 If True, the materialized table will be fully deleted and recreated (wiping things like row-level permissions).
-                If False, the data will just be dropped and overwritten.
+                If False, the data will just be dropped and overwritten, unless the table is not encrypted with the
+                region's default CMEK key, in which case it is deleted and recreated once so it picks the key up.
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
             use_declared_schema: If True, materialize using |view|'s declared schema.
                 If False, materialize using the schema of the deployed view in |view|.address.
@@ -2033,6 +2035,7 @@ class BigQueryClientImpl(BigQueryClient):
         use_query_cache: bool,
         job_labels: Optional[list[ResourceLabel]],
         output_schema: Optional[list[bigquery.SchemaField]],
+        destination_kms_key_name: str | None = None,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -2058,6 +2061,9 @@ class BigQueryClientImpl(BigQueryClient):
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
             output_schema: The schema for the output table
+            destination_kms_key_name: CMEK key to encrypt the destination table
+                with. BigQuery rejects the job unless the key matches an existing
+                destination table's key or the write disposition is WRITE_TRUNCATE.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -2075,6 +2081,10 @@ class BigQueryClientImpl(BigQueryClient):
 
         query_job_config.write_disposition = write_disposition
         query_job_config.query_parameters = query_parameters or []
+        if destination_kms_key_name:
+            query_job_config.destination_encryption_configuration = (
+                bigquery.EncryptionConfiguration(kms_key_name=destination_kms_key_name)
+            )
 
         if clustering_fields or time_partitioning or output_schema:
             query_job_config.clustering_fields = clustering_fields or None
@@ -2342,9 +2352,17 @@ class BigQueryClientImpl(BigQueryClient):
             destination_address.to_str(),
         )
 
+        destination_kms_key_name = self.default_kms_key_name
+        # WRITE_TRUNCATE_DATA keeps the existing table, and with it the existing
+        # encryption, so a table that predates the default key must be recreated
+        # once to pick the key up.
+        recreate_table = view_configuration_changed or (
+            destination_kms_key_name is not None
+            and self._table_lacks_key(destination_address, destination_kms_key_name)
+        )
         write_disposition = (
             bigquery.job.WriteDisposition.WRITE_TRUNCATE
-            if view_configuration_changed
+            if recreate_table
             else bigquery.job.WriteDisposition.WRITE_TRUNCATE_DATA
         )
         materialize_job = self._insert_into_table_from_query_async(
@@ -2357,6 +2375,7 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache=use_query_cache,
             job_labels=job_labels,
             output_schema=view.bq_schema if use_declared_schema else None,
+            destination_kms_key_name=destination_kms_key_name,
         )
         materialize_job.result()
 
@@ -2855,15 +2874,34 @@ class BigQueryClientImpl(BigQueryClient):
                 results.append(f.result())
         return results
 
-    def _default_kms_key_name(self) -> str | None:
-        """Returns the project-level default CMEK key for this client's region, or
-        None if the region has no default key set.
+    def _table_lacks_key(self, address: BigQueryAddress, kms_key_name: str) -> bool:
+        """Returns True if the table exists and is not encrypted with kms_key_name.
+        A missing table returns False because BigQuery applies the project default
+        key when it creates the table."""
+        try:
+            table = self.get_table(address)
+        except exceptions.NotFound:
+            return False
+        encryption = table.encryption_configuration
+        return encryption is None or encryption.kms_key_name != kms_key_name
 
-        BigQuery applies this key to every table it creates in the region, so the
-        Data Transfer Service must be handed the same key to write CMEK destination
-        tables. Regions are configured independently, and a region with no key set
-        returns no row at all.
+    @functools.cached_property
+    def default_kms_key_name(self) -> str | None:
+        """Returns the project-level default CMEK key for this client's region, or
+        None if the region has no default key set. The value is looked up once per
+        client.
+
+        BigQuery applies this key to every table it creates in the region. A write
+        that keeps an existing table, or a Data Transfer Service copy, must name the
+        same key to produce a CMEK table. Regions are configured independently, and
+        a region with no key set returns no row at all.
         """
+        if environment.in_test():
+            # The emulator has no INFORMATION_SCHEMA, so tests run as a region
+            # without a default key.
+            # TODO(https://github.com/goccy/bigquery-emulator/issues/48): Remove
+            #  this branch once the BQ emulator supports INFORMATION_SCHEMA.
+            return None
         query_job = self.run_query_async(
             query_str=f"""
             SELECT option_value
@@ -2942,7 +2980,7 @@ class BigQueryClientImpl(BigQueryClient):
         # itself names a key. Without one the Data Transfer Service skips the table
         # rather than failing it, so the copy finishes with the table silently
         # missing from the destination.
-        destination_kms_key_name = self._default_kms_key_name()
+        destination_kms_key_name = self.default_kms_key_name
         logging.info(
             "Copying into [%s] with default CMEK key [%s]",
             destination_dataset_id,

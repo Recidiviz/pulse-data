@@ -1517,6 +1517,157 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.WriteDisposition.WRITE_APPEND,
         )
 
+    _FAKE_KMS_KEY = (
+        "projects/fake-kms/locations/us/keyRings/ring/cryptoKeys/fake-default-key"
+    )
+
+    def _allow_default_key_lookup(self) -> None:
+        """Turns off the in-test shortcut so default_kms_key_name really queries."""
+        in_test_patcher = patch(
+            "recidiviz.big_query.big_query_client.environment.in_test",
+            return_value=False,
+        )
+        in_test_patcher.start()
+        self.addCleanup(in_test_patcher.stop)
+
+    def _set_default_kms_key(self, kms_key_name: str | None) -> MagicMock:
+        """Makes the mocked client answer the default-key lookup with kms_key_name
+        and every other query with a generic job. Returns the generic job."""
+        self._allow_default_key_lookup()
+        materialize_job = MagicMock()
+        options_job = MagicMock()
+        options_job.result.return_value = (
+            [{"option_value": kms_key_name}] if kms_key_name else []
+        )
+
+        def query_side_effect(query: str, **_kwargs: Any) -> MagicMock:
+            if "EFFECTIVE_PROJECT_OPTIONS" in query:
+                return options_job
+            return materialize_job
+
+        self.mock_client.query.side_effect = query_side_effect
+        return materialize_job
+
+    def _materialize_query_call_kwargs(self) -> dict[str, Any]:
+        """Returns the kwargs of the client.query() call that ran the materialization."""
+        for query_call in self.mock_client.query.call_args_list:
+            if "EFFECTIVE_PROJECT_OPTIONS" not in query_call.kwargs["query"]:
+                return query_call.kwargs
+        raise AssertionError("materialization query was never issued")
+
+    def test_materialize_view_to_table_recreates_table_without_default_key(
+        self,
+    ) -> None:
+        """A materialized table that predates the project default key is recreated
+        with WRITE_TRUNCATE on an unchanged view, because WRITE_TRUNCATE_DATA would
+        keep its old encryption."""
+        self._set_default_kms_key(self._FAKE_KMS_KEY)
+        unkeyed_table = create_autospec(bigquery.Table)
+        unkeyed_table.encryption_configuration = None
+        recreated_table = create_autospec(bigquery.Table)
+        # First get_table is the key check on the existing table, the second is
+        # create_table_with_schema's existence check, the last reads the result.
+        self.mock_client.get_table.side_effect = [
+            unkeyed_table,
+            exceptions.NotFound("not found"),
+            recreated_table,
+        ]
+
+        self.bq_client.materialize_view_to_table(
+            view=self.mock_view, use_query_cache=False, view_configuration_changed=False
+        )
+
+        self.mock_client.delete_table.assert_called_once()
+        self.mock_client.create_table.assert_called_once()
+        self.assertEqual(
+            self._materialize_query_call_kwargs()["job_config"],
+            MaterializeTableJobConfigMatcher(
+                expected_destination="fake-recidiviz-project.fake-dataset.test_view_materialized",
+                expected_write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+                expected_kms_key_name=self._FAKE_KMS_KEY,
+            ),
+        )
+
+    def test_materialize_view_to_table_keyed_table_keeps_truncate_data(self) -> None:
+        """A table already on the default key is written with WRITE_TRUNCATE_DATA as
+        before, with the key named on the job."""
+        self._set_default_kms_key(self._FAKE_KMS_KEY)
+        keyed_table = create_autospec(bigquery.Table)
+        keyed_table.encryption_configuration = bigquery.EncryptionConfiguration(
+            kms_key_name=self._FAKE_KMS_KEY
+        )
+        keyed_table.clustering_fields = None
+        keyed_table.time_partitioning = None
+        keyed_table.schema = self.mock_view.bq_schema
+        self.mock_client.get_table.return_value = keyed_table
+
+        self.bq_client.materialize_view_to_table(
+            view=self.mock_view, use_query_cache=False, view_configuration_changed=False
+        )
+
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(
+            self._materialize_query_call_kwargs()["job_config"],
+            MaterializeTableJobConfigMatcher(
+                expected_destination="fake-recidiviz-project.fake-dataset.test_view_materialized",
+                expected_write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
+                expected_kms_key_name=self._FAKE_KMS_KEY,
+            ),
+        )
+
+    def test_materialize_view_to_table_without_default_key_is_unchanged(
+        self,
+    ) -> None:
+        """A region with no default key materializes exactly as before: no key on
+        the job and no extra get_table for the key check."""
+        self._set_default_kms_key(None)
+        existing_table = create_autospec(bigquery.Table)
+        existing_table.clustering_fields = None
+        existing_table.time_partitioning = None
+        existing_table.schema = self.mock_view.bq_schema
+        self.mock_client.get_table.return_value = existing_table
+
+        self.bq_client.materialize_view_to_table(
+            view=self.mock_view, use_query_cache=False, view_configuration_changed=False
+        )
+
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(
+            self._materialize_query_call_kwargs()["job_config"],
+            MaterializeTableJobConfigMatcher(
+                expected_destination="fake-recidiviz-project.fake-dataset.test_view_materialized",
+                expected_write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
+                expected_kms_key_name=None,
+            ),
+        )
+        # Only the schema check reads the table; nothing reads it for a key.
+        self.assertEqual(2, self.mock_client.get_table.call_count)
+
+    def test_default_kms_key_name_is_looked_up_once_per_client(self) -> None:
+        self._set_default_kms_key(self._FAKE_KMS_KEY)
+        keyed_table = create_autospec(bigquery.Table)
+        keyed_table.encryption_configuration = bigquery.EncryptionConfiguration(
+            kms_key_name=self._FAKE_KMS_KEY
+        )
+        keyed_table.clustering_fields = None
+        keyed_table.time_partitioning = None
+        keyed_table.schema = self.mock_view.bq_schema
+        self.mock_client.get_table.return_value = keyed_table
+
+        for _ in range(3):
+            self.bq_client.materialize_view_to_table(
+                view=self.mock_view,
+                use_query_cache=False,
+                view_configuration_changed=False,
+            )
+
+        options_queries = [
+            query_call
+            for query_call in self.mock_client.query.call_args_list
+            if "EFFECTIVE_PROJECT_OPTIONS" in query_call.kwargs["query"]
+        ]
+        self.assertEqual(1, len(options_queries))
+
     def test_create_table_with_schema(self) -> None:
         """Tests that the create_table_with_schema function calls the create_table function on the client."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
@@ -2355,6 +2506,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_copy_dataset_tables_across_regions_uses_project_default_cmek_key(
         self, mock_transfer_client_fn: MagicMock
     ) -> None:
+        self._allow_default_key_lookup()
         kms_key_name = (
             "projects/fake-cmek-project/locations/us/keyRings/data-cjis"
             "/cryptoKeys/fake-recidiviz-project-bq-default"
@@ -2379,6 +2531,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_copy_dataset_tables_across_regions_region_has_no_cmek_key(
         self, mock_transfer_client_fn: MagicMock
     ) -> None:
+        self._allow_default_key_lookup()
         self.mock_client.query.return_value.result.return_value = []
 
         transfer_config = self._run_cross_region_copy_of_one_table(
@@ -3523,14 +3676,26 @@ class MaterializeTableJobConfigMatcher:
     materialize_view_to_table() function.
     """
 
-    def __init__(self, expected_destination: str):
+    def __init__(
+        self,
+        expected_destination: str,
+        expected_write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
+        expected_kms_key_name: str | None = None,
+    ):
         self.expected_destination = expected_destination
+        self.expected_write_disposition = expected_write_disposition
+        self.expected_kms_key_name = expected_kms_key_name
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, QueryJobConfig):
             return False
 
-        if other.write_disposition != bigquery.WriteDisposition.WRITE_APPEND:
+        if other.write_disposition != self.expected_write_disposition:
+            return False
+
+        encryption = other.destination_encryption_configuration
+        actual_kms_key_name = encryption.kms_key_name if encryption else None
+        if actual_kms_key_name != self.expected_kms_key_name:
             return False
 
         return str(other.destination) == self.expected_destination
