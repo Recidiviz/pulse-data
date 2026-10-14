@@ -4,6 +4,12 @@ test_update_managed_view_graph_endpoint:
   - --entrypoint=UpdateManagedViewGraphEntrypoint
   - --view_graph_name=calculation
 
+test_update_llm_extraction_managed_view_graph_endpoint:
+  - --entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint
+  - --state_code=US_XX
+  - --extractor_collection_name=CASE_NOTE_EMPLOYMENT_INFO
+  - --stage=first_order
+
 test_refresh_bq_dataset_task:
   - --entrypoint=BigQueryRefreshEntrypoint
   - --schema_type=OPERATIONS

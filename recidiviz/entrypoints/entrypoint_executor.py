@@ -100,6 +100,9 @@ from recidiviz.entrypoints.validation.validate import ValidationEntrypoint
 from recidiviz.entrypoints.view_update.update_big_query_source_table_schemata_entrypoint import (
     UpdateBigQuerySourceTableSchemataEntrypoint,
 )
+from recidiviz.entrypoints.view_update.update_llm_extraction_managed_view_graph import (
+    UpdateLLMExtractionManagedViewGraphEntrypoint,
+)
 from recidiviz.entrypoints.view_update.update_managed_view_graph import (
     UpdateManagedViewGraphEntrypoint,
 )
@@ -134,6 +137,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     ValidateSourceTableDatasetsEntrypoint,
     ValidationEntrypoint,
     UpdateManagedViewGraphEntrypoint,
+    UpdateLLMExtractionManagedViewGraphEntrypoint,
     IngestCheckRawDataFlashingEntrypoint,
 }
 

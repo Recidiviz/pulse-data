@@ -63,6 +63,15 @@ UpdateManagedViewGraphEntrypoint:
       cpu: 1000m
       memory: 2Gi
 
+# Builds only a single LLM extractor's view graph at a single stage, not the full
+# deployed view graph registry, so it needs far less than
+# UpdateManagedViewGraphEntrypoint above.
+UpdateLLMExtractionManagedViewGraphEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
 UpdateBigQuerySourceTableSchemataEntrypoint:
   default_resources:
     limits:

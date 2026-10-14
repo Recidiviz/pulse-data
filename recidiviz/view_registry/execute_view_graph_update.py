@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility for updating the views in a deployed view graph."""
+
 import datetime
 import logging
 
@@ -26,7 +27,10 @@ from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
-from recidiviz.big_query.big_query_view_graph import ResolvedBigQueryViewGraph
+from recidiviz.big_query.big_query_view_graph import (
+    BigQueryViewGraph,
+    ResolvedBigQueryViewGraph,
+)
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
@@ -115,8 +119,12 @@ class PerViewUpdateStatsPersister(BigQueryRowStreamer):
         self.stream_rows(rows)
 
 
+# TODO(OBT-46620) we only need the BigQueryViewGraph type here, update
+# call sites to pass in BigQueryViewGraph instances only.
 @gcp_only
-def execute_view_graph_update(view_graph: ResolvedBigQueryViewGraph) -> None:
+def execute_view_graph_update(
+    view_graph: BigQueryViewGraph | ResolvedBigQueryViewGraph,
+) -> None:
     """Updates and materializes all views in the given view graph, then records
     success stats in BigQuery."""
     start_time = datetime.datetime.now(tz=pytz.UTC)
