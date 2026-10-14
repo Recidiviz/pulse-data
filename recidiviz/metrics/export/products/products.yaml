@@ -144,8 +144,6 @@ products:
         environment: production
       - state_code: US_IX
         environment: production
-      - state_code: US_MA
-        environment: production
       - state_code: US_MI
         environment: production
       - state_code: US_MO
