@@ -1,2 +1,10 @@
 reference_data_type: acronyms
-entries: []
+entries:
+  - acronym: CRES
+    expansion: Community Re-Entry Specialist
+  - acronym: IOV
+    expansion: Initial Office Visit
+  - acronym: PPI
+    expansion: Pre-Parole Investigation
+  - acronym: ROR
+    expansion: Residence of Record
