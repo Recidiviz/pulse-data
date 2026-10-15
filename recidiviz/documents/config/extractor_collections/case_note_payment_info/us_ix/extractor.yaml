@@ -1,0 +1,20 @@
+extractor_collection_name: CASE_NOTE_PAYMENT_INFO
+
+input_document_collection_name: SUPERVISION_CASE_NOTES
+
+golden_eval:
+  source_sheet_uri: "https://docs.google.com/spreadsheets/d/1lNVloVNAt9-ORJJ2lbm5wrVB6gteuO_AAnQzG_k3zyw/edit?gid=88395250#gid=88395250"
+  accuracy_thresholds:
+    unit: 1.0
+    sample: 1.0
+
+document_metadata_filter_query_template: |
+  SELECT DISTINCT document_contents_id
+  FROM `{input_document_collection_metadata_address}`
+  WHERE document_contents_id IS NOT NULL
+    AND note_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
+
+prompt_vars:
+  state_agency_name: "Idaho Department of Correction"
+  input_document_orientation: |
+    These are Idaho ATLAS case notes written by supervision officers.

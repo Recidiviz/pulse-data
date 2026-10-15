@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=./../../../store/yaml_schema/schema.json
+description: >
+  Case notes from US_IX supervision officers documenting interactions with
+  people on supervision, including office visits, home visits, phone calls, and
+  other contact types.
+
+document_descriptor:
+  singular: supervision case note
+  plural: supervision case notes
+
+root_entity_id_type: person_external_id
+
+document_metadata_columns:
+  - name: note_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the case note (OffenderNoteId)
+  - name: note_date
+    field_type: DATE
+    description: The date the case note was recorded (NoteDate)
+  - name: note_type
+    field_type: STRING
+    description: The type of note (e.g., Supervision Notes, Facility Notes)
+  - name: contact_modes
+    field_type: STRING
+    description: Comma-separated list of contact modes (e.g., Office Visit, Phone Call)
+
+document_generation_query: |
+  SELECT
+    noteInfo.OffenderId AS person_external_id,
+    'US_IX_DOC' AS person_external_id_type,
+    notes.OffenderNoteId AS note_id,
+    refNoteType.NoteTypeDesc AS note_type,
+    contact_mode_agg.contact_modes,
+    notes.Details AS document_text,
+    TIMESTAMP(noteInfo.NoteDate) AS document_update_datetime,
+  FROM
+    `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNote_latest` notes
+  LEFT JOIN
+    `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_latest` noteInfo
+  USING
+    (OffenderNoteInfoId)
+  LEFT JOIN
+    `{project_id}.us_ix_raw_data_up_to_date_views.ref_NoteType_latest` refNoteType
+  USING
+    (NoteTypeId)
+  LEFT JOIN (
+    SELECT
+      OffenderNoteInfoId,
+      STRING_AGG(ContactModeDesc, ', ' ORDER BY ContactModeDesc) AS contact_modes
+    FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_ContactMode_latest`
+    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_ContactMode_latest`
+      USING(ContactModeId)
+    GROUP BY OffenderNoteInfoId
+  ) contact_mode_agg
+  USING
+    (OffenderNoteInfoId)
+  WHERE notes.Details IS NOT NULL
+    AND TRIM(notes.Details) != ''
+    AND refNoteType.NoteTypeDesc = "Supervision Notes"

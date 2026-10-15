@@ -336,6 +336,27 @@ datasets:
     default_table_expiration_ms: 86400000
   us_id_state:
     description: Contains un-normalized versions of the entities produced by the ingest pipeline for US_ID.
+  us_ix_document_contents:
+    description: Document contents tables for Idaho ATLAS
+  us_ix_document_extraction_results:
+    description: View-derived source tables materialized into [us_ix_document_extraction_results].
+  us_ix_document_extraction_results__entity_mentions:
+    description: View-derived source tables materialized into [us_ix_document_extraction_results__entity_mentions].
+  us_ix_document_extraction_results__pre_resolution:
+    description: View-derived source tables materialized into [us_ix_document_extraction_results__pre_resolution].
+  us_ix_document_extraction_results__raw:
+    description: Raw LLM document-extraction result tables for Idaho ATLAS
+  us_ix_document_extraction_results__unvalidated:
+    description: View-derived source tables materialized into [us_ix_document_extraction_results__unvalidated].
+  us_ix_document_extraction_results__validated:
+    description: Validated LLM document-extraction result tables for Idaho ATLAS
+  us_ix_document_extraction_validation_audit:
+    description: LLM document-extraction validation audit tables for Idaho ATLAS
+  us_ix_document_store_metadata:
+    description: Document store metadata tables for Idaho ATLAS
+  us_ix_document_store_temp:
+    description: Temporary tables used during document store processing for Idaho ATLAS
+    default_table_expiration_ms: 1209600000
   us_ix_identity_cluster:
     description: Stores clustered identity output produced by the identity ingest pipeline for tenant US_IX, consumed by the Identity Service.
     service_account_roles:
