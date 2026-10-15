@@ -518,18 +518,8 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
     -- Approved by Time Comp (Eligible Now): ACIS TPR/DTP date within 30 to 180 days
     SELECT
         * EXCEPT(criteria_reason),
-        CASE
-            WHEN SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_{opp_name.lower()}_date') AS DATE)
-                    < DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 30 DAY)
-                THEN "FAST_TRACK"
-            ELSE "APPROVED_BY_TIME_COMP"
-        END AS metadata_tab_description,
-    CASE
-            WHEN SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_{opp_name.lower()}_date') AS DATE)
-                    < DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 30 DAY)
-                THEN "FAST_TRACK"
-            ELSE "APPROVED_BY_TIME_COMP"
-        END AS metadata_tab_name,
+        "APPROVED_BY_TIME_COMP" AS metadata_tab_description,
+        "APPROVED_BY_TIME_COMP" AS metadata_tab_name,
     FROM acis_{opp_name.lower()}_date_approaching,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
     WHERE SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_WITHIN_6_MONTHS_OF_ACIS_{opp_name.upper()}_DATE"
