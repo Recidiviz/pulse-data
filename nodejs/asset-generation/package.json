@@ -39,7 +39,10 @@
     "zod-validation-error": "^2.1.0"
   },
   "resolutions": {
-    "tar": ">=7.5.19"
+    "tar": ">=7.5.19",
+    "proxy-addr": "2.0.8",
+    "body-parser": "1.20.6",
+    "fast-xml-builder": "1.2.1"
   },
   "devDependencies": {
     "@recidiviz/eslint-config": "^3.0.0",
