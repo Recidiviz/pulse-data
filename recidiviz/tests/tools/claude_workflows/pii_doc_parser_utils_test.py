@@ -320,7 +320,14 @@ class TestTicketHeaderRegexAgreement(unittest.TestCase):
 
     def test_every_linear_identifier_is_accepted_as_header_key(self) -> None:
         linear_full_re = re.compile(LinearIssue.issue_regex())
-        for identifier in ["OBT-1", "OBT-36212", "ABC-12345", "X-9", "STATE-100"]:
+        for identifier in [
+            "OBT-1",
+            "OBT-36212",
+            "ABC-12345",
+            "X-9",
+            "STATE-100",
+            "JII2-10",
+        ]:
             with self.subTest(identifier=identifier):
                 # Sanity check: LinearIssue itself considers this a valid ID.
                 self.assertIsNotNone(linear_full_re.fullmatch(identifier))

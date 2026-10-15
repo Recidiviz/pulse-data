@@ -69,15 +69,15 @@ _PII_DOC_LINK_RE = re.compile(r"docs\.google\.com/document/d/([A-Za-z0-9_-]+)")
 # inline references like "see #12345". These shapes were validated against the
 # real go/github-pii doc.
 #
-# The Linear-ID grammar ("[A-Z]+-\d+") is the source-of-truth grammar
+# The Linear-ID grammar ("[A-Z][A-Z0-9]*-\d+") is the source-of-truth grammar
 # LinearIssue.issue_regex() (recidiviz/issue_tracking/linear/linear_issue.py).
 # It is duplicated (not imported) because this module ships standalone in the
 # Cloud Build container and is mirrored by the dependency-free skill script, so
 # it must not import recidiviz. A test asserts the two stay in agreement.
 _TICKET_HEADER_RE = re.compile(
     r"^\s*(?:"
-    r"#\s*(?P<linear_hash>[A-Z]+-\d+)"  # "#OBT-…" or "# OBT-…"
-    r"|(?P<linear_bare>[A-Z]+-\d+)"  # bare "OBT-…" (unambiguous)
+    r"#\s*(?P<linear_hash>[A-Z][A-Z0-9]*-\d+)"  # "#OBT-…" or "# OBT-…"
+    r"|(?P<linear_bare>[A-Z][A-Z0-9]*-\d+)"  # bare "OBT-…" (unambiguous)
     r"|#\s*(?P<github>\d+)"  # "#<digits>" or "# <digits>"
     r")(?=\s|$)"
 )

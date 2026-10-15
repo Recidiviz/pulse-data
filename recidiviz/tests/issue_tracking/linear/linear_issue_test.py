@@ -30,11 +30,19 @@ class TestLinearIssue(unittest.TestCase):
         self.assertEqual(issue.number, 12345)
         self.assertEqual(str(issue), "OBT-12345")
 
+    def test_from_string_team_key_with_digit(self) -> None:
+        issue = LinearIssue.from_string("JII2-10")
+        self.assertEqual(issue.team_prefix, "JII2")
+        self.assertEqual(issue.number, 10)
+        self.assertEqual(str(issue), "JII2-10")
+
     def test_from_string_invalid(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, r"\[#123\]"):
             LinearIssue.from_string("#123")
         with self.assertRaises(ValueError):
             LinearIssue.from_string("XXXX")
+        with self.assertRaises(ValueError):
+            LinearIssue.from_string("2JII-10")
 
     def test_issue_identifier(self) -> None:
         issue = LinearIssue(team_prefix="OBT", number=789)
@@ -43,5 +51,6 @@ class TestLinearIssue(unittest.TestCase):
     def test_todo_regex(self) -> None:
         self.assertRegex("TODO(OBT-12345)", LinearIssue.todo_regex())
         self.assertRegex("TODO(ENG-1)", LinearIssue.todo_regex())
+        self.assertRegex("TODO(JII2-10)", LinearIssue.todo_regex())
         self.assertNotRegex("TODO(#123)", LinearIssue.todo_regex())
         self.assertNotRegex("TODO(XXXX)", LinearIssue.todo_regex())

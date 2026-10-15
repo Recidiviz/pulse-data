@@ -44,7 +44,7 @@ class LinearIssue(Issue):
 
     @classmethod
     def issue_regex(cls) -> str:
-        return r"(?P<team_prefix>[A-Z]+)-(?P<linear_number>\d+)"
+        return r"(?P<team_prefix>[A-Z][A-Z0-9]*)-(?P<linear_number>\d+)"
 
     @classmethod
     def _from_match(cls, match: Match[str]) -> "LinearIssue":
@@ -60,7 +60,8 @@ class LinearIssue(Issue):
         match = re.fullmatch(cls.issue_regex(), issue_string)
         if match is None:
             raise ValueError(
-                "String did not match format '<PREFIX>-<NUMBER>' (e.g. 'OBT-12345')"
+                f"String [{issue_string}] did not match format '<PREFIX>-<NUMBER>' "
+                f"(e.g. 'OBT-12345')"
             )
         return cls._from_match(match)
 
