@@ -13,6 +13,7 @@ input_columns:
   legacy_assessment_degree_level: STRING
   AssessmentDegreeId: STRING
   AssessmentDegreeDesc: STRING
+  assessment_category_scores: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -157,3 +158,4 @@ output:
           assessment_metadata:
             $normalized_values_json_dict:
               RESULTNOTE: ResultNote
+              CATEGORY_SCORES: assessment_category_scores
