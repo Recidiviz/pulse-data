@@ -418,7 +418,7 @@ def escape_absconsion_or_eluding_police_case_notes(
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON ne.person_id = pei.person_id
          AND ne.state_code = pei.state_code
-         AND pei.id_type = 'US_IX_IDOC'
+         AND pei.id_type = 'US_IX_DOC'
     WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
         AND meets_criteria IS FALSE
     GROUP BY 1,2,3,4,5
@@ -436,7 +436,7 @@ def escape_absconsion_or_eluding_police_case_notes(
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON na.person_id = pei.person_id
          AND na.state_code = pei.state_code
-         AND pei.id_type = 'US_ID_DOC'
+         AND pei.id_type = 'US_IX_DOC'
     WHERE pei.state_code = 'US_IX'
         AND CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
             AND meets_criteria IS FALSE
@@ -456,7 +456,7 @@ def escape_absconsion_or_eluding_police_case_notes(
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON ne.person_id = pei.person_id
             AND ne.state_code = pei.state_code
-            AND pei.id_type = 'US_IX_IDOC'
+            AND pei.id_type = 'US_IX_DOC'
     WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
         AND meets_criteria IS FALSE
     GROUP BY 1,2,3,4,5"""
