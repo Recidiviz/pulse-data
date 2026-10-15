@@ -38,6 +38,24 @@ components:
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
 
+    # The VPC, subnetwork, firewall rules, VPN jump box and IPsec tunnel to
+    # Nebraska. All of it already exists and was created by hand; this component
+    # imports it rather than creating anything. `vpn_shared_secret` is required
+    # and deliberately not set here - the API never returns the real value, the
+    # component ignores changes to it, and it must not live in git. Pass any
+    # non-empty placeholder in the environment at plan time, as a TF_VAR_ entry
+    # named after the variable. See the component README.
+    us-ne-ingest-network:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        zone: us-central1-c
+        # IAP TCP forwarding. This is the only rule in the project admitting
+        # that range, so it is what human SSH to the jump box depends on.
+        # https://cloud.google.com/iap/docs/using-tcp-forwarding#create-firewall-rule
+        jump_box_ssh_source_ranges:
+          - 35.235.240.0/20
+
     # A Cloud Run job will push data to this bucket daily, then the replication rules defined for this bucket cause the data to be
     # pushed to the recidiviz-staging-direct-ingest-state-us-ne and recidiviz-123-direct-ingest-state-us-ne buckets in
     # the recidiviz-staging and recidiviz-123 projects, respectively.
