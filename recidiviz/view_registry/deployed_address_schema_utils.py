@@ -99,6 +99,9 @@ from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ar import
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_az import (
     US_AZ_RESIDENT_DATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_co import (
+    US_CO_RESIDENT_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ix import (
     US_IX_RESIDENT_DATA_VIEW_BUILDER,
 )
@@ -167,6 +170,9 @@ from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata im
 )
 from recidiviz.calculator.query.state.views.workflows.us_az.resident_metadata import (
     US_AZ_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_co.resident_metadata import (
+    US_CO_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
@@ -329,6 +335,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_AR_PROGRAM_REFERRALS_PREPROCESSED_VIEW_BUILDER.address,
         US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_CO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,
         US_IA_PROGRAM_INVENTORY_OFFICE_VISITS_VIEW_BUILDER.address,
         US_IA_PROGRAM_INVENTORY_OCCURRING_INTERVENTIONS_VIEW_BUILDER.address,
@@ -361,6 +368,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
         US_AR_RESIDENT_DATA_VIEW_BUILDER.address,
         US_AZ_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_CO_RESIDENT_DATA_VIEW_BUILDER.address,
         US_IX_RESIDENT_DATA_VIEW_BUILDER.address,
         US_MA_RESIDENT_DATA_VIEW_BUILDER.address,
         US_NC_RESIDENT_DATA_VIEW_BUILDER.address,
