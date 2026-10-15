@@ -32,6 +32,15 @@ from recidiviz.utils.types import assert_type
 SFTP_SOCKET_PACKET_READ_TIMEOUT = 180.0  # 3 minutes, in seconds
 
 
+def _host_key_algorithms(host_key: paramiko.PKey) -> list[str]:
+    """Returns the host key algorithms that negotiate |host_key|'s type, matching
+    the ones paramiko's Transport.connect(hostkey=...) would allow.
+    """
+    if isinstance(host_key, paramiko.RSAKey):
+        return ["rsa-sha2-512", "rsa-sha2-256", "ssh-rsa"]
+    return [host_key.get_name()]
+
+
 class RecidivizSFTPHook(SFTPHook):
     """Custom SFTPHook that supports two-factor authenticated SFTP servers."""
 
@@ -59,7 +68,10 @@ class RecidivizSFTPHook(SFTPHook):
 
     def get_conn(self) -> paramiko.SFTPClient:  # type: ignore[override]
         """Retrieves the SFTP connection. This is overridden from the base class in order
-        to support private key and password two-factor authentication.
+        to support private key and password two-factor authentication. The server's host
+        key is compared against the connection's `host_key` extra, which the base
+        SSHHook parses into self.host_key. A missing or mismatched key is logged but
+        does not block the connection.
         """
         if self.conn is None:
             connection = self.get_connection(assert_type(self.ssh_conn_id, str))
@@ -74,8 +86,25 @@ class RecidivizSFTPHook(SFTPHook):
                 (connection.host, connection.port or 22), **self._transport_kwargs
             )
 
+            if self.host_key is None:
+                logging.warning(
+                    "No host_key configured for connection [%s]; the SFTP server's "
+                    "host key will not be verified.",
+                    self.ssh_conn_id,
+                )
+            else:
+                security_options = transport.get_security_options()
+                configured_key_types = _host_key_algorithms(self.host_key)
+                security_options.key_types = configured_key_types + [
+                    key_type
+                    for key_type in security_options.key_types
+                    if key_type not in configured_key_types
+                ]
+
             try:
                 transport.connect()
+                if self.host_key is not None:
+                    self._log_host_key_audit(transport.get_remote_server_key())
                 if private_key:
                     logging.info("starting public key auth flow...")
                     next_steps = transport.auth_publickey(connection.login, private_key)
@@ -113,3 +142,28 @@ class RecidivizSFTPHook(SFTPHook):
             client.sock.settimeout(SFTP_SOCKET_PACKET_READ_TIMEOUT)
             self.conn = client
         return self.conn
+
+    def _log_host_key_audit(self, server_key: paramiko.PKey) -> None:
+        configured_key = assert_type(self.host_key, paramiko.PKey)
+        if (
+            server_key.get_name() == configured_key.get_name()
+            and server_key.asbytes() == configured_key.asbytes()
+        ):
+            logging.info(
+                "SFTP host key for connection [%s] matches the configured host_key "
+                "[%s %s].",
+                self.ssh_conn_id,
+                configured_key.get_name(),
+                configured_key.fingerprint,
+            )
+            return
+        logging.warning(
+            "SFTP host key mismatch for connection [%s]: configured host_key is "
+            "[%s %s] but the server presented [%s %s]. Connecting anyway because "
+            "host keys are not enforced yet.",
+            self.ssh_conn_id,
+            configured_key.get_name(),
+            configured_key.fingerprint,
+            server_key.get_name(),
+            server_key.fingerprint,
+        )
