@@ -111,6 +111,9 @@ from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ma import
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_nc import (
     US_NC_RESIDENT_DATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii.state_specific_data.us_nd import (
+    US_ND_RESIDENT_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ne import (
     US_NE_RESIDENT_DATA_VIEW_BUILDER,
 )
@@ -191,6 +194,9 @@ from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata im
 )
 from recidiviz.calculator.query.state.views.workflows.us_nc.resident_metadata import (
     US_NC_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_nd.resident_metadata import (
+    US_ND_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ne.client_metadata import (
     US_NE_CLIENT_METADATA_VIEW_BUILDER,
@@ -333,9 +339,6 @@ def state_specific_deployed_views_without_state_code_columns(
         US_AR_EDUCATION_RECORDS_PREPROCESSED_VIEW_BUILDER.address,
         US_AR_PROGRAM_ACHIEVEMENTS_PREPROCESSED_VIEW_BUILDER.address,
         US_AR_PROGRAM_REFERRALS_PREPROCESSED_VIEW_BUILDER.address,
-        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_AZ_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_CO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,
         US_IA_PROGRAM_INVENTORY_OFFICE_VISITS_VIEW_BUILDER.address,
         US_IA_PROGRAM_INVENTORY_OCCURRING_INTERVENTIONS_VIEW_BUILDER.address,
@@ -344,36 +347,45 @@ def state_specific_deployed_views_without_state_code_columns(
         US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER.address,
         US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address,
         US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER.address,
-        US_IX_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_ME_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_NE_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_UT_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_MI_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_NC_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
+        # state metadata views are single-state by definition, and including a state code
+        # causes a duplicate field when they are bundled into JSON blobs for export
         US_MO_CLIENT_METADATA_VIEW_BUILDER.address,
-        US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
-        US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address,
-        US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
-        US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address,
-        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address,
-        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address,
         US_TN_CLIENT_METADATA_VIEW_BUILDER.address,
-        US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
-        US_TN_TOMIS_CODESTABLE_ANALOG_VIEW_BUILDER.address,
-        US_TN_TOMIS_CODESDESCRIPTION_ANALOG_VIEW_BUILDER.address,
         US_TX_CLIENT_METADATA_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
+        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_AZ_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_CO_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_IX_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_ME_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_MI_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_NC_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_ND_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_NE_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_UT_RESIDENT_METADATA_VIEW_BUILDER.address,
+        # these are the tablet app equivalent of metadata views,
+        # same reasoning about JSON bundling applies here
         US_AR_RESIDENT_DATA_VIEW_BUILDER.address,
         US_AZ_RESIDENT_DATA_VIEW_BUILDER.address,
         US_CO_RESIDENT_DATA_VIEW_BUILDER.address,
         US_IX_RESIDENT_DATA_VIEW_BUILDER.address,
         US_MA_RESIDENT_DATA_VIEW_BUILDER.address,
         US_NC_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_ND_RESIDENT_DATA_VIEW_BUILDER.address,
         US_NE_RESIDENT_DATA_VIEW_BUILDER.address,
         US_TN_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
+        US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address,
+        US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
+        US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address,
+        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address,
+        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address,
+        US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
+        US_TN_TOMIS_CODESTABLE_ANALOG_VIEW_BUILDER.address,
+        US_TN_TOMIS_CODESDESCRIPTION_ANALOG_VIEW_BUILDER.address,
         US_CO_JII_APP_PROGRAM_CATALOG_VIEW_BUILDER.address,
         US_CO_POLICY_PROGRAM_CATALOG_VIEW_BUILDER.address,
         US_CO_METADATA_PROGRAM_CATALOG_VIEW_BUILDER.address,
