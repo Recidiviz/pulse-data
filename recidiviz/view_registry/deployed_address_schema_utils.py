@@ -48,6 +48,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_p
 from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_jii_app_program_catalog import (
+    US_CO_JII_APP_PROGRAM_CATALOG_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_metadata_program_catalog import (
+    US_CO_METADATA_PROGRAM_CATALOG_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_policy_program_catalog import (
+    US_CO_POLICY_PROGRAM_CATALOG_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_completed_sessions import (
     US_IA_PROGRAM_INVENTORY_COMPLETED_SESSIONS_VIEW_BUILDER,
 )
@@ -357,6 +366,9 @@ def state_specific_deployed_views_without_state_code_columns(
         US_NC_RESIDENT_DATA_VIEW_BUILDER.address,
         US_NE_RESIDENT_DATA_VIEW_BUILDER.address,
         US_TN_RESIDENT_DATA_VIEW_BUILDER.address,
+        US_CO_JII_APP_PROGRAM_CATALOG_VIEW_BUILDER.address,
+        US_CO_POLICY_PROGRAM_CATALOG_VIEW_BUILDER.address,
+        US_CO_METADATA_PROGRAM_CATALOG_VIEW_BUILDER.address,
     }
 
     return {

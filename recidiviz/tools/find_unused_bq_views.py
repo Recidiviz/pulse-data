@@ -344,6 +344,22 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         "assessment_events. Unused until that dashboard reads it. TODO(#108522) "
         "(Hugo Salas, 2026-10-13)"
     ),
+    BigQueryAddress.from_str("analyst_data.us_co_jii_app_program_catalog"): (
+        "View to generate program catalog for JII app in US_CO. Output of view is "
+        "saved to a Google Sheet which is accessed by the front end to power the app. "
+        "Tracked in TODO(OBT-54521). (jkgerig, 2026-07-15)"
+    ),
+    BigQueryAddress.from_str("analyst_data.us_co_metadata_program_catalog"): (
+        "View to generate program catalog metadata that is manually curated by CDOC "
+        "staff and Recidiviz staff. Output of view is saved to a Google Sheet which is "
+        "shared with CDOC staff. "
+        "Tracked in TODO(OBT-54521). (jkgerig, 2026-07-15)"
+    ),
+    BigQueryAddress.from_str("analyst_data.us_co_policy_program_catalog"): (
+        "View to generate program catalog for policy documentation in US_CO. Output of "
+        "view is saved to a CSV which is shared with CDOC staff. "
+        "Tracked in TODO(OBT-54521). (jkgerig, 2026-07-15)"
+    ),
 }
 
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
