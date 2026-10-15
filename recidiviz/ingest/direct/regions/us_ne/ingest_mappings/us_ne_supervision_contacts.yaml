@@ -46,6 +46,7 @@ output:
                   - Administrative/Other
                   - LE/NCJIS Check
                   - Employment Program/Resource
+                  - Mid-States Organized Crime Information Center (MOCIC)
           contact_method:
             $enum_mapping:
               $raw_text: contactLocation
