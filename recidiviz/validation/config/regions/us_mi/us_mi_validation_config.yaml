@@ -37,6 +37,11 @@ max_allowed_error_overrides:
       changes we've made for outliers, where IN_CUSTODY supervision periods are no longer counted
       in the supervision population because we now infer an IP during those periods.
 num_allowed_rows_overrides:
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 130000
+    override_reason:
+      Current failing level as of 10/7/26 is 121,024 rows. Expected because we now infer
+      in-custody SPs when there's an IP overlapping with an SP.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 50000
     override_reason:

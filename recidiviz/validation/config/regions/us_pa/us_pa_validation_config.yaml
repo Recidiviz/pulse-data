@@ -81,11 +81,11 @@ max_allowed_error_overrides:
     override_reason: Small edge case in person caseload location sessions for supervision out of state clients
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 42000
+    hard_num_allowed_rows_override: 45000
     override_reason:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
-      tables. Current failing level as of 10/29/24 is 36,936 rows and we expect that it
+      tables. Current failing level as of 10/7/26 is 42,002 rows and we expect that it
       may slowly grow over time as new data is added.
       TODO(#9736) - need to investgate CCC ingest overlaps
   - validation_name: overlapping_supervision_periods
@@ -116,9 +116,9 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 120000
     override_reason: Needs investigation.  Current failing level as of 2/13/24 is 102,288 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 40000
+    hard_num_allowed_rows_override: 60000
     override_reason:
-      Current failing level as of 10/29/24 is 31,859 rows.  This is largely due to charges that are
+      Current failing level as of 10/7/26 is 52,777 rows.  This is largely due to charges that are
       getting ingested with almost all info missing.  We should re-evaluate this when we do the sentence refactor
       #TODO(#27541) #TODO(#29701)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels

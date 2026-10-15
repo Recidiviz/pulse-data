@@ -42,6 +42,11 @@ max_allowed_error_overrides:
     soft_max_allowed_error_override: .001
     override_reason: Small edge case in person caseload location sessions for supervision out of state clients
 num_allowed_rows_overrides:
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 1200
+    override_reason:
+      Current failing level as of 10/7/26 is 1,047 rows. Validation moved to v2 charges;
+      IA had no v1 charges so the CJARS script hasn't been run against IA's v2 descriptions yet.
   - validation_name: in_custody_sps_have_associated_ip
     hard_num_allowed_rows_override: 2000
     override_reason: Current failing level as of 1/27/25 is 1475 rows in staging.  To investigate when we flesh out incarceration periods more. TODO(#37755)
