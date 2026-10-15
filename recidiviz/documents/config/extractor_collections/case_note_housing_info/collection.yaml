@@ -190,11 +190,13 @@ output_schema:
     - name: address
       type: STRING
       description: >
-        Full residential address of the person's actual residence. Supervision
-        office addresses, facility names, and partial addresses should not be
-        extracted. Standardize to e.g. "123 First Road, City, State Zip" with
-        title case and consistent abbreviations (St, Ave, Blvd, Dr). Omit if no
-        full address found or person is unhoused.
+        Residential address of the person's actual residence. Supervision
+        office addresses and facility names should not be extracted. Format
+        as street address, then city, state, and zip code, e.g.
+        "123 First Road, Denver, CO 80202", with title case and consistent
+        abbreviations (St, Ave, Blvd, Dr). Partial addresses are valid;
+        include only the parts the source text states, e.g. "123 First Road".
+        Omit if no address found or person is unhoused.
       applicable_when_value:
         primary_status: [housed]
 
