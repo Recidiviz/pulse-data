@@ -401,3 +401,119 @@ class CleanupUserOverridesTest(TestCase):
             )
         ).scalar()
         self.assertEqual(modified_user, user_override)
+
+    def test_pseudonymized_id_set_to_null_with_matching_external_id(self) -> None:
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                external_id=self.roster_user.external_id,
+                pseudonymized_id=self.roster_user.pseudonymized_id,
+                # add one different attribute so it doesn't get deleted
+                district="different district",
+            )
+        )
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertIsNone(modified_user.external_id)
+        self.assertIsNone(modified_user.pseudonymized_id)
+
+    def test_stale_pseudonymized_id_without_external_id_set_to_null(self) -> None:
+        """An earlier cleanup nulled this override's matching external_id but left its
+        pseudonymized_id, and Roster's external_id has since changed, so the leftover
+        pseudonymized_id no longer matches Roster's."""
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                external_id=None,
+                pseudonymized_id="pseudo-old",
+                # add one different attribute so it doesn't get deleted
+                district="different district",
+            )
+        )
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertIsNone(modified_user.pseudonymized_id)
+
+    def test_pseudonymized_id_with_different_external_id_does_not_change(
+        self,
+    ) -> None:
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                external_id="456",
+                pseudonymized_id="pseudo-456",
+                # add one different attribute so it doesn't get deleted
+                district="different district",
+            )
+        )
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertEqual(modified_user.external_id, "456")
+        self.assertEqual(modified_user.pseudonymized_id, "pseudo-456")
+
+    def test_dry_run_does_not_null_stale_pseudonymized_id(self) -> None:
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                external_id=None,
+                pseudonymized_id="pseudo-old",
+                # add one different attribute so it doesn't get deleted
+                district="different district",
+            )
+        )
+        cleanup_user_overrides(
+            self.session, dry_run=True, state_code=self.roster_user.state_code
+        )
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertEqual(modified_user.pseudonymized_id, "pseudo-old")
+
+    def test_pseudonymized_id_kept_when_roster_has_none(self) -> None:
+        """Roster sync can clear a user's external_id, leaving no Roster
+        pseudonymized_id to fall back to, so the override's stays."""
+        self.roster_user.external_id = None
+        self.roster_user.pseudonymized_id = None
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                external_id=None,
+                pseudonymized_id="pseudo-old",
+                # add one different attribute so it doesn't get deleted
+                district="different district",
+            )
+        )
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertEqual(modified_user.pseudonymized_id, "pseudo-old")

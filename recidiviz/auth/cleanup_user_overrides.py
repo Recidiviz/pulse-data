@@ -16,8 +16,9 @@
 # =============================================================================
 """
 Tool for removing entries from the UserOverride table where the data is equivalent to a row in the
-Roster table. If a single column is equivalent, it sets it to null in the override. If all relevant
-columns are equivalent, it removes the entry.
+Roster table. If a single column is equivalent, it sets it to null in the override. It also nulls a
+pseudonymized_id whose override has no external_id of its own. If all relevant columns are
+equivalent, it removes the entry.
 
 This is run automatically after roster sync, or it can be run manually via tools/auth/cleanup_user_overrides.py.
 """
@@ -101,10 +102,33 @@ def _run_update_stmt(
 
 
 def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> None:
-    """Clean up the overrides. First, update equivalent columns to null. Then, delete any entries
-    where all relevant columns are null."""
+    """Clean up the overrides. First, update equivalent columns to null, along with any
+    pseudonymized_id left without the external_id it was generated from. Then, delete any
+    entries where all relevant columns are null."""
     for column, comparison in _COLUMN_TO_COMPARISON_CLAUSE.items():
         _run_update_stmt(session, dry_run, state_code, column, comparison)
+
+    # The users endpoint stores a pseudonymized_id generated from the external_id an
+    # override sets. Once that external_id is nulled above because it matches Roster, the
+    # stored pseudonymized_id no longer belongs to any override external_id, and it would
+    # keep taking priority over the Roster pseudonymized_id after Roster's external_id
+    # changes. Matching on the external_id comparison too covers dry runs, where the
+    # external_id has not actually been nulled. The Roster pseudonymized_id must be set so
+    # the user always falls back to a pseudonymized_id rather than ending up with none.
+    _run_update_stmt(
+        session,
+        dry_run,
+        state_code,
+        "pseudonymized_id",
+        and_(
+            UserOverride.pseudonymized_id.isnot(None),
+            Roster.pseudonymized_id.isnot(None),
+            or_(
+                UserOverride.external_id.is_(None),
+                _COLUMN_TO_COMPARISON_CLAUSE["external_id"],
+            ),
+        ),
+    )
 
     if dry_run:
         # In dry run mode we need to check if the Roster/UserOverride columns have equivalent values
