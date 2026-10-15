@@ -93,12 +93,12 @@ custom:
       COMS_dm_Staff_Supervisors:
         date_range_exclusions:
           - datetime_start_inclusive: "2026-07-01T00:00:00Z"
-            datetime_end_exclusive: "2026-10-13T00:00:00Z"
+            datetime_end_exclusive: "2026-10-26T00:00:00Z"
             reason:
               "This table's row count jumped from ~4,081 to ~5,368 on 2026-10-13
-              as part of the COMS migration data transfer. Excluding pre-migration
-              imports from the median so future validation compares against the
-              new baseline."
+              as part of the COMS migration data transfer. Excluding imports up until
+              the migration date from the median since we expect a bunch of extra additions
+              leading up to the cutover"
 
   US_MO:
     file_tags:
