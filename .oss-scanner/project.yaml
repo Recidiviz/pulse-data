@@ -1,0 +1,16 @@
+# Enrollment of Recidiviz/pulse-data in Anthropic's OSS Scanner (https://red.anthropic.com/oss-scanner).
+# This file is the source of truth. The scanner reads its copy from
+# https://github.com/anthropics/oss-scanner at projects/pulse-data/project.yaml; change this file first,
+# then send the same change there as a pull request. The Dockerfile and threat model next to this file are
+# read from the public mirror directly, so a change to them needs no pull request to Anthropic.
+repo: https://github.com/Recidiviz/pulse-data#main
+
+# Recidiviz's published security contact (see the org-wide SECURITY.md). Addresses here are public.
+primary_contact: security@recidiviz.org
+
+homepage: https://recidiviz.org
+
+disabled: false
+
+dockerfile: .oss-scanner/Dockerfile
+threat_model: .oss-scanner/threat_model.md
