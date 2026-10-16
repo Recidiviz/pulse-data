@@ -294,8 +294,8 @@ confirm this on a case-by-case basis.
 ## Dependency Security
 
 - Pin dependency versions in production code.
-- Do not install packages with known high or critical CVEs — find an
-  alternative or escalate to Peter or Dan.
+- Do not install packages with known high or critical CVEs; find an
+  alternative.
 - Pay extra attention to dependencies that handle authentication, PII,
   cryptography, or have native extensions.
 - New packages with very low download counts (hundreds/week) should be
