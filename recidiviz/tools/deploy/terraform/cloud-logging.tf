@@ -125,13 +125,14 @@ resource "google_bigquery_dataset_access" "user_mgmt_logs_dataset_log_writer_acc
 locals {
   cmek_logging_projects = toset(var.project_id == "recidiviz-staging" ? [var.project_id] : [])
   cmek_project_id       = "cmek-82ade411-5705-4461-b2cb-9"
+  logging_region        = var.us_central_region
 }
 
 data "google_kms_key_ring" "logging_cmek" {
   for_each = local.cmek_logging_projects
   project  = local.cmek_project_id
   name     = "logging-cmek"
-  location = var.us_central_region
+  location = local.logging_region
 }
 
 resource "google_kms_crypto_key" "logging_cmek" {
@@ -150,7 +151,7 @@ resource "google_kms_crypto_key" "logging_cmek" {
 import {
   for_each = local.cmek_logging_projects
   to       = google_kms_crypto_key.logging_cmek[each.key]
-  id       = "projects/${local.cmek_project_id}/locations/${var.us_central_region}/keyRings/logging-cmek/cryptoKeys/${each.key}-logging"
+  id       = "projects/${local.cmek_project_id}/locations/${local.logging_region}/keyRings/logging-cmek/cryptoKeys/${each.key}-logging"
 }
 
 # Cloud Logging writes to the bucket as the project's Logging service agent.
@@ -164,7 +165,7 @@ resource "google_kms_crypto_key_iam_member" "logging_sa_cmek_user" {
 resource "google_logging_project_bucket_config" "default_regional" {
   for_each       = local.cmek_logging_projects
   project        = each.key
-  location       = var.us_central_region
+  location       = local.logging_region
   bucket_id      = "default-regional"
   retention_days = 30
   description    = "Regional, CMEK-encrypted destination for the _Default sink"
@@ -180,6 +181,18 @@ resource "google_logging_project_bucket_config" "default_regional" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+# Allow Managed Airflow to read logs. RecidivizDataflowFlexTemplateOperator needs to
+# read Dataflow error logs to decide whether to retry a failed job in a fallback region.
+resource "google_logging_log_view_iam_member" "composer_default_regional_view_accessor" {
+  for_each = local.cmek_logging_projects
+  parent   = "projects/${each.key}"
+  location = local.logging_region
+  bucket   = google_logging_project_bucket_config.default_regional[each.key].bucket_id
+  name     = "_AllLogs"
+  role     = "roles/logging.viewAccessor"
+  member   = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # The project's built-in _Default sink, adopted here so its destination can be
