@@ -73,9 +73,6 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_preprocessed import (
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
-    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_base import (
     CLIENT_RECORD_BASE_VIEW_BUILDER,
 )
@@ -151,9 +148,6 @@ from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopba
 US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress, dict[BigQueryAddress, str]
 ] = {
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.BoardAction_latest"): {
-        US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: "TODO(TN-1969): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.CAFScore_latest"): {
         US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER.address: "TODO(TN-1971): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1972): Migrate this reference off of legacy TOMIS 1.0 raw data",
