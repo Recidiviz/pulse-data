@@ -13,6 +13,7 @@ input_columns:
   # StateSentence information
   SentenceImposedDate: DATE
   ISCSentencyType: STRING
+  LifeSentenceFlag: STRING
 
   # These columns have credit should we need to add them in the future.
   # ISCCreditDays: INTEGER
@@ -60,6 +61,10 @@ output:
                 StateSentenceType.STATE_PRISON:
                   - C # Custody
           imposed_date: SentenceImposedDate
+          is_life:
+            $equal:
+              - LifeSentenceFlag
+              - $literal("Y")
           # All of these sentences are from other US states or Puerto Rico.
           sentencing_authority: $literal_enum(StateSentencingAuthority.OTHER_STATE)
           # Tag ISC sentences with SENTENCE_SOURCE so downstream consumers
