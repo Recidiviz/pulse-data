@@ -425,6 +425,9 @@ from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_null_p
 from recidiviz.validation.views.state.us_co_edovo_records_preprocessed_no_unmatched_cdoc_completions import (
     US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_CDOC_COMPLETIONS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_co_policy_program_catalog_unmapped_category_group import (
+    US_CO_POLICY_PROGRAM_CATALOG_UNMAPPED_CATEGORY_GROUP_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_co_work_engagement_multiple_sessions_credited_same_month import (
     US_CO_WORK_ENGAGEMENT_MULTIPLE_SESSIONS_CREDITED_SAME_MONTH_VIEW_BUILDER,
 )
@@ -1464,6 +1467,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_CO_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_CDOC_COMPLETIONS_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_CO_POLICY_PROGRAM_CATALOG_UNMAPPED_CATEGORY_GROUP_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_CO_WORK_ENGAGEMENT_NO_DUPLICATE_PERSON_SESSION_MONTHS_VIEW_BUILDER,
