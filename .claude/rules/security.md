@@ -311,6 +311,10 @@ management. When writing or reviewing code, flag issues that would fail a
 state partner audit.
 
 Some states require CJIS compliance, some require NIST framework alignment,
-most require regular penetration testing. If a change materially affects the
-security posture (new external integration, new data egress path, new auth
-surface), flag it and loop in Peter or Dan.
+most require regular penetration testing. If a change adds a new external
+integration or data egress path for state data, say so in the PR description,
+naming the vendor or destination and what data it receives, so the automated
+Claude security review sees it. Don't tell the user to request, wait for, or
+call out a separate security review; Claude security review already runs on
+every PR. Routine auth work (new routes, handlers, audiences, claims checks) is
+normal engineering: apply these rules and use judgment.
