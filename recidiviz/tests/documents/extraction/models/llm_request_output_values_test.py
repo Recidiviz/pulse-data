@@ -40,19 +40,18 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
     LLMOutputFieldType,
+    NullReason,
     PrimitiveScalarLLMRequestOutputSchemaField,
     ScalarValuedLLMRequestOutputSchemaField,
     assert_scalar_valued_field,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
-    CITATIONS_FIELD_NAME,
     CONFIDENCE_LEVEL_FIELD_NAME,
     ENTITIES_FIELD_NAME,
     ENTITY_ID_FIELD_NAME,
     ENTRY_NUMS_FIELD_NAME,
     IS_RELEVANT_FIELD_NAME,
     RESULT_KEY,
-    VALUE_FIELD_NAME,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
@@ -693,30 +692,50 @@ class LLMRequestOutputValuesInferredFieldOutputsTest(_LLMRequestOutputValuesTest
         self.assertEqual(ConfidenceLevel.EXPLICIT, field_output.confidence_level)
         self.assertIsNone(field_output.adversarial_interpretation)
 
-    def test_null_out_value_writes_through_to_output_json(self) -> None:
-        # The views read a field's value at `$.<field>.value`, so nulling that key
-        # is what withholds the value downstream; the companion metadata beside it
-        # is deliberately left in place.
+    def test_take_null_branch_writes_through_to_output_json(self) -> None:
         output_values = self._full_output_values()
         field_output = self._field_output(output_values, "location")
-        field_output.null_out_value()
+        field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
 
-        location_json = assert_type(output_values.output_json, dict)[RESULT_KEY][
-            "location"
-        ]
-        self.assertIsNone(location_json[VALUE_FIELD_NAME])
-        self.assertEqual("inferred", location_json[CONFIDENCE_LEVEL_FIELD_NAME])
-        self.assertTrue(location_json[CITATIONS_FIELD_NAME])
+        self.assertEqual(
+            {
+                "null_reason": "not_applicable",
+                "confidence_level": "inferred",
+                "adversarial_interpretation": None,
+                "citations": [{"text": "citation for Kitchen", "start": 0, "end": 15}],
+            },
+            assert_type(output_values.output_json, dict)[RESULT_KEY]["location"],
+        )
+        self.assertFalse(field_output.has_value)
+        self.assertIsNone(field_output.value)
 
-    def test_null_out_value_on_null_branch_raises(self) -> None:
+    def test_take_null_branch_on_null_branch_raises(self) -> None:
         field_output = self._field_output(
             self._full_output_values(location=None), "location"
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"^Cannot null out field \[location\], which took its null branch",
+            r"^Cannot null out already-null field \[location\]\.$",
         ):
-            field_output.null_out_value()
+            field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
+
+    def test_take_null_branch_on_required_field_raises(self) -> None:
+        field_output = self._field_output(self._full_output_values(), "primary_status")
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot null out required field \[primary_status\]\.$",
+        ):
+            field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
+
+    def test_take_null_branch_on_required_array_sub_field_raises(self) -> None:
+        field_output = self._field_output(
+            self._full_output_values(), "assignments[0].assignment_name"
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot null out required field \[assignments\[0\]\.assignment_name\]\.$",
+        ):
+            field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
 
     def test_structural_field_rejected(self) -> None:
         # `status_note` is STRUCTURAL, so it carries none of the companion
@@ -822,8 +841,8 @@ class LLMRequestOutputValuesDeepCopyTest(_LLMRequestOutputValuesTestBase):
         copied = output_values.deep_copy()
 
         for field_output in copied.inferred_field_outputs():
-            if field_output.has_value:
-                field_output.null_out_value()
+            if field_output.has_value and not field_output.field.required:
+                field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
 
         self.assertEqual(before, output_values.output_json)
         self.assertNotEqual(before, copied.output_json)

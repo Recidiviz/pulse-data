@@ -26,7 +26,9 @@ in one audit. Each check itself is tested directly in its own test file.
 
 The quality adjustments are exercised alongside them: they are applied to the
 validated copy of a result that cleared every extraction-error check, and
-audited without costing the document a retry.
+audited without costing the document a retry. The validator then re-runs the
+extraction-error checks on the adjusted copy, and an adjustment that leaves it
+invalid fails the document instead.
 
 Every case but the hallucinated-citation one validates its result against a
 source document built to ground the result's citations, so that the citation
@@ -842,9 +844,59 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
         self.assertEqual("location", issue.field_name)
         self.assertFalse(issue.will_retry)
 
-        self.assertIsNone(validated_output.output_json["result"]["location"]["value"])
+        self.assertEqual(
+            {
+                "null_reason": "not_applicable",
+                "confidence_level": "speculative",
+                "adversarial_interpretation": _ADVERSARIAL,
+                "citations": grounded_json["result"]["location"]["citations"],
+            },
+            validated_output.output_json["result"]["location"],
+        )
         # The raw result the extractor returned is left exactly as it was.
         self.assertEqual("Kitchen", grounded_json["result"]["location"]["value"])
+
+    def test_adjustment_that_breaks_a_sibling_constraint_fails_and_retries(
+        self,
+    ) -> None:
+        # Nulling the below-minimum `rate_amount` leaves `rate_period` set while
+        # the field it applies only alongside is null.
+        result_json = fake_minimal_relevant_result_json()
+        result_json["result"]["assignments"] = [
+            {
+                "assignment_name": build_inferred_field_result_json("Dish duty"),
+                "assignment_type": build_inferred_field_result_json("internal"),
+                "rate_amount": build_inferred_field_result_json(12.5, "inferred"),
+                "rate_period": build_inferred_field_result_json("hourly"),
+            }
+        ]
+        with self.assertLogs(level="ERROR") as logs:
+            validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            validation.result_type_override,
+        )
+        self.assertTrue(validation.will_retry)
+        self.assertEqual(
+            [
+                (
+                    ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
+                    "assignments[0].rate_amount",
+                ),
+                (
+                    ValidationCheckType.SEMANTIC_CONSISTENCY,
+                    "assignments[0].rate_period",
+                ),
+            ],
+            [(issue.check_type, issue.field_name) for issue in validation.audit_issues],
+        )
+        [log_line] = logs.output
+        self.assertIn(
+            "Quality adjustments left document [doc1] non-conformant", log_line
+        )
 
     def test_extraction_error_suppresses_the_confidence_adjustment(self) -> None:
         # The document has a low-confidence optional field the adjustment would
@@ -1265,3 +1317,32 @@ class LLMRelevantButNoValuesPresentValidatorWiringTest(_ValidatorTestBase):
         )
         # The finding is about the document as a whole, so it names no field.
         self.assertIsNone(issue.field_name)
+
+    def test_all_values_withheld_by_adjustment_downgrades_result(self) -> None:
+        # Both fields carry values the confidence adjustment withholds, leaving
+        # a relevant document with nothing extracted.
+        result_json = wrap_in_result_key(
+            {
+                IS_RELEVANT_FIELD_NAME: True,
+                "first_note": build_inferred_field_result_json(
+                    "Dish duty", "speculative", adversarial_interpretation=_ADVERSARIAL
+                ),
+                "second_note": build_inferred_field_result_json(
+                    "Laundry", "speculative", adversarial_interpretation=_ADVERSARIAL
+                ),
+            }
+        )
+        with self.assertLogs(level="ERROR"):
+            validation, _ = self._validate_grounded(result_json)
+
+        self.assertFalse(validation.passed_validation)
+        self.assertIsNone(validation.validated_output)
+        self.assertTrue(validation.will_retry)
+        self.assertEqual(
+            [
+                (ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL, "first_note"),
+                (ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL, "second_note"),
+                (ValidationCheckType.RELEVANT_BUT_NO_VALUES_PRESENT, None),
+            ],
+            [(issue.check_type, issue.field_name) for issue in validation.audit_issues],
+        )

@@ -47,6 +47,9 @@ from recidiviz.documents.extraction.validation.llm_document_validation_result im
     ValidationCheckType,
     ValidationIssue,
 )
+from recidiviz.documents.extraction.validation.structural_conformance_check import (
+    StructuralConformanceCheck,
+)
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_inferred_field_result_json,
@@ -116,11 +119,10 @@ class ConfidenceThresholdAdjustmentTest(TestCase):
             "its value was withheld",
             issue.detail,
         )
-        # The value is withheld, but everything that explains why it was
-        # withheld survives into the validated output.
+        # The companion metadata survives into the validated output.
         self.assertEqual(
             {
-                "value": None,
+                "null_reason": "not_applicable",
                 "confidence_level": "speculative",
                 "adversarial_interpretation": "Could be the Yard.",
                 "citations": [{"text": "citation for Kitchen", "start": 0, "end": 15}],
@@ -185,8 +187,14 @@ class ConfidenceThresholdAdjustmentTest(TestCase):
             "confidence level [inferred], below its minimum of [explicit]",
             issue.detail,
         )
-        self.assertIsNone(
-            adjusted_json["result"]["assignments"][0]["rate_amount"]["value"]
+        self.assertEqual(
+            {
+                "null_reason": "not_applicable",
+                "confidence_level": "inferred",
+                "adversarial_interpretation": None,
+                "citations": [{"text": "citation for 12.5", "start": 0, "end": 15}],
+            },
+            adjusted_json["result"]["assignments"][0]["rate_amount"],
         )
         # Its sibling sub-fields, which clear their own bars, are untouched.
         self.assertEqual(
@@ -204,13 +212,15 @@ class ConfidenceThresholdAdjustmentTest(TestCase):
         self.assertEqual(
             ["assignments[0].assignment_type"], [issue.field_name for issue in issues]
         )
-        self.assertIsNone(
-            adjusted_json["result"]["assignments"][0]["assignment_type"]["value"]
+        self.assertEqual(
+            "not_applicable",
+            adjusted_json["result"]["assignments"][0]["assignment_type"]["null_reason"],
         )
         # The second element took the null branch for the same sub-field and is
         # untouched.
-        self.assertNotIn(
-            "value", adjusted_json["result"]["assignments"][1]["assignment_type"]
+        self.assertEqual(
+            "no_info_found",
+            adjusted_json["result"]["assignments"][1]["assignment_type"]["null_reason"],
         )
 
     def test_every_field_below_its_minimum_adjusted(self) -> None:
@@ -227,10 +237,43 @@ class ConfidenceThresholdAdjustmentTest(TestCase):
             ["location", "assignments[0].rate_amount"],
             [issue.field_name for issue in issues],
         )
-        self.assertIsNone(adjusted_json["result"]["location"]["value"])
-        self.assertIsNone(
-            adjusted_json["result"]["assignments"][0]["rate_amount"]["value"]
+        self.assertEqual(
+            "not_applicable", adjusted_json["result"]["location"]["null_reason"]
         )
+        self.assertEqual(
+            "not_applicable",
+            adjusted_json["result"]["assignments"][0]["rate_amount"]["null_reason"],
+        )
+
+    def test_adjusted_output_conforms_to_schema(self) -> None:
+        # Every optional INFERRED field falls short at once.
+        result_json = fake_all_fields_result_json()
+        result_json["result"]["location"] = build_inferred_field_result_json(
+            "Kitchen", "speculative", adversarial_interpretation="Could be the Yard."
+        )
+        result_json["result"]["assignments"][0][
+            "assignment_type"
+        ] = build_inferred_field_result_json(
+            "internal", "speculative", adversarial_interpretation="Could be external."
+        )
+        result_json["result"]["assignments"][0][
+            "rate_amount"
+        ] = build_inferred_field_result_json(12.5, "inferred")
+        adjusted, issues = ConfidenceThresholdAdjustment.apply(
+            output=LLMRequestOutputValues(
+                output_schema=self.output_schema, output_json=result_json
+            )
+        )
+
+        self.assertEqual(
+            [
+                "location",
+                "assignments[0].assignment_type",
+                "assignments[0].rate_amount",
+            ],
+            [issue.field_name for issue in issues],
+        )
+        self.assertEqual([], StructuralConformanceCheck.issues(output=adjusted))
 
     def test_output_it_is_given_left_untouched(self) -> None:
         # The adjustment rewrites a copy, so the raw output the extractor
@@ -251,4 +294,7 @@ class ConfidenceThresholdAdjustmentTest(TestCase):
         self.assertEqual(1, len(issues))
         self.assertEqual(before, raw_output.output_json)
         self.assertIsNot(raw_output.output_json, adjusted_output.output_json)
-        self.assertIsNone(adjusted_output.output_json["result"]["location"]["value"])
+        self.assertEqual(
+            "not_applicable",
+            adjusted_output.output_json["result"]["location"]["null_reason"],
+        )

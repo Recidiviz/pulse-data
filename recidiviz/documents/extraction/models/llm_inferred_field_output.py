@@ -20,7 +20,8 @@ confidence level, adversarial interpretation, and citations — that the
 validation checks read.
 
 Each class here is a live view over a node of a result's output JSON: the
-accessors read through to that JSON, and `null_out_value` writes through to it.
+accessors read through to that JSON, and take_null_branch and correct_offsets
+write through to it.
 """
 from typing import Any
 
@@ -31,6 +32,7 @@ from recidiviz.documents.extraction.exceptions import LLMOutputParsingError
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ConfidenceLevel,
     LLMRequestOutputSchemaField,
+    NullReason,
 )
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     ADVERSARIAL_INTERPRETATION_FIELD_NAME,
@@ -104,6 +106,19 @@ class FieldCitation:
     def correct_offsets(self, *, start: int, end: int) -> None:
         """Rewrites this citation's reported offsets to |start| / |end| in the
         output JSON this view reads from."""
+        prefix = (
+            f"Cannot correct citation [{self.index}] on field "
+            f"[{self.field_display_name}] to offsets [{start}, {end})"
+        )
+        if start < 0:
+            raise ValueError(f"{prefix}: start must be non-negative.")
+        if end <= start:
+            raise ValueError(f"{prefix}: end must be after start.")
+        if end - start != len(self.text):
+            raise ValueError(
+                f"{prefix}: span length [{end - start}] does not match the quoted "
+                f"text length [{len(self.text)}]."
+            )
         self.citation_json[CITATION_START_FIELD_NAME] = start
         self.citation_json[CITATION_END_FIELD_NAME] = end
 
@@ -251,13 +266,17 @@ class LLMInferredFieldOutput:
             for index, citation_json in enumerate(self.field_json[CITATIONS_FIELD_NAME])
         ]
 
-    def null_out_value(self) -> None:
-        """Nulls this field's extracted value in the output JSON this view reads
-        from, leaving every companion-metadata key in place.
+    def take_null_branch(self, *, null_reason: NullReason) -> None:
+        """Rewrites this field's wrapper from its value branch to its null branch
+        Every companion-metadata key is left in place.
+
+        Raises a ValueError when the field is required or already took its null branch.
         """
+        if self.field.required:
+            raise ValueError(f"Cannot null out required field [{self.display_name}].")
         if not self.has_value:
             raise ValueError(
-                f"Cannot null out field [{self.display_name}], which took its "
-                f"null branch and has no value to null out."
+                f"Cannot null out already-null field [{self.display_name}]."
             )
-        self.field_json[VALUE_FIELD_NAME] = None
+        del self.field_json[VALUE_FIELD_NAME]
+        self.field_json[NULL_REASON_FIELD_NAME] = null_reason.value

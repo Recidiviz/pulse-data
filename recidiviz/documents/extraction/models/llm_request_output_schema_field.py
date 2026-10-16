@@ -290,6 +290,9 @@ class NullReason(DescribedEnum):
     @classmethod
     def get_value_descriptions(cls) -> dict["DescribedEnum", str]:
         return {
+            # ConfidenceThresholdAdjustment also writes NOT_APPLICABLE when it
+            # withholds a value whose confidence level fell below the field's
+            # minimum. The model only sees the description below.
             cls.NOT_APPLICABLE: (
                 "The field does not apply given the values of the other fields it "
                 "depends on — for example, a field that is only meaningful for a "

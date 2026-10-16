@@ -33,9 +33,14 @@ it holding:
    entity-resolution extractor, the ER-only checks run in this stage too,
    validating the clustering result against the composite document's complete
    entry set.
+4. **The extraction-error checks again**, on the adjusted output. An adjustment
+   can leave the output invalid, e.g. by nulling a field another field applies
+   only alongside. A finding here fails the document like one on the raw output
+   and is logged as an error.
 """
 
 import datetime
+import logging
 
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
@@ -127,7 +132,7 @@ class LLMExtractionResultValidator:
         document_text = SourceDocumentText(text=source_document_text)
 
         extraction_error_issues = self._extraction_error_issues(
-            raw_output=raw_output,
+            output=raw_output,
             document_text=document_text,
             expected_entry_nums=expected_entry_nums,
         )
@@ -151,6 +156,30 @@ class LLMExtractionResultValidator:
             output=validated_output, source_document_text=document_text
         )
         adjustment_issues.extend(citation_drift_issues)
+
+        adjusted_output_issues = self._extraction_error_issues(
+            output=validated_output,
+            document_text=document_text,
+            expected_entry_nums=expected_entry_nums,
+        )
+        if adjusted_output_issues:
+            logging.error(
+                "Quality adjustments left document [%s] non-conformant: %s",
+                raw_result.document_contents_id,
+                [issue.to_dict() for issue in adjusted_output_issues],
+            )
+            # TODO(OBT-54072): if the adjustment violates a constraint, adjust the other
+            # field of the constraint and retry until the document conforms or no
+            # further adjustments can be made.
+            return self._result(
+                config=config,
+                validation_datetime_utc=validation_datetime_utc,
+                validated_output=None,
+                audit_issues=[*adjustment_issues, *adjusted_output_issues],
+                result_type_override=(
+                    LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
+                ),
+            )
 
         return self._result(
             config=config,
@@ -189,11 +218,11 @@ class LLMExtractionResultValidator:
     def _extraction_error_issues(
         self,
         *,
-        raw_output: LLMRequestOutputValues,
+        output: LLMRequestOutputValues,
         document_text: SourceDocumentText,
         expected_entry_nums: set[int] | None,
     ) -> list[ValidationIssue]:
-        """Returns every extraction-error finding against |raw_output|, or an
+        """Returns every extraction-error finding against |output|, or an
         empty list when it clears them all.
 
         Structural conformance runs alone first: every other check reads values
@@ -202,30 +231,30 @@ class LLMExtractionResultValidator:
         results that have |expected_entry_nums| — the pairing check in `validate`
         guarantees those are the entity-resolution extractors' results.
         """
-        structural_issues = StructuralConformanceCheck.issues(output=raw_output)
+        structural_issues = StructuralConformanceCheck.issues(output=output)
         if structural_issues:
             return structural_issues
 
-        if not raw_output.is_relevant:
+        if not output.is_relevant:
             # A structurally conformant irrelevant result is exactly
             # `{"is_relevant": false}`, so there is no value in running
             # any other validations.
             return []
 
         issues = [
-            *SemanticConsistencyCheck.issues(output=raw_output),
-            *RequiredFieldConfidenceCheck.issues(output=raw_output),
-            *RelevantButNoValuesPresentCheck.issues(output=raw_output),
-            *AdversarialInterpretationConsistencyCheck.issues(output=raw_output),
-            *AllNullArrayEntryCheck.issues(output=raw_output),
+            *SemanticConsistencyCheck.issues(output=output),
+            *RequiredFieldConfidenceCheck.issues(output=output),
+            *RelevantButNoValuesPresentCheck.issues(output=output),
+            *AdversarialInterpretationConsistencyCheck.issues(output=output),
+            *AllNullArrayEntryCheck.issues(output=output),
             *CitationGroundingCheck.issues(
-                output=raw_output, source_document_text=document_text
+                output=output, source_document_text=document_text
             ),
         ]
         if expected_entry_nums is not None:
             issues.extend(
                 self._entity_resolution_error_issues(
-                    raw_output=raw_output, expected_entry_nums=expected_entry_nums
+                    output=output, expected_entry_nums=expected_entry_nums
                 )
             )
         return issues
@@ -233,7 +262,7 @@ class LLMExtractionResultValidator:
     @staticmethod
     def _entity_resolution_error_issues(
         *,
-        raw_output: LLMRequestOutputValues,
+        output: LLMRequestOutputValues,
         expected_entry_nums: set[int],
     ) -> list[ValidationIssue]:
         """Returns every finding from the entity-resolution-only extraction-error
@@ -243,9 +272,9 @@ class LLMExtractionResultValidator:
         """
         return [
             *EntryPartitionCheck.issues(
-                output=raw_output, expected_entry_nums=expected_entry_nums
+                output=output, expected_entry_nums=expected_entry_nums
             ),
-            *DuplicateEntityCheck.issues(output=raw_output),
+            *DuplicateEntityCheck.issues(output=output),
         ]
 
     @staticmethod

@@ -20,6 +20,7 @@ optional INFERRED field that did not meet its minimum confidence level.
 
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ConfidenceLevel,
+    NullReason,
 )
 from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
@@ -42,10 +43,8 @@ class ConfidenceThresholdAdjustment:
     short is handled by `RequiredFieldConfidenceCheck`; between them the two
     cover every INFERRED field.
 
-    The adjusted value is nulled in the returned copy, leaving the field's
-    companion metadata — its confidence level and citations — intact, so
-    downstream the null is explicable rather than indistinguishable from a value
-    the model never found.
+    The adjusted field takes its null branch with null_reason "not_applicable", keeping
+    its confidence level and citations.
     """
 
     @classmethod
@@ -67,7 +66,7 @@ class ConfidenceThresholdAdjustment:
             confidence_level = field_output.confidence_level
             if confidence_level.meets_minimum(minimum):
                 continue
-            field_output.null_out_value()
+            field_output.take_null_branch(null_reason=NullReason.NOT_APPLICABLE)
             issues.append(
                 ValidationIssue(
                     check_type=ValidationCheckType.BELOW_MINIMUM_CONFIDENCE_LEVEL,
