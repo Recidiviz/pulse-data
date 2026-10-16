@@ -14462,15 +14462,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "termination_reason_raw_text",
     ],
     BigQueryAddress.from_str(
-        "validation_views.unidentified_supervision_officer_supervisors"
-    ): [
-        "num_officers_supervised_with_metrics",
-        "region_code",
-        "state_code",
-        "supervision_district",
-        "supervisor_staff_external_id",
-    ],
-    BigQueryAddress.from_str(
         "validation_views.unmatched_supervision_districts_for_email_states"
     ): [
         "dm_district",

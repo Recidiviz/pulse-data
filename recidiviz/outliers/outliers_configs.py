@@ -552,6 +552,7 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event_name_past_tense="were incarcerated",
             ),
         ],
+        include_in_outcomes_condition="avg_daily_population BETWEEN 10 AND 150",
     ),
 }
 
