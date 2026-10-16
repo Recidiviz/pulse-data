@@ -81,7 +81,12 @@ output:
                   $equal:
                     - SecurityLevelName
                     - $literal("Rider")
-                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+                $then:
+                  $enum_mapping:
+                    $raw_text: SecurityLevelName
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                        - Rider
               # Before the Parole Violator legal status is recorded, a parolee returned
               # to custody has no legal status. When the parole board later continued
               # their parole, that time was a hold, not general incarceration.
