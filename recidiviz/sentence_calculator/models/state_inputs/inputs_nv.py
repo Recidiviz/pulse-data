@@ -16,6 +16,9 @@
 # =============================================================================
 """Nevada-specific Sentence input models."""
 
+from datetime import date
+from functools import total_ordering
+
 import attr
 
 from recidiviz.common import attr_validators
@@ -24,6 +27,7 @@ from recidiviz.sentence_calculator.models.inputs import (
     OffenseGroup,
     Sentence,
 )
+from recidiviz.utils.types import assert_type
 
 
 class NevadaOffenseCategory(OffenseCategory):
@@ -56,6 +60,39 @@ class NevadaOffenseGroup(OffenseGroup):
     UNKNOWN = "UNKNOWN"
 
 
+# Ranked most to least severe. UNKNOWN is least severe since it carries no severity
+# information. This ordering is used to compare sentence severity.
+NEVADA_OFFENSE_CATEGORY_SEVERITY_ORDER: list[NevadaOffenseCategory] = [
+    NevadaOffenseCategory.CATEGORY_A,
+    NevadaOffenseCategory.CATEGORY_B,
+    NevadaOffenseCategory.CATEGORY_C,
+    NevadaOffenseCategory.CATEGORY_D,
+    NevadaOffenseCategory.CATEGORY_E,
+    NevadaOffenseCategory.UNKNOWN,
+]
+
+
+def nevada_category_severity_rank(category: OffenseCategory) -> int:
+    """Returns the severity rank of a Nevada offense category: lower is more severe."""
+    return NEVADA_OFFENSE_CATEGORY_SEVERITY_ORDER.index(
+        assert_type(category, NevadaOffenseCategory)
+    )
+
+
+# In actuality, SEX is more severe than VIO, but in practice this doesn't make any
+# difference. This makes the distinction between severe / not severe easier to see.
+NEVADA_MORE_SEVERE_OFFENSE_GROUPS: set[NevadaOffenseGroup] = {
+    NevadaOffenseGroup.VIOLENCE,
+    NevadaOffenseGroup.SEX,
+}
+
+
+def nevada_group_severity_rank(group: OffenseGroup) -> int:
+    """Returns the severity rank of a Nevada offense group: lower is more severe."""
+    nevada_group = assert_type(group, NevadaOffenseGroup)
+    return 0 if nevada_group in NEVADA_MORE_SEVERE_OFFENSE_GROUPS else 1
+
+
 @attr.define(frozen=True, kw_only=True)
 class NevadaSentence(Sentence):
     """Nevada-specific Sentence implementation.
@@ -81,3 +118,54 @@ class NevadaSentence(Sentence):
     qualified_for_enhanced_good_time: bool = attr.ib(
         default=False, validator=attr_validators.is_bool
     )
+
+
+@total_ordering
+@attr.define(frozen=True, kw_only=True)
+class NvSentenceWithSortableEndDate:
+    """A Sentence paired with its computed end date, sortable by end date with
+    Nevada severity as a tie-breaker.
+
+    This class would be generalizable to other states, were those states to
+    implement sorted offense categories and groups.
+    This is a wrapper rather than a subclass so that sentence fields don't need to be
+    copied individually and kept in sync should the fields on Sentence change.
+    """
+
+    sentence: Sentence = attr.ib(
+        validator=attr.validators.instance_of(Sentence)  # type: ignore[type-abstract]
+    )
+    """The wrapped sentence."""
+
+    end_date: date = attr.ib(validator=attr_validators.is_date)
+    """The date this sentence is projected to end."""
+
+    @classmethod
+    def from_sentence(
+        cls, sentence: Sentence, end_date: date
+    ) -> "NvSentenceWithSortableEndDate":
+        return cls(sentence=sentence, end_date=end_date)
+
+    def _is_more_severe(self, other: "NvSentenceWithSortableEndDate") -> bool:
+        """Returns True if this sentence is more severe than the other sentence.
+
+        Severity is determined by the following criteria:
+        1. Higher offense group
+        2. If offense groups are equally severe, higher offense category
+        3. If offense categories are equally severe, lower sentence ID (to ensure
+           deterministic ordering)
+        """
+        self_group_rank = nevada_group_severity_rank(self.sentence.offense_group)
+        other_group_rank = nevada_group_severity_rank(other.sentence.offense_group)
+        if self_group_rank != other_group_rank:
+            return self_group_rank < other_group_rank
+        if self.sentence.offense_category != other.sentence.offense_category:
+            return nevada_category_severity_rank(
+                self.sentence.offense_category
+            ) < nevada_category_severity_rank(other.sentence.offense_category)
+        return self.sentence.sentence_id < other.sentence.sentence_id
+
+    def __lt__(self, other: "NvSentenceWithSortableEndDate") -> bool:
+        if self.end_date != other.end_date:
+            return self.end_date < other.end_date
+        return other._is_more_severe(self)  # pylint: disable=protected-access
