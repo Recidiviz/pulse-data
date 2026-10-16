@@ -80,6 +80,7 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_LIMITED_SUPERVISION_FROM_MINIMUM = (
         "TRANSFER_TO_LIMITED_SUPERVISION_FROM_MINIMUM"
     )
+    TRANSFER_TO_CPR_UNIT = "TRANSFER_TO_CPR_UNIT"
     TRANSFER_TO_UNSUPERVISED_PAROLE = "TRANSFER_TO_UNSUPERVISED_PAROLE"
     RELEASE_TO_LIMITED_SUPERVISION = "RELEASE_TO_LIMITED_SUPERVISION"
     SUPERVISION_LEVEL_DOWNGRADE = "SUPERVISION_LEVEL_DOWNGRADE"
@@ -207,6 +208,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
+            TaskCompletionEventType.TRANSFER_TO_CPR_UNIT,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
         ]:
             return WorkflowsSystemType.INCARCERATION
@@ -267,6 +269,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
+            TaskCompletionEventType.TRANSFER_TO_CPR_UNIT,
         ]:
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
         if self in [
@@ -394,6 +397,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
             TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
+            TaskCompletionEventType.TRANSFER_TO_CPR_UNIT,
         ]:
             return True
         if self in [
@@ -477,6 +481,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
             TaskCompletionEventType.CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING,
+            TaskCompletionEventType.TRANSFER_TO_CPR_UNIT,
         ]:
             return False
         raise ValueError(
