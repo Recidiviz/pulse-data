@@ -102,9 +102,6 @@ from recidiviz.calculator.query.state.views.jii.state_specific_data.us_az import
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_co import (
     US_CO_RESIDENT_DATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ix import (
-    US_IX_RESIDENT_DATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.jii.state_specific_data.us_ma import (
     US_MA_RESIDENT_DATA_VIEW_BUILDER,
 )
@@ -371,7 +368,6 @@ def state_specific_deployed_views_without_state_code_columns(
         US_AR_RESIDENT_DATA_VIEW_BUILDER.address,
         US_AZ_RESIDENT_DATA_VIEW_BUILDER.address,
         US_CO_RESIDENT_DATA_VIEW_BUILDER.address,
-        US_IX_RESIDENT_DATA_VIEW_BUILDER.address,
         US_MA_RESIDENT_DATA_VIEW_BUILDER.address,
         US_NC_RESIDENT_DATA_VIEW_BUILDER.address,
         US_ND_RESIDENT_DATA_VIEW_BUILDER.address,

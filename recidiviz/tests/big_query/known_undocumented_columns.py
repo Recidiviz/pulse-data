@@ -15425,16 +15425,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "release_district",
         "tentative_parole_date",
     ],
-    BigQueryAddress.from_str("jii_views.us_ix_resident_data"): [
-        "crc_facilities",
-        "earliest_possible_release_date",
-        "initial_parole_hearing_date",
-        "next_parole_hearing_date",
-        "parole_eligibility_date",
-        "person_id",
-        "release_district",
-        "tentative_parole_date",
-    ],
     BigQueryAddress.from_str(
         "workflows_views.us_ix_supervision_level_downgrade_record"
     ): [
