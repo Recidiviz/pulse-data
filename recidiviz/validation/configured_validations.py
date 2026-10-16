@@ -784,8 +784,8 @@ def get_all_validations() -> List[DataValidationCheck]:
                 ACTUAL_NO_DYNAMIC_BLOCKER_COLUMN_NAME,
             ],
             partition_columns=["region_code"],
-            hard_max_allowed_error=0.01,
-            soft_max_allowed_error=0.01,
+            hard_max_allowed_error=0.006,
+            soft_max_allowed_error=0.006,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
