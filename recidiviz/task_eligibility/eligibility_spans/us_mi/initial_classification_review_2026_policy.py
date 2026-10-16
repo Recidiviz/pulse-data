@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     not_has_initial_classification_in_state_prison_custody,
+    not_in_state_prison_custody_at_least_4_months,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -39,10 +40,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     task_name="INITIAL_CLASSIFICATION_REVIEW_2026_POLICY",
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
-    # TODO(MI-7749): add any other relevant criteria for initial classification
-    # review once determined with MDOC.
+    # A resident is eligible from the day they enter state prison custody until their
+    # first screen. At 4 months in custody they move to the annual classification
+    # review instead, whether or not they have been screened.
     criteria_spans_view_builders=[
         not_has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
+        not_in_state_prison_custody_at_least_4_months.VIEW_BUILDER,
     ],
     completion_event_builder=incarceration_intake_assessment_2026_policy_completed.VIEW_BUILDER,
 )
