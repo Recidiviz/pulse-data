@@ -286,7 +286,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderTreatment_latest"
     ): {
-        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: "TODO(TN-2032): Migrate this reference off of legacy TOMIS 1.0 raw data",
+        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table after cutover: MiCase has no equivalent of OffenderTreatment, and TDOC stopped updating it in 2022",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Offender_latest"): {
         CLIENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(TN-2017): Migrate this reference off of legacy TOMIS 1.0 raw data",
