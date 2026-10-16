@@ -20,6 +20,17 @@ task_import_source_uri: "gs://{project_id}-label-studio/task_imports/cni/*"
 # submitted tasks view filters to this task type on the substring below.
 task_import_path_contains: "/accuracy_per_field/"
 
+# task_created_at comes from each task file's GCS metadata.
+# export_cni_accuracy_annotation_tasks.py writes every task file once per upload round and
+# nothing rewrites one afterward, so a file's updated time is when its task was staged.
+task_created_at:
+  source: "gcs_object_metadata"
+  description: >
+    When this task's file was written to GCS for import into Label Studio, read from the
+    file's GCS metadata. Moves to the later time if the file is ever rewritten, for example
+    by re-running an export into a round that already exists. NULL if the file no longer
+    exists.
+
 task_data_fields:
   - column_name: "state_code"
     description: "State this annotation belongs to."

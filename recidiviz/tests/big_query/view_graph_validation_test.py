@@ -147,6 +147,14 @@ def _preprocess_views_to_load_to_emulator(
             logging.info("Skipping due to unsupported  UDF: %s", v.address)
             return CreateOrUpdateViewStatus.SKIPPED
 
+        # The emulator does not implement BigQuery's ObjectRef functions, which read GCS
+        # object metadata.
+        if "OBJ.FETCH_METADATA" in v.view_query_template:
+            logging.info(
+                "Skipping due to unsupported ObjectRef function: %s", v.address
+            )
+            return CreateOrUpdateViewStatus.SKIPPED
+
         return CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES
 
     results = dag_walker.process_dag(

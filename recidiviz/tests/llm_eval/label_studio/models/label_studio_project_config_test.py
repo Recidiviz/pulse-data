@@ -31,6 +31,8 @@ from recidiviz.llm_eval.label_studio.models.label_studio_project_config import (
     collect_label_studio_project_configs,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_created_at_source import (
+    LabelStudioGcsObjectMetadataTaskCreatedAtSource,
+    LabelStudioJoinedTableTaskCreatedAtSource,
     LabelStudioTaskCreatedAtSource,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
@@ -60,8 +62,10 @@ def _annotation_field() -> LabelStudioAnnotationField:
     )
 
 
-def _created_at_source(*, task_join_column: str) -> LabelStudioTaskCreatedAtSource:
-    return LabelStudioTaskCreatedAtSource(
+def _created_at_source(
+    *, task_join_column: str
+) -> LabelStudioJoinedTableTaskCreatedAtSource:
+    return LabelStudioJoinedTableTaskCreatedAtSource(
         description="When the document was uploaded.",
         table_address=BigQueryAddress(dataset_id="documents", table_id="uploads"),
         table_join_column="document_id",
@@ -223,6 +227,14 @@ class LabelStudioProjectConfigTest(unittest.TestCase):
             _config(
                 task_created_at_source=_created_at_source(task_join_column="source_uri")
             )
+
+    def test_gcs_object_metadata_source_is_accepted(self) -> None:
+        # Raises if the source is rejected.
+        _config(
+            task_created_at_source=LabelStudioGcsObjectMetadataTaskCreatedAtSource(
+                description="When the task file was written."
+            )
+        )
 
     def test_load_all_configs(self) -> None:
         # Raises if any real config fails to parse or validate.

@@ -30,9 +30,29 @@ class LabelStudioTaskCreatedAtSourceType(Enum):
     JOINED_TABLE = "joined_table"
     """A column of another BigQuery table, joined to the submitted tasks view."""
 
+    GCS_OBJECT_METADATA = "gcs_object_metadata"
+    """The updated time in the GCS metadata of each task's own task file."""
+
+
+def _pop_source_type(d: YAMLDict, expected: LabelStudioTaskCreatedAtSourceType) -> None:
+    """Pops the source key from the given task_created_at section, raising unless it
+    names the expected source type.
+    """
+    source_type = LabelStudioTaskCreatedAtSourceType(d.pop("source", str))
+    if source_type is not expected:
+        raise ValueError(
+            f"Expected task_created_at source [{expected.value}], found "
+            f"[{source_type.value}]"
+        )
+
+
+def _raise_on_unexpected_keys(d: YAMLDict) -> None:
+    if d:
+        raise ValueError(f"Unexpected keys in task_created_at: {repr(d.get())}")
+
 
 @attr.define(frozen=True, kw_only=True)
-class LabelStudioTaskCreatedAtSource:
+class LabelStudioJoinedTableTaskCreatedAtSource:
     """A table the submitted tasks view LEFT JOINs to fill task_created_at.
 
     For example, a Meetings task keyed on meeting_id can take its timestamp from the
@@ -60,13 +80,11 @@ class LabelStudioTaskCreatedAtSource:
     """TIMESTAMP column of table_address that becomes task_created_at."""
 
     @classmethod
-    def from_yaml_dict(cls, d: YAMLDict) -> "LabelStudioTaskCreatedAtSource":
-        """Returns a LabelStudioTaskCreatedAtSource parsed from the task_created_at
-        section of a task config.
+    def from_yaml_dict(cls, d: YAMLDict) -> "LabelStudioJoinedTableTaskCreatedAtSource":
+        """Returns a LabelStudioJoinedTableTaskCreatedAtSource parsed from a
+        task_created_at section whose source is joined_table.
         """
-        source_type = LabelStudioTaskCreatedAtSourceType(d.pop("source", str))
-        if source_type is not LabelStudioTaskCreatedAtSourceType.JOINED_TABLE:
-            raise ValueError(f"Unexpected task_created_at source [{source_type}]")
+        _pop_source_type(d, LabelStudioTaskCreatedAtSourceType.JOINED_TABLE)
         source = cls(
             description=d.pop("description", str),
             table_address=BigQueryAddress.from_str(d.pop("table", str)),
@@ -74,6 +92,52 @@ class LabelStudioTaskCreatedAtSource:
             task_join_column=d.pop("task_join_column", str),
             column=d.pop("column", str),
         )
-        if d:
-            raise ValueError(f"Unexpected keys in task_created_at: {repr(d.get())}")
+        _raise_on_unexpected_keys(d)
         return source
+
+
+@attr.define(frozen=True, kw_only=True)
+class LabelStudioGcsObjectMetadataTaskCreatedAtSource:
+    """Fills task_created_at with the updated time in the GCS metadata of each task's own
+    task file, read through BigQuery's ObjectRef functions.
+
+    For example, a CNI task whose file the export script wrote on 2026-07-16 at 16:29:59
+    UTC gets that as its task_created_at. GCS resets updated whenever an object is
+    rewritten, so this suits only a task whose files are written once and never rewritten.
+    """
+
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Description of the task_created_at column for this task, saying what the timestamp
+    actually records, since each task's source measures something different."""
+
+    @classmethod
+    def from_yaml_dict(
+        cls, d: YAMLDict
+    ) -> "LabelStudioGcsObjectMetadataTaskCreatedAtSource":
+        """Returns a LabelStudioGcsObjectMetadataTaskCreatedAtSource parsed from a
+        task_created_at section whose source is gcs_object_metadata.
+        """
+        _pop_source_type(d, LabelStudioTaskCreatedAtSourceType.GCS_OBJECT_METADATA)
+        source = cls(description=d.pop("description", str))
+        _raise_on_unexpected_keys(d)
+        return source
+
+
+LabelStudioTaskCreatedAtSource = (
+    LabelStudioJoinedTableTaskCreatedAtSource
+    | LabelStudioGcsObjectMetadataTaskCreatedAtSource
+)
+
+
+def task_created_at_source_from_yaml_dict(
+    d: YAMLDict,
+) -> LabelStudioTaskCreatedAtSource:
+    """Returns the source a task config's task_created_at section describes, choosing the
+    kind of source by its source key.
+    """
+    source_type = LabelStudioTaskCreatedAtSourceType(d.peek("source", str))
+    if source_type is LabelStudioTaskCreatedAtSourceType.JOINED_TABLE:
+        return LabelStudioJoinedTableTaskCreatedAtSource.from_yaml_dict(d)
+    if source_type is LabelStudioTaskCreatedAtSourceType.GCS_OBJECT_METADATA:
+        return LabelStudioGcsObjectMetadataTaskCreatedAtSource.from_yaml_dict(d)
+    raise ValueError(f"Unexpected task_created_at source [{source_type}]")

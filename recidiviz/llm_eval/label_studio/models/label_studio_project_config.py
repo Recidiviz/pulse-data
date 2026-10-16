@@ -33,7 +33,10 @@ from recidiviz.llm_eval.label_studio.models.label_studio_annotation_field import
     LabelStudioAnnotationField,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_created_at_source import (
+    LabelStudioGcsObjectMetadataTaskCreatedAtSource,
+    LabelStudioJoinedTableTaskCreatedAtSource,
     LabelStudioTaskCreatedAtSource,
+    task_created_at_source_from_yaml_dict,
 )
 from recidiviz.llm_eval.label_studio.models.label_studio_task_data_field import (
     LabelStudioTaskDataField,
@@ -135,7 +138,14 @@ class LabelStudioProjectConfig:
     does carry. Empty for a task whose payloads have always been complete."""
 
     task_created_at_source: LabelStudioTaskCreatedAtSource | None = attr.ib(
-        validator=attr_validators.is_opt(LabelStudioTaskCreatedAtSource)
+        validator=attr.validators.optional(
+            attr.validators.instance_of(
+                (
+                    LabelStudioJoinedTableTaskCreatedAtSource,
+                    LabelStudioGcsObjectMetadataTaskCreatedAtSource,
+                )
+            )
+        )
     )
     """Where the submitted tasks view reads its task_created_at column from, configured
     under task_created_at. None for a task with no source yet, in which case the view has
@@ -254,8 +264,12 @@ class LabelStudioProjectConfig:
                 f"the index must be 0 or greater. Fix it in "
                 f"recidiviz/llm_eval/label_studio/config/{self.task_name}.yaml."
             )
-        if self.task_created_at_source:
-            self._validate_task_created_at_source(self.task_created_at_source)
+        if isinstance(
+            self.task_created_at_source, LabelStudioJoinedTableTaskCreatedAtSource
+        ):
+            self._validate_joined_table_task_created_at_source(
+                self.task_created_at_source
+            )
         unknown_batch = [
             k for k in self.irr_batch_key_fields if k not in data_field_names
         ]
@@ -275,8 +289,8 @@ class LabelStudioProjectConfig:
                 f"irr_batch_key_fields."
             )
 
-    def _validate_task_created_at_source(
-        self, source: LabelStudioTaskCreatedAtSource
+    def _validate_joined_table_task_created_at_source(
+        self, source: LabelStudioJoinedTableTaskCreatedAtSource
     ) -> None:
         """Raises unless the given source joins on one of the task's key fields."""
         if source.task_join_column not in self.task_key_fields:
@@ -395,7 +409,7 @@ class LabelStudioProjectConfig:
         }
         created_at_dict = d.pop_dict_optional("task_created_at")
         task_created_at_source = (
-            LabelStudioTaskCreatedAtSource.from_yaml_dict(created_at_dict)
+            task_created_at_source_from_yaml_dict(created_at_dict)
             if created_at_dict
             else None
         )
