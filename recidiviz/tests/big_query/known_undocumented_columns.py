@@ -1395,14 +1395,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("analyst_data.workflows_user_caseload_access_sessions"): [
-        "email_address",
-        "end_date_exclusive",
-        "has_facilities_workflows",
-        "has_supervision_workflows",
-        "start_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str(
         "analyst_data.workflows_user_person_assignment_sessions"
     ): [
@@ -3071,9 +3063,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "task_type_is_live",
         "user_has_eligible_caseload_in_past_year",
     ],
-    BigQueryAddress.from_str(
-        "observations__workflows_primary_user_span.workflows_user_caseload_access_session"
-    ): ["has_facilities_workflows", "has_supervision_workflows"],
     BigQueryAddress.from_str(
         "observations__workflows_provisioned_user_span.workflows_provisioned_user_session"
     ): ["is_primary_user", "is_registered", "prioritized_role", "system_type"],
