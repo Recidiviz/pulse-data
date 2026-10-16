@@ -21,7 +21,16 @@ my_enum_field:
   $enum_mapping:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tn_custom_enum_parsers.<function name>
+
+Also holds other custom functions referenced via $custom, e.g.:
+
+my_field:
+  $custom:
+    $function: us_tn_custom_enum_parsers.<function name>
+    $args:
+      some_arg: MY_CSV_COL
 """
+
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -92,6 +101,36 @@ def staff_role_subtype_from_staff_title(
         return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
 
     if raw_text in ("PRBO", "PRBP", "PARO"):
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER
+
+    return StateStaffRoleSubtype.INTERNAL_UNKNOWN
+
+
+def staff_role_type_from_job_classification(
+    raw_text: str,
+) -> StateStaffRoleType:
+    if raw_text in (
+        "PROBATION/PAROLE OFFICER",
+        "PROBATION OFFICER",
+        "PAROLE OFFICER",
+        "PROBATION MANAGER",
+        "PAROLE OFFICER SUPERVISOR",
+    ):
+        return StateStaffRoleType.SUPERVISION_OFFICER
+
+    return StateStaffRoleType.INTERNAL_UNKNOWN
+
+
+def staff_role_subtype_from_job_classification(
+    raw_text: str,
+) -> StateStaffRoleSubtype:
+    # TODO(TN-1961): PROBATION MANAGER and PAROLE OFFICER SUPERVISOR are inferred
+    # analogs of the TOMIS 1.0 PRBM/PAOS supervisor codes by title text alone, not a
+    # confirmed crosswalk; confirm with TN.
+    if raw_text in ("PROBATION MANAGER", "PAROLE OFFICER SUPERVISOR"):
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+
+    if raw_text in ("PROBATION/PAROLE OFFICER", "PROBATION OFFICER", "PAROLE OFFICER"):
         return StateStaffRoleSubtype.SUPERVISION_OFFICER
 
     return StateStaffRoleSubtype.INTERNAL_UNKNOWN

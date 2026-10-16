@@ -24,6 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+import datetime
 from typing import Optional
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -34,6 +35,7 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.regions.us_tn.constants import (
     CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
+    MEA_PROFILES_FIRST_DATA_DATE,
 )
 
 
@@ -144,3 +146,34 @@ def parse_incarceration_incident_is_violent(
         offense_class == "A"
         and infraction_code in CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES
     )
+
+
+def role_period_is_included_given_tomis_2_0_status(
+    start_date: str, tomis_2_0_enabled: bool
+) -> bool:
+    """Whether this legacy TOMIS 1.0 role period should still be emitted. Once TOMIS
+    2.0 is enabled, periods starting on or after MEA_PROFILES_FIRST_DATA_DATE are covered by
+    StaffRoleLocationPeriods_v2 instead.
+    """
+    if not tomis_2_0_enabled:
+        return True
+    # TODO(TN-1961): swap this to be TOMIS_2_0_GO_LIVE_DATE before go-live date
+    return datetime.date.fromisoformat(start_date[:10]) < datetime.date.fromisoformat(
+        MEA_PROFILES_FIRST_DATA_DATE
+    )
+
+
+def end_date_for_tomis_2_0_status(end_date: str, tomis_2_0_enabled: bool) -> str:
+    """This role period's end date. Unchanged unless TOMIS 2.0 is enabled, in which
+    case it is clamped to MEA_PROFILES_FIRST_DATA_DATE so it does not overlap with
+    StaffRoleLocationPeriods_v2's periods.
+    """
+    if not tomis_2_0_enabled:
+        return end_date
+    # TODO(TN-1961): swap this to be TOMIS_2_0_GO_LIVE_DATE before go-live date
+    if not end_date or datetime.date.fromisoformat(
+        end_date[:10]
+    ) > datetime.date.fromisoformat(MEA_PROFILES_FIRST_DATA_DATE):
+        # TODO(TN-1961): swap this to be TOMIS_2_0_GO_LIVE_DATE before go-live date
+        return MEA_PROFILES_FIRST_DATA_DATE
+    return end_date

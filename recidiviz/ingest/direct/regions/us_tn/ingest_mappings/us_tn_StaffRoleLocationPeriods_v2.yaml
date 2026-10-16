@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# view_StaffRoleLocationPeriods_v2 (MiCase / TOMIS 2.0 source tables) to the same
+# StateStaff fields as us_tn_StaffRoleLocationPeriods.yaml (TOMIS 1.0). Location periods
+# are not yet populated; see the "Migration Spec: StaffRoleLocationPeriods" Notion page.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  USERID: STRING
+  STAFF_ID: STRING
+  StaffTitle: STRING
+  Start_Date: DATETIME
+  End_Date: DATETIME
+  StatusChangeOrder: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: USERID
+          id_type: $literal("US_TN_STAFF_USERID")
+      # following the MiCase migration, StaffID is not a required field so some staff
+      # members may no longer have one
+      - $conditional:
+          - $if:
+              $not_null: STAFF_ID
+            $then:
+              StateStaffExternalId:
+                external_id: STAFF_ID
+                id_type: $literal("US_TN_STAFF_TOMIS")
+    role_periods:
+      - $conditional:
+          - $if:
+              $not_null: Start_Date
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - USERID
+                      - StatusChangeOrder
+                start_date: Start_Date
+                end_date: End_Date
+                role_type:
+                  $enum_mapping:
+                    $raw_text: StaffTitle
+                    $custom_parser: us_tn_custom_enum_parsers.staff_role_type_from_job_classification
+                    $map_null_to: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: StaffTitle
+                    $custom_parser: us_tn_custom_enum_parsers.staff_role_subtype_from_job_classification
+                    $map_null_to: $literal_enum(StateStaffRoleSubtype.INTERNAL_UNKNOWN)

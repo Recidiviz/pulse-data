@@ -19,7 +19,14 @@ output:
     role_periods:
       - $conditional:
           - $if:
-              $not_null: Start_Date
+              $and:
+                - $not_null: Start_Date
+                - $custom:
+                    $function: us_tn_custom_parsers.role_period_is_included_given_tomis_2_0_status
+                    $args:
+                      start_date: Start_Date
+                      tomis_2_0_enabled:
+                        $env: feature__tomis_2_0_enabled
             $then:
               StateStaffRolePeriod:
                 external_id:
@@ -28,7 +35,13 @@ output:
                       - StaffID
                       - StatusChangeOrder
                 start_date: Start_Date
-                end_date: End_Date
+                end_date:
+                  $custom:
+                    $function: us_tn_custom_parsers.end_date_for_tomis_2_0_status
+                    $args:
+                      end_date: End_Date
+                      tomis_2_0_enabled:
+                        $env: feature__tomis_2_0_enabled
                 role_type:
                   $enum_mapping:
                     $raw_text: StaffTitle
