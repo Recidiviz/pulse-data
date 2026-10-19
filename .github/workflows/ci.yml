@@ -5,6 +5,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ !contains(github.ref, 'releases/') && !contains(github.ref, 'main') }}
 
+permissions:
+  contents: read
+
 jobs:
   # These unit tests need to be run separately because they depend on a different Python
   # environment defined in the pyproject.toml in the recidiviz/airflow package.
