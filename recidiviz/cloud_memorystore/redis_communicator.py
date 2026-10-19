@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Communication bus via Redis """
+"""Communication bus via Redis"""
+
 import enum
 import json
 import logging
@@ -210,10 +211,10 @@ class RedisCommunicator:
                 break
 
         options_cache_key = cls.build_options_cache_key(channel_uuid)
-        cache.setex(
+        cache.set(
             options_cache_key,
-            MESSAGE_CACHE_EXPIRY_SECONDS,
             json.dumps({"max_messages": max_messages}),
+            ex=MESSAGE_CACHE_EXPIRY_SECONDS,
         )
 
         return RedisCommunicator(cache, channel_uuid)

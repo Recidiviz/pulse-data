@@ -54,6 +54,21 @@ _EXPECTED_COLUMNS = [
 ]
 _OTHER_COLUMNS = ["other_column", "other_column_2"]
 
+# PanelOLS raises if entity and time effects leave no residual degrees of freedom
+# or if a clustered covariance has a single cluster, so this panel needs more
+# observations than _DUMMY_DF and at least two clusters.
+_PANEL_DF = pd.DataFrame(
+    {
+        "outcome": [1, 1, 2, 1, 2, 2, 2, 1, 3, 1, 1, 2],
+        "unit_of_analysis": ["a"] * 3 + ["b"] * 3 + ["c"] * 3 + ["d"] * 3,
+        "unit_of_treatment": ["e"] * 6 + ["f"] * 6,
+        "start_date": pd.to_datetime(["2020-01-01", "2020-02-01", "2020-03-01"] * 4),
+        "weights": [1] * 12,
+        "cluster_column": ["x"] * 6 + ["y"] * 6,
+        "controls": [1, 0, 0.5, 1, 1, 0, 0.5, 1, 1, 0, 1, 0.5],
+    }
+)
+
 
 class TestValidateDf(unittest.TestCase):
     """Tests for validate_df() method in estimate_effects.py"""
@@ -238,7 +253,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
         "Verify that get_panel_ols_result() returns something wihtout error"
 
         # prep dummy df to include entity
-        df = _DUMMY_DF.copy().set_index(["unit_of_analysis", "start_date"])
+        df = _PANEL_DF.copy().set_index(["unit_of_analysis", "start_date"])
 
         # init reg formula
         reg_formula = "outcome ~ 1 + EntityEffects + TimeEffects"
@@ -266,7 +281,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
         """
 
         # prep dummy df
-        df = _DUMMY_DF.copy()
+        df = _PANEL_DF.copy()
         df["post_treat"] = False
         df.loc[
             (df.unit_of_analysis == "a") & (df.start_date == df.start_date.max()),
@@ -306,11 +321,6 @@ class TestEffectEstimationFunctions(unittest.TestCase):
         )
 
         # with control column
-        # need more observations because adding control column makes the matrix
-        # indeterminate (cannot invert)
-        df = pd.concat([df, df], axis=0)
-        df["unit_of_analysis"] = ["a", "a", "b", "b", "c", "c", "d", "d"]
-        df["controls"] = [1, 0, 0.5, 1, 1, 1, 1, 1]
         est_did_effect(
             df=df,
             outcome_column="outcome",
@@ -328,7 +338,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
         """
 
         # prep dummy df
-        df = _DUMMY_DF.copy()
+        df = _PANEL_DF.copy()
         df["treated"] = df.start_date == df.start_date.max()
 
         # no optional params
@@ -364,11 +374,6 @@ class TestEffectEstimationFunctions(unittest.TestCase):
         )
 
         # with control column
-        # need more observations because adding control column makes the matrix
-        # indeterminate (cannot invert)
-        df = pd.concat([df, df], axis=0)
-        df["unit_of_analysis"] = ["a", "a", "b", "b", "c", "c", "d", "d"]
-        df["controls"] = [1, 0, 0.5, 1, 1, 1, 1, 1]
         est_es_effect(
             df=df,
             outcome_column="outcome",
