@@ -20,12 +20,15 @@ from datetime import date, timedelta
 
 import networkx as nx
 
-from recidiviz.sentence_calculator.models.inputs import Sentence
+from recidiviz.sentence_calculator.models.inputs import Sentence, Term
 from recidiviz.sentence_calculator.models.outputs import (
     DisplayGraph,
     GraphEdge,
     TrackedLongestSentencePath,
     TrackedSentenceAdjustment,
+)
+from recidiviz.sentence_calculator.models.sentence_term_calculation import (
+    SentenceTermCalculation,
 )
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NvSentenceWithSortableEndDate,
@@ -86,7 +89,6 @@ class SentenceGraph:
         adjustments: dict[  # pylint: disable=unused-argument # TODO(NV-9)
             str, TrackedSentenceAdjustment
         ],
-        should_calc_min_term: bool,
         use_calendar_days_per_month: bool,  # pylint: disable=unused-argument # TODO(NV-9)
     ) -> TrackedLongestSentencePath | None:
         """Compute the path of controlling sentences from earliest start date to latest
@@ -129,15 +131,13 @@ class SentenceGraph:
         Args:
             adjustments: For each sentence, calculated the "adjusted" term based on
                 projected credits or a percentage reduction.
-            should_calc_min_term: Whether to calculate the min or max term. For regimes
-                that have a notion of min and max, this method is run twice, once for
-                each term.
             use_calendar_days_per_month: Whether to use calendar days for year/month
                 conversion.
 
         Returns:
-            TrackedResult of days in the longest path and the end date of that path.
-                None if the graph is empty.
+            The IDs of the controlling sentences in the order they became controlling,
+                the tracked total days of those sentences, and the tracked latest PED
+                across all sentences. None if the graph is empty.
 
         Raises:
             ValueError: If the graph contains cycles.
@@ -146,8 +146,7 @@ class SentenceGraph:
             return None
 
         # Keyed by sentence ID
-        sentence_end_dates: dict[str, date] = {}
-        sentence_lengths_days: dict[str, TrackedValue[int]] = {}
+        sentence_term_calculations: dict[str, SentenceTermCalculation] = {}
 
         # TODO(NV-9) Stubbed until a subsequent PR - the real date calc and adjustment
         # logic is a lot.
@@ -155,9 +154,9 @@ class SentenceGraph:
         # correct sentences!
         # TODO(NV-17): Handle the case where there's sentences from two JOCs and
         # they have different amounts of jail time.
-        def calculate_term_days_and_end_date(
+        def calculate_sentence_term(
             sentence_id: str, inherited_start_date: date | None
-        ) -> tuple[TrackedValue[int], date]:
+        ) -> SentenceTermCalculation:
             # TODO(NV-9), important: Since controlling sentences might overlap, this
             # needs to calculate and return the time from the last end date to the
             # next end date, which is likely to be shorter than the total days (e.g. if
@@ -175,46 +174,64 @@ class SentenceGraph:
                 ) from e
             # TODO(NV-9) This logic doesn't account yet for the mandatory parole min -
             # not positive it needs to, given the 40% requirement, but should check.
-            term = sentence.min_term if should_calc_min_term else sentence.max_term
-            # TODO(NV-9): This is wrong! but this is just a stub and this logic will
-            # be implemented correctly later. What values to use for "how many days are
-            # in a month/year" is configured by the rule set.
-            total_days: int = (term.years * 365) + (term.months * 30) + term.days
+            total_days = days_from_term(sentence.max_term)
             # The start date shouldn't be null because it should indeed use the
             # inherited start date if it doesn't have its own. This stub doesn't
             # handle that.
+            # The reason this doesn't break right now is that the test cases define a
+            # start date on every single sentence, when normally the start date would
+            # only be defined on the root sentences.
+            # TODO(NV-9): Correctly use inherited start dates.
             non_null_inherited_start_date = assert_type(inherited_start_date, date)
-            return (
-                TrackedValue.input(total_days, f"{sentence_id}.total_days"),
-                non_null_inherited_start_date + timedelta(total_days),
+            start_date = TrackedValue.input(
+                non_null_inherited_start_date, f"{sentence_id}.start_date"
+            )
+            min_term_days = TrackedValue.input(
+                days_from_term(sentence.min_term), f"{sentence_id}.min_term_days"
+            )
+            return SentenceTermCalculation(
+                total_days=TrackedValue.input(total_days, f"{sentence_id}.total_days"),
+                end_date=non_null_inherited_start_date + timedelta(total_days),
+                sentence_ped=start_date.derive(
+                    new_value=start_date.value + timedelta(min_term_days.value),
+                    label=f"{sentence_id}.ped",
+                    formula=f"{start_date.label} + {min_term_days.label}",
+                    other_sources=[min_term_days],
+                ),
             )
 
-        def get_sentence_end_date(sentence: Sentence) -> date:
-            _, end_date = get_sentence_length_and_end_date(sentence)
-            return end_date
+        # TODO(NV-9): This is wrong! but this is just a stub and this logic will
+        # be implemented correctly later. What values to use for "how many days are
+        # in a month/year" is configured by the rule set.
+        def days_from_term(term: Term) -> int:
+            return (term.years * 365) + (term.months * 30) + term.days
 
         def get_sentence_length(sentence: Sentence) -> TrackedValue[int]:
-            length, _ = get_sentence_length_and_end_date(sentence)
-            return length
+            return get_sentence_term_calculation(sentence).total_days
 
-        def get_sentence_length_and_end_date(
+        def get_sentence_term_calculation(
             sentence: Sentence,
-        ) -> tuple[TrackedValue[int], date]:
-            """Populates the sentence ID to sentence length/end date dicts.
+        ) -> SentenceTermCalculation:
+            """Populates the sentence ID to term calculation dict.
 
-            Returns the sentence length and end date -- either by retrieving them from
-            the dicts or calculating and adding them to the dicts.
+            Returns the term calculation -- either by retrieving it from the dict or
+            calculating and adding it to the dict.
             """
             sid = sentence.sentence_id
-            if sid in sentence_end_dates and sid in sentence_lengths_days:
-                return sentence_lengths_days[sid], sentence_end_dates[sid]
+            if sid in sentence_term_calculations:
+                return sentence_term_calculations[sid]
 
-            sentence_length_days, sentence_end_date = calculate_term_days_and_end_date(
-                sid, sentence.start_date
+            term_calculation = calculate_sentence_term(sid, sentence.start_date)
+            sentence_term_calculations[sid] = term_calculation
+            return term_calculation
+
+        def mark_sentence_active(sentence: Sentence) -> None:
+            sentence_term = get_sentence_term_calculation(sentence)
+            active_sentences.append(
+                NvSentenceWithSortableEndDate.from_sentence(
+                    sentence, sentence_term.end_date
+                )
             )
-            sentence_end_dates[sid] = sentence_end_date
-            sentence_lengths_days[sid] = sentence_length_days
-            return sentence_length_days, sentence_end_date
 
         # Get the starting nodes of each component in the graph
         # Assumption: no node has multiple parents.
@@ -265,10 +282,7 @@ class SentenceGraph:
             # Known non-null from check above
             start = assert_type(sentence.start_date, date)
             if start == earliest_start_date:
-                end = get_sentence_end_date(sentence)
-                active_sentences.append(
-                    NvSentenceWithSortableEndDate.from_sentence(sentence, end)
-                )
+                mark_sentence_active(sentence)
             else:
                 later_sentence_chains.append((sentence, start))
 
@@ -276,7 +290,7 @@ class SentenceGraph:
         # moves forward
         later_sentence_chains.sort(key=lambda s: s[1], reverse=True)
 
-        controlling_sentence_ids: list[str] = []
+        controlling_sentences: list[NvSentenceWithSortableEndDate] = []
         total_days = TrackedValue.input(0, "Start of sentence chain")
         active_sentences.sort(reverse=True)
         while active_sentences:
@@ -289,7 +303,7 @@ class SentenceGraph:
                 [total_days, length_days],
                 "Total length of time in days with new controlling sentence added",
             )
-            controlling_sentence_ids.append(controlling_sentence.sentence.sentence_id)
+            controlling_sentences.append(controlling_sentence)
 
             # Note that old controlling sentences stay in the active list until their end
             # date -- the expiring sentence pop below handles every sentence hitting its
@@ -343,10 +357,7 @@ class SentenceGraph:
                     newly_active_sentences.append(later_sentence_chains.pop()[0])
 
                 for sentence in newly_active_sentences:
-                    end = get_sentence_end_date(sentence)
-                    active_sentences.append(
-                        NvSentenceWithSortableEndDate.from_sentence(sentence, end)
-                    )
+                    mark_sentence_active(sentence)
                 active_sentences.sort(reverse=True)
 
         if later_sentence_chains:
@@ -358,7 +369,16 @@ class SentenceGraph:
                 "A sentence chain was never reached. Either there's a gap in the "
                 f"sentences or an implementation error. Unreached chains: [{remaining_sentences}]"
             )
+
+        # TODO(NV-9): This returns the correct dates but the incorrect justification.
+        # In the event of a tie, we should return the more severe sentence.
+        max_ped = max(
+            (term.sentence_ped for term in sentence_term_calculations.values()),
+            key=lambda ped: ped.value,
+        )
+
         return TrackedLongestSentencePath(
-            path_sentence_ids=controlling_sentence_ids,
+            path_sentence_ids=[s.sentence.sentence_id for s in controlling_sentences],
             total_days=total_days,
+            max_ped=assert_type(max_ped, TrackedValue),
         )

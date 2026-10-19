@@ -93,7 +93,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -106,7 +105,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -136,7 +134,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -161,7 +158,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         ):
             graph.longest_path(
                 adjustments={},
-                should_calc_min_term=False,
                 use_calendar_days_per_month=False,
             )
 
@@ -221,7 +217,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -264,7 +259,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -282,7 +276,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         Chain 2: C2a (5 years), starting two years after C1a's start date.
 
-        C2a should become active in the middle of C1b, even though no sentence in
+        C2a becomes active in the middle of C1b, even though no sentence in
         its chain is active at the time C1a starts.
 
         The resulting path is C1a, C1b, C2a.
@@ -307,7 +301,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -343,7 +336,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -373,7 +365,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -405,12 +396,10 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         shorter_sibling_first = SentenceGraph([c1a, c1b, c1c]).longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
         longer_sibling_first = SentenceGraph([c1a, c1c, c1b]).longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -484,7 +473,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -523,7 +511,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -573,7 +560,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -618,7 +604,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
@@ -663,12 +648,154 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         result = graph.longest_path(
             adjustments={},
-            should_calc_min_term=False,
             use_calendar_days_per_month=False,
         )
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b"])
+
+    def test_max_ped_for_single_sentence_is_start_date_plus_min_term(self) -> None:
+        graph = SentenceGraph(
+            [
+                _sentence(
+                    "S1",
+                    start_date=date(2024, 1, 1),
+                    min_term=Term(days=40),
+                    max_term=Term(days=100),
+                )
+            ]
+        )
+
+        result = graph.longest_path(
+            adjustments={},
+            use_calendar_days_per_month=False,
+        )
+
+        assert result is not None
+        self.assertEqual(
+            result.max_ped.to_derivation_tree(),
+            {
+                "label": "S1.ped",
+                "value": "2024-02-10",
+                "formula": "S1.start_date + S1.min_term_days",
+                "derived_from": [
+                    {"label": "S1.start_date", "value": "2024-01-01"},
+                    {"label": "S1.min_term_days", "value": 40},
+                ],
+            },
+        )
+
+    def test_max_ped_can_be_from_sentence_never_controlling_max(self) -> None:
+        """Same chains as test_chains_starting_later_become_active, with min
+        terms added.
+
+        Chain 1
+         - C1a (1 year)
+         - C1b (3 years)
+         - C1c (2 years)
+
+        Chain 2: C2a (5 years), starting two years after C1a's start date.
+
+        C2a becomes active in the middle of C1b, even though no sentence in its chain
+        is active at the time C1a starts.
+        The controlling sentences are C1a, C1b, then C2a.
+
+        C1c never controls the MAX, but it has the latest PED, so max_ped is C1c's
+        start date plus its min term.
+        """
+        c1a = _sentence(
+            "C1a",
+            start_date=date(2024, 1, 1),
+            min_term=Term(days=100),
+            max_term=Term(years=1),
+        )
+        c1b = _sentence(
+            "C1b",
+            parent_sentence_id="C1a",
+            start_date=date(2024, 12, 31),
+            min_term=Term(days=200),
+            max_term=Term(years=3),
+        )
+        c1c = _sentence(
+            "C1c",
+            parent_sentence_id="C1b",
+            start_date=date(2027, 12, 31),
+            min_term=Term(days=400),
+            max_term=Term(years=2),
+        )
+
+        c2a = _sentence(
+            "C2a",
+            start_date=date(2026, 1, 1),
+            min_term=Term(days=1000),
+            max_term=Term(years=5),
+        )
+
+        graph = SentenceGraph([c1a, c1b, c1c, c2a])
+
+        result = graph.longest_path(
+            adjustments={},
+            use_calendar_days_per_month=False,
+        )
+
+        assert result is not None
+        self.assertEqual(result.path_sentence_ids, ["C1a", "C1b", "C2a"])
+        self.assertEqual(
+            result.max_ped.to_derivation_tree(),
+            {
+                "label": "C1c.ped",
+                "value": "2029-02-03",
+                "formula": "C1c.start_date + C1c.min_term_days",
+                "derived_from": [
+                    {"label": "C1c.start_date", "value": "2027-12-31"},
+                    {"label": "C1c.min_term_days", "value": 400},
+                ],
+            },
+        )
+
+    def test_max_ped_from_only_sentence_on_late_starting_chain(self) -> None:
+        """Chain 1: C1a (3 years), starting 2024-01-01.
+
+        Chain 2: C2a (1 year), starting a year after C1a. C2a is the only sentence on
+        its chain.
+
+        C2a ends before C1a, so C1a controls the MAX the whole time. C2a has the
+        latest PED, so max_ped is C2a's start date plus its min term.
+        """
+        c1a = _sentence(
+            "C1a",
+            start_date=date(2024, 1, 1),
+            min_term=Term(days=100),
+            max_term=Term(years=3),
+        )
+        c2a = _sentence(
+            "C2a",
+            start_date=date(2025, 1, 1),
+            min_term=Term(days=500),
+            max_term=Term(years=1),
+        )
+
+        graph = SentenceGraph([c1a, c2a])
+
+        result = graph.longest_path(
+            adjustments={},
+            use_calendar_days_per_month=False,
+        )
+
+        assert result is not None
+        self.assertEqual(result.path_sentence_ids, ["C1a"])
+        self.assertEqual(
+            result.max_ped.to_derivation_tree(),
+            {
+                "label": "C2a.ped",
+                "value": "2026-05-16",
+                "formula": "C2a.start_date + C2a.min_term_days",
+                "derived_from": [
+                    {"label": "C2a.start_date", "value": "2025-01-01"},
+                    {"label": "C2a.min_term_days", "value": 500},
+                ],
+            },
+        )
 
 
 if __name__ == "__main__":

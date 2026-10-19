@@ -16,6 +16,8 @@
 # =============================================================================
 """Output data models for sentence calculator."""
 
+from datetime import date
+
 import attr
 
 from recidiviz.common import attr_validators
@@ -89,5 +91,13 @@ class TrackedLongestSentencePath:
     # sentence adds to the total.
     # TODO(NV-9): Validate that we actually need this value to be tracked.
     total_days: "TrackedValue[int]" = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    # Latest date any sentence becomes eligible to go before the parole board. Tracked
+    # value shows derivation from the sentence's MIN and start date (derived from
+    # earlier sentences in the chain if it's not a root sentence).
+    # TODO(NV-9): The sentence start dates aren't yet calculated from previous
+    # sentences.
+    max_ped: "TrackedValue[date]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
