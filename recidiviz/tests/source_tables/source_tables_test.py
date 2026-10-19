@@ -157,8 +157,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # These source tables only exist & are in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
             "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
-            # Read by the CO credit writer at run time, not by a view.
-            "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
             *COMMON_VESTIGES,
         ]
     },
@@ -173,8 +171,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "sentencing_views.case_insights_record_flattened",
             # Legacy V1 Idaho tasks record archive, predates V2 pipeline
             "export_archives.us_ix_supervision_tasks_record_archive",
-            # Read by the CO credit writer at run time, not by a view.
-            "eomis_writeback_metadata.us_co_eomis_writeback_credit_details",
             *COMMON_VESTIGES,
         ]
     },

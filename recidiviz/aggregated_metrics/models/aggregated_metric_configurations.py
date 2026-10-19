@@ -5250,6 +5250,60 @@ DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP_FOR_REGISTERED_JII_TABLET_A
     ),
 )
 
+EARNED_CREDIT_WRITEBACK_ATTEMPT_EVENTS = EventCountMetric(
+    name="earned_credit_writeback_attempt_events",
+    display_name="Earned Credit Writeback Attempt Events",
+    description="Number of earned credit writeback attempts, one per run, pathway, and person",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["run_id", "pathway"],
+)
+
+DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT = EventDistinctUnitCountMetric(
+    name="distinct_population_earned_credit_writeback_attempt",
+    display_name="Distinct Population: Earned Credit Writeback Attempt",
+    description="Total distinct count of people with at least one earned credit writeback attempt",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={},
+    ),
+)
+
+SUM_EARNED_CREDIT_WRITEBACK_DAYS_REQUESTED = SumEventValueMetric(
+    name="sum_earned_credit_writeback_days_requested",
+    display_name="Sum of Earned Credit Writeback Days Requested",
+    description="Sum of days that earned credit writeback attempts asked to add beyond the credit the state's system already held, excluding attempts with no recorded day counts",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="days_requested",
+)
+
+SUM_EARNED_CREDIT_WRITEBACK_DAYS_ATTEMPTED = SumEventValueMetric(
+    name="sum_earned_credit_writeback_days_attempted",
+    display_name="Sum of Earned Credit Writeback Days Attempted",
+    description="Sum of requested days that earned credit writeback attempts submitted to the state's system, excluding attempts with no recorded day counts",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="days_attempted",
+)
+
+SUM_EARNED_CREDIT_WRITEBACK_DAYS_WRITTEN = SumEventValueMetric(
+    name="sum_earned_credit_writeback_days_written",
+    display_name="Sum of Earned Credit Writeback Days Written",
+    description="Sum of days that successful earned credit writeback attempts confirmed by reading them back at write time, excluding attempts with no recorded day counts",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="days_written",
+)
+
 CONTACTS_INCLUDED_IN_ROUTE_PLANNER = EventCountMetric(
     name="contacts_included_in_route_planner",
     display_name="Contacts Included in Route Planner",

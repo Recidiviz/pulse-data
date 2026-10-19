@@ -43,6 +43,11 @@ from recidiviz.tools.looker.aggregated_metrics.custom_cpa_metrics_configurations
     CPA_ASSIGNMENT_NAMES_TO_TYPES,
     CPA_IMPACT_LOOKER_METRICS,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_earned_credit_metrics_configurations import (
+    EARNED_CREDIT_ASSIGNMENT_NAMES_TO_TYPES,
+    EARNED_CREDIT_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+    EARNED_CREDIT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_experiment_kpi_metrics_configurations import (
     EXPERIMENT_KPI_ASSIGNMENT_NAMES_TO_TYPES,
     EXPERIMENT_KPI_DENOMINATOR_METRICS,
@@ -197,6 +202,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.INCARCERATION],
             assignment_types_dict=INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions=INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+        )
+
+        ## Earned Credit
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="earned_credit_metrics",
+            output_directory=output_subdir,
+            metrics=EARNED_CREDIT_LOOKER_METRICS,
+            assignment_types_dict=EARNED_CREDIT_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions=EARNED_CREDIT_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )
 
         # Workflows
