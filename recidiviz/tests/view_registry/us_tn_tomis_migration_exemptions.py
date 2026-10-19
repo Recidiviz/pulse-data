@@ -115,9 +115,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_special_cu
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_special_custody_level_upgrade_2026_policy_v3_record import (
     US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension_of_direct_supervision_record import (
-    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
 )
@@ -317,7 +314,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Site_latest"): {
         US_TN_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(TN-2040): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: "TODO(TN-2041): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.TDPOP_latest"): {
         US_TN_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2046): Migrate this reference off of legacy TOMIS 1.0 raw data",
