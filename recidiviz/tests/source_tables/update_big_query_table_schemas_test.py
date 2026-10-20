@@ -2580,6 +2580,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.DisciplinaryIncarcerationIncident",
     "us_tn_ingest_view_results.DisciplinaryIncarcerationIncident_v2",
     "us_tn_ingest_view_results.InferredViolations",
+    "us_tn_ingest_view_results.InferredViolations_v2",
     "us_tn_ingest_view_results.OffenderMovementIncarcerationPeriod_v3",
     "us_tn_ingest_view_results.OffenderName",
     "us_tn_ingest_view_results.OffenderName_v2",

@@ -1235,6 +1235,15 @@
     sorts: [us_tn_STG_GANG_AFFILIATION.CREATE_DTM__raw]
     note_display: hover
     note_text: "Security threat group affiliations recorded for a person. 10 of 32 columns have no comment in the MiCase data dictionary and are left undocumented here."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 156
+    col: 0
+    width: 24
+    height: 6
+
   - name: CS_EPISODE
     title: CS_EPISODE
     explore: us_tn_raw_data
@@ -1282,7 +1291,7 @@
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
       US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1352,7 +1361,8 @@
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
       US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
+
