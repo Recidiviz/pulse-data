@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_tools_d
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_preprocessed import (
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_prior_record_preprocessed import (
-    US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
@@ -276,20 +273,12 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2028): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
-        "us_tn_raw_data_up_to_date_views.OffenderStatute_latest"
-    ): {
-        US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2029): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderTreatment_latest"
     ): {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table after cutover: MiCase has no equivalent of OffenderTreatment, and TDOC stopped updating it in 2022",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Offender_latest"): {
         CLIENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(TN-2017): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.PriorRecord_latest"): {
-        US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2033): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Sanctions_latest"): {
         NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-2035): Migrate this reference off of legacy TOMIS 1.0 raw data",
