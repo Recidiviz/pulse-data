@@ -31,6 +31,7 @@ steps:
       - "BQ_PROJECT=$PROJECT_ID"
       - "FORCE_RERUN=${_FORCE_RERUN}"
       - "PRODUCT_AREAS=${_PRODUCT_AREAS}"
+      - "STATE_CODE=${_STATE_CODE}"
     secretEnv: [ANTHROPIC_API_KEY]
     id: run
 
@@ -52,6 +53,7 @@ substitutions:
   _REPO_BRANCH: "main"
   _FORCE_RERUN: ""
   _PRODUCT_AREAS: ""
+  _STATE_CODE: ""
 
 # No `serviceAccount` here: it's set on the Cloud Build trigger
 # (pg-diagnosis.tf), which inlines these steps via `yamldecode`.

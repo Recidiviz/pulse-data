@@ -43,20 +43,25 @@ To test end-to-end, fire the Cloud Build webhook trigger directly:
       --arg issue_repo "Recidiviz/pulse-data" \\
       --arg repo_branch "main" \\
       --arg product_areas "workflows" \\
+      --arg state_code "US_ID" \\
       --arg force_rerun "1" \\
-      '{ISSUE_NUMBER: $issue_number, ISSUE_REPO: $issue_repo, REPO_BRANCH: $repo_branch, PRODUCT_AREAS: $product_areas, FORCE_RERUN: $force_rerun}' \\
+      '{ISSUE_NUMBER: $issue_number, ISSUE_REPO: $issue_repo, REPO_BRANCH: $repo_branch, PRODUCT_AREAS: $product_areas, STATE_CODE: $state_code, FORCE_RERUN: $force_rerun}' \\
       | curl -X POST -H "Content-Type: application/json" --data @- \\
         "https://cloudbuild.googleapis.com/v1/projects/${PROJECT_NUMBER}/locations/us-west1/triggers/pg-diagnosis:webhook?key=<API_KEY>&secret=${SECRET}"
 
 The API key portion of the URL is shown on the trigger's detail page in the
 Cloud Build console. _PRODUCT_AREAS is a comma-separated list of product
-areas (workflows, tasks, insights); leave empty for all. Requires GCP setup
-via Terraform-applied pg-diagnosis.tf, plus secret values from setup_gcp.sh.
+areas (workflows, tasks, insights); leave empty for all. _STATE_CODE is the
+state the ticket is about, normally derived from its `Region:` label by the
+GitHub Action; leave empty to have a model read it off the ticket. Requires GCP
+setup via Terraform-applied pg-diagnosis.tf, plus secret values from
+setup_gcp.sh.
 
 Alternatively, fire the `workflow_dispatch` event on
 .github/workflows/pg-diagnosis.yml from the GitHub Actions UI — that wraps
 the same webhook call.
 """
+import json
 import logging
 import os
 import re
@@ -81,6 +86,7 @@ from recidiviz.case_triage.edovo.external_id_matching import (
     strip_leading_zeros,
     zero_stripped,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DATA_REPO,
@@ -109,13 +115,25 @@ logger = logging.getLogger(__name__)
 
 MAX_AGENT_ITERATIONS = 40
 MODEL = "claude-opus-4-8"
-SCRUB_MODEL = "claude-haiku-4-5-20251001"
+SCRUB_MODEL = "claude-haiku-5-5"
+STATE_CODE_MODEL = "claude-haiku-5-5"
 AGENT_TIMEZONE = ZoneInfo("US/Eastern")
 
 # Marker used to replace redacted PII in posted comments. Both the deterministic
 # external-ID scrub and the Haiku scrub system prompt reference this so the
 # output is consistent.
 PII_REDACTION_MARKER = "[REDACTED PII]"
+
+# States whose data we are never permitted to query.
+FORBIDDEN_STATE_CODES = (StateCode.US_ME, StateCode.US_CA)
+
+# TODO(#10703): Remove this alias once US_IX is merged back into US_ID.
+# Tickets are labeled `Region: US_ID`, but all Idaho code and data live under
+# US_IX. The inverse mapping (data -> display) lives in
+# recidiviz/common/person_state_specific_data.py.
+_TICKET_TO_DATA_STATE_CODE: dict[StateCode, StateCode] = {
+    StateCode.US_ID: StateCode.US_IX
+}
 
 
 @dataclass(frozen=True)
@@ -132,6 +150,10 @@ class RuntimeConfig:
     build_id: str
     sa_email: str
     prompts_dir: str
+    # State from the ticket's Region label. None for manual runs and for tickets
+    # labeled with more than one state; determine_state_code then asks a model
+    # to read the state off the ticket.
+    labeled_state_code: StateCode | None
 
 
 def _load_runtime_config() -> RuntimeConfig:
@@ -148,6 +170,12 @@ def _load_runtime_config() -> RuntimeConfig:
         "PROMPTS_DIR",
         os.path.join(repo_path, ".claude/skills/investigate-pg-ticket"),
     )
+    raw_state_code = os.environ.get("STATE_CODE", "").strip()
+    labeled_state_code = StateCode.get(raw_state_code) if raw_state_code else None
+    if raw_state_code and labeled_state_code is None:
+        # A mistyped label shouldn't kill a run that used to work; degrade to
+        # reading the state off the ticket.
+        logger.warning("Ignoring unparseable STATE_CODE=[%s]", raw_state_code)
     return RuntimeConfig(
         gcp_project=gcp_project,
         bq_project=bq_project,
@@ -155,6 +183,7 @@ def _load_runtime_config() -> RuntimeConfig:
         build_id=build_id,
         sa_email=sa_email,
         prompts_dir=prompts_dir,
+        labeled_state_code=labeled_state_code,
     )
 
 
@@ -413,6 +442,23 @@ class PersonIDLookupError(DiagnosisFailure):
         "`pg_diagnosis_data_access_states` in "
         "`recidiviz/tools/deploy/terraform/pg-diagnosis.tf` and deploy."
     )
+
+
+class StateCodeUndeterminedError(DiagnosisFailure):
+    """Raised before the agent starts when we can't tell which state a ticket is for."""
+
+    HEADLINE = "**could not tell which state this ticket is about**."
+    GUIDANCE = (
+        "Add a single `Region: US_XX` label to this ticket (or put the state "
+        "code in its title) and re-run the diagnosis."
+    )
+
+
+class ForbiddenStateError(DiagnosisFailure):
+    """Raised before the agent starts when a ticket is for a state we never query."""
+
+    HEADLINE = "**we don't query this state's data**."
+    GUIDANCE = "A human needs to investigate this one."
 
 
 def _fetch_doc(*, doc_id: str, sa_email: str) -> dict:
@@ -785,7 +831,7 @@ def _query_person_external_id_rows(
 
 def look_up_person_ids(
     external_ids: list[str],
-    state_code: str,
+    state_code: StateCode,
     bq_project: str,
     ctx: DiagnosisContext,
 ) -> str:
@@ -814,7 +860,7 @@ def look_up_person_ids(
     Args:
         external_ids: IDs read out of the ticket's PII doc, in whatever form the
             reporter wrote them.
-        state_code: State whose IDs these are. Use US_IX for Idaho.
+        state_code: State to search, as returned by determine_state_code.
         bq_project: GCP project holding normalized_state.
         ctx: Per-run context, used for the BigQuery client and to record every ID
             seen so the redaction sweep can find it later.
@@ -823,14 +869,14 @@ def look_up_person_ids(
     cleaned_external_ids = sorted({eid.strip() for eid in external_ids if eid.strip()})
     if not cleaned_external_ids:
         raise PersonIDLookupError(
-            f"No usable external IDs to look up in state [{state_code}]: the PII "
+            f"No usable external IDs to look up in state [{state_code.value}]: the PII "
             f"doc yielded [{len(external_ids)}] value(s), all of them blank."
         )
 
     try:
         rows = _query_person_external_id_rows(
             external_ids=cleaned_external_ids,
-            state_code=state_code,
+            state_code=state_code.value,
             bq_project=bq_project,
             ctx=ctx,
             ignore_leading_zeros=False,
@@ -838,7 +884,7 @@ def look_up_person_ids(
         if not rows:
             rows = _query_person_external_id_rows(
                 external_ids=cleaned_external_ids,
-                state_code=state_code,
+                state_code=state_code.value,
                 bq_project=bq_project,
                 ctx=ctx,
                 ignore_leading_zeros=True,
@@ -850,7 +896,7 @@ def look_up_person_ids(
         # The IDs themselves stay out of the message: it is surfaced verbatim in
         # a public GitHub comment, and the count is what a reader can act on.
         raise PersonIDLookupError(
-            f"No person IDs found in state [{state_code}] for the "
+            f"No person IDs found in state [{state_code.value}] for the "
             f"[{len(cleaned_external_ids)}] external ID(s) read from the PII "
             f"doc, with or without leading zeros."
         )
@@ -861,6 +907,7 @@ def look_up_person_ids(
 
 def _build_tool_handlers(
     config: RuntimeConfig,
+    state_code: StateCode,
     ctx: DiagnosisContext,
     linear_id: str | None,
     pii_doc_id: str | None,
@@ -879,7 +926,7 @@ def _build_tool_handlers(
             ctx=ctx,
         ),
         "look_up_person_ids": lambda args: look_up_person_ids(
-            args["external_ids"], args["state_code"], config.bq_project, ctx
+            args["external_ids"], state_code, config.bq_project, ctx
         ),
         "search_codebase": lambda args: search_codebase(
             args["query"], config.repo_path, args.get("path")
@@ -937,7 +984,7 @@ TOOLS = [
     },
     {
         "name": "look_up_person_ids",
-        "description": "Look up internal person_ids from external IDs (e.g. SID numbers, TDCJ numbers). Use this after fetch_pii to convert external IDs to person_ids for subsequent queries.",
+        "description": "Look up internal person_ids from external IDs (e.g. SID numbers, TDCJ numbers) in this ticket's state. Use this after fetch_pii to convert external IDs to person_ids for subsequent queries.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -946,12 +993,8 @@ TOOLS = [
                     "items": {"type": "string"},
                     "description": "List of external IDs from the PII doc, exactly as written there (e.g. ['00EXAMPLE1', 'EXAMPLE-0002']). Leading zeros do not need to match how the ID is stored.",
                 },
-                "state_code": {
-                    "type": "string",
-                    "description": "State code (e.g. 'US_TX'). Use 'US_IX' for Idaho.",
-                },
             },
-            "required": ["external_ids", "state_code"],
+            "required": ["external_ids"],
         },
     },
     {
@@ -989,10 +1032,117 @@ TOOLS = [
 ]
 
 
+# ── state code ───────────────────────────────────────────────────────────────
+
+
+_REPORTED_STATE_CODE_KEY = "state_code"
+
+_STATE_CODE_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        _REPORTED_STATE_CODE_KEY: {
+            "anyOf": [
+                {"type": "string", "enum": [s.value for s in StateCode]},
+                {"type": "null"},
+            ],
+            "description": (
+                "The state's US_XX code, or null if the ticket doesn't name "
+                "exactly one state."
+            ),
+        },
+    },
+    "required": [_REPORTED_STATE_CODE_KEY],
+    "additionalProperties": False,
+}
+
+
+def _infer_state_code_from_ticket(
+    *, issue_title: str, issue_body: str, anthropic_api_key: str
+) -> StateCode:
+    """Returns the state a model reads off the ticket's title and body.
+
+    Raises StateCodeUndeterminedError when the ticket names no state or more
+    than one, or when the model returns no answer.
+    """
+    client = anthropic.Anthropic(api_key=anthropic_api_key)
+    response = client.messages.create(
+        model=STATE_CODE_MODEL,
+        max_tokens=1_000,
+        system=(
+            "You identify which US state a Product Growth bug ticket is about. "
+            "Reporters usually put the state code in brackets in the title, "
+            "like [US_ID], or fill in a 'State(s)' field in the body; they "
+            "sometimes write the state's name instead. Report null if the "
+            "ticket names no state or more than one; never guess."
+        ),
+        output_config={
+            "effort": "low",
+            "format": {"type": "json_schema", "schema": _STATE_CODE_RESPONSE_SCHEMA},
+        },
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    f"**Issue title:** {issue_title}\n\n**Issue body:**\n{issue_body}"
+                ),
+            }
+        ],
+    )
+    if response.stop_reason != "end_turn":
+        raise StateCodeUndeterminedError(
+            f"The state-code model stopped with [{response.stop_reason}] "
+            f"before answering."
+        )
+    response_text = next(
+        block.text for block in response.content if block.type == "text"
+    )
+    reported_state_code = json.loads(response_text)[_REPORTED_STATE_CODE_KEY]
+    if reported_state_code is None:
+        raise StateCodeUndeterminedError(
+            "The ticket has no single Region label, and its title and body "
+            "don't name exactly one state."
+        )
+    state_code = StateCode(reported_state_code)
+    logger.info("Model read state [%s] off the ticket", state_code.value)
+    return state_code
+
+
+def determine_state_code(
+    *,
+    labeled_state_code: StateCode | None,
+    issue_title: str,
+    issue_body: str,
+    anthropic_api_key: str,
+) -> StateCode:
+    """Returns the state whose data the agent should query for this ticket.
+
+    Uses the ticket's Region label when there is one, and otherwise asks a model
+    to read the state off the title and body. Idaho tickets come back as US_IX,
+    where all Idaho code and data live.
+
+    Raises StateCodeUndeterminedError when no single state can be found, and
+    ForbiddenStateError for a state whose data we never query.
+    """
+    ticket_state_code = (
+        labeled_state_code
+        if labeled_state_code is not None
+        else _infer_state_code_from_ticket(
+            issue_title=issue_title,
+            issue_body=issue_body,
+            anthropic_api_key=anthropic_api_key,
+        )
+    )
+    if ticket_state_code in FORBIDDEN_STATE_CODES:
+        raise ForbiddenStateError(f"This ticket is for {ticket_state_code.value}.")
+    return _TICKET_TO_DATA_STATE_CODE.get(ticket_state_code, ticket_state_code)
+
+
 # ── agentic loop ─────────────────────────────────────────────────────────────
 
 
-def _build_system_prompt(config: RuntimeConfig, product_areas: list[str]) -> str:
+def _build_system_prompt(
+    config: RuntimeConfig, state_code: StateCode, product_areas: list[str]
+) -> str:
     """Assemble the agent's system prompt from skill markdown + product-area sections."""
 
     def _load_prompt(name: str) -> str:
@@ -1055,6 +1205,13 @@ this date — the most recent row in a table is not necessarily today.
   - `recidiviz/task_eligibility/CLAUDE.md` — task eligibility spans, criteria, helper functions
   - `recidiviz/ingest/CLAUDE.md` — data ingestion pipeline
 
+## This ticket's state
+
+**This ticket's data lives under {state_code.value}.** A separate step already
+determined that from the ticket's labels, title, and body, so do NOT infer a
+different state. Use `{state_code.value}` for every BQ query, dataset name, and
+codebase search, and skip the "Determine the state code" part of Step 2.
+
 ## Investigation Steps
 
 ### Step 1: Fetch PII
@@ -1073,9 +1230,8 @@ If you're not confident which task/opportunity is the right match, pick the best
 
 ### Step 3: Look up person IDs
 
-Use the look_up_person_ids tool with the external IDs from the PII doc and the state code.
-For US_ID tickets, use state_code 'US_IX' (they share the same data).
-The tool returns person_id, external_id, id_type, and state_code for each match.
+Use the look_up_person_ids tool with the external IDs from the PII doc. It searches
+{state_code.value} and returns person_id, external_id, id_type, and state_code for each match.
 
 Pass the IDs exactly as the PII doc writes them. The tool ignores leading zeros on
 both sides, so do not pad, strip, or otherwise reformat an ID and retry it — a miss
@@ -1124,11 +1280,13 @@ recommends that a human investigate manually.
 
 
 def run_agent(
+    *,
     issue: GithubIssue,
     issue_title: str,
     issue_body: str,
     product_areas: list[str],
     config: RuntimeConfig,
+    state_code: StateCode,
     anthropic_api_key: str,
     ctx: DiagnosisContext,
     linear_id: str | None,
@@ -1141,14 +1299,17 @@ def run_agent(
     """
     return run_agent_loop(
         api_key=anthropic_api_key,
-        system_prompt=_build_system_prompt(config, product_areas),
+        system_prompt=_build_system_prompt(config, state_code, product_areas),
         user_message=(
             f"**Issue #{issue.number}**\n\n"
+            f"**State:** {state_code.value}\n\n"
             f"**Issue title:** {issue_title}\n\n"
             f"**Issue body:**\n{issue_body}"
         ),
         tools=TOOLS,
-        tool_handlers=_build_tool_handlers(config, ctx, linear_id, pii_doc_id),
+        tool_handlers=_build_tool_handlers(
+            config, state_code, ctx, linear_id, pii_doc_id
+        ),
         config=AgentConfig(model=MODEL, max_iterations=MAX_AGENT_ITERATIONS),
         summary_instruction=(
             "You've reached the maximum number of investigation steps. "
@@ -1270,17 +1431,30 @@ def main() -> None:
     anthropic_api_key = get_secret("pg_diagnosis_claude_api_key", config.gcp_project)
     ctx = DiagnosisContext()
     try:
+        try:
+            state_code = determine_state_code(
+                labeled_state_code=config.labeled_state_code,
+                issue_title=issue_content.title,
+                issue_body=issue_content.body,
+                anthropic_api_key=anthropic_api_key,
+            )
+        except DiagnosisFailure as e:
+            logger.warning("Not diagnosing %s: %s", issue, e)
+            _post_marked_comment(issue, e.user_message() + logs_footer)
+            return
+
         logger.info("Starting diagnosis for %s", issue)
         result = run_agent(
-            issue,
-            issue_content.title,
-            issue_content.body,
-            product_areas,
-            config,
-            anthropic_api_key,
-            ctx,
-            linear_id,
-            issue_content.pii_doc_id,
+            issue=issue,
+            issue_title=issue_content.title,
+            issue_body=issue_content.body,
+            product_areas=product_areas,
+            config=config,
+            state_code=state_code,
+            anthropic_api_key=anthropic_api_key,
+            ctx=ctx,
+            linear_id=linear_id,
+            pii_doc_id=issue_content.pii_doc_id,
         )
         # A run that finished normally but never resolved the ticket's PII to a
         # person didn't diagnose this client's problem, whatever it wrote — post

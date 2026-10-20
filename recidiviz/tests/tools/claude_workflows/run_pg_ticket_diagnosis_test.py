@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for pg_ticket_diagnosis/run_pg_ticket_diagnosis.py."""
+import json
 import os
 import unittest
 from unittest import mock
 
 from google.cloud import bigquery
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
@@ -305,6 +307,9 @@ class TestFetchPiiForIssue(unittest.TestCase):
         "ISSUE_NUMBER": str(_ISSUE.number),
         "ISSUE_REPO": _ISSUE.repo,
         "PRODUCT_AREAS": "tasks",
+        # Set explicitly because patch.dict merges with the real environment —
+        # a developer's exported STATE_CODE would otherwise leak in.
+        "STATE_CODE": "US_TX",
     },
 )
 @mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
@@ -353,9 +358,8 @@ class TestMainRefusesUnresolvedDiagnosis(unittest.TestCase):
         mock_post: mock.MagicMock,
         _mock_scrub: mock.MagicMock,
     ) -> None:
-        def _resolve_and_diagnose(*args: object) -> object:
-            # ctx is the 7th positional arg run_agent receives.
-            ctx = args[6]
+        def _resolve_and_diagnose(**kwargs: object) -> object:
+            ctx = kwargs["ctx"]
             assert isinstance(ctx, run_pg.DiagnosisContext)
             ctx.person_ids_resolved = True
             return run_pg.AgentResult(text=self.DIAGNOSIS)
@@ -430,6 +434,7 @@ class TestIssueHasSuccessfulDiagnosis(unittest.TestCase):
         "BUILD_ID": "test-build",
         "ISSUE_NUMBER": str(_ISSUE.number),
         "ISSUE_REPO": _ISSUE.repo,
+        "STATE_CODE": "US_TX",
     },
 )
 class TestMainDeduplication(unittest.TestCase):
@@ -541,7 +546,7 @@ class TestLookUpPersonIds(unittest.TestCase):
     sides. These tests pin that, and pin that a genuine miss still aborts the run.
     """
 
-    STATE_CODE = "US_TN"
+    STATE_CODE = StateCode.US_TN
     BQ_PROJECT = "recidiviz-staging"
     STORED_ID = "00123456"
     UNPADDED_ID = "123456"
@@ -569,7 +574,7 @@ class TestLookUpPersonIds(unittest.TestCase):
             person_id=self.PERSON_ID,
             external_id=self.STORED_ID,
             id_type="US_TN_DOC",
-            state_code=self.STATE_CODE,
+            state_code=self.STATE_CODE.value,
         )
         with mock.patch.object(
             run_pg, "_query_person_external_id_rows", side_effect=[[], [row]]
@@ -592,7 +597,9 @@ class TestLookUpPersonIds(unittest.TestCase):
         with mock.patch.object(
             run_pg, "_query_person_external_id_rows", return_value=[row]
         ) as mock_query:
-            run_pg.look_up_person_ids(["0123456"], "US_MI", self.BQ_PROJECT, self.ctx)
+            run_pg.look_up_person_ids(
+                ["0123456"], StateCode.US_MI, self.BQ_PROJECT, self.ctx
+            )
 
         self.assertEqual([False], self._passes(mock_query))
 
@@ -604,13 +611,13 @@ class TestLookUpPersonIds(unittest.TestCase):
                 person_id=self.PERSON_ID,
                 external_id=self.STORED_ID,
                 id_type="US_TN_DOC",
-                state_code=self.STATE_CODE,
+                state_code=self.STATE_CODE.value,
             ),
             _external_id_row(
                 person_id=487200000000000002,
                 external_id=self.STORED_ID,
                 id_type="US_TN_OTHER",
-                state_code=self.STATE_CODE,
+                state_code=self.STATE_CODE.value,
             ),
         ]
         with mock.patch.object(
@@ -641,7 +648,7 @@ class TestLookUpPersonIds(unittest.TestCase):
                 self._look_up([self.UNPADDED_ID])
 
         self.assertNotIn(self.UNPADDED_ID, str(raised.exception))
-        self.assertIn(self.STATE_CODE, str(raised.exception))
+        self.assertIn(self.STATE_CODE.value, str(raised.exception))
 
     def test_blank_ids_raise_without_querying(self) -> None:
         with mock.patch.object(run_pg, "_query_person_external_id_rows") as mock_query:
@@ -657,7 +664,7 @@ class TestLookUpPersonIds(unittest.TestCase):
             person_id=self.PERSON_ID,
             external_id=self.STORED_ID,
             id_type="US_TN_DOC",
-            state_code=self.STATE_CODE,
+            state_code=self.STATE_CODE.value,
         )
         with mock.patch.object(
             run_pg, "_query_person_external_id_rows", side_effect=[[], [row]]
@@ -666,3 +673,202 @@ class TestLookUpPersonIds(unittest.TestCase):
 
         self.assertIn(self.UNPADDED_ID, self.ctx.known_external_ids)
         self.assertIn(self.STORED_ID, self.ctx.known_external_ids)
+
+
+class TestLoadRuntimeConfigStateCode(unittest.TestCase):
+    """Tests how _load_runtime_config reads the ticket's Region label state code.
+
+    .github/workflows/pg-diagnosis.yml forwards it as STATE_CODE. It's optional:
+    manual runs and tickets labeled for more than one state send nothing.
+    """
+
+    # pylint: disable=protected-access  # tests a module-private helper
+
+    _BASE_ENV = {"GCP_PROJECT_ID": "recidiviz-staging", "BUILD_ID": "test-build"}
+
+    def _config(self, state_code: str) -> run_pg.RuntimeConfig:
+        with mock.patch.dict(
+            os.environ, {**self._BASE_ENV, "STATE_CODE": state_code}, clear=True
+        ):
+            return run_pg._load_runtime_config()
+
+    def test_parses_state_code(self) -> None:
+        self.assertEqual(StateCode.US_TX, self._config("US_TX").labeled_state_code)
+
+    def test_lowercase_state_code_is_normalized(self) -> None:
+        self.assertEqual(StateCode.US_TX, self._config("us_tx").labeled_state_code)
+
+    def test_absent_state_code_is_none(self) -> None:
+        with mock.patch.dict(os.environ, self._BASE_ENV, clear=True):
+            self.assertIsNone(run_pg._load_runtime_config().labeled_state_code)
+
+    def test_empty_state_code_is_none(self) -> None:
+        self.assertIsNone(self._config("").labeled_state_code)
+
+    def test_unparseable_state_code_degrades_to_none(self) -> None:
+        # A mistyped label shouldn't kill a run that used to work.
+        # assertLogs misses this when Alembic's fileConfig, run by migration tests
+        # in the same worker, has already disabled the module logger.
+        with mock.patch.object(run_pg, "logger") as mock_logger:
+            self.assertIsNone(self._config("US_PO").labeled_state_code)
+        mock_logger.warning.assert_called_once_with(
+            "Ignoring unparseable STATE_CODE=[%s]", "US_PO"
+        )
+
+
+def _mock_model_reporting(
+    reported_state_code: str | None, *, stop_reason: str = "end_turn"
+) -> mock.MagicMock:
+    """Returns an anthropic.Anthropic stub whose model reports reported_state_code."""
+    text_block = mock.MagicMock(
+        type="text", text=json.dumps({"state_code": reported_state_code})
+    )
+    mock_anthropic = mock.MagicMock()
+    mock_anthropic.return_value.messages.create.return_value = mock.MagicMock(
+        content=[text_block], stop_reason=stop_reason
+    )
+    return mock_anthropic
+
+
+class TestDetermineStateCode(unittest.TestCase):
+    """Tests determine_state_code, which settles the ticket's state before the agent runs."""
+
+    def _determine(
+        self,
+        labeled_state_code: StateCode | None,
+        mock_anthropic: mock.MagicMock,
+    ) -> StateCode:
+        with mock.patch(f"{_MODULE}.anthropic.Anthropic", mock_anthropic):
+            return run_pg.determine_state_code(
+                labeled_state_code=labeled_state_code,
+                issue_title="[US_PO] Client missing from caseload",
+                issue_body=_BODY_WITHOUT_BANNER,
+                anthropic_api_key="fake-api-key",
+            )
+
+    def test_region_label_wins_without_asking_the_model(self) -> None:
+        # On issue #99565 the title read [US_PO] (the officer's role typed into
+        # the state bracket), but the Region label had the right state.
+        mock_anthropic = _mock_model_reporting("US_TX")
+        self.assertEqual(
+            StateCode.US_TX, self._determine(StateCode.US_TX, mock_anthropic)
+        )
+        mock_anthropic.assert_not_called()
+
+    def test_idaho_label_maps_to_us_ix(self) -> None:
+        self.assertEqual(
+            StateCode.US_IX,
+            self._determine(StateCode.US_ID, _mock_model_reporting(None)),
+        )
+
+    def test_forbidden_label_raises(self) -> None:
+        with self.assertRaisesRegex(run_pg.ForbiddenStateError, "US_ME"):
+            self._determine(StateCode.US_ME, _mock_model_reporting(None))
+
+    def test_asks_the_model_when_there_is_no_label(self) -> None:
+        mock_anthropic = _mock_model_reporting("US_TX")
+        self.assertEqual(StateCode.US_TX, self._determine(None, mock_anthropic))
+        mock_anthropic.return_value.messages.create.assert_called_once()
+
+    def test_idaho_model_answer_maps_to_us_ix(self) -> None:
+        self.assertEqual(
+            StateCode.US_IX, self._determine(None, _mock_model_reporting("US_ID"))
+        )
+
+    def test_forbidden_model_answer_raises(self) -> None:
+        with self.assertRaisesRegex(run_pg.ForbiddenStateError, "US_CA"):
+            self._determine(None, _mock_model_reporting("US_CA"))
+
+    def test_model_finding_no_state_raises(self) -> None:
+        with self.assertRaises(run_pg.StateCodeUndeterminedError):
+            self._determine(None, _mock_model_reporting(None))
+
+    def test_model_stopping_before_answering_raises(self) -> None:
+        with self.assertRaisesRegex(
+            run_pg.StateCodeUndeterminedError, r"\[max_tokens\]"
+        ):
+            self._determine(None, _mock_model_reporting(None, stop_reason="max_tokens"))
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GCP_PROJECT_ID": "recidiviz-staging",
+        "BUILD_ID": "test-build",
+        "ISSUE_NUMBER": str(_ISSUE.number),
+        "ISSUE_REPO": _ISSUE.repo,
+        "PRODUCT_AREAS": "tasks",
+        "STATE_CODE": "US_ME",
+    },
+)
+@mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
+@mock.patch(
+    f"{_MODULE}.issue_has_successful_diagnosis", mock.MagicMock(return_value=False)
+)
+@mock.patch(
+    f"{_MODULE}.fetch_issue_content",
+    mock.MagicMock(
+        return_value=run_pg.FetchedIssueContent(
+            title="[US_ME] Contacts aren't clearing",
+            body=_BODY_WITH_BANNER,
+            pii_doc_id=_DOC_ID,
+        )
+    ),
+)
+@mock.patch(f"{_MODULE}.resolve_linear_id_for_issue", mock.MagicMock(return_value=None))
+class TestMainStateCodeGuards(unittest.TestCase):
+    """Tests that main() stops before the agent runs when the ticket's state is off limits or unknown."""
+
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.run_agent")
+    def test_refuses_and_explains_itself(
+        self, mock_run_agent: mock.MagicMock, mock_post: mock.MagicMock
+    ) -> None:
+        run_pg.main()
+        mock_run_agent.assert_not_called()
+        posted = mock_post.call_args.args[1]
+        self.assertIn("we don't query this state's data", posted)
+        self.assertIn("US_ME", posted)
+
+    @mock.patch.dict(os.environ, {"STATE_CODE": ""})
+    @mock.patch(f"{_MODULE}.anthropic.Anthropic", _mock_model_reporting("US_ME"))
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.run_agent")
+    def test_refuses_a_state_the_model_read_off_the_ticket(
+        self, mock_run_agent: mock.MagicMock, mock_post: mock.MagicMock
+    ) -> None:
+        run_pg.main()
+        mock_run_agent.assert_not_called()
+        self.assertIn("we don't query this state's data", mock_post.call_args.args[1])
+
+    @mock.patch.dict(os.environ, {"STATE_CODE": ""})
+    @mock.patch(f"{_MODULE}.anthropic.Anthropic", _mock_model_reporting(None))
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.run_agent")
+    def test_stops_when_the_state_is_undetermined(
+        self, mock_run_agent: mock.MagicMock, mock_post: mock.MagicMock
+    ) -> None:
+        run_pg.main()
+        mock_run_agent.assert_not_called()
+        self.assertIn(
+            "could not tell which state this ticket is about",
+            mock_post.call_args.args[1],
+        )
+
+    @mock.patch.dict(os.environ, {"STATE_CODE": ""})
+    @mock.patch(f"{_MODULE}._post_marked_comment")
+    @mock.patch(f"{_MODULE}.run_agent")
+    def test_reports_a_state_code_model_outage(
+        self, mock_run_agent: mock.MagicMock, mock_post: mock.MagicMock
+    ) -> None:
+        mock_anthropic = mock.MagicMock()
+        mock_anthropic.return_value.messages.create.side_effect = RuntimeError(
+            "API overloaded"
+        )
+        with mock.patch(f"{_MODULE}.anthropic.Anthropic", mock_anthropic):
+            with self.assertRaises(SystemExit):
+                run_pg.main()
+        mock_run_agent.assert_not_called()
+        posted = mock_post.call_args.args[1]
+        self.assertIn("Automated diagnosis failed", posted)
+        self.assertIn("RuntimeError: API overloaded", posted)

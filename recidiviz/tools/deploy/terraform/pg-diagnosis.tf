@@ -209,6 +209,7 @@ resource "google_cloudbuild_trigger" "pg_diagnosis" {
     _ISSUE_REPO    = "$(body.ISSUE_REPO)"
     _REPO_BRANCH   = "$(body.REPO_BRANCH)"
     _PRODUCT_AREAS = "$(body.PRODUCT_AREAS)"
+    _STATE_CODE    = "$(body.STATE_CODE)"
     _FORCE_RERUN   = "$(body.FORCE_RERUN)"
   }
 
