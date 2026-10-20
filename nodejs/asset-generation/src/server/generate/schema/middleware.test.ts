@@ -58,7 +58,7 @@ test("invalid input", () => {
   expect(res.json.mock.calls[0]).toMatchInlineSnapshot(`
     [
       {
-        "error": "Validation error: Expected string, received number at \\"foo\\"",
+        "error": "Validation error: Expected string, received number at "foo"",
       },
     ]
   `);

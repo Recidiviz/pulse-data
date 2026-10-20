@@ -35,5 +35,19 @@ export default defineConfig({
     globalSetup: ["./globalTestSetup.ts"],
     setupFiles: ["./testSetup.ts"],
     mockReset: true,
+    // Vitest resolves packages like Node does, which picks the design system's
+    // CJS entry; that entry requires .css files Node cannot load. Point tests at
+    // the ES build instead and let Vite transform it.
+    alias: {
+      "@recidiviz/design-system": path.resolve(
+        __dirname,
+        "./node_modules/@recidiviz/design-system/dist/index.es.js"
+      ),
+    },
+    server: {
+      deps: {
+        inline: ["@recidiviz/design-system"],
+      },
+    },
   },
 });

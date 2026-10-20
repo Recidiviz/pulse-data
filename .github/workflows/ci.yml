@@ -249,7 +249,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
         with:
-          node-version: "18"
+          node-version: "22"
           cache: "yarn"
           cache-dependency-path: nodejs/asset-generation/yarn.lock
       - name: Install fonts

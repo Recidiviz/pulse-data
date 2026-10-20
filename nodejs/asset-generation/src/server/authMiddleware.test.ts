@@ -27,6 +27,14 @@ import { HttpError } from "./errors";
 vi.mock("../utils");
 vi.mock("google-auth-library");
 
+// OAuth2Client is constructed with `new`, which vitest mocks only support via a
+// `function` (not arrow) implementation.
+function mockOAuth2ClientInstance(instance: object) {
+  (OAuth2Client as unknown as Mock).mockImplementation(function () {
+    return instance;
+  });
+}
+
 const AUTH_ENDPOINT = "/test-auth";
 const CLOUD_RUN_URL = "test-service.run.app";
 
@@ -61,7 +69,7 @@ test("misformatted auth", async () => {
 });
 
 test("unverified", async () => {
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       throw new Error("failed verifying token");
     },
@@ -74,7 +82,7 @@ test("unverified", async () => {
 });
 
 test("unverified email", async () => {
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       return {
         getPayload: () => {
@@ -93,7 +101,7 @@ test("unverified email", async () => {
 });
 
 test("unauthorized email", async () => {
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       return {
         getPayload: () => {
@@ -116,7 +124,7 @@ test("no audience", async () => {
   const gaeServiceAcct = "my-service-account@example.com";
   vi.stubEnv("GAE_SERVICE_ACCOUNT", gaeServiceAcct);
 
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       return {
         getPayload: () => {
@@ -139,7 +147,7 @@ test("successful service account auth", async () => {
   const gaeServiceAcct = "my-service-account@example.com";
   vi.stubEnv("GAE_SERVICE_ACCOUNT", gaeServiceAcct);
 
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       return {
         getPayload: () => {
@@ -163,7 +171,7 @@ test("successful user auth", async () => {
   const gaeServiceAcct = "my-service-account@example.com";
   vi.stubEnv("GAE_SERVICE_ACCOUNT", gaeServiceAcct);
 
-  (OAuth2Client as unknown as Mock).mockReturnValue({
+  mockOAuth2ClientInstance({
     verifyIdToken: async () => {
       return {
         getPayload: () => {

@@ -46,7 +46,7 @@ describe("convertRemToPx", () => {
         `<style>.abc123{font:500 1rem/1.2 "Public Sans",sans-serif;padding:5px 1rem 0.5em;}</style>`
       )
     ).toMatchInlineSnapshot(
-      '"<style>.abc123{font:500 16px/1.2 \\"Public Sans\\",sans-serif;padding:5px 16px 0.5em;}</style>"'
+      `"<style>.abc123{font:500 16px/1.2 "Public Sans",sans-serif;padding:5px 16px 0.5em;}</style>"`
     );
   });
 });
