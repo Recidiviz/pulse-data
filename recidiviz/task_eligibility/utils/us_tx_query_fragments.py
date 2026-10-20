@@ -1222,8 +1222,7 @@ def us_tx_program_attendance_case_notes(*, fallback_population_cte: str) -> str:
     Produces one row per current or completed referral, plus "No records found" fallback
     rows for every person in fallback_population_cte who doesn't have corresponding
     attendance info under current or completed referrals. In-progress rows whose start
-    date is in the future end with "Program not started yet", and rows with no attended
-    or missed sessions end with "No sessions recorded".
+    date is in the future end with "Program not started yet".
 
     For example:
         person_id,criteria,note_title,note_body,event_date
@@ -1258,18 +1257,10 @@ def us_tx_program_attendance_case_notes(*, fallback_population_cte: str) -> str:
         CONCAT(
             "Attended: ", CAST(JSON_VALUE(referral_metadata, '$.sessions_attended') AS INT64),
             " | Missed: ", CAST(JSON_VALUE(referral_metadata, '$.sessions_missed') AS INT64),
-            IFNULL(
-                CONCAT(
-                    " | ",
-                    CASE
-                        WHEN participation_status_raw_text = "ACTIVE"
-                            AND start_date > CURRENT_DATE('US/Eastern')
-                            THEN "Program not started yet"
-                        WHEN CAST(JSON_VALUE(referral_metadata, '$.sessions_attended') AS INT64)
-                            + CAST(JSON_VALUE(referral_metadata, '$.sessions_missed') AS INT64) = 0
-                            THEN "No sessions recorded"
-                    END
-                ),
+            IF(
+                participation_status_raw_text = "ACTIVE"
+                    AND start_date > CURRENT_DATE('US/Eastern'),
+                " | Program not started yet",
                 ""
             )
         ) AS note_body,
