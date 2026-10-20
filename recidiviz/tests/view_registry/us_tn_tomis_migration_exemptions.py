@@ -28,9 +28,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_incarceration_incidents_preprocessed import (
-    US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -176,9 +173,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
     ): {
         US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2001): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Disciplinary_latest"): {
-        US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2004): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DrugTestDrugClass_latest"

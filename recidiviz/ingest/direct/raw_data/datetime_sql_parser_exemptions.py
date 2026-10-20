@@ -175,13 +175,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "PostedDate",
             "WaiverSignedDate",
         ],
-        "Disciplinary": [
-            "DispositionDate",
-            "IncidentDate",
-            "LastUpdateDate",
-            "PostedDateTime",
-            "RefuseToSignDate",
-        ],
         "Offender": ["ArchiveDate", "LastUpdateDate", "NotInCustodyDate", "PostedDate"],
         "OffenderAttributes": [
             "DeathDate",
@@ -723,6 +716,13 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
     StateCode.US_TN: {
         "Address": ["LastUpdateDate"],
         "CellBedAssignment": ["AssignmentDateTime", "EndDate", "LastUpdateDate"],
+        "Disciplinary": [
+            "DispositionDate",
+            "IncidentDate",
+            "LastUpdateDate",
+            "PostedDateTime",
+            "RefuseToSignDate",
+        ],
         "DisciplinarySentence": ["LastUpdateDate", "SentenceDate"],
         "Diversion": [
             "DiversionGrantedDate",
