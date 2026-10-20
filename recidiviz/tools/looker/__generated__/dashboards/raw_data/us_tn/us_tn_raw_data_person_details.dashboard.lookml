@@ -1235,6 +1235,49 @@
     sorts: [us_tn_STG_GANG_AFFILIATION.CREATE_DTM__raw]
     note_display: hover
     note_text: "Security threat group affiliations recorded for a person. 10 of 32 columns have no comment in the MiCase data dictionary and are left undocumented here."
+  - name: CS_EPISODE
+    title: CS_EPISODE
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_CS_EPISODE.primary_key,
+      us_tn_CS_EPISODE.DPP_ID,
+      us_tn_CS_EPISODE.PERSON_ID,
+      us_tn_CS_EPISODE.DPP_NUMBER,
+      us_tn_CS_EPISODE.CASE_TYPE,
+      us_tn_CS_EPISODE.INTERVIEW_DATE__raw,
+      us_tn_CS_EPISODE.REVIEWER_ID,
+      us_tn_CS_EPISODE.STATUS_ID,
+      us_tn_CS_EPISODE.CHANGE_ID,
+      us_tn_CS_EPISODE.TRACKING_NUMBER,
+      us_tn_CS_EPISODE.INTERVIEW_STATUS_ID,
+      us_tn_CS_EPISODE.DATE_COMPLETED__raw,
+      us_tn_CS_EPISODE.DATE_RECEIVED__raw,
+      us_tn_CS_EPISODE.ECC_ELIGIBILITY_STATUS,
+      us_tn_CS_EPISODE.ECC_ABATEMENT_DATE__raw,
+      us_tn_CS_EPISODE.ECC_ABATEMENT_DATE_DENIED__raw,
+      us_tn_CS_EPISODE.COURT_TITLE,
+      us_tn_CS_EPISODE.COURT_FIRST_NAME,
+      us_tn_CS_EPISODE.COURT_MIDDLE_NAME,
+      us_tn_CS_EPISODE.COURT_LAST_NAME,
+      us_tn_CS_EPISODE.COURT_SUFFIX,
+      us_tn_CS_EPISODE.COURT_DATE_OF_BIRTH__raw,
+      us_tn_CS_EPISODE.SUPERVISION_LEVEL_ID,
+      us_tn_CS_EPISODE.SUPERVISION_LEVEL_STARTDATE__raw,
+      us_tn_CS_EPISODE.SUPERVISION_LEVEL_ENDDATE__raw,
+      us_tn_CS_EPISODE.RELEASE_TYPE_ID,
+      us_tn_CS_EPISODE.CREATE_USERID,
+      us_tn_CS_EPISODE.CREATE_DTM__raw,
+      us_tn_CS_EPISODE.UPDT_DTM__raw,
+      us_tn_CS_EPISODE.UPDT_USERID,
+      us_tn_CS_EPISODE.ACTIVE_FLAG,
+      us_tn_CS_EPISODE.LAST_CONTACT_DATE__raw,
+      us_tn_CS_EPISODE.EPISODE_TYPE_ID,
+      us_tn_CS_EPISODE.file_id,
+      us_tn_CS_EPISODE.is_deleted]
+    sorts: [us_tn_CS_EPISODE.INTERVIEW_DATE__raw]
+    note_display: hover
+    note_text: "Community supervision (\"DPP\" — Diversion/Probation/Parole) episode table, keyed on DPP_ID. Many other MiCase tables (IN_EPISODE, V4P_SUBJECT_ATTRIBUTE, V4P_RNA_ASSESSMENT, the CS_OMS_* family, PM_MOVEMENT_CODES, PM_INMATE_TRAFFIC_HISTORY added in this same batch, and others) reference DPP_ID as a foreign key to this table, which previously had no raw data config anywhere in this repo.  File description is Claude inference/placeholder. TODO(TN-2078): confirm and expand.  Irregularities: only 1 sample row was available, and this file — like the other 5 new file tags in this same batch — has only ever been observed as a small incremental daily diff (first delivered 2026-09-02) rather than a full initial dump. Column population and PK uniqueness could not be meaningfully evaluated against a single row; DPP_ID is used as the primary key based on the strong external convention of every other table referencing it as CS_EPISODE's key, not on uniqueness verification here. This is an initial MiCase transfer and may be truncated, incomplete, or wrong."
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
@@ -1313,4 +1356,3 @@
     col: 0
     width: 24
     height: 6
-

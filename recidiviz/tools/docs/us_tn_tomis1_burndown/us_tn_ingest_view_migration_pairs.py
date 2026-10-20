@@ -44,7 +44,7 @@ US_TN_INGEST_VIEW_MIGRATION_PAIRS: dict[str, str | None] = {
     "StaffRoleLocationPeriods": "StaffRoleLocationPeriods_v2",
     "StaffSupervisorPeriods": None,
     "VantagePointAssessments": None,
-    "ViolationsAndSanctions": None,
+    "ViolationsAndSanctions": "ViolationsAndSanctions_v2",
     "diversion_sentence": None,
     "diversion_sentence_length": None,
     "drug_screen": None,
