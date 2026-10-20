@@ -2514,15 +2514,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "system_type",
     ],
     BigQueryAddress.from_str(
-        "observations__global_provisioned_user_event.intercom_csat_response"
-    ): [
-        "feedback_reason",
-        "feedback_type",
-        "prioritized_role",
-        "satisfaction_score",
-        "system_type",
-    ],
-    BigQueryAddress.from_str(
         "observations__insights_primary_user_span.insights_primary_user_impact_funnel_status_session"
     ): [
         "has_outlier_officers",
