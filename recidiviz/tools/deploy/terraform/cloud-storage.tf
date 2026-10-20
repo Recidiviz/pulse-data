@@ -69,6 +69,27 @@ module "direct-ingest-state-storage-secondary" {
   location    = var.direct_ingest_region
   name_suffix = var.direct_ingest_state_storage_secondary_bucket_name_suffix
   use_cmek    = true
+
+  # Setting lifecycle_rules replaces the module default, so the Delete rule is repeated.
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 3
+      }
+    },
+    {
+      action = {
+        type          = "SetStorageClass"
+        storage_class = "NEARLINE"
+      }
+      condition = {
+        age = 30
+      }
+    },
+  ]
 }
 
 module "direct-ingest-cloud-sql-exports" {

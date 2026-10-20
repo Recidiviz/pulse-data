@@ -65,7 +65,8 @@ variable "soft_delete_policy" {
 variable "lifecycle_rules" {
   type = list(object({
     action = object({
-      type = string
+      type          = string
+      storage_class = optional(string)
     }),
     condition = object({
       age                = optional(number)
@@ -166,7 +167,8 @@ resource "google_storage_bucket" "bucket" {
     for_each = var.lifecycle_rules
     content {
       action {
-        type = lifecycle_rule.value["action"].type
+        type          = lifecycle_rule.value["action"].type
+        storage_class = lifecycle_rule.value["action"].storage_class
       }
       condition {
         age                = lifecycle_rule.value["condition"].age
