@@ -36,12 +36,16 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
     LLMDocumentExtractionGoldenEvalConfig,
+    LLMDocumentExtractionGoldenEvalStageConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
     LLMExtractorCollectionConfig,
@@ -84,12 +88,15 @@ _FILTER_QUERY = (
     "SELECT document_contents_id FROM `{input_document_collection_metadata_address}`"
 )
 _GOLDEN_EVAL_SHEET_URI = "https://docs.google.com/spreadsheets/d/abc123"
-_GOLDEN_EVAL_CONFIG = LLMDocumentExtractionGoldenEvalConfig(
+_GOLDEN_EVAL_STAGE_CONFIG = LLMDocumentExtractionGoldenEvalStageConfig(
     source_sheet_uri=_GOLDEN_EVAL_SHEET_URI,
     accuracy_thresholds={
         GoldenEvalTestType.UNIT: 1.0,
         GoldenEvalTestType.SAMPLE: 0.9,
     },
+)
+_GOLDEN_EVAL_CONFIG = LLMDocumentExtractionGoldenEvalConfig(
+    stage_configs={LLMExtractionViewGraphStage.FIRST_ORDER: _GOLDEN_EVAL_STAGE_CONFIG}
 )
 
 # Defined under recidiviz/tests/documents/fake_config/. The fake collection
@@ -321,16 +328,43 @@ class LLMExtractorConfigFromYamlTest(TestCase):
         )
         self.assertEqual(_GOLDEN_EVAL_CONFIG, config.golden_eval)
 
-    def test_missing_golden_eval_raises(self) -> None:
-        # Every authored (first-order) extractor must declare a golden eval set.
-        # Only the generated entity-resolution extractor is exempt, and it is
-        # built directly rather than parsed from an extractor.yaml.
-        with self.assertRaisesRegex(
-            KeyError, re.escape("Expected nonnull [golden_eval]")
-        ):
-            self._resolve_fixture(
-                "extractor_configs/fake_extractor_collection/us_xx/"
-                "missing_golden_eval.yaml"
+    def test_missing_golden_eval_block_parses_to_none(self) -> None:
+        config = self._resolve_fixture(
+            "extractor_configs/fake_extractor_collection/us_xx/no_golden_eval.yaml"
+        )
+        self.assertIsNone(config.golden_eval)
+
+    def test_golden_eval_with_entity_resolution_is_parsed(self) -> None:
+        config = self._resolve_fixture(
+            "extractor_configs/fake_extractor_collection/us_xx/"
+            "golden_eval_with_entity_resolution.yaml"
+        )
+        self.assertEqual(
+            LLMDocumentExtractionGoldenEvalConfig(
+                stage_configs={
+                    LLMExtractionViewGraphStage.FIRST_ORDER: _GOLDEN_EVAL_STAGE_CONFIG,
+                    LLMExtractionViewGraphStage.ENTITY_RESOLUTION: attr.evolve(
+                        _GOLDEN_EVAL_STAGE_CONFIG,
+                        source_sheet_uri=f"{_GOLDEN_EVAL_SHEET_URI}#gid=2",
+                    ),
+                }
+            ),
+            config.golden_eval,
+        )
+
+    def test_entity_resolution_golden_eval_without_entity_groups_raises(
+        self,
+    ) -> None:
+        config = self._resolve_fixture(
+            "extractor_configs/fake_extractor_collection/us_xx/"
+            "golden_eval_with_entity_resolution.yaml"
+        )
+        with self.assertRaisesRegex(ValueError, r"declares no entity_groups"):
+            attr.evolve(
+                config,
+                extractor_collection=attr.evolve(
+                    config.extractor_collection, entity_groups=[]
+                ),
             )
 
 

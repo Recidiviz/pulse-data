@@ -166,7 +166,7 @@ _OPTIONAL_ARRAY_SUB_FIELD_NAMES = ["note_title", "note_body"]
 
 def _rebind_output_schema(output_schema: LLMRequestOutputSchema) -> LLMExtractorConfig:
     """Returns the fake first-order config rebound to |output_schema|, with no
-    entity groups.
+    entity groups or golden eval config.
     """
     config = get_first_order_llm_extractor_config(
         _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
@@ -179,6 +179,7 @@ def _rebind_output_schema(output_schema: LLMRequestOutputSchema) -> LLMExtractor
             relevance_criteria=_NO_REQUIRED_FIELDS_RELEVANCE_CRITERIA,
             entity_groups=[],
         ),
+        golden_eval=None,
     )
 
 

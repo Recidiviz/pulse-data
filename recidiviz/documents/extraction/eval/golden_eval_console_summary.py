@@ -154,16 +154,19 @@ def _render_accuracy_by_test_type(
     *, config: LLMExtractorConfig, result: GoldenEvalResult
 ) -> str:
     """Returns the per-test-type accuracy table, each row marked against the
-    threshold the extractor's golden eval config sets for that test type.
+    threshold the extractor's golden eval config sets for that test type at the
+    extractor's extraction stage.
 
     Test types read in declaration order — the targeted unit documents before the
     realistic samples — and a test type the run scored no documents for is omitted
     rather than reported as 0%, which would read as a failure the extractor did not
     cause.
     """
-    accuracy_thresholds = assert_type(
-        config.golden_eval, LLMDocumentExtractionGoldenEvalConfig
-    ).accuracy_thresholds
+    accuracy_thresholds = (
+        assert_type(config.golden_eval, LLMDocumentExtractionGoldenEvalConfig)
+        .config_for_stage(config.extraction_stage)
+        .accuracy_thresholds
+    )
     tallies = {
         test_type: _Tally.of(scores)
         for test_type, scores in group_by(

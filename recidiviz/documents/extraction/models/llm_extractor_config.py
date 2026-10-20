@@ -40,6 +40,9 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     LLMDocumentExtractionGoldenEvalConfig,
 )
@@ -412,10 +415,10 @@ class LLMExtractorConfig:
     golden_eval: LLMDocumentExtractionGoldenEvalConfig | None = attr.ib(
         validator=attr_validators.is_opt(LLMDocumentExtractionGoldenEvalConfig)
     )
-    """Where this (collection, state) extractor's human-labeled eval set lives and
-    how accurate each test type must be. Required for a first-order extractor;
-    None on a generated entity-resolution extractor, which is exempt from golden
-    eval.
+    """Where the human-labeled eval set of each extraction stage lives and how
+    accurate each test type must be. None when the extractor's YAML declares no
+    golden_eval block. A generated entity-resolution extractor carries its parent
+    first-order extractor's config and reads its entity_resolution stage block.
     """
 
     instructions_prompt: str = attr.ib(init=False, eq=False, repr=False)
@@ -505,6 +508,20 @@ class LLMExtractorConfig:
                 f"[{self.model_config.name}]. Thinking models are only permitted "
                 f"for entity-resolution extractors."
             )
+        if (
+            self.entity_group is None
+            and self.golden_eval is not None
+            and LLMExtractionViewGraphStage.ENTITY_RESOLUTION
+            in self.golden_eval.stage_configs
+            and not self.extractor_collection.entity_groups
+        ):
+            raise ValueError(
+                f"Extractor [{self.extractor_collection.name}] for "
+                f"[{self.state_code.value}] declares a "
+                f"golden_eval.entity_resolution block, but collection "
+                f"[{self.extractor_collection.name}] declares no entity_groups, so "
+                f"there are no entity-resolution extractors to evaluate."
+            )
 
     def _validate_root_entity_narrowing_matches_collection(self) -> None:
         """Validates that any sandbox root-entity narrowing is the variant the input
@@ -538,6 +555,15 @@ class LLMExtractorConfig:
         input does.
         """
         return f"{self.state_code.value}_{self.extractor_collection.name}"
+
+    @property
+    def extraction_stage(self) -> LLMExtractionViewGraphStage:
+        """Returns the extraction stage this extractor runs at, which is also the
+        stage of the golden eval set that evaluates it.
+        """
+        if self.entity_group is not None:
+            return LLMExtractionViewGraphStage.ENTITY_RESOLUTION
+        return LLMExtractionViewGraphStage.FIRST_ORDER
 
     @property
     def instructions_prompt_hash(self) -> str:
@@ -730,11 +756,11 @@ class LLMExtractorConfig:
         # Raises if the name does not resolve in the registry.
         model_config = model_registry.get_model_config(model_config_name)
 
-        # Required here even though the field is nullable: only the generated
-        # entity-resolution extractor may omit golden eval, and it is built
-        # directly rather than via this code path.
-        golden_eval = LLMDocumentExtractionGoldenEvalConfig.from_yaml_dict(
-            config_dict.pop_dict("golden_eval")
+        golden_eval_dict = config_dict.pop_dict_optional("golden_eval")
+        golden_eval = (
+            LLMDocumentExtractionGoldenEvalConfig.from_yaml_dict(golden_eval_dict)
+            if golden_eval_dict is not None
+            else None
         )
 
         config = cls(

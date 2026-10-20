@@ -20,7 +20,8 @@ extractor collection to one state.
 An ER extractor mirrors a first-order `extractor.yaml`-backed extractor, but every
 part is generated rather than authored: it reads the composite-document collection,
 selects every composite document, inherits the parent state extractor's resolved
-reference data (whose org aliases drive the clustering) and its retry setting,
+reference data (whose org aliases drive the clustering), its retry setting, and
+its golden eval config (whose ENTITY_RESOLUTION stage block names the ER eval set),
 applies the framework's entity-resolution-specific document-count caps (lower than
 the first-order caps because ER's thinking calls are slower and its composite
 documents are pricier per document), and runs the ER collection's framework-fixed
@@ -87,8 +88,8 @@ class EntityResolutionExtractorGenerator:
         """Returns the fully-resolved ER extractor config for one (ER collection,
         state-specific ER document collection), reading the composite-document
         collection, inheriting the parent first-order extractor's resolved reference
-        data and retry setting, applying the framework's ER-specific document-count
-        caps, and binding the ER collection's default (thinking-enabled) model resolved
+        data, retry setting, and golden eval config, applying the framework's
+        ER-specific document-count caps, and binding the ER collection's default (thinking-enabled) model resolved
         from |model_registry|.
         """
         first_order_config = entity_resolution_document_collection.first_order_config
@@ -114,7 +115,5 @@ class EntityResolutionExtractorGenerator:
             model_config=model_config,
             reference_data=first_order_config.reference_data,
             entity_group=entity_resolution_document_collection.entity_group,
-            # ER output is derived from already-extracted first-order results, so
-            # there is no golden set of documents to evaluate it against.
-            golden_eval=None,
+            golden_eval=first_order_config.golden_eval,
         )

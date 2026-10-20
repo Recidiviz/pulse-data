@@ -62,6 +62,7 @@ class CollectEntityResolutionDocumentCollectionConfigsTest(TestCase):
             extractor_collection=attr.evolve(
                 first_order_config.extractor_collection, entity_groups=[]
             ),
+            golden_eval=None,
         )
         self.assertEqual(
             [],

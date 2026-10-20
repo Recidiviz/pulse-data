@@ -3,10 +3,11 @@ extractor_collection_name: CASE_NOTE_EMPLOYMENT_INFO
 input_document_collection_name: SUPERVISION_CASE_NOTES
 
 golden_eval:
-  source_sheet_uri: "https://docs.google.com/spreadsheets/d/15mi5SxXBEQSPeu-62a3wuHhzmrpRQ3repcpgUGDwTzA/edit?gid=352577552#gid=352577552"
-  accuracy_thresholds:
-    unit: 1.0
-    sample: 1.0
+  first_order:
+    source_sheet_uri: "https://docs.google.com/spreadsheets/d/15mi5SxXBEQSPeu-62a3wuHhzmrpRQ3repcpgUGDwTzA/edit?gid=352577552#gid=352577552"
+    accuracy_thresholds:
+      unit: 1.0
+      sample: 1.0
 
 document_metadata_filter_query_template: |
   SELECT DISTINCT document_contents_id

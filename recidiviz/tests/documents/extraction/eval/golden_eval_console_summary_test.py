@@ -92,11 +92,18 @@ def _config_with_thresholds(
     declared accuracy thresholds.
     """
     config = _config()
+    golden_eval = assert_type(config.golden_eval, LLMDocumentExtractionGoldenEvalConfig)
+    stage_config = golden_eval.config_for_stage(config.extraction_stage)
     return attr.evolve(
         config,
         golden_eval=attr.evolve(
-            assert_type(config.golden_eval, LLMDocumentExtractionGoldenEvalConfig),
-            accuracy_thresholds=thresholds,
+            golden_eval,
+            stage_configs={
+                **golden_eval.stage_configs,
+                config.extraction_stage: attr.evolve(
+                    stage_config, accuracy_thresholds=thresholds
+                ),
+            },
         ),
     )
 

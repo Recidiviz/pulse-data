@@ -34,6 +34,9 @@ from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
     DEFAULT_MAX_TRANSIENT_RETRY_COUNT,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     collect_all_extractor_configs_by_state,
     collect_entity_resolution_extractor_configs,
@@ -41,6 +44,9 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
     get_states_with_extractor_configs,
     load_first_order_llm_extractor_configs,
+)
+from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
+    LLMDocumentExtractionGoldenEvalConfig,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -61,6 +67,7 @@ from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
 )
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.types import assert_type
 
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _OVERRIDE_MODEL_CONFIG_NAME = "ACME_LARGE_DETERMINISTIC"
@@ -117,6 +124,26 @@ class ParseAllExtractorConfigsTest(TestCase):
             for collection_name, config in state_configs.items():
                 with self.subTest(collection=collection_name, state=state_code.value):
                     self.assertIsNotNone(config.golden_eval)
+
+    def test_all_real_entity_resolution_extractors_carry_parent_golden_eval(
+        self,
+    ) -> None:
+        # A generated ER extractor carries its parent's golden eval config, whose
+        # entity_resolution entry names the ER eval set.
+        configs_by_state = load_first_order_llm_extractor_configs()
+        pairs = collect_entity_resolution_extractor_configs(
+            first_order_configs=[
+                config
+                for state_configs in configs_by_state.values()
+                for config in state_configs.values()
+            ]
+        )
+        self.assertTrue(pairs)
+        for parent_config, entity_resolution_config in pairs:
+            with self.subTest(extractor=entity_resolution_config.extractor_id):
+                self.assertEqual(
+                    parent_config.golden_eval, entity_resolution_config.golden_eval
+                )
 
     def test_all_real_extractors_compute_version_ids(self) -> None:
         # Every real extractor must compute all four version IDs as 64-char hex
@@ -299,10 +326,19 @@ class CollectEntityResolutionExtractorConfigsTest(TestCase):
         first_order_config = get_first_order_llm_extractor_config(
             StateCode.US_XX, _FAKE_COLLECTION_NAME, config_module=fake_config
         )
+        # A collection with no entity groups has no ER eval set to declare either.
         without_entity_groups = attr.evolve(
             first_order_config,
             extractor_collection=attr.evolve(
                 first_order_config.extractor_collection, entity_groups=[]
+            ),
+            golden_eval=LLMDocumentExtractionGoldenEvalConfig(
+                stage_configs={
+                    LLMExtractionViewGraphStage.FIRST_ORDER: assert_type(
+                        first_order_config.golden_eval,
+                        LLMDocumentExtractionGoldenEvalConfig,
+                    ).config_for_stage(LLMExtractionViewGraphStage.FIRST_ORDER)
+                }
             ),
         )
         self.assertEqual(
@@ -381,9 +417,8 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
             with self.assertRaisesRegex(
                 ValueError,
                 re.escape(
-                    f"Generated entity-resolution extractor collection name "
                     f"[{_FAKE_COLLECTION_NAME}] collides with an existing "
-                    f"extractor config for state [US_XX]."
+                    f"extractor config"
                 ),
             ):
                 collect_all_extractor_configs_by_state(config_module=fake_config)

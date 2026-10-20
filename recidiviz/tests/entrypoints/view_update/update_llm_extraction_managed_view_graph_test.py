@@ -23,7 +23,7 @@ from unittest.mock import patch
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_graph import BigQueryViewGraph
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
     LLMExtractionViewGraphStage,
 )
 from recidiviz.entrypoints.view_update.update_llm_extraction_managed_view_graph import (

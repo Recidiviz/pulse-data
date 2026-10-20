@@ -52,6 +52,9 @@ from recidiviz.documents.extraction.eval.golden_eval_document_source import (
 from recidiviz.documents.extraction.eval.golden_eval_scorer import (
     LLMDocumentExtractionGoldenEvalScorer,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
@@ -248,6 +251,21 @@ def _one_cell_issue(
     return f"row [{row_number}] column [{column_name}] value [{value}]: {reason}"
 
 
+def _with_stage_config(
+    golden_eval: LLMDocumentExtractionGoldenEvalConfig,
+    stage: LLMExtractionViewGraphStage,
+    **changes: Any,
+) -> LLMDocumentExtractionGoldenEvalConfig:
+    """Returns |golden_eval| with |changes| applied to its config for |stage|."""
+    return attr.evolve(
+        golden_eval,
+        stage_configs={
+            **golden_eval.stage_configs,
+            stage: attr.evolve(golden_eval.config_for_stage(stage), **changes),
+        },
+    )
+
+
 class GoldenEvalDocumentReaderTest(TestCase):
     """Tests for GoldenEvalDocumentReader."""
 
@@ -257,8 +275,9 @@ class GoldenEvalDocumentReaderTest(TestCase):
         )
         self.config = attr.evolve(
             config,
-            golden_eval=attr.evolve(
+            golden_eval=_with_stage_config(
                 assert_type(config.golden_eval, LLMDocumentExtractionGoldenEvalConfig),
+                LLMExtractionViewGraphStage.FIRST_ORDER,
                 source_sheet_uri=_SOURCE_SHEET_URI,
             ),
         )

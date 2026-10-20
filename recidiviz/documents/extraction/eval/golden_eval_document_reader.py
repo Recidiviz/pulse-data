@@ -40,6 +40,9 @@ from recidiviz.documents.extraction.eval.golden_eval_document_validator import (
     GoldenEvalDocumentIssue,
     GoldenEvalDocumentValidator,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
 )
@@ -179,7 +182,9 @@ class GoldenEvalDocumentReader:
             source=GoldenEvalGoogleSheetDocumentSource(
                 sheets_reader=sheets_reader,
                 state_code=config.state_code,
-                source_sheet_uri=config.golden_eval.source_sheet_uri,
+                source_sheet_uri=config.golden_eval.config_for_stage(
+                    LLMExtractionViewGraphStage.FIRST_ORDER
+                ).source_sheet_uri,
             ),
             output_schema=config.extractor_collection.output_schema,
         )

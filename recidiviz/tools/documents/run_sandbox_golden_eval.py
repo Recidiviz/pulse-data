@@ -96,8 +96,7 @@ def main(
     if config.golden_eval is None:
         raise ValueError(
             f"Extractor [{config.extractor_id}] declares no golden_eval config, so it "
-            f"cannot be golden eval'd. Entity-resolution extractors are exempt from "
-            f"golden eval."
+            f"cannot be golden eval'd."
         )
 
     bq_client = BigQueryClientImpl()
