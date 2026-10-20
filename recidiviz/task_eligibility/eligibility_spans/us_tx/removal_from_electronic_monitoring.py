@@ -26,7 +26,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tx import (
     case_type_downgrade_from_electronic_monitoring,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    at_least_60_days_since_negative_drug_test_streak_began,
+    at_least_3_months_since_most_recent_positive_drug_test,
+    latest_drug_test_is_negative_or_missing,
     no_supervision_violation_within_30_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
@@ -56,7 +57,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_30_days_since_last_rejection_for_em_removal.VIEW_BUILDER,
         # TODO(TX-1100): Remove if we decide on start/end EM equipment service dates
         at_least_60_days_since_facility_or_temporary_housing_ended.VIEW_BUILDER,
-        at_least_60_days_since_negative_drug_test_streak_began.VIEW_BUILDER,
+        latest_drug_test_is_negative_or_missing.VIEW_BUILDER,
+        at_least_3_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         no_supervision_violation_within_30_days.VIEW_BUILDER,
         not_interstate_compact_in.VIEW_BUILDER,
     ],

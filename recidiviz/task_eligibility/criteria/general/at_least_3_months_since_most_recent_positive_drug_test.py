@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,28 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when at least 60 days have passed since the start of
-a client's current negative-drug-test streak (i.e., since the first negative test
-following their most recent positive test).
+"""Describes the spans of time when a client has not had a positive drug test within the
+past 3 months.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    on_negative_drug_screen_streak,
+    at_least_X_time_since_drug_screen,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = on_negative_drug_screen_streak(
-    date_interval=60,
-    date_part="DAY",
-    criteria_name="AT_LEAST_60_DAYS_SINCE_NEGATIVE_DRUG_TEST_STREAK_BEGAN",
-    # People with no drug screen on record at all should not be disqualified by
-    # this criterion -- treat missing drug screen data as eligible rather than
-    # ineligible.
-    meets_criteria_default=True,
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    at_least_X_time_since_drug_screen(
+        date_interval=3,
+        date_part="MONTH",
+        where_clause="WHERE is_positive_result",
+        criteria_name="AT_LEAST_3_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
+    )
 )
 
 if __name__ == "__main__":
