@@ -1192,6 +1192,58 @@
     width: 24
     height: 6
 
+  - name: STG_GANG_AFFILIATION
+    title: STG_GANG_AFFILIATION
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_STG_GANG_AFFILIATION.primary_key,
+      us_tn_STG_GANG_AFFILIATION.GANG_AFF_ID,
+      us_tn_STG_GANG_AFFILIATION.PERSON_ID,
+      us_tn_STG_GANG_AFFILIATION.GANG_ID,
+      us_tn_STG_GANG_AFFILIATION.AFFILIATION_ID,
+      us_tn_STG_GANG_AFFILIATION.AFFILIATION_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_AFFILIATION_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_AFFILIATION_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.NICKNAME,
+      us_tn_STG_GANG_AFFILIATION.EVER_MEMBER_GANG,
+      us_tn_STG_GANG_AFFILIATION.MEMBER_STREET_OR_DOC,
+      us_tn_STG_GANG_AFFILIATION.SERVED_SENTENCE_DOC,
+      us_tn_STG_GANG_AFFILIATION.ACTIVE_MEMBER,
+      us_tn_STG_GANG_AFFILIATION.TATTOOS,
+      us_tn_STG_GANG_AFFILIATION.STG_DASHBOARD_FLAG,
+      us_tn_STG_GANG_AFFILIATION.ADDITIONAL_INFO,
+      us_tn_STG_GANG_AFFILIATION.CREATE_USERID,
+      us_tn_STG_GANG_AFFILIATION.CREATE_DTM__raw,
+      us_tn_STG_GANG_AFFILIATION.UPDT_USERID,
+      us_tn_STG_GANG_AFFILIATION.UPDT_DTM__raw,
+      us_tn_STG_GANG_AFFILIATION.ACTIVE_FLAG,
+      us_tn_STG_GANG_AFFILIATION.CHANGE_ID,
+      us_tn_STG_GANG_AFFILIATION.ENROLLEMENT_DECISION,
+      us_tn_STG_GANG_AFFILIATION.APPROVEMENT_DATE__raw,
+      us_tn_STG_GANG_AFFILIATION.APPROVED_BY,
+      us_tn_STG_GANG_AFFILIATION.ENROLLEMENT_REQ_SUBMITTED,
+      us_tn_STG_GANG_AFFILIATION.AFFILIATION_FACTIONSET_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.AFFILIATION_RANKROLE_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.AFFILIATION_WHEREDIDYOUJOIN_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_AFFILIATION_FACTIONSET_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_AFFILIATION_RANKROLE_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.STG_AFFILIATION_WHEREDIDYOUJOIN_TYPE_ID,
+      us_tn_STG_GANG_AFFILIATION.file_id,
+      us_tn_STG_GANG_AFFILIATION.is_deleted]
+    sorts: [us_tn_STG_GANG_AFFILIATION.CREATE_DTM__raw]
+    note_display: hover
+    note_text: "Security threat group affiliations recorded for a person. 10 of 32 columns have no comment in the MiCase data dictionary and are left undocumented here."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 156
+    col: 0
+    width: 24
+    height: 6
+
   - name: IN_EPISODE
     title: IN_EPISODE
     explore: us_tn_raw_data
@@ -1257,7 +1309,7 @@
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
       US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6

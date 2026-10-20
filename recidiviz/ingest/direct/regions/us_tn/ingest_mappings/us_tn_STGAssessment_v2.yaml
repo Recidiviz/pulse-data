@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_STGAssessment_v2` to
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  OffenderID: STRING
+  STGID: STRING
+  AssessmentDate: DATE
+  Status: STRING
+  StatusDate: DATE
+  Rank: STRING
+  SelfAdmitsMembershipFlag: STRING
+  GangRelatedTattoosFlag: STRING
+  UsesGangSymbolsFlag: STRING
+  WearsGangColorsFlag: STRING
+  PossessesGangDocumentsFlag: STRING
+  PossessesGangPublicationsFlag: STRING
+  ParticipatesInGangPublicationsFlag: STRING
+  ObservedContactWithMembersFlag: STRING
+  KnownContactWithMembersFlag: STRING
+  PhotoWithMembersFlag: STRING
+  OutsideJurisdictionInfoFlag: STRING
+  CorrespondenceWithMembersFlag: STRING
+  NamedInCorrespondenceFlag: STRING
+  ConfirmedByOutsideAgencyFlag: STRING
+  StgRelatedDisciplinaryFlag: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - AssessmentDate
+          assessment_type: $literal_enum(StateAssessmentType.TN_STG)
+          assessment_date: AssessmentDate
+          # Each `*_FLAG` value is one of the individual validation criteria
+          # that make up the score; each is `X` when the criterion was met.
+          assessment_metadata:
+            $normalized_values_json_dict:
+              STG_ID: STGID
+              STATUS: Status
+              STATUS_DATE: StatusDate
+              RANK: Rank
+              ASSESSMENT_FLAG_SELF_ADMITS_MEMBERSHIP: SelfAdmitsMembershipFlag
+              ASSESSMENT_FLAG_GANG_RELATED_TATTOOS: GangRelatedTattoosFlag
+              ASSESSMENT_FLAG_USES_GANG_SYMBOLS: UsesGangSymbolsFlag
+              ASSESSMENT_FLAG_WEARS_GANG_COLORS: WearsGangColorsFlag
+              ASSESSMENT_FLAG_POSSESSES_GANG_DOCUMENTS: PossessesGangDocumentsFlag
+              ASSESSMENT_FLAG_POSSESSES_GANG_PUBLICATIONS: PossessesGangPublicationsFlag
+              ASSESSMENT_FLAG_PARTICIPATES_IN_GANG_PUBLICATIONS: ParticipatesInGangPublicationsFlag
+              ASSESSMENT_FLAG_OBSERVED_CONTACT_WITH_MEMBERS: ObservedContactWithMembersFlag
+              ASSESSMENT_FLAG_KNOWN_CONTACT_WITH_MEMBERS: KnownContactWithMembersFlag
+              ASSESSMENT_FLAG_PHOTO_WITH_MEMBERS: PhotoWithMembersFlag
+              ASSESSMENT_FLAG_OUTSIDE_JURISDICTION_INFO: OutsideJurisdictionInfoFlag
+              ASSESSMENT_FLAG_CORRESPONDENCE_WITH_MEMBERS: CorrespondenceWithMembersFlag
+              ASSESSMENT_FLAG_NAMED_IN_CORRESPONDENCE: NamedInCorrespondenceFlag
+              ASSESSMENT_FLAG_CONFIRMED_BY_OUTSIDE_AGENCY: ConfirmedByOutsideAgencyFlag
+              ASSESSMENT_FLAG_STG_RELATED_DISCIPLINARY: StgRelatedDisciplinaryFlag

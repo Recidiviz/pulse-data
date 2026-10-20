@@ -185,6 +185,13 @@ explore: us_tn_raw_data_template {
     view_label: "us_tn_Violations"
   }
 
+  join: us_tn_STG_GANG_AFFILIATION {
+    sql_on: ${us_tn_PERSON.PERSON_ID} = ${us_tn_STG_GANG_AFFILIATION.PERSON_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_tn_STG_GANG_AFFILIATION"
+  }
+
   join: us_tn_IN_EPISODE {
     sql_on: ${us_tn_IN_EPISODE.PERSON_ID} = ${us_tn_PERSON.PERSON_ID};;
     type: full_outer

@@ -2586,6 +2586,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.ProgramAssignment",
     "us_tn_ingest_view_results.RCAFandDCAFAssessments",
     "us_tn_ingest_view_results.STGAssessment",
+    "us_tn_ingest_view_results.STGAssessment_v2",
     "us_tn_ingest_view_results.Staff",
     "us_tn_ingest_view_results.StaffCaseloadTypePeriod",
     "us_tn_ingest_view_results.StaffRoleLocationPeriods",
