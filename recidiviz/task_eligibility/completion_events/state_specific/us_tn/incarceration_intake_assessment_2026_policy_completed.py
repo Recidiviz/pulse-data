@@ -33,6 +33,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = intake_classification_decision_completed_view_builder(
     state_code=StateCode.US_TN,
     description=__doc__,
+    intake_window_months=None,
     # Filters to the 2026 diagnostic CAF, TN's intake classification instrument.
     additional_where_clause="c.assessment_instrument = 'DCAF'",
 )

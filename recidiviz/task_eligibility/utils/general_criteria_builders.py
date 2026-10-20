@@ -930,9 +930,46 @@ def custody_level_compared_to_recommended(
     """
 
 
+def _scope_assessment_sessions_to_state_prison_custody_stay_cte() -> str:
+    """Returns a scoped_assessment_sessions_cte that ends each span in
+    assessment_sessions_cte when the STATE_PRISON custody stay its assessment happened
+    in ends, dropping spans whose assessment falls outside any such stay or that would
+    start after the stay ends.
+    """
+    return f"""
+    scoped_assessment_sessions_cte AS
+    (
+        SELECT
+            assessment.state_code,
+            assessment.person_id,
+            assessment.start_date,
+            LEAST(
+                assessment.end_date,
+                {nonnull_end_date_clause('custody.end_date_exclusive')}
+            ) AS end_date,
+            assessment.meets_criteria,
+            assessment.classification_decision_date,
+            assessment.assessment_date,
+            assessment.assessment_due_date,
+            assessment.assessment_due_month,
+        FROM assessment_sessions_cte assessment
+        INNER JOIN `{{project_id}}.{SESSIONS_DATASET}.custodial_authority_sessions_materialized` custody
+            ON assessment.person_id = custody.person_id
+            AND assessment.state_code = custody.state_code
+            AND assessment.classification_decision_date BETWEEN custody.start_date
+                AND {nonnull_end_date_exclusive_clause('custody.end_date_exclusive')}
+        WHERE custody.custodial_authority = 'STATE_PRISON'
+            -- Drops eligible spans that would only begin after the stay has ended.
+            AND assessment.start_date < {nonnull_end_date_clause('custody.end_date_exclusive')}
+    )
+    ,"""
+
+
 def at_least_x_time_since_latest_classification_assessment(
+    *,
     state_code: StateCode,
     eligible_date_clause: str,
+    is_scoped_to_state_prison_custody_stay: bool,
 ) -> str:
     """
     The span's start, classification_decision_date, reflects TN's "submitted
@@ -949,21 +986,32 @@ def at_least_x_time_since_latest_classification_assessment(
             computing the date a span becomes eligible again following a classification
             assessment. This is the only piece of the criteria's timing that varies by
             state; the WHERE-clause guard below is independent of it and does not vary.
+        is_scoped_to_state_prison_custody_stay (bool): If True, an assessment only
+            makes someone ineligible within the STATE_PRISON custody stay it happened
+            in, so each span ends when that stay ends. Someone starting a new stay
+            then meets the criteria by default until their first assessment in it.
     Returns:
         f-string: Spans of time when at least 12 months have passed since a resident's
-            last classification assessment.
+            last classification assessment. Both the ineligible and eligible spans
+            following an assessment carry its assessment_date and assessment_due_date.
     """
+    sessions_cte_name = (
+        "scoped_assessment_sessions_cte"
+        if is_scoped_to_state_prison_custody_stay
+        else "assessment_sessions_cte"
+    )
     return f"""
-    WITH assessment_sessions_cte AS
+    WITH assessments_cte AS
     (
         SELECT
             state_code,
             person_id,
-            -- The span when someone is ineligible begins on classification_decision_date
-            -- and ends, making them eligible again, per eligible_date_clause.
-            classification_decision_date AS start_date,
-            {eligible_date_clause} AS end_date,
-            FALSE AS meets_criteria,
+            classification_decision_date,
+            {eligible_date_clause} AS eligible_date,
+            LEAD(classification_decision_date) OVER (
+                PARTITION BY state_code, person_id
+                ORDER BY classification_decision_date, assessment_date, assessment_id
+            ) AS next_classification_decision_date,
             assessment_date,
             assessment_due_date,
             DATE_TRUNC(assessment_due_date, MONTH) AS assessment_due_month,
@@ -975,7 +1023,38 @@ def at_least_x_time_since_latest_classification_assessment(
             DATE_SUB(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 WEEK) > classification_decision_date
     )
     ,
-    {create_sub_sessions_with_attributes('assessment_sessions_cte')}
+    assessment_sessions_cte AS
+    (
+        -- Someone is ineligible from classification_decision_date until eligible_date.
+        SELECT
+            state_code,
+            person_id,
+            classification_decision_date AS start_date,
+            eligible_date AS end_date,
+            FALSE AS meets_criteria,
+            classification_decision_date,
+            assessment_date,
+            assessment_due_date,
+            assessment_due_month,
+        FROM assessments_cte
+        UNION ALL
+        -- They are then eligible until their next assessment, with that span carrying
+        -- the assessment_due_date that made them eligible.
+        SELECT
+            state_code,
+            person_id,
+            eligible_date AS start_date,
+            next_classification_decision_date AS end_date,
+            TRUE AS meets_criteria,
+            classification_decision_date,
+            assessment_date,
+            assessment_due_date,
+            assessment_due_month,
+        FROM assessments_cte
+        WHERE eligible_date < {nonnull_end_date_clause('next_classification_decision_date')}
+    )
+    ,{_scope_assessment_sessions_to_state_prison_custody_stay_cte() if is_scoped_to_state_prison_custody_stay else ""}
+    {create_sub_sessions_with_attributes(sessions_cte_name)}
     ,
     dedup_cte AS
     (

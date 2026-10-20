@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a view that shows when a subsequent (non-intake) classification review has
-occurred for someone in Michigan, under the 2026 classification policy.
+occurred for someone in Michigan, under the 2026 classification policy. Someone's first
+classification in a state prison custody stay also counts once they have been in the
+stay at least 4 months, since by then they are due for an annual classification review
+rather than an initial one.
 
 TODO(MI-7750): This currently marks every non-intake classification decision as an
 event under the 2026 policy, since MI's classification data doesn't yet distinguish
@@ -26,6 +29,9 @@ so this doesn't fire for pre-2026-policy reclassifications. Same root cause as t
 identical caveat on incarceration_intake_assessment_2026_policy_completed.py.
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.criteria.general.in_state_prison_custody_at_least_4_months import (
+    MIN_MONTHS_IN_STATE_PRISON_CUSTODY,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
 )
@@ -35,11 +41,12 @@ from recidiviz.task_eligibility.utils.general_completion_event_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    non_intake_classification_decision_completed_view_builder(
-        state_code=StateCode.US_MI,
-        description=__doc__,
-    )
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = non_intake_classification_decision_completed_view_builder(
+    state_code=StateCode.US_MI,
+    description=__doc__,
+    # The initial classification review ends once someone reaches this many months
+    # in custody (see initial_classification_review_2026_policy).
+    intake_window_months=MIN_MONTHS_IN_STATE_PRISON_CUSTODY,
 )
 
 if __name__ == "__main__":

@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a view that shows when an initial custody classification decision has
-been made for someone in Michigan, under the 2026 classification policy.
+been made for someone in Michigan, under the 2026 classification policy. Only a first
+classification within someone's first 4 months in a state prison custody stay counts;
+a later one completes their annual classification review instead.
 
 TODO(MI-7750): This currently marks every 'first' classification decision as an
 event under the 2026 policy, since MI's classification data doesn't yet
@@ -26,6 +28,9 @@ data supports it, so this doesn't fire for pre-2026-policy first
 classifications.
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.criteria.general.in_state_prison_custody_at_least_4_months import (
+    MIN_MONTHS_IN_STATE_PRISON_CUSTODY,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
 )
@@ -35,11 +40,12 @@ from recidiviz.task_eligibility.utils.general_completion_event_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    intake_classification_decision_completed_view_builder(
-        state_code=StateCode.US_MI,
-        description=__doc__,
-    )
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = intake_classification_decision_completed_view_builder(
+    state_code=StateCode.US_MI,
+    description=__doc__,
+    # The initial classification review ends once someone reaches this many months
+    # in custody (see initial_classification_review_2026_policy).
+    intake_window_months=MIN_MONTHS_IN_STATE_PRISON_CUSTODY,
 )
 
 if __name__ == "__main__":

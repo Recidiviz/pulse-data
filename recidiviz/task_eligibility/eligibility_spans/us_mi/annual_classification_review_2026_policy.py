@@ -28,6 +28,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     has_initial_classification_in_state_prison_custody,
+    in_state_prison_custody_at_least_4_months,
+    not_has_initial_classification_in_state_prison_custody,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     at_least_12_months_since_latest_assessment,
@@ -40,14 +42,53 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder impor
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+# A resident is due for an annual classification review either 12 months after their
+# latest assessment in their current state prison custody stay, or, if they have had no
+# assessment yet in that stay, once they reach 4 months in custody. The initial
+# classification review covers their first 4 months.
+US_MI_ANNUAL_CLASSIFICATION_REVIEW_ELIGIBILITY_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MI_ANNUAL_CLASSIFICATION_REVIEW_2026_POLICY_ELIGIBILITY",
+    sub_criteria_list=[
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="US_MI_AT_LEAST_12_MONTHS_SINCE_LATEST_ASSESSMENT_IN_STATE_PRISON_CUSTODY",
+            sub_criteria_list=[
+                at_least_12_months_since_latest_assessment.VIEW_BUILDER,
+                has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
+            ],
+        ),
+        StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="IN_STATE_PRISON_CUSTODY_AT_LEAST_4_MONTHS_WITHOUT_INITIAL_CLASSIFICATION",
+            sub_criteria_list=[
+                in_state_prison_custody_at_least_4_months.VIEW_BUILDER,
+                not_has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
+            ],
+        ),
+    ],
+    # Both paths include has_initial_classification_in_state_prison_custody, directly or
+    # inverted, so both carry its reasons fields.
+    allowed_duplicate_reasons_keys=[
+        "initial_assessment_date",
+        "initial_classification_date",
+        "initial_classification_decision_date",
+        "most_recent_prison_custody_start_date",
+    ],
+)
 
 US_MI_ANNUAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
-    at_least_12_months_since_latest_assessment.VIEW_BUILDER,
-    has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
+    US_MI_ANNUAL_CLASSIFICATION_REVIEW_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
     # This criteria is used to add the current and recommended custody levels into the
     # reasons blob for easier access to the fields on the front end, standardizing across
     # all MI classification opportunities, including custody level downgrade. For annual
@@ -55,12 +96,14 @@ US_MI_ANNUAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS: list[
     custody_level_compared_to_recommended_2026_policy.VIEW_BUILDER,
 ]
 
-# A resident is almost eligible starting 1 month before their assessment is due, and
-# becomes eligible 2 weeks before their assessment is due (see the eligible_date_clause
-# in at_least_12_months_since_latest_assessment.VIEW_BUILDER).
+# A resident due 12 months after their latest assessment is almost eligible starting 1
+# month before their assessment is due, and becomes eligible 2 weeks before their
+# assessment is due (see the eligible_date_clause in
+# at_least_12_months_since_latest_assessment.VIEW_BUILDER). A resident due at 4 months
+# in custody has no assessment_due_date, so they are never almost eligible.
 US_MI_ANNUAL_CLASSIFICATION_REVIEW_ALMOST_ELIGIBLE_CONDITION = (
     TimeDependentCriteriaCondition(
-        criteria=at_least_12_months_since_latest_assessment.VIEW_BUILDER,
+        criteria=US_MI_ANNUAL_CLASSIFICATION_REVIEW_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
         reasons_date_field="assessment_due_date",
         interval_length=1,
         interval_date_part=BigQueryDateInterval.MONTH,

@@ -30,11 +30,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "IN_STATE_PRISON_CUSTODY_AT_LEAST_4_MONTHS"
 
+MIN_MONTHS_IN_STATE_PRISON_CUSTODY = 4
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        minimum_time_served=4,
+        minimum_time_served=MIN_MONTHS_IN_STATE_PRISON_CUSTODY,
         time_served_interval="MONTH",
         custodial_authority_types=["STATE_PRISON"],
     )
