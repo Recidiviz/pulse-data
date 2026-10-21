@@ -31,9 +31,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_raw_data_update_date import (
-    US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_tools_date_aligned__OffenderCredit_latest import (
     US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER,
 )
@@ -366,7 +363,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address: "TODO(TN-2022): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_views.OffenderSentenceSummary_all"): {
-        US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address: "TODO(TN-2026): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address: "TODO(TN-2027): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_views.SupervisionPlan_all"): {
