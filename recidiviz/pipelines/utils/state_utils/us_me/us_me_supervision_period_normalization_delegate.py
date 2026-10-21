@@ -19,17 +19,12 @@ from collections import OrderedDict
 from typing import List, Optional
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateSupervisionPeriod,
-)
-from recidiviz.persistence.entity.activity.normalized_entities import (
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -46,33 +41,8 @@ class UsMeSupervisionNormalizationDelegate(
     def __init__(
         self,
         assessments: List[StateAssessment],
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ):
         self._assessments = assessments
-        self._supervision_sentences = supervision_sentences
-
-    def supervision_termination_reason_override(
-        self, supervision_period: StateSupervisionPeriod
-    ) -> Optional[StateSupervisionPeriodTerminationReason]:
-        """If there was a revocation sentence status with a completion date within a week of the supervision period's
-        end date, then we assume the period's termination reason was a revocation."""
-        if not self._supervision_sentences:
-            return supervision_period.termination_reason
-
-        for supervision_sentence in self._supervision_sentences:
-            if (
-                supervision_sentence.completion_date
-                and supervision_period.end_date_exclusive
-                and abs(
-                    (
-                        supervision_sentence.completion_date
-                        - supervision_period.end_date_exclusive
-                    ).days
-                )
-                <= SUPERVISION_SENTENCE_PERIOD_LOOKBACK
-            ) and supervision_sentence.status == StateSentenceStatus.REVOKED:
-                return StateSupervisionPeriodTerminationReason.REVOCATION
-        return supervision_period.termination_reason
 
     def supervision_level_override(
         self,

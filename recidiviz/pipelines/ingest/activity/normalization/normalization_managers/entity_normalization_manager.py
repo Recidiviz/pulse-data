@@ -36,7 +36,7 @@ class EntityNormalizationManager(metaclass=abc.ABCMeta):
         """Must be implemented by subclasses. Defines all entity pairs that have
         associations (many-to-many relationships) that are normalized by this
         normalization manager. The association must go from the child to the parent (e.g.
-        StateCharge, StateSupervisionSentence), because the association table is named
+        StateChargeV2, StateSentence), because the association table is named
         from child to parent.
 
         Because associations are very rare, by default returns an empty list."""

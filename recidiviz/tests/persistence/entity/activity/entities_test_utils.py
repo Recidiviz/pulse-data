@@ -28,8 +28,6 @@ from recidiviz.common.constants.state.state_assessment import (
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import (
-    StateChargeClassificationType,
-    StateChargeStatus,
     StateChargeV2ClassificationType,
     StateChargeV2Status,
 )
@@ -97,9 +95,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
@@ -604,46 +599,6 @@ def generate_full_graph_state_person(
         violation_response_decision
     ]
 
-    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
-        external_id="BOOK_ID1234-1",
-        status=StateSentenceStatus.COMPLETED,
-        status_raw_text="COMPLETED",
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        incarceration_type_raw_text="PRISON",
-        date_imposed=datetime.date(year=2018, month=7, day=3),
-        projected_min_release_date=datetime.date(year=2017, month=5, day=14),
-        projected_max_release_date=None,
-        parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        #   - What
-        # These will be None if is_life is true
-        min_length_days=90,
-        max_length_days=900,
-        is_life=False,
-        is_capital_punishment=False,
-        parole_possible=True,
-        initial_time_served_days=None,
-        good_time_days=10,
-        earned_time_days=None,
-    )
-
-    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
-        external_id="BOOK_ID1234-2",
-        status=StateSentenceStatus.SERVING,
-        status_raw_text="SERVING",
-        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-        supervision_type_raw_text="PAROLE",
-        projected_completion_date=datetime.date(year=2020, month=5, day=14),
-        completion_date=None,
-        state_code="US_XX",
-        min_length_days=None,
-        max_length_days=200,
-    )
-
-    person.incarceration_sentences = [incarceration_sentence]
-    person.supervision_sentences = [supervision_sentence]
-
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
         external_id="ip1",
         incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -662,60 +617,6 @@ def generate_full_graph_state_person(
     )
 
     person.incarceration_periods = [incarceration_period]
-
-    charge = entities.StateCharge.new_with_defaults(
-        external_id="CHARGE1_EXTERNAL_ID",
-        status=StateChargeStatus.CONVICTED,
-        status_raw_text="CONVICTED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="A",
-        counts=1,
-        charge_notes=None,
-    )
-
-    charge2 = entities.StateCharge.new_with_defaults(
-        external_id="CHARGE2_EXTERNAL_ID",
-        status=StateChargeStatus.CONVICTED,
-        status_raw_text="CONVICTED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="B",
-        counts=1,
-        charge_notes=None,
-    )
-
-    charge3 = entities.StateCharge.new_with_defaults(
-        external_id="CHARGE3_EXTERNAL_ID",
-        status=StateChargeStatus.DROPPED,
-        status_raw_text="DROPPED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="AA",
-        counts=1,
-        charge_notes=None,
-    )
-
-    supervision_sentence.charges = [charge, charge2, charge3]
-    incarceration_sentence.charges = [charge, charge2, charge3]
 
     early_discharge_1 = entities.StateEarlyDischarge.new_with_defaults(
         external_id="ed1",
@@ -1224,45 +1125,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         )
     )
 
-    incarceration_sentence = normalized_entities.NormalizedStateIncarcerationSentence(
-        incarceration_sentence_id=1,
-        external_id="BOOK_ID1234-1",
-        status=StateSentenceStatus.COMPLETED,
-        status_raw_text="COMPLETED",
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        incarceration_type_raw_text="PRISON",
-        date_imposed=datetime.date(year=2018, month=7, day=3),
-        projected_min_release_date=datetime.date(year=2017, month=5, day=14),
-        projected_max_release_date=None,
-        parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        #   - What
-        # These will be None if is_life is true
-        min_length_days=90,
-        max_length_days=900,
-        is_life=False,
-        is_capital_punishment=False,
-        parole_possible=True,
-        initial_time_served_days=None,
-        good_time_days=10,
-        earned_time_days=None,
-    )
-
-    supervision_sentence = normalized_entities.NormalizedStateSupervisionSentence(
-        supervision_sentence_id=1,
-        external_id="BOOK_ID1234-2",
-        status=StateSentenceStatus.SERVING,
-        status_raw_text="SERVING",
-        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-        supervision_type_raw_text="PAROLE",
-        projected_completion_date=datetime.date(year=2020, month=5, day=14),
-        completion_date=None,
-        state_code="US_XX",
-        min_length_days=None,
-        max_length_days=200,
-    )
-
     incarceration_period = normalized_entities.NormalizedStateIncarcerationPeriod(
         incarceration_period_id=1,
         external_id="ip1",
@@ -1280,63 +1142,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         release_reason_raw_text="CONDITIONAL RELEASE",
         sequence_num=1,
     )
-
-    charge = normalized_entities.NormalizedStateCharge(
-        charge_id=1,
-        external_id="CHARGE1_EXTERNAL_ID",
-        status=StateChargeStatus.CONVICTED,
-        status_raw_text="CONVICTED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="A",
-        counts=1,
-        charge_notes=None,
-    )
-
-    charge2 = normalized_entities.NormalizedStateCharge(
-        charge_id=2,
-        external_id="CHARGE2_EXTERNAL_ID",
-        status=StateChargeStatus.CONVICTED,
-        status_raw_text="CONVICTED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="B",
-        counts=1,
-        charge_notes=None,
-    )
-
-    charge3 = normalized_entities.NormalizedStateCharge(
-        charge_id=3,
-        external_id="CHARGE3_EXTERNAL_ID",
-        status=StateChargeStatus.DROPPED,
-        status_raw_text="DROPPED",
-        offense_date=datetime.date(year=2003, month=7, day=1),
-        date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="US_XX",
-        statute="A102.3",
-        description="DRUG POSSESSION",
-        attempted=True,
-        classification_type=StateChargeClassificationType.FELONY,
-        classification_type_raw_text="F",
-        classification_subtype="AA",
-        counts=1,
-        charge_notes=None,
-    )
-
-    supervision_sentence.charges = [charge, charge2, charge3]
-    incarceration_sentence.charges = [charge, charge2, charge3]
 
     early_discharge_1 = normalized_entities.NormalizedStateEarlyDischarge(
         early_discharge_id=1,
@@ -1601,8 +1406,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         supervision_violations=[supervision_violation],
         supervision_contacts=[supervision_contact],
         scheduled_supervision_contacts=[scheduled_supervision_contact],
-        incarceration_sentences=[incarceration_sentence],
-        supervision_sentences=[supervision_sentence],
         early_discharges=[early_discharge_1, early_discharge_2, early_discharge_3],
         incarceration_periods=[incarceration_period],
         task_deadlines=[task_deadline],

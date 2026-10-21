@@ -21,15 +21,14 @@ from unittest.mock import call, patch
 import attr
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.persistence.entity import entity_field_index
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.activity.entities import (
-    StateCharge,
+    StateChargeV2,
     StatePerson,
-    StateSupervisionSentence,
+    StateSentence,
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
@@ -57,19 +56,18 @@ class TestEntityFieldIndex(TestCase):
 
     def test_getEntityRelationshipFieldNames_children(self) -> None:
         field_index = entities_module_context_for_module(state_entities).field_index()
-        entity = StateSupervisionSentence.new_with_defaults(
+        entity = StateSentence.new_with_defaults(
             state_code="US_XX",
             external_id="ss1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
-                StateCharge.new_with_defaults(
+                StateChargeV2.new_with_defaults(
                     state_code="US_XX",
                     external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
-            person=[StatePerson.new_with_defaults(state_code="US_XX")],
-            supervision_sentence_id=_ID,
+            person=StatePerson.new_with_defaults(state_code="US_XX"),
+            sentence_id=_ID,
         )
         self.assertEqual(
             {"charges"},
@@ -81,19 +79,18 @@ class TestEntityFieldIndex(TestCase):
     def test_getEntityRelationshipFieldNames_backedges(self) -> None:
         field_index = entities_module_context_for_module(state_entities).field_index()
 
-        entity = state_entities.StateSupervisionSentence(
+        entity = state_entities.StateSentence(
             state_code="US_XX",
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
-                StateCharge.new_with_defaults(
+                StateChargeV2.new_with_defaults(
                     state_code="US_XX",
                     external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
+            sentence_id=_ID,
         )
         self.assertEqual(
             {"person"},
@@ -105,22 +102,21 @@ class TestEntityFieldIndex(TestCase):
     def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
         field_index = entities_module_context_for_module(state_entities).field_index()
 
-        entity = state_entities.StateSupervisionSentence(
+        entity = state_entities.StateSentence(
             state_code="US_XX",
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
-                StateCharge.new_with_defaults(
+                StateChargeV2.new_with_defaults(
                     state_code="US_XX",
                     external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
+            sentence_id=_ID,
         )
         self.assertEqual(
-            {"state_code", "external_id", "status", "supervision_sentence_id"},
+            {"state_code", "external_id", "sentence_id"},
             field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.FLAT_FIELD
             ),
@@ -128,19 +124,18 @@ class TestEntityFieldIndex(TestCase):
 
     def test_getEntityRelationshipFieldNames_all(self) -> None:
         field_index = entities_module_context_for_module(state_entities).field_index()
-        entity = state_entities.StateSupervisionSentence(
+        entity = state_entities.StateSentence(
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code="US_XX",
             charges=[
-                StateCharge.new_with_defaults(
+                StateChargeV2.new_with_defaults(
                     state_code="US_XX",
                     external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
+            sentence_id=_ID,
         )
         self.assertEqual(
             {
@@ -148,8 +143,7 @@ class TestEntityFieldIndex(TestCase):
                 "charges",
                 "external_id",
                 "person",
-                "status",
-                "supervision_sentence_id",
+                "sentence_id",
             },
             field_index.get_fields_with_non_empty_values(entity, EntityFieldType.ALL),
         )

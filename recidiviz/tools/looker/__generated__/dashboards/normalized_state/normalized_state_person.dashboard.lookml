@@ -151,50 +151,6 @@
     width: 12
     height: 6
 
-  - name: Normalized State Charge
-    title: Normalized State Charge
-    explore: normalized_state_person
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [normalized_state_charge.attempted,
-      normalized_state_charge.charge_id,
-      normalized_state_charge.charge_notes,
-      normalized_state_charge.charging_entity,
-      normalized_state_charge.classification_subtype,
-      normalized_state_charge.classification_type,
-      normalized_state_charge.classification_type_raw_text,
-      normalized_state_charge.counts,
-      normalized_state_charge.county_code,
-      normalized_state_charge.date_charged_date,
-      normalized_state_charge.description,
-      normalized_state_charge.description_external,
-      normalized_state_charge.external_id,
-      normalized_state_charge.is_controlling,
-      normalized_state_charge.is_drug_external,
-      normalized_state_charge.is_sex_offense_external,
-      normalized_state_charge.is_violent_external,
-      normalized_state_charge.judge_external_id,
-      normalized_state_charge.judge_full_name,
-      normalized_state_charge.judicial_district_code,
-      normalized_state_charge.ncic_category_external,
-      normalized_state_charge.ncic_code_external,
-      normalized_state_charge.offense_date,
-      normalized_state_charge.offense_type,
-      normalized_state_charge.state_code,
-      normalized_state_charge.status,
-      normalized_state_charge.status_raw_text,
-      normalized_state_charge.statute]
-    sorts: [normalized_state_charge.date_charged_date desc, normalized_state_charge.offense_date desc]
-    listen: 
-      Person Id: normalized_state_person.person_id
-      State Code: normalized_state_person.state_code
-      External Id: normalized_state_person_external_id.external_id
-      Id Type: normalized_state_person_external_id.id_type
-    row: 15
-    col: 12
-    width: 12
-    height: 6
-
   - name: Normalized State Charge V2
     title: Normalized State Charge V2
     explore: normalized_state_person
@@ -214,17 +170,13 @@
       normalized_state_charge_v2.description_external,
       normalized_state_charge_v2.external_id,
       normalized_state_charge_v2.is_controlling,
-      normalized_state_charge_v2.is_drug,
       normalized_state_charge_v2.is_drug_external,
-      normalized_state_charge_v2.is_sex_offense,
       normalized_state_charge_v2.is_sex_offense_external,
-      normalized_state_charge_v2.is_violent,
       normalized_state_charge_v2.is_violent_external,
       normalized_state_charge_v2.judge_external_id,
       normalized_state_charge_v2.judge_full_name,
       normalized_state_charge_v2.judicial_district_code,
       normalized_state_charge_v2.ncic_category_external,
-      normalized_state_charge_v2.ncic_code,
       normalized_state_charge_v2.ncic_code_external,
       normalized_state_charge_v2.offense_date,
       normalized_state_charge_v2.offense_type,
@@ -238,8 +190,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 21
-    col: 0
+    row: 15
+    col: 12
     width: 12
     height: 6
 
@@ -264,7 +216,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 21
-    col: 12
+    col: 0
     width: 12
     height: 6
 
@@ -293,8 +245,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 27
-    col: 0
+    row: 21
+    col: 12
     width: 12
     height: 6
 
@@ -323,7 +275,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 27
-    col: 12
+    col: 0
     width: 12
     height: 6
 
@@ -351,8 +303,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 33
-    col: 0
+    row: 27
+    col: 12
     width: 12
     height: 6
 
@@ -381,7 +333,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 33
-    col: 12
+    col: 0
     width: 12
     height: 6
 
@@ -424,47 +376,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 39
-    col: 0
-    width: 12
-    height: 6
-
-  - name: Normalized State Incarceration Sentence
-    title: Normalized State Incarceration Sentence
-    explore: normalized_state_person
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [normalized_state_incarceration_sentence.completion_date,
-      normalized_state_incarceration_sentence.conditions,
-      normalized_state_incarceration_sentence.county_code,
-      normalized_state_incarceration_sentence.date_imposed_date,
-      normalized_state_incarceration_sentence.earned_time_days,
-      normalized_state_incarceration_sentence.effective_date,
-      normalized_state_incarceration_sentence.external_id,
-      normalized_state_incarceration_sentence.good_time_days,
-      normalized_state_incarceration_sentence.incarceration_sentence_id,
-      normalized_state_incarceration_sentence.incarceration_type,
-      normalized_state_incarceration_sentence.incarceration_type_raw_text,
-      normalized_state_incarceration_sentence.initial_time_served_days,
-      normalized_state_incarceration_sentence.is_capital_punishment,
-      normalized_state_incarceration_sentence.is_life,
-      normalized_state_incarceration_sentence.max_length_days,
-      normalized_state_incarceration_sentence.min_length_days,
-      normalized_state_incarceration_sentence.parole_eligibility_date,
-      normalized_state_incarceration_sentence.parole_possible,
-      normalized_state_incarceration_sentence.projected_max_release_date,
-      normalized_state_incarceration_sentence.projected_min_release_date,
-      normalized_state_incarceration_sentence.sentence_metadata,
-      normalized_state_incarceration_sentence.state_code,
-      normalized_state_incarceration_sentence.status,
-      normalized_state_incarceration_sentence.status_raw_text]
-    sorts: [normalized_state_incarceration_sentence.completion_date desc, normalized_state_incarceration_sentence.date_imposed_date desc, normalized_state_incarceration_sentence.effective_date desc, normalized_state_incarceration_sentence.parole_eligibility_date desc, normalized_state_incarceration_sentence.projected_max_release_date desc, normalized_state_incarceration_sentence.projected_min_release_date desc]
-    listen: 
-      Person Id: normalized_state_person.person_id
-      State Code: normalized_state_person.state_code
-      External Id: normalized_state_person_external_id.external_id
-      Id Type: normalized_state_person_external_id.id_type
-    row: 39
+    row: 33
     col: 12
     width: 12
     height: 6
@@ -497,7 +409,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 45
+    row: 39
     col: 0
     width: 12
     height: 6
@@ -529,7 +441,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 45
+    row: 39
     col: 12
     width: 12
     height: 6
@@ -550,7 +462,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 51
+    row: 45
     col: 0
     width: 12
     height: 6
@@ -575,7 +487,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 51
+    row: 45
     col: 12
     width: 12
     height: 6
@@ -597,7 +509,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 57
+    row: 51
     col: 0
     width: 12
     height: 6
@@ -626,7 +538,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 57
+    row: 51
     col: 12
     width: 12
     height: 6
@@ -657,7 +569,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 63
+    row: 57
     col: 0
     width: 12
     height: 6
@@ -695,7 +607,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 63
+    row: 57
     col: 12
     width: 12
     height: 6
@@ -732,7 +644,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 69
+    row: 63
     col: 0
     width: 12
     height: 6
@@ -752,7 +664,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 69
+    row: 63
     col: 12
     width: 12
     height: 6
@@ -778,7 +690,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 75
+    row: 69
     col: 0
     width: 12
     height: 6
@@ -801,7 +713,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 75
+    row: 69
     col: 12
     width: 12
     height: 6
@@ -820,7 +732,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 81
+    row: 75
     col: 0
     width: 12
     height: 6
@@ -849,7 +761,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 81
+    row: 75
     col: 12
     width: 12
     height: 6
@@ -873,7 +785,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 87
+    row: 81
     col: 0
     width: 12
     height: 6
@@ -910,7 +822,7 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 87
+    row: 81
     col: 12
     width: 12
     height: 6
@@ -951,41 +863,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 93
+    row: 87
     col: 0
-    width: 12
-    height: 6
-
-  - name: Normalized State Supervision Sentence
-    title: Normalized State Supervision Sentence
-    explore: normalized_state_person
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [normalized_state_supervision_sentence.completion_date,
-      normalized_state_supervision_sentence.conditions,
-      normalized_state_supervision_sentence.county_code,
-      normalized_state_supervision_sentence.date_imposed_date,
-      normalized_state_supervision_sentence.effective_date,
-      normalized_state_supervision_sentence.external_id,
-      normalized_state_supervision_sentence.is_life,
-      normalized_state_supervision_sentence.max_length_days,
-      normalized_state_supervision_sentence.min_length_days,
-      normalized_state_supervision_sentence.projected_completion_date,
-      normalized_state_supervision_sentence.sentence_metadata,
-      normalized_state_supervision_sentence.state_code,
-      normalized_state_supervision_sentence.status,
-      normalized_state_supervision_sentence.status_raw_text,
-      normalized_state_supervision_sentence.supervision_sentence_id,
-      normalized_state_supervision_sentence.supervision_type,
-      normalized_state_supervision_sentence.supervision_type_raw_text]
-    sorts: [normalized_state_supervision_sentence.completion_date desc, normalized_state_supervision_sentence.date_imposed_date desc, normalized_state_supervision_sentence.effective_date desc, normalized_state_supervision_sentence.projected_completion_date desc]
-    listen: 
-      Person Id: normalized_state_person.person_id
-      State Code: normalized_state_person.state_code
-      External Id: normalized_state_person_external_id.external_id
-      Id Type: normalized_state_person_external_id.id_type
-    row: 93
-    col: 12
     width: 12
     height: 6
 
@@ -1011,8 +890,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 99
-    col: 0
+    row: 87
+    col: 12
     width: 12
     height: 6
 
@@ -1046,8 +925,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 99
-    col: 12
+    row: 93
+    col: 0
     width: 12
     height: 6
 
@@ -1072,8 +951,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 105
-    col: 0
+    row: 93
+    col: 12
     width: 12
     height: 6
 

@@ -333,10 +333,10 @@ class EntityClassForForeignKeyColumnTest(unittest.TestCase):
         )
 
     def test_indirect_reference_to_root(self) -> None:
-        # StateCharge.person is a one-way reference: its parents in the entity
+        # StateChargeV2.person is a one-way reference: its parents in the entity
         # tree are the sentences, and StatePerson has no charges field back. Its
         # table still carries person_id to join back to the root.
         self.assertEqual(
             entities.StatePerson,
-            self._fk(self.state_context, entities.StateCharge, "person"),
+            self._fk(self.state_context, entities.StateChargeV2, "person"),
         )

@@ -29,14 +29,6 @@ from recidiviz.tools.looker.entity.entity_lookml_field_factory import (
 
 DEFAULT_FIELDS: list[LookMLViewField] = [EntityLookMLFieldFactory.count_measure()]
 COMMON_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
-    "state_supervision_sentence": [
-        EntityLookMLFieldFactory.average_measure("max_length_days"),
-        EntityLookMLFieldFactory.sum_measure("max_length_days"),
-    ],
-    "state_incarceration_sentence": [
-        EntityLookMLFieldFactory.average_measure("earned_time_days"),
-        EntityLookMLFieldFactory.sum_measure("earned_time_days"),
-    ],
     "state_incarceration_incident_outcome": [
         EntityLookMLFieldFactory.average_measure("punishment_length_days"),
         EntityLookMLFieldFactory.sum_measure("punishment_length_days"),
@@ -151,8 +143,8 @@ STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
     ],
 }
 NORMALIZED_STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
-    "state_charge": [
-        # Hide duplicated columns that are represented as *_external in normalized state_charge
+    "state_charge_v2": [
+        # Hide duplicated columns that are represented as *_external in normalized state_charge_v2
         EntityLookMLFieldFactory.hidden_dimension("is_drug"),
         EntityLookMLFieldFactory.hidden_dimension("is_sex_offense"),
         EntityLookMLFieldFactory.hidden_dimension("is_violent"),

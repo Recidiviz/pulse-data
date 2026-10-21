@@ -23,10 +23,7 @@ from unittest.mock import patch
 import sqlalchemy
 from more_itertools import one
 
-from recidiviz.common.constants.state.state_charge import (
-    StateChargeStatus,
-    StateChargeV2Status,
-)
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
@@ -537,26 +534,26 @@ class TestEntityValidations(unittest.TestCase):
         )
         self.assertIn(expected_error, error_messages[0])
 
-    def test_normalized_entity_tree_backedges_empty_list(self) -> None:
-        charge = normalized_entities.NormalizedStateCharge(
+    def test_normalized_entity_tree_backedges_set(self) -> None:
+        charge = normalized_entities.NormalizedStateChargeV2(
             state_code="US_XX",
-            charge_id=1,
+            charge_v2_id=1,
             external_id="C1",
-            status=StateChargeStatus.CONVICTED,
+            status=StateChargeV2Status.CONVICTED,
         )
 
-        incarceration_sentence = (
-            normalized_entities.NormalizedStateIncarcerationSentence(
-                state_code="US_XX",
-                incarceration_sentence_id=1,
-                external_id="S1",
-                status=StateSentenceStatus.SERVING,
-                charges=[charge],
-            )
+        sentence = normalized_entities.NormalizedStateSentence(
+            state_code="US_XX",
+            sentence_id=1,
+            external_id="S1",
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            imposed_date=date(2022, 1, 1),
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
+            charges=[charge],
         )
-        charge.incarceration_sentences = [incarceration_sentence]
-        # It should be valid to have a back-edge that is an empty list
-        charge.supervision_sentences = []
+        charge.sentences = [sentence]
 
         normalized_person = normalized_entities.NormalizedStatePerson(
             state_code="US_XX",
@@ -574,9 +571,9 @@ class TestEntityValidations(unittest.TestCase):
                     id_active_to_datetime=None,
                 )
             ],
-            incarceration_sentences=[incarceration_sentence],
+            sentences=[sentence],
         )
-        incarceration_sentence.person = normalized_person
+        sentence.person = normalized_person
         charge.person = normalized_person
 
         for external_id in normalized_person.external_ids:

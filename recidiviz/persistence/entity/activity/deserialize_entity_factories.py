@@ -16,13 +16,10 @@
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
 
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import parse_days
 from recidiviz.persistence.entity.activity import entities
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -118,13 +115,17 @@ class StatePersonAliasFactory(EntityFactory):
         )
 
 
-class StateChargeFactory(EntityFactory):
+class StateProgramAssignmentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateCharge:
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateProgramAssignment:
         return entity_deserialize(
-            cls=entities.StateCharge,
+            cls=entities.StateProgramAssignment,
             converter_overrides={},
-            defaults={"status": StateChargeStatus.PRESENT_WITHOUT_INFO},
+            defaults={
+                "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
+            },
             **kwargs,
         )
 
@@ -164,62 +165,6 @@ class StateIncarcerationIncidentOutcomeFactory(EntityFactory):
             cls=entities.StateIncarcerationIncidentOutcome,
             converter_overrides={},
             defaults={},
-            **kwargs,
-        )
-
-
-class StateIncarcerationSentenceFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateIncarcerationSentence:
-        return entity_deserialize(
-            cls=entities.StateIncarcerationSentence,
-            converter_overrides={
-                "min_length_days": EntityFieldConverter(str, parse_days),
-                "max_length_days": EntityFieldConverter(str, parse_days),
-                # Note: other day count fields on this class (initial_time_served_days,
-                # good_time_days, earned_time_days) should be formatted as integers
-                # (e.g. not 'xxY xxM xxD' format) in the ingest view and will be parsed
-                # normally as integers.
-            },
-            defaults={
-                "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                "incarceration_type": StateIncarcerationType.STATE_PRISON,
-            },
-            **kwargs,
-        )
-
-
-class StateSupervisionSentenceFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateSupervisionSentence:
-        return entity_deserialize(
-            cls=entities.StateSupervisionSentence,
-            converter_overrides={
-                "min_length_days": EntityFieldConverter(str, parse_days),
-                "max_length_days": EntityFieldConverter(str, parse_days),
-            },
-            defaults={
-                "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            },
-            **kwargs,
-        )
-
-
-class StateProgramAssignmentFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateProgramAssignment:
-        return entity_deserialize(
-            cls=entities.StateProgramAssignment,
-            converter_overrides={},
-            defaults={
-                "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
-            },
             **kwargs,
         )
 

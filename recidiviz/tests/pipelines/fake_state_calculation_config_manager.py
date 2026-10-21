@@ -38,11 +38,9 @@ from recidiviz.persistence.entity.activity.entities import (
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager import (
@@ -114,7 +112,7 @@ def get_state_specific_sentence_normalization_delegate(
 
 
 def get_state_specific_incarceration_period_normalization_delegate(
-    state_code: str, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
+    state_code: str,
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     return StateSpecificIncarcerationNormalizationDelegate()
 
@@ -122,7 +120,6 @@ def get_state_specific_incarceration_period_normalization_delegate(
 def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
     assessments: List[StateAssessment],
-    supervision_sentences: List[NormalizedStateSupervisionSentence],
     incarceration_periods: List[StateIncarcerationPeriod],
     sentences: List[StateSentence],
 ) -> StateSpecificSupervisionNormalizationDelegate:

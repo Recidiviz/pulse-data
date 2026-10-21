@@ -72,8 +72,8 @@ DataTablesDict = Dict[str, Iterable[NormalizedDatabaseDict]]
 # Example query:
 # SELECT * FROM `recidiviz-staging.state.state_person` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 ENTITY_TABLE_QUERY_REGEX = re.compile(
-    r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]*state[a-z_]*)\.([a-z_]+)` "
-    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
+    r"SELECT ([A-Za-z_\d\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_\d]*state[a-z_\d]*)\.([a-z_\d]+)` "
+    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_\d]+) IN \(([\'\w\d ,]+)\))?"
 )
 
 # Regex matching queries used by calc pipelines to hydrate reference data.
@@ -96,11 +96,11 @@ REFERENCE_VIEWS_QUERY_REGEX = re.compile(
 # ON state_incarceration_incident.incarceration_incident_id
 #   = state_incarceration_incident_outcome.incarceration_incident_id
 ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
-    r"SELECT ([a-z_]+\.[a-z_]+) as root_entity_id, ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
-    r"FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` ([a-z_]+) "
-    r"JOIN \(SELECT \* FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
-    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
-    r"ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)"
+    r"SELECT ([a-z_\d]+\.[a-z_\d]+) as root_entity_id, ([a-z_\d]+\.[a-z_\d]+), ([a-z_\d]+\.[a-z_\d]+) "
+    r"FROM `[a-z\d\-]+\.([a-z_\d]+)\.([a-z_\d]+)` ([a-z_\d]+) "
+    r"JOIN \(SELECT \* FROM `[a-z\d\-]+\.([a-z_\d]+)\.([a-z_\d]+)` "
+    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_\d]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_\d]+) "
+    r"ON ([a-z_\d]+\.[a-z_\d]+) = ([a-z_\d]+\.[a-z_\d]+)"
 )
 
 

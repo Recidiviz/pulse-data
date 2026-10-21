@@ -20,9 +20,8 @@ import unittest
 
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity.entities import (
-    StateIncarcerationSentence,
     StatePerson,
-    StateSupervisionSentence,
+    StateSentence,
     StateSupervisionViolation,
 )
 from recidiviz.persistence.entity.entities_module_context_factory import (
@@ -38,9 +37,7 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         entities_module_context = entities_module_context_for_module(state_entities)
         direction_checker = entities_module_context.direction_checker()
-        self.assertTrue(
-            direction_checker.is_higher_ranked(StatePerson, StateIncarcerationSentence)
-        )
+        self.assertTrue(direction_checker.is_higher_ranked(StatePerson, StateSentence))
         self.assertTrue(
             direction_checker.is_higher_ranked(StatePerson, StateSupervisionViolation)
         )
@@ -48,9 +45,7 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
     def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self) -> None:
         entities_module_context = entities_module_context_for_module(state_entities)
         direction_checker = entities_module_context.direction_checker()
-        self.assertFalse(
-            direction_checker.is_higher_ranked(StateSupervisionSentence, StatePerson)
-        )
+        self.assertFalse(direction_checker.is_higher_ranked(StateSentence, StatePerson))
         self.assertFalse(
             direction_checker.is_higher_ranked(StateSupervisionViolation, StatePerson)
         )

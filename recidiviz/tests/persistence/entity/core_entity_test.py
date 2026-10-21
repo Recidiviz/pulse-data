@@ -19,7 +19,6 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -338,93 +337,102 @@ class TestCoreEntity(unittest.TestCase):
             db_entity.set_field_from_list("state_code", ["US_XX", "US_YY"])
 
     def test_isDefaultEnum(self) -> None:
-        entity = entities.StateCharge.new_with_defaults(
+        entity = entities.StateChargeV2.new_with_defaults(
             state_code="US_XX",
             external_id="c1",
-            status=entities.StateChargeStatus.PRESENT_WITHOUT_INFO,
+            status=entities.StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
         db_entity = converter.convert_entity_to_schema_object(
             entity, populate_back_edges=False
         )
-        if not isinstance(db_entity, schema.StateCharge):
+        if not isinstance(db_entity, schema.StateChargeV2):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         self.assertTrue(entity.is_default_enum("status"))
-        entity.status = entities.StateChargeStatus.CONVICTED
+        entity.status = entities.StateChargeV2Status.CONVICTED
         self.assertFalse(entity.is_default_enum("status"))
 
         self.assertTrue(db_entity.is_default_enum("status"))
-        db_entity.status = entities.StateChargeStatus.CONVICTED.value
+        db_entity.status = entities.StateChargeV2Status.CONVICTED.value
         self.assertFalse(db_entity.is_default_enum("status"))
 
-    def test_isDefaultEnum_incarceration_type(self) -> None:
-        entity = entities.StateIncarcerationSentence.new_with_defaults(
+    def test_isDefaultEnum_classification_type(self) -> None:
+        entity = entities.StateChargeV2.new_with_defaults(
             state_code="US_XX",
-            external_id="is1",
-            incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            external_id="c1",
+            status=entities.StateChargeV2Status.PRESENT_WITHOUT_INFO,
+            classification_type=entities.StateChargeV2ClassificationType.FELONY,
         )
         db_entity = converter.convert_entity_to_schema_object(
             entity, populate_back_edges=False
         )
-        if not isinstance(db_entity, schema.StateIncarcerationSentence):
+        if not isinstance(db_entity, schema.StateChargeV2):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         self.assertTrue(
             entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
-        entity.incarceration_type_raw_text = "PRISON"
+        entity.classification_type_raw_text = "FELONY"
         self.assertFalse(
             entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
-        entity.incarceration_type = entities.StateIncarcerationType.COUNTY_JAIL
-        entity.incarceration_type_raw_text = None
+        entity.classification_type = (
+            entities.StateChargeV2ClassificationType.MISDEMEANOR
+        )
+        entity.classification_type_raw_text = None
         self.assertFalse(
             entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
         self.assertTrue(
             db_entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
-        db_entity.incarceration_type_raw_text = "PRISON"
+        db_entity.classification_type_raw_text = "FELONY"
         self.assertFalse(
             db_entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
-        db_entity.incarceration_type = entities.StateIncarcerationType.COUNTY_JAIL.value
-        db_entity.incarceration_type_raw_text = None
+        db_entity.classification_type = (
+            entities.StateChargeV2ClassificationType.MISDEMEANOR.value
+        )
+        db_entity.classification_type_raw_text = None
         self.assertFalse(
             entity.is_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
+                "classification_type",
+                entities.StateChargeV2ClassificationType.FELONY.value,
             )
         )
 
     def test_limited_pii_repr_has_external_id_entity(self) -> None:
-        entity = entities.StateIncarcerationSentence.new_with_defaults(
-            incarceration_sentence_id=123,
+        entity = entities.StateChargeV2.new_with_defaults(
+            charge_v2_id=123,
             state_code="US_XX",
-            external_id="is1",
-            incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            external_id="c1",
+            status=entities.StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
         db_entity = converter.convert_entity_to_schema_object(
             entity, populate_back_edges=False
         )
 
-        expected_repr = "StateIncarcerationSentence(external_id='is1', incarceration_sentence_id=123)"
+        expected_repr = "StateChargeV2(charge_v2_id=123, external_id='c1')"
         self.assertEqual(expected_repr, entity.limited_pii_repr())
         self.assertEqual(expected_repr, db_entity.limited_pii_repr())
 

@@ -19,8 +19,11 @@ import datetime
 import unittest
 from typing import Set
 
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceType,
+    StateSentencingAuthority,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -34,10 +37,10 @@ from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
-    NormalizedStateCharge,
+    NormalizedStateChargeV2,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSentence,
     NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -192,61 +195,78 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
     def test_convert_entity_trees_to_normalized_versions_many_to_many_entities(
         self,
     ) -> None:
-        charge = entities.StateCharge.new_with_defaults(
-            charge_id=1,
+        charge = entities.StateChargeV2.new_with_defaults(
+            charge_v2_id=1,
             state_code="US_XX",
             external_id="c1",
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
-        ss1 = entities.StateSupervisionSentence.new_with_defaults(
+        sentence1 = entities.StateSentence.new_with_defaults(
             state_code="US_XX",
-            external_id="ss1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentence_id=1,
+            external_id="s1",
+            sentence_id=1,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
             charges=[charge],
         )
-        ss2 = entities.StateSupervisionSentence.new_with_defaults(
+        sentence2 = entities.StateSentence.new_with_defaults(
             state_code="US_XX",
-            external_id="ss2",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentence_id=2,
+            external_id="s2",
+            sentence_id=2,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
             charges=[charge],
         )
 
-        charge.supervision_sentences = [ss1, ss2]
+        charge.sentences = [sentence1, sentence2]
 
         normalized_trees = convert_entity_trees_to_normalized_versions(
-            root_entities=[ss1, ss2],
-            normalized_entity_class=NormalizedStateSupervisionSentence,
+            root_entities=[sentence1, sentence2],
+            normalized_entity_class=NormalizedStateSentence,
             additional_attributes_map={
-                entities.StateSupervisionSentence.__name__: {},
-                entities.StateCharge.__name__: {},
+                entities.StateSentence.__name__: {
+                    1: {
+                        "sentence_inferred_group_id": None,
+                        "sentence_imposed_group_id": None,
+                    },
+                    2: {
+                        "sentence_inferred_group_id": None,
+                        "sentence_imposed_group_id": None,
+                    },
+                },
+                entities.StateChargeV2.__name__: {},
             },
         )
 
-        expected_charge = NormalizedStateCharge(
-            charge_id=1,
+        expected_charge = NormalizedStateChargeV2(
+            charge_v2_id=1,
             state_code="US_XX",
             external_id="c1",
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
-        expected_ss1 = NormalizedStateSupervisionSentence(
+        expected_sentence1 = NormalizedStateSentence(
             state_code="US_XX",
-            external_id="ss1",
-            supervision_sentence_id=1,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            external_id="s1",
+            sentence_id=1,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             charges=[expected_charge],
         )
-        expected_ss2 = NormalizedStateSupervisionSentence(
+        expected_sentence2 = NormalizedStateSentence(
             state_code="US_XX",
-            external_id="ss2",
-            supervision_sentence_id=2,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            external_id="s2",
+            sentence_id=2,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             charges=[expected_charge],
         )
-        expected_charge.supervision_sentences = [expected_ss1, expected_ss2]
+        expected_charge.sentences = [expected_sentence1, expected_sentence2]
         self.assertListEqual(
-            [expected_ss1, expected_ss2],
+            [expected_sentence1, expected_sentence2],
             normalized_trees,
         )
 

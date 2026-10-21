@@ -30,10 +30,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import (
-    StateChargeStatus,
-    StateChargeV2Status,
-)
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
@@ -42,7 +39,6 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
 )
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -79,9 +75,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
 )
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
-)
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
 )
@@ -109,14 +102,13 @@ from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
 )
 from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_assessment,
-    make_incarceration_sentence,
     make_person,
     make_person_external_id,
     make_person_race,
+    make_sentence,
     make_staff,
     make_staff_external_id,
     make_state_charge,
-    make_supervision_sentence,
     make_task_deadline,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
@@ -187,13 +179,6 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    state_entities.StateCharge: [
-        state_entities.StateCharge(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-        )
-    ],
     state_entities.StateDrugScreen: [],
     state_entities.StateEmploymentPeriod: [],
     state_entities.StateEarlyDischarge: [
@@ -212,13 +197,6 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
         )
     ],
     state_entities.StateIncarcerationPeriod: [],
-    state_entities.StateIncarcerationSentence: [
-        state_entities.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        ),
-    ],
     state_entities.StatePerson: [
         state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
@@ -300,25 +278,6 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
         # scheduled_contact_date.
     ],
     state_entities.StateSupervisionPeriod: [],
-    state_entities.StateSupervisionSentence: [
-        state_entities.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        ),
-        state_entities.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[
-                state_entities.StateCharge(
-                    state_code=StateCode.US_XX.value,
-                    external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-        ),
-    ],
     state_entities.StateSupervisionViolatedConditionEntry: [],
     state_entities.StateSupervisionViolation: [
         state_entities.StateSupervisionViolation(
@@ -385,20 +344,6 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             assessment_date=datetime.date(2021, 1, 1),
         ),
     ],
-    state_entities.StateCharge: [
-        state_entities.StateCharge(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            statute="1234a",
-        ),
-        state_entities.StateCharge(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            statute="1234a",
-        ),
-    ],
     state_entities.StateDrugScreen: [
         state_entities.StateDrugScreen(
             state_code=StateCode.US_XX.value,
@@ -453,19 +398,6 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             external_id=_EXTERNAL_ID,
             admission_date=datetime.date(2021, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-        ),
-    ],
-    state_entities.StateIncarcerationSentence: [
-        state_entities.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            date_imposed=datetime.date(2021, 1, 1),
-        ),
-        state_entities.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.SERVING,
         ),
     ],
     state_entities.StatePerson: [
@@ -651,26 +583,6 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             start_date=datetime.date(2021, 1, 1),
         ),
     ],
-    state_entities.StateSupervisionSentence: [
-        state_entities.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.SERVING,
-        ),
-        state_entities.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            date_imposed=datetime.date(2021, 1, 1),
-            charges=[
-                state_entities.StateCharge(
-                    state_code=StateCode.US_XX.value,
-                    external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-        ),
-    ],
     state_entities.StateSupervisionViolatedConditionEntry: [
         state_entities.StateSupervisionViolatedConditionEntry(
             state_code=StateCode.US_XX.value,
@@ -817,28 +729,24 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
     def test_throws_primary_keys_set_child_entity(self) -> None:
         charge = make_state_charge(
             # Primary key should not be set when we get to root entity merging.
-            charge_id=123,
+            charge_v2_id=123,
             external_id="CHARGE_A",
             ncic_code="3599",
         )
-        incarceration_sentence = make_incarceration_sentence(
+        sentence = make_sentence(
             external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
             charges=[attr.evolve(charge)],
         )
         root_entity = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            sentences=[attr.evolve(sentence)],
         )
 
         # Test primary key set on new child entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set primary key on \[StateCharge\] entity: 123. Primary key fields "
-            r"should not be set at this point.",
+            r"Found set primary key on \[StateChargeV2\] entity: 123. Primary key "
+            r"fields should not be set at this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
                 old_root_entity=None,
@@ -847,10 +755,10 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
 
         root_entity_without_primary_key = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
+            sentences=[
                 attr.evolve(
-                    incarceration_sentence,
-                    charges=[attr.evolve(charge, charge_id=None)],
+                    sentence,
+                    charges=[attr.evolve(charge, charge_v2_id=None)],
                 )
             ],
         )
@@ -858,8 +766,8 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         # Test primary key set on old root entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set primary key on \[StateCharge\] entity: 123. Primary key fields "
-            r"should not be set at this point.",
+            r"Found set primary key on \[StateChargeV2\] entity: 123. Primary key "
+            r"fields should not be set at this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
                 old_root_entity=root_entity,
@@ -867,24 +775,20 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             )
 
     def test_throws_backedges_to_root_set(self) -> None:
-        incarceration_sentence = make_incarceration_sentence(
+        sentence = make_sentence(
             external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
         )
         root_entity = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[incarceration_sentence],
+            sentences=[sentence],
         )
         # Set person backedge
-        incarceration_sentence.person = root_entity
+        sentence.person = root_entity
 
         # Test primary key set on new child entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set back edges on \[StateIncarcerationSentence\] entity: "
+            r"Found set back edges on \[StateSentence\] entity: "
             r"\{'person'\}. Back edge fields should not be set at this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
@@ -894,13 +798,13 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
 
         root_entity_without_backedge = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence, person=None)],
+            sentences=[attr.evolve(sentence, person=None)],
         )
 
         # Test primary key set on old root entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set back edges on \[StateIncarcerationSentence\] entity: "
+            r"Found set back edges on \[StateSentence\] entity: "
             r"\{'person'\}. Back edge fields should not be set at this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
@@ -913,26 +817,22 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             external_id="CHARGE_A",
             ncic_code="3599",
         )
-        incarceration_sentence = make_incarceration_sentence(
+        sentence = make_sentence(
             external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
             charges=[charge],
         )
         # Backedge set on charge
-        charge.incarceration_sentences = [incarceration_sentence]
+        charge.sentences = [sentence]
         root_entity = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            sentences=[attr.evolve(sentence)],
         )
 
         # Test primary key set on new child entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set back edges on \[StateCharge\] entity: "
-            r"\{'incarceration_sentences'\}. Back edge fields should not be set at "
+            r"Found set back edges on \[StateChargeV2\] entity: "
+            r"\{'sentences'\}. Back edge fields should not be set at "
             r"this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
@@ -942,10 +842,10 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
 
         root_entity_without_backedge = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
+            sentences=[
                 attr.evolve(
-                    incarceration_sentence,
-                    charges=[attr.evolve(charge, incarceration_sentences=[])],
+                    sentence,
+                    charges=[attr.evolve(charge, sentences=[])],
                 )
             ],
         )
@@ -953,8 +853,8 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         # Test primary key set on old root entity
         with self.assertRaisesRegex(
             ValueError,
-            r"Found set back edges on \[StateCharge\] entity: "
-            r"\{'incarceration_sentences'\}. Back edge fields should not be set at "
+            r"Found set back edges on \[StateChargeV2\] entity: "
+            r"\{'sentences'\}. Back edge fields should not be set at "
             r"this point.",
         ):
             _ = self.merger.merge_root_entity_trees(
@@ -1207,9 +1107,6 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
 
         previous_root_entity.incarceration_periods = []
         previous_root_entity.assessments = []
-        # TODO(#20936): Un-comment this line once multi-parent merging is
-        #  implemented.
-        # previous_root_entity.incarceration_sentences[0].charges = []
 
         entity_updates = generate_full_graph_state_person(
             set_back_edges=False,
@@ -1765,27 +1662,21 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
     def test_merge_updated_grandchild(self) -> None:
         # Arrange
         charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
-        incarceration_sentence = make_incarceration_sentence(
+        sentence = make_sentence(
             external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
             charges=[attr.evolve(charge)],
         )
         assessment = make_assessment(external_id="a1")
         previous_root_entity = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            sentences=[attr.evolve(sentence)],
             assessments=[attr.evolve(assessment)],
         )
 
         updated_charge = attr.evolve(charge, ncic_code="9999")
         entity_updates = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
-                attr.evolve(incarceration_sentence, charges=[updated_charge])
-            ],
+            sentences=[attr.evolve(sentence, charges=[updated_charge])],
         )
 
         # Act
@@ -1798,191 +1689,9 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         # The charge should have been updated, assessments remain unchanged
         expected_result = make_person(
             external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
-                attr.evolve(
-                    incarceration_sentence, charges=[attr.evolve(updated_charge)]
-                )
-            ],
+            sentences=[attr.evolve(sentence, charges=[attr.evolve(updated_charge)])],
             assessments=[attr.evolve(assessment)],
         )
-        self.assert_expected_matches_result(
-            expected_result=expected_result, result=result
-        )
-
-    def test_merge_multi_parent_charge_on_update(self) -> None:
-        # Arrange
-        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
-        incarceration_sentence = make_incarceration_sentence(
-            external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
-            charges=[attr.evolve(charge)],
-        )
-        previous_root_entity = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
-        )
-
-        supervision_sentence = make_supervision_sentence(
-            external_id="A",
-            status=StateSentenceStatus.SERVING,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            min_length_days=90,
-            max_length_days=365,
-            # Separate, updated copy of charge also attached to this supervision
-            # sentence
-            charges=[attr.evolve(charge, description="Charge description")],
-        )
-        entity_updates = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            supervision_sentences=[attr.evolve(supervision_sentence)],
-        )
-
-        # Act
-        result = self.merger.merge_root_entity_trees(
-            old_root_entity=previous_root_entity,
-            root_entity_updates=entity_updates,
-        )
-
-        # Assert
-        expected_charge = attr.evolve(charge, description="Charge description")
-
-        # Both the incarceration and supervision sentence should reference the same
-        # charge.
-        expected_result = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
-                attr.evolve(incarceration_sentence, charges=[expected_charge])
-            ],
-            supervision_sentences=[
-                attr.evolve(supervision_sentence, charges=[expected_charge])
-            ],
-        )
-
-        self.assert_expected_matches_result(
-            expected_result=expected_result, result=result
-        )
-
-    def test_merge_multi_parent_charge_both_parents_new(self) -> None:
-        # Arrange
-        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
-        incarceration_sentence = make_incarceration_sentence(
-            external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
-            charges=[attr.evolve(charge)],
-        )
-        supervision_sentence = make_supervision_sentence(
-            external_id="A",
-            status=StateSentenceStatus.SERVING,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            min_length_days=90,
-            max_length_days=365,
-            # Separate copy of charge also attached to this sentence (mimics output of
-            # ingest view parser).
-            charges=[attr.evolve(charge)],
-        )
-        entity_updates = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
-            supervision_sentences=[attr.evolve(supervision_sentence)],
-        )
-
-        # Act
-        result = self.merger.merge_root_entity_trees(
-            old_root_entity=None,
-            root_entity_updates=entity_updates,
-        )
-
-        # Assert
-        expected_charge = attr.evolve(charge)
-
-        # Both the incarceration and supervision sentence should reference the same
-        # charge.
-        expected_result = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
-                attr.evolve(incarceration_sentence, charges=[expected_charge])
-            ],
-            supervision_sentences=[
-                attr.evolve(supervision_sentence, charges=[expected_charge])
-            ],
-        )
-
-        self.assert_expected_matches_result(
-            expected_result=expected_result, result=result
-        )
-
-    def test_merge_multi_parent_charge_on_update_original_was_already_multi_parent(
-        self,
-    ) -> None:
-        # Arrange
-        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
-        original_charge = attr.evolve(charge)
-        incarceration_sentence = make_incarceration_sentence(
-            external_id="A",
-            status=StateSentenceStatus.SERVING,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            min_length_days=365,
-            max_length_days=365 * 2,
-            charges=[original_charge],
-        )
-        supervision_sentence = make_supervision_sentence(
-            external_id="B",
-            status=StateSentenceStatus.SERVING,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            min_length_days=90,
-            max_length_days=365,
-            charges=[original_charge],
-        )
-        previous_root_entity = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[attr.evolve(incarceration_sentence)],
-            supervision_sentences=[attr.evolve(supervision_sentence)],
-        )
-
-        updated_charge = attr.evolve(charge, description="Charge description")
-        supervision_sentence_2 = make_supervision_sentence(
-            external_id="C",
-            status=StateSentenceStatus.SERVING,
-            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-            min_length_days=180,
-            max_length_days=400,
-            # Separate, updated copy of charge also attached to this supervision
-            # sentence
-            charges=[updated_charge],
-        )
-        entity_updates = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            supervision_sentences=[attr.evolve(supervision_sentence_2)],
-        )
-
-        # Act
-        result = self.merger.merge_root_entity_trees(
-            old_root_entity=previous_root_entity,
-            root_entity_updates=entity_updates,
-        )
-
-        # Assert
-        expected_charge = attr.evolve(charge, description="Charge description")
-
-        # Both the incarceration and supervision sentence should reference the same
-        # charge.
-        expected_result = make_person(
-            external_ids=[attr.evolve(self._make_external_id_entity_1())],
-            incarceration_sentences=[
-                attr.evolve(incarceration_sentence, charges=[expected_charge])
-            ],
-            supervision_sentences=[
-                attr.evolve(supervision_sentence, charges=[expected_charge]),
-                attr.evolve(supervision_sentence_2, charges=[expected_charge]),
-            ],
-        )
-
         self.assert_expected_matches_result(
             expected_result=expected_result, result=result
         )

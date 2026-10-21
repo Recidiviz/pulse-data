@@ -27,6 +27,19 @@ from recidiviz.segment.segment_event_utils import (
     get_all_segment_source_table_addresses,
 )
 
+# The v1 sentence entities (StateCharge, StateIncarcerationSentence, and
+# StateSupervisionSentence, plus the two charge-sentence association tables) were
+# deleted in the sentences v1 teardown. Their tables stay materialized in every state's
+# state and normalized_state ingest-output datasets with no source table config, so they
+# are exempted here until they are dropped from BigQuery.
+_V1_SENTENCE_ENTITY_ORPHAN_TABLES: set[str] = {
+    "state_charge",
+    "state_charge_incarceration_sentence_association",
+    "state_charge_supervision_sentence_association",
+    "state_incarceration_sentence",
+    "state_supervision_sentence",
+}
+
 # Legacy tables that existed before we had source table management, or have other
 # valid exemption reasons.
 # These are grandfathered in and won't trigger validation failures
@@ -401,6 +414,54 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
     "us_ny_raw_data_secondary": {"ADMISSIONS", "RELEASES"},
     # TODO(#57811): Delete this table from BigQuery and remove this exemption
     "us_or_raw_data_secondary": {"RCDVZ_CISPRDDTA_CMOFRO"},
+    # TODO(OBT-53665): Drop the orphaned v1 sentence tables from each state's state and
+    # normalized_state datasets in BigQuery, then remove these exemptions.
+    "us_ar_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ar_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_az_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_az_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ca_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ca_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_co_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_co_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ia_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ia_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_id_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_id_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ix_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ix_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ma_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ma_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_me_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_me_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_mi_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_mi_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_mo_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_mo_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nc_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nc_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nd_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nd_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ne_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ne_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nv_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nv_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ny_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ny_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nyc_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_nyc_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_or_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_or_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_oz_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_oz_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_pa_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_pa_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_tn_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_tn_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_tx_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_tx_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ut_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
+    "us_ut_normalized_state": _V1_SENTENCE_ENTITY_ORPHAN_TABLES,
 }
 
 

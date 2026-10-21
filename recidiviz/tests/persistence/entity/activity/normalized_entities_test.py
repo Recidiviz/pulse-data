@@ -72,8 +72,7 @@ from recidiviz.utils.types import non_optional
 NORMALIZED_PREFIX = "Normalized"
 
 # Fields that are present in state entities but not in normalized entities.
-# TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
-#  plan to delete here.
+# TODO(#15559): Add NormalizedStateChargeV2 fields that we plan to delete here.
 STATE_DATASET_ONLY_FIELDS = {
     state_entities.StateSentence.__name__: {
         "current_state_provided_start_date",

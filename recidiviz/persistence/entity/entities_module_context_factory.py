@@ -81,9 +81,6 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             state_entities.StatePersonHousingStatusPeriod.__name__,
             state_entities.StatePersonAlias.__name__,
             state_entities.StatePersonRace.__name__,
-            state_entities.StateIncarcerationSentence.__name__,
-            state_entities.StateSupervisionSentence.__name__,
-            state_entities.StateCharge.__name__,
             state_entities.StateIncarcerationPeriod.__name__,
             state_entities.StateIncarcerationIncident.__name__,
             state_entities.StateIncarcerationIncidentOutcome.__name__,
@@ -127,16 +124,7 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
     #  once we remove these classes from the schema.
     @classmethod
     def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
-        return {
-            "state_charge_supervision_sentence_association": (
-                state_entities.StateCharge,
-                state_entities.StateSupervisionSentence,
-            ),
-            "state_charge_incarceration_sentence_association": (
-                state_entities.StateCharge,
-                state_entities.StateIncarcerationSentence,
-            ),
-        }
+        return {}
 
     @classmethod
     def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
@@ -164,9 +152,6 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
             normalized_entities.NormalizedStatePersonHousingStatusPeriod.__name__,
             normalized_entities.NormalizedStatePersonAlias.__name__,
             normalized_entities.NormalizedStatePersonRace.__name__,
-            normalized_entities.NormalizedStateIncarcerationSentence.__name__,
-            normalized_entities.NormalizedStateSupervisionSentence.__name__,
-            normalized_entities.NormalizedStateCharge.__name__,
             normalized_entities.NormalizedStateIncarcerationPeriod.__name__,
             normalized_entities.NormalizedStateIncarcerationIncident.__name__,
             normalized_entities.NormalizedStateIncarcerationIncidentOutcome.__name__,
@@ -212,16 +197,7 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
     #  once we remove these classes from the schema.
     @classmethod
     def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
-        return {
-            "state_charge_supervision_sentence_association": (
-                normalized_entities.NormalizedStateCharge,
-                normalized_entities.NormalizedStateSupervisionSentence,
-            ),
-            "state_charge_incarceration_sentence_association": (
-                normalized_entities.NormalizedStateCharge,
-                normalized_entities.NormalizedStateIncarcerationSentence,
-            ),
-        }
+        return {}
 
     @classmethod
     def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:

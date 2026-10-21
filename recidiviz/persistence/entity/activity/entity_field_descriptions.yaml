@@ -32,57 +32,6 @@ state_assessment:
       The ordinal position of this observation in the sequence of StateAssessment
       observations for this NormalizedStatePerson.
 
-state_charge:
-  fields:
-    attempted: Whether this charge was an attempt or not (e.g. attempted murder).
-    charge_notes: Free text containing other information about a charge.
-    charging_entity: >-
-      The entity that brought this charge (e.g., Boston Police Department, Southern District of New York).
-    classification_subtype: >-
-      The sub-classification of the charge, such as a degree
-      (e.g. 1st Degree, 2nd Degree, etc.) or a class (e.g. Class A, Class B, etc.).
-    classification_type: Charge classification.
-    classification_type_raw_text: The raw text value of the charge classification.
-    counts: The number of counts of this charge which are being brought against the person.
-    county_code: The code of the county under whose jurisdiction the charge was brought.
-    date_charged: The date the person was charged with the alleged offense.
-    description: A text description of the charge.
-    is_controlling: >-
-      Whether or not this is the "controlling" charge in a set of related
-      charges. A controlling charge is the one which is responsible for the longest
-      possible sentence duration in the set.
-    is_drug: Whether this charge was for a drug-related crime or not.
-    is_sex_offense: Whether or not the violation involved a sex offense.
-    is_violent: Whether this charge was for a violent crime or not.
-    judge_external_id: >-
-      The unique identifier for the presiding judge, unique within
-      the scope of the source data system.
-    judge_full_name: >-
-      The full name of the judge presiding over the court case associated
-      with this charge.
-    judicial_district_code: >-
-      The code of the judicial district under whose jurisdiction
-      the case was tried.
-    ncic_code: >-
-      The standardized NCIC (National Crime Information Center) code for
-      the charged offense. NCIC codes are a set of nationally recognized codes for
-      certain types of crimes.
-    offense_date: The date of the alleged offense that led to this charge.
-    offense_type: The type of offense associated with the charge.
-    status: The status of the charge.
-    status_raw_text: The raw text value of the status of the charge.
-    statute: The identifier of the charge in the state or federal code.
-  normalization_only_fields:
-    description_external: A text description of the charge.
-    is_drug_external: Whether this charge was for a drug-related crime or not.
-    is_sex_offense_external: Whether or not the violation involved a sex offense.
-    is_violent_external: Whether this charge was for a violent crime or not.
-    ncic_code_external: >-
-      The standardized NCIC (National Crime Information Center) code for
-      the charged offense. NCIC codes are a set of nationally recognized codes for
-      certain types of crimes.
-    ncic_category_external: A high-level category associated with the state-provided NCIC code (e.g. Kidnapping, Bribery, etc).
-
 state_charge_v2:
   fields:
     attempted: Whether this charge was an attempt or not (e.g. attempted murder).
@@ -244,53 +193,6 @@ state_incarceration_period:
     incarceration_admission_violation_type: A supervision violation type that lead to this period of incarceration. It is null if this incarceration period did not result in a supervision violation.
     purpose_for_incarceration_subtype: Defines why this period of incarceration is being served beyond admission reason.
     sequence_num: The ordinal position of this incarceration period in the sequence of incarceration periods for this person.
-
-state_incarceration_sentence:
-  fields:
-    completion_date: The date this sentence has been completed.
-    conditions: >-
-      The conditions of this incarceration sentence which the person must
-      follow to avoid a disciplinary response. If this field is empty, there may still
-      be applicable conditions that apply to someone's current term of supervision/incarceration
-      - either inherited from another ongoing sentence or the current supervision term. (See conditions on StateSupervisionPeriod).
-    county_code: The code of the county under whose jurisdiction the sentence was imposed.
-    date_imposed: >-
-      The date this sentence was imposed, e.g. the date of actual sentencing,
-      but not necessarily the date the person started serving the sentence
-    earned_time_days: >-
-      Any earned time (in days) the person has credited against this
-      sentence due to participation in programming designed to reduce the likelihood
-      of re-offense, if applicable.
-    effective_date: >-
-      The date on which a sentence effectively begins being served,
-      including any pre-trial jail detention time if applicable.
-    good_time_days: >-
-      Any good time (in days) the person has credited against this sentence
-      due to good conduct, a.k.a. time off for good behavior, if applicable.
-    incarceration_type: The type of incarceration the person is being sentenced to.
-    incarceration_type_raw_text: The raw text value of the type of incarceration of this sentence.
-    initial_time_served_days: >-
-      The amount of any time already served (in days), to
-      possible be credited against the overall sentence duration.
-    is_capital_punishment: Whether or not this is a sentence for the death penalty.
-    is_life: Whether or not this is a life sentence.
-    max_length_days: The maximum duration of this sentence in days.
-    min_length_days: The minimum duration of this sentence in days.
-    parole_eligibility_date: >-
-      The first date under which the person becomes eligible
-      for parole under the terms of this sentence.
-    parole_possible: Whether or not the person may be released to parole under the terms of this sentence.
-    projected_max_release_date: >-
-      The latest projected date the person may be released
-      from incarceration due to this sentence.
-    projected_min_release_date: >-
-      The earliest projected date the person may be released
-      from incarceration due to this sentence.
-    sentence_metadata: >-
-      Arbitrary JSON-formatted metadata relevant to a fine understanding
-      of a particular sentence.
-    status: The current status of this sentence.
-    status_raw_text: The raw text value of the status of the sentence.
 
 state_person:
   fields:
@@ -760,32 +662,6 @@ state_supervision_period:
   normalization_only_fields:
     sequence_num: The ordinal position of this supervision period in the sequence of all supervision periods for this person.
     supervising_officer_staff_id: StateStaff ID for the supervising officer.
-
-state_supervision_sentence:
-  fields:
-    completion_date: The date the person actually did complete their supervision.
-    conditions: >-
-      The conditions of this supervision sentence which the person must
-      follow to avoid a disciplinary response. If this field is empty, there may still
-      be applicable conditions that apply to someone's current term of supervision/incarceration
-      - either inherited from another ongoing sentence or the current supervision
-      term. (See conditions on StateSupervisionPeriod).
-    county_code: The code of the county under whose jurisdiction the sentence was imposed.
-    date_imposed:
-      The date this sentence was imposed, e.g. the date of actual sentencing,
-      but not necessarily the date the person started serving the sentence.
-    effective_date:
-      The date on which a sentence effectively begins being served,
-      including any pre-trial jail detention time if applicable.
-    is_life: Whether or not this is a life sentence.
-    max_length_days: Maximum duration of this sentence in days.
-    min_length_days: Minimum duration of this sentence in days.
-    projected_completion_date: The earliest projected date the person may have completed their supervision.
-    sentence_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular sentence.
-    status: The current status of this sentence.
-    status_raw_text: The raw text value of the current status of this sentence.
-    supervision_type: The type of supervision the person is being sentenced to.
-    supervision_type_raw_text: The raw text value of the type of supervision the person is being sentenced to.
 
 state_supervision_violated_condition_entry:
   fields:

@@ -20,12 +20,12 @@ import unittest
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
-from recidiviz.common.constants.state.state_charge import (
-    StateChargeStatus,
-    StateChargeV2Status,
-)
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceType,
+    StateSentencingAuthority,
+)
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.common.demographics import Gender, Race
 from recidiviz.persistence.entity.activity import entities, normalized_entities
@@ -37,9 +37,9 @@ from recidiviz.persistence.entity.activity.entities import (
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
-    NormalizedStateCharge,
-    NormalizedStateIncarcerationSentence,
+    NormalizedStateChargeV2,
     NormalizedStatePerson,
+    NormalizedStateSentence,
 )
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -316,23 +316,26 @@ class TestJsonSerializableDict(unittest.TestCase):
         )
         person.assessments = [assessment]
 
-        charge = NormalizedStateCharge(
-            charge_id=789,
+        charge = NormalizedStateChargeV2(
+            charge_v2_id=789,
             state_code="US_XX",
             external_id="EXTERNAL_ID",
-            status=StateChargeStatus.PENDING,
+            status=StateChargeV2Status.PENDING,
             person=person,
         )
 
-        sentence = NormalizedStateIncarcerationSentence(
-            incarceration_sentence_id=1011,
+        sentence = NormalizedStateSentence(
+            sentence_id=1011,
             state_code="US_XX",
             external_id="EXTERNAL_ID",
             person=person,
-            status=StateSentenceStatus.PENDING,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             charges=[charge],
         )
-        person.incarceration_sentences = [sentence]
+        person.sentences = [sentence]
 
         # Root entity
         self.assertEqual(
@@ -387,31 +390,28 @@ class TestJsonSerializableDict(unittest.TestCase):
         # Entity with many-to-many relationship with child
         self.assertEqual(
             {
-                "completion_date": None,
                 "conditions": None,
                 "county_code": None,
-                "date_imposed": None,
-                "earned_time_days": None,
-                "effective_date": None,
+                "current_start_date": None,
+                "current_state_provided_start_date": None,
                 "external_id": "EXTERNAL_ID",
-                "good_time_days": None,
-                "incarceration_sentence_id": 1011,
-                "incarceration_type": None,
-                "incarceration_type_raw_text": None,
+                "imposed_date": None,
                 "initial_time_served_days": None,
                 "is_capital_punishment": None,
                 "is_life": None,
-                "max_length_days": None,
-                "min_length_days": None,
-                "parole_eligibility_date": None,
+                "parent_sentence_external_id_array": None,
                 "parole_possible": None,
                 "person_id": 123,
-                "projected_max_release_date": None,
-                "projected_min_release_date": None,
+                "sentence_group_external_id": None,
+                "sentence_id": 1011,
+                "sentence_imposed_group_id": None,
+                "sentence_inferred_group_id": None,
                 "sentence_metadata": None,
+                "sentence_type": "STATE_PRISON",
+                "sentence_type_raw_text": None,
+                "sentencing_authority": "STATE",
+                "sentencing_authority_raw_text": None,
                 "state_code": "US_XX",
-                "status": "PENDING",
-                "status_raw_text": None,
             },
             serialize_entity_into_json(sentence, context),
         )
@@ -420,8 +420,8 @@ class TestJsonSerializableDict(unittest.TestCase):
         self.assertEqual(
             {
                 "attempted": None,
-                "charge_id": 789,
                 "charge_notes": None,
+                "charge_v2_id": 789,
                 "charging_entity": None,
                 "classification_subtype": None,
                 "classification_type": None,

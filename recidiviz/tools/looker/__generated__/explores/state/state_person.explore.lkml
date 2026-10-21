@@ -10,7 +10,6 @@ explore: state_person_template {
     state_employment_period,
     state_incarceration_incident,
     state_incarceration_period,
-    state_incarceration_sentence,
     state_person_address_period,
     state_person_alias,
     state_person_external_id,
@@ -23,7 +22,6 @@ explore: state_person_template {
     state_sentence_group,
     state_supervision_contact,
     state_supervision_period,
-    state_supervision_sentence,
     state_supervision_violation,
     state_task_deadline
   ]
@@ -64,11 +62,6 @@ explore: state_person_template {
 
   join: state_incarceration_period {
     sql_on: ${state_person.person_id} = ${state_incarceration_period.person_id};;
-    relationship: one_to_many
-  }
-
-  join: state_incarceration_sentence {
-    sql_on: ${state_person.person_id} = ${state_incarceration_sentence.person_id};;
     relationship: one_to_many
   }
 
@@ -132,11 +125,6 @@ explore: state_person_template {
     relationship: one_to_many
   }
 
-  join: state_supervision_sentence {
-    sql_on: ${state_person.person_id} = ${state_supervision_sentence.person_id};;
-    relationship: one_to_many
-  }
-
   join: state_supervision_violation {
     sql_on: ${state_person.person_id} = ${state_supervision_violation.person_id};;
     relationship: one_to_many
@@ -182,27 +170,6 @@ explore: state_incarceration_incident_outcome {
 }
 explore: state_incarceration_period {
   extension: required
-
-}
-explore: state_incarceration_sentence {
-  extension: required
-  extends: [
-    state_charge_incarceration_sentence_association
-  ]
-
-  join: state_charge_incarceration_sentence_association {
-    sql_on: ${state_incarceration_sentence.incarceration_sentence_id} = ${state_charge_incarceration_sentence_association.incarceration_sentence_id};;
-    relationship: one_to_many
-  }
-
-}
-explore: state_charge_incarceration_sentence_association {
-  extension: required
-
-  join: state_charge {
-    sql_on: ${state_charge_incarceration_sentence_association.charge_id} = ${state_charge.charge_id};;
-    relationship: many_to_one
-  }
 
 }
 explore: state_person_address_period {
@@ -312,27 +279,6 @@ explore: state_supervision_period {
 }
 explore: state_supervision_case_type_entry {
   extension: required
-
-}
-explore: state_supervision_sentence {
-  extension: required
-  extends: [
-    state_charge_supervision_sentence_association
-  ]
-
-  join: state_charge_supervision_sentence_association {
-    sql_on: ${state_supervision_sentence.supervision_sentence_id} = ${state_charge_supervision_sentence_association.supervision_sentence_id};;
-    relationship: one_to_many
-  }
-
-}
-explore: state_charge_supervision_sentence_association {
-  extension: required
-
-  join: state_charge {
-    sql_on: ${state_charge_supervision_sentence_association.charge_id} = ${state_charge.charge_id};;
-    relationship: many_to_one
-  }
 
 }
 explore: state_supervision_violation {

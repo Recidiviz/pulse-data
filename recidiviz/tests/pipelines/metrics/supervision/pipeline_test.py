@@ -230,11 +230,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        charge = database_test_utils.generate_test_charge(
-            person_id=fake_person_id,
-            charge_id=1234523,
-        )
-
         assessment = schema.StateAssessment(
             assessment_id=298374,
             external_id="a1",
@@ -274,8 +269,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                 {"supervising_officer_staff_id": 123456, "sequence_num": 0},
             )
         ]
-
-        charge_data = [normalized_database_base_dict(charge)]
 
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
@@ -323,7 +316,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
         }
@@ -496,12 +488,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        charge = database_test_utils.generate_test_charge(
-            person_id=fake_person_id,
-            state_code="US_XX",
-            charge_id=1234523,
-        )
-
         ssvr = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=fake_svr_id,
             external_id="svr1",
@@ -587,8 +573,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation)
         ]
 
-        charge_data = [normalized_database_base_dict(charge)]
-
         assessment_data = [
             normalized_database_base_dict(
                 assessment,
@@ -604,7 +588,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
         }
         data_dict.update(data_dict_overrides)
@@ -683,11 +666,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id_1,
         )
 
-        charge = database_test_utils.generate_test_charge(
-            person_id=fake_person_id_1,
-            charge_id=1234523,
-        )
-
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id_2
@@ -711,8 +689,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_violation_data = [
             normalized_database_base_dict(supervision_violation)
         ]
-
-        charge_data = [normalized_database_base_dict(charge)]
 
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
@@ -775,7 +751,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
         }
         data_dict.update(data_dict_overrides)

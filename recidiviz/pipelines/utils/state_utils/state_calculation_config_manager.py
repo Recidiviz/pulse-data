@@ -35,11 +35,9 @@ from recidiviz.persistence.entity.activity.entities import (
 )
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager import (
@@ -956,7 +954,7 @@ def get_state_specific_assessment_normalization_delegate(
 
 
 def get_state_specific_incarceration_period_normalization_delegate(
-    state_code: str, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
+    state_code: str,
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     """Returns the type of IncarcerationNormalizationDelegate that should be used for
     normalizing StateIncarcerationPeriod entities from a given |state_code|."""
@@ -971,7 +969,7 @@ def get_state_specific_incarceration_period_normalization_delegate(
     if state_code == StateCode.US_MA.value:
         return UsMaIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeIncarcerationNormalizationDelegate(incarceration_sentences)
+        return UsMeIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_MI.value:
         return UsMiIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
@@ -1013,7 +1011,6 @@ def get_state_specific_incarceration_period_normalization_delegate(
 def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
     assessments: List[StateAssessment],
-    supervision_sentences: List[NormalizedStateSupervisionSentence],
     incarceration_periods: List[StateIncarcerationPeriod],
     sentences: List[StateSentence],
 ) -> StateSpecificSupervisionNormalizationDelegate:
@@ -1034,9 +1031,7 @@ def get_state_specific_supervision_period_normalization_delegate(
             raise ValueError(
                 "Missing StateAssessment entity for UsMeSupervisionNormalizationDelegate"
             )
-        return UsMeSupervisionNormalizationDelegate(
-            assessments=assessments, supervision_sentences=supervision_sentences
-        )
+        return UsMeSupervisionNormalizationDelegate(assessments=assessments)
     if state_code == StateCode.US_MI.value:
         return UsMiSupervisionNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
@@ -1094,7 +1089,7 @@ def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unuse
     sentences: list["StateSentence"],
 ) -> StateSpecificSentenceNormalizationDelegate:
     """Returns the type of SentenceNormalizationDelegate that should be used for normalizing
-    StateIncarcerationSentence/StateSupervisionSentence entities from a given |state_code|.
+    StateSentence entities from a given |state_code|.
     """
     if state_code == StateCode.US_AR.value:
         return UsArSentenceNormalizationDelegate()

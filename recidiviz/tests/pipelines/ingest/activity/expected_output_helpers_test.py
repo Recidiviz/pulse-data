@@ -50,9 +50,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
     def test_get_all_table_ids_for_schema_state(self) -> None:
         expected_table_ids = {
             "state_assessment",
-            "state_charge",
-            "state_charge_incarceration_sentence_association",
-            "state_charge_supervision_sentence_association",
             "state_charge_v2",
             "state_charge_v2_state_sentence_association",
             "state_drug_screen",
@@ -61,7 +58,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             "state_incarceration_incident",
             "state_incarceration_incident_outcome",
             "state_incarceration_period",
-            "state_incarceration_sentence",
             "state_person",
             "state_person_address_period",
             "state_person_alias",
@@ -85,7 +81,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             "state_scheduled_supervision_contact",
             "state_supervision_contact",
             "state_supervision_period",
-            "state_supervision_sentence",
             "state_supervision_violated_condition_entry",
             "state_supervision_violation",
             "state_supervision_violation_response",
@@ -103,9 +98,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
     ) -> None:
         expected_table_ids = {
             "state_assessment",
-            "state_charge",
-            "state_charge_incarceration_sentence_association",
-            "state_charge_supervision_sentence_association",
             "state_charge_v2",
             "state_charge_v2_state_sentence_association",
             "state_drug_screen",
@@ -114,7 +106,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             "state_incarceration_incident",
             "state_incarceration_incident_outcome",
             "state_incarceration_period",
-            "state_incarceration_sentence",
             "state_person",
             "state_person_address_period",
             "state_person_alias",
@@ -140,7 +131,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             "state_scheduled_supervision_contact",
             "state_supervision_contact",
             "state_supervision_period",
-            "state_supervision_sentence",
             "state_supervision_violated_condition_entry",
             "state_supervision_violation",
             "state_supervision_violation_response",
@@ -174,9 +164,6 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             {
                 entities.StatePerson,
                 entities.StatePersonExternalId,
-                entities.StateIncarcerationSentence,
-                entities.StateSupervisionSentence,
-                entities.StateCharge,
                 entities.StateSentence,
                 entities.StateChargeV2,
                 entities.StateIncarcerationPeriod,

@@ -26,11 +26,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import (
-    StateChargeClassificationType,
-    StateChargeStatus,
-    StateChargeV2Status,
-)
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
@@ -103,9 +99,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
@@ -262,59 +255,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateIncarcerationSentence(self) -> None:
-        result = (
-            deserialize_entity_factories.StateIncarcerationSentenceFactory.deserialize(
-                status=StateSentenceStatus.SUSPENDED,
-                status_raw_text="S",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                incarceration_type_raw_text="SP",
-                external_id="INCARCERATION_ID",
-                date_imposed="7/2/2006",
-                effective_date="1/2/2006",
-                projected_min_release_date="4/2/2111",
-                projected_max_release_date="7/2/2111",
-                parole_eligibility_date="4/2/2111",
-                county_code="CO",
-                min_length_days="90D",
-                max_length_days="180D",
-                is_life="False",
-                is_capital_punishment="False",
-                parole_possible="true",
-                initial_time_served_days="60",  # Units in days
-                good_time_days="365",  # Units in days
-                earned_time_days=None,
-                state_code="us_xx",
-            )
-        )
-
-        # Assert
-        expected_result = entities.StateIncarcerationSentence(
-            status=StateSentenceStatus.SUSPENDED,
-            status_raw_text="S",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text="SP",
-            external_id="INCARCERATION_ID",
-            date_imposed=date(year=2006, month=7, day=2),
-            effective_date=date(year=2006, month=1, day=2),
-            projected_min_release_date=date(year=2111, month=4, day=2),
-            projected_max_release_date=date(year=2111, month=7, day=2),
-            parole_eligibility_date=date(year=2111, month=4, day=2),
-            completion_date=None,
-            state_code="US_XX",
-            county_code="CO",
-            min_length_days=90,
-            max_length_days=180,
-            is_life=False,
-            is_capital_punishment=False,
-            parole_possible=True,
-            initial_time_served_days=60,
-            good_time_days=365,
-            earned_time_days=None,
-        )
-
-        self.assertEqual(expected_result, result)
-
     def test_deserialize_StateProgramAssignment(self) -> None:
         result = deserialize_entity_factories.StateProgramAssignmentFactory.deserialize(
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -444,46 +384,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="US_XX",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DV",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StateSupervisionSentence(self) -> None:
-        result = (
-            deserialize_entity_factories.StateSupervisionSentenceFactory.deserialize(
-                status=StateSentenceStatus.SUSPENDED,
-                status_raw_text="S",
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                supervision_type_raw_text="PR",
-                external_id="SENTENCE_ID",
-                date_imposed="2000-12-13",
-                effective_date="20010101",
-                completion_date="1/2/2011",
-                projected_completion_date="1/2/2012",
-                is_life=True,
-                county_code="CO",
-                min_length_days="90D",
-                max_length_days="180D",
-                state_code="us_xx",
-            )
-        )
-
-        # Assert
-        expected_result = entities.StateSupervisionSentence(
-            status=StateSentenceStatus.SUSPENDED,
-            status_raw_text="S",
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            supervision_type_raw_text="PR",
-            external_id="SENTENCE_ID",
-            date_imposed=date(year=2000, month=12, day=13),
-            effective_date=date(year=2001, month=1, day=1),
-            completion_date=date(year=2011, month=1, day=2),
-            projected_completion_date=date(year=2012, month=1, day=2),
-            is_life=True,
-            state_code="US_XX",
-            county_code="CO",
-            min_length_days=90,
-            max_length_days=180,
         )
 
         self.assertEqual(expected_result, result)
@@ -698,58 +598,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             housing_unit="CB4",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="SP",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StateCharge(self) -> None:
-        result = deserialize_entity_factories.StateChargeFactory.deserialize(
-            status=StateChargeStatus.ACQUITTED,
-            status_raw_text="ACQ",
-            classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text="F",
-            classification_subtype="AA",
-            offense_type="OTHER",
-            is_violent="False",
-            is_sex_offense="False",
-            external_id="CHARGE_ID",
-            offense_date="1/2/2111",
-            date_charged="1/10/2111",
-            state_code="us_xx",
-            ncic_code="4801",
-            statute="ab54.21c",
-            description="CONSPIRACY",
-            attempted="False",
-            counts="4",
-            charge_notes="Have I told you about that time I saw Janelle Monae "
-            "open for of Montreal at the 9:30 Club?",
-            is_controlling="True",
-            charging_entity="SCOTUS",
-        )
-
-        # Assert
-        expected_result = entities.StateCharge(
-            status=StateChargeStatus.ACQUITTED,
-            status_raw_text="ACQ",
-            classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text="F",
-            classification_subtype="AA",
-            offense_type="OTHER",
-            is_violent=False,
-            is_sex_offense=False,
-            external_id="CHARGE_ID",
-            offense_date=date(year=2111, month=1, day=2),
-            date_charged=date(year=2111, month=1, day=10),
-            state_code="US_XX",
-            ncic_code="4801",
-            statute="AB54.21C",
-            description="CONSPIRACY",
-            attempted=False,
-            counts=4,
-            charge_notes="HAVE I TOLD YOU ABOUT THAT TIME I SAW JANELLE MONAE "
-            "OPEN FOR OF MONTREAL AT THE 9:30 CLUB?",
-            is_controlling=True,
-            charging_entity="SCOTUS",
         )
 
         self.assertEqual(expected_result, result)

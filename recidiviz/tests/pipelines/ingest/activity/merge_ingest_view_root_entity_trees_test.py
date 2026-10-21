@@ -22,23 +22,26 @@ from typing import Iterable, Optional, Tuple
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceType,
+    StateSentencingAuthority,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity.entities import (
-    StateCharge,
+    StateChargeV2,
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
+    StateSentence,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
@@ -245,18 +248,18 @@ class TestMergeIngestViewRootEntityTrees(
                             id_type="US_DD_ID_TYPE",
                         ),
                     ],
-                    incarceration_sentences=[
-                        StateIncarcerationSentence(
+                    sentences=[
+                        StateSentence(
                             external_id="IS1",
                             state_code=self.state_code().value,
-                            incarceration_type=StateIncarcerationType.STATE_PRISON,
-                            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                            sentence_type=StateSentenceType.STATE_PRISON,
+                            sentencing_authority=StateSentencingAuthority.STATE,
                             charges=[
-                                StateCharge(
+                                StateChargeV2(
                                     external_id="IC1",
                                     state_code=self.state_code().value,
                                     description="something",
-                                    status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                    status=StateChargeV2Status.INTERNAL_UNKNOWN,
                                 ),
                             ],
                         )
@@ -274,18 +277,18 @@ class TestMergeIngestViewRootEntityTrees(
                             id_type="US_DD_ID_TYPE",
                         ),
                     ],
-                    incarceration_sentences=[
-                        StateIncarcerationSentence(
+                    sentences=[
+                        StateSentence(
                             external_id="IS1",
                             state_code=self.state_code().value,
-                            incarceration_type=StateIncarcerationType.STATE_PRISON,
-                            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                            sentence_type=StateSentenceType.STATE_PRISON,
+                            sentencing_authority=StateSentencingAuthority.STATE,
                             charges=[
-                                StateCharge(
+                                StateChargeV2(
                                     external_id="IC1",
                                     state_code=self.state_code().value,
                                     description="something different",
-                                    status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                    status=StateChargeV2Status.INTERNAL_UNKNOWN,
                                 ),
                             ],
                         )
@@ -309,18 +312,18 @@ class TestMergeIngestViewRootEntityTrees(
                                     id_type="US_DD_ID_TYPE",
                                 ),
                             ],
-                            incarceration_sentences=[
-                                StateIncarcerationSentence(
+                            sentences=[
+                                StateSentence(
                                     external_id="IS1",
                                     state_code=self.state_code().value,
-                                    incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                    status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                                    sentence_type=StateSentenceType.STATE_PRISON,
+                                    sentencing_authority=StateSentencingAuthority.STATE,
                                     charges=[
-                                        StateCharge(
+                                        StateChargeV2(
                                             external_id="IC1",
                                             state_code=self.state_code().value,
                                             description="something different",
-                                            status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                            status=StateChargeV2Status.INTERNAL_UNKNOWN,
                                         ),
                                     ],
                                 )

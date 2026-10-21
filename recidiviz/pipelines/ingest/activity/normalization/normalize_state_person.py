@@ -53,9 +53,6 @@ from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.pr
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.scheduled_supervision_contact_normalization_manager import (
     ScheduledSupervisionContactNormalizationManager,
 )
-from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.sentence_normalization_manager import (
-    SentenceNormalizationManager,
-)
 from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )
@@ -126,15 +123,6 @@ def build_normalized_state_person(
         supervision_periods=person.supervision_periods,
         sentences=person.sentences,
     )
-    (
-        normalized_incarceration_sentences,
-        normalized_supervision_sentences,
-    ) = SentenceNormalizationManager(
-        person.incarceration_sentences,
-        person.supervision_sentences,
-        delegate=sentencing_delegate,
-    ).get_normalized_sentences()
-
     normalized_program_assignments = ProgramAssignmentNormalizationManager(
         person.program_assignments,
         staff_external_id_to_staff_id,
@@ -168,7 +156,6 @@ def build_normalized_state_person(
         delegate=get_state_specific_supervision_period_normalization_delegate(
             state_code=state_code.value,
             assessments=person.assessments,
-            supervision_sentences=normalized_supervision_sentences,
             incarceration_periods=person.incarceration_periods,
             sentences=person.sentences,
         ),
@@ -192,7 +179,7 @@ def build_normalized_state_person(
         person_id=person_id,
         incarceration_periods=person.incarceration_periods,
         normalization_delegate=get_state_specific_incarceration_period_normalization_delegate(
-            state_code.value, incarceration_sentences=normalized_incarceration_sentences
+            state_code.value
         ),
         normalized_supervision_period_index=NormalizedSupervisionPeriodIndex(
             sorted_supervision_periods=normalized_supervision_periods
@@ -223,7 +210,6 @@ def build_normalized_state_person(
         "assessments": normalized_assessments,
         "external_ids": normalized_person_external_ids,
         "incarceration_periods": normalized_incarceration_periods,
-        "incarceration_sentences": normalized_incarceration_sentences,
         "program_assignments": normalized_program_assignments,
         "sentences": normalized_sentences,
         "sentence_groups": normalized_sentence_groups,
@@ -232,7 +218,6 @@ def build_normalized_state_person(
         "supervision_contacts": normalized_supervision_contacts,
         "scheduled_supervision_contacts": normalized_scheduled_supervision_contacts,
         "supervision_periods": normalized_supervision_periods,
-        "supervision_sentences": normalized_supervision_sentences,
         "supervision_violations": normalized_violations,
         "staff_relationship_periods": normalized_staff_relationship_periods,
     }

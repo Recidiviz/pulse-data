@@ -2486,12 +2486,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "state_code",
     ],
     BigQueryAddress.from_str(
-        "normalized_state_views.state_charge_incarceration_sentence_association_view"
-    ): ["charge_id", "incarceration_sentence_id", "state_code"],
-    BigQueryAddress.from_str(
-        "normalized_state_views.state_charge_supervision_sentence_association_view"
-    ): ["charge_id", "state_code", "supervision_sentence_id"],
-    BigQueryAddress.from_str(
         "normalized_state_views.state_charge_v2_state_sentence_association_view"
     ): ["charge_v2_id", "sentence_id", "state_code"],
     BigQueryAddress.from_str(
@@ -7182,12 +7176,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "termination_reason",
         "year",
     ],
-    BigQueryAddress.from_str(
-        "state_views.state_charge_incarceration_sentence_association_view"
-    ): ["charge_id", "incarceration_sentence_id", "state_code"],
-    BigQueryAddress.from_str(
-        "state_views.state_charge_supervision_sentence_association_view"
-    ): ["charge_id", "state_code", "supervision_sentence_id"],
     BigQueryAddress.from_str(
         "state_views.state_charge_v2_state_sentence_association_view"
     ): ["charge_v2_id", "sentence_id", "state_code"],

@@ -103,7 +103,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
     ) -> None:
         for state_code in get_existing_direct_ingest_states():
             _ = get_state_specific_incarceration_period_normalization_delegate(
-                state_code.value, incarceration_sentences=[]
+                state_code.value
             )
 
     def test_get_state_specific_supervision_period_normalization_delegate(self) -> None:
@@ -112,7 +112,6 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 state_code.value,
                 incarceration_periods=[],
                 assessments=[],
-                supervision_sentences=[],
                 sentences=[],
             )
 

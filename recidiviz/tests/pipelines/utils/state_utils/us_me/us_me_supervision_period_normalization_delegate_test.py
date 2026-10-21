@@ -23,18 +23,13 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateSupervisionPeriod,
-)
-from recidiviz.persistence.entity.activity.normalized_entities import (
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (
     UsMeSupervisionNormalizationDelegate,
@@ -66,7 +61,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -83,7 +78,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.INTERNAL_UNKNOWN,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -114,7 +109,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.HIGH,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -152,7 +147,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MAXIMUM,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -195,7 +190,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.HIGH,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -244,7 +239,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
         )
 
@@ -277,123 +272,6 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MINIMUM,
             UsMeSupervisionNormalizationDelegate(
-                assessments=assessments, supervision_sentences=[]
+                assessments=assessments
             ).supervision_level_override(0, [supervision_period]),
-        )
-
-    def test_supervision_termination_reason_override_revocation_sentence_future_date(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_ME.value,
-            external_id="sp1",
-            start_date=date(2009, 1, 1),
-            termination_date=date(2010, 1, 7),
-            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-        )
-        supervision_sentences = [
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss1",
-                completion_date=date(2010, 3, 1),
-                status=StateSentenceStatus.COMPLETED,
-            ),
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss2",
-                completion_date=date(2010, 1, 2),
-                status=StateSentenceStatus.REVOKED,
-            ),
-        ]
-        self.assertEqual(
-            StateSupervisionPeriodTerminationReason.REVOCATION,
-            UsMeSupervisionNormalizationDelegate(
-                assessments=[], supervision_sentences=supervision_sentences
-            ).supervision_termination_reason_override(supervision_period),
-        )
-
-    def test_supervision_termination_reason_override_revocation_sentence_past_date(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_ME.value,
-            external_id="sp1",
-            start_date=date(2009, 1, 1),
-            termination_date=date(2009, 12, 26),
-            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-        )
-        supervision_sentences = [
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss1",
-                completion_date=date(2010, 3, 1),
-                status=StateSentenceStatus.COMPLETED,
-            ),
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss2",
-                completion_date=date(2010, 1, 2),
-                status=StateSentenceStatus.REVOKED,
-            ),
-        ]
-        self.assertEqual(
-            StateSupervisionPeriodTerminationReason.REVOCATION,
-            UsMeSupervisionNormalizationDelegate(
-                assessments=[], supervision_sentences=supervision_sentences
-            ).supervision_termination_reason_override(supervision_period),
-        )
-
-    def test_supervision_termination_reason_override_no_revocation_sentence(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_ME.value,
-            external_id="sp1",
-            start_date=date(2009, 1, 1),
-            termination_date=date(2010, 1, 7),
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-        )
-        supervision_sentences = [
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss1",
-                completion_date=date(2010, 3, 1),
-                status=StateSentenceStatus.COMPLETED,
-            ),
-            NormalizedStateSupervisionSentence(
-                supervision_sentence_id=1,
-                state_code=StateCode.US_ME.value,
-                external_id="ss2",
-                completion_date=date(2010, 1, 2),
-                status=StateSentenceStatus.COMPLETED,
-            ),
-        ]
-        self.assertEqual(
-            StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            UsMeSupervisionNormalizationDelegate(
-                assessments=[], supervision_sentences=supervision_sentences
-            ).supervision_termination_reason_override(supervision_period),
-        )
-
-    def test_supervision_termination_reason_override_no_sentences(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_ME.value,
-            external_id="sp1",
-            start_date=date(2009, 1, 1),
-            termination_date=date(2010, 1, 7),
-            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-        )
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = []
-        self.assertEqual(
-            StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-            UsMeSupervisionNormalizationDelegate(
-                assessments=[], supervision_sentences=supervision_sentences
-            ).supervision_termination_reason_override(supervision_period),
         )

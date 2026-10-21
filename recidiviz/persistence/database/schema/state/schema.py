@@ -979,36 +979,9 @@ state_charge_v2_state_sentence_association_table = Table(
         "sentence_id", Integer, ForeignKey("state_sentence.sentence_id"), index=True
     ),
 )
-# TODO(#26240): Update usage of state_charge with state_charge_v2
-state_charge_incarceration_sentence_association_table = Table(
-    "state_charge_incarceration_sentence_association",
-    StateBase.metadata,
-    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
-    Column(
-        "incarceration_sentence_id",
-        Integer,
-        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
-        index=True,
-    ),
-)
-
-state_charge_supervision_sentence_association_table = Table(
-    "state_charge_supervision_sentence_association",
-    StateBase.metadata,
-    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
-    Column(
-        "supervision_sentence_id",
-        Integer,
-        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
-        index=True,
-    ),
-)
 
 SchemaPeriodType = TypeVar(
     "SchemaPeriodType", "StateSupervisionPeriod", "StateIncarcerationPeriod"
-)
-SchemaSentenceType = TypeVar(
-    "SchemaSentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
 
 
@@ -1178,12 +1151,6 @@ class StatePerson(StateBase):
     races = relationship("StatePersonRace", backref="person", lazy="selectin")
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
     sentences = relationship("StateSentence", backref="person", lazy="selectin")
-    incarceration_sentences = relationship(
-        "StateIncarcerationSentence", backref="person", lazy="selectin"
-    )
-    supervision_sentences = relationship(
-        "StateSupervisionSentence", backref="person", lazy="selectin"
-    )
     early_discharges = relationship(
         "StateEarlyDischarge", backref="person", lazy="selectin"
     )
@@ -1229,53 +1196,6 @@ class StatePerson(StateBase):
     )
 
 
-class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a StateCharge in the SQL schema"""
-
-    __tablename__ = "state_charge"
-    __table_args__: tuple = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="charge_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {},
-    )
-
-    charge_id = Column(Integer, primary_key=True)
-
-    external_id = Column(String(255), nullable=False, index=True)
-    status = Column(state_charge_status, nullable=False)
-    status_raw_text = Column(String(255))
-    offense_date = Column(Date)
-    date_charged = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    ncic_code = Column(String(255))
-    statute = Column(String(255))
-    description = Column(Text)
-    attempted = Column(Boolean)
-    classification_type = Column(state_charge_classification_type)
-    classification_type_raw_text = Column(String(255))
-    classification_subtype = Column(String(255))
-    offense_type = Column(String(255))
-    is_violent = Column(Boolean)
-    is_sex_offense = Column(Boolean)
-    is_drug = Column(Boolean)
-    counts = Column(Integer)
-    charge_notes = Column(Text)
-    charging_entity = Column(String(255))
-    is_controlling = Column(Boolean)
-    judge_full_name = Column(String(255))
-    judge_external_id = Column(String(255))
-    judicial_district_code = Column(String(255))
-
-    # Cross-entity relationships
-    person = relationship("StatePerson", uselist=False)
-
-
 class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateAssessment in the SQL schema"""
 
@@ -1305,91 +1225,6 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     assessment_override_reason = Column(String(255))
     conducting_staff_external_id = Column(String(255))
     conducting_staff_external_id_type = Column(String(255))
-
-
-class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a StateSupervisionSentence in the SQL schema"""
-
-    __tablename__ = "state_supervision_sentence"
-
-    supervision_sentence_id = Column(Integer, primary_key=True)
-
-    external_id = Column(String(255), nullable=False, index=True)
-    status = Column(state_sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    supervision_type = Column(state_supervision_sentence_supervision_type)
-    supervision_type_raw_text = Column(String(255))
-    date_imposed = Column(Date)
-    effective_date = Column(Date)
-    projected_completion_date = Column(Date)
-    completion_date = Column(Date)
-    is_life = Column(Boolean)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
-    sentence_metadata = Column(Text)
-    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
-    # we do for most other String fields.
-    conditions = Column(Text)
-
-    charges = relationship(
-        "StateCharge",
-        secondary=state_charge_supervision_sentence_association_table,
-        backref="supervision_sentences",
-        lazy="selectin",
-    )
-
-
-class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a StateIncarcerationSentence in the SQL schema"""
-
-    __tablename__ = "state_incarceration_sentence"
-    __table_args__: tuple = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="incarceration_sentence_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {},
-    )
-
-    incarceration_sentence_id = Column(Integer, primary_key=True)
-
-    external_id = Column(String(255), nullable=False, index=True)
-    status = Column(state_sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    incarceration_type = Column(state_incarceration_type)
-    incarceration_type_raw_text = Column(String(255))
-    date_imposed = Column(Date)
-    effective_date = Column(Date)
-    projected_min_release_date = Column(Date)
-    projected_max_release_date = Column(Date)
-    completion_date = Column(Date)
-    parole_eligibility_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
-    is_life = Column(Boolean)
-    is_capital_punishment = Column(Boolean)
-    parole_possible = Column(Boolean)
-    initial_time_served_days = Column(Integer)
-    good_time_days = Column(Integer)
-    earned_time_days = Column(Integer)
-    sentence_metadata = Column(Text)
-    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
-    # we do for most other String fields.
-    conditions = Column(Text)
-
-    charges = relationship(
-        "StateCharge",
-        secondary=state_charge_incarceration_sentence_association_table,
-        backref="incarceration_sentences",
-        lazy="selectin",
-    )
 
 
 class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
