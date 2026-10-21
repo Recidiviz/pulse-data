@@ -217,6 +217,20 @@ output:
                   # specific taxonomy) that have never appeared in real staff review data as of
                   # 2026-09. Deliberately not enumerating those here.
 
+          incident_severity:
+            $enum_mapping:
+              $raw_text: OFFENSE_CLASS
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - A
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - B
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - C
+                StateIncarcerationIncidentSeverity.FOURTH_HIGHEST:
+                  - D
+                StateIncarcerationIncidentSeverity.FIFTH_HIGHEST:
+                  - E
           incident_details: HEARING_COMMENT
           is_violent:
             $custom:
@@ -244,102 +258,123 @@ output:
                 report_date: EVENT_DATE
                 projected_end_date: SANCTION_END_DATE
                 outcome_type:
-                  $enum_mapping:
-                    $raw_text: SANCTION_CODE
-                    $mappings:
-                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
-                        - CER # Restrict to Quarters
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - SR_DECISION
+                          - $literal("Not Guilty")
+                      $then: $literal_enum(StateIncarcerationIncidentOutcomeType.NOT_GUILTY)
+                    - $else_if:
+                        $equal:
+                          - SR_DECISION
+                          - $literal("Dismissed")
+                      $then: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)
+                    # Guilty - Verbal Warning incidents usually carry a reprimand
+                    # sanction; give the ones with no sanction a WARNING outcome too.
+                    - $else_if:
+                        $and:
+                          - $equal:
+                              - SR_DECISION
+                              - $literal("Guilty - Verbal Warning")
+                          - $is_null: SANCTION_CODE
+                      $then: $literal_enum(StateIncarcerationIncidentOutcomeType.WARNING)
+                    - $else:
+                        $enum_mapping:
+                          $raw_text: SANCTION_CODE
+                          $mappings:
+                            StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                              - CER # Restrict to Quarters
 
-                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
-                        - RES # Restriction
+                            StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                              - RES # Restriction
 
-                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
-                        - EW # EXTRA WORK
-                        - EWD # Extra work duty
-                        - EXD # Extra Duty
+                            StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                              - EW # EXTRA WORK
+                              - EWD # Extra work duty
+                              - EXD # Extra Duty
 
-                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
-                        - FIN # Fine
-                        - RE # RESTITUTION
-                        - RL250 # Restitution ($250.00 or less)
-                        - RO250 # Restitution (over $250.00)
-                        - RSTCA # Restitution $
-                        - RSTCB # Restitution $
-                        - RTN # Restitution
+                            StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                              - FIN # Fine
+                              - RE # RESTITUTION
+                              - RL250 # Restitution ($250.00 or less)
+                              - RO250 # Restitution (over $250.00)
+                              - RSTCA # Restitution $
+                              - RSTCB # Restitution $
+                              - RTN # Restitution
 
-                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
-                        - CTD # Recommended Good Time, Educational and/or Case Plan Credit Time deprivation of days
-                        - D2 # DEMOTE TO CREDIT CLASS 2
-                        - D3 # DEMOTE TO CREDIT CLASS 3
-                        - DB # DEMOTE TO CREDIT CLASS B
-                        - DC # DEMOTE TO CREDIT CLASS C
-                        - DD # DEMOTE TO CREDIT CLASS D
-                        - EL # EARNED CREDIT TIME LOST
-                        - LGH # Lose Good and Honor Credit
-                        - LIT # Lose Incentive Time
-                        - LPP # Loss of Earned Sentence Credits
-                        - RCC # Time Earned Class change
-                        - RED # Release Eligibility Date (RED) Extension
-                        - RGT # Remove Good Time
-                        - RHT # Remove Honor Time
+                            StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                              - CTD # Recommended Good Time, Educational and/or Case Plan Credit Time deprivation of days
+                              - D2 # DEMOTE TO CREDIT CLASS 2
+                              - D3 # DEMOTE TO CREDIT CLASS 3
+                              - DB # DEMOTE TO CREDIT CLASS B
+                              - DC # DEMOTE TO CREDIT CLASS C
+                              - DD # DEMOTE TO CREDIT CLASS D
+                              - EL # EARNED CREDIT TIME LOST
+                              - LGH # Lose Good and Honor Credit
+                              - LIT # Lose Incentive Time
+                              - LPP # Loss of Earned Sentence Credits
+                              - RCC # Time Earned Class change
+                              - RED # Release Eligibility Date (RED) Extension
+                              - RGT # Remove Good Time
+                              - RHT # Remove Honor Time
 
-                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
-                        - CC # CUSTODY LEVEL CHANGE
-                        - CNV # Conversion
-                        - CSBC # Contract for specific behavior change
-                        - CWHA # Change in work/Housing Assignment
-                        - ES # ENFORCE SUSPENDED SANCTN
-                        - FCRM # Formal conflict resolution meeting
-                        - FT # FACILITY TRANSFER
-                        - HC # HOUSE ASSIGNMENT CHANGE
-                        - IFTR # Inter-Facility transfer recommendation
-                        - IPT # Imposed Probated Time
-                        - PRO # Disciplinary Probation
-                        - PT # PROGRAM TRANSFER
-                        - RC # CONTINUE ON RCA
-                        - RCR # Recommend Cell/Room Change
-                        - RCSV # Referral for a change in status value
-                        - RIC # Recommend Intensive Counseling
-                        - RM # CONTINUE RCA BUT MODIFY (never used)
-                        - ROC # Recommend Outside Court
-                        - RPE # Recommend Psychiatric Evaluation
-                        - RT # TRANSFER FROM RCA
-                        - RUC # Recommend Unit Change
-                        - SC # SECURITY CLASS CHANGE
-                        - SET # Sentence Extension Time
-                        - ST # STATUS/ASSIGNMENT CHANGE
-                        - TR # TEAM REFERRAL
-                        - TS # TIME SERVED
-                        - WC # WORK ASSIGNMENT CHANGE
+                            StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                              - CC # CUSTODY LEVEL CHANGE
+                              - CNV # Conversion
+                              - CSBC # Contract for specific behavior change
+                              - CWHA # Change in work/Housing Assignment
+                              - ES # ENFORCE SUSPENDED SANCTN
+                              - FCRM # Formal conflict resolution meeting
+                              - FT # FACILITY TRANSFER
+                              - HC # HOUSE ASSIGNMENT CHANGE
+                              - IFTR # Inter-Facility transfer recommendation
+                              - IPT # Imposed Probated Time
+                              - PRO # Disciplinary Probation
+                              - PT # PROGRAM TRANSFER
+                              - RC # CONTINUE ON RCA
+                              - RCR # Recommend Cell/Room Change
+                              - RCSV # Referral for a change in status value
+                              - RIC # Recommend Intensive Counseling
+                              - RM # CONTINUE RCA BUT MODIFY (never used)
+                              - ROC # Recommend Outside Court
+                              - RPE # Recommend Psychiatric Evaluation
+                              - RT # TRANSFER FROM RCA
+                              - RUC # Recommend Unit Change
+                              - SC # SECURITY CLASS CHANGE
+                              - SET # Sentence Extension Time
+                              - ST # STATUS/ASSIGNMENT CHANGE
+                              - TR # TEAM REFERRAL
+                              - TS # TIME SERVED
+                              - WC # WORK ASSIGNMENT CHANGE
 
-                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
-                        - COM # Commissary Ordering Restriction
-                        - IMP # Impound Property
-                        - JTE # Recommend Job or Program Termination
-                        - LLA # Loss or limitation of Activity
-                        - LLC # Loss or limitation of Commissary
-                        - LLP # Loss or limitation of Playing cards
-                        - LLR # Loss or limitation of Radio
-                        - LLT # Loss or limitation of Tablet
-                        - LOP # Loss of Privileges
-                        - LRP # Lose Recreation Privileges
-                        - PAK # Package Ordering Restriction
-                        - PAY # Pay Decrease
-                        - PL # PRIVILEGES LOST/LIMITED
-                        - REC # Recreation Restriction
-                        - TEL # Telephone Restriction
-                        - VIS # Visitation Suspension
+                            StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                              - COM # Commissary Ordering Restriction
+                              - IMP # Impound Property
+                              - JTE # Recommend Job or Program Termination
+                              - LLA # Loss or limitation of Activity
+                              - LLC # Loss or limitation of Commissary
+                              - LLP # Loss or limitation of Playing cards
+                              - LLR # Loss or limitation of Radio
+                              - LLT # Loss or limitation of Tablet
+                              - LOP # Loss of Privileges
+                              - LRP # Lose Recreation Privileges
+                              - PAK # Package Ordering Restriction
+                              - PAY # Pay Decrease
+                              - PL # PRIVILEGES LOST/LIMITED
+                              - REC # Recreation Restriction
+                              - TEL # Telephone Restriction
+                              - VIS # Visitation Suspension
 
-                      StateIncarcerationIncidentOutcomeType.SOLITARY:
-                        - ADS # Recommend Administrative Segregation
-                        - AST # Administrative Segregation and/or Transfer
-                        - DRH # Disciplinary restrictive housing
-                        - DRHL60 # Disciplinary restrictive housing (less than 60 days)
-                        - PSG # Disciplinary Segregation
-                        - SG # SEGREGATION
+                            StateIncarcerationIncidentOutcomeType.SOLITARY:
+                              - ADS # Recommend Administrative Segregation
+                              - AST # Administrative Segregation and/or Transfer
+                              - DRH # Disciplinary restrictive housing
+                              - DRHL60 # Disciplinary restrictive housing (less than 60 days)
+                              - PSG # Disciplinary Segregation
+                              - SG # SEGREGATION
 
-                      StateIncarcerationIncidentOutcomeType.WARNING:
-                        - VR # VERBAL REPRIMAND
-                        - VRE # Verbal Reprimand
-                        - WR # Written reprimand -- LOOKUPS also has a separate row with code WR described as 'WRITTEN REPORT'; ambiguous meaning
-                        - WRE # Written Reprimand
+                            StateIncarcerationIncidentOutcomeType.WARNING:
+                              - VR # VERBAL REPRIMAND
+                              - VRE # Verbal Reprimand
+                              - WR # Written reprimand -- LOOKUPS also has a separate row with code WR described as 'WRITTEN REPORT'; ambiguous meaning
+                              - WRE # Written Reprimand

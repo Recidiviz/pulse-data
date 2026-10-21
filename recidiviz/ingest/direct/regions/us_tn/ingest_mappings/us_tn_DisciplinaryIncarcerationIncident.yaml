@@ -314,6 +314,16 @@ output:
                   - FIG # FIGHTING (C) (Y - indicates it's required to fill in level of injury)
                   - SXB # SEXUAL BATTERY
 
+          incident_severity:
+            $enum_mapping:
+              $raw_text: DisciplinaryClass
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - A
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - B
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - C
           incident_details: OffenderAccount
           is_violent:
             $custom:
@@ -340,50 +350,66 @@ output:
                 date_effective: SentenceDate
                 report_date: IncidentDate
                 outcome_type:
-                  $enum_mapping:
-                    $raw_text: SentenceType
-                    $mappings:
-                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
-                        - CER # CELL RESTRICTION
-                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
-                        - RES # RESTRICTION
-                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
-                        - KP # KP/EXTRA DUTY
-                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
-                        - RTN # RESTITUTION
-                        - FIN # FINE
-                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
-                        - LGH # LOSE GOOD AND HONOR CREDIT
-                        - RGT # REMOVE GOOD TIME
-                        - RHT # REMOVE HONOR TIME
-                        - LIT # LOSE INCENTIVE TIME
-                        - LPP # LOSS OF Prisoner Performance Sentence Credits (PPSC) /Prisoner Sentence Reduction Credits (PSRC) CREDITS
-                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
-                        - CNV # CONVERSION
-                        - PRO # PROBATION/SUSPENDED SENTENCE
-                        - RTF # RECOMMEND TRANSFER
-                        - TSV # TIME SERVED
-                        - IPT # IMPOSED PROBATED TIME
-                        - RIC # RECOMMEND INTENSIVE COUNSELING
-                        - ROC # RECOMMEND OUTSIDE COURT
-                        - RCR # RECOMMEND CELL/ROOM CHANGE
-                        - SET # SENTENCE EXTENSION TIME
-                        - CLC # CUSTODY LEVEL CHANGE
-                        - RUC # RECOMMEND UNIT CHANGE
-                        - RPE # RECOMMEND PSYCHIATRIC EVALUATION
-                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
-                        - LRP # LOSE RECREATION PRIVILEGES
-                        - JTE # PROGRAM/JOB TERMINATION
-                        - TEL # TELEPHONE RESTRICTION
-                        - VIS # VISITATION SUSPENSION
-                        - PAY # PAY DECREASE
-                      StateIncarcerationIncidentOutcomeType.SOLITARY:
-                        - ADS # ADMINISTRATIVE SEGREGATION
-                        - AST # ADMINISTRATIVE SEGREG AND/OR TRANSFER
-                        - PSG # PUNITIVE SEGREGATION
-                      StateIncarcerationIncidentOutcomeType.WARNING:
-                        - VRE # VERBAL REPRIMAND
-                        - WRE # WRITTEN REPRIMAND
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - Disposition
+                          - $literal("NG")
+                      $then: $literal_enum(StateIncarcerationIncidentOutcomeType.NOT_GUILTY)
+                    # GV (guilty, verbal warning) incidents usually carry a VRE/WRE
+                    # reprimand; give the ones with no sanction a WARNING outcome too.
+                    - $else_if:
+                        $and:
+                          - $equal:
+                              - Disposition
+                              - $literal("GV")
+                          - $is_null: SentenceType
+                      $then: $literal_enum(StateIncarcerationIncidentOutcomeType.WARNING)
+                    - $else:
+                        $enum_mapping:
+                          $raw_text: SentenceType
+                          $mappings:
+                            StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                              - CER # CELL RESTRICTION
+                            StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                              - RES # RESTRICTION
+                            StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                              - KP # KP/EXTRA DUTY
+                            StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                              - RTN # RESTITUTION
+                              - FIN # FINE
+                            StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                              - LGH # LOSE GOOD AND HONOR CREDIT
+                              - RGT # REMOVE GOOD TIME
+                              - RHT # REMOVE HONOR TIME
+                              - LIT # LOSE INCENTIVE TIME
+                              - LPP # LOSS OF Prisoner Performance Sentence Credits (PPSC) /Prisoner Sentence Reduction Credits (PSRC) CREDITS
+                            StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                              - CNV # CONVERSION
+                              - PRO # PROBATION/SUSPENDED SENTENCE
+                              - RTF # RECOMMEND TRANSFER
+                              - TSV # TIME SERVED
+                              - IPT # IMPOSED PROBATED TIME
+                              - RIC # RECOMMEND INTENSIVE COUNSELING
+                              - ROC # RECOMMEND OUTSIDE COURT
+                              - RCR # RECOMMEND CELL/ROOM CHANGE
+                              - SET # SENTENCE EXTENSION TIME
+                              - CLC # CUSTODY LEVEL CHANGE
+                              - RUC # RECOMMEND UNIT CHANGE
+                              - RPE # RECOMMEND PSYCHIATRIC EVALUATION
+                            StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                              - LRP # LOSE RECREATION PRIVILEGES
+                              - JTE # PROGRAM/JOB TERMINATION
+                              - TEL # TELEPHONE RESTRICTION
+                              - VIS # VISITATION SUSPENSION
+                              - PAY # PAY DECREASE
+                            StateIncarcerationIncidentOutcomeType.SOLITARY:
+                              - ADS # ADMINISTRATIVE SEGREGATION
+                              - AST # ADMINISTRATIVE SEGREG AND/OR TRANSFER
+                              - PSG # PUNITIVE SEGREGATION
+                            StateIncarcerationIncidentOutcomeType.WARNING:
+                              - VRE # VERBAL REPRIMAND
+                              - WRE # WRITTEN REPRIMAND
                 punishment_length_days:
                   $custom:
                     $function: us_tn_custom_parsers.get_punishment_days
