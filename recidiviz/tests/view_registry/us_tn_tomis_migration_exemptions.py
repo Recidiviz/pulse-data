@@ -49,9 +49,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.classification.score_components.us_tn.dcaf_rcaf_q7 import (
-    VIEW_BUILDER as DCAF_RCAF_Q7_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_officer import (
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
 )
@@ -66,6 +63,12 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 )
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_preprocessed import (
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.ClassTerminationRequest import (
+    US_TN_TOMIS_CLASSTERMINATIONREQUEST_ANALOG_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.JobTerminationRequest import (
+    US_TN_TOMIS_JOBTERMINATIONREQUEST_ANALOG_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_base import (
     CLIENT_RECORD_BASE_VIEW_BUILDER,
@@ -147,7 +150,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.ClassTerminationRequest_latest"
     ): {
-        DCAF_RCAF_Q7_VIEW_BUILDER.address: "TODO(TN-1930): Migrate this reference off of legacy TOMIS 1.0 raw data",
+        US_TN_TOMIS_CLASSTERMINATIONREQUEST_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for completions before go-live: MiCase's migrated job and class completion history is incomplete",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Classification_latest"): {
         US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER.address: "TODO(TN-1974): Migrate this reference off of legacy TOMIS 1.0 raw data",
@@ -219,7 +222,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.JobTerminationRequest_latest"
     ): {
-        DCAF_RCAF_Q7_VIEW_BUILDER.address: "TODO(TN-2012): Migrate this reference off of legacy TOMIS 1.0 raw data",
+        US_TN_TOMIS_JOBTERMINATIONREQUEST_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for completions before go-live: MiCase's migrated job and class completion history is incomplete",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderAccounts_latest"
