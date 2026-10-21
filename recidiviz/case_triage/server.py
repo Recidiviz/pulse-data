@@ -44,6 +44,7 @@ from recidiviz.case_triage.sentry_filters import (
     NO_REQUEST_DATA_SENTRY_OPTIONS,
     scrub_email_user_pii,
 )
+from recidiviz.case_triage.sentry_tracing import tag_sentry_scope_with_gcp_trace
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
     get_redis_connection_options,
@@ -60,7 +61,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.server_config import initialize_scoped_sessions
 from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
-from recidiviz.utils import structured_logging
+from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import (
     get_gcp_environment,
     in_development,
@@ -99,6 +100,16 @@ register_error_handlers(app)
 # `current_session` (e.g. the Edovo course-completion endpoint) work in the
 # deployed server. Mirrors the admin panel's setup.
 initialize_scoped_sessions(app)
+
+if in_gcp():
+    gcp_project_id = metadata.project_id()
+
+    @app.before_request
+    def tag_sentry_with_gcp_trace() -> None:
+        # Sentry does not receive request bodies, so the request detail lives in
+        # Cloud Logging; this tag is how a Sentry event finds its log entries.
+        tag_sentry_scope_with_gcp_trace(gcp_project_id)
+
 
 jii_api_blueprint = create_jii_api_blueprint()
 
