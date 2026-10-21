@@ -49,6 +49,9 @@ class TestGetRedisConnectionOptions(unittest.TestCase):
 
         return retry.call_with_retry(command, lambda _: None), attempts
 
+    def test_uses_resp2_protocol(self) -> None:
+        self.assertEqual(2, get_redis_connection_options()["protocol"])
+
     def test_retries_redis_connection_error(self) -> None:
         # redis-py wraps a socket reset in its own ConnectionError, which is not
         # a subclass of the builtin ConnectionError.

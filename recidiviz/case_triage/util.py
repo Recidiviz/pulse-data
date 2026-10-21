@@ -98,6 +98,9 @@ def get_redis_connection_options() -> Dict[Any, Any]:
         socket_keepalive_options = {}
 
     return {
+        # Memorystore Redis 5.0 does not support the RESP3 HELLO handshake that
+        # redis-py 8 sends by default.
+        "protocol": 2,
         "health_check_interval": 30,
         "socket_keepalive": True,
         "socket_keepalive_options": socket_keepalive_options,
