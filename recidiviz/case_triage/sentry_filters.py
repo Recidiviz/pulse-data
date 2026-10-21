@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Sentry event filters for the Case Triage server."""
+from typing import Any
 from urllib.parse import urlparse
 
 from sentry_sdk.types import Event, Hint
@@ -22,6 +23,14 @@ from sentry_sdk.types import Event, Hint
 from recidiviz.utils.types import assert_type
 
 EMAIL_USER_PATH_SUFFIX = "/email_user"
+
+# sentry_sdk.init() options that keep request bodies and stack frame local variables
+# out of every Sentry event. Request bodies, and the records parsed from them, carry
+# person data such as the learner names Edovo sends to /edovo/course-completions.
+NO_REQUEST_DATA_SENTRY_OPTIONS: dict[str, Any] = {
+    "max_request_body_size": "never",
+    "include_local_variables": False,
+}
 
 # before_send and before_send_transaction both require hint parameter
 # but it is not needed for our use cases

@@ -15,12 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for sentry_filters."""
+import json
 from typing import Any, cast
 from unittest import TestCase
 
+import sentry_sdk
+from flask import Flask
+from flask import request as flask_request
+from sentry_sdk.envelope import Envelope
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.transport import Transport
 from sentry_sdk.types import Event
 
-from recidiviz.case_triage.sentry_filters import scrub_email_user_pii
+from recidiviz.case_triage.sentry_filters import (
+    NO_REQUEST_DATA_SENTRY_OPTIONS,
+    scrub_email_user_pii,
+)
 from recidiviz.utils.types import assert_type
 
 EMAIL_USER_URL = "https://app.recidiviz.org/workflows/external_request/US_ND/email_user"
@@ -95,3 +105,82 @@ class SentryFiltersTest(TestCase):
 
         assert result is not None
         self.assertEqual("", _email_body(result))
+
+
+class _CapturingTransport(Transport):
+    """Keeps every event the Sentry client would send, instead of sending it."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.events: list[dict[str, Any]] = []
+
+    def capture_envelope(self, envelope: Envelope) -> None:
+        for item in envelope.items:
+            if item.type in ("event", "transaction"):
+                self.events.append(assert_type(item.payload.json, dict))
+
+
+class NoRequestDataSentryOptionsTest(TestCase):
+    """Tests that NO_REQUEST_DATA_SENTRY_OPTIONS keeps request bodies and frame
+    local variables out of both error and transaction events."""
+
+    def _send_failing_course_completion(
+        self, sentry_options: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Returns the events Sentry captures when a request with a learner's name
+        in its body fails inside the route."""
+        transport = _CapturingTransport()
+        app = Flask(__name__)
+
+        @app.route("/edovo/course-completions", methods=["POST"])
+        def course_completions() -> str:
+            body = flask_request.get_json()
+            if body["first_name"]:
+                raise ValueError("Unexpected course")
+            return "OK"
+
+        sentry_sdk.init(
+            dsn="https://public@sentry.example.com/1",
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=1.0,
+            transport=transport,
+            **sentry_options,
+        )
+        try:
+            app.test_client().post(
+                "/edovo/course-completions",
+                json={
+                    "person_external_id": "A123456",
+                    "first_name": "Jane",
+                    "last_name": "Doe",
+                },
+            )
+            sentry_sdk.flush()
+        finally:
+            sentry_sdk.get_client().close()
+            sentry_sdk.get_global_scope().set_client(None)
+        return transport.events
+
+    def test_events_carry_no_request_body_or_local_variables(self) -> None:
+        events = self._send_failing_course_completion(NO_REQUEST_DATA_SENTRY_OPTIONS)
+
+        self.assertEqual(
+            {"event", "transaction"},
+            {event.get("type", "event") for event in events},
+        )
+        for event in events:
+            # Sentry keeps the data key but empties it, and notes the removal in _meta.
+            self.assertFalse(event["request"].get("data"))
+            frames = [
+                frame
+                for exception in event.get("exception", {}).get("values", [])
+                for frame in exception["stacktrace"]["frames"]
+            ]
+            self.assertFalse(any("vars" in frame for frame in frames))
+            self.assertNotIn("Jane", json.dumps(event))
+            self.assertNotIn("Doe", json.dumps(event))
+
+    def test_sentry_defaults_send_the_learner_name(self) -> None:
+        events = self._send_failing_course_completion({})
+
+        self.assertTrue(any("Jane" in json.dumps(event) for event in events))

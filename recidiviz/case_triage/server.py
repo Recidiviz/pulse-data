@@ -40,7 +40,10 @@ from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_b
 from recidiviz.case_triage.sentence_calculation.sentence_calculation_routes import (
     create_sentence_calculation_api_blueprint,
 )
-from recidiviz.case_triage.sentry_filters import scrub_email_user_pii
+from recidiviz.case_triage.sentry_filters import (
+    NO_REQUEST_DATA_SENTRY_OPTIONS,
+    scrub_email_user_pii,
+)
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
     get_redis_connection_options,
@@ -81,6 +84,7 @@ if in_gcp():
         # every transaction and both send the body to sentry otherwise.
         before_send=scrub_email_user_pii,
         before_send_transaction=scrub_email_user_pii,
+        **NO_REQUEST_DATA_SENTRY_OPTIONS,
     )
 
 # Flask setup
