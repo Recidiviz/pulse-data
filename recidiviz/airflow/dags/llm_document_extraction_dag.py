@@ -78,17 +78,17 @@ UPLOAD_TASK_INSTANCE_COUNT = 10
 # operator (see MappedOperator.unmap / BaseOperator.__init__), so the
 # validated string is roughly double the nominal depth. The 250-char
 # validate_key cap is easy to hit with long, descriptive group names.
-LLM_DOCUMENT_EXTRACTION_BRANCHING = "extraction_branching"
-DOCUMENT_COLLECTIONS_BRANCHING = "document_collections_branching"
+LLM_DOCUMENT_EXTRACTION_BRANCHING = "extraction"
+DOCUMENT_COLLECTIONS_BRANCHING = "document_collections"
 RUN_ID_FORMAT_ARG = "{{ run_id }}"
 
 
 def get_llm_document_extraction_branch_key(state_code: StateCode) -> str:
-    return f"{state_code.value.lower()}_branch"
+    return state_code.value.lower()
 
 
 def get_document_collection_branch_key(document_collection_name: str) -> str:
-    return f"{document_collection_name}_branch"
+    return document_collection_name
 
 
 def get_llm_document_extraction_branch_filter(dag_run: DagRun) -> list[str] | None:

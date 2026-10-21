@@ -88,19 +88,27 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.dag_id = get_llm_document_extraction_dag_id(self.project_id)
 
         # State-level branches.
-        self.us_xx_branch = "extraction_branching.us_xx_branch"
-        self.us_yy_branch = "extraction_branching.us_yy_branch"
+        self.us_xx_branch = "extraction.us_xx"
+        self.us_yy_branch = "extraction.us_yy"
 
         # Per-document-collection branches under us_xx.
         self.us_xx_fake_case_notes_collection_branch = (
-            f"{self.us_xx_branch}.document_collections_branching.FAKE_CASE_NOTES_branch"
+            f"{self.us_xx_branch}.document_collections.FAKE_CASE_NOTES"
         )
-        self.us_xx_fake_input_notes_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_INPUT_NOTES_branch"
-        self.us_xx_fake_person_id_notes_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_PERSON_ID_NOTES_branch"
-        self.us_xx_fake_staff_id_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_ID_REPORTS_branch"
-        self.us_xx_fake_staff_reports_collection_branch = f"{self.us_xx_branch}.document_collections_branching.FAKE_STAFF_REPORTS_branch"
+        self.us_xx_fake_input_notes_collection_branch = (
+            f"{self.us_xx_branch}.document_collections.FAKE_INPUT_NOTES"
+        )
+        self.us_xx_fake_person_id_notes_collection_branch = (
+            f"{self.us_xx_branch}.document_collections.FAKE_PERSON_ID_NOTES"
+        )
+        self.us_xx_fake_staff_id_reports_collection_branch = (
+            f"{self.us_xx_branch}.document_collections.FAKE_STAFF_ID_REPORTS"
+        )
+        self.us_xx_fake_staff_reports_collection_branch = (
+            f"{self.us_xx_branch}.document_collections.FAKE_STAFF_REPORTS"
+        )
 
-        # after_upload_noop (per-document-collection) and branch_end (document_collections_branching)
+        # after_upload_noop (per-document-collection) and branch_end (document_collections)
         # are excluded from skip regexes because their ALL_DONE trigger rules let
         # them run even when their upstreams are skipped, so they succeed rather
         # than skipping.
@@ -117,8 +125,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             rf"^{self.us_xx_fake_staff_reports_collection_branch}\..*(?<!after_upload_noop)$",
         ]
         self.us_xx_other_document_collections_always_succeeds_tasks_regex = (
-            rf"^{self.us_xx_branch}\.document_collections_branching\."
-            rf"(?!FAKE_CASE_NOTES_branch\.)[^.]+_branch\.after_upload_noop$"
+            rf"^{self.us_xx_branch}\.document_collections\."
+            rf"(?!FAKE_CASE_NOTES\.)[^.]+\.after_upload_noop$"
         )
         # Combined helper for tests scoped to us_xx + fake_case_notes that need
         # to skip every other document collection across both states.
@@ -137,8 +145,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             r"^initialize_dag\..*$",
             rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
             rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-            r"^extraction_branching\.branch_(start|end)$",
-            rf"^{self.us_xx_branch}\.document_collections_branching\.branch_(start|end)$",
+            r"^extraction\.branch_(start|end)$",
+            rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
             *self.non_target_document_collection_always_succeeds_regexes,
         ]
         # Subset of the frame above for failure-path tests where branch_end
@@ -148,8 +156,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             r"^initialize_dag\..*$",
             rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
             rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-            r"^extraction_branching\.branch_start$",
-            rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
+            r"^extraction\.branch_start$",
+            rf"^{self.us_xx_branch}\.document_collections\.branch_start$",
             *self.non_target_document_collection_always_succeeds_regexes,
         ]
 
@@ -410,8 +418,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     # check_has_updates short-circuits the rest of each branch
                     # because metadata_rows=0.
-                    rf"^extraction_branching\.[^.]+_branch\.document_collections_branching\."
-                    rf"[^.]+_branch\."
+                    rf"^extraction\.[^.]+\.document_collections\."
+                    rf"[^.]+\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|"
                     rf"{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|"
@@ -460,8 +468,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
-                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_end$",
-                    r"^extraction_branching\.branch_end$",
+                    rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
+                    r"^extraction\.branch_end$",
                 ],
                 expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
@@ -536,7 +544,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                         r"wait_to_continue_or_cancel|handle_queueing_result)$",
                         rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                         rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                        r"^extraction_branching\..*$",
+                        r"^extraction\..*$",
                     ],
                     expected_success_task_id_regexes=[
                         # handle_params_check is ALL_DONE; it runs and re-raises.
@@ -569,15 +577,15 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     # The validation side branch depends on the schema update, so it
                     # upstream-fails alongside the branches.
                     rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    # Everything under extraction_branching upstream-fails except the
+                    # Everything under extraction upstream-fails except the
                     # ALL_DONE after_upload_noop tasks below. The branch_end scaffolding
                     # tasks also upstream-fail (their inputs failed rather than skipped).
-                    r"^extraction_branching\.(?!.*after_upload_noop$).*$",
+                    r"^extraction\.(?!.*after_upload_noop$).*$",
                 ],
                 expected_skipped_task_id_regexes=[],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
-                    r"^extraction_branching\..*after_upload_noop$",
+                    r"^extraction\..*after_upload_noop$",
                 ],
             )
             self.mock_bq_client.create_table_from_query.assert_not_called()
@@ -643,8 +651,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
                     self.us_yy_all_skippable_tasks_regex,
-                    rf"^{self.us_xx_branch}\.document_collections_branching\."
-                    r"[^.]+_branch\."
+                    rf"^{self.us_xx_branch}\.document_collections\."
+                    r"[^.]+\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
                 ],
@@ -669,25 +677,25 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     document_collection_name_filter="does_not_exist",
                 ),
                 expected_failure_task_id_regexes=[
-                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_start$",
-                    rf"^{self.us_xx_branch}\.document_collections_branching\.branch_end$",
-                    r"^extraction_branching\.branch_end$",
+                    rf"^{self.us_xx_branch}\.document_collections\.branch_start$",
+                    rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
+                    r"^extraction\.branch_end$",
                     # Every task in every us_xx document collection branch becomes
                     # upstream_failed except after_upload_noop, which is an
                     # ALL_DONE EmptyOperator with no body and succeeds.
-                    rf"^{self.us_xx_branch}\.document_collections_branching\."
-                    rf"[^.]+_branch\.(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
+                    rf"^{self.us_xx_branch}\.document_collections\."
+                    rf"[^.]+\.(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
                 ],
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
                     rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                     rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    r"^extraction_branching\.branch_start$",
+                    r"^extraction\.branch_start$",
                     # All us_xx document collection branches' after_upload_noop tasks
                     # succeed (ALL_DONE).
-                    rf"^{self.us_xx_branch}\.document_collections_branching\."
-                    rf"[^.]+_branch\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
+                    rf"^{self.us_xx_branch}\.document_collections\."
+                    rf"[^.]+\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
                     self.us_yy_always_succeeds_tasks_regex,
                 ],
             )
@@ -714,7 +722,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     r"wait_to_continue_or_cancel|handle_queueing_result)$",
                     rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
                     rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    r"^extraction_branching\..*$",
+                    r"^extraction\..*$",
                 ],
                 expected_success_task_id_regexes=[
                     # handle_params_check is ALL_DONE; it runs and re-raises.
