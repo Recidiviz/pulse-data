@@ -98,6 +98,8 @@ class TrackedLongestSentencePath:
     # earlier sentences in the chain if it's not a root sentence).
     # TODO(NV-9): The sentence start dates aren't yet calculated from previous
     # sentences.
+    # Latest date any sentence becomes eligible to go before the parole board. Tracked
+    # value shows the controlling sentences that led up to it.
     max_ped: "TrackedValue[date]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )

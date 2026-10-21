@@ -61,6 +61,22 @@ class SentenceGraph:
         graph: nx.DiGraph = nx.DiGraph()
         edges = []
         for sentence in sentences:
+            if sentence.parent_sentence_id and sentence.start_date is not None:
+                # TODO(NV-5): Log errors rather than throwing.
+                raise ValueError(
+                    f"Consecutive sentence [{sentence.sentence_id}] has start date "
+                    f"[{sentence.start_date}]. The parent sentence is "
+                    f"[{sentence.parent_sentence_id}]. Remove the start date from the "
+                    f"consecutive sentence."
+                )
+            # TODO(NV-9): This class is probably not the right place for this kind of
+            # general validation. Move it elsewhere when there is an 'elsewhere' to do
+            # validation.
+            if sentence.max_term == 0 or sentence.min_term == 0:
+                raise ValueError(
+                    f"Sentence [{sentence.sentence_id}] has an invalid term (0 days)."
+                    f"Min term: [{sentence.min_term}], Max term: [{sentence.max_term}]"
+                )
             graph.add_node(sentence.sentence_id)
             if sentence.parent_sentence_id:
                 graph.add_edge(sentence.parent_sentence_id, sentence.sentence_id)
@@ -154,9 +170,29 @@ class SentenceGraph:
         # correct sentences!
         # TODO(NV-17): Handle the case where there's sentences from two JOCs and
         # they have different amounts of jail time.
-        def calculate_sentence_term(
-            sentence_id: str, inherited_start_date: date | None
-        ) -> SentenceTermCalculation:
+        def get_start_date(sentence: Sentence) -> TrackedValue[date]:
+            """Returns a root sentence's own start date, or for a consecutive sentence,
+            the day after its parent sentence ends."""
+            if not sentence.parent_sentence_id:
+                return TrackedValue.input(
+                    assert_type(sentence.start_date, date),
+                    f"{sentence.sentence_id}.start_date",
+                )
+            parent = self._sentences_by_id[sentence.parent_sentence_id]
+            # TODO(NV-9): Make SentenceTermCalculation.end_date a TrackedValue so the
+            # derivation tree traces the parent's end date back to its start date and
+            # term instead of stopping here.
+            parent_end_date = TrackedValue.input(
+                get_sentence_term_calculation(parent).end_date,
+                f"{parent.sentence_id}.end_date",
+            )
+            return parent_end_date.derive(
+                new_value=parent_end_date.value + timedelta(days=1),
+                label=f"{sentence.sentence_id}.start_date",
+                formula=f"{parent_end_date.label} + 1 day",
+            )
+
+        def calculate_sentence_term(sentence: Sentence) -> SentenceTermCalculation:
             # TODO(NV-9), important: Since controlling sentences might overlap, this
             # needs to calculate and return the time from the last end date to the
             # next end date, which is likely to be shorter than the total days (e.g. if
@@ -166,36 +202,23 @@ class SentenceGraph:
             # many days each controlling sentence contributed. If we don't, then the
             # total days will fall very neatly out of the final end date - start date,
             # and we won't need to be careful here about the intermediate intervals.
-            try:
-                sentence = self._sentences_by_id[sentence_id]
-            except KeyError as e:
-                raise ValueError(
-                    f"Got a sentence ID that didn't map to a real sentence: [{sentence_id}]"
-                ) from e
+            sentence_id = sentence.sentence_id
             # TODO(NV-9) This logic doesn't account yet for the mandatory parole min -
             # not positive it needs to, given the 40% requirement, but should check.
             total_days = days_from_term(sentence.max_term)
-            # The start date shouldn't be null because it should indeed use the
-            # inherited start date if it doesn't have its own. This stub doesn't
-            # handle that.
-            # The reason this doesn't break right now is that the test cases define a
-            # start date on every single sentence, when normally the start date would
-            # only be defined on the root sentences.
-            # TODO(NV-9): Correctly use inherited start dates.
-            non_null_inherited_start_date = assert_type(inherited_start_date, date)
-            start_date = TrackedValue.input(
-                non_null_inherited_start_date, f"{sentence_id}.start_date"
-            )
+            start_date = get_start_date(sentence)
             min_term_days = TrackedValue.input(
                 days_from_term(sentence.min_term), f"{sentence_id}.min_term_days"
             )
             return SentenceTermCalculation(
                 total_days=TrackedValue.input(total_days, f"{sentence_id}.total_days"),
-                end_date=non_null_inherited_start_date + timedelta(total_days),
+                # The start date is the first day served, so a term of n days ends
+                # n - 1 days after the start.
+                end_date=start_date.value + timedelta(days=total_days - 1),
                 sentence_ped=start_date.derive(
-                    new_value=start_date.value + timedelta(min_term_days.value),
+                    new_value=start_date.value + timedelta(min_term_days.value - 1),
                     label=f"{sentence_id}.ped",
-                    formula=f"{start_date.label} + {min_term_days.label}",
+                    formula=f"{start_date.label} + {min_term_days.label} - 1 day",
                     other_sources=[min_term_days],
                 ),
             )
@@ -221,7 +244,7 @@ class SentenceGraph:
             if sid in sentence_term_calculations:
                 return sentence_term_calculations[sid]
 
-            term_calculation = calculate_sentence_term(sid, sentence.start_date)
+            term_calculation = calculate_sentence_term(sentence)
             sentence_term_calculations[sid] = term_calculation
             return term_calculation
 
@@ -317,18 +340,7 @@ class SentenceGraph:
                 # It's possible for a chain to have a start date between the current
                 # date and the next sentence end date; this check ensures that such a
                 # sentence can become controlling if it should.
-                # TODO(NV-9): A sentence consecutive to another should start the day
-                # after its parent ends, which is what next_expiration_date assumes.
-                # But consecutive sentences don't yet inherit their start date from
-                # their parent, so tests have to hack one in, and every test in this
-                # file hacks it to equal the parent's end date instead (no gap). A
-                # later chain whose start date is set to match that same hacked value
-                # -- i.e. meant to represent starting on the same real day -- is
-                # compared one day earlier than next_expiration_date, so it can be
-                # chosen as controlling before the correctly-later sentence (the
-                # parent's actual successor) is even created. Once start dates are
-                # inherited correctly, this won't come up, since every later chain's
-                # start date will already be correct.
+                # A consecutive sentence starts the day after its parent ends.
                 next_expiration_date = active_sentences[-1].end_date + timedelta(days=1)
                 # The next event is whichever comes first: a later chain starting, or
                 # the soonest-expiring active sentence's successor(s) starting. When a

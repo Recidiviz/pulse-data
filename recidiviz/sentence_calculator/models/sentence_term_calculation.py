@@ -37,7 +37,8 @@ class SentenceTermCalculation:
     """Number of days in the sentence's term, as configured by the rule set."""
 
     end_date: date = attr.ib(validator=attr_validators.is_date)
-    """Date the sentence's term is complete."""
+    """Last day served on the sentence's term (inclusive). A consecutive sentence
+    starts the day after."""
 
     sentence_ped: TrackedValue[date] = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)

@@ -84,6 +84,27 @@ class TestSentenceGraphConstruction(unittest.TestCase):
                 ]
             )
 
+    def test_consecutive_sentence_with_start_date_surfaces_error(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Consecutive sentence \[S2\] has start date \[2024-04-11\]\. The parent "
+            r"sentence is \[S1\]\. Remove the start date from the consecutive "
+            r"sentence\.$",
+        ):
+            SentenceGraph(
+                [
+                    _sentence(
+                        "S1", start_date=date(2024, 1, 1), max_term=Term(days=100)
+                    ),
+                    _sentence(
+                        "S2",
+                        parent_sentence_id="S1",
+                        start_date=date(2024, 4, 11),
+                        max_term=Term(days=100),
+                    ),
+                ]
+            )
+
 
 class TestSentenceGraphLongestPath(unittest.TestCase):
     """Tests for SentenceGraph.longest_path()."""
@@ -189,19 +210,16 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2028, 12, 31),
             max_term=Term(years=1),
         )
         c1c = _sentence(
             "C1c",
             parent_sentence_id="C1b",
-            start_date=date(2030, 1, 1),
             max_term=Term(years=1),
         )
         c1d = _sentence(
             "C1d",
             parent_sentence_id="C1c",
-            start_date=date(2031, 1, 2),
             max_term=Term(years=5),
         )
 
@@ -209,7 +227,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2027, 1, 1),
             max_term=Term(years=5),
         )
 
@@ -243,7 +260,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2025, 12, 31),
             max_term=Term(years=3),
         )
 
@@ -251,7 +267,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=2),
         )
 
@@ -285,13 +300,11 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=3),
         )
         c1c = _sentence(
             "C1c",
             parent_sentence_id="C1b",
-            start_date=date(2027, 12, 31),
             max_term=Term(years=2),
         )
 
@@ -326,7 +339,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=5),
         )
 
@@ -384,13 +396,11 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=2),
         )
         c1c = _sentence(
             "C1c",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=5),
         )
 
@@ -445,13 +455,11 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=3),
         )
         c1c = _sentence(
             "C1c",
             parent_sentence_id="C1b",
-            start_date=date(2027, 12, 31),
             max_term=Term(years=2),
         )
 
@@ -465,7 +473,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=4),
         )
 
@@ -492,20 +499,20 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
          - C2a (2 years)
          - C2b (3 years)
 
-        C1a and C2b both start when C2a ends (though only C2b is consecutive to it).
+        C1a and C2b both start the day after C2a ends (though only C2b is consecutive
+        to it).
         C2b ends later than C1a, so C1a should never control.
 
         The resulting path should be C2a, C2b.
         """
-        c2a = _sentence("C2a", start_date=date(2024, 1, 1), max_term=Term(years=2))
+        c2a = _sentence("C2a", start_date=date(2025, 1, 1), max_term=Term(years=2))
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2026, 1, 1),
             max_term=Term(years=3),
         )
 
-        c1a = _sentence("C1a", start_date=date(2026, 1, 1), max_term=Term(years=1))
+        c1a = _sentence("C1a", start_date=date(2027, 1, 1), max_term=Term(years=1))
 
         graph = SentenceGraph([c2a, c2b, c1a])
 
@@ -544,7 +551,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             max_term=Term(years=3),
         )
 
@@ -552,7 +558,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2025, 1, 1),
             max_term=Term(years=5),
         )
 
@@ -583,7 +588,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         Chain 2:
          - C2a (medium), starting the same day C1b does
 
-        C1b and C2a both start the moment C1a ends. C1b ends later, so C2a
+        C1b and C2a both start the day after C1a ends. C1b ends later, so C2a
         should never control.
 
         The resulting path should be C1a, C1b.
@@ -592,13 +597,10 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            # Parent's end date + 1 day -- accurate, doesn't match the inaccurate
-            # start dates = preceding end date elsewhere in this test file
-            start_date=date(2024, 4, 11),
             max_term=Term(days=300),
         )
 
-        c2a = _sentence("C2a", start_date=date(2024, 4, 11), max_term=Term(days=150))
+        c2a = _sentence("C2a", start_date=date(2024, 4, 10), max_term=Term(days=150))
 
         graph = SentenceGraph([c1a, c1b, c2a])
 
@@ -638,7 +640,6 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c2b = _sentence(
             "C2b",
             parent_sentence_id="C2a",
-            start_date=date(2025, 12, 31),
             max_term=Term(years=3),
             offense_category=NevadaOffenseCategory.CATEGORY_A,
             offense_group=NevadaOffenseGroup.OTHER,
@@ -676,8 +677,8 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             result.max_ped.to_derivation_tree(),
             {
                 "label": "S1.ped",
-                "value": "2024-02-10",
-                "formula": "S1.start_date + S1.min_term_days",
+                "value": "2024-02-09",
+                "formula": "S1.start_date + S1.min_term_days - 1 day",
                 "derived_from": [
                     {"label": "S1.start_date", "value": "2024-01-01"},
                     {"label": "S1.min_term_days", "value": 40},
@@ -712,14 +713,12 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         c1b = _sentence(
             "C1b",
             parent_sentence_id="C1a",
-            start_date=date(2024, 12, 31),
             min_term=Term(days=200),
             max_term=Term(years=3),
         )
         c1c = _sentence(
             "C1c",
             parent_sentence_id="C1b",
-            start_date=date(2027, 12, 31),
             min_term=Term(days=400),
             max_term=Term(years=2),
         )
@@ -744,10 +743,19 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             result.max_ped.to_derivation_tree(),
             {
                 "label": "C1c.ped",
-                "value": "2029-02-03",
-                "formula": "C1c.start_date + C1c.min_term_days",
+                "value": "2029-02-02",
+                "formula": "C1c.start_date + C1c.min_term_days - 1 day",
                 "derived_from": [
-                    {"label": "C1c.start_date", "value": "2027-12-31"},
+                    {
+                        "label": "C1c.start_date",
+                        "value": "2027-12-31",
+                        "formula": "C1b.end_date + 1 day",
+                        "derived_from": [
+                            # C1b starts 2024-12-31, the day after C1a ends, and
+                            # runs 1095 days.
+                            {"label": "C1b.end_date", "value": "2027-12-30"},
+                        ],
+                    },
                     {"label": "C1c.min_term_days", "value": 400},
                 ],
             },
@@ -788,8 +796,8 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             result.max_ped.to_derivation_tree(),
             {
                 "label": "C2a.ped",
-                "value": "2026-05-16",
-                "formula": "C2a.start_date + C2a.min_term_days",
+                "value": "2026-05-15",
+                "formula": "C2a.start_date + C2a.min_term_days - 1 day",
                 "derived_from": [
                     {"label": "C2a.start_date", "value": "2025-01-01"},
                     {"label": "C2a.min_term_days", "value": 500},
