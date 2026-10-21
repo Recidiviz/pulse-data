@@ -205,7 +205,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "StandardEndDate",
             "StandardStartDate",
         ],
-        "VantagePointAssessments": ["AssignedDate", "CompletedDate", "LastUpdateDate"],
         "VantagePointRecommendations": [
             "LastUpdateDate",
             "RecommendationDate",
@@ -777,6 +776,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "StatusDate",
             "UserClassDate",
         ],
+        "VantagePointAssessments": ["AssignedDate", "CompletedDate", "LastUpdateDate"],
     },
     StateCode.US_TX: {
         "Charges": ["OFF_SENT_BEG_DATE", "OFF_SENT_DATE"],

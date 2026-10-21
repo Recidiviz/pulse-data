@@ -280,24 +280,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2046): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
-        "us_tn_raw_data_up_to_date_views.VantagePointAssessments_latest"
-    ): {
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2048): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.VantagePointPathways_latest"
     ): {
         US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2049): Migrate this reference off of legacy TOMIS 1.0 raw data",
