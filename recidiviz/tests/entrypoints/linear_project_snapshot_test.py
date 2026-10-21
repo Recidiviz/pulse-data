@@ -52,6 +52,7 @@ class LinearProjectSnapshotTest(unittest.TestCase):
                 "id": "proj-1",
                 "slugId": "74c48ad27169",
                 "name": "[US_XX] Tasks V2",
+                "createdAt": "2026-05-12T18:04:11.000Z",
                 "state": "started",
                 "status": {"name": "TT"},
                 "startDate": None,

@@ -507,10 +507,10 @@ class LinearClient:
 
     def get_all_projects_with_milestones(self) -> list[dict]:
         """Fetch every Linear project, including its id, slugId, name,
-        state, status name, startDate, targetDate, health, healthUpdatedAt,
-        nested milestones (each with name, description, and targetDate), and
-        nested labels (each with name and, for grouped labels, its parent
-        group's name).
+        createdAt, state, status name, startDate, targetDate, health,
+        healthUpdatedAt, nested milestones (each with name, description, and
+        targetDate), and nested labels (each with name and, for grouped labels,
+        its parent group's name).
 
         state is the status's built-in type (e.g. "started", "completed");
         status.name is the workspace's custom status name (e.g. "TT", "FSL").
@@ -534,6 +534,7 @@ class LinearClient:
                     id
                     slugId
                     name
+                    createdAt
                     state
                     status {
                         name

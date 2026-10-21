@@ -44,6 +44,7 @@ from recidiviz.issue_tracking.roadmap_snapshot_tables import (
 
 LINEAR_PROJECT_ID_COLUMN = "linear_project_id"
 LINEAR_PROJECT_NAME_COLUMN = "linear_project_name"
+LINEAR_PROJECT_CREATED_AT_COLUMN = "linear_project_created_at"
 LINEAR_PROJECT_STATE_COLUMN = "linear_project_state"
 LINEAR_PROJECT_STATUS_COLUMN = "linear_project_status"
 LINEAR_PROJECT_START_DATE_COLUMN = "linear_project_start_date"
@@ -203,6 +204,7 @@ def build_linear_project_snapshot_rows(
             LINEAR_PROJECT_ID_COLUMN: project["id"],
             LINEAR_PROJECT_SLUG_ID_COLUMN: project["slugId"],
             LINEAR_PROJECT_NAME_COLUMN: project["name"],
+            LINEAR_PROJECT_CREATED_AT_COLUMN: project["createdAt"],
             LINEAR_PROJECT_STATE_COLUMN: project["state"],
             LINEAR_PROJECT_STATUS_COLUMN: project["status"]["name"],
             LINEAR_PROJECT_START_DATE_COLUMN: project["startDate"],

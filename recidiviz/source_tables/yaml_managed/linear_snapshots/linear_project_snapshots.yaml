@@ -19,6 +19,12 @@ schema:
     type: STRING
     mode: REQUIRED
     description: Linear project name.
+  - name: linear_project_created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description:
+      Timestamp the Linear project was created. Null in rows written before the
+      snapshot job started recording it.
   - name: linear_project_state
     type: STRING
     mode: REQUIRED
