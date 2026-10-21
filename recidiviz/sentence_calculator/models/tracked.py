@@ -51,7 +51,12 @@ def _is_allowed_tracked_value(
     """
     if isinstance(value, date):
         return
-    attr_validators.is_numerical_strict(instance, attribute, value)
+    # bool is a subclass of int, so it has to be rejected explicitly.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be an "
+            f"int, float, or date. Found value [{value!r}] of type [{type(value)}]."
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
