@@ -82,7 +82,6 @@ def active_supervision_population_additional_filters(
     return [
         f"compartment_level_2 IN {included_compartment_level_2}",
         f"compartment_level_2 NOT IN {excluded_compartment_level_2}",
-        # TODO(#19411) align on how to treat null supervision levels
         correctional_level_filter,
         f"start_date >= '{start_date}'",
     ]
