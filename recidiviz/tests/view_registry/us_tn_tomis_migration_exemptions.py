@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_officer import (
-    SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
     SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
 )
@@ -364,8 +361,5 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     },
     BigQueryAddress.from_str("us_tn_raw_data_views.OffenderSentenceSummary_all"): {
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address: "TODO(TN-2027): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_views.SupervisionPlan_all"): {
-        SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER.address: "TODO(TN-2045): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
 }
