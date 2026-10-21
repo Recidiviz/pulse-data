@@ -65,9 +65,17 @@ resource "google_cloudbuild_trigger" "repositories_bucket_sync" {
       id = "sync-working-tree-to-repositories-bucket"
     }
 
-    # Generous relative to the ~10 minutes the upload of ~26.5k objects takes at
-    # the throughput observed in this builder, so a slow run fails loudly on a
-    # real error rather than on the clock.
+    # The upload is thousands of small objects, so per-request latency, not
+    # bandwidth, bounds it, and more vCPUs let gcloud storage run more uploads
+    # concurrently. The ~28.5k-object upload takes ~2 minutes on E2_HIGHCPU_8
+    # versus ~13 on the default e2-standard-2. Billing is per second, so the
+    # faster machine also costs less per run.
+    options {
+      machine_type = "E2_HIGHCPU_8"
+    }
+
+    # Generous relative to the ~2 minutes the upload takes on this machine, so a
+    # slow run fails loudly on a real error rather than on the clock.
     timeout = "3600s"
   }
 }
