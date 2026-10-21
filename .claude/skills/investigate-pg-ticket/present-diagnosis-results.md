@@ -62,6 +62,11 @@ Then present the full details in the following format:
   </details>
   ````
 
+- **Scope**: once you know the root cause, run one query counting how many
+  clients in the state hit the same problem right now, and report that count
+  with the query as SQL evidence. Project only counts, never IDs. If the cause
+  can't be expressed as a query, say so instead of guessing a number.
+
 **CRITICAL:** Always run every query using `bq query` BEFORE including it. Never
 infer, guess, or hallucinate SQL syntax. If you're unsure about JSON extraction
 or complex field parsing, run a simpler query first to understand the data
