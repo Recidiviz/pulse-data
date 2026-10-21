@@ -432,6 +432,13 @@ class DocumentExtractionProcessor:
         total_documents = len(pending_documents)
         logging.info("Processing [%d] documents through the LLM.", total_documents)
 
+        prior_transient_failure_counts_by_document = (
+            self.job_manager.get_prior_transient_failure_counts_by_document(
+                state_code=self.state_code,
+                extractor_version_id=self.config.extractor_version_id,
+            )
+        )
+
         # Progress is reported through the session's per-result event, which fires
         # as each result completes — decoupling how often the run says something
         # from how often it flushes to BigQuery. Tying the two together meant a run
@@ -455,6 +462,7 @@ class DocumentExtractionProcessor:
                 )
             ),
             request_build_concurrency=self.request_build_concurrency,
+            prior_transient_failure_counts_by_document=prior_transient_failure_counts_by_document,
         )
 
         chunk: list[LLMJobDocumentExtractionResult] = []

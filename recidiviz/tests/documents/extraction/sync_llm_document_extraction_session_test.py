@@ -172,6 +172,7 @@ class SyncLLMDocumentExtractionSessionTest(TestCase):
         *,
         client: FakeSyncLLMClient,
         delegate: SyncLLMDocumentExtractionSessionDelegate | None = None,
+        prior_transient_failure_counts_by_document: dict[str, int] | None = None,
     ) -> SyncLLMDocumentExtractionSession:
         return SyncLLMDocumentExtractionSession(
             config=self.config,
@@ -181,6 +182,9 @@ class SyncLLMDocumentExtractionSessionTest(TestCase):
             delegate=delegate if delegate is not None else self.delegate,
             expected_entry_nums_source=None,
             request_build_concurrency=2,
+            prior_transient_failure_counts_by_document=(
+                prior_transient_failure_counts_by_document or {}
+            ),
         )
 
     def _client(
@@ -367,6 +371,42 @@ class SyncLLMDocumentExtractionSessionTest(TestCase):
                 ),
             ),
             session.finish_session(),
+        )
+
+    def test_prior_transient_failure_count_escalates_to_retries_exhausted(
+        self,
+    ) -> None:
+        # Both documents fail validation this run (classifying transient), but only
+        # DOC_A has reached the retry cap across prior runs, so only DOC_A escalates
+        # to retries-exhausted. DOC_B is absent from the counts dict (0 prior
+        # failures) and stays transient. (A validation failure, not a request error,
+        # keeps the transient path off the request runner's in-run retry loop.)
+        def result_fn(
+            request: LLMDocumentExtractionRequest,
+        ) -> LLMClientDocumentExtractionResult:
+            return LLMClientDocumentExtractionResult.from_success(
+                document_contents_id=request.document_contents_id,
+                result_json=copy.deepcopy(_INVALID_RESULT_JSON),
+                token_counts=_PER_DOCUMENT_TOKEN_COUNTS,
+            )
+
+        session = self._session(
+            client=self._client(result_fn),
+            prior_transient_failure_counts_by_document={
+                _DOC_A: self.config.max_transient_retry_count
+            },
+        )
+
+        results = list(
+            session.extract(documents=[self._document(_DOC_A), self._document(_DOC_B)])
+        )
+
+        self.assertEqual(
+            {
+                _DOC_A: LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                _DOC_B: LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            },
+            {result.document_contents_id: result.result_type for result in results},
         )
 
     def test_token_counts_summed_across_results(self) -> None:

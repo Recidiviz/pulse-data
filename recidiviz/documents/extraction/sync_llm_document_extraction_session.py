@@ -18,6 +18,7 @@
 extraction over a collection of documents and accumulates the results for downstream
 use.
 """
+
 from collections.abc import Iterator, Sequence
 from typing import Protocol
 
@@ -184,6 +185,18 @@ class SyncLLMDocumentExtractionSession:
 
     request_build_concurrency: int = attr.ib(validator=attr_validators.is_positive_int)
     """How many requests to build (fetching their document text) concurrently."""
+
+    prior_transient_failure_counts_by_document: dict[str, int] = attr.ib(
+        factory=dict,
+        validator=attr_validators.is_dict_where_each(
+            key_validator=attr_validators.is_str,
+            value_validator=attr_validators.is_non_negative_int,
+        ),
+    )
+    """How many prior jobs each document failed transiently in, keyed by
+    document_contents_id. A document absent from the dict has none (its first attempt).
+    Empty for a caller with no cross-run history, e.g. golden eval's fresh synthetic
+    job per run."""
 
     _request_builder: LLMDocumentExtractionRequestBuilder = attr.ib(init=False)
     """Assembles the per-document extraction request the same way the pipeline
@@ -390,12 +403,9 @@ class SyncLLMDocumentExtractionSession:
                     document_contents_id=raw_result.document_contents_id
                 )
             ),
-            # TODO(OBT-41779) prior_transient_failure_count is hardcoded to 0, so
-            # escalation to RETRIES_EXHAUSTED never happens across runs and a
-            # transient-failed document is re-selected forever. The session should
-            # accept caller-supplied per-document prior counts; the Airflow caller
-            # reads them from Postgres in one batched query.
-            prior_transient_failure_count=0,
+            prior_transient_failure_count=self.prior_transient_failure_counts_by_document.get(
+                raw_result.document_contents_id, 0
+            ),
         )
 
         summary = self._active_summary()

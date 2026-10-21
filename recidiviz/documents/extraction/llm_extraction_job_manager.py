@@ -426,6 +426,57 @@ class LLMExtractionJobManager:
         )
         return [document_contents_id for (document_contents_id,) in needing_processing]
 
+    def get_prior_transient_failure_counts_by_document(
+        self, *, state_code: StateCode, extractor_version_id: str
+    ) -> dict[str, int]:
+        """Returns, per document_contents_id, how many prior jobs for this extractor
+        version the document failed transiently in. Manages its own session.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.get_prior_transient_failure_counts_by_document_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
+            )
+
+    def get_prior_transient_failure_counts_by_document_with_session(
+        self, session: Session, *, state_code: StateCode, extractor_version_id: str
+    ) -> dict[str, int]:
+        """Returns, per document_contents_id, how many prior jobs for this extractor
+        version the document failed transiently. Runs within |session| transaction.
+
+        One GROUP BY aggregates every document's transient-failure count server-side
+        across the same prior jobs job selection reads (every job for the version), so
+        the result holds only documents with at least one prior transient failure — a
+        document absent from it has never failed transiently. Aggregating this way keeps
+        the read O(documents with a prior transient failure) rather than O(every
+        document the version has processed).
+        """
+        counts_by_document = (
+            session.query(
+                schema.LLMExtractionJobDocument.document_contents_id,
+                func.count().label("transient_failure_count"),
+            )
+            .join(
+                schema.LLMExtractionJob,
+                and_(
+                    schema.LLMExtractionJob.state_code
+                    == schema.LLMExtractionJobDocument.state_code,
+                    schema.LLMExtractionJob.job_id
+                    == schema.LLMExtractionJobDocument.job_id,
+                ),
+            )
+            .filter(
+                schema.LLMExtractionJobDocument.state_code == state_code.value,
+                schema.LLMExtractionJob.extractor_version_id == extractor_version_id,
+                schema.LLMExtractionJobDocument.result_type
+                == LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT.value,
+            )
+            .group_by(schema.LLMExtractionJobDocument.document_contents_id)
+            .all()
+        )
+        return dict(counts_by_document)
+
     def get_open_job(
         self, *, state_code: StateCode, extractor_version_id: str
     ) -> LLMExtractionJob | None:

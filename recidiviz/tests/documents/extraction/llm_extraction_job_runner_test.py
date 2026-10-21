@@ -663,6 +663,22 @@ class RunSyncExtractionJobEndToEndTest(BigQueryEmulatorTestCase):
                 for doc in session.query(schema.LLMExtractionJobDocument).all()
             }
 
+    def _job_document_result_type(
+        self, *, job_id: str, document_contents_id: str
+    ) -> str | None:
+        """Returns one job-document row's result_type, scoped to its job so a
+        multi-run test reads the row for the run it means to."""
+        with SessionFactory.using_database(self.database_key) as session:
+            return (
+                session.query(schema.LLMExtractionJobDocument.result_type)
+                .filter(
+                    schema.LLMExtractionJobDocument.job_id == job_id,
+                    schema.LLMExtractionJobDocument.document_contents_id
+                    == document_contents_id,
+                )
+                .scalar()
+            )
+
     def _extraction_job_snapshot(self) -> _ExtractionJobSnapshot:
         with SessionFactory.using_database(self.database_key) as session:
             job = session.query(schema.LLMExtractionJob).one()
@@ -938,6 +954,84 @@ class RunSyncExtractionJobEndToEndTest(BigQueryEmulatorTestCase):
                 is_completed=True,
             ),
             self._extraction_job_snapshot(),
+        )
+
+    def test_transient_failure_escalates_to_retries_exhausted_across_runs(
+        self,
+    ) -> None:
+        # A document that keeps failing transiently is re-selected run after run
+        # until its prior-transient count reaches max_transient_retry_count, at which
+        # point the next run escalates it to the terminal retries-exhausted result.
+        # This exercises the whole cross-run chain: the processor reads the prior
+        # count from Postgres and threads it into the session's classification.
+        self._seed_gcs(_DOC_A, _DOCUMENT_TEXT)
+
+        def result_fn(
+            request: LLMDocumentExtractionRequest,
+        ) -> LLMClientDocumentExtractionResult:
+            # Invalid JSON, so the result fails validation and classifies transient.
+            return LLMClientDocumentExtractionResult.from_success(
+                document_contents_id=request.document_contents_id,
+                result_json={"not_a_valid_field": "nope"},
+                token_counts=_token_counts(),
+            )
+
+        job_manager = LLMExtractionJobManager()
+
+        # First run: no prior failures, so the document fails transiently and stays
+        # non-terminal, and the run records exactly one prior-transient row.
+        first_job_id = job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=self.active_version.extractor_version_id,
+            document_contents_ids=[_DOC_A],
+        ).job_id
+        run_sync_extraction_job(
+            config=self.config,
+            job_id=first_job_id,
+            job_manager=job_manager,
+            processor=self._processor(
+                self._fake_client(result_fn), job_manager=job_manager
+            ),
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT.value,
+            self._job_document_result_type(
+                job_id=first_job_id, document_contents_id=_DOC_A
+            ),
+        )
+        self.assertEqual(
+            {_DOC_A: 1},
+            job_manager.get_prior_transient_failure_counts_by_document(
+                state_code=_STATE,
+                extractor_version_id=self.active_version.extractor_version_id,
+            ),
+        )
+
+        # Drop the retry cap to 1 so the one prior failure is already at the budget;
+        # max_transient_retry_count is not part of extractor_version_id, so both runs
+        # stay on the same version.
+        self.config = attr.evolve(self.config, max_transient_retry_count=1)
+
+        # Second run: the prior count (1) has reached the cap (1), so the same
+        # transient failure now escalates to the terminal retries-exhausted result.
+        second_job_id = job_manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=self.active_version.extractor_version_id,
+            document_contents_ids=[_DOC_A],
+        ).job_id
+        run_sync_extraction_job(
+            config=self.config,
+            job_id=second_job_id,
+            job_manager=job_manager,
+            processor=self._processor(
+                self._fake_client(result_fn), job_manager=job_manager
+            ),
+        )
+        self.assertEqual(
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED.value,
+            self._job_document_result_type(
+                job_id=second_job_id, document_contents_id=_DOC_A
+            ),
         )
 
     def test_missing_gcs_document_left_unmarked(self) -> None:

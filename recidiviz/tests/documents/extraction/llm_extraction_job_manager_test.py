@@ -630,6 +630,136 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
         )
         self.assertEqual(["doc1"], needing)
 
+    def test_get_prior_transient_failure_counts_by_document(self) -> None:
+        # Only DOCUMENT_LEVEL_FAILURE_TRANSIENT rows are counted, one per prior job:
+        # doc_two_fails failed transiently in both jobs; doc_one_fail in one;
+        # doc_then_success failed transiently once before later succeeding (the past
+        # transient still counts). doc_permanent / doc_exhausted / doc_success_only
+        # have no transient row and so are absent (count 0), as is a never-seen doc.
+        documents = [
+            "doc_two_fails",
+            "doc_one_fail",
+            "doc_then_success",
+            "doc_permanent",
+            "doc_exhausted",
+            "doc_success_only",
+        ]
+        self._record_eligible(documents)
+        job_one = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=documents,
+        )
+        self.manager.mark_job_started(state_code=_STATE, job_id=job_one.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _failure_result(
+                    job_id=job_one.job_id,
+                    document_contents_id="doc_two_fails",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                ),
+                _failure_result(
+                    job_id=job_one.job_id,
+                    document_contents_id="doc_one_fail",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_TIMEOUT,
+                ),
+                _failure_result(
+                    job_id=job_one.job_id,
+                    document_contents_id="doc_then_success",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_SERVER_ERROR,
+                ),
+                _failure_result(
+                    job_id=job_one.job_id,
+                    document_contents_id="doc_permanent",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                ),
+                _failure_result(
+                    job_id=job_one.job_id,
+                    document_contents_id="doc_exhausted",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                ),
+                _success_result(
+                    job_id=job_one.job_id, document_contents_id="doc_success_only"
+                ),
+            ],
+        )
+        # The open job must be completed before the next is created (enforced by the
+        # one-open-job-per-version unique index), just as production completes a job
+        # before selecting fresh work.
+        self.manager.mark_job_completed(state_code=_STATE, job_id=job_one.job_id)
+
+        # The transient-failed documents are re-selected into a second job; the two
+        # that failed again (doc_two_fails) or succeeded (doc_then_success) get a
+        # second-job row.
+        job_two = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=["doc_two_fails", "doc_one_fail", "doc_then_success"],
+        )
+        self.manager.mark_job_started(state_code=_STATE, job_id=job_two.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _failure_result(
+                    job_id=job_two.job_id,
+                    document_contents_id="doc_two_fails",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                ),
+                _success_result(
+                    job_id=job_two.job_id, document_contents_id="doc_then_success"
+                ),
+            ],
+        )
+
+        self.assertEqual(
+            {"doc_two_fails": 2, "doc_one_fail": 1, "doc_then_success": 1},
+            self.manager.get_prior_transient_failure_counts_by_document(
+                state_code=_STATE, extractor_version_id=_EXTRACTOR_VERSION
+            ),
+        )
+
+    def test_prior_transient_failure_counts_scoped_to_version(self) -> None:
+        # A transient failure under a different extractor version does not count
+        # toward the version under test.
+        self._record_eligible(["doc1"])
+        other_version = self._seed_second_extractor_version("ev2")
+        self.manager.record_eligible_documents(
+            state_code=_STATE,
+            extractor_version_id=other_version,
+            document_filter_id=_FILTER,
+            eligible_documents=[_eligible_record("doc1")],
+        )
+        other_job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=other_version,
+            document_contents_ids=["doc1"],
+        )
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _failure_result(
+                    job_id=other_job.job_id,
+                    document_contents_id="doc1",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                )
+            ],
+        )
+
+        self.assertEqual(
+            {},
+            self.manager.get_prior_transient_failure_counts_by_document(
+                state_code=_STATE, extractor_version_id=_EXTRACTOR_VERSION
+            ),
+        )
+
     def test_set_job_document_results_batch_persists_all(self) -> None:
         # A single batched call persists a success and a failure to their
         # respective rows, and leaves both no longer pending.
