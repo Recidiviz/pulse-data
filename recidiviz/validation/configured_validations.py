@@ -449,12 +449,6 @@ from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_
 from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_duplicate_rows import (
     OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_vs_impact_report_active_users_supervision import (
-    OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_ACTIVE_USERS_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_vs_impact_report_registered_users_supervision import (
-    OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.user_metrics.weekly_digest_email_sent_percent_change_exceeded import (
     WEEKLY_DIGEST_EMAIL_SENT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
 )
@@ -1515,44 +1509,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_ACTIVE_USERS_SUPERVISION_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "officer_monthly_usage_report_active_users_supervision",
-                "impact_report_active_users_supervision",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-            hard_max_allowed_error=0.08,
-            projects_to_deploy={GCP_PROJECT_PRODUCTION},
-        ),
-        SamenessDataValidationCheck(
-            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
-            validation_name_suffix="state",
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "officer_monthly_usage_report_registered_users_supervision",
-                "impact_report_registered_users_supervision",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-            hard_max_allowed_error=0.05,
-            projects_to_deploy={GCP_PROJECT_PRODUCTION},
-        ),
-        SamenessDataValidationCheck(
-            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
-            validation_name_suffix="district",
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "officer_monthly_usage_report_registered_users_supervision",
-                "impact_report_registered_users_supervision_by_district",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-            hard_max_allowed_error=0.05,
-            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         SamenessDataValidationCheck(
             view_builder=MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,

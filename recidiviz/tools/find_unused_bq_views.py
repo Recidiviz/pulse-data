@@ -41,7 +41,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     CLASSIFICATION_VIEWS_DATASET,
-    IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.notion_linear_roadmap_latest import (
@@ -370,8 +369,6 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     # Contains views referencing the output of Spark population projection runs. These
     # views are used to build Spark reports.
     SPARK_OUTPUT_DATASET_MOST_RECENT,
-    # Views in this dataset are aggregated metrics related to impact reports
-    IMPACT_REPORTS_DATASET_ID,
     # Views in this dataset are used by platform kpi dashboards
     PLATFORM_KPIS_DATASET,
     # Views in the dataset are used for org-wide impact tracking
