@@ -32,7 +32,7 @@ nothing blocked downstream, a red task is pure signal. Every other error is
 logged and swallowed.
 
 No-ops outside recidiviz-staging, and only touches the datasets in
-_PILOT_DATASET_ALLOWLIST until that allowlist is widened away. Delete this
+_PILOT_RAW_DATA_DATASET_ALLOWLIST until that allowlist is widened away. Delete this
 entrypoint, its DAG tasks, and its registration once every table carries the
 key.
 """
@@ -57,6 +57,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.activity.dataset_config import (
+    normalized_state_dataset_for_state_code,
+    state_dataset_for_state_code,
+)
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -73,11 +77,9 @@ _SCOPE_CALCULATION_OUTPUTS = "calculation_outputs"
 # run's re-key work is bounded. Interrupted sweeps converge across runs.
 _RUN_TIME_BUDGET_SECONDS = 15 * 60
 
-# Pilot rollout: while this allowlist is set, only these datasets are
-# re-keyed. us_oz is the synthetic demo state, so its raw tables exercise the
-# real pipeline path on fake data. Widen with one-line PRs as runs verify
-# cleanly; set to None to cover every dataset in scope.
-_PILOT_DATASET_ALLOWLIST: frozenset[str] | None = frozenset(
+# Pilot rollout: while this allowlist is set, only these raw-data datasets
+# are re-keyed. Set to None to cover every raw-data dataset in scope.
+_PILOT_RAW_DATA_DATASET_ALLOWLIST: frozenset[str] | None = frozenset(
     {
         "us_me_raw_data",
         "us_me_raw_data_secondary",
@@ -97,28 +99,47 @@ _PILOT_DATASET_ALLOWLIST: frozenset[str] | None = frozenset(
         "us_mo_raw_data_secondary",
         "us_ne_raw_data",
         "us_ne_raw_data_secondary",
-        "supplemental_data",
-        "dataflow_metrics",
     }
 )
 
 
+def _pilot_filtered(datasets: list[str]) -> list[str]:
+    if _PILOT_RAW_DATA_DATASET_ALLOWLIST is None:
+        return datasets
+    return [d for d in datasets if d in _PILOT_RAW_DATA_DATASET_ALLOWLIST]
+
+
+def _ingest_output_datasets() -> list[str]:
+    """Returns the state and normalized_state datasets that the ingest pipelines
+    rewrite on every calculation DAG run, for every state in this environment.
+    The pipelines truncate these tables in place, which never changes a table's
+    key, so only this task keys them."""
+    return [
+        dataset_for(state_code)
+        for state_code in get_direct_ingest_states_existing_in_env()
+        for dataset_for in (
+            state_dataset_for_state_code,
+            normalized_state_dataset_for_state_code,
+        )
+    ]
+
+
 def _datasets_for_scope(scope: str) -> list[str]:
     if scope == _SCOPE_RAW_DATA:
-        return [
-            raw_tables_dataset_for_region(state_code, instance)
-            for state_code in get_direct_ingest_states_existing_in_env()
-            for instance in DirectIngestInstance
-        ]
+        return _pilot_filtered(
+            [
+                raw_tables_dataset_for_region(state_code, instance)
+                for state_code in get_direct_ingest_states_existing_in_env()
+                for instance in DirectIngestInstance
+            ]
+        )
     if scope == _SCOPE_CALCULATION_OUTPUTS:
-        return [DATAFLOW_METRICS_DATASET, SUPPLEMENTAL_DATA_DATASET]
+        return [
+            DATAFLOW_METRICS_DATASET,
+            SUPPLEMENTAL_DATA_DATASET,
+            *_ingest_output_datasets(),
+        ]
     raise ValueError(f"Unknown scope: [{scope}]")
-
-
-def _pilot_filtered(datasets: list[str]) -> list[str]:
-    if _PILOT_DATASET_ALLOWLIST is None:
-        return datasets
-    return [d for d in datasets if d in _PILOT_DATASET_ALLOWLIST]
 
 
 def _rekey_datasets(scope: str) -> list[RekeyResult]:
@@ -135,7 +156,7 @@ def _rekey_datasets(scope: str) -> list[RekeyResult]:
 
     client = bigquery.Client(project=project_id)
     targets: list[tuple[str, str]] = []
-    for dataset_id in _pilot_filtered(_datasets_for_scope(scope)):
+    for dataset_id in _datasets_for_scope(scope):
         try:
             targets.extend(
                 (dataset_id, t.table_id)
