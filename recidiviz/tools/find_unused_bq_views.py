@@ -187,6 +187,11 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # or be deleted - and cite a tracking issue for that follow-up work. Every entry
 # MUST cite that tracking issue, e.g. TODO(#12345).
 TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
+    BigQueryAddress.from_str("analyst_data.us_ix_release_district_spans"): (
+        "New view whose consumers (us_ix_resident_metadata and the US_IX "
+        "HAS_*_RELEASE_NOTE criteria) move onto it in the stacked follow-up PR. "
+        "TODO(#109332): Remove once that PR merges. (Hugo Salas, 2026-10-20)"
+    ),
     **{
         BigQueryAddress.from_str(address): (
             "Cross-state document extraction UNION ALL view with no deployed "
