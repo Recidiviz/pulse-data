@@ -89,7 +89,7 @@ EXPOSE 8888
 # so the bundles produced here are safe to COPY into any target platform's
 # final image. This avoids running webpack under QEMU emulation for arm64,
 # which is dramatically slower than native.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS admin-panel-build
+FROM --platform=$BUILDPLATFORM node:22.23.4-alpine AS admin-panel-build
 WORKDIR /usr/admin-panel
 COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
 COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/

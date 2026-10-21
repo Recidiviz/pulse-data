@@ -19,27 +19,22 @@ nvm use
 
 # Set up your environment
 
-Install `yarn` via corepack:
+This project uses Yarn 1 (classic), pinned by the `packageManager` field in
+`package.json`. Enable corepack so that running `yarn` in this directory picks up
+that exact version:
 
 ```bash
 npm install -g corepack
-```
-
-## Yarn Security Configuration
-
-This project includes a security configuration that requires npm packages to be at least 72 hours old before installation (to help prevent supply chain attacks). To enable this security feature:
-
-```bash
 corepack enable
-corepack prepare yarn@stable --activate
 ```
 
-You can verify the security gate is active with:
-```bash
-yarn config get npmMinimalAgeGate  # Should return: 4320
-```
+Check that `yarn --version` prints `1.22.22` from this directory. Do not run
+`corepack prepare yarn@stable --activate` or install dependencies with Yarn 4 here;
+it rewrites `yarn.lock` into a format that CI and the Docker build cannot read.
 
-See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+The `npmMinimalAgeGate` setting in `.yarnrc.yml` is a Yarn 4 option, so Yarn 1
+does not enforce it. See `YARN_SECURITY_MIGRATION.md` in the repository root for
+background.
 
 ## Install dependencies 
 

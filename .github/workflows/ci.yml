@@ -212,6 +212,9 @@ jobs:
 
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
+        with:
+          node-version-file: frontends/admin-panel/.nvmrc
       - name: Yarn caching
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         id: yarn-caching
