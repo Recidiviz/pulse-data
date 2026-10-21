@@ -109,9 +109,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_special_cu
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.no_high_sanctions_in_past_year import (
-    VIEW_BUILDER as NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER,
-)
 from recidiviz.validation.views.external_data.regions.us_tn.incarceration_population_person_level import (
     US_TN_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -252,9 +249,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Offender_latest"): {
         CLIENT_RECORD_BASE_VIEW_BUILDER.address: "TODO(TN-2017): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Sanctions_latest"): {
-        NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-2035): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Segregation_latest"): {
         US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: "TODO(TN-2036): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SEGREGATION_STAYS_VIEW_BUILDER.address: "TODO(TN-2037): Migrate this reference off of legacy TOMIS 1.0 raw data",
@@ -333,9 +327,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2052): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-2052): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-2052): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Violations_latest"): {
-        NO_HIGH_SANCTIONS_IN_PAST_YEAR_VIEW_BUILDER.address: "TODO(TN-2053): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str("us_tn_raw_data_views.OffenderCredit_all"): {
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address: "TODO(TN-2022): Migrate this reference off of legacy TOMIS 1.0 raw data",
