@@ -13,7 +13,7 @@ document_metadata_filter_query_template: |
   SELECT DISTINCT document_contents_id
   FROM `{input_document_collection_metadata_address}`
   WHERE document_contents_id IS NOT NULL
-    AND note_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
+    AND document_update_datetime >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
 
 prompt_vars:
   state_agency_name: "Idaho Department of Correction"

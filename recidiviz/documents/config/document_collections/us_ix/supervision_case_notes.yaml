@@ -16,9 +16,6 @@ document_metadata_columns:
     is_document_primary_key: true
     field_type: STRING
     description: The unique identifier for the case note (OffenderNoteId)
-  - name: note_date
-    field_type: DATE
-    description: The date the case note was recorded (NoteDate)
   - name: note_type
     field_type: STRING
     description: The type of note (e.g., Supervision Notes, Facility Notes)
