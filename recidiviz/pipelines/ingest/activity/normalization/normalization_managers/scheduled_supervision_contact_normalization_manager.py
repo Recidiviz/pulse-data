@@ -71,12 +71,12 @@ class ScheduledSupervisionContactNormalizationManager(EntityNormalizationManager
     def normalized_scheduled_supervision_contacts_and_additional_attributes(
         self,
     ) -> Tuple[List[StateScheduledSupervisionContact], AdditionalAttributesMap]:
-        """Performs normalization on supervision contacts, currently empty,
-        and returns the list of normalized StateScheduledSupervisionContacts."""
+        """Performs normalization on scheduled supervision contacts (date
+        attributes and contacting_staff_id) and returns the list of normalized
+        StateScheduledSupervisionContacts."""
         if (
             not self._normalized_scheduled_supervision_contacts_and_additional_attributes
         ):
-            # TODO(#19965): currently nothing happens here, will eventually hydrate new foreign key fields here
             contacts_for_normalization = deepcopy(self._scheduled_supervision_contacts)
 
             contacts_for_normalization = self.normalize_date_attributes(
