@@ -57,6 +57,13 @@ data "google_compute_default_service_account" "default" {
   project = var.project_id
 }
 
+# Vertex AI access for the LLM document-extraction pods.
+resource "google_project_iam_member" "composer_pod_vertex_ai" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
   name     = "orchestration-v2"
