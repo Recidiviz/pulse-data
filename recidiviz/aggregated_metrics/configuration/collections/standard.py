@@ -364,7 +364,6 @@ METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric]] =
         TREATMENT_REFERRALS,
         ## Program Starts
         TREATMENT_STARTS,
-        # TODO(#18344): Use task population_types to only calculate relevant workflows metrics for a single population
         ## Workflows - eligibility metrics
         *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
         *LATE_OPPORTUNITY_METRICS_SUPERVISION,
