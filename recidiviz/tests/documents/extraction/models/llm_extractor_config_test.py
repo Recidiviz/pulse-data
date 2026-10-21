@@ -31,6 +31,7 @@ from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.descriptor import Descriptor
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
@@ -119,6 +120,7 @@ def _input_document_collection(
     return DocumentCollectionConfig(
         state_code=state_code,
         name=name,
+        launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
         description=_DESCRIPTION,
         root_entity_id_type=root_entity_id_type,
         document_primary_key_columns=[

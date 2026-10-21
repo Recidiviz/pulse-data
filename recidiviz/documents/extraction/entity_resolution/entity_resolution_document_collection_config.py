@@ -40,6 +40,7 @@ from recidiviz.big_query.big_query_attr_validators import (
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.descriptor import Descriptor
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
     entity_resolution_collection_name,
 )
@@ -91,6 +92,10 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
 
     state_code: StateCode = attr.ib(
         init=False, validator=attr.validators.instance_of(StateCode)
+    )
+
+    launch_env: DocumentPipelineLaunchEnv = attr.ib(
+        init=False, validator=attr.validators.in_(DocumentPipelineLaunchEnv)
     )
 
     root_entity_id_type: DocumentRootEntityIdType = attr.ib(
@@ -154,6 +159,12 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
     @state_code.default
     def _state_code(self) -> StateCode:
         return self.first_order_config.state_code
+
+    @launch_env.default
+    def _launch_env(self) -> DocumentPipelineLaunchEnv:
+        # TODO(OBT-46606) inherit the launch tier from the first-order collection
+        # once that field is populated.
+        return self.first_order_config.input_document_collection.launch_env
 
     @root_entity_id_type.default
     def _root_entity_id_type(self) -> DocumentRootEntityIdType:

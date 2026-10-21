@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=./../../../store/yaml_schema/schema.json
+launch_env: STAGING
 description: >
   Records for members of the Fellowship of the Ring, combining fellowship
   membership, role, and demographic information.

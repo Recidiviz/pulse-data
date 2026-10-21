@@ -42,6 +42,7 @@ from recidiviz.documents.dataset_config import (
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
 )
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
@@ -198,6 +199,11 @@ class DocumentCollectionConfig:
 
     # The state this document collection belongs to.
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+
+    # The broadest environment this collection is allowed to run in.
+    launch_env: DocumentPipelineLaunchEnv = attr.ib(
+        validator=attr.validators.in_(DocumentPipelineLaunchEnv)
+    )
 
     # UPPER_SNAKE_CASE name that uniquely identifies a collection of documents
     # within a state. Lowercased wherever it becomes a BQ identifier (metadata /
@@ -503,6 +509,7 @@ class DocumentCollectionConfig:
         return cls(
             state_code=cls.file_path_to_state_code(yaml_path),
             name=cls.file_path_to_config_name(yaml_path),
+            launch_env=DocumentPipelineLaunchEnv(yaml_dict.pop("launch_env", str)),
             description=yaml_dict.pop("description", str),
             root_entity_id_type=root_entity_id_type,
             document_primary_key_columns=document_pk_columns,

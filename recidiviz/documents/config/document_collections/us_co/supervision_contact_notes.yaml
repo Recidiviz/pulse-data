@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=./../../../store/yaml_schema/schema.json
+launch_env: PRODUCTION
 description: >
   Supervision contact notes from Colorado Department of Corrections officers
   documenting interactions with people on supervision, including office visits,

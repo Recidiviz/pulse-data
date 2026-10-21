@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=./../../../store/yaml_schema/schema.json
+launch_env: STAGING
 description: >
   Free-text supervision case notes written by reentry officers of the Reunited
   Kingdom about members of the Fellowship of the Ring following their release

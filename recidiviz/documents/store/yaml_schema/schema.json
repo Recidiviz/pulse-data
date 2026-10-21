@@ -9,6 +9,15 @@
       "description": "A meaningful description of this document collection.",
       "type": "string"
     },
+    "launch_env": {
+      "description": "The broadest environment this collection is allowed to run in.",
+      "type": "string",
+      "enum": [
+        "LOCAL_ONLY",
+        "STAGING",
+        "PRODUCTION"
+      ]
+    },
     "root_entity_id_type": {
       "description": "The type of root entity ID used to associate documents with entities.",
       "type": "string",
@@ -86,6 +95,7 @@
   },
   "required": [
     "description",
+    "launch_env",
     "document_descriptor",
     "root_entity_id_type",
     "document_generation_query"

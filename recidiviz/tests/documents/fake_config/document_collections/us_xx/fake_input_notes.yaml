@@ -2,6 +2,7 @@
 description: >
   Fake input document collection that the fake extractor reads, used by
   llm_extractor_config_test.py to exercise extractor config resolution.
+launch_env: STAGING
 document_descriptor:
   singular: note
   plural: notes

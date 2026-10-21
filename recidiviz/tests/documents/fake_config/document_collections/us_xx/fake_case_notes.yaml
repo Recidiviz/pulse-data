@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=./../../../../../../documents/store/yaml_schema/schema.json
 description: Fake case notes for testing document collection config parsing.
+launch_env: STAGING
 document_descriptor:
   singular: case note
   plural: case notes

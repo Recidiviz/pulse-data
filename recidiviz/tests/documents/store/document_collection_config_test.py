@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_utils import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.descriptor import Descriptor
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.store import yaml_schema
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
@@ -89,6 +90,7 @@ def _make_config(
     return DocumentCollectionConfig(
         state_code=StateCode.US_XX,
         name="TEST_COLLECTION",
+        launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
         description="test document collection",
         root_entity_id_type=root_entity_id_type,
         document_primary_key_columns=(
@@ -135,6 +137,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
                 name="FAKE_CASE_NOTES",
+                launch_env=DocumentPipelineLaunchEnv.STAGING,
                 description=(
                     "Fake case notes for testing document collection config parsing."
                 ),
@@ -182,6 +185,41 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 KeyError, r"Expected nonnull \[document_descriptor\]"
             ):
                 DocumentCollectionConfig.from_yaml(stripped_path)
+
+    def test_from_yaml_missing_launch_env_raises(self) -> None:
+        config = get_fake_first_order_document_collection_config()
+        source_path = DocumentCollectionConfig.config_name_to_file_path(
+            config.state_code, config.name, config_module=fake_config_module
+        )
+        raw = yaml.safe_load(source_path.read_text())
+        del raw["launch_env"]
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # from_yaml derives the state code from the parent directory name, so the
+            # file must live under a valid state directory to reach launch_env parsing.
+            state_dir = Path(tmp_dir) / config.state_code.value.lower()
+            state_dir.mkdir()
+            stripped_path = state_dir / source_path.name
+            stripped_path.write_text(yaml.dump(raw))
+            with self.assertRaisesRegex(KeyError, r"Expected nonnull \[launch_env\]"):
+                DocumentCollectionConfig.from_yaml(stripped_path)
+
+    def test_from_yaml_unknown_launch_env_raises(self) -> None:
+        config = get_fake_first_order_document_collection_config()
+        source_path = DocumentCollectionConfig.config_name_to_file_path(
+            config.state_code, config.name, config_module=fake_config_module
+        )
+        raw = yaml.safe_load(source_path.read_text())
+        raw["launch_env"] = "EVERYWHERE"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            state_dir = Path(tmp_dir) / config.state_code.value.lower()
+            state_dir.mkdir()
+            bad_path = state_dir / source_path.name
+            bad_path.write_text(yaml.dump(raw))
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^'EVERYWHERE' is not a valid DocumentPipelineLaunchEnv$",
+            ):
+                DocumentCollectionConfig.from_yaml(bad_path)
 
     def test_collect_configs(self) -> None:
         configs = load_first_order_document_collection_configs(
@@ -261,6 +299,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
                 name="TEST_COLLECTION",
+                launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
                 description="test collection for validation",
                 root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
                 document_primary_key_columns=[
@@ -282,6 +321,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
         config = DocumentCollectionConfig(
             state_code=StateCode.US_XX,
             name="TEST_COLLECTION",
+            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
             description="test collection with no authored template",
             root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
             document_primary_key_columns=[bigquery.SchemaField("note_id", "STRING")],
@@ -303,6 +343,7 @@ class TestDocumentCollectionConfig(unittest.TestCase):
             DocumentCollectionConfig(
                 state_code=StateCode.US_XX,
                 name="bad-name",
+                launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
                 description="test collection with bad name",
                 root_entity_id_type=DocumentRootEntityIdType.PERSON_ID,
                 document_primary_key_columns=[

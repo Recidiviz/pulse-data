@@ -919,6 +919,7 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 # collect_source_table_collections_hydrated_outside_view_graphs
                 "recidiviz.documents.config",
                 "recidiviz.documents.dataset_config",
+                "recidiviz.documents.document_pipeline_launch_env",
                 "recidiviz.documents.extraction",
                 "recidiviz.documents.store",
                 "recidiviz.intercom.intercom_export_columns",
