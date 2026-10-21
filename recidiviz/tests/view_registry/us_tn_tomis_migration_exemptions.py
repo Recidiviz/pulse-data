@@ -137,7 +137,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress, dict[BigQueryAddress, str]
 ] = {
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.CAFScore_latest"): {
-        US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER.address: "TODO(TN-1971): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1972): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER.address: "TODO(TN-1973): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
