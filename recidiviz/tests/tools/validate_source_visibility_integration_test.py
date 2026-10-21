@@ -178,6 +178,7 @@ VALID_CALCULATION_DAG_PREFIXES = {
     "recidiviz.common",
     "recidiviz.cloud_resources",
     "recidiviz.cloud_storage.gcsfs_path",
+    "recidiviz.ingest.direct.activity_pipeline_identity_source",
     "recidiviz.ingest.direct.dataset_config",
     "recidiviz.ingest.direct.direct_ingest_regions",
     "recidiviz.ingest.direct.raw_data.watermark_utils",

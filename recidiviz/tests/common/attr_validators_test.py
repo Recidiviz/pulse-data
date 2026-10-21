@@ -17,6 +17,7 @@
 """Tests for attr_validators.py."""
 
 import datetime
+import enum
 import re
 import unittest
 from collections.abc import Sequence
@@ -700,6 +701,90 @@ class AttrValidatorsTest(unittest.TestCase):
             r"\[my_type\] .* which is not a subclass of \[_Base\]:",
         ):
             _ = _TestClass(my_type="not a type")  # type: ignore[arg-type]
+
+    def test_is_str_value_of_enum(self) -> None:
+        class _Color(enum.Enum):
+            RED = "RED"
+            BLUE = "BLUE"
+
+        @attr.s
+        class _TestClass:
+            my_color: str = attr.ib(
+                validator=attr_validators.is_str_value_of_enum(_Color),
+            )
+
+        # Valid member values do not crash.
+        _ = _TestClass(my_color="RED")
+        _ = _TestClass(my_color="BLUE")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[my_color\] on class \[_TestClass\] must be the string "
+            r"value of a \[_Color\] member \['RED', 'BLUE'\], found: "
+            r"\[None\]\.$",
+        ):
+            _ = _TestClass(my_color=None)  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[my_color\] on class \[_TestClass\] must be the string "
+            r"value of a \[_Color\] member \['RED', 'BLUE'\], found: "
+            r"\['GREEN'\]\.$",
+        ):
+            _ = _TestClass(my_color="GREEN")
+
+    def test_is_opt_str_value_of_enum(self) -> None:
+        class _Color(enum.Enum):
+            RED = "RED"
+            BLUE = "BLUE"
+
+        @attr.s
+        class _TestClass:
+            my_color: Optional[str] = attr.ib(
+                default=None,
+                validator=attr_validators.is_opt_str_value_of_enum(_Color),
+            )
+
+        # None and valid member values do not crash.
+        _ = _TestClass()
+        _ = _TestClass(my_color="RED")
+        _ = _TestClass(my_color="BLUE")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[my_color\] on class \[_TestClass\] must be the string "
+            r"value of a \[_Color\] member \['RED', 'BLUE'\], found: "
+            r"\['GREEN'\]\.$",
+        ):
+            _ = _TestClass(my_color="GREEN")
+
+        # A member itself (not its string value) is rejected.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[my_color\] on class \[_TestClass\] must be the string "
+            r"value of a \[_Color\] member \['RED', 'BLUE'\], found: "
+            r"\[<_Color.RED: 'RED'>\]\.$",
+        ):
+            _ = _TestClass(my_color=_Color.RED)  # type: ignore[arg-type]
+
+    def test_is_str_value_of_enum_rejects_non_str_enum(self) -> None:
+        class _Number(enum.Enum):
+            ONE = 1
+            TWO = 2
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Enum \[_Number\] has non-string member values \[1, 2\]; "
+            r"is_str_value_of_enum only supports enums with string values\.$",
+        ):
+            attr_validators.is_str_value_of_enum(_Number)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Enum \[_Number\] has non-string member values \[1, 2\]; "
+            r"is_str_value_of_enum only supports enums with string values\.$",
+        ):
+            attr_validators.is_opt_str_value_of_enum(_Number)
 
     def test_is_list_of_non_empty_str(self) -> None:
         @attr.s

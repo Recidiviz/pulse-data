@@ -67,6 +67,13 @@
         "helpText": "If set as a space-separated string, only run the pipeline for a subset of ingest views.",
         "regexes": ["[0-9a-zA-Z_ ]+"],
         "isOptional": true
+      },
+      {
+        "name": "identity_source_override",
+        "label": "Identity source override",
+        "helpText": "Sandbox-only override of which identity source this pipeline uses. When unset, the pipeline resolves the source from the per-tenant activity_pipeline_identity_source constant.",
+        "regexes": ["LEGACY_CLUSTERING|IDENTITY_SERVICE_EXPORT"],
+        "isOptional": true
       }
     ]
   }

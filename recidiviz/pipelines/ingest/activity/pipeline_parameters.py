@@ -22,6 +22,11 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.ingest.direct.activity_pipeline_identity_source import (
+    ActivityPipelineIdentitySource,
+    activity_pipeline_identity_source,
+)
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.activity.dataset_config import (
@@ -30,6 +35,7 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
+from recidiviz.utils.types import assert_type
 
 
 @attr.define(kw_only=True)
@@ -107,6 +113,26 @@ class IngestPipelineParameters(PipelineParameters):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    identity_source_override: str | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_str_value_of_enum(
+            ActivityPipelineIdentitySource
+        ),
+    )
+    """Sandbox-only override of the identity source, as the string value of an
+    ActivityPipelineIdentitySource member. None (the production case) means:
+    resolve from the per-tenant activity_pipeline_identity_source constant."""
+
+    @property
+    def identity_source(self) -> ActivityPipelineIdentitySource:
+        """The resolved identity source for this run: the override if set,
+        otherwise the per-tenant constant for the run's project and tenant."""
+        if self.identity_source_override is not None:
+            return ActivityPipelineIdentitySource(self.identity_source_override)
+        return activity_pipeline_identity_source(
+            project_id=self.project, tenant=Tenant(assert_type(self.tenant, str))
+        )
+
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
         if self.ingest_view_results_only and self.pre_normalization_only:
@@ -141,6 +167,7 @@ class IngestPipelineParameters(PipelineParameters):
             "ingest_views_to_run",
             "ingest_view_results_only",
             "pre_normalization_only",
+            "identity_source_override",
         }
 
     @classmethod

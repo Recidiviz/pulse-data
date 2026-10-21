@@ -221,7 +221,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=34,
+                            lineno=35,
                             col_offset=0,
                         )
                     ]
@@ -250,7 +250,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=31,
+                            lineno=32,
                             col_offset=0,
                         )
                     ],
@@ -264,7 +264,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=28,
+                            lineno=29,
                             col_offset=0,
                         )
                     ]
@@ -290,6 +290,13 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.utils.metadata": [
                         Callsite(
                             filepath="r/utils/metadata.py", lineno=19, col_offset=0
+                        )
+                    ],
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=27,
+                            col_offset=0,
                         )
                     ],
                 },
@@ -364,7 +371,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=27,
+                            lineno=28,
                             col_offset=0,
                         )
                     ],
@@ -426,7 +433,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=29,
+                            lineno=30,
                             col_offset=0,
                         )
                     ],
@@ -461,7 +468,7 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.common.attr_validators": [
                         Callsite(
                             filepath="r/common/attr_validators.py",
-                            lineno=32,
+                            lineno=33,
                             col_offset=0,
                         )
                     ],

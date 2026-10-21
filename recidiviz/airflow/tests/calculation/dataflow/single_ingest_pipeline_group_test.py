@@ -55,6 +55,10 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.ingest.direct.activity_pipeline_identity_source import (
+    ActivityPipelineIdentitySource,
+)
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.pipeline_utils import (
@@ -290,6 +294,46 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
             "launchParameter"
         ]["environment"]
         self.assertEqual(4, environment["maxWorkers"])
+
+    def test_launched_parameters_identity_source_matches_constant(self) -> None:
+        """The DAG passes no identity_source_override, so the launched pipeline
+        resolves its identity source from the per-tenant constant. US_XX is not
+        in _IDENTITY_SERVICE_EXPORT_TENANTS for any project, so the source is
+        legacy clustering."""
+        delegate = IngestDataflowPipelineTaskGroupDelegate(
+            state_code=StateCode.US_XX,
+            max_update_datetimes_operator=MagicMock(),
+        )
+        parameters = delegate.get_default_parameters()
+
+        self.assertIsNone(parameters.identity_source_override)
+        self.assertNotIn("identity_source_override", parameters.template_parameters)
+        self.assertIs(
+            ActivityPipelineIdentitySource.LEGACY_CLUSTERING,
+            parameters.identity_source,
+        )
+
+    @patch.dict(
+        "recidiviz.ingest.direct.activity_pipeline_identity_source"
+        "._IDENTITY_SERVICE_EXPORT_TENANTS",
+        {_PROJECT_ID: frozenset({Tenant.US_XX})},
+    )
+    def test_launched_parameters_identity_source_follows_export_tenants_entry(
+        self,
+    ) -> None:
+        """Adding a tenant to _IDENTITY_SERVICE_EXPORT_TENANTS changes the
+        launched parameters' identity source with no DAG change."""
+        delegate = IngestDataflowPipelineTaskGroupDelegate(
+            state_code=StateCode.US_XX,
+            max_update_datetimes_operator=MagicMock(),
+        )
+        parameters = delegate.get_default_parameters()
+
+        self.assertIsNone(parameters.identity_source_override)
+        self.assertIs(
+            ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT,
+            parameters.identity_source,
+        )
 
 
 def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:

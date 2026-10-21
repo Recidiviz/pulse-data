@@ -20,6 +20,9 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.activity_pipeline_identity_source import (
+    ActivityPipelineIdentitySource,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -435,6 +438,115 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 region="us-west1",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
+
+    def test_identity_source_defaults_to_legacy_clustering(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_XX",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+        )
+
+        self.assertIsNone(pipeline_parameters.identity_source_override)
+        self.assertIs(
+            ActivityPipelineIdentitySource.LEGACY_CLUSTERING,
+            pipeline_parameters.identity_source,
+        )
+        self.assertNotIn(
+            "identity_source_override", pipeline_parameters.template_parameters
+        )
+        self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_identity_source_override(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_XX",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            identity_source_override="IDENTITY_SERVICE_EXPORT",
+            output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
+        )
+
+        expected_parameters = {
+            "state_code": "US_XX",
+            "pipeline": "test_pipeline_name",
+            "raw_data_source_instance": "PRIMARY",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
+            "pre_normalization_only": "False",
+            "identity_source_override": "IDENTITY_SERVICE_EXPORT",
+            "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertIs(
+            ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT,
+            pipeline_parameters.identity_source,
+        )
+        self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_identity_source_override_no_prefix_set(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"This sandbox pipeline must define an output_sandbox_prefix. "
+            r"Found non-default values for these fields\: \{'identity_source_override'\}",
+        ):
+            _ = IngestPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_XX",
+                pipeline="test_pipeline_name",
+                region="us-west1",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+                identity_source_override="IDENTITY_SERVICE_EXPORT",
+            )
+
+    def test_identity_source_override_invalid_value(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Field \[identity_source_override\] on class "
+            r"\[IngestPipelineParameters\] must be the string value of "
+            r"a \[ActivityPipelineIdentitySource\] member "
+            r"\['LEGACY_CLUSTERING', 'IDENTITY_SERVICE_EXPORT'\], found: "
+            r"\['BOGUS'\]\.$",
+        ):
+            _ = IngestPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_XX",
+                pipeline="test_pipeline_name",
+                region="us-west1",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+                identity_source_override="BOGUS",
+                output_sandbox_prefix="my_prefix",
+            )
+
+    def test_identity_source_override_parses_from_template_args(self) -> None:
+        """Simulates the flex-template launch path: parameter values serialized
+        to string args and re-parsed by argparse."""
+        argv = [
+            "--project=recidiviz-456",
+            "--state_code=US_XX",
+            "--pipeline=test_pipeline_name",
+            "--region=us-west1",
+            '--raw_data_upper_bound_dates_json={"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "--identity_source_override=IDENTITY_SERVICE_EXPORT",
+            "--output_sandbox_prefix=my_prefix",
+            "--sandbox_username=annag",
+        ]
+        parsed_parameters = IngestPipelineParameters.parse_from_args(
+            argv, sandbox_pipeline=True
+        )
+
+        self.assertEqual(
+            "IDENTITY_SERVICE_EXPORT", parsed_parameters.identity_source_override
+        )
+        self.assertIs(
+            ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT,
+            parsed_parameters.identity_source,
+        )
 
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")

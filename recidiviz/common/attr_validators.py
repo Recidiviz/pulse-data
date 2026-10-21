@@ -24,6 +24,7 @@ class MyClass:
 """
 
 import datetime
+import enum
 import re
 from collections.abc import Sequence
 from typing import Any, Callable, Optional, Type
@@ -86,6 +87,44 @@ def is_subclass_of(expected_superclass: Type) -> IsSubclassOfValidator:
     """Returns an attrs validator that checks the value is a subclass of
     |expected_superclass| (a class, not an instance)."""
     return IsSubclassOfValidator(expected_superclass)
+
+
+class IsStrValueOfEnumValidator:
+    """Validates that the value of an attr field is the string value of a
+    member of the configured enum class. For str-typed fields that carry an
+    enum value across a serialization boundary (e.g. flex-template pipeline
+    parameters, which must be strings)."""
+
+    def __init__(self, enum_cls: type[enum.Enum]) -> None:
+        non_str_values = [m.value for m in enum_cls if not isinstance(m.value, str)]
+        if non_str_values:
+            raise ValueError(
+                f"Enum [{enum_cls.__name__}] has non-string member values "
+                f"{non_str_values}; is_str_value_of_enum only supports enums "
+                f"with string values."
+            )
+        self._enum_cls = enum_cls
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        valid_values = [member.value for member in self._enum_cls]
+        if value not in valid_values:
+            raise ValueError(
+                f"Field [{attribute.name}] on class [{type(instance).__name__}] "
+                f"must be the string value of a [{self._enum_cls.__name__}] "
+                f"member {valid_values}, found: [{value!r}]."
+            )
+
+
+def is_str_value_of_enum(enum_cls: type[enum.Enum]) -> IsStrValueOfEnumValidator:
+    """Returns an attrs validator that checks the value is the string value of
+    a member of |enum_cls|."""
+    return IsStrValueOfEnumValidator(enum_cls)
+
+
+def is_opt_str_value_of_enum(enum_cls: type[enum.Enum]) -> Callable:
+    """Returns an attrs validator that checks the value is None or the string
+    value of a member of |enum_cls|."""
+    return attr.validators.optional(IsStrValueOfEnumValidator(enum_cls))
 
 
 def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
