@@ -26,6 +26,7 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     nonnull_start_date_clause,
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -34,6 +35,20 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SENTENCE_SESSIONS_DATASET,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_release_district_spans import (
+    ADDRESS_RELEASE_DISTRICT_COLUMN_NAME,
+    CRC_REQUEST_NOTE_DATE_COLUMN_NAME,
+    CRC_REQUEST_RELEASE_DISTRICT_COLUMN_NAME,
+    PHYSICAL_ADDRESS_COLUMN_NAME,
+    RELEASE_DISTRICT_COLUMN_NAME,
+    RELEASE_DISTRICT_SOURCE_COLUMN_NAME,
+    SENTENCING_COUNTY_NAME_COLUMN_NAME,
+    SENTENCING_COUNTY_RELEASE_DISTRICT_COLUMN_NAME,
+    US_IX_RELEASE_DISTRICT_SPANS_VIEW_NAME,
+    UsIxReleaseDistrict,
+    UsIxReleaseDistrictSource,
+    release_district_from_crc_request_note_title,
 )
 from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
 from recidiviz.calculator.query.state.views.tasks.contact_type import ContactType
@@ -1341,6 +1356,99 @@ FROM critical_date_has_passed_spans
     )
 
 
+def release_district_case_notes() -> str:
+    """Returns the case notes that show where a resident's release district comes
+    from. A resident with CRC Request notes in the current incarceration gets those
+    notes. Otherwise they get one note explaining the district from their home address
+    or, without an Idaho one, from the county of their latest sentence, matching
+    release_district_source in us_ix_release_district_spans.
+
+    For example, a resident with a CRC Request note this incarceration gets the first
+    row below, and one with no such note but an Ada County home address gets the
+    second (columns abridged):
+
+        note_title,note_body
+        Release district from CRC Request note: DISTRICT 3,"CRC Request - D3 Release: Plans to live with family in Nampa."
+        Release district from home address: DISTRICT 4,"No CRC Request note this incarceration. Home address on file: 123 MAIN ST, BOISE ID 83702 (Ada County), which is in DISTRICT 4."
+    """
+    return f"""
+        SELECT
+            crc_notes.external_id,
+            crc_notes.criteria,
+            CONCAT(
+                'Release district from CRC Request note: ',
+                {release_district_from_crc_request_note_title("crc_notes.note_title")}
+            ) AS note_title,
+            CONCAT(crc_notes.note_title, ': ', IFNULL(crc_notes.note_body, '')) AS note_body,
+            crc_notes.event_date,
+        FROM (
+{ix_general_case_notes(
+    where_clause_addition=f"AND ContactModeDesc IN {RELEASE_INFORMATION_CONTACT_MODES}",
+    criteria_str=RELEASE_INFORMATION_STR,
+    indent_level=12,
+)}
+        ) crc_notes
+        INNER JOIN `{{project_id}}.reference_views.product_stable_person_external_ids_materialized` pei
+            ON crc_notes.external_id = pei.stable_person_external_id
+            AND pei.state_code = 'US_IX'
+            AND pei.system_type = 'INCARCERATION'
+        INNER JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` sess
+            ON pei.person_id = sess.person_id
+            AND sess.compartment_level_1 = 'INCARCERATION'
+            AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+                start_date_column="sess.start_date",
+                end_date_column="sess.end_date_exclusive",
+            )}
+        WHERE crc_notes.event_date >= sess.start_date
+
+        UNION ALL
+
+        SELECT
+            pei.stable_person_external_id AS external_id,
+            '{RELEASE_INFORMATION_STR}' AS criteria,
+            CASE rds.{RELEASE_DISTRICT_SOURCE_COLUMN_NAME}
+                WHEN '{UsIxReleaseDistrictSource.ADDRESS.value}' THEN CONCAT(
+                    'Release district from home address: ',
+                    rds.{ADDRESS_RELEASE_DISTRICT_COLUMN_NAME}
+                )
+                WHEN '{UsIxReleaseDistrictSource.SENTENCING_COUNTY.value}' THEN CONCAT(
+                    'Release district from sentencing county: ',
+                    rds.{SENTENCING_COUNTY_RELEASE_DISTRICT_COLUMN_NAME}
+                )
+            END AS note_title,
+            CASE rds.{RELEASE_DISTRICT_SOURCE_COLUMN_NAME}
+                WHEN '{UsIxReleaseDistrictSource.ADDRESS.value}' THEN CONCAT(
+                    'No CRC Request note this incarceration. Home address on file: ',
+                    rds.{PHYSICAL_ADDRESS_COLUMN_NAME},
+                    ', which is in ',
+                    rds.{ADDRESS_RELEASE_DISTRICT_COLUMN_NAME},
+                    '.'
+                )
+                WHEN '{UsIxReleaseDistrictSource.SENTENCING_COUNTY.value}' THEN CONCAT(
+                    'No CRC Request note this incarceration and no Idaho home address ',
+                    'on file. Most recent sentence was imposed in ',
+                    INITCAP(rds.{SENTENCING_COUNTY_NAME_COLUMN_NAME}),
+                    ' County, which is in ',
+                    rds.{SENTENCING_COUNTY_RELEASE_DISTRICT_COLUMN_NAME},
+                    '.'
+                )
+            END AS note_body,
+            rds.start_date AS event_date,
+        FROM `{{project_id}}.{ANALYST_VIEWS_DATASET}.{US_IX_RELEASE_DISTRICT_SPANS_VIEW_NAME}_materialized` rds
+        INNER JOIN `{{project_id}}.reference_views.product_stable_person_external_ids_materialized` pei
+            ON rds.person_id = pei.person_id
+            AND pei.state_code = 'US_IX'
+            AND pei.system_type = 'INCARCERATION'
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+                start_date_column="rds.start_date",
+                end_date_column="rds.end_date_exclusive",
+            )}
+            AND rds.{RELEASE_DISTRICT_SOURCE_COLUMN_NAME} IN (
+                '{UsIxReleaseDistrictSource.ADDRESS.value}',
+                '{UsIxReleaseDistrictSource.SENTENCING_COUNTY.value}'
+            )"""
+
+
 def crc_case_notes_cte(
     crc_denied_months: int = 6,
     include_work_history: bool = False,
@@ -1391,13 +1499,7 @@ def crc_case_notes_cte(
             criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR,
             in_the_past_x_months=6,
         ),
-        # Release information (in the past 3 years)
-        "        --Release information (in the past 3 years)\n"
-        + ix_general_case_notes(
-            where_clause_addition=f"AND ContactModeDesc IN {RELEASE_INFORMATION_CONTACT_MODES}",
-            criteria_str=RELEASE_INFORMATION_STR,
-            in_the_past_x_months=36,
-        ),
+        "        --Release district information\n" + release_district_case_notes(),
         # Additional CRC info (in the past 6 months)
         "        --Additional CRC info (in the past 6 months)\n"
         + ix_general_case_notes(
@@ -1462,76 +1564,90 @@ def crc_case_notes_cte(
     return union_separator.join(queries)
 
 
-def release_district_criteria_query(release_districts: list[str]) -> str:
-    """
-    Returns a SQL query template for release district criteria.
+def _release_district_criteria_merge_column_names(
+    *, release_district_column_name: str
+) -> list[str]:
+    """Returns the us_ix_release_district_spans columns whose changes start a new
+    criteria span when the criteria reads release_district_column_name."""
+    if release_district_column_name == CRC_REQUEST_RELEASE_DISTRICT_COLUMN_NAME:
+        # Keeps consecutive notes naming the same district as separate spans.
+        return [
+            CRC_REQUEST_RELEASE_DISTRICT_COLUMN_NAME,
+            CRC_REQUEST_NOTE_DATE_COLUMN_NAME,
+        ]
+    if release_district_column_name == RELEASE_DISTRICT_COLUMN_NAME:
+        return [RELEASE_DISTRICT_COLUMN_NAME]
+    raise ValueError(
+        f"Unexpected release_district_column_name [{release_district_column_name}]"
+    )
 
-    This query identifies spans of time during which someone has a CRC release
-    district case note matching the specified districts.
+
+def release_district_criteria_query(
+    *,
+    release_districts: list[UsIxReleaseDistrict],
+    release_district_column_name: str,
+) -> str:
+    """Returns a criteria query over us_ix_release_district_spans that meets the
+    criteria while the district in release_district_column_name is one of
+    release_districts, with no span while that column is NULL.
+
+    For example, with release_districts [DISTRICT_3, DISTRICT_4] and
+    release_district_column_name crc_request_release_district, a resident with a D4
+    note on 2025-06-03 and an ISC note on 2025-09-15 gets (columns abridged):
+
+        start_date,end_date,meets_criteria,release_district
+        2025-06-03,2025-09-15,true,4
+        2025-09-15,,false,ISC
 
     Args:
-        release_districts: List of release districts to match (e.g., ['1', '2', 'ISC']
-            or ['3', '4', '5', '6', '7']).
-
-    Returns:
-        str: SQL query template as a string.
+        release_districts: The districts that meet the criteria.
+        release_district_column_name: The view column to read, either
+            crc_request_release_district (one span per CRC Request note) or
+            release_district (the CRC note, home address or sentencing county
+            district, whichever is set first).
     """
-    release_districts_str = "('" + "', '".join(release_districts) + "')"
+    source_column_names = _release_district_criteria_merge_column_names(
+        release_district_column_name=release_district_column_name
+    )
+    release_districts_str = list_to_query_string(
+        [district.value for district in release_districts],
+        quoted=True,
+        single_quote=True,
+    )
+
+    # Columns this criteria doesn't read split the view's spans, so the spans are
+    # merged back on the columns it does read.
+    merged_spans_query = aggregate_adjacent_spans(
+        table_name="release_district_spans",
+        attribute=[*source_column_names, "release_district_code"],
+        end_date_field_name="end_date_exclusive",
+    )
 
     return f"""
-WITH case_notes AS ({ix_general_case_notes(
-    where_clause_addition="AND ContactModeDesc LIKE '%CRC Request%'",
-    criteria_str="CRC Release District case note")}
-    --choose the most recent note
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY external_id, event_date
-        -- If there's multiple notes on the same date for a person,
-        -- pick one deterministically
-        ORDER BY note_title
-    ) = 1
-),
-case_notes_plus_sentinel AS (
-    -- Add a sentinel date
-    SELECT external_id, event_date, note_title
-    FROM case_notes
-
-    UNION ALL
-
-    SELECT DISTINCT external_id, SAFE_CAST('1900-01-01' AS DATE) AS event_date, '' AS note_title
-    FROM case_notes
-),
-super_sessions_with_case_notes AS (
-    -- Join incarceration sessions to case notes to get spans with release districts
+WITH release_district_spans AS (
     SELECT
-        sess.state_code,
-        sess.person_id,
-        GREATEST(sess.start_date, c.event_date) AS start_date,
-        LEAST({nonnull_end_date_exclusive_clause("sess.end_date_exclusive")},
-            IFNULL(LEAD(c.event_date) OVER (
-                PARTITION BY sess.state_code, sess.person_id ORDER BY c.event_date),
-            '9999-12-31')
-        ) AS end_date,
-        REGEXP_EXTRACT(c.note_title, r'ISC|\\d+') AS release_district
-    FROM `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` sess
-    INNER JOIN `{{project_id}}.reference_views.product_stable_person_external_ids_materialized` pei
-        USING (state_code, person_id)
-    INNER JOIN case_notes c
-        ON c.event_date BETWEEN sess.start_date AND {nonnull_end_date_exclusive_clause("sess.end_date_exclusive")}
-            AND c.external_id = pei.stable_person_external_id
-            AND pei.system_type = 'INCARCERATION'
-            AND pei.state_code='US_IX'
-    WHERE sess.compartment_level_1 = 'INCARCERATION'
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        {list_to_query_string(source_column_names)},
+        -- Turns DISTRICT 3 into 3 and leaves ISC as is.
+        REGEXP_EXTRACT({release_district_column_name}, r'ISC|\\d+') AS release_district_code,
+    FROM `{{project_id}}.{ANALYST_VIEWS_DATASET}.{US_IX_RELEASE_DISTRICT_SPANS_VIEW_NAME}_materialized`
+    WHERE {release_district_column_name} IS NOT NULL
+),
+merged_release_district_spans AS (
+{fix_indent(merged_spans_query, indent_level=4)}
 )
-
 SELECT
     state_code,
     person_id,
     start_date,
-    end_date,
-    release_district IN {release_districts_str} AS meets_criteria,
-    TO_JSON(STRUCT(release_district AS release_district)) AS reason,
-    release_district,
-FROM super_sessions_with_case_notes
+    end_date_exclusive AS end_date,
+    {release_district_column_name} IN ({release_districts_str}) AS meets_criteria,
+    TO_JSON(STRUCT(release_district_code AS release_district)) AS reason,
+    release_district_code AS release_district,
+FROM merged_release_district_spans
 """
 
 
