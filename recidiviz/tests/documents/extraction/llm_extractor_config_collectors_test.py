@@ -44,6 +44,7 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
     get_states_with_extractor_configs,
     load_first_order_llm_extractor_configs,
+    load_launched_first_order_llm_extractor_configs,
 )
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     LLMDocumentExtractionGoldenEvalConfig,
@@ -67,6 +68,7 @@ from recidiviz.tests.documents.store.document_store_test_utils import (
     FAKE_INPUT_DOCUMENT_COLLECTION_NAME,
 )
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.types import assert_type
 
 _FAKE_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -80,6 +82,26 @@ class ParseAllExtractorConfigsTest(TestCase):
         # Guards against the set being empty, which would make any test that
         # iterates over it (e.g. the reference-data load guard) pass vacuously.
         self.assertTrue(get_states_with_extractor_configs())
+
+    def test_load_launched_first_order_llm_extractor_configs(self) -> None:
+        # The fake config defines a single US_XX extractor launched in staging
+        # (STAGING), so it is launched in staging but not production.
+        self.assertEqual(
+            {_FAKE_COLLECTION_NAME},
+            load_launched_first_order_llm_extractor_configs(
+                StateCode.US_XX,
+                project_id=GCP_PROJECT_STAGING,
+                config_module=fake_config,
+            ).keys(),
+        )
+        self.assertEqual(
+            set(),
+            load_launched_first_order_llm_extractor_configs(
+                StateCode.US_XX,
+                project_id=GCP_PROJECT_PRODUCTION,
+                config_module=fake_config,
+            ).keys(),
+        )
 
     def test_load_all_real_configs(self) -> None:
         # Raises if any real extractor — first-order or generated ER — fails to

@@ -23,6 +23,7 @@ from recidiviz.airflow.dags.utils.cloud_sql_session import (
     airflow_cloud_sql_session_for_connection,
 )
 from recidiviz.airflow.dags.utils.constants import (
+    CHECK_HAS_JOB_TASK_ID,
     IDENTIFY_JOB_DOCUMENTS_TASK_ID,
     SYNC_EXTRACTOR_METADATA_TASK_ID,
 )
@@ -75,3 +76,11 @@ def identify_job_documents_task(
             bq_client=BigQueryClientImpl(),
             session=session,
         )
+
+
+@task.short_circuit(
+    task_id=CHECK_HAS_JOB_TASK_ID, ignore_downstream_trigger_rules=False
+)
+def check_has_job(job_id: str | None) -> bool:
+    """Returns True if a job was generated, False otherwise."""
+    return job_id is not None

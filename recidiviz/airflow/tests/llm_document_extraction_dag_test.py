@@ -32,11 +32,16 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.utils.constants import (
     AFTER_UPLOAD_NOOP_TASK_ID,
     BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID,
+    CHECK_HAS_JOB_TASK_ID,
     CHECK_HAS_UPDATES_TASK_ID,
     DOCUMENT_UPLOAD_TASK_ID,
+    IDENTIFY_JOB_DOCUMENTS_TASK_ID,
     RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID,
     RUN_DOCUMENT_DISCOVERY_TASK_ID,
+    RUN_EXTRACTION_TASK_ID,
+    SYNC_EXTRACTOR_METADATA_TASK_ID,
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
     VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
@@ -48,6 +53,9 @@ from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
     fake_noop_kpo_partial,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    load_first_order_llm_extractor_configs,
+)
 from recidiviz.documents.store import (
     document_collection_config,
     document_collection_config_collectors,
@@ -60,6 +68,9 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
 from recidiviz.tests.documents import fake_config as fake_config_module
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.utils.types import assert_type
 
 # Per-document-collection tasks defined inside each document collection's task group, in
@@ -72,6 +83,28 @@ ALL_PER_DOCUMENT_COLLECTION_TASK_IDS: list[str] = [
     AFTER_UPLOAD_NOOP_TASK_ID,
     RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID,
 ]
+
+# Per-extractor-collection tasks defined inside each extractor collection's task group,
+# in upstream-to-downstream order.
+ALL_PER_EXTRACTOR_COLLECTION_TASK_IDS: list[str] = [
+    SYNC_EXTRACTOR_METADATA_TASK_ID,
+    IDENTIFY_JOB_DOCUMENTS_TASK_ID,
+    CHECK_HAS_JOB_TASK_ID,
+    RUN_EXTRACTION_TASK_ID,
+    UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
+]
+
+# Module globals whose `default_config_module` must be swapped to the fake config so the
+# DAG enumerates the fake extractor collections.
+_FAKE_EXTRACTOR_CONFIG_MODULE_PATHS: list[str] = [
+    "recidiviz.documents.extraction.llm_extractor_config_collectors.default_config_module",
+    "recidiviz.documents.extraction.models.llm_model_registry.default_config_module",
+    "recidiviz.documents.extraction.models.llm_extractor_collection_config.default_config_module",
+    "recidiviz.documents.extraction.models.reference_data.reference_data_registry.default_config_module",
+]
+
+# The single extractor collection the fake config defines, for US_XX only.
+FAKE_EXTRACTOR_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 
 
 class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
@@ -105,6 +138,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             f"{self.us_xx_branch}.document_collections.FAKE_STAFF_REPORTS"
         )
 
+        # The single per-extractor-collection branch, defined only under us_xx
+        self.us_xx_fake_extractor_collection_branch = f"{self.us_xx_branch}.extractor_collections.{FAKE_EXTRACTOR_COLLECTION_NAME}"
+
         # after_upload_noop (per-document-collection) and branch_end (document_collections)
         # are excluded from skip regexes because their ALL_DONE trigger rules let
         # them run even when their upstreams are skipped, so they succeed rather
@@ -132,6 +168,12 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             self.us_yy_always_succeeds_tasks_regex,
             self.us_xx_other_document_collections_always_succeeds_tasks_regex,
         ]
+        # The whole us_xx extraction subtree (the per-extractor-collection branch plus
+        # its branching scaffolding).
+        self.us_xx_extraction_subtree_regex = (
+            rf"^{self.us_xx_branch}\.extractor_collections\..*$"
+        )
+
         # Frame tasks (initialize, branching scaffolding, ALL_DONE noops in
         # non-target document collections) that succeed in any happy-path test scoped to
         # us_xx + fake_case_notes.
@@ -141,6 +183,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
             r"^extraction\.branch_(start|end)$",
             rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
+            self.us_xx_extraction_subtree_regex,
             *self.non_target_document_collection_always_succeeds_regexes,
         ]
         # Subset of the frame above for failure-path tests where branch_end
@@ -177,6 +220,40 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         )
         self.collectors_config_module_patcher.start()
 
+        # Swap every extractor-config module to the fake config and clear the cached
+        # loader so the DAG enumerates the fake extractor collections.
+        for module_path in _FAKE_EXTRACTOR_CONFIG_MODULE_PATHS:
+            self.enterContext(patch(module_path, fake_config_module))
+        # get_extractor_config generates ER configs, whose builder's default model
+        # config name is absent from the fake registry; point it at a fake-registry one.
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        load_first_order_llm_extractor_configs.cache_clear()
+        self.addCleanup(load_first_order_llm_extractor_configs.cache_clear)
+
+        self.mock_extraction_session = MagicMock()
+        self.extraction_session_patcher = patch(
+            "recidiviz.airflow.dags.llm_document_extraction.extraction_tasks."
+            "airflow_cloud_sql_session_for_connection",
+        )
+        self.mock_extraction_session_cm = self.extraction_session_patcher.start()
+        self.mock_extraction_session_cm.return_value.__enter__.return_value = (
+            self.mock_extraction_session
+        )
+
+        self.sync_extractor_metadata_patcher = patch(
+            "recidiviz.airflow.dags.llm_document_extraction.extraction_tasks."
+            "sync_extractor_metadata",
+            return_value="fake-extractor-version-id",
+        )
+        self.mock_sync_extractor_metadata = self.sync_extractor_metadata_patcher.start()
+
+        self.identify_job_documents_patcher = patch(
+            "recidiviz.airflow.dags.llm_document_extraction.extraction_tasks."
+            "identify_job_documents",
+            return_value="fake-job-id",
+        )
+        self.mock_identify_job_documents = self.identify_job_documents_patcher.start()
+
         self.mock_bq_client = MagicMock()
         self._mock_bq_client_no_updates()
         self.bq_client_patcher = patch(
@@ -197,6 +274,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.project_patcher.stop()
         self.config_module_patcher.stop()
         self.collectors_config_module_patcher.stop()
+        self.extraction_session_patcher.stop()
+        self.sync_extractor_metadata_patcher.stop()
+        self.identify_job_documents_patcher.stop()
         self.bq_client_patcher.stop()
         self.kpo_patcher.stop()
         super().tearDown()
@@ -462,6 +542,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     ),
                     rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
                     r"^extraction\.branch_end$",
+                    # Extraction runs after the whole document-collections branching, so
+                    # the failed branch_end upstream-fails the entire extraction subtree.
+                    self.us_xx_extraction_subtree_regex,
                 ],
                 expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
@@ -677,6 +760,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     # ALL_DONE EmptyOperator with no body and succeeds.
                     rf"^{self.us_xx_branch}\.document_collections\."
                     rf"[^.]+\.(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
+                    # Extraction runs after the whole document-collections branching, so
+                    # the failed branch_end upstream-fails the entire extraction subtree.
+                    self.us_xx_extraction_subtree_regex,
                 ],
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
@@ -774,3 +860,127 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # for debugging. Discovery itself succeeded, so it already
             # deleted the generation-output temp table.
             self.assertEqual(self.mock_bq_client.delete_table.call_count, 1)
+
+    def _constructed_pod_arguments(self, task_id: str) -> list[str]:
+        """Returns the argv the DAG constructed the KPO named |task_id| with."""
+        for call in self.mock_kpo_constructor.call_args_list:
+            if call.kwargs.get("task_id") == task_id:
+                return assert_type(call.kwargs["arguments"], list)
+        raise ValueError(f"No KPO constructed with task_id [{task_id}].")
+
+    def test_extraction_runs_when_job_is_generated(self) -> None:
+        """When identify_job_documents returns a job, check_has_job proceeds and both the
+        extraction pod and the first-order view update pod run."""
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(state_code_filter=StateCode.US_XX.value),
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    self.us_yy_all_skippable_tasks_regex,
+                    # Each document collection's upload is short-circuited (no updates),
+                    # but that does not gate extraction.
+                    rf"^{self.us_xx_branch}\.document_collections\."
+                    r"[^.]+\."
+                    rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
+                    rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            self.mock_sync_extractor_metadata.assert_called_once()
+            self.mock_identify_job_documents.assert_called_once()
+
+            run_extraction_argv = self._constructed_pod_arguments(
+                RUN_EXTRACTION_TASK_ID
+            )
+            self.assertIn(
+                "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
+                run_extraction_argv,
+            )
+            self.assertIn(f"--state_code={StateCode.US_XX.value}", run_extraction_argv)
+            self.assertIn(
+                f"--extractor_collection_name={FAKE_EXTRACTOR_COLLECTION_NAME}",
+                run_extraction_argv,
+            )
+            # The job id is pulled from the identify task's XCom at pod render time.
+            self.assertIn(
+                f"--job_id={{{{ task_instance.xcom_pull(task_ids="
+                f"'{self.us_xx_fake_extractor_collection_branch}."
+                f"{IDENTIFY_JOB_DOCUMENTS_TASK_ID}') }}}}",
+                run_extraction_argv,
+            )
+
+            update_views_argv = self._constructed_pod_arguments(
+                UPDATE_FIRST_ORDER_VIEWS_TASK_ID
+            )
+            self.assertIn(
+                "--entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint",
+                update_views_argv,
+            )
+            self.assertIn(f"--state_code={StateCode.US_XX.value}", update_views_argv)
+            self.assertIn(
+                f"--extractor_collection_name={FAKE_EXTRACTOR_COLLECTION_NAME}",
+                update_views_argv,
+            )
+            self.assertIn("--stage=first_order", update_views_argv)
+
+    def test_extraction_short_circuits_when_no_job_is_generated(self) -> None:
+        """When identify_job_documents returns None (no documents need processing),
+        check_has_job short-circuits and the extraction and view update pods are skipped.
+        """
+        self.mock_identify_job_documents.return_value = None
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(
+                    state_code_filter=StateCode.US_XX.value,
+                    document_collection_name_filter="FAKE_CASE_NOTES",
+                ),
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    *self.non_target_document_collection_skipped_regexes,
+                    # check_has_updates short-circuits the (unfiltered) case-notes upload.
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID
+                    ),
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        DOCUMENT_UPLOAD_TASK_ID
+                    ),
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        AFTER_UPLOAD_NOOP_TASK_ID
+                    ),
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
+                    ),
+                    # check_has_job short-circuits the extraction and view update pods.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"(?:{RUN_EXTRACTION_TASK_ID}|{UPDATE_FIRST_ORDER_VIEWS_TASK_ID})$",
+                ],
+                expected_success_task_id_regexes=[
+                    # Frame successes, but NOT the whole extraction subtree (part of it
+                    # is short-circuited below), so they are listed explicitly here
+                    # rather than via us_xx_fake_case_notes_frame_success_regexes.
+                    r"^initialize_dag\..*$",
+                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
+                    r"^extraction\.branch_(start|end)$",
+                    rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
+                    rf"^{self.us_xx_branch}\.extractor_collections\.branch_(start|end)$",
+                    *self.non_target_document_collection_always_succeeds_regexes,
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        RUN_DOCUMENT_DISCOVERY_TASK_ID
+                    ),
+                    self._us_xx_fake_case_notes_collection_branch_regex(
+                        CHECK_HAS_UPDATES_TASK_ID
+                    ),
+                    # sync, identify, and the short-circuit itself run and succeed.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"(?:{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
+                    rf"{CHECK_HAS_JOB_TASK_ID})$",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)

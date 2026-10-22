@@ -140,6 +140,24 @@ def load_all_first_order_llm_extractor_configs(
     ]
 
 
+def load_launched_first_order_llm_extractor_configs(
+    state_code: StateCode,
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> dict[str, LLMExtractorConfig]:
+    """Returns the state's first-order extractor configs whose launch_env includes
+    |project_id|, keyed by collection name.
+    """
+    return {
+        name: config
+        for name, config in load_first_order_llm_extractor_configs(config_module)
+        .get(state_code, {})
+        .items()
+        if config.launch_env.is_launched_in_project(project_id)
+    }
+
+
 def _lookup_extractor_config(
     *,
     configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]],

@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""DAG that runs the LLM document extraction pipeline, branched per state and
-per document collection within a state.
+"""DAG that runs the LLM document extraction pipeline.
 
-By default every (state, document collection) branch launched in this project runs. To
-target a single state, pass `state_code_filter` in the DAG run conf; to additionally target
-a single document collection, pass `document_collection_name_filter` (which requires
-`state_code_filter` to also be set, since document collection names are only unique within a
-state).
+By default every (state, document collection) upload branch launched in this project
+runs, followed by every launched extractor collection's extraction. To target a single
+state, pass `state_code_filter` in the DAG run conf; to additionally target a single
+document collection's upload, pass `document_collection_name_filter` (which requires
+`state_code_filter` to also be set, since document collection names are only unique within
+a state). The filters scope the upload branching only; extraction always runs for every
+launched extractor collection in the targeted state(s).
 """
 
 from typing import Callable
@@ -38,6 +39,11 @@ from recidiviz.airflow.dags.llm_document_extraction.document_store_tasks import 
     record_document_upload_results,
     run_document_discovery,
 )
+from recidiviz.airflow.dags.llm_document_extraction.extraction_tasks import (
+    check_has_job,
+    identify_job_documents_task,
+    sync_extractor_metadata_task,
+)
 from recidiviz.airflow.dags.llm_document_extraction.initialize_llm_document_extraction_dag_group import (
     initialize_llm_document_extraction_dag_group,
 )
@@ -45,11 +51,13 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_llm_document_extraction_dag_id,
 )
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    build_kubernetes_pod_task,
     build_mapped_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import (
     DAGNode,
     create_branching_by_key,
+    select_all_branches,
 )
 from recidiviz.airflow.dags.utils.config_utils import (
     get_document_collection_name_filter,
@@ -58,6 +66,8 @@ from recidiviz.airflow.dags.utils.config_utils import (
 from recidiviz.airflow.dags.utils.constants import (
     AFTER_UPLOAD_NOOP_TASK_ID,
     DOCUMENT_UPLOAD_TASK_ID,
+    RUN_EXTRACTION_TASK_ID,
+    UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -66,10 +76,17 @@ from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_validate_source_table_datasets,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    load_launched_first_order_llm_extractor_configs,
+)
+from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.store.document_collection_config import (
     get_states_with_launched_document_collections,
     load_launched_document_collection_configs,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 
 # pylint: disable=W0104 pointless-statement
 
@@ -81,6 +98,7 @@ UPLOAD_TASK_INSTANCE_COUNT = 10
 # validate_key cap is easy to hit with long, descriptive group names.
 LLM_DOCUMENT_EXTRACTION_BRANCHING = "extraction"
 DOCUMENT_COLLECTIONS_BRANCHING = "document_collections"
+EXTRACTOR_COLLECTIONS_BRANCHING = "extractor_collections"
 RUN_ID_FORMAT_ARG = "{{ run_id }}"
 
 
@@ -177,12 +195,71 @@ def create_single_document_collection_branch(
     return [branch]
 
 
+def create_single_extractor_collection_branch(
+    state_code: StateCode,
+    extractor_collection_name: str,
+) -> list[DAGNode]:
+    """Creates the per-extractor-collection task group: sync the extractor metadata,
+    identify the documents for a new extraction job, run that job through the LLM, and
+    deploy the first-order views over its results.
+
+    TODO(OBT-45428): Add the entity-resolution pass after first-order views.
+    """
+    with TaskGroup(extractor_collection_name) as branch:
+        # --- Step 1: Sync extractor metadata ---
+        extractor_version_id = sync_extractor_metadata_task(
+            state_code=state_code,
+            extractor_collection_name=extractor_collection_name,
+        )
+
+        # --- Step 2: Identify the documents for a new job ---
+        job_id = identify_job_documents_task(
+            state_code=state_code,
+            extractor_collection_name=extractor_collection_name,
+            extractor_version_id=extractor_version_id,
+        )
+
+        # Short-circuit so extraction and the view deploy are skipped when no
+        # documents needed processing (no job was generated).
+        proceed = check_has_job(job_id=job_id)
+
+        # --- Step 3: Run the extraction job through the LLM (KPO) ---
+        run_extraction = build_kubernetes_pod_task(
+            task_id=RUN_EXTRACTION_TASK_ID,
+            arguments=[
+                "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
+                f"--state_code={state_code.value}",
+                f"--extractor_collection_name={extractor_collection_name}",
+                f"--job_id={{{{ task_instance.xcom_pull(task_ids='{job_id.operator.task_id}') }}}}",
+            ],
+            cloud_sql_connections=[SchemaType.OPERATIONS],
+        )
+
+        # --- Step 4: Deploy the first-order views over the results (KPO) ---
+        update_first_order_views = build_kubernetes_pod_task(
+            task_id=UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
+            arguments=[
+                "--entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint",
+                f"--state_code={state_code.value}",
+                f"--extractor_collection_name={extractor_collection_name}",
+                f"--stage={LLMExtractionViewGraphStage.FIRST_ORDER.value}",
+            ],
+        )
+
+        proceed >> run_extraction >> update_first_order_views
+
+    return [branch]
+
+
 def create_single_state_llm_document_extraction_branch(
     state_code: StateCode,
 ) -> list[DAGNode]:
-    """Creates the per-state task group, which nests a per-document-collection branching."""
+    """Creates the per-state task group, which nests a per-document-collection document
+    upload branching followed by a per-extractor-collection extraction branching."""
     with TaskGroup(get_llm_document_extraction_branch_key(state_code)) as branch:
-        with TaskGroup(DOCUMENT_COLLECTIONS_BRANCHING):
+        with TaskGroup(
+            DOCUMENT_COLLECTIONS_BRANCHING
+        ) as document_collections_branching:
             document_collection_names = sorted(
                 load_launched_document_collection_configs(
                     state_code, project_id=get_project_id()
@@ -202,6 +279,37 @@ def create_single_state_llm_document_extraction_branch(
                     state_code, set(document_collection_names)
                 ),
             )
+
+        extractor_collection_names = sorted(
+            load_launched_first_order_llm_extractor_configs(
+                state_code, project_id=get_project_id()
+            )
+        )
+        # A state can have document collections but no extractor configs yet; skip the
+        # extraction branching entirely in that case, since an empty branch map would
+        # produce an orphaned branch_start/branch_end pair that run for no reason.
+        if extractor_collection_names:
+            with TaskGroup(
+                EXTRACTOR_COLLECTIONS_BRANCHING
+            ) as extractor_collections_branching:
+                extractor_collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
+                    extractor_collection_name: create_single_extractor_collection_branch(
+                        state_code, extractor_collection_name
+                    )
+                    for extractor_collection_name in extractor_collection_names
+                }
+                create_branching_by_key(
+                    extractor_collection_branch_map,
+                    select_all_branches,
+                )
+
+            # Extraction reads the document store the upload branching writes, so it
+            # runs only after every collection's upload has finished.
+            # TODO(OBT-54936): Wire each extractor branch downstream of only its
+            # input_document_collection's upload branch, so document_collection_name_filter
+            # correctly scopes extraction to the extractors that read the filtered
+            # collection.
+            document_collections_branching >> extractor_collections_branching
 
     return [branch]
 

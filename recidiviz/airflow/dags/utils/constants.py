@@ -74,3 +74,6 @@ RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID = "record_document_upload_results"
 # Task ids for the per-extractor-collection tasks in the LLM document extraction DAG.
 SYNC_EXTRACTOR_METADATA_TASK_ID = "sync_extractor_metadata"
 IDENTIFY_JOB_DOCUMENTS_TASK_ID = "identify_job_documents"
+CHECK_HAS_JOB_TASK_ID = "check_has_job"
+RUN_EXTRACTION_TASK_ID = "run_extraction"
+UPDATE_FIRST_ORDER_VIEWS_TASK_ID = "update_first_order_views"
