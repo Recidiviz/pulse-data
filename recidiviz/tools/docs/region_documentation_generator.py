@@ -64,15 +64,16 @@ US_TN_TOMIS1_BURNDOWN_MD_PATH = os.path.join(
 
 # Files outside recidiviz/ingest/direct/regions/us_tn/ that should also
 # trigger regenerating the US_TN TOMIS 1.0 -> TOMIS 2.0 burndown doc: the two
-# manually-maintained tracking dicts it reads. (A third tracking dict,
-# us_tn_tomis_migration_exemptions.py, lives under recidiviz/tests/ and is
-# deliberately not read by the generator or listed here -- it's a proxy
-# signal for calculator/ changes relevant to the migration, not an input to
-# this doc.)
+# manually-maintained tracking dicts it reads, plus
+# us_tn_tomis_migration_exemptions.py. The generator doesn't read the
+# exemptions file, but every PR that repoints a view off TOMIS 1.0 removes an
+# entry from it, and the doc's raw data reference counts change with that
+# repoint.
 US_TN_TOMIS1_BURNDOWN_TRACKING_FILES = frozenset(
     {
         "recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_ingest_view_migration_pairs.py",
         "recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_raw_data_migration_statuses.py",
+        "recidiviz/tests/view_registry/us_tn_tomis_migration_exemptions.py",
     }
 )
 
@@ -212,9 +213,8 @@ def us_tn_tomis1_burndown_relevant_files_touched(
 ) -> bool:
     """Returns whether `touched_files` includes anything relevant to the
     US_TN TOMIS 1.0 -> TOMIS 2.0 burndown doc: US_TN's raw data directory, or
-    either of its manually-maintained tracking dicts
-    (US_TN_TOMIS1_BURNDOWN_TRACKING_FILES). If no files are given, returns
-    True so the doc is regenerated to be safe, matching the same fallback
+    any file in US_TN_TOMIS1_BURNDOWN_TRACKING_FILES. If no files are given,
+    returns True so the doc is regenerated to be safe, matching the same fallback
     posture as get_touched_raw_data_regions.
     """
     if not touched_files:
