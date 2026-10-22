@@ -505,6 +505,9 @@ from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff
 from recidiviz.validation.views.static_reference_tables.experiment_assignments_unit_of_analysis_validation import (
     EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.static_reference_tables.us_ix_core_programs_by_facility_unknown_facilities_validation import (
+    US_IX_CORE_PROGRAMS_BY_FACILITY_UNKNOWN_FACILITIES_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.static_reference_tables.us_tx_contact_standards_bucket_concurrency_validation import (
     US_TX_CONTACT_STANDARDS_BUCKET_CONCURRENCY_VALIDATION_VIEW_BUILDER,
 )
@@ -820,6 +823,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_TX_RISK_ASSESSMENT_REFERENCE_DUPLICATE_KEYS_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_IX_CORE_PROGRAMS_BY_FACILITY_UNKNOWN_FACILITIES_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

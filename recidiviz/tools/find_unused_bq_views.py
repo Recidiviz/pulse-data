@@ -332,6 +332,14 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         "assessment_events. Unused until that dashboard reads it. TODO(#108522) "
         "(Hugo Salas, 2026-10-13)"
     ),
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_ix_core_programs_by_facility"
+    ): (
+        "Lookup of the IDOC core programs each US_IX facility offers, for a "
+        "facility-recommendation view that matches residents' program needs to "
+        "facilities. Unused until that view reads it. TODO(OBT-55017) "
+        "(Hugo Salas, 2026-10-20)"
+    ),
     BigQueryAddress.from_str("analyst_data.us_co_jii_app_program_catalog"): (
         "View to generate program catalog for JII app in US_CO. Output of view is "
         "saved to a Google Sheet which is accessed by the front end to power the app. "
