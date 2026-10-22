@@ -20,9 +20,15 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Mapping
 
 from flask import Flask, Request, Response, request
 
+from recidiviz.monitoring.pagerduty_alert_forwarder.budget_alert import (
+    BUDGET_SOURCE,
+    build_budget_event,
+    is_budget_notification,
+)
 from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
     AlertForwarderConfig,
     ConfigurationError,
@@ -137,21 +143,28 @@ class AlertForwarder:
         try:
             # Wrap alert data in PagerDutyAlert for cached field lookups
             alert = PagerDutyAlert(alert_data)
-            return self.process_alert(alert)
+            attributes = pubsub_message.get("attributes") or {}
+            return self.process_alert(alert, attributes)
         except Exception as e:
             logger.exception("Unexpected error processing alert: %s", e)
             # Return 500 to trigger Pub/Sub retry
             return Response(f"Internal error: {e}", status=500)
 
-    def process_alert(self, alert: PagerDutyAlert) -> Response:
+    def process_alert(
+        self, alert: PagerDutyAlert, attributes: Mapping[str, str] | None = None
+    ) -> Response:
         """Process alert through rule engine and forward to PagerDuty.
 
         Args:
             alert: PagerDuty alert data wrapper
+            attributes: Pub/Sub message attributes, if any
 
         Returns:
             Flask response
         """
+        if is_budget_notification(alert.raw_data):
+            return self._process_budget_notification(alert, attributes or {})
+
         incident = alert.raw_data.get("incident", {})
         policy_name = incident.get("policy_name", "unknown")
         incident_id = incident.get("incident_id", "")
@@ -243,17 +256,120 @@ class AlertForwarder:
             return Response("Alert forwarded successfully", status=200)
 
         except PagerDutyError as e:
-            logger.error(
-                "Failed to forward alert to PagerDuty: %s",
-                e,
-                extra={
-                    "policy_name": policy_name,
-                    "service": service,
-                    "error": str(e),
-                },
+            return self._pagerduty_error_response(e, service, policy_name)
+
+    def _process_budget_notification(
+        self, alert: PagerDutyAlert, attributes: Mapping[str, str]
+    ) -> Response:
+        """Forward a GCP Billing budget notification to PagerDuty.
+
+        Routine budget cost updates that have not crossed a threshold are acknowledged
+        without alerting. The rule engine is only used to pick the PagerDuty service.
+
+        Args:
+            alert: PagerDuty alert data wrapper holding the budget message
+            attributes: Pub/Sub message attributes (billingAccountId, budgetId, ...)
+
+        Returns:
+            Flask response
+        """
+        budget_name = str(alert.raw_data.get("budgetDisplayName", "unknown"))
+
+        event = build_budget_event(alert.raw_data, attributes)
+        if event is None:
+            logger.info(
+                "Budget notification has no exceeded threshold, not alerting",
+                extra={"budget_name": budget_name},
             )
-            # Return 500 to trigger Pub/Sub retry and DLQ
-            return Response(f"PagerDuty error: {e}", status=500)
+            return Response("Budget update acknowledged, no alert sent", status=200)
+
+        try:
+            processed = self.rule_engine.process_alert(alert)
+        except Exception as e:
+            logger.error(
+                "Rule engine failed: %s",
+                e,
+                extra={"budget_name": budget_name, "error": str(e)},
+            )
+            return Response(f"Rule processing failed: {e}", status=500)
+
+        if processed.get("suppress", False):
+            logger.info(
+                "Budget notification suppressed by rule configuration",
+                extra={"budget_name": budget_name},
+            )
+            return Response("Alert suppressed successfully", status=200)
+
+        service = processed["pagerduty_service"]
+        if not service:
+            logger.error(
+                "No PagerDuty service configured for budget notification",
+                extra={"budget_name": budget_name},
+            )
+            return Response(
+                "No PagerDuty service configured for this alert", status=500
+            )
+
+        try:
+            result = self.pagerduty_client.trigger_incident(
+                service_name=service,
+                title=event.title,
+                severity=event.severity,
+                source=BUDGET_SOURCE,
+                dedup_key=event.dedup_key,
+                component=event.component,
+                custom_details=event.custom_details,
+            )
+        except PagerDutyError as e:
+            return self._pagerduty_error_response(e, service, budget_name)
+
+        logger.info(
+            "Successfully forwarded budget notification to PagerDuty",
+            extra={
+                "budget_name": budget_name,
+                "service": service,
+                "severity": event.severity,
+                "dedup_key": result.get("dedup_key"),
+            },
+        )
+        return Response("Alert forwarded successfully", status=200)
+
+    @staticmethod
+    def _pagerduty_error_response(
+        error: PagerDutyError, service: str, alert_name: str
+    ) -> Response:
+        """Choose the response for a failed PagerDuty call.
+
+        Pub/Sub redelivers on any non-2xx response and eventually dead-letters the
+        message. Retrying cannot fix a payload-shape rejection (see
+        PagerDutyError.is_permanent), so those are logged and acknowledged. Everything else returns 500 to be retried.
+
+        Args:
+            error: The PagerDuty failure
+            service: Name of the PagerDuty service the alert was sent to
+            alert_name: Policy or budget name, for logging
+
+        Returns:
+            Flask response
+        """
+        extra = {
+            "alert_name": alert_name,
+            "service": service,
+            "status_code": error.status_code,
+            "response_body": error.response_body,
+        }
+        if error.is_permanent:
+            logger.error(
+                "PagerDuty permanently rejected alert, not retrying: %s (response: %s)",
+                error,
+                error.response_body,
+                extra=extra,
+            )
+            return Response(f"PagerDuty rejected alert: {error}", status=200)
+
+        logger.error("Failed to forward alert to PagerDuty: %s", error, extra=extra)
+        # Return 500 to trigger Pub/Sub retry and DLQ
+        return Response(f"PagerDuty error: {error}", status=500)
 
 
 # Global forwarder instance

@@ -119,6 +119,99 @@ class TestPagerDutyClient(unittest.TestCase):
         self.assertEqual(payload["dedup_key"], "custom-key")
 
     @patch("requests.post")
+    def test_trigger_incident_component_and_custom_details(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Test that component and custom details are sent in the payload."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"status": "success", "dedup_key": "k"}
+        mock_post.return_value = mock_response
+
+        self.client.trigger_incident(
+            service_name="test-service",
+            title="Budget alert",
+            severity="warning",
+            component="cloud-billing",
+            custom_details={"budgetId": "b1"},
+            dedup_key="k",
+        )
+
+        payload = mock_post.call_args.kwargs["json"]["payload"]
+        self.assertEqual(payload["component"], "cloud-billing")
+        self.assertEqual(payload["custom_details"], {"budgetId": "b1"})
+
+    @patch("requests.post")
+    def test_trigger_incident_omits_component_by_default(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Test that component is not sent unless provided."""
+        mock_post.return_value = MagicMock()
+
+        self.client.trigger_incident(
+            service_name="test-service", title="Test Alert", severity="error"
+        )
+
+        self.assertNotIn("component", mock_post.call_args.kwargs["json"]["payload"])
+
+    @patch("requests.post")
+    def test_trigger_incident_http_error_captures_status_and_body(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Test that the PagerDuty response status and body are kept on the error."""
+        mock_response = MagicMock(status_code=400, text='{"message":"invalid"}')
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        with self.assertRaises(PagerDutyError) as context:
+            self.client.trigger_incident(
+                service_name="test-service", title="Test Alert", severity="error"
+            )
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.response_body, '{"message":"invalid"}')
+        self.assertTrue(context.exception.is_permanent)
+
+    @patch("requests.post")
+    def test_trigger_incident_network_error_is_not_permanent(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Test that a connection failure has no status code and is retryable."""
+        mock_post.side_effect = requests.exceptions.ConnectionError("boom")
+
+        with self.assertRaises(PagerDutyError) as context:
+            self.client.trigger_incident(
+                service_name="test-service", title="Test Alert", severity="error"
+            )
+
+        self.assertIsNone(context.exception.status_code)
+        self.assertFalse(context.exception.is_permanent)
+
+    def test_is_permanent(self) -> None:
+        """Test which status codes are treated as permanent rejections."""
+        for status_code, expected in [
+            (400, True),
+            (404, True),
+            (409, True),
+            (410, True),
+            (413, True),
+            (422, True),
+            (401, False),
+            (403, False),
+            (408, False),
+            (429, False),
+            (500, False),
+            (503, False),
+            (None, False),
+        ]:
+            with self.subTest(status_code=status_code):
+                self.assertEqual(
+                    PagerDutyError("e", status_code=status_code).is_permanent,
+                    expected,
+                )
+
+    @patch("requests.post")
     def test_trigger_incident_unknown_service(self, mock_post: MagicMock) -> None:
         """Test incident trigger with unknown service name."""
         with self.assertRaises(PagerDutyError) as context:

@@ -1211,3 +1211,45 @@ class TestRuleEngineIntegration(unittest.TestCase):
             result["title"],
             "[STAGING] Uptime Check failing: staff-synthetic-monitor-us-ut",
         )
+
+    def test_budget_notification_routes_to_cloud_billing(self) -> None:
+        """Budget messages have no incident key but still route to Cloud Billing."""
+        alert = {
+            "budgetDisplayName": "[Cloud Costs] BigQuery - $20,000 per month",
+            "alertThresholdExceeded": 0.71,
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(result["pagerduty_service"], "Cloud Billing")
+        self.assertFalse(result["suppress"])
+
+    def test_monitoring_incident_does_not_route_to_cloud_billing(self) -> None:
+        """Existing Cloud Monitoring routing is unaffected by the budget rule."""
+        alert = {
+            "incident": {
+                "incident_id": "test-123",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "job_name": "calculation-pipeline-prod",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(
+            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
+        )
+
+    def test_unrecognized_message_uses_default_service_and_fallback_title(
+        self,
+    ) -> None:
+        result = self.engine.process_alert(PagerDutyAlert({"something": "else"}))
+
+        self.assertEqual(result["pagerduty_service"], "GCP Infrastructure")
+        self.assertEqual(result["title"], "GCP alert (no title)")

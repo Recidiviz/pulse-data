@@ -82,6 +82,12 @@ Match criteria use simple JSON field paths with dot notation (no indexing) to re
      in: ["ERROR", "CRITICAL"]
    ```
 
+4. **Exists** (field is present, whatever its value):
+   ```yaml
+   budgetDisplayName:
+     exists: true
+   ```
+
 **Available Fields:**
 
 - `incident.policy_name`: Alert policy name
@@ -216,6 +222,24 @@ In this example, an alert for a production database with ERROR severity would:
 - **Progressive enhancement**: Start with broad rules, add specific overrides as needed
 
 **Important**: Since later rules override earlier ones, order your rules from most general to most specific.
+
+### GCP Billing Budget Notifications
+
+Budget notifications published by Cloud Billing have no `incident` key, so they are handled in
+`budget_alert.py` rather than by the title/severity rules above. The "GCP Billing Budget Notifications"
+rule in `config.yaml` only routes them to the `Cloud Billing` PagerDuty service.
+
+- Routine cost updates (no `alertThresholdExceeded` or `forecastThresholdExceeded`) are acknowledged and not sent to PagerDuty.
+- The title starts with the budget's display name, e.g. `<budget name>: 71% of budget reached (cost $14,684)`.
+- Severity is `critical` at 100% or more of actual spend, `warning` from 71% and for forecasts, and `info` below that.
+- The dedup key combines billing account, budget, threshold kind and value, and the budget period start, so redelivered
+  messages dedup and different budgets, thresholds or months never collide.
+
+### PagerDuty Error Handling
+
+If PagerDuty rejects an event as malformed (400, 404, 409, 410, 413 or 422), the forwarder logs the response body and
+returns 200, since Pub/Sub retries cannot fix it. Everything else returns 500 so Pub/Sub retries and eventually dead-letters
+the message: network errors, 5xx, 408, 429, and auth failures (401, 403) so that a revoked or wrong routing key still reaches the DLQ alert.
 
 ## Deployment
 

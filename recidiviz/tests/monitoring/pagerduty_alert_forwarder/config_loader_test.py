@@ -28,6 +28,7 @@ from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
     ConfigurationError,
     ContainsCondition,
     EqualityCondition,
+    ExistsCondition,
     InCondition,
 )
 
@@ -70,6 +71,39 @@ class TestConfigLoader(unittest.TestCase):
         self.assertEqual(config.default.severity, "info")
         self.assertEqual(len(config.rules), 1)
         self.assertEqual(config.rules[0].name, "Test Rule")
+
+    def test_exists_condition(self) -> None:
+        """Test that an `exists: true` match condition is parsed."""
+        config = AlertForwarderConfig(
+            {
+                "rules": [
+                    {
+                        "name": "Exists Rule",
+                        "match": {"budgetDisplayName": {"exists": True}},
+                        "actions": {"pagerduty_service": "test-service"},
+                    }
+                ],
+            }
+        )
+
+        condition = config.rules[0].match.conditions[0].condition
+        self.assertIsInstance(condition, ExistsCondition)
+        self.assertTrue(condition.evaluate("anything"))
+
+    def test_exists_condition_must_be_true(self) -> None:
+        """Test that `exists: false` is rejected, since it cannot be evaluated."""
+        with self.assertRaisesRegex(ConfigurationError, "'exists' must be true"):
+            AlertForwarderConfig(
+                {
+                    "rules": [
+                        {
+                            "name": "Exists Rule",
+                            "match": {"budgetDisplayName": {"exists": False}},
+                            "actions": {"pagerduty_service": "test-service"},
+                        }
+                    ],
+                }
+            )
 
     def test_missing_default(self) -> None:
         """Test configuration without default section."""

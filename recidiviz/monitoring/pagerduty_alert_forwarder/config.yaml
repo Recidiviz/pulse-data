@@ -55,6 +55,17 @@ rules:
       severity: warning
       pagerduty_service: "[STAGING] JII Project"
 
+  # GCP Billing budget notifications are not Cloud Monitoring incidents, so none of the
+  # incident.* rules in this file match them. Their title, severity and dedup key are built
+  # in budget_alert.py (which also drops routine updates that have not crossed a threshold),
+  # so this rule only routes them to the billing service.
+  - name: "GCP Billing Budget Notifications"
+    match:
+      budgetDisplayName:
+        exists: true
+    actions:
+      pagerduty_service: "Cloud Billing"
+
   # Secondly, apply alert policy-specific actions
   - name: "Stale Metric Exports"
     match:

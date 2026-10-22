@@ -102,6 +102,19 @@ class InCondition(Condition):
 
 
 @attr.define(frozen=True)
+class ExistsCondition(Condition):
+    """Condition that is satisfied whenever the field is present in the alert.
+
+    Field presence is checked by the rule engine before conditions are evaluated, so
+    this condition only needs to accept any value that reaches it.
+    """
+
+    def evaluate(self, value: Any) -> bool:
+        """Always true: the rule engine has already confirmed the field exists."""
+        return True
+
+
+@attr.define(frozen=True)
 class MatchCondition:
     """A single match condition for a field path."""
 
@@ -159,10 +172,16 @@ class MatchConfig:
                         )
                     elif "in" in condition_value:
                         condition = InCondition(allowed_values=condition_value["in"])
+                    elif "exists" in condition_value:
+                        if condition_value["exists"] is not True:
+                            raise ConfigurationError(
+                                f"Rule {rule_index} match '{field_path}' 'exists' must be true"
+                            )
+                        condition = ExistsCondition()
                     else:
                         raise ConfigurationError(
                             f"Rule {rule_index} match '{field_path}' has unknown condition type: {condition_value} "
-                            f"Supported: 'contains', 'in'"
+                            f"Supported: 'contains', 'in', 'exists'"
                         )
                 elif isinstance(condition_value, (str, int, float, bool)):
                     # Simple equality condition
@@ -170,7 +189,7 @@ class MatchConfig:
                 else:
                     raise ConfigurationError(
                         f"Rule {rule_index} match '{field_path}' must be a string, number, boolean, "
-                        f"or dict with 'contains'/'in'"
+                        f"or dict with 'contains'/'in'/'exists'"
                     )
             except ConfigurationError:
                 # Re-raise ConfigurationError as-is

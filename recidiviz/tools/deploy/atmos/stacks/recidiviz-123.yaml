@@ -89,6 +89,7 @@ components:
           - "[PRODUCTION] JII Project"
           - "[STAGING] JII Project"
           - "[IE On Call] General Raw Data Alerting"
+          - "Cloud Billing"
 
     data-platform-alerting:
       metadata:

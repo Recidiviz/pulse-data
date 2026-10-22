@@ -19,10 +19,16 @@ import base64
 import json
 import tempfile
 import unittest
+from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
+from recidiviz.monitoring import pagerduty_alert_forwarder
 from recidiviz.monitoring.pagerduty_alert_forwarder.pagerduty_alert import (
     PagerDutyAlert,
+)
+from recidiviz.monitoring.pagerduty_alert_forwarder.pagerduty_client import (
+    PagerDutyError,
 )
 from recidiviz.monitoring.pagerduty_alert_forwarder.server import AlertForwarder, app
 
@@ -245,6 +251,45 @@ rules:
             # Verify trigger_incident was NOT called
             mock_trigger.assert_not_called()
 
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_process_alert_permanent_pagerduty_rejection_is_acknowledged(
+        self, mock_trigger: MagicMock
+    ) -> None:
+        """A payload rejection returns 200 so Pub/Sub stops retrying, and logs the body."""
+        mock_trigger.side_effect = PagerDutyError(
+            "PagerDuty API request failed: 400",
+            status_code=400,
+            response_body='{"message":"Event object is invalid"}',
+        )
+
+        with self.assertLogs(
+            "recidiviz.monitoring.pagerduty_alert_forwarder.server", level="ERROR"
+        ) as logs:
+            response = self.forwarder.process_alert(self._create_alert())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Event object is invalid", "\n".join(logs.output))
+        self.assertNotIn("test-key-123", "\n".join(logs.output))
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_process_alert_retryable_pagerduty_errors_return_500(
+        self, mock_trigger: MagicMock
+    ) -> None:
+        """Auth failures, 408, 429, 5xx and network errors return 500 so Pub/Sub retries."""
+        for status_code in (401, 403, 408, 429, 500, 503, None):
+            with self.subTest(status_code=status_code):
+                mock_trigger.side_effect = PagerDutyError(
+                    "failed", status_code=status_code
+                )
+
+                response = self.forwarder.process_alert(self._create_alert())
+
+                self.assertEqual(response.status_code, 500)
+
 
 class TestServerEndpoints(unittest.TestCase):
     """Tests for Flask server endpoints."""
@@ -401,3 +446,194 @@ rules:
 
         self.assertEqual(response.status_code, 400)
         self.assertIn(b"Invalid message data", response.data)
+
+
+class TestBudgetNotificationEndpoint(unittest.TestCase):
+    """Tests for GCP Billing budget notifications using the real config.yaml."""
+
+    def setUp(self) -> None:
+        config_path = Path(pagerduty_alert_forwarder.__file__).parent / "config.yaml"
+        self.env_patcher = patch.dict(
+            "os.environ",
+            {
+                "CONFIG_PATH": str(config_path),
+                "PAGERDUTY_INTEGRATION_KEYS": json.dumps(
+                    {
+                        "Cloud Billing": "billing-key",
+                        "GCP Infrastructure": "infra-key",
+                    }
+                ),
+            },
+        )
+        self.env_patcher.start()
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.monitoring.pagerduty_alert_forwarder import server
+
+        server.forwarder = AlertForwarder()
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def tearDown(self) -> None:
+        self.env_patcher.stop()
+
+    def _post(
+        self, data: dict[str, Any], attributes: dict[str, str] | None = None
+    ) -> Any:
+        message: dict[str, Any] = {
+            "data": base64.b64encode(json.dumps(data).encode()).decode()
+        }
+        if attributes is not None:
+            message["attributes"] = attributes
+        return self.client.post(
+            "/pubsub-push",
+            data=json.dumps({"message": message}),
+            content_type="application/json",
+        )
+
+    @staticmethod
+    def _budget_message(**overrides: Any) -> dict[str, Any]:
+        message: dict[str, Any] = {
+            "budgetDisplayName": "[Cloud Costs] BigQuery - $20,000 per month",
+            "costAmount": 14684.37,
+            "costIntervalStart": "2026-10-01T07:00:00Z",
+            "budgetAmount": 20000.0,
+            "budgetAmountType": "SPECIFIED_AMOUNT",
+            "currencyCode": "USD",
+        }
+        message.update(overrides)
+        return message
+
+    ATTRIBUTES = {
+        "billingAccountId": "012345-ABCDEF-678901",
+        "budgetId": "budget-1",
+        "schemaVersion": "1.0",
+    }
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_actual_threshold_pages_cloud_billing(
+        self, mock_trigger: MagicMock
+    ) -> None:
+        mock_trigger.return_value = {"status": "success", "dedup_key": "k"}
+
+        response = self._post(
+            self._budget_message(alertThresholdExceeded=0.71), self.ATTRIBUTES
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_trigger.assert_called_once()
+        kwargs = mock_trigger.call_args.kwargs
+        self.assertEqual(kwargs["service_name"], "Cloud Billing")
+        self.assertEqual(
+            kwargs["title"],
+            "[Cloud Costs] BigQuery - $20,000 per month: 71% of budget reached "
+            "(cost $14,684)",
+        )
+        self.assertEqual(kwargs["severity"], "warning")
+        self.assertEqual(kwargs["component"], "cloud-billing")
+        self.assertEqual(
+            kwargs["dedup_key"],
+            "012345-ABCDEF-678901:budget-1:actual:0.71:2026-10-01T07:00:00Z",
+        )
+        self.assertEqual(kwargs["custom_details"]["budgetId"], "budget-1")
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_actual_threshold_critical(self, mock_trigger: MagicMock) -> None:
+        mock_trigger.return_value = {"status": "success", "dedup_key": "k"}
+
+        self._post(self._budget_message(alertThresholdExceeded=1.0), self.ATTRIBUTES)
+
+        self.assertEqual(mock_trigger.call_args.kwargs["severity"], "critical")
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_actual_threshold_info(self, mock_trigger: MagicMock) -> None:
+        mock_trigger.return_value = {"status": "success", "dedup_key": "k"}
+
+        self._post(self._budget_message(alertThresholdExceeded=0.5), self.ATTRIBUTES)
+
+        self.assertEqual(mock_trigger.call_args.kwargs["severity"], "info")
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_forecast_threshold(self, mock_trigger: MagicMock) -> None:
+        mock_trigger.return_value = {"status": "success", "dedup_key": "k"}
+
+        self._post(self._budget_message(forecastThresholdExceeded=1.0), self.ATTRIBUTES)
+
+        kwargs = mock_trigger.call_args.kwargs
+        self.assertEqual(kwargs["severity"], "warning")
+        self.assertIn("forecast to reach 100% of budget", kwargs["title"])
+        self.assertEqual(kwargs["service_name"], "Cloud Billing")
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.resolve_incident"
+    )
+    def test_routine_cost_update_is_suppressed(
+        self, mock_resolve: MagicMock, mock_trigger: MagicMock
+    ) -> None:
+        response = self._post(self._budget_message(), self.ATTRIBUTES)
+
+        self.assertEqual(response.status_code, 200)
+        mock_trigger.assert_not_called()
+        mock_resolve.assert_not_called()
+
+    @patch("requests.post")
+    def test_pagerduty_400_for_budget_is_acknowledged(
+        self, mock_post: MagicMock
+    ) -> None:
+        # pylint: disable=import-outside-toplevel
+        import requests
+
+        mock_response = MagicMock(status_code=400, text="invalid event")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        response = self._post(
+            self._budget_message(alertThresholdExceeded=0.71), self.ATTRIBUTES
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_post.assert_called_once()
+
+    @patch("requests.post")
+    def test_pagerduty_503_for_budget_is_retried(self, mock_post: MagicMock) -> None:
+        # pylint: disable=import-outside-toplevel
+        import requests
+
+        mock_response = MagicMock(status_code=503, text="unavailable")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        response = self._post(
+            self._budget_message(alertThresholdExceeded=0.71), self.ATTRIBUTES
+        )
+
+        self.assertEqual(response.status_code, 500)
+
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_non_budget_non_incident_message_gets_fallback_title(
+        self, mock_trigger: MagicMock
+    ) -> None:
+        mock_trigger.return_value = {"status": "success", "dedup_key": "k"}
+
+        response = self._post({"something": "else"})
+
+        self.assertEqual(response.status_code, 200)
+        kwargs = mock_trigger.call_args.kwargs
+        self.assertEqual(kwargs["title"], "GCP alert (no title)")
+        self.assertEqual(kwargs["service_name"], "GCP Infrastructure")

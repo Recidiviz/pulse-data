@@ -30,8 +30,49 @@ logger = logging.getLogger(__name__)
 PAGERDUTY_EVENTS_V2_URL = "https://events.pagerduty.com/v2/enqueue"
 
 
+MAX_ERROR_BODY_CHARS = 1000
+
+# HTTP statuses that mean PagerDuty rejected the event itself, so resending the same
+# message cannot succeed. Auth failures (401, 403), 408, 429 and 5xx are deliberately
+# excluded so that they are retried and, if they persist, reach the DLQ alert.
+PERMANENT_REJECTION_STATUS_CODES = frozenset({400, 404, 409, 410, 413, 422})
+
+
 class PagerDutyError(Exception):
-    """Raised when PagerDuty API call fails."""
+    """Raised when PagerDuty API call fails.
+
+    status_code and response_body are only set when PagerDuty returned an HTTP error
+    response, as opposed to a network failure or a client-side validation error.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        response_body: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.response_body = response_body
+
+    @property
+    def is_permanent(self) -> bool:
+        """True for payload-shape rejections that retrying cannot fix."""
+        return self.status_code in PERMANENT_REJECTION_STATUS_CODES
+
+    @classmethod
+    def from_request_exception(
+        cls, e: requests.exceptions.RequestException
+    ) -> "PagerDutyError":
+        """Builds a PagerDutyError, capturing the HTTP response if there was one."""
+        message = f"PagerDuty API request failed: {e}"
+        if isinstance(e, requests.exceptions.HTTPError) and e.response is not None:
+            return cls(
+                message,
+                status_code=e.response.status_code,
+                response_body=str(e.response.text)[:MAX_ERROR_BODY_CHARS],
+            )
+        return cls(message)
 
 
 class PagerDutyClient:
@@ -55,6 +96,8 @@ class PagerDutyClient:
         source: str = "cloud-monitoring",
         alert: PagerDutyAlert | None = None,
         dedup_key: str | None = None,
+        component: str | None = None,
+        custom_details: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Trigger a PagerDuty incident.
 
@@ -65,6 +108,9 @@ class PagerDutyClient:
             source: Source of the alert (default: cloud-monitoring)
             alert: PagerDuty alert wrapper to include in custom details
             dedup_key: Deduplication key (auto-generated from alert if not provided)
+            component: Optional component of the source that is responsible for the event
+            custom_details: Optional custom details. Defaults to the raw alert data
+                when an alert is provided.
 
         Returns:
             PagerDuty API response
@@ -100,8 +146,13 @@ class PagerDutyClient:
         if dedup_key:
             payload["dedup_key"] = dedup_key
 
-        # Add custom details if alert data provided
-        if alert:
+        if component:
+            payload["payload"]["component"] = component
+
+        # Add custom details if provided, otherwise fall back to the alert data
+        if custom_details:
+            payload["payload"]["custom_details"] = custom_details
+        elif alert:
             payload["payload"]["custom_details"] = {
                 "cloud_monitoring_alert": alert.raw_data,
             }
@@ -157,7 +208,7 @@ class PagerDutyClient:
                 e,
                 extra={"service": service_name, "error": str(e)},
             )
-            raise PagerDutyError(f"PagerDuty API request failed: {e}") from e
+            raise PagerDutyError.from_request_exception(e) from e
 
     def resolve_incident(
         self,
@@ -240,4 +291,4 @@ class PagerDutyClient:
                 e,
                 extra={"service": service_name, "error": str(e)},
             )
-            raise PagerDutyError(f"PagerDuty API request failed: {e}") from e
+            raise PagerDutyError.from_request_exception(e) from e

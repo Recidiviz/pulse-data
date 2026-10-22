@@ -30,6 +30,8 @@ from recidiviz.monitoring.pagerduty_alert_forwarder.pagerduty_alert import (
 
 logger = logging.getLogger(__name__)
 
+FALLBACK_TITLE = "GCP alert (no title)"
+
 
 class RuleEngine:
     """Evaluates alerts against configured rules and applies transformations."""
@@ -98,6 +100,13 @@ class RuleEngine:
                 extra={"alert_name": alert_name, "matched_rules": matched_rules},
             )
 
+        if not result["title"].strip():
+            logger.warning(
+                "Alert has no title, using fallback title",
+                extra={"alert_name": alert_name},
+            )
+            result["title"] = FALLBACK_TITLE
+
         return result
 
     def _matches_rule(
@@ -111,6 +120,7 @@ class RuleEngine:
         - Field equality: {"incident.severity": "ERROR"}
         - Field contains (string): {"incident.policy_name": {"contains": "database"}}
         - Field in list: {"incident.severity": {"in": ["ERROR", "CRITICAL"]}}
+        - Field exists: {"budgetDisplayName": {"exists": true}}
 
         Args:
             rule: Rule configuration
