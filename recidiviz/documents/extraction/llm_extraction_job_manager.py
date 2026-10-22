@@ -26,6 +26,7 @@ objects.
 
 import datetime
 import uuid
+from contextlib import AbstractContextManager
 from typing import Any
 
 import attr
@@ -51,7 +52,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     LLMExtractionJob,
@@ -288,6 +288,19 @@ class LLMExtractionJobManager:
     def __init__(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
+    def _session(self) -> AbstractContextManager[Session]:
+        # TODO(OBT-46620) do a real fix instead of lazy importing SessionFactory here
+        # Imported lazily so this module's import graph stays free of SessionFactory,
+        # which pulls in the SQLAlchemy engine manager and thus recidiviz.monitoring —
+        # whose Google Cloud OpenTelemetry exporters are not installed in the Cloud
+        # Composer worker. The in-worker LLM extraction tasks call only the
+        # *_with_session methods (passing an Airflow-hook session), so they never reach
+        # this and the DAG never imports SessionFactory at parse time.
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.persistence.database.session_factory import SessionFactory
+
+        return SessionFactory.using_database(self.database_key)
+
     def record_eligible_documents(
         self,
         *,
@@ -300,7 +313,7 @@ class LLMExtractionJobManager:
         seen before, `llm_extraction_eligible_document_metadata`. Opens and
         commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             self.record_eligible_documents_with_session(
                 session,
                 state_code=state_code,
@@ -372,7 +385,7 @@ class LLMExtractionJobManager:
         """Returns the eligible documents that lack a terminal result across prior
         jobs for this extractor version. Opens and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.get_document_contents_ids_needing_processing_with_session(
                 session,
                 state_code=state_code,
@@ -432,7 +445,7 @@ class LLMExtractionJobManager:
         """Returns, per document_contents_id, how many prior jobs for this extractor
         version the document failed transiently in. Manages its own session.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.get_prior_transient_failure_counts_by_document_with_session(
                 session,
                 state_code=state_code,
@@ -483,7 +496,7 @@ class LLMExtractionJobManager:
         """Returns the open (not-yet-completed) job for this extractor version, or
         None. Opens and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.get_open_job_with_session(
                 session,
                 state_code=state_code,
@@ -525,7 +538,7 @@ class LLMExtractionJobManager:
         row per document, returning the created job. Opens and commits its own
         transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.create_job_with_session(
                 session,
                 state_code=state_code,
@@ -592,7 +605,7 @@ class LLMExtractionJobManager:
         """Writes `start_datetime_utc` to `llm_extraction_job`. A no-op if the
         job is already started (a resumed job). Opens and commits its own
         transaction."""
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             self.mark_job_started_with_session(
                 session, state_code=state_code, job_id=job_id
             )
@@ -623,7 +636,7 @@ class LLMExtractionJobManager:
         the read that feeds the request builder. Opens and commits its own
         transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.get_pending_job_documents_with_session(
                 session, state_code=state_code, job_id=job_id
             )
@@ -671,7 +684,7 @@ class LLMExtractionJobManager:
         silent data loss. Raises if any result has no matching job-document row,
         rolling back the whole batch.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             self.set_job_document_results_with_session(
                 session, state_code=state_code, results=results
             )
@@ -750,7 +763,7 @@ class LLMExtractionJobManager:
         SUCCESS when no document failed, PARTIAL_FAILURE when at least one did.
         Opens and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             self.mark_job_completed_with_session(
                 session, state_code=state_code, job_id=job_id
             )
@@ -800,7 +813,7 @@ class LLMExtractionJobManager:
         (the one result type that cannot be derived from document rows). Opens
         and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             self.mark_job_failed_with_session(
                 session,
                 state_code=state_code,

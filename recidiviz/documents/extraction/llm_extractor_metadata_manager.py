@@ -17,6 +17,7 @@
 """Postgres I/O layer over the extractor-metadata tables."""
 
 import datetime
+from contextlib import AbstractContextManager
 
 from sqlalchemy.dialects.postgresql import insert
 
@@ -30,7 +31,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import LLMExtractorVersion
 
@@ -43,13 +43,26 @@ class LLMExtractorMetadataManager:
     def __init__(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
+    def _session(self) -> AbstractContextManager[Session]:
+        # TODO(OBT-46620) do a real fix instead of lazy importing SessionFactory here
+        # Imported lazily so this module's import graph stays free of SessionFactory,
+        # which pulls in the SQLAlchemy engine manager and thus recidiviz.monitoring —
+        # whose Google Cloud OpenTelemetry exporters are not installed in the Cloud
+        # Composer worker. The in-worker LLM extraction tasks call only the
+        # *_with_session methods (passing an Airflow-hook session), so they never reach
+        # this and the DAG never imports SessionFactory at parse time.
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.persistence.database.session_factory import SessionFactory
+
+        return SessionFactory.using_database(self.database_key)
+
     def set_active_extractor_version(
         self, *, config: LLMExtractorConfig
     ) -> LLMExtractorVersion:
         """Writes this extractor config to the DB if it is different than the
         current config written to the DB. Opens and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.set_active_extractor_version_with_session(
                 session, config=config
             )
@@ -169,7 +182,7 @@ class LLMExtractorMetadataManager:
         """Returns the current active version for the given (state_code,
         collection). Opens and commits its own transaction.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self._session() as session:
             return self.get_active_extractor_version_with_session(
                 session, state_code=state_code, collection_name=collection_name
             )
