@@ -22,6 +22,7 @@ from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
+from recidiviz.case_triage.shared_pathways.exceptions import MetricMappingError
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.shared_pathways.metric_query_builder_config_parser import (
     MetricQueryBuilderConfigParser,
@@ -112,6 +113,50 @@ class TestAdmissionsAndReleasesOverTime(PublicPathwaysCountByMetricTestBase, Tes
                 {"movementDate": "2023-01-01", "eventType": "admission", "count": 1},
                 {"movementDate": "2024-02-01", "eventType": "admission", "count": 1},
                 {"movementDate": "2024-02-01", "eventType": "release", "count": 1},
+            ],
+            results["data"],
+        )
+
+    def test_admission_type_filter_keeps_the_releases_line(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.MOVEMENT_DATE_EVENT_TYPE,
+                filters={
+                    Dimension.ADMISSION_TYPE: [
+                        "incarcerated_individual|court_commitment"
+                    ]
+                },
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {"movementDate": "2023-01-01", "eventType": "admission", "count": 1},
+                {"movementDate": "2024-01-01", "eventType": "admission", "count": 1},
+                {"movementDate": "2024-01-01", "eventType": "release", "count": 1},
+                {"movementDate": "2024-02-01", "eventType": "release", "count": 2},
+            ],
+            results["data"],
+        )
+
+    def test_unchecking_every_admission_type_leaves_the_releases_line(
+        self,
+    ) -> None:
+        # A query string cannot carry an empty list, so the frontend sends one
+        # empty value when the reader unchecks every option.
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.MOVEMENT_DATE_EVENT_TYPE,
+                filters={Dimension.ADMISSION_TYPE: [""]},
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {"movementDate": "2024-01-01", "eventType": "release", "count": 1},
+                {"movementDate": "2024-02-01", "eventType": "release", "count": 2},
             ],
             results["data"],
         )
@@ -258,23 +303,192 @@ class TestAdmissionsAndReleasesByDimensionCount(
             results["data"],
         )
 
+    def test_admission_type_filter_narrows_admissions_and_keeps_releases(
+        self,
+    ) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.CUSTODY_STATUS,
+                filters={
+                    Dimension.ADMISSION_TYPE: [
+                        "incarcerated_parolee|drug_treatment_judicially_sanctioned"
+                    ]
+                },
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_parolee",
+                    "count": 1,
+                },
+                {
+                    "eventType": "release",
+                    "custodyStatus": "incarcerated_individual",
+                    "count": 2,
+                },
+                {
+                    "eventType": "release",
+                    "custodyStatus": "incarcerated_parolee",
+                    "count": 1,
+                },
+            ],
+            results["data"],
+        )
+
+    def test_admission_type_filter_values_combine_with_or(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.ADMISSION_TYPE,
+                filters={
+                    Dimension.ADMISSION_TYPE: [
+                        "incarcerated_parolee|drug_treatment_judicially_sanctioned",
+                        "incarcerated_individual|court_commitment",
+                    ]
+                },
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_individual",
+                    "admissionType": "court_commitment",
+                    "count": 2,
+                },
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_parolee",
+                    "admissionType": "drug_treatment_judicially_sanctioned",
+                    "count": 1,
+                },
+            ],
+            results["data"],
+        )
+
+    def test_release_type_filter_matches_the_custody_type_too(self) -> None:
+        # The only drug_treatment_judicially_sanctioned release is a parolee's,
+        # so the same type under the other custody type matches nothing.
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.RELEASE_TYPE,
+                filters={
+                    Dimension.RELEASE_TYPE: [
+                        "incarcerated_individual|drug_treatment_judicially_sanctioned"
+                    ]
+                },
+            ),
+        )
+
+        self.assertEqual([], results["data"])
+
+    def test_community_supervision_filter_keeps_admissions(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.CUSTODY_STATUS,
+                filters={
+                    Dimension.COMMUNITY_SUPERVISION: [
+                        "released_to_community_supervision"
+                    ]
+                },
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_individual",
+                    "count": 3,
+                },
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_parolee",
+                    "count": 2,
+                },
+                {
+                    "eventType": "release",
+                    "custodyStatus": "incarcerated_individual",
+                    "count": 1,
+                },
+            ],
+            results["data"],
+        )
+
+    def test_unchecking_every_admission_type_keeps_every_release(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.CUSTODY_STATUS,
+                filters={Dimension.ADMISSION_TYPE: [""]},
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "eventType": "release",
+                    "custodyStatus": "incarcerated_individual",
+                    "count": 2,
+                },
+                {
+                    "eventType": "release",
+                    "custodyStatus": "incarcerated_parolee",
+                    "count": 1,
+                },
+            ],
+            results["data"],
+        )
+
+    def test_unchecking_every_custody_status_matches_nothing(self) -> None:
+        # Custody status applies to every row, so no row is left.
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.CUSTODY_STATUS,
+                filters={Dimension.CUSTODY_STATUS: [""]},
+            ),
+        )
+
+        self.assertEqual([], results["data"])
+
+    def test_compound_value_without_a_custody_type_is_rejected(self) -> None:
+        with self.assertRaisesRegex(MetricMappingError, r"\[court_commitment\]"):
+            fetch(
+                self.query_builder,
+                CountByDimensionMetricParams(
+                    group=Dimension.CUSTODY_STATUS,
+                    filters={Dimension.ADMISSION_TYPE: ["court_commitment"]},
+                ),
+            )
+
 
 class TestCompositeDimensionParsing(TestCase):
     """Tests for how the config parser reads a composite dimension."""
 
-    def test_composite_dimension_filters_on_one_column(self) -> None:
+    def test_type_dimensions_filter_and_group_on_different_columns(self) -> None:
         collection = ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME[
             "AdmissionsAndReleasesByDimensionCount"
         ].dimension_mapping_collection
 
-        filter_column = collection.columns_for_dimension_operation(
+        filter_columns = collection.mapping_for_dimension_operation(
             DimensionOperation.FILTER, Dimension.ADMISSION_TYPE
-        )
+        ).columns
         group_columns = collection.columns_for_dimension_operation(
             DimensionOperation.GROUP, Dimension.ADMISSION_TYPE
         )
 
-        self.assertEqual("movement_type", filter_column.name)
+        self.assertEqual(
+            ["custody_type", "movement_type"],
+            [column.name for column in filter_columns],
+        )
         self.assertEqual(
             ["event_type", "custody_status", "admission_type"],
             [column.name for column in group_columns],
@@ -290,7 +504,9 @@ class TestCompositeDimensionParsing(TestCase):
             collection.operable_map[DimensionOperation.FILTER],
         )
 
-    def test_applies_to_without_group_columns_is_rejected(self) -> None:
+    def test_compound_filter_columns_cannot_be_grouped_without_group_columns(
+        self,
+    ) -> None:
         parser = MetricQueryBuilderConfigParser(config_path, SchemaType.PUBLIC_PATHWAYS)
 
         with self.assertRaisesRegex(ValueError, r"\[admission_type\]"):
@@ -299,7 +515,6 @@ class TestCompositeDimensionParsing(TestCase):
                 "admission_type",
                 {
                     "operations": "ALL",
-                    "column": "movement_type",
-                    "applies_to": {"movement_category": "admission"},
+                    "filter_columns": ["custody_type", "movement_type"],
                 },
             )

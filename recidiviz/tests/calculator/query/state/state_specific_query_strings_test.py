@@ -19,13 +19,13 @@
 import unittest
 
 from recidiviz.calculator.query.state.state_specific_query_strings import (
-    PATHWAYS_COMPOUND_FILTER_VALUE_DELIMITER,
     get_pathways_admission_type_id_name_map,
     get_pathways_dynamic_filter_options,
     get_pathways_incarceration_last_updated_date,
     get_pathways_release_type_id_name_map,
     get_pathways_supervision_last_updated_date,
 )
+from recidiviz.common.constants.pathways import PATHWAYS_COMPOUND_FILTER_VALUE_DELIMITER
 
 
 class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):

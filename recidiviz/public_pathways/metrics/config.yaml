@@ -18,8 +18,12 @@
 #     #   by it selects every column named here, while filtering on it still
 #     #   matches column alone. Each entry is a column name, or a
 #     #   column/column_label pair.
-#     # - applies_to: dict # optional, needs group_columns. Maps column name to
-#     #   value; grouping by the dimension counts only the rows that match.
+#     # - filter_columns: list # optional, replaces column for filtering. Each
+#     #   filter value then names one value per column, joined by "|", e.g.
+#     #   filters[admission_type]=incarcerated_parolee|other
+#     # - applies_to: dict # optional. Maps column name to value, naming the rows
+#     #   the dimension describes. Grouping counts only those rows; filtering
+#     #   narrows only those rows and keeps every other row.
 #     # Enables filtering functionality of Dimension.SEX i.e. /public_pathways/US_XX/MyMetric?filters[sex]=MALE
 #     sex: FILTER
 #     # Enables both filtering and grouping functionality for Dimension.TIME_PERIOD
@@ -95,15 +99,28 @@ AdmissionsAndReleasesOverTime:
     custody_status:
       operations: FILTER
       column: custody_type
+    # Admission and release types only mean something alongside a custody
+    # status, so their filter values name both. Each narrows only its own
+    # event type, so the other line on the chart stays whole.
     admission_type:
       operations: FILTER
-      column: movement_type
+      filter_columns:
+        - custody_type
+        - movement_type
+      applies_to:
+        movement_category: admission
     release_type:
       operations: FILTER
-      column: movement_type
+      filter_columns:
+        - custody_type
+        - movement_type
+      applies_to:
+        movement_category: release
     community_supervision:
       operations: FILTER
       column: release_to_community_supervision_indicator
+      applies_to:
+        movement_category: release
 
 # Admissions and releases counted by one dimension. Every grouping also selects
 # the event type, so a chart can tell admissions from releases without a second
@@ -121,10 +138,12 @@ AdmissionsAndReleasesByDimensionCount:
         - column: custody_type
           column_label: custody_status
     # Admission and release types only mean something alongside a custody
-    # status, so their groupings select it too.
+    # status, so their groupings select it and their filter values name it.
     admission_type:
       operations: ALL
-      column: movement_type
+      filter_columns:
+        - custody_type
+        - movement_type
       applies_to:
         movement_category: admission
       group_columns:
@@ -136,7 +155,9 @@ AdmissionsAndReleasesByDimensionCount:
           column_label: admission_type
     release_type:
       operations: ALL
-      column: movement_type
+      filter_columns:
+        - custody_type
+        - movement_type
       applies_to:
         movement_category: release
       group_columns:

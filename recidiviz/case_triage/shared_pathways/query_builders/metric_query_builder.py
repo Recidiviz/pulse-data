@@ -20,6 +20,7 @@ from typing import Any, Dict, Generic, List, Tuple, Type, TypeVar, Union
 
 import attr
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.elements import ColumnElement
 
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
@@ -73,16 +74,13 @@ class MetricQueryBuilder(Generic[ParamsType]):
             self.dimension_mappings
         )
 
-    def build_filter_conditions(self, params: ParamsType) -> List[str]:
-        conditions = [
-            self.dimension_mapping_collection.columns_for_dimension_operation(
-                DimensionOperation.FILTER,
-                dimension,
-            ).in_(value)
-            for dimension, value in params.filters.items()
+    def build_filter_conditions(self, params: ParamsType) -> List[ColumnElement]:
+        return [
+            self.dimension_mapping_collection.mapping_for_dimension_operation(
+                DimensionOperation.FILTER, dimension
+            ).build_filter_condition(values)
+            for dimension, values in params.filters.items()
         ]
-
-        return conditions
 
     @property
     def cache_fragment(self) -> str:

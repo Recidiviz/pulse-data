@@ -45,8 +45,9 @@ from recidiviz.persistence.database.schema_utils import (
 FindByNameElement = TypeVar("FindByNameElement")
 
 ColumnConfig = Union[str, Dict[str, str]]
-# One entry of a dimension_mappings block. The dict form holds operations,
-# column, an optional column_label, and an optional group_columns list.
+# One entry of a dimension_mappings block. The dict form holds operations, and
+# either column (with an optional column_label) or filter_columns, plus optional
+# group_columns and applies_to.
 DimensionMappingConfig = Union[str, Dict[str, Any]]
 
 
@@ -161,15 +162,19 @@ class MetricQueryBuilderConfigParser:
     ) -> List[DimensionMapping]:
         """Returns the mappings one dimension_mappings entry declares.
 
-        An entry produces one mapping, unless it sets group_columns. That key
-        makes the dimension composite: grouping by it selects several columns,
-        while filtering on it still matches the single column. Those two
-        column lists cannot live on one DimensionMapping, so the entry produces
-        a FILTER mapping and a GROUP mapping instead.
+        A dict entry can set three optional keys:
 
-        A composite entry may also set applies_to, a map of column name to
-        value. Grouping by the dimension then counts only the rows that match
-        every pair, e.g. "movement_category: admission" for an admission type.
+        - group_columns makes the dimension composite: grouping by it selects
+          every column listed. Filtering still reads the filter column(s), and
+          one DimensionMapping cannot hold two column lists, so the entry
+          produces a FILTER mapping and a GROUP mapping.
+        - filter_columns makes each filter value compound: one value per
+          column, joined by PATHWAYS_COMPOUND_FILTER_VALUE_DELIMITER. It
+          replaces column for filtering.
+        - applies_to maps column names to values, and names the rows the
+          dimension describes, e.g. "movement_category: admission" for an
+          admission type. Grouping counts only those rows, and filtering
+          narrows only those rows.
         """
         dimension = self.parse_dimension(dimension_name)
 
@@ -185,25 +190,39 @@ class MetricQueryBuilderConfigParser:
         operations = self.parse_dimension_operation(
             dimension_mapping_config["operations"]
         )
+        filter_columns_config = dimension_mapping_config.get("filter_columns", None)
         group_columns_config = dimension_mapping_config.get("group_columns", None)
-        applies_to_config = dimension_mapping_config.get("applies_to", None)
+        applicable_row_conditions = [
+            self.parse_column(database_entity, column_name) == value
+            for column_name, value in (
+                dimension_mapping_config.get("applies_to", None) or {}
+            ).items()
+        ]
+
+        def parse_filter_columns() -> List[Column]:
+            if filter_columns_config:
+                return [
+                    self.parse_column(database_entity, column_name)
+                    for column_name in filter_columns_config
+                ]
+            return [
+                self.parse_labeled_column(database_entity, dimension_mapping_config)
+            ]
 
         if not group_columns_config:
-            if applies_to_config:
+            if filter_columns_config and DimensionOperation.GROUP in operations:
                 raise ValueError(
-                    f"Dimension [{dimension_name}] sets applies_to without "
-                    f"group_columns. applies_to only narrows a grouping, so add "
-                    f"group_columns to the entry or remove applies_to."
+                    f"Dimension [{dimension_name}] sets filter_columns and allows "
+                    f"GROUP, but sets no group_columns. A grouping cannot read "
+                    f"compound filter columns, so add group_columns to the entry or "
+                    f"change its operations to FILTER."
                 )
             return [
                 DimensionMapping(
                     dimension=dimension,
-                    columns=[
-                        self.parse_labeled_column(
-                            database_entity, dimension_mapping_config
-                        )
-                    ],
+                    columns=parse_filter_columns(),
                     operations=operations,
+                    applicable_row_conditions=applicable_row_conditions,
                 )
             ]
 
@@ -212,12 +231,9 @@ class MetricQueryBuilderConfigParser:
             mappings.append(
                 DimensionMapping(
                     dimension=dimension,
-                    columns=[
-                        self.parse_labeled_column(
-                            database_entity, dimension_mapping_config["column"]
-                        )
-                    ],
+                    columns=parse_filter_columns(),
                     operations=DimensionOperation.FILTER,
+                    applicable_row_conditions=applicable_row_conditions,
                 )
             )
         if DimensionOperation.GROUP in operations:
@@ -229,10 +245,7 @@ class MetricQueryBuilderConfigParser:
                         for column_config in group_columns_config
                     ],
                     operations=DimensionOperation.GROUP,
-                    applicable_row_conditions=[
-                        self.parse_column(database_entity, column_name) == value
-                        for column_name, value in (applies_to_config or {}).items()
-                    ],
+                    applicable_row_conditions=applicable_row_conditions,
                 )
             )
         return mappings
