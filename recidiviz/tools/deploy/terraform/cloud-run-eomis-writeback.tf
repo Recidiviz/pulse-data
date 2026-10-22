@@ -48,8 +48,6 @@ locals {
       # --commit.
       jobs = {
         # GED and Edovo share one job and eOMIS login session. Starts paused.
-        # TODO(AR-490): Set US_AR_EDOVO_POLICY_START_MONTH to the confirmed
-        # start month before unpausing. Edovo cannot run without it.
         "us-ar-ged" = {
           args      = ["--flow=ar_ged", "--flow=ar_edovo"]
           schedule  = "0 0 * * *"

@@ -704,6 +704,9 @@ def test_admin_panel_server_dependencies() -> None:
                 "recidiviz.workflows",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Award calculation module that imports only the standard library and
+                # recidiviz.common.date; the Edovo view reads its policy constants.
+                "recidiviz.eomis.us_ar.edovo_award_engine",
                 # Constants-only module with the launch momentum roadmap snapshot
                 # table addresses and column names, which
                 # notion_linear_roadmap_latest reads.
@@ -811,6 +814,9 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.segment",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Award calculation module that imports only the standard library and
+                # recidiviz.common.date; the Edovo view reads its policy constants.
+                "recidiviz.eomis.us_ar.edovo_award_engine",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
                 "recidiviz.utils",
@@ -975,6 +981,9 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Award calculation module that imports only the standard library and
+                # recidiviz.common.date; the Edovo view reads its policy constants.
+                "recidiviz.eomis.us_ar.edovo_award_engine",
                 # Constants-only module with the launch momentum roadmap snapshot
                 # table addresses and column names, which
                 # notion_linear_roadmap_latest reads.
