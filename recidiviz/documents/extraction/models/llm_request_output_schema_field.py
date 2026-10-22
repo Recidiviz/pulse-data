@@ -437,9 +437,17 @@ class LLMRequestOutputSchemaField(abc.ABC):
         """Returns the value type of this field."""
 
     @property
+    def base_description(self) -> str:
+        """Returns the human-readable description of this field without any
+        value guidance appended. Use this for UI labels and documentation.
+        Subclasses that augment `description` (e.g. ENUM) do not override this.
+        """
+        return self._description
+
+    @property
     def description(self) -> str:
         """Returns what this field represents, as surfaced to the model in the
-        prompt.
+        prompt. ENUM fields append their allowed-value guidance here.
         """
         return self._description
 

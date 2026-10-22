@@ -45,6 +45,9 @@ from recidiviz.tools.looker.top_level_generators.custom_metrics_lookml_generator
     CustomMetricsLookMLGenerator,
     LookMLGenerator,
 )
+from recidiviz.tools.looker.top_level_generators.document_stores_lookml_generator import (
+    DocumentStoresLookMLGenerator,
+)
 from recidiviz.tools.looker.top_level_generators.observations_lookml_generator import (
     ObservationsLookMLGenerator,
 )
@@ -68,6 +71,7 @@ LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX: dict[type[LookMLGenerator], str | Non
     CustomMetricsLookMLGenerator: r"^recidiviz/aggregated_metrics/",
     AggregatedMetricsLookMLGenerator: r"^recidiviz/aggregated_metrics/",
     UsageLookMLGenerator: r"^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions",
+    DocumentStoresLookMLGenerator: r"^recidiviz/documents/config/",
 }
 
 

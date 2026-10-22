@@ -35,7 +35,8 @@ class LookMLViewSourceTable:
 
     @classmethod
     def sql_table_address(
-        cls, address: Union[BigQueryAddress, ParameterizedValue]
+        cls,
+        address: Union[BigQueryAddress, ParameterizedValue],
     ) -> "LookMLViewSourceTable":
         return SqlTableAddress(address)
 

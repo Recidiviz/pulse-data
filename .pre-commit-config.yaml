@@ -75,8 +75,7 @@ repos:
         require_serial: true
       - id: validate_scripts_and_notebooks_are_changed_together
         name: validate_scripts_and_notebooks_are_changed_together
-        entry: uv run python -m
-          recidiviz.research.validate_script_changes_pre_commit
+        entry: uv run python -m recidiviz.research.validate_script_changes_pre_commit
         language: system
         files: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
         require_serial: true
@@ -91,23 +90,20 @@ repos:
         require_serial: true
       - id: generate_docs_for_region
         name: generate_docs_for_region
-        entry: uv run python -m
-          recidiviz.tools.docs.region_documentation_generator
+        entry: uv run python -m recidiviz.tools.docs.region_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/regions/|^recidiviz/view_registry/raw_data_reference_reasons.yaml|^recidiviz/tests/view_registry/us_tn_tomis_migration_exemptions.py|^recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_ingest_view_migration_pairs.py|^recidiviz/tools/docs/us_tn_tomis1_burndown/us_tn_raw_data_migration_statuses.py
         require_serial: true
       - id: generate_docs_for_endpoint
         name: generate_docs_for_endpoint
-        entry: uv run python -m
-          recidiviz.tools.docs.endpoint_documentation_generator
+        entry: uv run python -m recidiviz.tools.docs.endpoint_documentation_generator
         language: system
         files: (?x)(^recidiviz/tools/docs/endpoint_documentation_generator.py|^recidiviz/server_blueprint_registry.py|.*/routes/|.*routes.py|.*/server.py|.*control.py|.*endpoint.py|.*endpoints.py|^recidiviz/backup/backup_manager.py|^recidiviz/pipelines/calculation_data_storage_manager.py)$
         exclude: ^recidiviz/tests
         require_serial: true
       - id: generate_entity_documentation
         name: generate_entity_documentation
-        entry: uv run python -m
-          recidiviz.tools.docs.entity_documentation_generator
+        entry: uv run python -m recidiviz.tools.docs.entity_documentation_generator
         language: system
         files: >
           (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/entity/activity/normalized_entities.py|^recidiviz/persistence/entity/activity/entities.py|^recidiviz/common/constants/state/)
@@ -158,5 +154,5 @@ repos:
         entry: uv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
         # If you modify this list, also update LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX mapping in generate_all_lookml.py
-        files: ^recidiviz/persistence/entity/activity/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions
+        files: ^recidiviz/persistence/entity/activity/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions|^recidiviz/documents/config/
         exclude: ^recidiviz/tools/looker/__generated__/

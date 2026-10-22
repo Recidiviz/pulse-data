@@ -24,31 +24,46 @@ from recidiviz.looker.lookml_view_field import (
     TimeDimensionGroupLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
+    LookMLFieldDatatype,
     LookMLFieldParameter,
     LookMLFieldType,
+    LookMLTimeframesOption,
 )
+
+DATETIME_TIMEFRAMES = [
+    LookMLTimeframesOption.RAW,
+    LookMLTimeframesOption.TIME,
+    LookMLTimeframesOption.DATE,
+    LookMLTimeframesOption.WEEK,
+    LookMLTimeframesOption.MONTH,
+    LookMLTimeframesOption.QUARTER,
+    LookMLTimeframesOption.YEAR,
+]
 
 
 def lookml_field_type_for_bq_type(
     field_type: bigquery.enums.SqlTypeNames,
 ) -> LookMLFieldType:
-    """
-    Convert the provided Big Query field type into a LookMLFieldType.
-    """
+    """Converts a BigQuery field type into a LookMLFieldType."""
     if field_type in (
         bigquery.enums.SqlTypeNames.DATE,
         bigquery.enums.SqlTypeNames.DATETIME,
+        bigquery.enums.SqlTypeNames.TIMESTAMP,
     ):
         return LookMLFieldType.TIME
     if field_type == bigquery.enums.SqlTypeNames.STRING:
         return LookMLFieldType.STRING
     if field_type == bigquery.enums.SqlTypeNames.BOOLEAN:
         return LookMLFieldType.YESNO
-    if field_type == bigquery.enums.SqlTypeNames.INTEGER:
+    if field_type in (
+        bigquery.enums.SqlTypeNames.INTEGER,
+        bigquery.enums.SqlTypeNames.FLOAT,
+    ):
         return LookMLFieldType.NUMBER
 
     raise NotImplementedError(
-        f"Could not convert {field_type.value} into Looker: LookML data type equivalent to {field_type.value} has not been implemented"
+        f"Could not convert {field_type.value} into Looker: LookML data type equivalent to "
+        f"{field_type.value} has not been implemented"
     )
 
 
@@ -56,21 +71,15 @@ def lookml_view_field_for_schema_field(
     schema_field: bigquery.SchemaField,
     custom_params: Optional[List[LookMLFieldParameter]] = None,
 ) -> DimensionLookMLViewField | TimeDimensionGroupLookMLViewField:
-    """
-    Converts a BigQuery schema field into a LookML view field.
+    """Converts a BigQuery schema field into a LookML view field.
 
-    - For `DATE` and `DATETIME` fields, this function returns a `DimensionGroupLookMLViewField`,
-      which creates a set of time-based dimensions (e.g., day, week, month, year) to allow
-      querying data at different granularities.
-    - For all other field types, it returns a `DimensionLookMLViewField`.
+    Returns a TimeDimensionGroupLookMLViewField for DATE, DATETIME, and TIMESTAMP
+    fields (producing a set of time-based dimensions at different granularities), and
+    a DimensionLookMLViewField for all other types.
 
     Args:
-        schema_field (bigquery.SchemaField): The BigQuery schema field to convert.
-        custom_params (Optional[List[LookMLFieldParameter]]): Additional LookML parameters to include
-            in the generated view field.
-
-    Returns:
-        LookMLViewField: The corresponding LookML view field representation.
+        schema_field: The BigQuery schema field to convert.
+        custom_params: Additional LookML parameters to include in the generated field.
     """
     field_type = bigquery.enums.SqlTypeNames(schema_field.field_type)
     if field_type == bigquery.enums.SqlTypeNames.DATETIME:
@@ -80,6 +89,13 @@ def lookml_view_field_for_schema_field(
     if field_type == bigquery.enums.SqlTypeNames.DATE:
         return TimeDimensionGroupLookMLViewField.for_date_column(
             schema_field.name, custom_params
+        )
+    if field_type == bigquery.enums.SqlTypeNames.TIMESTAMP:
+        return TimeDimensionGroupLookMLViewField.for_column(
+            column_name=schema_field.name,
+            datatype=LookMLFieldDatatype.TIMESTAMP,
+            timeframe_options=DATETIME_TIMEFRAMES,
+            custom_params=custom_params,
         )
     return DimensionLookMLViewField.for_column(
         schema_field.name,

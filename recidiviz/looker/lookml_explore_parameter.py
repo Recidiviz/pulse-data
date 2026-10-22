@@ -164,6 +164,11 @@ class LookMLJoinParameter(LookMLExploreParameter):
     def view_label(cls, label: str) -> "LookMLJoinParameter":
         return JoinParameterViewLabel(label)
 
+    @classmethod
+    def fields(cls, field_names: list[str]) -> "LookMLJoinParameter":
+        """Returns a join parameter that restricts which fields are exposed from the joined view."""
+        return JoinParameterFields(field_names)
+
 
 @attr.define
 class ExploreParameterJoin(LookMLExploreParameter):
@@ -273,6 +278,23 @@ class JoinParameterViewLabel(LookMLJoinParameter):
     @property
     def value_text(self) -> str:
         return f'"{self.label_text}"'
+
+
+@attr.define
+class JoinParameterFields(LookMLJoinParameter):
+    """Generates a `fields` parameter inside a `join` in an explore,
+    controlling which fields are exposed from the joined view. Pass an empty
+    list to hide all fields (useful for resolution-only joins)."""
+
+    field_names: list[str]
+
+    @property
+    def key(self) -> str:
+        return "fields"
+
+    @property
+    def value_text(self) -> str:
+        return "[" + ", ".join(self.field_names) + "]"
 
 
 @attr.define

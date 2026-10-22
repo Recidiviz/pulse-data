@@ -65,7 +65,7 @@ class TestLookMLBQUtils(unittest.TestCase):
 
     def test_lookml_field_type_for_bq_type_not_implemented(self) -> None:
         with self.assertRaises(NotImplementedError):
-            lookml_field_type_for_bq_type(bigquery.enums.SqlTypeNames.FLOAT64)
+            lookml_field_type_for_bq_type(bigquery.enums.SqlTypeNames.BYTES)
 
     def test_lookml_dimension_view_field_for_schema_field_datetime(self) -> None:
         schema_field = bigquery.SchemaField("test_field", "DATETIME")
