@@ -45,6 +45,9 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
@@ -1562,3 +1565,19 @@ def parse_employment_status(raw_text: str) -> StateEmploymentPeriodEmploymentSta
     # Default to EMPLOYED_UNKNOWN_AMOUNT for employment data missing an employment_level
     # value (taken from the WORK_STATUS_CD column) or with employment_level "SEA" ("Seasonal").
     return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+
+
+def parse_supervision_contact_type(raw_text: str) -> StateSupervisionContactType:
+    """Returns the contact type for a contact, given its contact type codes joined
+    by "-" (e.g. "C-HV" or "PHV"). MO marks collateral contacts with a "C" code in the
+    same column as the more specific contact type codes, so "C" alone maps to
+    COLLATERAL, "C" alongside other codes (e.g. "C-HV") maps to
+    BOTH_COLLATERAL_AND_DIRECT, and anything without "C" (e.g. "PHV-POV") maps to
+    DIRECT.
+    """
+    contact_types = set(raw_text.split("-"))
+    if "C" not in contact_types:
+        return StateSupervisionContactType.DIRECT
+    if contact_types == {"C"}:
+        return StateSupervisionContactType.COLLATERAL
+    return StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT
