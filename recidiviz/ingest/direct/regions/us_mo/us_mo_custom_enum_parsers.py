@@ -1025,12 +1025,16 @@ SEX_OFFENSE_CASE_TYPES = [
     "Sex Offender",
 ]
 
-UNCATEGORIZED_CASE_TYPES = [
+TREATMENT_COURT_CASE_TYPES = [
     "ICTS Treatment Offender",
+    "Treatment Court Offender",
+    "DRG",  # Treatment Court Offender
+]
+
+UNCATEGORIZED_CASE_TYPES = [
     "JRI Treatment Pilot Offender",
     "Parole or Condition Release Less than 12 months",
     "Specialty Court Offender",
-    "Treatment Court Offender",
 ]
 
 
@@ -1046,6 +1050,9 @@ def parse_case_types(raw_text: str) -> Optional[StateSupervisionCaseType]:
 
         if case_type in SEX_OFFENSE_CASE_TYPES:
             return StateSupervisionCaseType.SEX_OFFENSE
+
+        if case_type in TREATMENT_COURT_CASE_TYPES:
+            return StateSupervisionCaseType.DRUG_COURT
 
         if case_type in UNCATEGORIZED_CASE_TYPES:
             return StateSupervisionCaseType.INTERNAL_UNKNOWN
