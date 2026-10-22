@@ -19,8 +19,11 @@
 import unittest
 
 from recidiviz.calculator.query.state.state_specific_query_strings import (
+    PATHWAYS_COMPOUND_FILTER_VALUE_DELIMITER,
+    get_pathways_admission_type_id_name_map,
     get_pathways_dynamic_filter_options,
     get_pathways_incarceration_last_updated_date,
+    get_pathways_release_type_id_name_map,
     get_pathways_supervision_last_updated_date,
 )
 
@@ -49,6 +52,8 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "movement_categories",
             "custody_types",
             "movement_types",
+            "admission_types",
+            "release_types",
             "release_to_community_supervision_indicators",
         ]
         for cte in expected_ctes:
@@ -70,6 +75,8 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "movement_category_id_name_map",
             "custody_type_id_name_map",
             "movement_type_id_name_map",
+            "admission_type_id_name_map",
+            "release_type_id_name_map",
             "release_to_community_supervision_indicator_id_name_map",
         ]
         for col in expected_columns:
@@ -99,6 +106,8 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "LEFT JOIN movement_categories",
             "LEFT JOIN custody_types",
             "LEFT JOIN movement_types",
+            "LEFT JOIN admission_types",
+            "LEFT JOIN release_types",
             "LEFT JOIN release_to_community_supervision_indicators",
         ]
         for join in expected_joins:
@@ -108,13 +117,41 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
 
     def test_all_joins_use_state_code(self) -> None:
         result = get_pathways_dynamic_filter_options()
-        # Count USING (state_code): 18 outer LEFT JOINs between top-level CTEs +
+        # Count USING (state_code): 20 outer LEFT JOINs between top-level CTEs +
         # 1 inner INNER JOIN against UNDER_CUSTODY_all inside the
-        # date_in_population CTE = 19.
+        # date_in_population CTE = 21.
         using_count = result.count("USING (state_code)") + result.count(
             "USING(state_code)"
         )
-        self.assertEqual(using_count, 19)
+        self.assertEqual(using_count, 21)
+
+
+class GetPathwaysMovementTypeByCustodyTypeTests(unittest.TestCase):
+    """Tests for the admission and release type maps, which group movement types
+    by custody type."""
+
+    def test_each_map_reads_only_its_own_movement_category(self) -> None:
+        self.assertIn(
+            "WHERE movement_category = 'admission'",
+            get_pathways_admission_type_id_name_map(),
+        )
+        self.assertIn(
+            "WHERE movement_category = 'release'",
+            get_pathways_release_type_id_name_map(),
+        )
+
+    def test_value_joins_custody_type_and_movement_type(self) -> None:
+        # The frontend splits each value on this delimiter, so "other" under one
+        # custody type stays distinct from "other" under the other.
+        result = get_pathways_admission_type_id_name_map()
+        self.assertIn(f'"{PATHWAYS_COMPOUND_FILTER_VALUE_DELIMITER}"', result)
+        self.assertIn("AS value", result)
+
+    def test_each_option_names_its_custody_type_group(self) -> None:
+        result = get_pathways_release_type_id_name_map()
+        self.assertIn("'Incarcerated Individuals'", result)
+        self.assertIn("STRUCT(value, label, `group`)", result)
+        self.assertIn("AS release_type_id_name_map", result)
 
 
 class GetPathwaysLastUpdatedDateTests(unittest.TestCase):
