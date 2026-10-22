@@ -503,8 +503,9 @@ programming_meta AS (
             )
         ORDER BY Referral_Date, Start_Date, Program
         ) AS programming_history
-    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Program_Recommendations_latest`
-    LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
+    FROM (
+{fix_indent(us_mi_coms_program_recommendations_query(), indent_level=8)}
+    )
     WHERE Program NOT IN ('Birth Certificate', 'Social Security Card', 'Identification Card')
     GROUP BY person_id
 ),
@@ -840,3 +841,60 @@ def secondary_officer_dockets_cte() -> str:
             GROUP BY 1
         )
     """
+
+
+def _coms_raw_datetime_string(date_expression: str) -> str:
+    """Returns SQL rendering a DATE as the "YYYY-MM-DD 00:00:00" string the frontend
+    reads in programming_history."""
+    return f"FORMAT_DATE('%Y-%m-%d 00:00:00', {date_expression})"
+
+
+def us_mi_coms_program_legs_query() -> str:
+    """Returns a query over US_MI StateProgramAssignments ingested from COMS, with one
+    row per program recommendation leg and the raw COMS fields unpacked from
+    referral_metadata. Empty strings in referral_metadata come back as NULL."""
+    return """
+    SELECT
+        state_code,
+        person_id,
+        participation_status,
+        referral_date,
+        start_date,
+        discharge_date,
+        -- referral_metadata stores NULL raw values as empty strings.
+        NULLIF(JSON_VALUE(referral_metadata, '$.PROGRAM_RECOMMENDATION_ID'), '') AS program_recommendation_id,
+        NULLIF(JSON_VALUE(referral_metadata, '$.PROGRAM'), '') AS program_name,
+        NULLIF(JSON_VALUE(referral_metadata, '$.PROGRAM_STATUS'), '') AS program_status,
+        DATE(NULLIF(JSON_VALUE(referral_metadata, '$.PROGRAM_STATUS_DATE'), '')) AS program_status_date,
+        NULLIF(JSON_VALUE(referral_metadata, '$.PROGRAM_END_REASON'), '') AS program_end_reason,
+    FROM `{project_id}.us_mi_normalized_state.state_program_assignment`
+"""
+
+
+def us_mi_coms_program_recommendations_query() -> str:
+    """Returns a query over US_MI StateProgramAssignments ingested from COMS, with one
+    row per program recommendation leg, in the columns and string formats that the
+    programming_history field of MI Workflows records shows to staff.
+
+    For example, a recommendation that moved facilities once and then finished
+    produces these rows (some columns abridged):
+
+        person_id,Program,Start_Date,End_Date,Program_Status,Program_End_Reason
+        1234,Thinking for a Change,,2024-02-09 00:00:00,Closed,Transferred
+        1234,Thinking for a Change,2024-03-04 00:00:00,2024-06-21 00:00:00,Closed,Completed
+    """
+    return f"""
+    SELECT
+        person_id,
+        participation_status,
+        program_name AS Program,
+        {_coms_raw_datetime_string("referral_date")} AS Referral_Date,
+        {_coms_raw_datetime_string("start_date")} AS Start_Date,
+        {_coms_raw_datetime_string("discharge_date")} AS End_Date,
+        program_status AS Program_Status,
+        {_coms_raw_datetime_string("program_status_date")} AS Program_Status_Date,
+        program_end_reason AS Program_End_Reason,
+    FROM (
+{fix_indent(us_mi_coms_program_legs_query(), indent_level=8)}
+    )
+"""
