@@ -18,25 +18,28 @@
 # scheduled Cloud Run Job, one job per flow.
 
 locals {
-  # Same CO job in both projects, so staging rehearses production. Dry run
-  # unless the execution adds --commit.
+  # Same CO job in both projects; only production commits.
+  eomis_writeback_us_co_args = [
+    "--flow=co_work",
+    "--flow=co_cert",
+    "--flow=co_ged",
+    "--flow=co_edovo",
+    # CDOC's service account; its login needs no browser.
+    "--account=svc",
+    # The 2-3 sessions OIT was told to expect.
+    "--workers=3",
+    # Above the biggest work wave (~5,300), well below a broken view (~19,700).
+    "--max-writes=8000",
+  ]
   eomis_writeback_us_co_job = {
-    args = [
-      "--flow=co_work",
-      "--flow=co_cert",
-      "--flow=co_ged",
-      "--flow=co_edovo",
-      # CDOC's service account; its login needs no browser.
-      "--account=svc",
-      "--workers=8",
-      # Above the first run's candidate count.
-      "--max-writes=30000",
-    ]
+    args = local.eomis_writeback_us_co_args
     # Room for the first run.
     timeout = "86400s"
-    # Before CDOC's 8:30 PM Mountain export.
+    # All four candidate views are loaded at once.
+    memory = "1Gi"
+    # 6 PM Pacific, 7 PM Mountain: when OIT was told the daily job runs.
     schedule  = "0 18 * * *"
-    time_zone = "America/Denver"
+    time_zone = "America/Los_Angeles"
     env       = {}
     paused    = true
   }
@@ -69,7 +72,10 @@ locals {
           env       = {}
           paused    = true
         }
-        "us-co-continuous" = local.eomis_writeback_us_co_job
+        "us-co-continuous" = merge(local.eomis_writeback_us_co_job, {
+          args   = concat(local.eomis_writeback_us_co_args, ["--commit", "--allow-prod-write"])
+          paused = false
+        })
       }
       recidiviz_env = "production"
     }
@@ -185,7 +191,7 @@ resource "google_cloud_run_v2_job" "eomis_writeback" {
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "512Mi"
+            memory = lookup(each.value, "memory", "512Mi")
           }
         }
       }
@@ -233,6 +239,17 @@ resource "google_cloud_scheduler_job" "eomis_writeback" {
       service_account_email = google_service_account.cloud_scheduler.email
     }
   }
+}
+
+# So a run can see another execution still writing. Job-level, not project-wide.
+resource "google_cloud_run_v2_job_iam_member" "eomis_writeback_execution_viewer" {
+  for_each = local.eomis_writeback.jobs
+  provider = google-beta
+  project  = var.project_id
+  location = var.us_central_region
+  name     = google_cloud_run_v2_job.eomis_writeback[each.key].name
+  role     = "roles/run.viewer"
+  member   = "serviceAccount:${local.eomis_writeback_sa_email}"
 }
 
 # Job-level run.invoker for the Scheduler identity, not a project-wide grant.

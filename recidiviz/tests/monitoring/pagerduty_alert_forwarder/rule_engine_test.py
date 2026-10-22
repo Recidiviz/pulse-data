@@ -761,6 +761,27 @@ class TestRuleEngineIntegration(unittest.TestCase):
             "🚨 [PRODUCTION] Cloud Run Job Failure: eomis-writeback-us-co-edovo",
         )
 
+    def test_eomis_writeback_job_not_started_routes_to_eomis_service(self) -> None:
+        """The scheduler names the job by job_id, not job_name."""
+        alert = {
+            "incident": {
+                "incident_id": "test-126",
+                "policy_name": "eOMIS Writeback - Not Started",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "job_id": "eomis-writeback-us-co-continuous",
+                    }
+                },
+                "summary": "Cloud Scheduler could not start the job",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["pagerduty_service"], "EOMIS Writeback")
+
     def test_staging_data_platform_stale_metric_exports(self) -> None:
         """Test staging data platform alert with stale metric exports."""
         alert = {

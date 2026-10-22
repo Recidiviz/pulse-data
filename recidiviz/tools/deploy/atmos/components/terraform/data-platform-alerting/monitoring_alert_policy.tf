@@ -169,6 +169,95 @@ resource "google_monitoring_alert_policy" "cloud_run_job_failure" {
   project               = var.project_id
 }
 
+# The failure alert misses an eOMIS writeback run that hangs or never starts.
+resource "google_monitoring_alert_policy" "eomis_writeback_still_running" {
+  alert_strategy {
+    auto_close           = "86400s"
+    notification_prompts = ["OPENED", "CLOSED"]
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period     = "300s"
+        cross_series_reducer = "REDUCE_MAX"
+        group_by_fields      = ["resource.label.project_id", "resource.label.job_name"]
+        per_series_aligner   = "ALIGN_MAX"
+      }
+
+      comparison = "COMPARISON_GT"
+      # 6 PM to 6 AM Pacific: still running when CDOC's workday starts.
+      duration        = "43200s"
+      filter          = <<-EOT
+        resource.type = "cloud_run_job" AND resource.labels.job_name = starts_with("eomis-writeback-") AND metric.type = "run.googleapis.com/job/running_executions"
+      EOT
+      threshold_value = "0"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "eOMIS writeback run still running after 12 hours"
+  }
+
+  display_name = "eOMIS Writeback - Still Running"
+
+  documentation {
+    content   = "An eOMIS writeback run has been running for 12 hours. Pause it with its kill-switch marker (see recidiviz/eomis/kill_switch.py) and check the job's log."
+    mime_type = "text/markdown"
+    subject   = "eOMIS writeback still running after 12 hours"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+    google_monitoring_notification_channel.alerts.id,
+  ]
+  project               = var.project_id
+}
+
+resource "google_monitoring_alert_policy" "eomis_writeback_not_started" {
+  alert_strategy {
+    auto_close           = "86400s"
+    notification_prompts = ["OPENED"]
+
+    notification_rate_limit {
+      period = "3600s"
+    }
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_matched_log {
+      filter = <<-EOT
+        resource.type="cloud_scheduler_job" AND resource.labels.job_id:"eomis-writeback-" AND jsonPayload.@type="type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished" AND severity>=ERROR
+      EOT
+    }
+
+    display_name = "Cloud Scheduler could not start the eOMIS writeback job"
+  }
+
+  display_name = "eOMIS Writeback - Not Started"
+
+  documentation {
+    content   = "Cloud Scheduler failed to start an eOMIS writeback job, so tonight's run did not happen. The next scheduled run catches up; start one sooner from the Cloud Run job's page if needed."
+    mime_type = "text/markdown"
+    subject   = "eOMIS writeback job not started"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+    google_monitoring_notification_channel.alerts.id,
+  ]
+  project               = var.project_id
+}
+
 resource "google_monitoring_alert_policy" "uptime_check_url_down" {
   alert_strategy {
     auto_close           = "604800s"

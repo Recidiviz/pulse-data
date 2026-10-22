@@ -77,6 +77,14 @@ rules:
     actions:
       pagerduty_service: "EOMIS Writeback"
 
+  # Scheduler alerts name the job by job_id, not job_name
+  - name: "eOMIS Writeback Job Not Started"
+    match:
+      incident.resource.labels.job_id:
+        contains: "eomis-writeback"
+    actions:
+      pagerduty_service: "EOMIS Writeback"
+
   - name: "Cloud Function Failure"
     match:
       incident.policy_name:
