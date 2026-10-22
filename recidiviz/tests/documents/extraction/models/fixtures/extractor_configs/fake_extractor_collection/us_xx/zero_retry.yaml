@@ -2,6 +2,8 @@
 # which must be honored rather than coerced to the code-level default.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
+launch_env: LOCAL_ONLY
+
 input_document_collection_name: FAKE_INPUT_NOTES
 
 max_transient_retry_count: 0

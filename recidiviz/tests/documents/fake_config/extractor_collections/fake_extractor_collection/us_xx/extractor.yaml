@@ -3,6 +3,8 @@
 # document collection — without depending on any real state's configs.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
+launch_env: LOCAL_ONLY
+
 input_document_collection_name: FAKE_INPUT_NOTES
 
 golden_eval:

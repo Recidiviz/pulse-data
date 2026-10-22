@@ -23,12 +23,14 @@ through from the ER collection, the clustering prompt assembling from the templa
 and generated sections, and the parent entity-field → `extractor_version_id`
 cascade.
 """
+
 from unittest import TestCase
 from unittest.mock import patch
 
 import attr
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_ER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_ER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
@@ -141,6 +143,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
 
         expected = LLMExtractorConfig(
             state_code=StateCode.US_XX,
+            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(
@@ -181,6 +184,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
 
         expected = LLMExtractorConfig(
             state_code=StateCode.US_XX,
+            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(

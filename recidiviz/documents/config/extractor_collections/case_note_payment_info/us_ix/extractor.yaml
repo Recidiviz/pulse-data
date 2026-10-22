@@ -1,5 +1,7 @@
 extractor_collection_name: CASE_NOTE_PAYMENT_INFO
 
+launch_env: LOCAL_ONLY
+
 input_document_collection_name: SUPERVISION_CASE_NOTES
 
 golden_eval:

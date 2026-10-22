@@ -98,6 +98,7 @@ class EntityResolutionExtractorGenerator:
         )
         return LLMExtractorConfig(
             state_code=first_order_config.state_code,
+            launch_env=first_order_config.launch_env,
             input_document_collection=entity_resolution_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=self._build_document_filter_query_template(),

@@ -22,8 +22,27 @@ from enum import Enum
 
 
 class DocumentPipelineLaunchEnv(Enum):
-    """Where a document collection or extractor is allowed to run."""
+    """Where a document collection or extractor is allowed to run. Tiers are
+    cumulative: STAGING includes local runs; PRODUCTION includes staging and
+    local runs. Local/sandbox tooling may run any config regardless of tier.
+    """
 
+    # NOTE: These are listed from narrowest to broadest tier, and rank below
+    #  depends on that order. DO NOT CHANGE THE ORDER OF THESE ENUMS RELATIVE TO
+    #  EACH OTHER.
     LOCAL_ONLY = "LOCAL_ONLY"
     STAGING = "STAGING"
     PRODUCTION = "PRODUCTION"
+
+    @property
+    def rank(self) -> int:
+        """Returns this tier's position in the cumulative ordering (0 =
+        narrowest).
+        """
+        return list(DocumentPipelineLaunchEnv).index(self)
+
+    def is_at_least(self, other: "DocumentPipelineLaunchEnv") -> bool:
+        """Returns whether this tier is as broad as or broader than the other
+        tier.
+        """
+        return self.rank >= other.rank

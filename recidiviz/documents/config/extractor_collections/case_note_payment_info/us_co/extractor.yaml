@@ -1,5 +1,7 @@
 extractor_collection_name: CASE_NOTE_PAYMENT_INFO
 
+launch_env: PRODUCTION
+
 input_document_collection_name: SUPERVISION_CONTACT_NOTES
 
 golden_eval:

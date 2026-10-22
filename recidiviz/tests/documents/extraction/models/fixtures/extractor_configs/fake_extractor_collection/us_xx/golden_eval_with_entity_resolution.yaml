@@ -2,6 +2,8 @@
 # US_XX__ER tab shared by the collection's entity groups.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
+launch_env: LOCAL_ONLY
+
 input_document_collection_name: FAKE_INPUT_NOTES
 
 golden_eval:

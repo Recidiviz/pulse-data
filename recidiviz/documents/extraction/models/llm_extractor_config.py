@@ -35,6 +35,7 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
 from recidiviz.documents.extraction.config_defaults import (
     DEFAULT_FIRST_ORDER_SINGLE_JOB_DOCUMENT_COUNT_BATCH_THRESHOLD,
     DEFAULT_FIRST_ORDER_TOTAL_PENDING_DOCUMENT_COUNT_HARD_CAP,
@@ -336,6 +337,11 @@ class LLMExtractorConfig:
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
     """The state this extractor runs for."""
 
+    launch_env: DocumentPipelineLaunchEnv = attr.ib(
+        validator=attr.validators.in_(DocumentPipelineLaunchEnv)
+    )
+    """The broadest environment this extractor is allowed to run in."""
+
     input_document_collection: DocumentCollectionConfig = attr.ib(
         validator=attr.validators.instance_of(DocumentCollectionConfig)
     )
@@ -476,6 +482,15 @@ class LLMExtractorConfig:
                 f"[{self.state_code.value}] reads input document collection "
                 f"[{self.input_document_collection.name}], which belongs to state "
                 f"[{self.input_document_collection.state_code.value}]."
+            )
+        if not self.input_document_collection.launch_env.is_at_least(self.launch_env):
+            raise ValueError(
+                f"Extractor [{self.extractor_collection.name}] for "
+                f"[{self.state_code.value}] declares launch_env "
+                f"[{self.launch_env.value}], broader than its input document "
+                f"collection [{self.input_document_collection.name}]'s launch_env "
+                f"[{self.input_document_collection.launch_env.value}]. An extractor "
+                f"cannot run anywhere the documents it reads are not uploaded."
             )
         self._validate_root_entity_narrowing_matches_collection()
         if (
@@ -765,6 +780,7 @@ class LLMExtractorConfig:
 
         config = cls(
             state_code=cls.state_code_for_yaml_path(yaml_path),
+            launch_env=DocumentPipelineLaunchEnv(config_dict.pop("launch_env", str)),
             input_document_collection=input_document_collection,
             # Authored files carry only the flat filter template; the sandbox-only
             # narrowing knobs are never authored and default to None here.

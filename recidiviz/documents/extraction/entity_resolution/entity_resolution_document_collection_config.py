@@ -162,9 +162,7 @@ class EntityResolutionDocumentCollectionConfig(DocumentCollectionConfig):
 
     @launch_env.default
     def _launch_env(self) -> DocumentPipelineLaunchEnv:
-        # TODO(OBT-46606) inherit the launch tier from the first-order collection
-        # once that field is populated.
-        return self.first_order_config.input_document_collection.launch_env
+        return self.first_order_config.launch_env
 
     @root_entity_id_type.default
     def _root_entity_id_type(self) -> DocumentRootEntityIdType:

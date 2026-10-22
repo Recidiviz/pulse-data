@@ -2,6 +2,8 @@
 # config, both document-count thresholds, the transient retry count, and prompt vars.
 extractor_collection_name: FAKE_EXTRACTOR_COLLECTION
 
+launch_env: LOCAL_ONLY
+
 input_document_collection_name: FAKE_INPUT_NOTES
 
 model_config_name: ACME_LARGE_DETERMINISTIC

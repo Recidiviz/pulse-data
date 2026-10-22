@@ -115,12 +115,13 @@ def _input_document_collection(
     root_entity_id_type: DocumentRootEntityIdType = (
         DocumentRootEntityIdType.PERSON_EXTERNAL_ID
     ),
+    launch_env: DocumentPipelineLaunchEnv = DocumentPipelineLaunchEnv.STAGING,
 ) -> DocumentCollectionConfig:
     """Returns a minimal valid input document collection for resolution."""
     return DocumentCollectionConfig(
         state_code=state_code,
         name=name,
-        launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
+        launch_env=launch_env,
         description=_DESCRIPTION,
         root_entity_id_type=root_entity_id_type,
         document_primary_key_columns=[
@@ -221,6 +222,7 @@ class LLMExtractorConfigFromYamlTest(TestCase):
             "extractor_configs/fake_extractor_collection/us_xx/minimal.yaml"
         )
         self.assertEqual(_DEFAULT_MODEL_CONFIG_NAME, config.model_config.name)
+        self.assertEqual(DocumentPipelineLaunchEnv.LOCAL_ONLY, config.launch_env)
         self.assertEqual(
             FAKE_INPUT_DOCUMENT_COLLECTION_NAME, config.input_document_collection.name
         )
@@ -496,6 +498,7 @@ class LLMExtractorConfigVersionIdTest(TestCase):
         # flows in only via the prompt), so it does not affect these tests.
         return LLMExtractorConfig(
             state_code=state_code,
+            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
             input_document_collection=_input_document_collection(
                 state_code=state_code, name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME
             ),
@@ -854,6 +857,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
         self,
         *,
         state_code: StateCode = StateCode.US_XX,
+        launch_env: DocumentPipelineLaunchEnv = DocumentPipelineLaunchEnv.LOCAL_ONLY,
         model_config: LLMModelConfig | None = None,
         entity_group: Any = None,
         prompt_vars: dict[str, str] | None = None,
@@ -868,6 +872,7 @@ class LLMExtractorConfigConstructionTest(TestCase):
     ) -> LLMExtractorConfig:
         return LLMExtractorConfig(
             state_code=state_code,
+            launch_env=launch_env,
             input_document_collection=(
                 input_document_collection
                 if input_document_collection is not None
@@ -900,6 +905,16 @@ class LLMExtractorConfigConstructionTest(TestCase):
                 # Disagrees with the state_code on self.input_document_collection
                 state_code=StateCode.US_YY
             )
+
+    def test_launch_env_broader_than_input_document_collection_raises(self) -> None:
+        # self.input_document_collection is STAGING; a PRODUCTION extractor would run
+        # where its documents are never uploaded.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"declares launch_env \[PRODUCTION\], broader than its input document "
+            r"collection .* launch_env \[STAGING\]",
+        ):
+            self._config(launch_env=DocumentPipelineLaunchEnv.PRODUCTION)
 
     def test_batch_threshold_exceeds_hard_cap_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -1025,6 +1040,7 @@ class WithSandboxNarrowingTest(TestCase):
     ) -> LLMExtractorConfig:
         return LLMExtractorConfig(
             state_code=StateCode.US_XX,
+            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
             input_document_collection=_input_document_collection(
                 state_code=StateCode.US_XX,
                 name=FAKE_INPUT_DOCUMENT_COLLECTION_NAME,

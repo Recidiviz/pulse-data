@@ -1,5 +1,7 @@
 extractor_collection_name: PLAYGROUND_EMPLOYMENT_INFO
 
+launch_env: STAGING
+
 input_document_collection_name: FELLOWSHIP_SUPERVISION_NOTES
 
 golden_eval:
