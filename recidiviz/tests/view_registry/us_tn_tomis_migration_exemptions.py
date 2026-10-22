@@ -162,7 +162,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
     ): {
-        US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "TODO(TN-2001): Migrate this reference off of legacy TOMIS 1.0 raw data",
+        US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.address: "Intentionally reads TDOC's own supervision population extract: the validation compares against state-reported counts, so after cutover it keeps checking the dates TDOC sent",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DrugTestDrugClass_latest"
