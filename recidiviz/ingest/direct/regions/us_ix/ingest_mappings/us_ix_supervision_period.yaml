@@ -400,6 +400,7 @@ output:
                         - Expanded CRC
                         - DUI Court
                         - Out ST Custody
+                        - District Monitored
                         # Not sure why this comes up, but as of 3/15/24 there are only 3 periods that come up
                         - Parole
                       StateSupervisionLevel.WARRANT:
@@ -524,3 +525,4 @@ output:
                         - Absconder
                         - Unclassified
                         - Interstate
+                        - District Monitored
