@@ -171,6 +171,20 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Interventions"
   }
 
+  join: us_mi_COMS_Misconduct_Charges {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Misconduct_Charges.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Misconduct_Charges"
+  }
+
+  join: us_mi_COMS_Misconducts {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Misconducts.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Misconducts"
+  }
+
   join: us_mi_COMS_Modifiers {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Modifiers.Offender_Number};;
     type: full_outer
@@ -190,27 +204,6 @@ explore: us_mi_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mi_COMS_Names"
-  }
-
-  join: us_mi_COMS_Offender_Misconduct {
-    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Misconduct.Offender_Number};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_mi_COMS_Offender_Misconduct"
-  }
-
-  join: us_mi_COMS_Offender_Misconduct_Charge {
-    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Misconduct_Charge.Offender_Number};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_mi_COMS_Offender_Misconduct_Charge"
-  }
-
-  join: us_mi_COMS_Offender_Sanctions {
-    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Offender_Sanctions.Offender_Number};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_mi_COMS_Offender_Sanctions"
   }
 
   join: us_mi_COMS_Outside_Detainers {
@@ -253,6 +246,13 @@ explore: us_mi_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mi_COMS_Program_Recommendations"
+  }
+
+  join: us_mi_COMS_Sanctions {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Sanctions.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Sanctions"
   }
 
   join: us_mi_COMS_Security_Classification {

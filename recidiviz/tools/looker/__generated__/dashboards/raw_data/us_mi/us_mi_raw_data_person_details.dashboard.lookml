@@ -980,6 +980,62 @@
     width: 24
     height: 6
 
+  - name: COMS_Misconduct_Charges
+    title: COMS_Misconduct_Charges
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Misconduct_Charges.primary_key,
+      us_mi_COMS_Misconduct_Charges.Misconduct_Id,
+      us_mi_COMS_Misconduct_Charges.Source,
+      us_mi_COMS_Misconduct_Charges.Misconduct_Charge_ID,
+      us_mi_COMS_Misconduct_Charges.Offender_Number,
+      us_mi_COMS_Misconduct_Charges.Misconduct_Charge_Code,
+      us_mi_COMS_Misconduct_Charges.Misconduct_Charge_Code_Number,
+      us_mi_COMS_Misconduct_Charges.Entered_Date__raw,
+      us_mi_COMS_Misconduct_Charges.file_id,
+      us_mi_COMS_Misconduct_Charges.is_deleted]
+    sorts: [us_mi_COMS_Misconduct_Charges.Entered_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about guilty misconduct charge records (Class I or Class II) for active offenders referenced in COMS_Misconducts. Sent as a two-week differential file. Note: see also ADH_MISCONDUCT_CHARGE for historical misconduct charge data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 144
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Misconducts
+    title: COMS_Misconducts
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Misconducts.primary_key,
+      us_mi_COMS_Misconducts.Misconduct_Id,
+      us_mi_COMS_Misconducts.Offender_Number,
+      us_mi_COMS_Misconducts.Violation_Date__raw,
+      us_mi_COMS_Misconducts.Report_Date__raw,
+      us_mi_COMS_Misconducts.Hearing_Date__raw,
+      us_mi_COMS_Misconducts.Expunged,
+      us_mi_COMS_Misconducts.Entered_Date__raw,
+      us_mi_COMS_Misconducts.file_id,
+      us_mi_COMS_Misconducts.is_deleted]
+    sorts: [us_mi_COMS_Misconducts.Violation_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about misconduct records for active offenders with guilty Class I or Class II misconduct verdicts. Sent as a two-week differential file. Records with Expunged = Yes indicate the offender's records must be completely removed from the Recidiviz database. Note: see also ADH_MISCONDUCT_INCIDENT for historical misconduct data from the OMNI system."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 150
+    col: 0
+    width: 24
+    height: 6
+
   - name: COMS_Modifiers
     title: COMS_Modifiers
     explore: us_mi_raw_data
@@ -1003,7 +1059,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 144
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1035,7 +1091,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 150
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1065,87 +1121,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 156
-    col: 0
-    width: 24
-    height: 6
-
-  - name: COMS_Offender_Misconduct
-    title: COMS_Offender_Misconduct
-    explore: us_mi_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_mi_COMS_Offender_Misconduct.primary_key,
-      us_mi_COMS_Offender_Misconduct.Misconduct_Id,
-      us_mi_COMS_Offender_Misconduct.Offender_Number,
-      us_mi_COMS_Offender_Misconduct.Violation_Date__raw,
-      us_mi_COMS_Offender_Misconduct.Report_Date__raw,
-      us_mi_COMS_Offender_Misconduct.Hearing_Date__raw,
-      us_mi_COMS_Offender_Misconduct.Expunged,
-      us_mi_COMS_Offender_Misconduct.file_id,
-      us_mi_COMS_Offender_Misconduct.is_deleted]
-    sorts: [us_mi_COMS_Offender_Misconduct.Violation_Date__raw]
-    note_display: hover
-    note_text: "This table includes data from the COMS system about misconduct records for active offenders with guilty Class I or Class II misconduct verdicts. Sent as a two-week differential file. Records with Expunged = Yes indicate the offender's records must be completely removed from the Recidiviz database. Note: see also ADH_MISCONDUCT_INCIDENT for historical misconduct data from the OMNI system."
-    listen: 
-      View Type: us_mi_ADH_OFFENDER.view_type
-      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
-      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
-      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 162
-    col: 0
-    width: 24
-    height: 6
-
-  - name: COMS_Offender_Misconduct_Charge
-    title: COMS_Offender_Misconduct_Charge
-    explore: us_mi_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_mi_COMS_Offender_Misconduct_Charge.primary_key,
-      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Id,
-      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_ID,
-      us_mi_COMS_Offender_Misconduct_Charge.Offender_Number,
-      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_Code,
-      us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_Code_Number,
-      us_mi_COMS_Offender_Misconduct_Charge.file_id,
-      us_mi_COMS_Offender_Misconduct_Charge.is_deleted]
-    sorts: [us_mi_COMS_Offender_Misconduct_Charge.Misconduct_Charge_ID]
-    note_display: hover
-    note_text: "This table includes data from the COMS system about guilty misconduct charge records (Class I or Class II) for active offenders referenced in COMS_Offender_Misconduct. Sent as a two-week differential file. Note: see also ADH_MISCONDUCT_CHARGE for historical misconduct charge data from the OMNI system."
-    listen: 
-      View Type: us_mi_ADH_OFFENDER.view_type
-      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
-      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
-      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
     row: 168
-    col: 0
-    width: 24
-    height: 6
-
-  - name: COMS_Offender_Sanctions
-    title: COMS_Offender_Sanctions
-    explore: us_mi_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_mi_COMS_Offender_Sanctions.primary_key,
-      us_mi_COMS_Offender_Sanctions.Sanction_Id,
-      us_mi_COMS_Offender_Sanctions.Misconduct_Id,
-      us_mi_COMS_Offender_Sanctions.Offender_Number,
-      us_mi_COMS_Offender_Sanctions.Sanction_Length,
-      us_mi_COMS_Offender_Sanctions.Sanction_Start_Date__raw,
-      us_mi_COMS_Offender_Sanctions.Sanction_End_Date__raw,
-      us_mi_COMS_Offender_Sanctions.file_id,
-      us_mi_COMS_Offender_Sanctions.is_deleted]
-    sorts: [us_mi_COMS_Offender_Sanctions.Sanction_Start_Date__raw]
-    note_display: hover
-    note_text: "This table includes data from the COMS system about detention sanctions associated with guilty Class I or Class II misconducts for active offenders. Sent as a two-week differential file. Note: see also ADH_SANCTION for historical sanction data from the OMNI system."
-    listen: 
-      View Type: us_mi_ADH_OFFENDER.view_type
-      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
-      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
-      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 174
     col: 0
     width: 24
     height: 6
@@ -1174,7 +1150,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 180
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1199,7 +1175,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 186
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1228,7 +1204,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 192
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1253,7 +1229,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 198
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1292,7 +1268,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 204
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1319,6 +1295,35 @@
     sorts: [us_mi_COMS_Program_Recommendations.Create_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about program recommendations"
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 204
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Sanctions
+    title: COMS_Sanctions
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Sanctions.primary_key,
+      us_mi_COMS_Sanctions.Sanction_Id,
+      us_mi_COMS_Sanctions.Misconduct_Id,
+      us_mi_COMS_Sanctions.Source,
+      us_mi_COMS_Sanctions.Offender_Number,
+      us_mi_COMS_Sanctions.Sanction_Length,
+      us_mi_COMS_Sanctions.Sanction_Start_Date__raw,
+      us_mi_COMS_Sanctions.Sanction_End_Date__raw,
+      us_mi_COMS_Sanctions.Entered_Date__raw,
+      us_mi_COMS_Sanctions.file_id,
+      us_mi_COMS_Sanctions.is_deleted]
+    sorts: [us_mi_COMS_Sanctions.Sanction_Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about detention sanctions associated with guilty Class I or Class II misconducts for active offenders. Sent as a two-week differential file. Note: see also ADH_SANCTION for historical sanction data from the OMNI system."
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
