@@ -47,13 +47,21 @@ schema:
     type: NUMERIC
     mode: NULLABLE
     description: Days this run wrote. Zero for a skip, an error, or a dry run.
+  - name: unrecorded_credit_units
+    type: NUMERIC
+    mode: NULLABLE
+    description: >-
+      Days of ours eOMIS held before this run that no earlier row records, e.g. from an UNCERTAIN Add that did land
+      (CoWriteResult.unrecorded_days). Counted as posted from this row on, so a later CDOC edit can't make a run write
+      them again. Zero on a dry run; null on rows from before this column existed.
   - name: skip_reason_code
     type: STRING
     mode: NULLABLE
     description: >-
-      "ALREADY_SYNCED", "WEDGED_ERROR", "REFUSED" (eOMIS opened the add form read-only) or "UNCERTAIN" (an Add whose
-      outcome neither its response nor a fresh read confirmed) when the write did not land or could not be verified for
-      one of those reasons; null on a verified success or a dry run.
+      "ALREADY_SYNCED", "WEDGED_ERROR", "REFUSED" (eOMIS opened the add form read-only), "UNCERTAIN" (an Add whose
+      outcome neither its response nor a fresh read confirmed) or "UNRECOGNISED_STATUS" (a credit row with a status the
+      writer doesn't know, so nothing was written) when the write did not land or could not be verified for one of
+      those reasons; null on a verified success or a dry run.
   - name: eomis_entry_reference
     type: STRING
     mode: NULLABLE

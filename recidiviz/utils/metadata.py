@@ -158,6 +158,17 @@ def zone() -> Optional[str]:
     return zone_string
 
 
+def cloud_run_region() -> Optional[str]:
+    """Returns the region the metadata server reports for the current Cloud Run
+    instance or job."""
+    region_string = _get_metadata("instance/region")
+    if region_string:
+        # Of the form 'projects/123456789012/regions/us-central1'
+        region_string = region_string.split("/")[-1]
+
+    return region_string
+
+
 def region() -> Optional[str]:
     """Returns the GCP region of the current instance."""
     region_string = None
