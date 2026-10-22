@@ -1,0 +1,208 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Last_Name: STRING
+  First_Name: STRING
+  Middle_Name: STRING
+  Suffix: STRING
+  Birth_Date: STRING
+  Sex: STRING
+  Race: STRING
+  Culture: STRING
+  hispanic_flag: STRING
+  alias_Last_Name: STRING
+  alias_First_Name: STRING
+  alias_Middle_Name: STRING
+  alias_Suffix: STRING
+  alias_type: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    birthdate: Birth_Date
+    full_name:
+      $person_name:
+        $given_names: First_Name
+        $middle_names: Middle_Name
+        $surname: Last_Name
+        $name_suffix: Suffix
+    sex:
+      $enum_mapping:
+        $raw_text: Sex
+        $mappings:
+          StateSex.MALE:
+            - "435"
+            - "Male"
+          StateSex.FEMALE:
+            - "434"
+            - "Female"
+          StateSex.EXTERNAL_UNKNOWN:
+            - "7403"
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                # TODO(MI-8592): Once real data received, run mappings script to confirm other raw text values
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
+                  - "American Indian or Alaskan Native"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
+                  - "Native Hawaiian or Other Pacific Islander"
+                StateRace.WHITE:
+                  - "White"
+                StateRace.BLACK:
+                  - "Black or African American"
+                StateRace.ASIAN:
+                  - "Asian"
+                StateRace.EXTERNAL_UNKNOWN:
+                  - "Unknown"
+                StateRace.INTERNAL_UNKNOWN:
+                  - "Middle Eastern/North African"
+                  - "Latino"
+    aliases:
+      - $conditional:
+          - $if:
+              $not_null: alias_type
+            $then:
+              StatePersonAlias:
+                full_name:
+                  $person_name:
+                    $given_names: alias_First_Name
+                    $middle_names: alias_Middle_Name
+                    $surname: alias_Last_Name
+                    $name_suffix: alias_Suffix
+                alias_type:
+                  $enum_mapping:
+                    $raw_text: alias_type
+                    $mappings:
+                      StatePersonAliasType.GIVEN_NAME:
+                        - "GIVEN_NAME"
+                      StatePersonAliasType.ALIAS:
+                        - "ALIAS"
+                      StatePersonAliasType.MAIDEN_NAME:
+                        - "MAIDEN_NAME"
+                      StatePersonAliasType.NICKNAME:
+                        - "NICKNAME"
+                      StatePersonAliasType.AFFILIATION_NAME:
+                        - "AFFILIATION_NAME"
+                      StatePersonAliasType.EXTERNAL_UNKNOWN:
+                        - "EXTERNAL_UNKNOWN"
+                      StatePersonAliasType.INTERNAL_UNKNOWN:
+                        - "INTERNAL_UNKNOWN"
+    # TODO(MI-8592): Once real data received, run mappings script to confirm other raw text values
+    ethnicity:
+      $conditional:
+        - $if:
+            $equal:
+              - hispanic_flag
+              - $literal("1")
+          $then: $literal_enum(StateEthnicity.HISPANIC)
+        - $else_if:
+            $not_null: Culture
+          $then:
+            $enum_mapping:
+              $raw_text: Culture
+              $mappings:
+                StateEthnicity.HISPANIC:
+                  - "Mexican"
+                  - "Hispanic"
+                  - "Puerto Rican"
+                  - "Cuban"
+                  - "Guatemalan"
+                  - "Nicaraguan"
+                  - "Peruvian"
+                  - "El Salvadorian"
+                  - "Ecuadorian"
+                  - "Honduran"
+                  - "Dominican"
+                  - "Colombian"
+                StateEthnicity.NOT_HISPANIC:
+                  - "African"
+                  - "Albanian"
+                  - "American"
+                  - "Antiguan"
+                  - "Asian"
+                  - "Australian"
+                  - "Bahamian"
+                  - "Bosnian"
+                  - "Brazilian"
+                  - "British"
+                  - "Burmese"
+                  - "Cambodian"
+                  - "Canadian"
+                  - "Chaldean"
+                  - "Chinese"
+                  - "Czechoslovakian"
+                  - "Dutch"
+                  - "East Indian"
+                  - "Egyptian"
+                  - "English"
+                  - "Ethiopian"
+                  - "European"
+                  - "Filipino"
+                  - "French"
+                  - "German"
+                  - "Ghanaian"
+                  - "Greek"
+                  - "HIC - Hannahville Indian Community"
+                  - "Haitian"
+                  - "Hebrew/Israeli"
+                  - "Hmong"
+                  - "Hungarian"
+                  - "Indian"
+                  - "Iraqi"
+                  - "Irish"
+                  - "Italian"
+                  - "Jamaican"
+                  - "Japanese"
+                  - "Jewish"
+                  - "Jordanian"
+                  - "Kenyan"
+                  - "Korean"
+                  - "Kosovar"
+                  - "LRB - Little River Band of Ottawa Indians"
+                  - "LTBB - Little Traverse Bay Bands of Odawa Indians"
+                  - "Lebanese"
+                  - "Middle Eastern"
+                  - "Native American"
+                  - "Nigerian"
+                  - "None"
+                  - "Nordic/Scandinavian"
+                  - "Norwegian"
+                  - "Others"
+                  - "Pacific Islands"
+                  - "Pakistani"
+                  - "Palestinian"
+                  - "Persian"
+                  - "Polish"
+                  - "Portuguese"
+                  - "Romanian"
+                  - "Russian"
+                  - "SCIT - Saginaw Chippewa Indian Tribe of Michigan"
+                  - "SSM - Sault Ste. Marie Tribe of Chippewa Indians"
+                  - "Samoan"
+                  - "Scottish"
+                  - "Serbian"
+                  - "Slovakian"
+                  - "South Korean"
+                  - "Spaniard"
+                  - "Swedish"
+                  - "Syrian"
+                  - "Thai"
+                  - "Trinidadian/Tobagonian"
+                  - "Turkish"
+                  - "Ukrainian"
+                  - "Vietnamese"
+                  - "Welsh"
+                  - "West Indian"
+                  - "Yemini"
+        - $else: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)

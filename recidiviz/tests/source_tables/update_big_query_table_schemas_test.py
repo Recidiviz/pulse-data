@@ -1114,6 +1114,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.state_drug_screen",
     "us_mi_ingest_view_results.state_drug_screen_coms",
     "us_mi_ingest_view_results.state_leadership_role_period",
+    "us_mi_ingest_view_results.state_persons_COMS_2026",
     "us_mi_ingest_view_results.state_persons_v2",
     "us_mi_ingest_view_results.state_staff",
     "us_mi_ingest_view_results.state_staff_role_location_period",
