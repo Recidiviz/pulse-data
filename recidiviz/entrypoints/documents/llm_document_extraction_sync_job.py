@@ -46,6 +46,10 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 
+# TODO(OBT-46617): Temporary workaround to guard against accidentally huge runs.
+# Remove once the production SKIPPED_OVER_CAP check is built.
+_MAX_DOCUMENTS = 200_000
+
 
 class LLMDocumentExtractionSyncJobEntrypoint(EntrypointInterface):
     """Entrypoint that runs one synchronous LLM document-extraction job to
@@ -85,6 +89,7 @@ class LLMDocumentExtractionSyncJobEntrypoint(EntrypointInterface):
             config=config,
             job_id=args.job_id,
             job_manager=job_manager,
+            max_documents=_MAX_DOCUMENTS,
             processor=DocumentExtractionProcessor(
                 config=config,
                 results_sandbox_prefix=None,
