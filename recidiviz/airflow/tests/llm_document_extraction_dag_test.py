@@ -60,9 +60,6 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
 from recidiviz.tests.documents import fake_config as fake_config_module
-from recidiviz.tests.documents.store.document_store_test_utils import (
-    patch_fake_config_states_exist_in_env,
-)
 from recidiviz.utils.types import assert_type
 
 # Per-document-collection tasks defined inside each document collection's task group, in
@@ -120,9 +117,6 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         )
         self.us_xx_other_document_collections_skippable_tasks_regexes = [
             rf"^{self.us_xx_fake_input_notes_collection_branch}\..*(?<!after_upload_noop)$",
-            rf"^{self.us_xx_fake_person_id_notes_collection_branch}\..*(?<!after_upload_noop)$",
-            rf"^{self.us_xx_fake_staff_id_reports_collection_branch}\..*(?<!after_upload_noop)$",
-            rf"^{self.us_xx_fake_staff_reports_collection_branch}\..*(?<!after_upload_noop)$",
         ]
         self.us_xx_other_document_collections_always_succeeds_tasks_regex = (
             rf"^{self.us_xx_branch}\.document_collections\."
@@ -175,8 +169,6 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             document_collection_config, "default_config_module", fake_config_module
         )
         self.config_module_patcher.start()
-
-        self.enterContext(patch_fake_config_states_exist_in_env())
 
         self.collectors_config_module_patcher = patch.object(
             document_collection_config_collectors,
@@ -405,10 +397,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
 
     def test_no_filters_runs_all_states_and_document_collections(self) -> None:
-        """Without any filter, every (state, document collection) branch runs to
-        completion. With the default 'no updates' mock, each document collection's
-        discovery succeeds and check_has_updates short-circuits the rest of
-        its branch."""
+        """Without any filter, every (state, document collection) branch launched in
+        this project runs to completion. With the default 'no updates' mock, each
+        document collection's discovery succeeds and check_has_updates short-circuits
+        the rest of its branch."""
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 self._create_dag(),
@@ -430,9 +422,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
             # Two create_table_from_query calls per document collection (the
             # generation-output and metadata-updates temp tables; 0 metadata
-            # rows → no contents call). 5 US_XX document collections + 1 US_YY
-            # document collection = 6 collections × 2 = 12.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 12)
+            # rows → no contents call). 2 launched US_XX document collections + 1
+            # launched US_YY document collection = 3 collections × 2 = 6.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 6)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -640,7 +632,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
 
     def test_state_filter_fans_out_to_all_document_collections(self) -> None:
-        """state_code_filter alone runs all document collections defined for the state.
+        """state_code_filter alone runs all document collections launched for the state.
         Since in the tests we are defaulting to 'no updates', each document collection's
         discovery runs once and check_has_updates short-circuits."""
         with Session(bind=self.engine) as session:
@@ -661,9 +653,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
             # Two create_table_from_query calls per document collection (the
             # generation-output and metadata-updates temp tables; 0 metadata
-            # rows → no contents call). Fake config defines 5 US_XX document
-            # collections, so 5 × 2 = 10.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 10)
+            # rows → no contents call). The fake config launches 2 US_XX document
+            # collections under staging, so 2 × 2 = 4.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 4)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 

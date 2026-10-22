@@ -17,10 +17,11 @@
 """DAG that runs the LLM document extraction pipeline, branched per state and
 per document collection within a state.
 
-By default all (state, document collection) branches run. To target a single state, pass
-`state_code_filter` in the DAG run conf; to additionally target a single document collection,
-pass `document_collection_name_filter` (which requires `state_code_filter` to also be set,
-since document collection names are only unique within a state).
+By default every (state, document collection) branch launched in this project runs. To
+target a single state, pass `state_code_filter` in the DAG run conf; to additionally target
+a single document collection, pass `document_collection_name_filter` (which requires
+`state_code_filter` to also be set, since document collection names are only unique within a
+state).
 """
 
 from typing import Callable
@@ -66,8 +67,8 @@ from recidiviz.airflow.dags.utils.source_table_tasks import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
-    get_states_with_document_collections_existing_in_env,
-    load_first_order_document_collection_configs,
+    get_states_with_launched_document_collections,
+    load_launched_document_collection_configs,
 )
 
 # pylint: disable=W0104 pointless-statement
@@ -100,22 +101,21 @@ def get_llm_document_extraction_branch_filter(dag_run: DagRun) -> list[str] | No
 
 
 def make_document_collection_branch_filter(
-    state_code: StateCode, document_collection_names: set[str]
+    state_code: StateCode, launched_document_collection_names: set[str]
 ) -> Callable[[DagRun], list[str] | None]:
-    """Returns a branch filter scoped to |state_code|'s document collections. If
-    document_collection_name_filter is set, validates that the document collection exists in this
-    state and selects only its branch; raises if the filter names a document collection
-    not defined for this state."""
+    """Returns a branch filter scoped to |state_code|'s launched document collections.
+    If document_collection_name_filter is set, selects only its branch; raises if the
+    filter names a document collection not launched for this state in this project."""
 
     def document_collection_branch_filter(dag_run: DagRun) -> list[str] | None:
         selected_document_collection_name = get_document_collection_name_filter(dag_run)
         if not selected_document_collection_name:
             return None
-        if selected_document_collection_name not in document_collection_names:
+        if selected_document_collection_name not in launched_document_collection_names:
             raise ValueError(
                 f"document_collection_name_filter [{selected_document_collection_name}] does not "
-                f"match any document collection defined for state [{state_code.value}]. "
-                f"Valid document collections: {sorted(document_collection_names)}"
+                f"match any document collection launched for state [{state_code.value}] in this "
+                f"project. Launched document collections: {sorted(launched_document_collection_names)}"
             )
         return [get_document_collection_branch_key(selected_document_collection_name)]
 
@@ -184,7 +184,9 @@ def create_single_state_llm_document_extraction_branch(
     with TaskGroup(get_llm_document_extraction_branch_key(state_code)) as branch:
         with TaskGroup(DOCUMENT_COLLECTIONS_BRANCHING):
             document_collection_names = sorted(
-                load_first_order_document_collection_configs(state_code)
+                load_launched_document_collection_configs(
+                    state_code, project_id=get_project_id()
+                )
             )
             document_collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
                 get_document_collection_branch_key(
@@ -209,7 +211,9 @@ def create_llm_document_extraction_branch_map() -> dict[str, list[DAGNode] | DAG
         get_llm_document_extraction_branch_key(
             state_code
         ): create_single_state_llm_document_extraction_branch(state_code)
-        for state_code in get_states_with_document_collections_existing_in_env()
+        for state_code in get_states_with_launched_document_collections(
+            project_id=get_project_id()
+        )
     }
 
 

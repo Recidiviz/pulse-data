@@ -19,6 +19,7 @@
 import unittest
 
 from recidiviz.documents.document_pipeline_launch_env import DocumentPipelineLaunchEnv
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class TestDocumentPipelineLaunchEnv(unittest.TestCase):
@@ -44,4 +45,50 @@ class TestDocumentPipelineLaunchEnv(unittest.TestCase):
             DocumentPipelineLaunchEnv.LOCAL_ONLY.is_at_least(
                 DocumentPipelineLaunchEnv.STAGING
             )
+        )
+
+    def test_is_launched_in_project(self) -> None:
+        self.assertFalse(
+            DocumentPipelineLaunchEnv.LOCAL_ONLY.is_launched_in_project(
+                GCP_PROJECT_STAGING
+            )
+        )
+        self.assertFalse(
+            DocumentPipelineLaunchEnv.LOCAL_ONLY.is_launched_in_project(
+                GCP_PROJECT_PRODUCTION
+            )
+        )
+
+        self.assertTrue(
+            DocumentPipelineLaunchEnv.STAGING.is_launched_in_project(
+                GCP_PROJECT_STAGING
+            )
+        )
+        self.assertFalse(
+            DocumentPipelineLaunchEnv.STAGING.is_launched_in_project(
+                GCP_PROJECT_PRODUCTION
+            )
+        )
+
+        self.assertTrue(
+            DocumentPipelineLaunchEnv.PRODUCTION.is_launched_in_project(
+                GCP_PROJECT_PRODUCTION
+            )
+        )
+        self.assertTrue(
+            DocumentPipelineLaunchEnv.PRODUCTION.is_launched_in_project(
+                GCP_PROJECT_STAGING
+            )
+        )
+
+    def test_is_launched_in_non_deploy_project_is_treated_as_staging(self) -> None:
+        test_project_id = "recidiviz-testing"
+        self.assertFalse(
+            DocumentPipelineLaunchEnv.LOCAL_ONLY.is_launched_in_project(test_project_id)
+        )
+        self.assertTrue(
+            DocumentPipelineLaunchEnv.STAGING.is_launched_in_project(test_project_id)
+        )
+        self.assertTrue(
+            DocumentPipelineLaunchEnv.PRODUCTION.is_launched_in_project(test_project_id)
         )

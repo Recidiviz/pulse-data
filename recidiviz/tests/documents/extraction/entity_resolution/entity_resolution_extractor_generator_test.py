@@ -143,7 +143,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
 
         expected = LLMExtractorConfig(
             state_code=StateCode.US_XX,
-            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
+            launch_env=DocumentPipelineLaunchEnv.STAGING,
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(
@@ -184,7 +184,7 @@ class EntityResolutionExtractorGeneratorTest(TestCase):
 
         expected = LLMExtractorConfig(
             state_code=StateCode.US_XX,
-            launch_env=DocumentPipelineLaunchEnv.LOCAL_ONLY,
+            launch_env=DocumentPipelineLaunchEnv.STAGING,
             input_document_collection=composite_document_collection,
             document_filter=LLMExtractorDocumentFilterConfig(
                 document_metadata_filter_query_template=(

@@ -20,6 +20,8 @@ run.
 
 from enum import Enum
 
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+
 
 class DocumentPipelineLaunchEnv(Enum):
     """Where a document collection or extractor is allowed to run. Tiers are
@@ -46,3 +48,16 @@ class DocumentPipelineLaunchEnv(Enum):
         tier.
         """
         return self.rank >= other.rank
+
+    def is_launched_in_project(self, project_id: str) -> bool:
+        """Returns whether a config with this tier runs in the given project."""
+        return self.is_at_least(_minimum_launch_env_for_project(project_id))
+
+
+def _minimum_launch_env_for_project(project_id: str) -> DocumentPipelineLaunchEnv:
+    """Returns the narrowest tier a config must have to run in the given project.
+    Any non-production project (staging, test projects) runs staging-tier configs.
+    """
+    if project_id == GCP_PROJECT_PRODUCTION:
+        return DocumentPipelineLaunchEnv.PRODUCTION
+    return DocumentPipelineLaunchEnv.STAGING

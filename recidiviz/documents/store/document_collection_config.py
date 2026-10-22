@@ -635,3 +635,41 @@ def load_first_order_document_collection_configs(
         _load_document_collection_config(yaml_path, module)
 
     return _DOCUMENT_COLLECTION_CONFIGS[module][state_code]
+
+
+def load_launched_document_collection_configs(
+    state_code: StateCode,
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> dict[str, DocumentCollectionConfig]:
+    """Returns the state's first-order document collection configs whose launch_env
+    includes |project_id|.
+    """
+    return {
+        name: config
+        for name, config in load_first_order_document_collection_configs(
+            state_code, config_module
+        ).items()
+        if config.launch_env.is_launched_in_project(project_id)
+    }
+
+
+def get_states_with_launched_document_collections(
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> list[StateCode]:
+    """Returns the states with at least one document collection launched in
+    |project_id|, ordered by state code.
+    """
+    return sorted(
+        (
+            state_code
+            for state_code in StateCode
+            if load_launched_document_collection_configs(
+                state_code, project_id=project_id, config_module=config_module
+            )
+        ),
+        key=lambda state_code: state_code.value,
+    )

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for document_collection_config.py."""
+
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,7 +39,9 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentRootEntityIdType,
     collect_document_collection_config_yaml_paths,
     get_states_with_document_collections_existing_in_env,
+    get_states_with_launched_document_collections,
     load_first_order_document_collection_configs,
+    load_launched_document_collection_configs,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
     get_document_collection_config,
@@ -63,6 +66,7 @@ from recidiviz.tests.documents import fake_config as fake_config_module
 from recidiviz.tests.documents.store.document_store_test_utils import (
     get_fake_first_order_document_collection_config,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
@@ -293,6 +297,40 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                     fake_config_module
                 ),
             )
+
+    def test_load_launched_document_collection_configs(self) -> None:
+        # The fake US_XX config launches FAKE_CASE_NOTES and FAKE_INPUT_NOTES in
+        # staging (STAGING); the other three are LOCAL_ONLY.
+        self.assertEqual(
+            {"FAKE_CASE_NOTES", "FAKE_INPUT_NOTES"},
+            load_launched_document_collection_configs(
+                StateCode.US_XX,
+                project_id=GCP_PROJECT_STAGING,
+                config_module=fake_config_module,
+            ).keys(),
+        )
+        self.assertEqual(
+            set(),
+            load_launched_document_collection_configs(
+                StateCode.US_XX,
+                project_id=GCP_PROJECT_PRODUCTION,
+                config_module=fake_config_module,
+            ).keys(),
+        )
+
+    def test_states_with_launched_document_collections(self) -> None:
+        self.assertEqual(
+            [StateCode.US_XX, StateCode.US_YY],
+            get_states_with_launched_document_collections(
+                project_id=GCP_PROJECT_STAGING, config_module=fake_config_module
+            ),
+        )
+        self.assertEqual(
+            [],
+            get_states_with_launched_document_collections(
+                project_id=GCP_PROJECT_PRODUCTION, config_module=fake_config_module
+            ),
+        )
 
     def test_validation_duplicate_columns(self) -> None:
         with self.assertRaisesRegex(ValueError, "has duplicate column names"):
