@@ -592,14 +592,14 @@ def us_ix_dors_query(*, dor_classes: list[str]) -> str:
     """Returns a SQL query for the US_IX DORs of the given classes, one row per DOR, read
     from normalized state. Dismissed and not-guilty DORs are left out; pending DORs and
     informal resolutions are kept. Reports with no DA case are also left out, since
-    nothing records whether they were decided. Ingest stores text uppercase, so the
-    offense type name and the description come back title-cased for display.
+    nothing records whether they were decided. The offense type name and the description
+    come from incident_metadata, which keeps IDOC's original casing for display.
 
     For example, a resident with a pending class B DOR and a dismissed class A DOR gets
     one row (some columns abridged):
 
         person_id,dor_class,offense_type_name,dor_description,incident_date,hearing_date,is_pending
-        123,B,Disobedience To Orders 2,Resident Refused To Return To The Assigned Cell,2026-08-01,,true
+        123,B,Disobedience to Orders 2,Resident refused to return to the assigned cell.,2026-08-01,,true
     """
     return f"""
     SELECT
@@ -610,8 +610,8 @@ def us_ix_dors_query(*, dor_classes: list[str]) -> str:
         incident.external_id AS incident_external_id,
         NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.DACaseId'), '') AS da_case_id,
         SUBSTR(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseCode'), 1, 1) AS dor_class,
-        INITCAP(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseTypeName')) AS offense_type_name,
-        INITCAP(incident.incident_details) AS dor_description,
+        JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseTypeName') AS offense_type_name,
+        JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.IncidentDetails') AS dor_description,
         incident.incident_date,
         CAST(
             LEFT(NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.HearingDate'), ''), 10)

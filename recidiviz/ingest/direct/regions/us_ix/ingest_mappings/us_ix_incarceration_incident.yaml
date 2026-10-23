@@ -54,7 +54,8 @@ output:
               $custom_parser: us_ix_custom_enum_parsers.map_incident_type
           incident_details: IncidentDetails
           incident_metadata:
-            $normalized_values_json_dict:
+            $json_dict:
+              IncidentDetails: IncidentDetails
               ProcedureStatus: DAProcedureStatusDesc
               HearingDate: DAHearingDate
               OffenseTypeName: DorOffenseTypeName
