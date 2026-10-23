@@ -61,11 +61,23 @@ output:
                         - "Min"
                         - "Minimum"
                         - "minimum"
+                        - "Very Low Risk"
                       StateAssessmentLevel.LOW:
+                        - "LOW"
                         - "Low"
                         - "Low Risk"
                         - "Low Risk, [Pro_Rated_Score]"
+                        - "Below Average Risk"
+                        - "5 yr % recidivism = .09 (LOW)"
+                        - "5 yr % recidivism = .12 (LOW)"
+                        - "5 yr % recidivism = .16 (LOW)"
+                      StateAssessmentLevel.LOW_MODERATE:
+                        - "LOW-MODERATE"
                       StateAssessmentLevel.MEDIUM:
+                        - "Average Risk"
+                        - "5 yr % recidivism = .20 (MED)"
+                        - "5 yr % recidivism = .26 (MED)"
+                        - "5 yr % recidivism = .34 (MED)"
                         - "Medium"
                         - "Medium -request override due to mental health issues"
                         - "Medium due to sex offense"
@@ -81,16 +93,26 @@ output:
                         - "medium"
                         - "medium Risk"
                       StateAssessmentLevel.MODERATE:
+                        - "MODERATE"
                         - "Mod"
                         - "Mod."
                         - "Moderate"
                         - "Moderate Risk"
                         - "Moderate Risk, [Pro_Rated_Score]"
                         - "mod"
+                      StateAssessmentLevel.MEDIUM_HIGH:
+                        - "MODERATE-HIGH"
                       StateAssessmentLevel.HIGH:
+                        - "HIGH"
                         - "High"
                         - "High Risk"
                         - "High Risk, [Pro_Rated_Score]"
+                        - "Above Average Risk"
+                        - "5 yr % recidivism = .45 (HIGH)"
+                        - "5 yr % recidivism = .58 (HIGH)"
+                        - "5 yr % recidivism = .76 (HIGH)"
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "Well Above Average Risk"
                       StateAssessmentLevel.MAXIMUM:
                         - "Max"
                         - "Maximum"
