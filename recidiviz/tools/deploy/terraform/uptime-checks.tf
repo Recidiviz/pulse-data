@@ -134,3 +134,66 @@ resource "google_monitoring_uptime_check_config" "marketing-website" {
 
   checker_type = "STATIC_IP_CHECKERS"
 }
+
+
+# Hosts outside this project that page on-call through the "Uptime Check URL - DOWN"
+# policy and warn ahead of cert expiry through the "SSL certificate expiring" policy,
+# both in the data-platform-alerting component. Each check validates the TLS
+# certificate, so an expired or mismatched certificate fails the check even when the
+# app behind it is healthy. status is the response code a healthy host returns for
+# path without credentials: IAP-protected hosts redirect to Google sign-in (302), and
+# the sftpgo admin consoles sit behind a Cloud Armor allowlist that rejects the
+# uptime checkers (403) only after the TLS handshake completes.
+locals {
+  external_uptime_checks = var.project_id == "recidiviz-123" ? {
+    "sftpgo-admin-us-nc"  = { host = "sftpgo-admin-us-nc.recidiviz.org", path = "/", status = 403 }
+    "sftpgo-admin-us-nyc" = { host = "sftpgo-admin-us-nyc.recidiviz.org", path = "/", status = 403 }
+    "sftpgo-admin-us-nv"  = { host = "sftpgo-admin-us-nv.recidiviz.org", path = "/", status = 403 }
+    "sftpgo-admin-us-tn"  = { host = "sftpgo-admin-us-tn.recidiviz.org", path = "/", status = 403 }
+    "resource-api"        = { host = "resource.recidiviz.org", path = "/api/docs", status = 200 }
+    "auth0-login"         = { host = "login.recidiviz.org", path = "/.well-known/openid-configuration", status = 200 }
+    "app-prod"            = { host = "app-prod.recidiviz.org", path = "/health", status = 200 }
+    "identity-service"    = { host = "identity-service.recidiviz.org", path = "/", status = 302 }
+    "admin-panel"         = { host = "admin-panel-prod.recidiviz.org", path = "/", status = 302 }
+    "dashboard-cdn"       = { host = "dashboard-cdn.recidiviz.org", path = "/", status = 200 }
+    "housing"             = { host = "housing.recidiviz.org", path = "/", status = 200 }
+    "housing-admin"       = { host = "housing-admin.recidiviz.org", path = "/", status = 302 }
+    "planner"             = { host = "plan.recidiviz.org", path = "/", status = 307 }
+    "planner-api"         = { host = "api.plan.recidiviz.org", path = "/health", status = 200 }
+    "public-pathways"     = { host = "pathways.recidiviz.org", path = "/", status = 200 }
+    "pathways-app"        = { host = "pathways-app.recidiviz.org", path = "/health", status = 200 }
+    "opportunities-app"   = { host = "opportunities.app", path = "/", status = 200 }
+    "opportunities-edovo" = { host = "opportunities.edovo.com", path = "/", status = 200 }
+    } : {
+    "resource-api" = { host = "resource-dev.recidiviz.org", path = "/api/docs", status = 200 }
+  }
+}
+
+resource "google_monitoring_uptime_check_config" "external" {
+  for_each = local.external_uptime_checks
+
+  display_name = each.key
+  timeout      = "60s"
+
+  http_check {
+    path           = each.value.path
+    request_method = "GET"
+    port           = "443"
+    use_ssl        = true
+    validate_ssl   = true
+
+    accepted_response_status_codes {
+      status_value = each.value.status
+    }
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project_id
+      host       = each.value.host
+    }
+  }
+
+  checker_type = "STATIC_IP_CHECKERS"
+}

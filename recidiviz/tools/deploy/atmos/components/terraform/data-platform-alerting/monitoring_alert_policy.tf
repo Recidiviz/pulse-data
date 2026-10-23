@@ -301,6 +301,59 @@ resource "google_monitoring_alert_policy" "uptime_check_url_down" {
   project               = var.project_id
 }
 
+# Google sends no notice when a managed certificate fails to renew, and a check with
+# validate_ssl only fails once the certificate has already expired. This policy covers
+# every HTTPS uptime check in the recidiviz-123 metrics scope that validates SSL.
+resource "google_monitoring_alert_policy" "uptime_check_ssl_cert_expiring" {
+  alert_strategy {
+    auto_close           = "604800s"
+    notification_prompts = ["OPENED", "CLOSED"]
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period     = "1200s"
+        cross_series_reducer = "REDUCE_MIN"
+        group_by_fields      = ["metric.label.checked_resource_id"]
+        per_series_aligner   = "ALIGN_NEXT_OLDER"
+      }
+
+      comparison              = "COMPARISON_LT"
+      duration                = "600s"
+      evaluation_missing_data = "EVALUATION_MISSING_DATA_INACTIVE"
+      filter                  = <<-EOT
+        resource.type = "uptime_url" AND metric.type = "monitoring.googleapis.com/uptime_check/time_until_ssl_cert_expires"
+      EOT
+      threshold_value         = "14"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "SSL certificate expires in under 14 days"
+  }
+
+  display_name = "Uptime Check URL - SSL certificate expiring"
+
+  documentation {
+    content   = "The certificate served for $${metric.label.checked_resource_id} expires in under 14 days, so its automatic renewal has stalled. Google-managed and Let's Encrypt certificates both renew about 30 days before expiry.\n\nCompare the served certificate (`openssl s_client -connect HOST:443 -servername HOST`) with the certificate attached to the load balancer's target HTTPS proxy. For a Google-managed certificate, check its managed status for FAILED_NOT_VISIBLE or CAA errors, which usually mean DNS for the host no longer points at the load balancer. For the sftpgo-admin hosts, cert-manager renews the certificate in GKE and a terraform apply of sftpgo-kubernetes-resources copies it to the load balancer."
+    mime_type = "text/markdown"
+    subject   = "SSL certificate for $${metric.label.checked_resource_id} expires in under 14 days"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    google_monitoring_notification_channel.polaris_general_infrastructure.id,
+    google_monitoring_notification_channel.alerts.id
+  ]
+  project               = var.project_id
+}
+
 resource "google_monitoring_alert_policy" "cloud_sql_instance_update_detection" {
   alert_strategy {
     auto_close           = "604800s"
