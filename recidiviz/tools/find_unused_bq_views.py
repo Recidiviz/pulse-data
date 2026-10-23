@@ -200,7 +200,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results.case_note_employment_info_employment_changes",
             "document_extraction_results.case_note_housing_info_housing_entities",
             "document_extraction_results.case_note_payment_info",
-            "document_extraction_results.case_note_payment_info_payments",
             "document_extraction_results__entity_mentions.case_note_employment_info_employer_entity_mentions",
             "document_extraction_results__entity_mentions.case_note_housing_info_housing_entity_mentions",
             "document_extraction_results__pre_resolution.case_note_employment_info_employers",
@@ -213,13 +212,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__unvalidated.case_note_payment_info_payments",
         ]
     },
-    BigQueryAddress.from_str(
-        "document_extraction_sessions.case_note_payment_info_payment_type_llm_sessions"
-    ): (
-        "Payment sessions view with no deployed downstream consumer yet; there is "
-        "no CNI payment summary view, unlike employment and housing. Tracked in "
-        "TODO(OBT-51675). (Emily Turner, 2026-10-02)"
-    ),
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "New tasks snooze status archive view. "
         "Downstream work is tracked in TODO(OBT-39438). (Daniel McLaughlin, 2026-07-29)"
