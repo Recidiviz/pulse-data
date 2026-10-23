@@ -492,10 +492,10 @@ packages = ["dags"]
 [tool.uv]
 required-version = ">=0.11.8"
 index-url = "https://pypi.org/simple"
-exclude-newer = "3 days"
+exclude-newer = "7 days"
 # certifi 2026.10.19 removes the emSign root CA in response to the eMudhra
-# certificate incident. It was published 2026-10-20, so the rolling 3-day
-# quarantine above blocks it (same for pip 26.2.2); this overrides the cutoff for
+# certificate incident. It was published 2026-10-20, so the rolling
+# 7-day quarantine above blocks it (same for pip 26.2.2); this overrides the cutoff for
 # those packages alone so the security fix can land now. Safe to delete once
 # exclude-newer has moved past both releases.
 exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", pip = "2026-10-22T00:00:00Z" }
