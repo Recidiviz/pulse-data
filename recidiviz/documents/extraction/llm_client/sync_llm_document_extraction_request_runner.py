@@ -59,14 +59,18 @@ DEFAULT_MAX_RETRIES = 5
 # Base delay, in seconds, for the exponential backoff between retries.
 DEFAULT_RETRY_BASE_DELAY_SECONDS = 5.0
 
-# Error types that indicate a transient provider condition worth retrying. Every
-# other error type (malformed/empty/filtered responses, unknown errors) reflects
-# a permanent condition and is passed straight through for the caller to classify.
+# Error types worth retrying within a single request. Provider-level transients
+# (rate-limiting, timeouts, 5xx) clear on their own; malformed and empty
+# responses are non-deterministic model behavior that a re-call may resolve.
+# Every other error type (filtered responses, unknown errors) reflects a
+# permanent condition and is passed straight through for the caller to classify.
 _TRANSIENT_ERROR_TYPES = frozenset(
     {
         LLMRequestErrorType.RATE_LIMITED,
         LLMRequestErrorType.TIMEOUT,
         LLMRequestErrorType.SERVER_ERROR,
+        LLMRequestErrorType.MALFORMED_RESPONSE,
+        LLMRequestErrorType.EMPTY_RESPONSE,
     }
 )
 

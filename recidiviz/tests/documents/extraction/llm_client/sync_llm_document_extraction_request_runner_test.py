@@ -170,8 +170,6 @@ class SyncLLMDocumentExtractionRequestRunnerTest(TestCase):
 
     def test_permanent_errors_pass_through_without_retry(self) -> None:
         for error_type in (
-            LLMRequestErrorType.MALFORMED_RESPONSE,
-            LLMRequestErrorType.EMPTY_RESPONSE,
             LLMRequestErrorType.CONTENT_FILTERED,
             LLMRequestErrorType.UNKNOWN_ERROR,
         ):

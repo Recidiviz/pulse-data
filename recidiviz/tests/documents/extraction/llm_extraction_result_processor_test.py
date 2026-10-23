@@ -324,11 +324,11 @@ class LLMExtractionResultProcessorTest(TestCase):
         permanent = LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT
         expected = {
             LLMRequestErrorType.MALFORMED_RESPONSE: (
-                permanent,
+                transient,
                 LLMDocumentExtractionErrorType.LLM_REQUEST_MALFORMED_RESPONSE,
             ),
             LLMRequestErrorType.EMPTY_RESPONSE: (
-                permanent,
+                transient,
                 LLMDocumentExtractionErrorType.LLM_REQUEST_EMPTY_RESPONSE,
             ),
             LLMRequestErrorType.CONTENT_FILTERED: (

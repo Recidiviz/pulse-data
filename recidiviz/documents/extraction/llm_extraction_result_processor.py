@@ -44,16 +44,17 @@ def result_type_for_request_error(
     error_type: LLMRequestErrorType,
 ) -> LLMExtractionJobDocumentResultType:
     """Returns the document-level classification for an LLM-request-phase error.
-    Transient errors (provider rate-limiting, timeouts, and 5xx server errors)
-    leave the document eligible for a future job; every other error is permanent.
+    Transient errors (empty and malformed responses, provider rate-limiting,
+    timeouts, and 5xx server errors) leave the document eligible for a future job;
+    every other error is permanent.
 
     Enumerates every member so adding a new LLMRequestErrorType without classifying
     it here fails loudly.
     """
     if error_type is LLMRequestErrorType.MALFORMED_RESPONSE:
-        return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT
+        return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
     if error_type is LLMRequestErrorType.EMPTY_RESPONSE:
-        return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT
+        return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT
     if error_type is LLMRequestErrorType.CONTENT_FILTERED:
         return LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT
     if error_type is LLMRequestErrorType.TIMEOUT:
