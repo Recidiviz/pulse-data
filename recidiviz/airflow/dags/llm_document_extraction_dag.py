@@ -76,11 +76,11 @@ from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_validate_source_table_datasets,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     load_launched_first_order_llm_extractor_configs,
-)
-from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
-    LLMExtractionViewGraphStage,
 )
 from recidiviz.documents.store.document_collection_config import (
     get_states_with_launched_document_collections,
