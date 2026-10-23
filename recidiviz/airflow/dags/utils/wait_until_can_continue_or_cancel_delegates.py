@@ -26,6 +26,7 @@ from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_a
 from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_state_code_filter,
+    get_tenant_filter,
 )
 
 
@@ -194,3 +195,51 @@ class NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(
             all_active_dag_runs[0].run_id,
             all_active_dag_runs[-1].run_id,
         }
+
+
+class TenantAwareNoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(
+    WaitUntilCanContinueOrCancelDelegate
+):
+    """Delegate for the WaitUntilCanContinueOrCancelSensorAsync for DAGs that run one
+    dag run at a time but whose runs are partitioned by tenant_filter, where each
+    tenant's run does distinct, non-redundant work.
+
+    Only one run executes at a time, like
+    NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate: a queued run waits for the
+    active run to finish regardless of tenant. The two differ in which queued runs get
+    canceled. NoConcurrentDags cancels every queued run but the newest, which is correct
+    only when queued runs are interchangeable. Here a run is superseded only by a newer
+    run for the same tenant_filter, so a burst of distinct-tenant runs all execute
+    (serialized) rather than all but the newest being dropped.
+
+    A run with no tenant_filter runs every tenant and forms its own partition: it never
+    cancels per-tenant runs, and it is superseded only by a newer no-filter run.
+    """
+
+    def this_dag_run_can_continue(
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run can continue, i.e. it is the oldest active run.
+        One run executes at a time across all tenants.
+        """
+        return all_active_dag_runs[0].run_id == dag_run.run_id
+
+    def this_dag_run_should_be_canceled(
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run should be canceled, i.e. it is not the run
+        admitted to execute and a newer run for the same tenant_filter has queued behind
+        it. Runs for other tenants never cancel it.
+        """
+        if all_active_dag_runs[0].run_id == dag_run.run_id:
+            # The run this_dag_run_can_continue admits. The sensor checks cancelation
+            # before continuation, so the admitted run must never be canceled, or a lone
+            # queued run would cancel itself.
+            return False
+        this_run_tenant_filter = get_tenant_filter(dag_run)
+        same_tenant_dag_runs = [
+            active_dag_run
+            for active_dag_run in all_active_dag_runs
+            if get_tenant_filter(active_dag_run) == this_run_tenant_filter
+        ]
+        return same_tenant_dag_runs[-1].run_id != dag_run.run_id

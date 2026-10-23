@@ -36,7 +36,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
 from recidiviz.airflow.dags.utils.dag_run_metadata import record_dag_run_metadata
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
-    NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
+    TenantAwareNoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
 )
 from recidiviz.common.constants.tenants import Tenant
 
@@ -81,13 +81,8 @@ def verify_parameters(dag_run: DagRun | None = None) -> bool:
 
 @task_group(group_id=INITIALIZE_DAG_GROUP_ID)
 def initialize_identity_ingest_dag_group() -> Any:
-    # Same one-run-at-a-time policy as the calculation DAG: a new run waits for
-    # the active run to finish, and any runs stacked between them are canceled.
-    # Concurrent runs for the same tenant would race on the tenant's cluster
-    # datasets and import, and runs are rare enough that serializing across
-    # tenants costs little.
     wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
-        delegate=NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(),
+        delegate=TenantAwareNoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(),
         task_id="wait_to_continue_or_cancel",
     )
     (
