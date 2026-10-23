@@ -48,7 +48,11 @@ output:
               $values:
                 - OffenderID
                 - CAF_ID
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type: $literal_enum(StateAssessmentType.CAF)
+          # TOMIS uses the CAF for both intake and reclassification and does not
+          # record which one a given CAF was.
+          assessment_subtype: $literal_enum(StateAssessmentSubtype.INITIAL_OR_REASSESSMENT)
           assessment_date: CAFDate
           assessment_score: CAFScore
           assessment_level:
@@ -86,6 +90,29 @@ output:
                         - "CLS"
                       StateAssessmentLevel.MAXIMUM:
                         - "MAX"
+          # StateAssessment requires a decision and its date together, so set
+          # neither unless TOMIS recorded both.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then:
+                  $enum_mapping:
+                    $raw_text: ClassificationDecision
+                    $mappings:
+                      StateAssessmentDecision.APPROVED:
+                        - "A"
+                      StateAssessmentDecision.DENIED:
+                        - "D"
+          assessment_decision_date:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then: ClassificationDecisionDate
           assessment_metadata:
             $normalized_values_json_dict:
               QUESTION1: Question1

@@ -309,6 +309,8 @@ AVG_DAILY_POPULATION_GENERAL_INCARCERATION = DailyAvgSpanCountMetric(
 # span at once, but it's possible for someone to have multiple 'RISK' spans in the
 # `ASSESSMENT_SCORE_SESSION` span type (if the assessments are of different types). We
 # should properly aggregate/deduplicate as needed for this metric.
+# TODO(#108525): Exclude incarceration-only custody classifications (e.g. TN CAF), whose
+# custody levels otherwise count as risk levels.
 AVG_DAILY_POPULATION_HIGH_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_high_risk_level",
     display_name="Average Population: High Risk Level",
@@ -339,6 +341,8 @@ AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetri
 # span at once, but it's possible for someone to have multiple 'RISK' spans in the
 # `ASSESSMENT_SCORE_SESSION` span type (if the assessments are of different types). We
 # should properly aggregate/deduplicate as needed for this metric.
+# TODO(#108525): Exclude incarceration-only custody classifications (e.g. TN CAF), whose
+# custody levels otherwise count as risk levels.
 AVG_DAILY_POPULATION_LOW_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_low_risk_level",
     display_name="Average Population: Low Risk Level",

@@ -31,6 +31,7 @@ my_field:
       some_arg: MY_CSV_COL
 """
 
+from recidiviz.common.constants.state.state_assessment import StateAssessmentSubtype
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -222,3 +223,23 @@ def parse_staff_caseload_type(
         return StateStaffCaseloadType.GENERAL
 
     return StateStaffCaseloadType.INTERNAL_UNKNOWN
+
+
+def assessment_subtype_from_classification_type(
+    raw_text: str,
+) -> StateAssessmentSubtype:
+    """Parses the subtype of a 2026 Classification policy form from raw text of the
+    form "<ClassificationType>-<ClassificationFormType>", e.g. "RCAF_V2-ANNUAL", or just
+    "<ClassificationType>" when the form type is blank. The ClassificationType alone
+    decides the subtype, since DCAF is only used for initial classifications and RCAF
+    only for reclassifications. A handful of DCAFs carry a ClassificationFormType of
+    ANNUAL, which this treats as initial."""
+    classification_type = raw_text.split("-", maxsplit=1)[0]
+    if classification_type == "DCAF":
+        return StateAssessmentSubtype.INITIAL
+    if classification_type in ("RCAF", "RCAF_V2"):
+        return StateAssessmentSubtype.REASSESSMENT
+    raise ValueError(
+        f"Unexpected ClassificationType [{classification_type}] in raw text "
+        f"[{raw_text}]"
+    )

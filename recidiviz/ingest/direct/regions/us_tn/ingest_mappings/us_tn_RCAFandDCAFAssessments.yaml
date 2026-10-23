@@ -65,6 +65,7 @@ output:
                 - OffenderID
                 - CAF_ID
                 - $literal("2026-POLICY")
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type:
             $enum_mapping:
               $raw_text: ClassificationType
@@ -74,6 +75,19 @@ output:
                   - RCAF_V2
                 StateAssessmentType.DCAF:
                   - DCAF
+          assessment_subtype:
+            $conditional:
+              - $if:
+                  $not_null: ClassificationType
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - ClassificationType
+                          - ClassificationFormType
+                        $include_nulls: False
+                    $custom_parser: us_tn_custom_enum_parsers.assessment_subtype_from_classification_type
           assessment_date: AssessmentDate
           assessment_score: OverallScore
           assessment_level:
@@ -111,6 +125,29 @@ output:
                         - "CLOSE"
                       StateAssessmentLevel.MAXIMUM:
                         - "MAX"
+          # StateAssessment requires a decision and its date together, so set
+          # neither unless TOMIS recorded both.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then:
+                  $enum_mapping:
+                    $raw_text: ClassificationDecision
+                    $mappings:
+                      StateAssessmentDecision.APPROVED:
+                        - "A"
+                      StateAssessmentDecision.DENIED:
+                        - "D"
+          assessment_decision_date:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then: ClassificationDecisionDate
           assessment_metadata:
             $normalized_values_json_dict:
               ClassificationType: ClassificationType
