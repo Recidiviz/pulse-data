@@ -130,7 +130,9 @@ class TestStateSchemaEnums(TestSchemaEnums):
         # it should be mapped to None.
         state_enums_mapping = {
             "state_assessment_class": state_assessment.StateAssessmentClass,
+            "state_assessment_decision": state_assessment.StateAssessmentDecision,
             "state_assessment_level": state_assessment.StateAssessmentLevel,
+            "state_assessment_subtype": state_assessment.StateAssessmentSubtype,
             "state_assessment_type": state_assessment.StateAssessmentType,
             "state_charge_classification_type": state_charge.StateChargeClassificationType,
             "state_charge_status": state_charge.StateChargeStatus,

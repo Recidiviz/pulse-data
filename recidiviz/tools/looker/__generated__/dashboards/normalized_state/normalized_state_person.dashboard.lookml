@@ -123,6 +123,9 @@
     fields: [normalized_state_assessment.assessment_class,
       normalized_state_assessment.assessment_class_raw_text,
       normalized_state_assessment.assessment_date,
+      normalized_state_assessment.assessment_decision,
+      normalized_state_assessment.assessment_decision_date,
+      normalized_state_assessment.assessment_decision_raw_text,
       normalized_state_assessment.assessment_id,
       normalized_state_assessment.assessment_level,
       normalized_state_assessment.assessment_level_raw_text,
@@ -132,6 +135,8 @@
       normalized_state_assessment.assessment_override_reason,
       normalized_state_assessment.assessment_score,
       normalized_state_assessment.assessment_score_bucket,
+      normalized_state_assessment.assessment_subtype,
+      normalized_state_assessment.assessment_subtype_raw_text,
       normalized_state_assessment.assessment_type,
       normalized_state_assessment.assessment_type_raw_text,
       normalized_state_assessment.conducting_staff_external_id,
@@ -140,7 +145,7 @@
       normalized_state_assessment.external_id,
       normalized_state_assessment.sequence_num,
       normalized_state_assessment.state_code]
-    sorts: [normalized_state_assessment.assessment_date desc]
+    sorts: [normalized_state_assessment.assessment_date desc, normalized_state_assessment.assessment_decision_date desc]
     listen: 
       Person Id: normalized_state_person.person_id
       State Code: normalized_state_person.state_code

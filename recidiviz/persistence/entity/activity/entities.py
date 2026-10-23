@@ -30,7 +30,9 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
+    StateAssessmentDecision,
     StateAssessmentLevel,
+    StateAssessmentSubtype,
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -654,6 +656,12 @@ class StateAssessment(
     assessment_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    assessment_subtype: Optional[StateAssessmentSubtype] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateAssessmentSubtype)
+    )
+    assessment_subtype_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Attributes
     #   - When
@@ -693,6 +701,23 @@ class StateAssessment(
     )
     assessment_override_reason: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
+    )
+    assessment_decision: Optional[StateAssessmentDecision] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt(StateAssessmentDecision),
+            appears_with("assessment_decision_date"),
+        ],
+    )
+    assessment_decision_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    assessment_decision_date: datetime.date | None = attr.ib(
+        default=None,
+        validator=[
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            appears_with("assessment_decision"),
+        ],
     )
 
     #   - Who

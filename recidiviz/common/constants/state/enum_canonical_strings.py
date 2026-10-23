@@ -147,6 +147,13 @@ state_assessment_level_very_high = "VERY_HIGH"
 state_assessment_level_maximum = "MAXIMUM"
 state_assessment_level_intense = "INTENSE"
 
+state_assessment_subtype_initial = "INITIAL"
+state_assessment_subtype_reassessment = "REASSESSMENT"
+state_assessment_subtype_initial_or_reassessment = "INITIAL_OR_REASSESSMENT"
+
+state_assessment_decision_approved = "APPROVED"
+state_assessment_decision_denied = "DENIED"
+
 # state_charge.py
 state_charge_classification_type_civil = "CIVIL"
 state_charge_classification_type_felony = "FELONY"

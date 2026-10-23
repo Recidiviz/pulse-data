@@ -123,6 +123,9 @@
     fields: [state_assessment.assessment_class,
       state_assessment.assessment_class_raw_text,
       state_assessment.assessment_date,
+      state_assessment.assessment_decision,
+      state_assessment.assessment_decision_date,
+      state_assessment.assessment_decision_raw_text,
       state_assessment.assessment_id,
       state_assessment.assessment_level,
       state_assessment.assessment_level_raw_text,
@@ -131,13 +134,15 @@
       state_assessment.assessment_override_level_raw_text,
       state_assessment.assessment_override_reason,
       state_assessment.assessment_score,
+      state_assessment.assessment_subtype,
+      state_assessment.assessment_subtype_raw_text,
       state_assessment.assessment_type,
       state_assessment.assessment_type_raw_text,
       state_assessment.conducting_staff_external_id,
       state_assessment.conducting_staff_external_id_type,
       state_assessment.external_id,
       state_assessment.state_code]
-    sorts: [state_assessment.assessment_date desc]
+    sorts: [state_assessment.assessment_date desc, state_assessment.assessment_decision_date desc]
     listen: 
       Person Id: state_person.person_id
       State Code: state_person.state_code

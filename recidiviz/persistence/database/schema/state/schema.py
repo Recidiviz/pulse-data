@@ -196,6 +196,23 @@ state_assessment_level = Enum(
     name="state_assessment_level",
 )
 
+state_assessment_subtype = Enum(
+    state_enum_strings.state_assessment_subtype_initial,
+    state_enum_strings.state_assessment_subtype_reassessment,
+    state_enum_strings.state_assessment_subtype_initial_or_reassessment,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_assessment_subtype",
+)
+
+state_assessment_decision = Enum(
+    state_enum_strings.state_assessment_decision_approved,
+    state_enum_strings.state_assessment_decision_denied,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_assessment_decision",
+)
+
 state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_amended,
     state_enum_strings.state_sentence_status_commuted,
@@ -1223,6 +1240,11 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     assessment_override_level = Column(state_assessment_level)
     assessment_override_level_raw_text = Column(String(255))
     assessment_override_reason = Column(String(255))
+    assessment_decision = Column(state_assessment_decision)
+    assessment_decision_raw_text = Column(String(255))
+    assessment_decision_date = Column(Date)
+    assessment_subtype = Column(state_assessment_subtype)
+    assessment_subtype_raw_text = Column(String(255))
     conducting_staff_external_id = Column(String(255))
     conducting_staff_external_id_type = Column(String(255))
 

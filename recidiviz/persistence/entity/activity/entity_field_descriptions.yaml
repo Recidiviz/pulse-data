@@ -14,7 +14,23 @@ state_assessment:
     assessment_override_reason: >-
       The raw text code or reason the state recorded for overriding the assessment
       result. An assessment was overridden if and only if this field is non-null.
+    assessment_decision: >-
+      The decision an authority made on the assessment's result, for instruments
+      whose result only takes effect once approved. Null when the instrument has no
+      approval step, or when the state has not recorded a decision yet. Always set
+      together with assessment_decision_date.
+    assessment_decision_date: >-
+      The date the assessment_decision was made. Always set together with
+      assessment_decision.
+    assessment_decision_raw_text: The raw text value of the assessment decision.
     assessment_score: The final score output by the assessment, if applicable.
+    assessment_subtype: >-
+      Whether the assessment is designed as an initial assessment (e.g. an intake or
+      diagnostic classification) or as a recurring reassessment. This describes the
+      instrument or form used, not whether it was the person's first assessment.
+    assessment_subtype_raw_text: >-
+      The raw text value of the assessment subtype, e.g. the state's label for the
+      form or classification type, such as an annual review form.
     assessment_type: The specific type of assessment that was conducted.
     assessment_type_raw_text: The raw text value of the assessment type.
     conducting_staff_external_id: >-

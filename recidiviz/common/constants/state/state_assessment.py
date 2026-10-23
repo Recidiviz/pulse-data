@@ -284,3 +284,77 @@ _STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentLevel.INTENSE: "Category of “Intense”, as defined by the assessment."
     " This is considered higher than the `MAXIMUM` category.",
 }
+
+
+@unique
+class StateAssessmentSubtype(StateEntityEnum):
+    """An enumeration of whether an assessment is designed as an initial assessment or
+    as a recurring reassessment. This describes the instrument or form used, not
+    whether it was the person's first assessment."""
+
+    INITIAL = state_enum_strings.state_assessment_subtype_initial
+    REASSESSMENT = state_enum_strings.state_assessment_subtype_reassessment
+    INITIAL_OR_REASSESSMENT = (
+        state_enum_strings.state_assessment_subtype_initial_or_reassessment
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "Whether the assessment is designed as an initial (intake or diagnostic) "
+            "assessment or as a recurring reassessment. This describes the "
+            "instrument or form used, not whether it was the person's first "
+            "assessment."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_SUBTYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentSubtype.INITIAL: "The assessment is designed as an initial "
+    "assessment, e.g. an intake or diagnostic classification.",
+    StateAssessmentSubtype.REASSESSMENT: "The assessment is designed as a recurring "
+    "reassessment, whether scheduled (e.g. an annual review) or triggered by an "
+    "event (e.g. a transfer, a custody level change, or a disciplinary).",
+    StateAssessmentSubtype.INITIAL_OR_REASSESSMENT: "The instrument is designed for "
+    "both initial assessments and reassessments, and the state does not record "
+    "which one this was. Use this rather than EXTERNAL_UNKNOWN when the instrument "
+    "itself serves both purposes, so the subtype can never be known from the "
+    "state's data; use EXTERNAL_UNKNOWN when the state records the subtype but "
+    "this assessment's value is missing.",
+}
+
+
+@unique
+class StateAssessmentDecision(StateEntityEnum):
+    """An enumeration of the decisions an authority can make on an assessment's
+    result, for instruments whose result only takes effect once approved."""
+
+    APPROVED = state_enum_strings.state_assessment_decision_approved
+    DENIED = state_enum_strings.state_assessment_decision_denied
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The decision an authority made on the assessment's result, for "
+            "instruments whose result only takes effect once approved (e.g. a custody "
+            "classification that a warden or classification coordinator signs off on)."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_DECISION_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_DECISION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentDecision.APPROVED: "The assessment's result was approved and took "
+    "effect.",
+    StateAssessmentDecision.DENIED: "The assessment's result was denied and did not "
+    "take effect.",
+}

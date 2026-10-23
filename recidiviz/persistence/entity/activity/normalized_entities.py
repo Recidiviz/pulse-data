@@ -32,7 +32,9 @@ from more_itertools import first, last
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
+    StateAssessmentDecision,
     StateAssessmentLevel,
+    StateAssessmentSubtype,
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -348,6 +350,12 @@ class NormalizedStateAssessment(
     assessment_type_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    assessment_subtype: StateAssessmentSubtype | None = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateAssessmentSubtype)
+    )
+    assessment_subtype_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Attributes
     #   - When
@@ -387,6 +395,23 @@ class NormalizedStateAssessment(
     )
     assessment_override_reason: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
+    )
+    assessment_decision: StateAssessmentDecision | None = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt(StateAssessmentDecision),
+            appears_with("assessment_decision_date"),
+        ],
+    )
+    assessment_decision_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    assessment_decision_date: date | None = attr.ib(
+        default=None,
+        validator=[
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            appears_with("assessment_decision"),
+        ],
     )
 
     #   - Who
