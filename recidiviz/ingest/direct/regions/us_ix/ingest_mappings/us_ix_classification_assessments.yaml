@@ -28,13 +28,36 @@ output:
       - StateAssessment:
           external_id: ClassificationId
           assessment_date: AssessmentDate
+          # IX records no approval step; a completed RSLS took effect on its
+          # AssessmentDate.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $not_null: AssessmentDate
+                $then: $literal_enum(StateAssessmentDecision.APPROVED)
+          assessment_decision_date: AssessmentDate
           conducting_staff_external_id: AdministrativeDutyOfficerId
           conducting_staff_external_id_type:
             $conditional:
               - $if:
                   $not_null: AdministrativeDutyOfficerId
                 $then: $literal("US_IX_EMPLOYEE")
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type: $literal_enum(StateAssessmentType.RSLS)
+          assessment_subtype:
+            $enum_mapping:
+              $raw_text: ClassificationTypeDesc
+              $mappings:
+                StateAssessmentSubtype.INITIAL:
+                  - "Initial"
+                  # A rider classification is done on entering the retained
+                  # jurisdiction program, so it's the initial classification for
+                  # that stay. A person committed to a term after a rider can
+                  # therefore have two INITIAL classifications in one stay.
+                  - "Rider"
+                StateAssessmentSubtype.REASSESSMENT:
+                  - "Scheduled"
+                  - "Administrative"
           assessment_score: score
           assessment_level:
             $enum_mapping:
